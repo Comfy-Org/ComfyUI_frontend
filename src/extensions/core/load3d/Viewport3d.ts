@@ -17,7 +17,11 @@ import type {
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
-import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import {
+  clientPointToLetterboxNdc,
+  computeLetterboxedViewport,
+  isLoad3dActive
+} from './load3dViewport'
 
 const VIEW_HELPER_SIZE = 128
 
@@ -274,6 +278,20 @@ export class Viewport3d {
 
     this.sceneManager.renderBackground()
     this.renderer.render(this.sceneManager.scene, this.getRenderCamera())
+  }
+
+  clientPointToNdc(
+    clientX: number,
+    clientY: number
+  ): { x: number; y: number } | null {
+    const rect = this.domElement.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return null
+    return clientPointToLetterboxNdc(
+      (clientX - rect.left) / rect.width,
+      (clientY - rect.top) / rect.height,
+      { width: rect.width, height: rect.height },
+      this.shouldMaintainAspectRatio() ? this.targetAspectRatio : null
+    )
   }
 
   protected startAnimation(): void {

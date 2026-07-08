@@ -386,6 +386,74 @@ describe('Viewport3d', () => {
     })
   })
 
+  describe('clientPointToNdc', () => {
+    function installCanvas(rect: {
+      left: number
+      top: number
+      width: number
+      height: number
+    }) {
+      const canvas = document.createElement('canvas')
+      vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+        ...rect,
+        right: rect.left + rect.width,
+        bottom: rect.top + rect.height,
+        x: rect.left,
+        y: rect.top,
+        toJSON: () => ({})
+      } as DOMRect)
+      Object.assign(ctx.viewport, { view: { canvas } })
+    }
+
+    function expectNdc(
+      actual: { x: number; y: number } | null,
+      x: number,
+      y: number
+    ): void {
+      expect(actual).not.toBeNull()
+      expect(actual!.x).toBeCloseTo(x)
+      expect(actual!.y).toBeCloseTo(y)
+    }
+
+    beforeEach(() => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 100,
+        targetHeight: 100,
+        targetAspectRatio: 1,
+        isViewerMode: false
+      })
+    })
+
+    it('maps pointer positions inside the letterboxed content to NDC', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+
+      expectNdc(ctx.viewport.clientPointToNdc(300, 150), 0, 0)
+      expectNdc(ctx.viewport.clientPointToNdc(200, 150), -1, 0)
+      expectNdc(ctx.viewport.clientPointToNdc(400, 50), 1, 1)
+    })
+
+    it('returns null on the letterbox bars', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+
+      expect(ctx.viewport.clientPointToNdc(150, 150)).toBeNull()
+      expect(ctx.viewport.clientPointToNdc(450, 150)).toBeNull()
+    })
+
+    it('returns null when the canvas has no layout size', () => {
+      installCanvas({ left: 0, top: 0, width: 0, height: 0 })
+
+      expect(ctx.viewport.clientPointToNdc(10, 10)).toBeNull()
+    })
+
+    it('maps the full canvas when no aspect ratio is maintained', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+      Object.assign(ctx.viewport, { targetWidth: 0, targetHeight: 0 })
+
+      expectNdc(ctx.viewport.clientPointToNdc(100, 50), -1, 1)
+      expectNdc(ctx.viewport.clientPointToNdc(500, 250), 1, -1)
+    })
+  })
+
   describe('start / remove lifecycle', () => {
     beforeEach(() => {
       vi.useFakeTimers()

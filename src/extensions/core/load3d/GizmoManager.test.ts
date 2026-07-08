@@ -3,14 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
 
-const { mockSetMode, mockAttach, mockDetach, mockGetHelper, mockDispose } =
-  vi.hoisted(() => ({
-    mockSetMode: vi.fn(),
-    mockAttach: vi.fn(),
-    mockDetach: vi.fn(),
-    mockGetHelper: vi.fn(),
-    mockDispose: vi.fn()
-  }))
+const {
+  mockSetMode,
+  mockAttach,
+  mockDetach,
+  mockGetHelper,
+  mockDispose,
+  transformControlsInstances
+} = vi.hoisted(() => ({
+  mockSetMode: vi.fn(),
+  mockAttach: vi.fn(),
+  mockDetach: vi.fn(),
+  mockGetHelper: vi.fn(),
+  mockDispose: vi.fn(),
+  transformControlsInstances: [] as unknown[]
+}))
 
 vi.mock('three/examples/jsm/controls/TransformControls', () => {
   class TransformControls {
@@ -20,6 +27,7 @@ vi.mock('three/examples/jsm/controls/TransformControls', () => {
 
     constructor(camera: THREE.Camera) {
       this.camera = camera
+      transformControlsInstances.push(this)
     }
 
     addEventListener(event: string, cb: (e: unknown) => void) {
@@ -64,6 +72,7 @@ describe('GizmoManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    transformControlsInstances.length = 0
 
     scene = new THREE.Scene()
     interactionElement = document.createElement('div')
@@ -87,6 +96,58 @@ describe('GizmoManager', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe('setPointerNdcSource', () => {
+    type PointerNdc = { x: number; y: number; button: number }
+    function getPointerOverride() {
+      const controls = transformControlsInstances.at(-1) as {
+        _getPointer?: (event: PointerEvent) => PointerNdc
+      }
+      return controls._getPointer
+    }
+
+    it('routes TransformControls pointer NDC through the injected source', () => {
+      manager.init()
+      manager.setPointerNdcSource((clientX, clientY) => ({
+        x: clientX / 100,
+        y: clientY / 100
+      }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 50,
+        clientY: -25,
+        button: 2
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('maps points outside the viewport to an off-screen pointer', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => null)
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('applies a source registered before init once init runs', () => {
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5 }))
+      manager.init()
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: 0.5, button: 1 })
+    })
   })
 
   describe('init', () => {

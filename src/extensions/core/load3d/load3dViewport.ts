@@ -34,6 +34,26 @@ export function computeLetterboxedViewport(
   }
 }
 
+export function clientPointToLetterboxNdc(
+  normalizedX: number,
+  normalizedY: number,
+  container: Size,
+  targetAspectRatio: number | null
+): { x: number; y: number } | null {
+  if (targetAspectRatio === null) {
+    return { x: normalizedX * 2 - 1, y: -(normalizedY * 2 - 1) }
+  }
+  const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
+    container,
+    targetAspectRatio
+  )
+  if (width <= 0 || height <= 0) return null
+  const localX = (normalizedX * container.width - offsetX) / width
+  const localY = (normalizedY * container.height - offsetY) / height
+  if (localX < 0 || localX > 1 || localY < 0 || localY > 1) return null
+  return { x: localX * 2 - 1, y: -(localY * 2 - 1) }
+}
+
 export type Load3dActivityFlags = {
   mouseOnNode: boolean
   mouseOnScene: boolean

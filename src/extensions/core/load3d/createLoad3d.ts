@@ -127,5 +127,11 @@ export function createLoad3d(
   container: HTMLElement,
   options?: Load3DOptions
 ): Load3d {
-  return new Load3d(container, buildLoad3dDeps(container), options)
+  const deps = buildLoad3dDeps(container)
+  const load3d = new Load3d(container, deps, options)
+
+  deps.gizmoManager.setPointerNdcSource((clientX, clientY) =>
+    load3d.clientPointToNdc(clientX, clientY)
+  )
+  return load3d
 }

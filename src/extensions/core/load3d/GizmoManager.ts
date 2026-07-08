@@ -18,6 +18,10 @@ export class GizmoManager {
   private interactionElement: HTMLElement
   private orbitControls: OrbitControls
   private onTransformChange?: () => void
+  private getPointerNdc?: (
+    clientX: number,
+    clientY: number
+  ) => { x: number; y: number } | null
 
   constructor(
     scene: THREE.Scene,
@@ -46,10 +50,39 @@ export class GizmoManager {
       }
     })
 
+    this.applyPointerNdcSource()
+
     const helper = this.transformControls.getHelper()
     helper.name = 'GizmoTransformControls'
     helper.renderOrder = 999
     this.scene.add(helper)
+  }
+
+  setPointerNdcSource(
+    getPointerNdc: (
+      clientX: number,
+      clientY: number
+    ) => { x: number; y: number } | null
+  ): void {
+    this.getPointerNdc = getPointerNdc
+    this.applyPointerNdcSource()
+  }
+
+  private applyPointerNdcSource(): void {
+    if (!this.transformControls || !this.getPointerNdc) return
+    const getNdc = this.getPointerNdc
+    const controls = this.transformControls as unknown as {
+      _getPointer: (event: PointerEvent) => {
+        x: number
+        y: number
+        button: number
+      }
+    }
+    controls._getPointer = (event: PointerEvent) => {
+      const ndc = getNdc(event.clientX, event.clientY)
+      if (!ndc) return { x: 10, y: 10, button: event.button }
+      return { x: ndc.x, y: ndc.y, button: event.button }
+    }
   }
 
   setupForModel(model: THREE.Object3D): void {
