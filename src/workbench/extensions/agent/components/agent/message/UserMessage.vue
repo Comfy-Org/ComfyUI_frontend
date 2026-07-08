@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// User message per the design reference: a right-aligned pill, no avatar. text-xs on the
-// secondary surface, rounded-lg, px-4 py-3, sized to content.
+// User message per the design reference: a right-aligned pill, no avatar.
 const { text } = defineProps<{
   text: string
 }>()
