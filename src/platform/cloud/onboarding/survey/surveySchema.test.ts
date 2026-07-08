@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
+import { defaultOnboardingSurvey } from './defaultSurveySchema'
 import {
   buildInitialValues,
   buildSubmissionPayload,
@@ -244,5 +245,49 @@ describe('prepareSurvey', () => {
     const values = prepared.fields[0]!.options!.map((o) => o.value)
     expect(values.slice(-2).sort()).toEqual(['not_sure', 'other'])
     expect(values.slice(0, -2).sort()).toEqual(['a', 'b'])
+  })
+})
+
+describe('defaultOnboardingSurvey branching', () => {
+  const idsFor = (values: Record<string, string | string[]>) =>
+    visibleFields(defaultOnboardingSurvey, values).map((f) => f.id)
+
+  it('asks focus only for builder intents (workflows / apps_api)', () => {
+    expect(idsFor({ intent: 'workflows' })).toContain('focus')
+    expect(idsFor({ intent: 'apps_api' })).toContain('focus')
+    expect(idsFor({ intent: 'images' })).not.toContain('focus')
+    expect(idsFor({ intent: 'exploring' })).not.toContain('focus')
+  })
+
+  it('asks source_social only when source is social', () => {
+    expect(idsFor({ source: 'social' })).toContain('source_social')
+    expect(idsFor({ source: 'friend' })).not.toContain('source_social')
+  })
+
+  it('zeroes hidden branch fields in the submission payload', () => {
+    const payload = buildSubmissionPayload(defaultOnboardingSurvey, {
+      intent: 'images',
+      experience: 'new',
+      source: 'friend'
+    })
+    expect(payload).toMatchObject({
+      intent: 'images',
+      experience: 'new',
+      source: 'friend',
+      focus: '',
+      source_social: ''
+    })
+  })
+
+  it('prefers free-text over the "other" sentinel for intent and source', () => {
+    const payload = buildSubmissionPayload(defaultOnboardingSurvey, {
+      intent: 'other',
+      intentOther: '  Comics  ',
+      experience: 'pro',
+      source: 'other',
+      sourceOther: 'A podcast'
+    })
+    expect(payload.intent).toBe('Comics')
+    expect(payload.source).toBe('A podcast')
   })
 })
