@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -12,6 +12,9 @@ import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
 } from '@/components/dialog/rekaPrimeVueBridge'
+import UiDialog from '@/components/ui/dialog/Dialog.vue'
+import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({
@@ -27,6 +30,14 @@ const i18n = createI18n({
 const Body = defineComponent({
   name: 'Body',
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
+})
+
+const ClosedNonModalDialog = defineComponent({
+  name: 'ClosedNonModalDialog',
+  setup: () => () =>
+    h(UiDialog, { open: false, modal: false }, () =>
+      h(UiDialogPortal, null, () => h(UiDialogOverlay))
+    )
 })
 
 function mountDialog() {
@@ -272,6 +283,80 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
     expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
     expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
+  })
+})
+
+describe('GlobalDialog Reka overlay scrim', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders a backdrop scrim for modal Reka dialogs', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-modal-scrim',
+      title: 'Modal',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka' }
+    })
+
+    await screen.findByRole('dialog')
+    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
+  })
+
+  it('renders a backdrop scrim for non-modal Reka dialogs', async () => {
+    // Reka's own DialogOverlay renders nothing when the root is non-modal,
+    // which silently dropped the scrim behind Settings/Manager (modal: false).
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-non-modal-scrim',
+      title: 'Non-modal',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        modal: false,
+        overlayClass: 'p-8'
+      }
+    })
+
+    await screen.findByRole('dialog')
+    const scrims = screen.queryAllByTestId('dialog-overlay')
+    expect(scrims).toHaveLength(1)
+    expect(scrims[0].classList.contains('p-8')).toBe(true)
+  })
+
+  it('renders no scrim for a mounted but closed non-modal dialog', async () => {
+    // CustomizationDialog mounts its non-modal Dialog root with open=false;
+    // the scrim must stay gated on open, not just on mount.
+    render(ClosedNonModalDialog)
+    await Promise.resolve()
+    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
+  })
+
+  it('removes the scrim when the dialog closes', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-scrim-close',
+      title: 'Non-modal',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka', modal: false }
+    })
+
+    await screen.findByRole('dialog')
+    store.closeDialog({ key: 'reka-scrim-close' })
+    await waitFor(() =>
+      expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
+    )
   })
 })
 
