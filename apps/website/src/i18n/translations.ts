@@ -3983,12 +3983,12 @@ const translations = {
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Join the live stream. Get answers in real time.',
-    'zh-CN': '加入直播，实时获得解答。'
+    en: 'Now turn your agent into a creative technologist.',
+    'zh-CN': '现在，让你的智能体成为创意技术专家。'
   },
   'launches.banner.cta': {
-    en: 'Join livestream',
-    'zh-CN': '加入直播'
+    en: 'Start Comfy MCP',
+    'zh-CN': '启动 Comfy MCP'
   },
 
   // Launches page (/launches) — closing CTA
