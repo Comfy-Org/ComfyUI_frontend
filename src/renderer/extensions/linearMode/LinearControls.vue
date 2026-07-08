@@ -21,6 +21,9 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -105,6 +108,10 @@ async function runButtonClick(e: Event) {
 function handleDragDrop() {
   return widgetListRef.value?.handleDragDrop()
 }
+
+function replayAppModeTour() {
+  useOnboardingTourStore().replayTour('appMode')
+}
 </script>
 <template>
   <div
@@ -118,16 +125,29 @@ function handleDragDrop() {
       class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
     >
       <span
-        class="truncate font-bold"
+        class="min-w-0 flex-1 truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
-      <div class="flex-1" />
-      <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
+      <Button
+        v-tooltip.bottom="{
+          value: t('onboardingCoachmarks.appMode.replay'),
+          showDelay: 300,
+          hideDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        :aria-label="t('onboardingCoachmarks.appMode.replay')"
+        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        @click="replayAppModeTour"
+      >
+        <i class="icon-[lucide--circle-question-mark] size-4" />
+      </Button>
     </section>
     <div
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
+        v-coachmark="COACH_IDS.inputsList"
         data-testid="linear-widgets"
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
@@ -167,101 +187,58 @@ function handleDragDrop() {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <SubscribeToRunButton v-if="!isActiveSubscription" class="mt-4 w-full">
-          <template #trailing>
-            <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
-          </template>
-        </SubscribeToRunButton>
-        <div v-else class="mt-4 flex">
-          <RekaPopoverRoot v-if="creditsBadges.length">
-            <RekaPopoverTrigger as-child>
-              <Button class="mr-2 size-10">
-                <i :class="cn(CREDITS_ICON, 'bg-current')" />
-              </Button>
-            </RekaPopoverTrigger>
-            <RekaPopoverPortal>
-              <RekaPopoverContent
-                side="top"
-                :side-offset="8"
-                :collision-padding="10"
-                class="z-1700 w-72 max-w-[calc(100vw-2rem)]"
-              >
-                <PartnerNodesList :badges="creditsBadges" />
-              </RekaPopoverContent>
-            </RekaPopoverPortal>
-          </RekaPopoverRoot>
-          <Popover side="top" @open-auto-focus.prevent>
-            <template #button>
-              <Button size="lg" class="-mr-3 pr-7">
-                <i v-if="batchCount == 1" class="icon-[lucide--chevron-down]" />
-                <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
-              </Button>
-            </template>
-            <div
-              class="m-1 mb-2 text-node-component-slot-text uppercase"
-              v-text="t('linearMode.runCount')"
-            />
-            <ScrubableNumberInput
-              v-model="batchCount"
-              :aria-label="t('linearMode.runCount')"
-              :min="1"
-              :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-              class="h-10 min-w-40"
-            />
-          </Popover>
-          <Button
-            variant="inverted"
-            class="grow"
-            size="lg"
-            :aria-describedby="
-              showRunErrorWarning
-                ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-                : undefined
-            "
-            @click="runButtonClick"
+        <div v-coachmark="COACH_IDS.appRunButton">
+          <SubscribeToRunButton
+            v-if="!isActiveSubscription"
+            class="mt-4 w-full"
           >
-            <i aria-hidden="true" class="icon-[lucide--play]" />
-            {{ t('menu.run') }}
-            <CreditsPill
-              v-if="creditsBadges.length"
-              class="ml-auto text-brand-blue"
-            />
-          </Button>
-        </div>
-      </section>
-      <section v-else :data-testid="linearRunButtonTestId" class="p-4 pb-6">
-        <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <div class="mx-1 flex flex-wrap items-center justify-between gap-2">
-          <div
-            class="text-xs text-base-foreground uppercase"
-            v-text="t('linearMode.runCount')"
-          />
-          <ScrubableNumberInput
-            v-model="batchCount"
-            :aria-label="t('linearMode.runCount')"
-            :min="1"
-            :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
-            class="h-7 min-w-40"
-          />
-        </div>
-        <HoverCardRoot
-          :open-delay="creditsBadges.length ? 0 : 150"
-          :close-delay="100"
-        >
-          <HoverCardTrigger as-child>
-            <SubscribeToRunButton
-              v-if="!isActiveSubscription"
-              large
-              class="mt-4 w-full"
-            >
-              <template #trailing>
-                <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
+            <template #trailing>
+              <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
+            </template>
+          </SubscribeToRunButton>
+          <div v-else class="mt-4 flex">
+            <RekaPopoverRoot v-if="creditsBadges.length">
+              <RekaPopoverTrigger as-child>
+                <Button class="mr-2 size-10">
+                  <i :class="cn(CREDITS_ICON, 'bg-amber-400')" />
+                </Button>
+              </RekaPopoverTrigger>
+              <RekaPopoverPortal>
+                <RekaPopoverContent
+                  side="top"
+                  :side-offset="8"
+                  :collision-padding="10"
+                  class="z-1700 w-72 max-w-[calc(100vw-2rem)]"
+                >
+                  <PartnerNodesList :badges="creditsBadges" />
+                </RekaPopoverContent>
+              </RekaPopoverPortal>
+            </RekaPopoverRoot>
+            <Popover side="top" @open-auto-focus.prevent>
+              <template #button>
+                <Button size="lg" class="-mr-3 pr-7">
+                  <i
+                    v-if="batchCount == 1"
+                    class="icon-[lucide--chevron-down]"
+                  />
+                  <div v-else class="tabular-nums" v-text="`${batchCount}x`" />
+                </Button>
               </template>
-            </SubscribeToRunButton>
+              <div
+                class="m-1 mb-2 text-node-component-slot-text uppercase"
+                v-text="t('linearMode.runCount')"
+              />
+              <ScrubableNumberInput
+                v-model="batchCount"
+                :aria-label="t('linearMode.runCount')"
+                :min="1"
+                :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+                class="h-10 min-w-40"
+              />
+            </Popover>
             <Button
-              v-else
               variant="inverted"
-              class="mt-4 w-full text-sm"
+              class="grow"
               size="lg"
               :aria-describedby="
                 showRunErrorWarning
@@ -277,18 +254,71 @@ function handleDragDrop() {
                 class="ml-auto text-brand-blue"
               />
             </Button>
-          </HoverCardTrigger>
-          <HoverCardPortal v-if="creditsBadges.length">
-            <HoverCardContent
-              side="top"
-              :side-offset="10"
-              :collision-padding="10"
-              class="z-1700 w-(--reka-hover-card-trigger-width)"
-            >
-              <PartnerNodesList :badges="creditsBadges" />
-            </HoverCardContent>
-          </HoverCardPortal>
-        </HoverCardRoot>
+          </div>
+        </div>
+      </section>
+      <section v-else :data-testid="linearRunButtonTestId" class="p-4 pb-6">
+        <LinearRunErrorWarning v-if="showRunErrorWarning" />
+        <div v-coachmark="COACH_IDS.appRunButton">
+          <div class="mx-1 flex flex-wrap items-center justify-between gap-2">
+            <div
+              class="text-xs text-base-foreground uppercase"
+              v-text="t('linearMode.runCount')"
+            />
+            <ScrubableNumberInput
+              v-model="batchCount"
+              :aria-label="t('linearMode.runCount')"
+              :min="1"
+              :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
+              class="h-7 min-w-40"
+            />
+          </div>
+          <HoverCardRoot
+            :open-delay="creditsBadges.length ? 0 : 150"
+            :close-delay="100"
+          >
+            <HoverCardTrigger as-child>
+              <SubscribeToRunButton
+                v-if="!isActiveSubscription"
+                large
+                class="mt-4 w-full"
+              >
+                <template #trailing>
+                  <CreditsPill v-if="creditsBadges.length" class="ml-auto" />
+                </template>
+              </SubscribeToRunButton>
+              <Button
+                v-else
+                variant="inverted"
+                class="mt-4 w-full text-sm"
+                size="lg"
+                :aria-describedby="
+                  showRunErrorWarning
+                    ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                    : undefined
+                "
+                @click="runButtonClick"
+              >
+                <i aria-hidden="true" class="icon-[lucide--play]" />
+                {{ t('menu.run') }}
+                <CreditsPill
+                  v-if="creditsBadges.length"
+                  class="ml-auto text-brand-blue"
+                />
+              </Button>
+            </HoverCardTrigger>
+            <HoverCardPortal v-if="creditsBadges.length">
+              <HoverCardContent
+                side="top"
+                :side-offset="10"
+                :collision-padding="10"
+                class="z-1700 w-(--reka-hover-card-trigger-width)"
+              >
+                <PartnerNodesList :badges="creditsBadges" />
+              </HoverCardContent>
+            </HoverCardPortal>
+          </HoverCardRoot>
+        </div>
       </section>
     </div>
   </div>

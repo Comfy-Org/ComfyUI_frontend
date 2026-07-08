@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { useAppModeStore } from '@/stores/appModeStore'
-import Button from '@/components/ui/button/Button.vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { useAppMode } from '@/composables/useAppMode'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
