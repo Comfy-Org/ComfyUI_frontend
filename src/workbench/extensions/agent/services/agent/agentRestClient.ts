@@ -20,15 +20,7 @@ import type {
   UploadImageResult
 } from '../../schemas/agentApiSchema'
 
-/**
- * agentRestClient: the ONE place the agent's REST surface is spoken. Every
- * response is parsed through the shared agentApiSchema, so a wire change surfaces
- * as a zod parse error at the seam rather than silent drift downstream. It owns no
- * retries, timeouts, or logging: the caller surfaces failures.
- */
-
-// Thrown on any non-2xx response. body is the parsed error payload (whatever the
-// server sent) or undefined when the body was empty or not JSON.
+// body is the parsed error payload, or undefined when empty or not JSON.
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
@@ -42,15 +34,13 @@ export class AgentApiError extends Error {
 }
 
 export interface AgentRestClientDeps {
-  // Origin prefix for every path; '' targets the current origin.
+  // '' targets the current origin.
   baseUrl?: string
-  // Resolves the bearer token, or undefined to send the request unauthenticated.
+  // Resolves the bearer token, or undefined to send unauthenticated.
   getAuthToken: () => Promise<string | undefined> | string | undefined
   fetchImpl?: typeof fetch
 }
 
-// The wire request shape for postMessage; the caller passes camelCase and the
-// client maps to the snake_case wire keys, omitting absent optionals entirely.
 export interface PostMessageInput {
   content: string
   workflowId?: string
@@ -58,8 +48,6 @@ export interface PostMessageInput {
   attachments?: string[]
 }
 
-// The ingest-raised error shape ({error: {message, type}}), narrower than a full
-// schema: only message is read for the AgentApiError message.
 interface IngestErrorBody {
   error: { message: string }
 }
@@ -82,9 +70,6 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
-  // Non-2xx: read the body as text, try to parse it as JSON, and resolve a message
-  // from the plain-string error shape, then the ingest shape, then statusText. The
-  // parsed body (or undefined) rides along on the AgentApiError.
   async function toApiError(response: Response): Promise<AgentApiError> {
     const text = await response.text()
     let body: unknown
@@ -102,8 +87,7 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     return new AgentApiError(message, response.status, body)
   }
 
-  // Send a request and parse a success body through `schema`. A schema violation
-  // throws zod's error unchanged (the anti-drift behavior, not caught here).
+  // A schema violation throws zod's error uncaught here, by design (anti-drift seam).
   async function request<T>(
     path: string,
     init: RequestInit,
@@ -160,9 +144,6 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     )
   }
 
-  // The caller's own threads, for the Chat History list, unwrapped from the server's
-  // {threads, pagination} envelope. Newest-first ordering is the caller's job (the
-  // store sorts by timestamp).
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const page = await request(
       '/api/agent/threads',
@@ -192,8 +173,7 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     )
   }
 
-  // Multipart upload: the file rides under field 'image'. No Content-Type header is
-  // set manually so the browser writes the multipart boundary.
+  // No Content-Type header is set so the browser writes the multipart boundary itself.
   async function uploadImage(
     image: Blob,
     filename: string

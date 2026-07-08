@@ -1,4 +1,3 @@
-// Staged for FE-1187 host wiring (canvas selection is a V0 tech-design surface); built and tested, not yet wired into the shipped panel.
 import { ref, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter } from 'vue'
@@ -9,9 +8,7 @@ export interface SelectedNode {
 }
 
 export interface UseCanvasSelectionOptions {
-  // The current canvas selection (host-injected reactive getter/ref).
   selection: MaybeRefOrGetter<SelectedNode[]>
-  // Live-only gate: @-tags are meaningless while disconnected.
   isLive: MaybeRefOrGetter<boolean>
 }
 
@@ -22,19 +19,10 @@ function signature(nodes: SelectedNode[]): string {
     .join(',')
 }
 
-/**
- * useCanvasSelection — the @-tag staging lifecycle.
- *
- * A selection is staged ONCE; consuming it on submit records its signature so the SAME
- * selection does not re-tag every subsequent message. It re-appears only when the
- * selection actually changes (a naive "always tag current selection" would re-tag forever
- * and never clear — monolith parity, comfyAgent.ts:2233-2311).
- */
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   const staged = ref<SelectedNode[]>([])
-  // The selection last consumed (so the SAME selection does not re-tag every message) and
-  // the selection currently staged (so a watcher re-fire with NO real change — a deep node
-  // rename, an isLive flicker — does not resurrect tags the user dismissed via remove()).
+  // consumedSig: the same selection must not re-tag every message. stagedSig: a watcher
+  // re-fire with no real change must not resurrect tags the user dismissed via remove().
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
 
@@ -56,7 +44,6 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     { immediate: true, deep: true, flush: 'sync' }
   )
 
-  // Take the staged tags for the outgoing message and mark this selection consumed.
   function consume(): SelectedNode[] {
     const tags = staged.value
     consumedSig.value = signature(toValue(options.selection))

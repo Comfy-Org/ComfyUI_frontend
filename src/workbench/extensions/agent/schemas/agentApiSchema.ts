@@ -1,35 +1,20 @@
 import { z } from 'zod'
 
-/**
- * Wire contract for the In-App Agent REST + WebSocket backend. Derived from
- * services/ingest/openapi.yaml (agent section) of Comfy-Org/cloud PR #4432, then
- * validated field-by-field against live frames recorded from
- * pr-4432.testenvs.comfy.org on 2026-07-06 into __fixtures__/agent/. This schema
- * is the single source of truth shared by the transport and every fixture, so a
- * wire change surfaces as a parse error rather than silent drift.
- *
- * Two contract facts corrected here against earlier docs, both re-verified live:
- * - the draft_patch version anchor is `base_version`, not `prev_version`.
- * - agent_message_done.usage is null on a cancelled turn (no tokens accounted).
- */
+// Wire contract for the In-App Agent REST + WebSocket backend, validated
+// field-by-field against live frames in __fixtures__/agent/.
 
-// The TurnId brand holds the server-minted assistant message_id and is applied at
-// the session seam, not on the wire. Wire fields stay plain z.string() so a raw
-// frame parses without a branding cast; the session layer brands as it adopts ids.
+// Wire fields stay plain z.string(); the session layer brands ids as it adopts them,
+// so a raw frame parses without a branding cast.
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
-
-/* ---------------------------------- REST ---------------------------------- */
 
 export const zAgentThreadCreated = z.object({
   thread_id: z.string()
 })
 export type AgentThreadCreated = z.infer<typeof zAgentThreadCreated>
 
-// The server owns the workflow: it creates one when a message opens a thread and returns its
-// id in the 202 ack (the panel binds drafts to it, it does not mint its own). workflow_id is
-// optional only because the openapi marks it so; every observed ack carries it. Passthrough
-// tolerates further additive keys.
+// workflow_id is optional only because the openapi marks it so; every observed ack
+// carries it.
 export const zAgentTurnAccepted = z
   .object({
     thread_id: z.string(),
@@ -39,8 +24,7 @@ export const zAgentTurnAccepted = z
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
-// content is a free object (user={text, attachments?}, assistant={text}); it is
-// omitted while a message is still streaming, so it stays optional and tolerant.
+// content is omitted while a message is still streaming, so it stays optional.
 export const zAgentMessage = z
   .object({
     id: z.string(),
@@ -56,10 +40,7 @@ export const zAgentMessage = z
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-// Thread-list row (GET /api/agent/threads), validated against a live response on
-// 2026-07-07: {threads: [...], pagination: {...}}. title is "" until the server names
-// the thread; preview carries the first prompt. Rows also carry status / workflow_id /
-// message_count (passthrough), which the panel does not consume yet.
+// title is "" until the server names the thread; preview carries the first prompt.
 const zAgentThreadSummary = z
   .object({
     id: z.string(),
@@ -87,8 +68,8 @@ export const zAgentDraftSnapshot = z.object({
 })
 export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
 
-// The plain-string error shape. Ingest-raised errors use a different, richer shape
-// (e.g. {error: {message, type}}); callers fall back tolerantly and do not model it.
+// Plain-string error shape only; ingest-raised errors use a richer {error:{message,type}}
+// shape that callers tolerate but do not model.
 export const zAgentError = z.object({
   error: z.string()
 })
@@ -100,10 +81,7 @@ export const zUploadImageResult = z.object({
 })
 export type UploadImageResult = z.infer<typeof zUploadImageResult>
 
-/* ------------------------------ WebSocket events ------------------------------ */
-
-// Each event rides the standard ComfyUI envelope {type, data}. data objects use
-// passthrough to tolerate additive server fields but require every captured field.
+// Each event rides the standard ComfyUI envelope {type, data}.
 
 const zAgentThinkingData = z
   .object({
@@ -144,8 +122,7 @@ const zAgentMessageDeltaData = z
   })
   .passthrough()
 
-// The five token counts are required numbers; the object itself tolerates additive
-// fields. usage is null on a cancelled turn (no token accounting).
+// usage is null on a cancelled turn (no token accounting).
 const zTokenUsage = z
   .object({
     input_tokens: z.number(),
@@ -214,8 +191,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-// Host frames (e.g. {type:"status"}) ride the same /ws. isAgentEvent cheaply sorts
-// agent events from foreign frames on the type string, without zod-parsing them.
+// Host frames (e.g. {type:"status"}) ride the same /ws; isAgentEvent sorts agent events
+// from foreign frames on the type string without zod-parsing them.
 export const AGENT_WS_EVENT_TYPES: ReadonlySet<string> = new Set([
   'agent_thinking',
   'agent_tool_call',
@@ -229,8 +206,6 @@ export function isAgentEvent(type: string): boolean {
   return AGENT_WS_EVENT_TYPES.has(type)
 }
 
-// Thin: returns the safeParse result typed to AgentWsEvent on success. No logging;
-// callers decide how to surface a failure.
 export function parseAgentWsEvent(
   value: unknown
 ): z.SafeParseReturnType<unknown, AgentWsEvent> {

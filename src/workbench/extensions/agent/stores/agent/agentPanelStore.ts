@@ -1,20 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-// Dock geometry per the design reference: 420px default, 960px maximized, drag-resizable
-// between the two.
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 
-/**
- * Visibility + geometry state for the right-docked agent panel (FE-1187). The panel opens
- * from the tab-bar "Ask Comfy Agent" button into a full-viewport-height right column.
- * `enabled` mirrors the PostHog flag gate (fail-closed), so the host renders the button and
- * panel only while the feature flag is on; `isOpen` is the user toggle; `width` is the
- * dock's pixel width (drag-resize clamps into [min, max], the header icon toggles the two
- * extremes).
- */
 export const useAgentPanelStore = defineStore('agentPanel', () => {
+  // Mirrors the PostHog flag gate (fail-closed): host renders the panel only while on.
   const enabled = ref(false)
   const isOpen = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
