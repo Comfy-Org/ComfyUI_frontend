@@ -24,7 +24,7 @@ const promptIcons = [
 <template>
   <div class="flex h-full flex-col p-4">
     <div
-      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-6 text-center"
+      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <div
         class="mb-2 flex size-12 items-center justify-center rounded-xl border border-plum-600 bg-ink-700"
@@ -34,11 +34,13 @@ const promptIcons = [
           aria-hidden="true"
         />
       </div>
-      <div class="text-agent-fg text-base font-semibold @min-[570px]:text-2xl">
-        <p class="my-0 leading-snug">
+      <div
+        class="text-agent-fg flex max-w-sm flex-col items-center gap-2 text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
+      >
+        <p class="my-0">
           {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
         </p>
-        <p class="my-0 leading-snug">
+        <p class="my-0">
           {{ t('agent.greetingQuestion') }}
         </p>
       </div>
