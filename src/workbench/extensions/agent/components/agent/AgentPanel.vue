@@ -57,6 +57,7 @@ const emit = defineEmits<{
   newChat: []
   toggleSize: []
   close: []
+  openHistory: []
   selectHistory: [id: string]
   deleteHistory: [id: string]
   copyHistory: [id: string]
@@ -69,6 +70,10 @@ const showHistory = ref(false)
 function onNewChat(): void {
   showHistory.value = false
   emit('newChat')
+}
+function onOpenHistory(): void {
+  showHistory.value = true
+  emit('openHistory')
 }
 function onSelectHistory(id: string): void {
   showHistory.value = false
@@ -121,7 +126,7 @@ defineExpose({ addAttachment })
     </template>
 
     <template v-else>
-      <SessionBar :title="sessionTitle" @open-history="showHistory = true" />
+      <SessionBar :title="sessionTitle" @open-history="onOpenHistory" />
 
       <LockBanner :state="lockState" @take-control="emit('takeControl')" />
 
