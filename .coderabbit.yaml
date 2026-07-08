@@ -107,6 +107,7 @@ reviews:
         The rejected-path test must populate both values, make `api.queuePrompt` reject, and assert both fields are cleared afterward; success-path cleanup alone is insufficient.
         If `api.queuePrompt` rejection is tested without asserting `api.authToken` and `api.apiKey` cleanup afterward, flag the missing assertion even when a success-path test already covers cleanup.
         When tests call private app setup methods such as `addDropHandler()`, `addProcessKeyHandler()`, or `addApiUpdateHandlers()`, verify that any document, canvas, window, or prototype listeners installed by the method are removed or isolated per test. Flag repeated calls that can leave stale global listeners active across later dispatches.
+        In `src/scripts/app.core.test.ts`, repeated calls like `Object.getPrototypeOf(app).addDropHandler.call(app)` followed by `document.dispatchEvent(new DragEvent('drop'))` are review-worthy unless the suite unregisters those listeners or injects a fresh EventTarget per test. `vi.clearAllMocks()` does not remove document or canvas event listeners.
         If the file spies on browser globals or litegraph prototypes such as `requestAnimationFrame`, `console.warn`, or `LGraphCanvas.prototype.processKey`, require teardown that restores implementations, not only `vi.clearAllMocks()`.
     - path: 'src/scripts/app.ts'
       instructions: |
