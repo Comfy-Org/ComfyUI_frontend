@@ -1421,8 +1421,9 @@ const translations = {
     'zh-CN': '创意校园'
   },
   'pricing.creativeCampus.description': {
-    en: 'Partner with us on custom features, dedicated support, and a deeper campus partnership.',
-    'zh-CN': '与我们合作，获得定制功能、专属支持以及更深入的校园合作。'
+    en: 'Partner with us on custom features, dedicated support, course accreditation, and a deeper campus partnership.',
+    'zh-CN':
+      '与我们合作，获得定制功能、专属支持、课程认证以及更深入的校园合作。'
   },
   // Student Ambassador interest band (education only); zh-CN drafted, pending review.
   'pricing.studentAmbassador.comingSoon': {
