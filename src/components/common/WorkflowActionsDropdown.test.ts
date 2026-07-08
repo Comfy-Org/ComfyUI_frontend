@@ -84,9 +84,8 @@ function renderDropdown() {
       plugins: [i18n],
       directives: { tooltip: {} },
       stubs: {
-        DropdownMenuRoot: { template: '<div><slot /></div>' },
         DropdownMenuPortal: { template: '<div><slot /></div>' },
-        DropdownMenuContent: { template: '<div><slot /></div>' },
+        DropdownMenuContent: { template: '<div role="menu"><slot /></div>' },
         WorkflowActionsList: true
       }
     }
