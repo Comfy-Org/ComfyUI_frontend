@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { app } from '@/scripts/app'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 // A controllable stand-in for the host api: an EventTarget with a swappable socket, the
@@ -217,6 +218,77 @@ describe('AgentPanelRoot draft binding', () => {
       expect(app.loadGraphData).toHaveBeenCalledWith(graph)
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+  })
+
+  it('surfaces one toast per rejection streak and recovers on a valid draft', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('/messages')) {
+        return new Response(
+          JSON.stringify({
+            thread_id: 'th-1',
+            message_id: 'm-1',
+            workflow_id: 'wf-42'
+          }),
+          { status: 202, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response('{}', { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // Module-level fns retain calls across tests (restoreAllMocks only restores spies).
+    vi.mocked(app.loadGraphData).mockClear()
+    vi.mocked(validateComfyWorkflow).mockClear()
+    // The schema rejects the first two patches (e.g. content missing its required
+    // version field, as observed live); the third passes through and must both load
+    // the canvas and reset the notification streak.
+    vi.mocked(validateComfyWorkflow)
+      .mockImplementationOnce(async (_content, onError) => {
+        onError?.('rejected')
+        return null
+      })
+      .mockImplementationOnce(async (_content, onError) => {
+        onError?.('rejected')
+        return null
+      })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const toast = useToastStore()
+
+    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    const patch = (version: number): void =>
+      socket.emit('message', {
+        data: JSON.stringify({
+          type: 'draft_patch',
+          data: {
+            workflow_id: 'wf-42',
+            base_version: version - 1,
+            version,
+            content: { nodes: [] }
+          }
+        })
+      })
+
+    // One patch per tick: the version watcher batches same-tick bumps into one fire.
+    patch(1)
+    await vi.waitFor(() =>
+      expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
+    )
+    patch(2)
+    await vi.waitFor(() =>
+      expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(2)
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    const rejectionToasts = toast.messagesToAdd.filter(
+      (message) => message.summary === i18n.global.t('agent.draftApplyFailed')
+    )
+    expect(rejectionToasts).toHaveLength(1)
+
+    patch(3)
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
   })
 })
 

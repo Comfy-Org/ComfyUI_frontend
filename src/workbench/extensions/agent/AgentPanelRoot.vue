@@ -91,11 +91,25 @@ watch(
 
 // V0 draft apply is a full-graph load per the tech design (no incremental edits). The
 // draft rides the wire untyped; parse it through the host's own workflow schema instead
-// of blind-casting before handing it to the canvas.
+// of blind-casting before handing it to the canvas. A rejected draft must be visible:
+// silently dropping it strands the user on a stale canvas while the agent narrates a
+// graph they never see. One toast per failure streak (a turn can carry many patches),
+// reset on the next draft that applies.
+let draftRejectionNotified = false
 useDraftCanvasApply((content) => {
   void (async () => {
-    const workflow = await validateComfyWorkflow(content)
-    if (workflow) await app.loadGraphData(workflow)
+    const workflow = await validateComfyWorkflow(content, (error) => {
+      console.warn(error)
+      if (draftRejectionNotified) return
+      draftRejectionNotified = true
+      toast.add({
+        severity: 'error',
+        summary: t('agent.draftApplyFailed')
+      })
+    })
+    if (!workflow) return
+    draftRejectionNotified = false
+    await app.loadGraphData(workflow)
   })()
 })
 
