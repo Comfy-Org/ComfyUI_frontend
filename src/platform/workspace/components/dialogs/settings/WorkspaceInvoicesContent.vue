@@ -9,7 +9,7 @@
           <TableRow
             class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
           >
-            <TableHead>
+            <TableHead class="w-40">
               <button :class="sortHeaderClass" @click="toggleSort('date')">
                 {{ $t('workspacePanel.invoices.columns.date') }}
                 <i :class="sortIcon('date')" />
