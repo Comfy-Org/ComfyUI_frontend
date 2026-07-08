@@ -63,6 +63,7 @@ export const externalLinks = {
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
   docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
+  g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',

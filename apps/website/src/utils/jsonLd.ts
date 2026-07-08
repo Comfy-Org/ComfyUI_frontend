@@ -36,10 +36,11 @@ const sameAs = [
   externalLinks.wikidataComfyOrg
 ]
 
-// Authoritative encyclopedic references for the ComfyUI software entity.
+// Authoritative encyclopedic and review-platform references for the ComfyUI software entity.
 const comfyUiSameAs = [
   externalLinks.wikidataComfyUi,
-  externalLinks.wikipediaComfyUi
+  externalLinks.wikipediaComfyUi,
+  externalLinks.g2ComfyUi
 ]
 
 function siteUrlFrom(site: URL | undefined): string {
@@ -219,7 +220,12 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     publisher: input.firstParty ? orgRef : undefined,
     sameAs: input.sameAs,
     offers: input.isFree
-      ? { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
+      ? {
+          '@type': 'Offer',
+          price: 0,
+          priceCurrency: 'USD',
+          seller: input.firstParty ? orgRef : undefined
+        }
       : undefined
   }
 }
@@ -230,6 +236,7 @@ interface SourceCodeInput {
   name: string
   codeRepository: string
   programmingLanguage?: string
+  targetProductId?: string
 }
 
 function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
@@ -239,6 +246,9 @@ function softwareSourceCodeNode(input: SourceCodeInput): JsonLdNode {
     name: input.name,
     codeRepository: input.codeRepository,
     programmingLanguage: input.programmingLanguage,
+    targetProduct: input.targetProductId
+      ? { '@id': input.targetProductId }
+      : undefined,
     author: { '@id': organizationId(input.siteUrl) }
   }
 }
@@ -267,7 +277,8 @@ export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
     id: `${siteUrl}/#sourcecode`,
     name: 'ComfyUI',
     codeRepository: externalLinks.github,
-    programmingLanguage: 'Python'
+    programmingLanguage: 'Python',
+    targetProductId: comfyUiSoftwareId(siteUrl)
   })
 }
 
@@ -298,6 +309,7 @@ export function productNode(input: ProductInput): JsonLdNode {
       price: offer.price,
       priceCurrency: 'USD',
       url: offer.url,
+      seller: { '@id': organizationId(input.siteUrl) },
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
         price: offer.price,

@@ -8,6 +8,8 @@ import {
   buildPageGraph,
   collectGraphIds,
   comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -72,8 +74,21 @@ describe('softwareApplicationNode', () => {
     expect(node.offers).toEqual({
       '@type': 'Offer',
       price: 0,
-      priceCurrency: 'USD'
+      priceCurrency: 'USD',
+      seller: orgRef
     })
+  })
+
+  it('does not name Comfy Org as seller on a third-party free offer', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: 'https://comfy.org/cloud/supported-nodes/foo/#software',
+      name: 'Foo Pack',
+      url: 'https://comfy.org/cloud/supported-nodes/foo/',
+      applicationCategory: 'DeveloperApplication',
+      isFree: true
+    })
+    expect((node.offers as Record<string, unknown>).seller).toBeUndefined()
   })
 
   it('credits a known third-party author without claiming to publish it', () => {
@@ -112,11 +127,12 @@ describe('sameAs encyclopedic references', () => {
     expect(org?.sameAs).toContain(externalLinks.wikidataComfyOrg)
   })
 
-  it('links the ComfyUI application to its Wikidata and Wikipedia entities', () => {
+  it('links the ComfyUI application to its Wikidata, Wikipedia and G2 entities', () => {
     const node = comfyUiApplicationNode(siteUrl)
     expect(node.sameAs).toEqual([
       externalLinks.wikidataComfyUi,
-      externalLinks.wikipediaComfyUi
+      externalLinks.wikipediaComfyUi,
+      externalLinks.g2ComfyUi
     ])
   })
 
@@ -144,6 +160,14 @@ describe('productNode', () => {
     const offers = node.offers as Record<string, unknown>[]
     expect(offers[0].price).toBe('20')
     expect(offers[0].priceCurrency).toBe('USD')
+    expect(offers[0].seller).toEqual({ '@id': organizationId(siteUrl) })
+  })
+})
+
+describe('comfyUiSourceCodeNode', () => {
+  it('links the source code to the ComfyUI application via targetProduct', () => {
+    const node = comfyUiSourceCodeNode(siteUrl)
+    expect(node.targetProduct).toEqual({ '@id': comfyUiSoftwareId(siteUrl) })
   })
 })
 
