@@ -21,6 +21,7 @@ const INVOICE_KINDS: Array<[eventType: string, amountCents: number]> = [
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const BASE = new Date('2026-02-20T18:30:00').getTime()
+const NEXT_INVOICE_CENTS = 32000
 
 function mockInvoices(): Invoice[] {
   return Array.from({ length: 44 }, (_, i) => {
@@ -93,6 +94,7 @@ export function useWorkspaceInvoices(
     pagedItems,
     sortField,
     sortDirection,
-    toggleSort
+    toggleSort,
+    nextInvoiceCents: NEXT_INVOICE_CENTS
   }
 }

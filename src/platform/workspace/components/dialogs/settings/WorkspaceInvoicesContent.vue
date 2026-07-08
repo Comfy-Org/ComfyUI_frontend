@@ -1,6 +1,26 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
     <div
+      class="flex items-center justify-between gap-4 rounded-2xl border border-interface-stroke/60 p-4"
+    >
+      <div class="flex flex-col gap-2">
+        <span class="text-sm text-muted-foreground">
+          {{ $t('workspacePanel.overview.nextInvoice') }}
+        </span>
+        <p class="m-0 text-2xl font-semibold text-base-foreground">
+          {{ formatWholeUsd(nextInvoiceCents) }}
+          <span class="text-base font-normal text-base-foreground">
+            {{ $t('workspacePanel.overview.usd') }}
+          </span>
+        </p>
+      </div>
+      <Button variant="secondary" size="lg" @click="openHistory">
+        {{ $t('workspacePanel.invoices.fullHistory') }}
+        <i class="icon-[lucide--external-link] size-4" />
+      </Button>
+    </div>
+
+    <div
       ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
@@ -54,14 +74,7 @@
       </Table>
     </div>
 
-    <div class="flex h-8 items-center justify-between">
-      <button
-        class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-muted-foreground transition-colors hover:text-base-foreground"
-        @click="openHistory"
-      >
-        <i class="icon-[lucide--external-link] size-4" />
-        {{ $t('workspacePanel.invoices.fullHistory') }}
-      </button>
+    <div class="flex h-8 items-center justify-end">
       <Pagination
         v-model:page="page"
         :total="total"
@@ -75,6 +88,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -103,7 +117,8 @@ const {
   pagedItems,
   sortField,
   sortDirection,
-  toggleSort
+  toggleSort,
+  nextInvoiceCents
 } = useWorkspaceInvoices(() => search, pageSize)
 
 const sortHeaderClass =
@@ -135,6 +150,15 @@ function formatDate(date: Date): string {
 
 function formatPrice(cents: number): string {
   return n(cents / 100, { style: 'currency', currency: 'USD' })
+}
+
+function formatWholeUsd(cents: number): string {
+  return n(cents / 100, {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })
 }
 
 function openHistory() {
