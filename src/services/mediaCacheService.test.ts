@@ -20,11 +20,7 @@ class MockURL extends NativeURL {
 }
 
 function response(ok: boolean, blob = new Blob(['image'])): Response {
-  return {
-    ok,
-    status: ok ? 200 : 404,
-    blob: () => Promise.resolve(blob)
-  } as Response
+  return new Response(blob, { status: ok ? 200 : 404 })
 }
 
 async function freshCache(options?: {
@@ -57,7 +53,7 @@ describe('useMediaCache', () => {
   })
 
   it('fetches media once and returns cached entries on later reads', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache()
 
     const first = await cache.getCachedMedia('/image.png')
@@ -79,7 +75,7 @@ describe('useMediaCache', () => {
 
   it('stores an error entry when fetch fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockFetch.mockResolvedValue(response(false))
+    mockFetch.mockImplementation(() => Promise.resolve(response(false)))
     const cache = await freshCache()
 
     const entry = await cache.getCachedMedia('/missing.png')
@@ -97,7 +93,7 @@ describe('useMediaCache', () => {
   })
 
   it('ref-counts acquired object URLs and removes the cache entry on final release', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache()
     await cache.getCachedMedia('/image.png')
 
@@ -122,7 +118,7 @@ describe('useMediaCache', () => {
   })
 
   it('expires old cache entries during scheduled cleanup', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache({ maxAge: 100 })
     await cache.getCachedMedia('/old.png')
 
@@ -134,7 +130,7 @@ describe('useMediaCache', () => {
   })
 
   it('keeps expired entries while their object URL is still acquired', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache({ maxAge: 100 })
     await cache.getCachedMedia('/held.png')
     cache.acquireUrl('/held.png')
@@ -147,7 +143,7 @@ describe('useMediaCache', () => {
   })
 
   it('removes the oldest unused entries when the cache is over size', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache({ maxSize: 1, maxAge: 1_000_000 })
     await cache.getCachedMedia('/old.png')
     vi.setSystemTime(1)
@@ -161,7 +157,7 @@ describe('useMediaCache', () => {
   })
 
   it('clears all cached URLs on demand and before unload', async () => {
-    mockFetch.mockResolvedValue(response(true))
+    mockFetch.mockImplementation(() => Promise.resolve(response(true)))
     const cache = await freshCache()
     await cache.getCachedMedia('/first.png')
     await cache.getCachedMedia('/second.png')
