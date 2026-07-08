@@ -197,42 +197,50 @@ describe('createAssetWidget', () => {
 
   it('rejects malformed asset selections', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { node } = createAssetWidgetNode()
-    const widget = createAssetWidget({
-      node,
-      widgetName: 'ckpt_name',
-      nodeTypeForBrowser: 'CheckpointLoaderSimple',
-      defaultValue: 'fake_model.safetensors'
-    })
-    assertAssetOptions(widget.options)
+    try {
+      const { node } = createAssetWidgetNode()
+      const widget = createAssetWidget({
+        node,
+        widgetName: 'ckpt_name',
+        nodeTypeForBrowser: 'CheckpointLoaderSimple',
+        defaultValue: 'fake_model.safetensors'
+      })
+      assertAssetOptions(widget.options)
 
-    await widget.options.openModal(widget)
-    firstShowOptions().onAssetSelected?.(
-      fromPartial({ id: 'asset-without-name' })
-    )
+      await widget.options.openModal(widget)
+      firstShowOptions().onAssetSelected?.(
+        fromPartial({ id: 'asset-without-name' })
+      )
 
-    expect(widget.value).toBe('fake_model.safetensors')
-    expect(captureCanvasState).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+      expect(widget.value).toBe('fake_model.safetensors')
+      expect(captureCanvasState).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('rejects invalid asset filenames', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { node } = createAssetWidgetNode()
-    const widget = createAssetWidget({
-      node,
-      widgetName: 'ckpt_name',
-      nodeTypeForBrowser: 'CheckpointLoaderSimple',
-      defaultValue: 'fake_model.safetensors'
-    })
-    assertAssetOptions(widget.options)
+    try {
+      const { node } = createAssetWidgetNode()
+      const widget = createAssetWidget({
+        node,
+        widgetName: 'ckpt_name',
+        nodeTypeForBrowser: 'CheckpointLoaderSimple',
+        defaultValue: 'fake_model.safetensors'
+      })
+      assertAssetOptions(widget.options)
 
-    await widget.options.openModal(widget)
-    firstShowOptions().onAssetSelected?.(checkpointAsset('../bad.safetensors'))
+      await widget.options.openModal(widget)
+      firstShowOptions().onAssetSelected?.(
+        checkpointAsset('../bad.safetensors')
+      )
 
-    expect(widget.value).toBe('fake_model.safetensors')
-    expect(captureCanvasState).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+      expect(widget.value).toBe('fake_model.safetensors')
+      expect(captureCanvasState).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('updates ownerless cloned widgets without node callbacks', async () => {
