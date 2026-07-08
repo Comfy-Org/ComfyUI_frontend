@@ -425,6 +425,16 @@ because some patterns are environment conditional (a missing-model 404
 fires only on hosts without the model), so an entry can be legitimately
 idle in one environment and load-bearing in the next.
 
+The console-error ledger also has a bounded window, not just bounded
+strength. Collection starts inside each tier, so it covers that tier's
+own actions (load, run, wire, save); console noise a pack logs at app
+boot, before the first tier action, is outside it - the shared app
+fixture navigates once at setup, so boot output predates any per-pack
+collector. This is deliberate: boot breakage that reaches a visible
+surface is still caught by the startup zero-visible-errors check, and
+invisible boot console noise is exactly what the ledger exists to
+tolerate rather than gate on.
+
 ## 11. Design decisions
 
 The decisions that define the suite, with their trade-offs. Each is

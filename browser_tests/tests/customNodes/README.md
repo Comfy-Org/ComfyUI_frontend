@@ -93,6 +93,15 @@ Any `-g` pattern works against the generic scripts, e.g.
   real error UI by design), and the self-check inverts the invariant - it
   forces a real execution error and asserts the overlay IS visible, proving
   the selectors stay live.
+- **Console-error window**: the console/page-error ledger (curated run,
+  save/reload) starts collecting inside each tier, so it covers the tier's
+  own actions - load, run, wire, save. Pure console noise a pack logs at
+  app boot, before the first tier action, is out of that window by design:
+  the shared app fixture navigates once at setup, so boot output predates
+  any per-pack collector. Boot breakage that MATTERS still fails the gate -
+  the zero-visible-errors check runs at startup and catches any boot error
+  that reaches a visible surface; only invisible, functionally-inert boot
+  console noise (the ledger's whole reason to exist) is out of scope.
 
 ## Adding a pack
 

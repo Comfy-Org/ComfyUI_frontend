@@ -377,6 +377,25 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
         slotName: 'latent_image',
         slotType: 'LATENT'
       }
+    },
+    // Second-slot anchor: ImageBatch has two IMAGE inputs (image1, image2)
+    // and we target the SECOND. A slot hit-test regression that falls back
+    // to the first compatible input would land on image1, leaving image2
+    // (the asserted index) unlinked - so this pair, unlike a first-slot
+    // pair, actually discriminates a broken drop-to-slot resolution.
+    {
+      producer: {
+        nodeType: 'EmptyImage',
+        pack: 'core',
+        slotName: 'IMAGE',
+        slotType: 'IMAGE'
+      },
+      consumer: {
+        nodeType: 'ImageBatch',
+        pack: 'core',
+        slotName: 'image2',
+        slotType: 'IMAGE'
+      }
     }
   ]
   const nodeTypes = new Set(nodes.map((node) => node.type))

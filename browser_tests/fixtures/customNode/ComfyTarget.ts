@@ -1,5 +1,7 @@
 import type { Page, Response } from '@playwright/test'
 
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import type { ObjectInfo } from '@e2e/fixtures/customNode/objectInfoValidator'
 import type {
   ExecutionError,
@@ -24,6 +26,31 @@ const TERMINAL = [
   'execution_error',
   'execution_interrupted'
 ]
+
+// The /prompt rejection body is the apiSchema PromptResponse shape
+// ({ error: string | {message}, node_errors: { <nodeId>: { class_type,
+// errors: [{ details, message }] } } }). Flatten it to a single line naming
+// the node class and the failing input so a VALIDATION_FAIL result is
+// actionable instead of an empty object. Exported for a pure unit test: the
+// happy path never runs it, so without a test a regression here would rot the
+// diagnostic back to `{}` silently.
+export function summarizePromptError(body: unknown): string | undefined {
+  const payload = body as Partial<PromptResponse> | null
+  if (!payload || typeof payload !== 'object') return undefined
+  const parts: string[] = []
+  const topError = payload.error
+  if (typeof topError === 'string') {
+    if (topError) parts.push(topError)
+  } else if (topError?.message) parts.push(topError.message)
+  for (const [nodeId, nodeError] of Object.entries(payload.node_errors ?? {})) {
+    const cls = nodeError.class_type || nodeId
+    for (const err of nodeError.errors ?? []) {
+      const detail = err.details || err.message
+      if (detail) parts.push(`${cls}: ${detail}`)
+    }
+  }
+  return parts.length > 0 ? parts.join('; ') : undefined
+}
 
 function toPromptEvent(raw: RawEvent): PromptEvent {
   if (raw.type === 'executing')
@@ -116,6 +143,12 @@ export class LocalDesktopTarget {
     // check below stay as defense in depth (capture can lose a race with a
     // transient refusal, and `executing` events carry no prompt id at all).
     let capturedPromptId: string | undefined
+    // A backend validation rejection answers /prompt with a non-2xx body
+    // carrying { error, node_errors }. app.queuePrompt swallows it and just
+    // returns false, so without capturing it here a VALIDATION_FAIL result
+    // names nothing. Snapshot the failing node/input so the outcome is
+    // actionable instead of an empty object.
+    let capturedValidationError: string | undefined
     const onPromptResponse = (response: Response) => {
       if (response.request().method() !== 'POST') return
       if (!new URL(response.url()).pathname.endsWith('/prompt')) return
@@ -124,6 +157,8 @@ export class LocalDesktopTarget {
         .then((body: unknown) => {
           const id = (body as { prompt_id?: unknown } | null)?.prompt_id
           if (typeof id === 'string') capturedPromptId = id
+          if (response.status() >= 400)
+            capturedValidationError = summarizePromptError(body)
         })
         .catch(() => {
           // a refused submission answers with a non-JSON or error body;
@@ -144,7 +179,9 @@ export class LocalDesktopTarget {
         try {
           return await window.app!.queuePrompt(0)
         } catch (error) {
-          return { __cnThrew: String(error) }
+          // Never an empty string: an empty __cnThrew would nullish-coalesce
+          // wrong downstream and blank the VALIDATION_FAIL message.
+          return { __cnThrew: String(error) || 'pack threw an empty error' }
         }
       })
     const refused = (
@@ -164,7 +201,11 @@ export class LocalDesktopTarget {
           outcome: 'VALIDATION_FAIL',
           executedNodes: [],
           outputsByNode: {},
-          clientError: typeof queued === 'object' ? queued.__cnThrew : undefined
+          // A throw carries its own text; a bare `false` reject leaves only
+          // the backend's node_errors captured off the /prompt response.
+          clientError:
+            (typeof queued === 'object' ? queued.__cnThrew : undefined) ??
+            capturedValidationError
         }
       }
     }

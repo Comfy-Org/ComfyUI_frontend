@@ -174,7 +174,14 @@ for (const entry of loadManifest()) {
         timeoutMs: entry.timeoutMs
       })
 
-      expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
+      // A run that executed and errored carries an ExecutionError; a run the
+      // backend rejected before executing (VALIDATION_FAIL) carries only the
+      // captured node_errors text in clientError - surface whichever exists so
+      // a red names the cause instead of printing an empty object.
+      expect(
+        result.outcome,
+        result.clientError ?? JSON.stringify(result.error ?? {})
+      ).toBe('PASS')
       // PASS proves execution completed; the sinks prove data ARRIVED.
       // Every display sink in the curated workflow must have emitted a ui
       // payload through its executed event.
