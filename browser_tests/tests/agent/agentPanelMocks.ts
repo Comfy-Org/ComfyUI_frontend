@@ -184,16 +184,17 @@ const jsonRoute = (body: unknown) => ({
 /**
  * Boots the cloud app against fully mocked boot + agent REST endpoints. Mirrors
  * `CloudWorkspaceMockHelper.mockBoot`, adding the agent's own REST surface
- * (`postMessage`, `getDraft`). Returns the recorded POST bodies so the spec can
- * assert the composed message reached the wire. Auth (Firebase) is mocked by the
- * caller via `CloudAuthHelper` before navigation.
+ * (`postMessage`, `getDraft`). Records POST bodies into the caller's
+ * `postedMessages` so the spec can assert the composed message reached the wire.
+ * Auth (Firebase) is mocked by the caller via `CloudAuthHelper` before navigation.
  */
 export async function mockAgentBoot(
   page: Page,
-  { agentFlag }: { agentFlag: boolean }
-): Promise<{ postedMessages: string[] }> {
-  const postedMessages: string[] = []
-
+  {
+    agentFlag,
+    postedMessages
+  }: { agentFlag: boolean; postedMessages: string[] }
+): Promise<void> {
   await page.route('**/api/features', (r) =>
     r.fulfill(jsonRoute(agentFeatures(agentFlag)))
   )
@@ -267,6 +268,4 @@ export async function mockAgentBoot(
   await page.route('**/api/agent/draft**', (r) =>
     r.fulfill(jsonRoute(DRAFT_SNAPSHOT))
   )
-
-  return { postedMessages }
 }
