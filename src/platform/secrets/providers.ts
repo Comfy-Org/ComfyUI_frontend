@@ -17,7 +17,7 @@ interface ProviderConfig {
  * back to the raw id with no logo, so adding a provider server-side renders
  * without an FE change (a dedicated logo/label is an optional enhancement).
  */
-export const SECRET_PROVIDERS: ProviderConfig[] = [
+const SECRET_PROVIDERS: ProviderConfig[] = [
   {
     value: 'huggingface',
     label: 'HuggingFace',

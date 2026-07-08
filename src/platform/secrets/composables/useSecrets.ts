@@ -21,9 +21,7 @@ export function useSecrets() {
   const operatingSecretId = ref<string | null>(null)
 
   const existingProviders = computed<string[]>(() =>
-    secrets.value
-      .map((s) => s.provider)
-      .filter((p): p is string => p !== undefined)
+    secrets.value.map((s) => s.provider).filter((p): p is string => p != null)
   )
 
   async function fetchSecrets() {

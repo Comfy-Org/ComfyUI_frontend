@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata, SecretProvider } from '../types'
@@ -226,6 +226,22 @@ describe('useSecretForm', () => {
       expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
     })
 
+    it('dedupes repeated provider ids from the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['civitai', 'civitai', 'huggingface'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'civitai',
+        'huggingface'
+      ])
+    })
+
     it('renders server-listed BYOK providers with labels and logos', () => {
       const visible = ref(true)
       const { providerOptions } = useSecretForm({
@@ -284,6 +300,43 @@ describe('useSecretForm', () => {
       availableProviders.value = ['huggingface']
 
       expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+    })
+
+    it('clears a selection the resolved allowlist no longer offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[] | null>(null)
+      const { form, providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'civitai'
+      availableProviders.value = ['huggingface']
+      await nextTick()
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+      expect(form.provider).toBeNull()
+    })
+
+    it('keeps a selection the resolved allowlist still offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[] | null>(null)
+      const { form } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      availableProviders.value = ['huggingface', 'civitai']
+      await nextTick()
+
+      expect(form.provider).toBe('huggingface')
     })
 
     it('ignores the availableProviders filter in edit mode', () => {

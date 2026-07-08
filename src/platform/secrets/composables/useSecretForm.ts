@@ -1,6 +1,6 @@
 import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, reactive, ref, toValue } from 'vue'
+import { computed, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
@@ -82,11 +82,12 @@ export function useSecretForm(options: UseSecretFormOptions) {
     if (mode === 'edit') {
       const stored = toValue(secretRef)?.provider
       ids =
-        stored && !DEFAULT_PROVIDER_IDS.includes(stored as never)
+        stored && !DEFAULT_PROVIDER_IDS.some((id) => id === stored)
           ? [...DEFAULT_PROVIDER_IDS, stored]
           : [...DEFAULT_PROVIDER_IDS]
     } else {
-      ids = available === null ? [...DEFAULT_PROVIDER_IDS] : available
+      ids =
+        available === null ? [...DEFAULT_PROVIDER_IDS] : [...new Set(available)]
     }
 
     const existing = toValue(existingProviders)
@@ -96,6 +97,14 @@ export function useSecretForm(options: UseSecretFormOptions) {
       logo: getProviderLogo(id),
       disabled: mode === 'edit' ? false : existing.includes(id)
     }))
+  })
+
+  // Once the server allowlist resolves, drop a selection the resolved list no
+  // longer offers so the user cannot submit an unlisted provider.
+  watch(providerOptions, (options) => {
+    if (form.provider && !options.some((o) => o.value === form.provider)) {
+      form.provider = null
+    }
   })
 
   // Provider-specific help text when the selected provider defines it, else the
