@@ -50,20 +50,20 @@
 
       <div
         v-if="showBar"
-        :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
+        :class="cn('flex flex-col gap-2', isAllowanceDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
           <span class="text-muted">{{ cycleLabel }}</span>
           <span class="text-muted">
-            {{ monthlyStatusLabel }}
+            {{ cycleStatusLabel }}
           </span>
         </div>
         <div
           role="progressbar"
           :aria-valuenow="usage.used"
           :aria-valuemin="0"
-          :aria-valuemax="monthlyTotalCredits ?? 0"
-          :aria-valuetext="monthlyUsageLabel"
+          :aria-valuemax="allowanceTotalCredits ?? 0"
+          :aria-valuetext="cycleUsageLabel"
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
@@ -201,16 +201,24 @@ const tierKey = computed(() => {
   return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
 })
 
-const monthlyTotalCredits = computed<number | null>(() => {
+// Annual plans grant the whole year's credits upfront, so the allowance the
+// bar tracks is the monthly nominal times the number of months in the cycle.
+const cycleMonths = computed(() =>
+  subscription.value?.duration === 'ANNUAL' ? 12 : 1
+)
+
+const allowanceTotalCredits = computed<number | null>(() => {
   const teamStop = currentTeamCreditStop.value
-  if (teamStop) return teamStop.credits_monthly
-  return getTierCredits(tierKey.value)
+  const monthly = teamStop
+    ? teamStop.credits_monthly
+    : getTierCredits(tierKey.value)
+  return monthly === null ? null : monthly * cycleMonths.value
 })
 
 const usage = computed(() => {
   const base = computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
-    monthlyTotalCredits.value ?? 0
+    allowanceTotalCredits.value ?? 0
   )
   return isPaused.value ? { ...base, used: 0, usedFraction: 0 } : base
 })
@@ -232,14 +240,14 @@ const cycleLabel = computed(() =>
     : t('subscription.monthly')
 )
 
-const monthlyUsedPercent = computed(() =>
+const cycleUsedPercent = computed(() =>
   Math.round(usage.value.usedFraction * 100)
 )
 
-const monthlyStatusLabel = computed(() =>
+const cycleStatusLabel = computed(() =>
   isPaused.value
     ? t('subscription.refillPaused')
-    : t('subscription.percentUsed', { percent: monthlyUsedPercent.value })
+    : t('subscription.percentUsed', { percent: cycleUsedPercent.value })
 )
 
 const formatCreditCount = (value: number) =>
@@ -249,8 +257,8 @@ const formatCreditCount = (value: number) =>
     numberOptions: { maximumFractionDigits: 0 }
   })
 
-const monthlyTotalDisplay = computed(() => {
-  const total = monthlyTotalCredits.value
+const allowanceTotalDisplay = computed(() => {
+  const total = allowanceTotalCredits.value
   return total === null ? '—' : formatCreditCount(total)
 })
 
@@ -261,10 +269,10 @@ const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
-const monthlyUsageLabel = computed(() =>
-  t('subscription.monthlyUsageProgress', {
+const cycleUsageLabel = computed(() =>
+  t('subscription.usageProgress', {
     used: usedDisplay.value,
-    total: monthlyTotalDisplay.value
+    total: allowanceTotalDisplay.value
   })
 )
 
@@ -272,14 +280,14 @@ const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
 const showBar = computed(
   () =>
     showBreakdown.value &&
-    monthlyTotalCredits.value !== null &&
-    monthlyTotalCredits.value > 0
+    allowanceTotalCredits.value !== null &&
+    allowanceTotalCredits.value > 0
 )
 const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
 )
 
-const isMonthlyDepleted = computed(
+const isAllowanceDepleted = computed(
   () =>
     !isPaused.value &&
     showBar.value &&
@@ -288,10 +296,10 @@ const isMonthlyDepleted = computed(
     monthlyBonusCreditsValue.value <= 0
 )
 const isOutOfCredits = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 const isSpendingAdditional = computed(
-  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
 
 const emptyStateNotice = computed(() => {
@@ -303,7 +311,7 @@ const emptyStateNotice = computed(() => {
       description: t('subscription.outOfCreditsDescription')
     }
   }
-  if (isMonthlyDepleted.value) {
+  if (isAllowanceDepleted.value) {
     return {
       title: hasRefillsDate.value
         ? t('subscription.monthlyCreditsUsedUpTitle', {

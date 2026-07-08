@@ -101,12 +101,12 @@ const i18n = createI18n({
         yearly: 'Yearly',
         percentUsed: '{percent}% used',
         refillPaused: 'Refill paused',
-        monthlyUsageProgress: '{used} of {total} monthly credits used',
+        usageProgress: '{used} of {total} credits used',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
-        usedAfterMonthly: 'Used after monthly runs out',
+        usedAfterMonthly: 'Used after plan credits run out',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -183,14 +183,14 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('98% used')
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
-    expect(container.textContent).toContain('Used after monthly runs out')
+    expect(container.textContent).toContain('Used after plan credits run out')
   })
 
-  it('uses the team credit stop monthly grant for the monthly total', () => {
+  it('uses the team credit stop grant for a monthly allowance', () => {
     state.isActiveSubscription = true
     state.subscription = {
       tier: 'TEAM',
-      duration: 'ANNUAL',
+      duration: 'MONTHLY',
       renewalDate: '2026-02-20T12:00:00Z'
     }
     state.currentTeamCreditStop = {
@@ -200,15 +200,14 @@ describe('CreditsTile', () => {
     }
     state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
     renderTile()
-    // Monthly total is the stop's raw monthly grant, not the tier fallback,
-    // and is not multiplied by 12 for annual billing.
+    // Allowance is the stop's grant, not the tier fallback.
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuemax',
       '527500'
     )
   })
 
-  it('uses the per-month nominal grant for an annual personal tier', () => {
+  it('grants the full year upfront for an annual plan', () => {
     state.isActiveSubscription = true
     state.subscription = {
       tier: 'PRO',
@@ -217,10 +216,10 @@ describe('CreditsTile', () => {
     }
     state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
     renderTile()
-    // Annual billing still grants the monthly nominal (21,100), not 12x.
+    // Annual plans grant the whole year at once: 21,100 x 12.
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuemax',
-      '21100'
+      '253200'
     )
   })
 
