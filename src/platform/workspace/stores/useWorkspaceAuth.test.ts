@@ -583,6 +583,128 @@ describe('useWorkspaceAuthStore', () => {
     })
   })
 
+  describe('ensureWorkspaceAuthHeader', () => {
+    it('returns the existing header without minting when the token is valid', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      const header = await store.ensureWorkspaceAuthHeader('workspace-123')
+
+      expect(header).toEqual({ Authorization: 'Bearer workspace-token-abc' })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('mints a token for the preferred workspace when none exists', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      const header = await store.ensureWorkspaceAuthHeader('workspace-123')
+
+      expect(header).toEqual({ Authorization: 'Bearer workspace-token-abc' })
+    })
+
+    it('coalesces concurrent recovery onto a single mint', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const [first, second] = await Promise.all([
+        store.ensureWorkspaceAuthHeader('workspace-123'),
+        store.ensureWorkspaceAuthHeader('workspace-123')
+      ])
+
+      expect(first).toEqual({ Authorization: 'Bearer workspace-token-abc' })
+      expect(second).toEqual({ Authorization: 'Bearer workspace-token-abc' })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('awaits an in-flight switch instead of racing a second mint', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      let resolveResponse: (value: unknown) => void = () => {}
+      const responsePromise = new Promise((resolve) => {
+        resolveResponse = resolve
+      })
+      const mockFetch = vi.fn().mockReturnValue(responsePromise)
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const switchPromise = store.switchWorkspace('workspace-123')
+      const ensurePromise = store.ensureWorkspaceAuthHeader('workspace-123')
+
+      resolveResponse({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      await switchPromise
+      const header = await ensurePromise
+
+      expect(header).toEqual({ Authorization: 'Bearer workspace-token-abc' })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns null (never a downgrade) when recovery fails transiently', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({})
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      const header = await store.ensureWorkspaceAuthHeader('workspace-123')
+
+      expect(header).toBeNull()
+    })
+
+    it('returns null when there is no workspace to recover to', async () => {
+      const store = useWorkspaceAuthStore()
+
+      const header = await store.ensureWorkspaceAuthHeader()
+
+      expect(header).toBeNull()
+    })
+
+    it('is a no-op returning null when the feature flag is disabled', async () => {
+      mockTeamWorkspacesEnabled.value = false
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const header = await store.ensureWorkspaceAuthHeader('workspace-123')
+
+      expect(header).toBeNull()
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+  })
+
   describe('token refresh scheduling', () => {
     it('schedules token refresh 5 minutes before expiry', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

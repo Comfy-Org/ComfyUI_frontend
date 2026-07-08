@@ -31,6 +31,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -226,8 +227,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
+
+      // The workspace token is transiently absent (mint in flight during
+      // bootstrap, expired, or cleared by a recoverable refresh failure). While
+      // an active workspace context exists, recover to its token rather than
+      // silently issuing the request under the personal Firebase identity — that
+      // downgrade is what makes cloud requests oscillate between workspace and
+      // personal auth. Fall through to Firebase only when there is no workspace
+      // to recover to (workspace mode not yet initialized).
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+      if (activeWorkspaceId) {
+        return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
+      }
     }
 
     const token = await getIdToken()
