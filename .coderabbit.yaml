@@ -64,6 +64,21 @@ reviews:
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
 
+      - name: App queue credential cleanup on rejection
+        mode: warning
+        instructions: |
+          Use only PR metadata already available in the review context: the changed-file list relative to the PR base, the PR description, and the diff content. Do not rely on shell commands.
+
+          This check applies ONLY when the PR changes `src/scripts/app.ts` and that diff assigns `api.authToken` or `api.apiKey` before awaiting `api.queuePrompt`.
+
+          When applicable, require a changed app test file such as `src/scripts/app.core.test.ts` or `src/scripts/app.test.ts` to include rejected-queue coverage that:
+          1. Populates both credential sources (`authToken` and API key, or the stores that feed them) with non-empty values.
+          2. Makes `api.queuePrompt` reject.
+          3. Calls `app.queuePrompt`.
+          4. Asserts after the rejection path that both `api.authToken` and `api.apiKey` are cleared, deleted, or `undefined`.
+
+          Warn if rejection is tested without those cleanup assertions, or if cleanup is asserted only on the successful `api.queuePrompt` path. Mention that success-path cleanup alone does not prove credentials are cleared after a failed queue request.
+
   path_instructions:
     - path: '**/*.test.ts'
       instructions: |
