@@ -93,7 +93,19 @@ export class CloudWorkspaceMockHelper {
       r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
     )
     await page.route('**/api/auth/token', (r) =>
-      r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
+      r.fulfill(
+        jsonRoute({
+          token: 'mock-workspace-token',
+          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          workspace: {
+            id: TEAM_WORKSPACE.id,
+            name: TEAM_WORKSPACE.name,
+            type: TEAM_WORKSPACE.type
+          },
+          role: TEAM_WORKSPACE.role,
+          permissions: []
+        })
+      )
     )
     await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 

@@ -97,6 +97,21 @@ async function mockCloudBoot(page: Page) {
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  await page.route('**/api/auth/token', (r) =>
+    r.fulfill(
+      jsonRoute({
+        token: 'mock-workspace-token',
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        workspace: {
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal'
+        },
+        role: 'owner',
+        permissions: []
+      })
+    )
+  )
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
   // Single personal workspace.
