@@ -750,6 +750,7 @@ describe('useConflictDetection', () => {
           )
         ])
       ).resolves.not.toThrow()
+      expect(mockConflictStore.clearConflicts).toHaveBeenCalled()
     })
 
     it('skips initialization when the new manager UI is disabled', async () => {
