@@ -106,6 +106,8 @@ reviews:
         For app tests that mock or spy on `api.queuePrompt`, require rejected-queue coverage whenever the code temporarily populates `api.authToken` or `api.apiKey`.
         The rejected-path test must populate both values, make `api.queuePrompt` reject, and assert both fields are cleared afterward; success-path cleanup alone is insufficient.
         If `api.queuePrompt` rejection is tested without asserting `api.authToken` and `api.apiKey` cleanup afterward, flag the missing assertion even when a success-path test already covers cleanup.
+        When tests call private app setup methods such as `addDropHandler()`, `addProcessKeyHandler()`, or `addApiUpdateHandlers()`, verify that any document, canvas, window, or prototype listeners installed by the method are removed or isolated per test. Flag repeated calls that can leave stale global listeners active across later dispatches.
+        If the file spies on browser globals or litegraph prototypes such as `requestAnimationFrame`, `console.warn`, or `LGraphCanvas.prototype.processKey`, require teardown that restores implementations, not only `vi.clearAllMocks()`.
     - path: 'src/scripts/app.ts'
       instructions: |
         When app queuing code temporarily assigns `api.authToken` or `api.apiKey` before awaiting `api.queuePrompt`, require app tests for both resolved and rejected `api.queuePrompt` paths.
