@@ -83,57 +83,63 @@
             </p>
           </div>
 
-          <Table v-else>
-            <TableHeader>
-              <TableRow
-                class="hover:bg-transparent [&>th]:h-9 [&>th]:border-b [&>th]:border-interface-stroke/60"
-              >
-                <TableHead>
-                  {{ $t('workspacePanel.overview.snapshot.user') }}
-                </TableHead>
-                <TableHead>
-                  {{ $t('workspacePanel.overview.snapshot.lastActivity') }}
-                </TableHead>
-                <TableHead class="text-right">
-                  <span class="inline-flex items-center gap-1">
-                    <i class="icon-[lucide--coins] size-4" />
-                    {{ $t('workspacePanel.overview.snapshot.creditsUsed') }}
-                  </span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow
-                v-for="row in snapshotRows"
-                :key="row.userName"
-                class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
-              >
-                <TableCell>
-                  <div class="flex items-center gap-2">
-                    <span
-                      class="flex size-5 shrink-0 items-center justify-center rounded-full"
-                      :style="{ backgroundColor: row.color }"
-                    >
-                      <span class="text-2xs font-bold text-base-foreground">
-                        {{ row.userName.charAt(0).toUpperCase() }}
-                      </span>
-                    </span>
-                    <span class="text-sm text-base-foreground">
-                      {{ row.userName }}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell class="text-sm text-muted-foreground tabular-nums">
-                  {{ row.lastActivity }}
-                </TableCell>
-                <TableCell
-                  class="text-right text-sm text-base-foreground tabular-nums"
+          <div
+            v-else
+            ref="snapshotContainer"
+            class="min-h-0 flex-1 overflow-hidden"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow
+                  class="hover:bg-transparent [&>th]:h-9 [&>th]:border-b [&>th]:border-interface-stroke/60"
                 >
-                  {{ row.credits.toLocaleString() }}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                  <TableHead>
+                    {{ $t('workspacePanel.overview.snapshot.user') }}
+                  </TableHead>
+                  <TableHead>
+                    {{ $t('workspacePanel.overview.snapshot.lastActivity') }}
+                  </TableHead>
+                  <TableHead class="text-right">
+                    <span class="inline-flex items-center gap-1">
+                      <i class="icon-[lucide--coins] size-4" />
+                      {{ $t('workspacePanel.overview.snapshot.creditsUsed') }}
+                    </span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow
+                  v-for="row in snapshotRows"
+                  :key="row.userName"
+                  class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
+                >
+                  <TableCell>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="flex size-5 shrink-0 items-center justify-center rounded-full"
+                        :style="{ backgroundColor: row.color }"
+                      >
+                        <span class="text-2xs font-bold text-base-foreground">
+                          {{ row.userName.charAt(0).toUpperCase() }}
+                        </span>
+                      </span>
+                      <span class="text-sm text-base-foreground">
+                        {{ row.userName }}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell class="text-sm text-muted-foreground tabular-nums">
+                    {{ row.lastActivity }}
+                  </TableCell>
+                  <TableCell
+                    class="text-right text-sm text-base-foreground tabular-nums"
+                  >
+                    {{ row.credits.toLocaleString() }}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
 
           <Button
             variant="tertiary"
@@ -234,6 +240,7 @@ import { useSettingsNavigation } from '@/platform/settings/composables/useSettin
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { buildSupportUrl } from '@/platform/support/config'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -302,9 +309,17 @@ const { plan, nextInvoiceCents, topSpenders, recentActivity } =
 
 const { navigateToPanel } = useSettingsNavigation()
 
+// The credits tile dictates the row height; the snapshot tile fits as many
+// user rows as that height allows, keeping "See more" pinned to the bottom.
+const snapshotContainer = ref<HTMLElement | null>(null)
+const { pageSize: visibleSnapshotRows } = useAutoPageSize(snapshotContainer, 1)
+
 const snapshotView = ref('top')
 const snapshotRows = computed(() =>
-  snapshotView.value === 'top' ? topSpenders.value : recentActivity.value
+  (snapshotView.value === 'top'
+    ? topSpenders.value
+    : recentActivity.value
+  ).slice(0, visibleSnapshotRows.value)
 )
 
 // A top-spenders leaderboard of all-zeros (a fresh billing cycle) is

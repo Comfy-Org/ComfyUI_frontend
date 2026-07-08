@@ -14,7 +14,9 @@ export interface SnapshotRow {
   credits: number
 }
 
-const SNAPSHOT_SIZE = 4
+// Upper bound on the snapshot pool; the tile shows as many of these as its
+// height allows (see visibleSnapshotRows in WorkspaceOverviewContent).
+const SNAPSHOT_SIZE = 6
 
 export function useWorkspaceOverview() {
   const { t, d } = useI18n()
