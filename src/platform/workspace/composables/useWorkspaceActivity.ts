@@ -53,7 +53,7 @@ const INFLOWS: Omit<ActivityEvent, 'id'>[] = [
   {
     date: new Date(BASE - 96 * HOUR_MS),
     userName: '',
-    eventType: 'Credit top-up',
+    eventType: 'Additional credits added',
     detail: '',
     credits: 20000,
     credited: true
