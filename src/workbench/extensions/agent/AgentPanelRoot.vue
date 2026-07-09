@@ -35,6 +35,7 @@ import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { WorkflowUpload } from './services/agent/agentRestClient'
 import { createReconnectingEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -114,14 +115,46 @@ const activeTab = computed<ActiveTab | null>(() => {
   return active ? { name: active.filename } : null
 })
 
-// Bind only when the server confirmed the id we sent for that tab; a freshly
-// minted id stays unbound so its first patch opens (and binds) its own tab.
+// The turn runs against the canvas as of the send: upload the serialized
+// graph when it changed since the last upload so the server can seed the
+// thread's draft from it (cloud postMessage.workflow contract; servers
+// without the field ignore it). Oversized graphs are skipped, matching the
+// server's 413 limit.
+const MAX_UPLOAD_CHARS = 2_000_000
+let lastSentGraph: string | null = null
+let snapshotTabPath: string | null = null
+
+function takeWorkflowSnapshot(): WorkflowUpload | undefined {
+  const graph = app.graph?.serialize()
+  if (!graph) return undefined
+  const serialized = JSON.stringify(graph)
+  if (serialized === lastSentGraph || serialized.length > MAX_UPLOAD_CHARS)
+    return undefined
+  lastSentGraph = serialized
+  snapshotTabPath = workflowStore.activeWorkflow?.path ?? null
+  return { content: graph, base_version: draftStore.version }
+}
+
+// A fresh thread gets a fresh draft on the server: re-upload on next send.
+function resetSnapshotGuard(): void {
+  lastSentGraph = null
+  snapshotTabPath = null
+}
+
+// Bind when the server confirmed the id we sent for that tab, or when the
+// send uploaded this tab's canvas: the draft then mirrors the tab, so even a
+// freshly minted id applies in place instead of opening a new tab.
 function onWorkflowAdopted(
   workflowId: string,
-  sent: WorkflowTurnContext | undefined
+  sent: WorkflowTurnContext | undefined,
+  uploaded: boolean
 ): void {
-  if (sent !== undefined && sent.id === workflowId)
+  if (sent !== undefined && sent.id === workflowId) {
     bindingStore.bind(workflowId, sent.tabPath)
+    return
+  }
+  if (uploaded && snapshotTabPath !== null)
+    bindingStore.bind(workflowId, snapshotTabPath)
 }
 
 const {
@@ -142,7 +175,8 @@ const {
   events,
   workflow: {
     current: activeWorkflowTurnContext,
-    adopted: onWorkflowAdopted
+    adopted: onWorkflowAdopted,
+    snapshot: takeWorkflowSnapshot
   }
 })
 
@@ -250,6 +284,11 @@ async function applyDraft(): Promise<void> {
       lastApplied.version >= version
     )
       return
+    // An agent draft with no nodes is noise (the server's freshly minted
+    // draft starts empty): applying it would blank a bound tab or conjure an
+    // empty one. Park until a patch carries actual nodes.
+    const nodes = (content as { nodes?: unknown }).nodes
+    if (!Array.isArray(nodes) || nodes.length === 0) return
     const boundTab = boundTabFor(workflowId)
     if (boundTab) {
       if (workflowStore.activeWorkflow?.path !== boundTab.path) return
@@ -260,10 +299,6 @@ async function applyDraft(): Promise<void> {
       await loadDraft(workflowId, version, content, boundTab)
       return
     }
-    // The server's freshly minted draft starts empty; conjuring a blank tab
-    // for it only confuses. Park until a patch carries actual nodes.
-    const nodes = (content as { nodes?: unknown }).nodes
-    if (!Array.isArray(nodes) || nodes.length === 0) return
     await loadDraft(workflowId, version, content, null)
   } finally {
     applying = false
@@ -359,6 +394,7 @@ watch(threadId, (id) => history.setActive(id), { immediate: true })
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  resetSnapshotGuard()
   await loadThread(id)
   void refreshHistory()
 }
@@ -394,7 +430,15 @@ function onSend(text: string, attachments: ComposerAttachment[]): void {
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(text, attachments, tagsWithNodeData(consumeSelection()))
+  void sendMessage(
+    text,
+    attachments,
+    tagsWithNodeData(consumeSelection())
+  ).then((ok) => {
+    // A failed send consumed the snapshot guard without reaching the
+    // server; drop it so the next send re-uploads.
+    if (!ok) resetSnapshotGuard()
+  })
 }
 
 function onStop(): void {
@@ -402,6 +446,7 @@ function onStop(): void {
 }
 
 function onNewChat(): void {
+  resetSnapshotGuard()
   newChat()
 }
 
