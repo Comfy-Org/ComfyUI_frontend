@@ -24,6 +24,7 @@ function isExcludedFromSitemap(page: string): boolean {
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  trailingSlash: 'never',
   prefetch: { prefetchAll: true },
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
@@ -36,7 +37,8 @@ export default defineConfig({
     '/zh-CN/terms-of-service': '/terms-of-service'
   },
   build: {
-    assets: '_website'
+    assets: '_website',
+    format: 'file'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [
