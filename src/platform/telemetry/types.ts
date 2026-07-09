@@ -70,11 +70,9 @@ export interface AuthErrorMetadata {
 }
 
 /**
- * Survey response data for user profiling
- * Maps 1-to-1 with actual survey fields
+ * Survey field ids mapped to answers. Fields are backend-overridable, so all
+ * are optional.
  */
-
-/** Survey field ids → answers. Fields are backend-overridable, so all optional. */
 export interface SurveyResponses {
   // Current default schema (see defaultSurveySchema.ts)
   intent?: string | string[]
