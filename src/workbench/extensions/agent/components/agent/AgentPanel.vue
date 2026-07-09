@@ -37,6 +37,7 @@ const {
   isMaximized = false,
   selectionTags = [],
   activeTab = null,
+  getMentionNodes = () => [],
   historyGroups
 } = defineProps<{
   entries: ConversationEntry[]
@@ -51,6 +52,7 @@ const {
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
   activeTab?: ActiveTab | null
+  getMentionNodes?: () => SelectedNode[]
   historyGroups: HistoryGroups
 }>()
 const emit = defineEmits<{
@@ -58,6 +60,7 @@ const emit = defineEmits<{
   stop: []
   attach: []
   removeTag: [id: string]
+  mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   answer: [approvalId: string, approved: boolean]
   takeControl: []
@@ -186,10 +189,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :submitting="submitting"
             :can-attach="canAttach"
             :selection-tags="selectionTags"
+            :get-mention-nodes="getMentionNodes"
             @send="(text, attachments) => emit('send', text, attachments)"
             @stop="emit('stop')"
             @attach="emit('attach')"
             @remove-tag="emit('removeTag', $event)"
+            @mention-pick="emit('mentionPick', $event)"
           />
           <p class="text-agent-fg-muted my-0 text-center text-xs">
             {{ t('agent.caption') }}
