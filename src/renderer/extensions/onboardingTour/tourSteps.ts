@@ -80,7 +80,7 @@ export const TOUR_TEMPLATE_SOURCE = 'default'
 export const EDIT_ENGINE_TYPE = '654c828f-2572-47e8-ba85-8a832c89b30c'
 
 /** Run button in the top bar; the cloud paywalled variant falls back to this list. */
-export const RUN_BUTTON_SELECTOR =
+const RUN_BUTTON_SELECTOR =
   '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
 
 /**
