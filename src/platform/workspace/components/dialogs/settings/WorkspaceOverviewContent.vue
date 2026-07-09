@@ -76,12 +76,12 @@
           </Tabs>
 
           <div
-            v-if="showSnapshotEmpty"
+            v-if="snapshotEmptyMessage"
             class="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center"
           >
             <i class="icon-[lucide--coins] size-6 text-muted-foreground" />
             <p class="m-0 text-sm text-base-foreground">
-              {{ $t('workspacePanel.overview.snapshot.empty.title') }}
+              {{ snapshotEmptyMessage }}
             </p>
           </div>
 
@@ -298,14 +298,19 @@ const snapshotRows = computed(() =>
   ).slice(0, visibleSnapshotRows.value)
 )
 
-// A top-spenders leaderboard of all-zeros (a fresh billing cycle) is
-// meaningless, so swap in an empty state. Recent activity persists across
-// cycles, so it keeps its list.
-const showSnapshotEmpty = computed(
-  () =>
-    snapshotView.value === 'top' &&
-    !topSpenders.value.some((row) => row.credits > 0)
-)
+// Each tab gets its own empty state: a top-spenders leaderboard of all-zeros
+// (a fresh billing cycle) is meaningless, and recent activity can simply have
+// no events yet. Returns the message to show, or null when the table has rows.
+const snapshotEmptyMessage = computed(() => {
+  if (snapshotView.value === 'top') {
+    return topSpenders.value.some((row) => row.credits > 0)
+      ? null
+      : t('workspacePanel.overview.snapshot.empty.topSpenders')
+  }
+  return recentActivity.value.length === 0
+    ? t('workspacePanel.overview.snapshot.empty.recentActivity')
+    : null
+})
 
 // Top spenders → the Members panel pre-sorted by credit usage; Recent activity
 // → the Activity tab.

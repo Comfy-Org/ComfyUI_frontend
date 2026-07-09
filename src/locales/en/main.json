@@ -2972,7 +2972,8 @@
         "topSpenders": "Top spenders",
         "recentActivity": "Recent activity",
         "empty": {
-          "title": "No credits used yet this month"
+          "topSpenders": "No credits used yet this month",
+          "recentActivity": "No activity yet"
         }
       }
     },
