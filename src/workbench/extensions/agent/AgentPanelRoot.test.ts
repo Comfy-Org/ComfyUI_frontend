@@ -62,6 +62,7 @@ vi.mock(
 // canvas selection the @-tag chips read. Reactive so the root's watches fire.
 type FakeTab = {
   path: string
+  filename: string
   isModified: boolean
   activeState: { id?: string } | null
 }
@@ -689,6 +690,7 @@ describe('AgentPanelRoot workflow binding', () => {
   function makeTab(id?: string): FakeTab {
     const tab: FakeTab = {
       path: 'workflows/current.json',
+      filename: 'current',
       isModified: false,
       activeState: id === undefined ? null : { id }
     }
@@ -731,6 +733,15 @@ describe('AgentPanelRoot workflow binding', () => {
         }
       })
     })
+
+  it('names the active tab in the panel strip', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText('current')).toBeInTheDocument()
+  })
 
   it("sends the active tab's saved workflow id and applies patches in place", async () => {
     const tab = makeTab('wf-42')
@@ -824,6 +835,7 @@ describe('AgentPanelRoot workflow binding', () => {
     // The bound tab goes to the background before the patch lands.
     const other: FakeTab = {
       path: 'workflows/other.json',
+      filename: 'other',
       isModified: false,
       activeState: null
     }

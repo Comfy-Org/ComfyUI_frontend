@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { ActiveTab } from '../../composables/agent/useCanvasContext'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {
@@ -12,6 +13,7 @@ import type {
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import ActiveTabStrip from './ActiveTabStrip.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -35,6 +37,7 @@ const {
   canAttach = false,
   isMaximized = false,
   selectionTags = [],
+  activeTab = null,
   historyGroups
 } = defineProps<{
   entries: ConversationEntry[]
@@ -48,6 +51,7 @@ const {
   canAttach?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  activeTab?: ActiveTab | null
   historyGroups: HistoryGroups
 }>()
 const emit = defineEmits<{
@@ -144,6 +148,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <SessionBar :title="sessionTitle" @open-history="onOpenHistory" />
+
+      <ActiveTabStrip :tab="activeTab" />
 
       <LockBanner :state="lockState" @take-control="emit('takeControl')" />
 
