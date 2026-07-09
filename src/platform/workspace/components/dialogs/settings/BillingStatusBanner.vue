@@ -7,17 +7,7 @@
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <div class="flex items-center gap-2">
         <i
-          :class="
-            cn(
-              'size-4 shrink-0',
-              // Triangle + amber for problems that need action (out of credits,
-              // payment failed); circle + muted for informational status notices
-              // (paused).
-              banner.kind === 'paused'
-                ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                : 'icon-[lucide--triangle-alert] text-warning-background'
-            )
-          "
+          class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
         />
         <span class="text-sm text-base-foreground">{{ banner.title }}</span>
       </div>
@@ -48,7 +38,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, d } = useI18n()
 const {
