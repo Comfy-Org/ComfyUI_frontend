@@ -8,11 +8,11 @@ const { tab } = defineProps<{ tab: ActiveTab | null }>()
 </script>
 
 <template>
-  <div
+  <span
     v-if="tab"
-    class="border-agent-border text-agent-fg-muted flex items-center gap-1.5 border-b px-4 py-1.5 text-xs"
+    class="text-agent-fg-muted flex min-w-0 items-center gap-1 text-xs"
   >
-    <span class="icon-[lucide--panels-top-left] size-3.5" />
+    <span class="icon-[lucide--panels-top-left] size-3.5 shrink-0" />
     <span class="truncate">{{ tab.name }}</span>
-  </div>
+  </span>
 </template>
