@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "使用 ByteDance Seed Audio 1.0，通过单个提示生成语音、音乐、音效和多说话人对话。在提示中描述声音、情感、氛围、背景音乐和音效，并包含要说的台词。可选内置预设声音，从最多 3 个参考 clip（在提示中标记为 @Audio1-3）克隆声音，或从角色图像推导声音。每次最多生成 2 分钟音频。",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "响度。0 = 正常，100 = 2.0x，-50 = 0.5x。"
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "音高变化（半音，-12 到 12）。"
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "声音的条件方式：'仅文本'（所有内容都在提示中描述）、'音频参考'（克隆最多 3 个声音，标记为 @Audio1-3）、'图像参考'（从一个角色图像推导声音）、或'预设声音'（选择内置命名声音朗读提示）。"
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "输出采样率（Hz）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "语速。0 = 正常，100 = 2.0x，-50 = 0.5x。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "描述声音、情感、语速、氛围、背景音乐和音效，并包含要说的台词（对话请直接写角色名）。在“音频参考”模式下，按顺序引用已连接的 clip，如 @Audio1、@Audio2、@Audio3。最多 3000 字符。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "使用字节跳动的 Seed 2.0 模型生成文本回复。请提供文本提示，并可选地添加一张或多张图像或视频以实现多模态上下文。",
     "display_name": "字节跳动 Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "模型"
       },
-      "model_fail_on_partial": {
-        "name": "部分失败时终止"
-      },
       "model_height": {
         "name": "高度"
-      },
-      "model_max_images": {
-        "name": "最大图像数"
       },
       "model_size_preset": {
         "name": "尺寸预设"
@@ -2009,6 +2045,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2273,17 @@
       },
       "conditioning_to": {
         "name": "条件到"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "条件（乘法）",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -5196,6 +5247,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，通过文本提示生成带音频的视频。可选提供参考图像和/或视频以引导或编辑结果。在提示中直接描述期望时长（3-10 秒）和宽高比（16:9 或 9:16）。",
+    "display_name": "Google Gemini Omni（视频）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成视频的 Gemini 视频模型。"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "生成轨道",
     "inputs": {
@@ -6162,94 +6247,6 @@
       },
       "width": {
         "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "使用 Ideogram V1 模型同步生成图像。\n\n图片链接仅在有限时间内有效；如果您想保留图片，请务必下载。",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "图像生成的宽高比。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "magic_prompt_option": {
-        "name": "Magic Prompt",
-        "tooltip": "确定生成时是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "描述需要从图像中排除的内容"
-      },
-      "num_images": {
-        "name": "图像数量"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词"
-      },
-      "seed": {
-        "name": "随机种"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "是否启用 turbo 模式（生成更快，但可能质量较低）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "使用 Ideogram V2 模型同步生成图像。\n\n图像链接仅在有限时间内有效；如果您想保留图像，请务必下载。",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "图像生成的宽高比。如果分辨率未设置为 AUTO，则此项无效。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "magic_prompt_option": {
-        "name": "Magic Prompt",
-        "tooltip": "确定生成时是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "描述图像中需要排除的内容"
-      },
-      "num_images": {
-        "name": "图像数量"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词"
-      },
-      "resolution": {
-        "name": "分辨率",
-        "tooltip": "图像生成的分辨率。如果未设置为 AUTO，则会覆盖 aspect_ratio 设置。"
-      },
-      "seed": {
-        "name": "随机种"
-      },
-      "style_type": {
-        "name": "风格",
-        "tooltip": "生成的风格类型（仅限 V2）"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "是否启用 turbo 模式（生成更快，质量可能略低）"
       }
     },
     "outputs": {
@@ -18465,293 +18462,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "使用文本指令转换现有音频样本的部分内容。",
-    "display_name": "Stability AI 音频重绘",
-    "inputs": {
-      "audio": {
-        "name": "音频",
-        "tooltip": "音频长度必须在6到190秒之间。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长",
-        "tooltip": "控制生成音频的时长（秒）。"
-      },
-      "mask_end": {
-        "name": "结束遮罩"
-      },
-      "mask_start": {
-        "name": "开始遮罩"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "用于生成的随机种子。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "控制采样步数。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "使用文本指令将现有音频样本转换为新的高质量作品。",
-    "display_name": "Stability AI 音频到音频",
-    "inputs": {
-      "audio": {
-        "name": "音频",
-        "tooltip": "音频长度必须在6到190秒之间。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长",
-        "tooltip": "控制生成音频的时长（秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "用于生成的随机种子。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "控制采样步数。"
-      },
-      "strength": {
-        "name": "强度",
-        "tooltip": "参数控制音频参数对生成音频的影响程度。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "根据提示词和分辨率同步生成图像。",
-    "display_name": "Stability AI Stable Diffusion 3.5 图像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "生成图像的宽高比。"
-      },
-      "cfg_scale": {
-        "name": "CFG",
-        "tooltip": "扩散过程对提示词文本的遵循程度（数值越高，生成的图像越接近你的提示词）"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "image_denoise": {
-        "name": "图像降噪",
-        "tooltip": "输入图像的去噪程度；0.0 表示与输入图像完全相同，1.0 表示完全不使用输入图像。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "你不希望在输出图像中出现的关键词。此为高级功能。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "你希望在输出图像中看到的内容。强有力且描述清晰的提示词，能够明确定义元素、颜色和主题，将带来更好的结果。"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "style_preset": {
-        "name": "风格预设",
-        "tooltip": "可选，生成图像的期望风格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "根据提示词和分辨率同步生成图像。",
-    "display_name": "Stability AI Stable 图像 Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "生成图像的宽高比。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "image_denoise": {
-        "name": "降噪",
-        "tooltip": "输入图像的去噪强度；0.0 表示与输入图像完全相同，1.0 表示完全不参考输入图像。"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "描述你不希望在输出图像中出现内容的文本。这是一个高级功能。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "你希望在输出图像中看到的内容。一个强有力且描述清晰的提示词，能够明确界定元素、颜色和主题，将带来更好的结果。要控制某个词的权重，请使用格式 `(word:weight)`，其中 `word` 是你想要控制权重的词，`weight` 是介于 0 到 1 之间的数值。例如：`The sky was a crisp (blue:0.3) and (green:0.8)` 表示天空是蓝色和绿色，但绿色多于蓝色。"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "style_preset": {
-        "name": "风格预设",
-        "tooltip": "可选的生成图像风格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "根据文本描述生成高质量音乐和音效。",
-    "display_name": "Stability AI 文本转音频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长",
-        "tooltip": "控制生成音频的时长（秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于生成的随机种子。"
-      },
-      "steps": {
-        "name": "步数",
-        "tooltip": "控制采样步数。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "以最小改动将图像放大至 4K 分辨率。",
-    "display_name": "Stability AI 保守放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "creativity": {
-        "name": "创造性",
-        "tooltip": "控制生成与初始图像不强相关的额外细节的可能性。"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "negative_prompt": {
-        "name": "反向提示词",
-        "tooltip": "你不希望在输出图像中出现的关键词。此为高级功能。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "你希望在输出图像中看到什么。强有力且描述清晰的提示词，能更好地定义元素、颜色和主题，从而获得更佳效果。"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于生成噪声的随机种子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "以最小改动将图像放大至4K分辨率。",
-    "display_name": "Stability AI 创意放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "creativity": {
-        "name": "创造性",
-        "tooltip": "控制生成不受初始图像强烈约束的额外细节的可能性。"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "negative_prompt": {
-        "name": "反向提示词",
-        "tooltip": "你不希望在输出图像中出现的关键词。此为高级功能。"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "你希望在输出图像中看到什么。强有力且描述清晰的提示词，明确元素、颜色和主题，将获得更好的结果。"
-      },
-      "seed": {
-        "name": "随机种子",
-        "tooltip": "用于生成噪声的随机种子。"
-      },
-      "style_preset": {
-        "name": "风格预设",
-        "tooltip": "可选，生成图像的期望风格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "通过 Stability API 快速将图像放大至原始尺寸的 4 倍；适用于低质量或压缩图像的放大。",
-    "display_name": "Stability AI 极速放大",
-    "inputs": {
-      "image": {
-        "name": "图像"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "空Latent图像（Stable Cascade）",
     "inputs": {
@@ -19755,6 +19465,42 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "在一张或多张图像上绘制文字覆盖。",
+    "display_name": "绘制文字覆盖",
+    "inputs": {
+      "align": {
+        "name": "对齐"
+      },
+      "color": {
+        "name": "颜色",
+        "tooltip": "文字的颜色。"
+      },
+      "font_size": {
+        "name": "字体大小",
+        "tooltip": "字体大小为图像高度的百分比。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "outline": {
+        "name": "描边",
+        "tooltip": "在文字周围绘制黑色描边。"
+      },
+      "position": {
+        "name": "位置"
+      },
+      "text": {
+        "name": "文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
         "tooltip": null
       }
     }
