@@ -421,6 +421,15 @@ export default defineConfig([
     }
   },
 
+  // Generated shadcn-vue primitives forward props via useForwardProps(Emits),
+  // which vue/no-unused-properties cannot trace
+  {
+    files: ['apps/website/src/components/ui/**/*.vue'],
+    rules: {
+      'vue/no-unused-properties': 'off'
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
