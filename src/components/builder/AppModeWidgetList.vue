@@ -221,6 +221,7 @@ defineExpose({ handleDragDrop })
     </div>
     <div
       v-if="description || builderMode"
+      data-testid="app-mode-widget-description"
       :class="
         cn(
           'h-5 px-5',

@@ -28,6 +28,7 @@ function onEditComplete(val: string) {
   <EditableText
     :model-value="description || placeholder"
     :is-editing
+    label-class="truncate"
     @dblclick="!disabled && (isEditing = true)"
     @edit="onEditComplete"
     @cancel="isEditing = false"
