@@ -10,15 +10,18 @@ import type { SecretResponse } from '@comfyorg/ingest-types'
 export type SecretMetadata = SecretResponse
 
 /**
- * Base providers the UI renders with a dedicated label/logo. The full set of
- * configurable providers is data-driven via `GET /secrets/providers`.
+ * Base providers the UI renders with a dedicated first-class label/logo. This
+ * union documents the historically-known providers only — the full set of
+ * configurable providers is data-driven via `GET /secrets/providers`, so the
+ * selected provider is stored/sent as a free-form string.
  */
 export type SecretProvider = 'huggingface' | 'civitai'
 
 export interface SecretCreateRequest {
   name: string
   secret_value: string
-  provider?: SecretProvider
+  /** Provider identifier as returned by `GET /secrets/providers`. */
+  provider?: string
 }
 
 export interface SecretUpdateRequest {
