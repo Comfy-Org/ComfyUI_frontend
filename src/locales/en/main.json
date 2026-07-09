@@ -2863,7 +2863,7 @@
     "editWorkspaceImage": "Edit workspace image",
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of {count} members",
+    "inviteLimitReached": "Your workspace is at the member limit",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",

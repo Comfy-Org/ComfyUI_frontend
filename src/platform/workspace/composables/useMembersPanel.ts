@@ -181,7 +181,7 @@ export function useMembersPanel() {
   const inviteTooltip = computed(() => {
     if (!isOnTeamPlan.value) return null
     if (!isMemberLimitReached.value) return null
-    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
+    return t('workspacePanel.inviteLimitReached')
   })
 
   function handleInviteMember() {
