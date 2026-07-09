@@ -24,7 +24,7 @@
         </Button>
       </div>
       <SearchInput
-        v-if="activeView !== 'overview'"
+        v-if="activeView === 'activity'"
         v-model="searchQuery"
         :placeholder="$t('g.search')"
         size="lg"
@@ -54,7 +54,7 @@
       v-else-if="activeView === 'activity'"
       :search="searchQuery"
     />
-    <WorkspaceInvoicesContent v-else :search="searchQuery" />
+    <WorkspaceInvoicesContent v-else />
   </div>
 </template>
 
