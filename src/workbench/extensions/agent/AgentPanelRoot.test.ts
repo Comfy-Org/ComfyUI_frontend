@@ -227,6 +227,60 @@ describe('AgentPanelRoot attach flow', () => {
       content: 'make it pop',
       attachments: ['uploaded_cat.png']
     })
+
+    // The sent attachment stays visible in the transcript's user message
+    // (thumbnail + name), not just on the wire.
+    expect(screen.getByAltText('cat.png')).toBeInTheDocument()
+    expect(screen.getByText('cat.png')).toBeInTheDocument()
+  })
+
+  it('shows an uploading chip and blocks send until the upload settles', async () => {
+    let settleUpload: () => void = () => {}
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith('/api/upload/image')) {
+        await new Promise<void>((resolve) => {
+          settleUpload = resolve
+        })
+        return new Response(
+          JSON.stringify({
+            name: 'uploaded_cat.png',
+            subfolder: '',
+            type: 'input'
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response(
+        JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }),
+        { status: 202, headers: { 'Content-Type': 'application/json' } }
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const file = new File(['x'], 'cat.png', { type: 'image/png' })
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      file
+    )
+
+    // The chip is visible the moment the file is picked, marked uploading,
+    // and the send stays blocked so the unfinished ref cannot be dropped.
+    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(i18n.global.t('agent.uploading'))
+    ).toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox'), 'make it pop')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+
+    settleUpload()
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+    )
+    expect(
+      screen.queryByLabelText(i18n.global.t('agent.uploading'))
+    ).not.toBeInTheDocument()
   })
 })
 

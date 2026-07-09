@@ -21,6 +21,14 @@ export interface SessionNotice {
   text: string
 }
 
+// A settled upload as the send path consumes it: the server ref rides the POST,
+// name + preview stay behind on the transcript's user entry.
+export interface SentAttachment {
+  ref: string
+  name: string
+  previewUrl?: string
+}
+
 // The host resolves the active canvas tab to the workflow the turn should edit.
 // `speculative` marks an id the server has not confirmed owning (a saved tab's
 // persisted uuid): a 403 on it retries once without, letting the server fall
@@ -134,7 +142,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   // False on any failure; hosts may restore the composer draft from it.
   async function sendMessage(
     text: string,
-    attachments?: string[]
+    attachments?: SentAttachment[]
   ): Promise<boolean> {
     if (sending.value) {
       // The composer already cleared its draft; a silently dropped send loses the text.
@@ -152,7 +160,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const input = {
       content: text,
       selection: selection?.(),
-      attachments
+      attachments: attachments?.map((attachment) => attachment.ref)
     }
     async function postTurn(threadId: string) {
       try {
@@ -179,7 +187,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       // The ONE branding seam: the server-minted message_id becomes the TurnId.
       const turnId = ack.message_id as TurnId
-      conversationStore.recordUser(turnId, text)
+      conversationStore.recordUser(
+        turnId,
+        text,
+        attachments?.map(({ name, previewUrl }) => ({ name, previewUrl }))
+      )
       conversationStore.startTurn(turnId)
       return true
     } catch (error) {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComposerAttachment } from './useComposer'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
 
 function fileOfSize(name: string, size: number): File {
@@ -8,74 +9,105 @@ function fileOfSize(name: string, size: number): File {
   return file
 }
 
+// A live chip registry mirroring what the composer does with the callbacks, so
+// each test asserts the states a user would actually see.
+function chipRegistry() {
+  const chips: ComposerAttachment[] = []
+  return {
+    chips,
+    stage: (attachment: ComposerAttachment) => chips.push(attachment),
+    update: (id: string, patch: Partial<ComposerAttachment>) => {
+      const index = chips.findIndex((chip) => chip.id === id)
+      if (index >= 0) chips[index] = { ...chips[index], ...patch }
+    },
+    remove: (id: string) => {
+      const index = chips.findIndex((chip) => chip.id === id)
+      if (index >= 0) chips.splice(index, 1)
+    }
+  }
+}
+
 describe('useAttachment', () => {
-  it('rejects files over 20MB before uploading', async () => {
+  it('rejects files over 20MB before staging or uploading', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
-    const { addFiles } = useAttachment({ upload, onError })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    const staged = await addFiles([
-      fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1)
-    ])
+    await addFiles([fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1)])
 
-    expect(staged).toEqual([])
+    expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
   })
 
-  it('uploads a valid file and forwards its server ref and name', async () => {
-    const upload = vi
-      .fn()
-      .mockResolvedValue({ ref: 'uploaded_cat.png', url: 'blob:cat' })
-    const { addFiles } = useAttachment({ upload })
+  it('stages an uploading chip immediately, then settles it with the server ref', async () => {
+    let resolveUpload: (result: { ref: string }) => void = () => {}
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolveUpload = resolve
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
 
-    const staged = await addFiles([fileOfSize('cat.png', 1024)])
+    const batch = addFiles([fileOfSize('cat.png', 1024)])
 
-    expect(upload).toHaveBeenCalledOnce()
-    expect(staged).toEqual([
-      {
-        id: 'uploaded_cat.png:cat.png',
-        name: 'cat.png',
-        ref: 'uploaded_cat.png',
-        previewUrl: 'blob:cat'
-      }
-    ])
+    // Visible before the upload finishes: name + preview, marked uploading.
+    expect(registry.chips).toHaveLength(1)
+    expect(registry.chips[0]).toMatchObject({
+      name: 'cat.png',
+      ref: '',
+      uploading: true
+    })
+    expect(registry.chips[0].previewUrl).toBeTruthy()
+
+    resolveUpload({ ref: 'uploaded_cat.png' })
+    await batch
+    expect(registry.chips[0]).toMatchObject({
+      ref: 'uploaded_cat.png',
+      uploading: false
+    })
   })
 
-  it('does not stage a file whose upload fails, and surfaces the error', async () => {
+  it('removes the chip and surfaces the error when the upload fails', async () => {
     const upload = vi.fn().mockRejectedValue(new Error('network down'))
     const onError = vi.fn()
-    const { addFiles } = useAttachment({ upload, onError })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    const staged = await addFiles([fileOfSize('cat.png', 1024)])
+    await addFiles([fileOfSize('cat.png', 1024)])
 
-    expect(staged).toEqual([])
+    expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
   })
 
-  it('keeps earlier staged files and continues the batch when one upload fails', async () => {
+  it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
     const upload = vi
       .fn()
-      .mockResolvedValueOnce({ ref: 'a.png', url: 'blob:a' })
+      .mockResolvedValueOnce({ ref: 'a.png' })
       .mockRejectedValueOnce(new Error('boom'))
-      .mockResolvedValueOnce({ ref: 'c.png', url: 'blob:c' })
+      .mockResolvedValueOnce({ ref: 'c.png' })
     const onError = vi.fn()
-    const { addFiles, pending } = useAttachment({ upload, onError })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    const staged = await addFiles([
+    await addFiles([
       fileOfSize('a.png', 10),
       fileOfSize('b.png', 10),
       fileOfSize('c.png', 10)
     ])
 
-    expect(staged.map((item) => item.ref)).toEqual(['a.png', 'c.png'])
+    expect(registry.chips.map((chip) => chip.ref)).toEqual(['a.png', 'c.png'])
+    expect(registry.chips.every((chip) => chip.uploading === false)).toBe(true)
     expect(onError).toHaveBeenCalledWith('b.png could not be uploaded')
-    expect(pending.value).toBe(false)
   })
 
   it('calls preventDefault before doing any work on drop', async () => {
     const upload = vi.fn().mockResolvedValue({ ref: 'r' })
-    const { onDrop } = useAttachment({ upload })
+    const registry = chipRegistry()
+    const { onDrop } = useAttachment({ upload, ...registry })
     const preventDefault = vi.fn()
     const event = {
       preventDefault,

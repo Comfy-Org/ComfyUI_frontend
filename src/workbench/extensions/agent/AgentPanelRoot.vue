@@ -355,10 +355,7 @@ function onSend(text: string, attachments: ComposerAttachment[]): void {
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(
-    text,
-    attachments.map((attachment) => attachment.ref)
-  )
+  void sendMessage(text, attachments)
 }
 
 function onStop(): void {
@@ -378,7 +375,10 @@ const attachment = useAttachment({
   upload: async (file) => ({
     ref: (await rest.uploadImage(file, file.name)).name
   }),
-  onError: (message) => toast.add({ severity: 'error', summary: message })
+  onError: (message) => toast.add({ severity: 'error', summary: message }),
+  stage: (staged) => panelRef.value?.addAttachment(staged),
+  update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
+  remove: (id) => panelRef.value?.removeAttachment(id)
 })
 
 function onAttach(): void {
@@ -388,11 +388,7 @@ function onAttach(): void {
 async function onFilesPicked(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const files = input.files
-  if (files && files.length > 0) {
-    for (const staged of await attachment.addFiles(Array.from(files))) {
-      panelRef.value?.addAttachment(staged)
-    }
-  }
+  if (files && files.length > 0) await attachment.addFiles(Array.from(files))
   // Clear so re-picking the same file fires change again.
   input.value = ''
 }

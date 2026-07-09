@@ -352,8 +352,12 @@ describe('useAgentSession (v1 composition root)', () => {
     const session = useAgentSession({ rest, events: source })
     session.start()
 
-    await session.sendMessage('with files', ['upload_a.png', 'upload_b.png'])
+    await session.sendMessage('with files', [
+      { ref: 'upload_a.png', name: 'a.png', previewUrl: 'blob:a' },
+      { ref: 'upload_b.png', name: 'b.png' }
+    ])
 
+    // Only the server refs ride the wire; name/preview stay on the transcript.
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
       selection: undefined,

@@ -100,13 +100,24 @@ const sessionTitle = computed(() => {
   return firstUser?.text.trim().slice(0, 60) || undefined
 })
 
-// The root wires the file picker + upload and stages the result back through here, so the
-// panel forwards a staged attachment down to the composer without owning the upload path.
+// The root wires the file picker + upload lifecycle and drives the composer's
+// staged chips through these, without the panel owning the upload path.
 function addAttachment(attachment: ComposerAttachment): void {
   composerRef.value?.addAttachment(attachment)
 }
 
-defineExpose({ addAttachment })
+function updateAttachment(
+  id: string,
+  patch: Partial<ComposerAttachment>
+): void {
+  composerRef.value?.updateAttachment(id, patch)
+}
+
+function removeAttachment(id: string): void {
+  composerRef.value?.removeAttachment(id)
+}
+
+defineExpose({ addAttachment, updateAttachment, removeAttachment })
 </script>
 
 <template>

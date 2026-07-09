@@ -57,7 +57,11 @@ watch(
     <ScrollArea class="h-full" viewport-class="mx-auto max-w-[640px] p-4">
       <div class="flex flex-col gap-4">
         <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
-          <UserMessage v-if="entry.role === 'user'" :text="entry.text" />
+          <UserMessage
+            v-if="entry.role === 'user'"
+            :text="entry.text"
+            :attachments="entry.attachments"
+          />
           <AgentMessage
             v-else
             :message="entry"
