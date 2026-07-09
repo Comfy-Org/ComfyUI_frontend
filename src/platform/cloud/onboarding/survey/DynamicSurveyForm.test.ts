@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -8,8 +8,6 @@ import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
 import DynamicSurveyForm from './DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './defaultSurveySchema'
-
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 300))
 
 const renderForm = (survey: OnboardingSurvey) =>
   render(DynamicSurveyForm, {
@@ -102,9 +100,10 @@ describe('DynamicSurveyForm', () => {
 
     // No Next click — choosing the card advances the wizard.
     await clickOption(user, 'Images')
-    await flushPromises()
 
-    expect(screen.getByText('Pick everything that applies')).toBeVisible()
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
   })
 
@@ -113,16 +112,14 @@ describe('DynamicSurveyForm', () => {
     renderForm(twoStepSurvey)
 
     await clickOption(user, 'Images')
-    await flushPromises()
 
-    const submit = screen.getByRole('button', { name: 'Submit' })
+    const submit = await screen.findByRole('button', { name: 'Submit' })
     expect(submit).toBeDisabled()
 
     await clickOption(user, 'Making A')
-    await flushPromises()
     // Still on the multi step (no auto-advance), now submittable.
     expect(screen.getByText('Pick everything that applies')).toBeVisible()
-    expect(submit).toBeEnabled()
+    await waitFor(() => expect(submit).toBeEnabled())
   })
 
   it('navigates back to the previous step', async () => {
@@ -130,12 +127,12 @@ describe('DynamicSurveyForm', () => {
     renderForm(twoStepSurvey)
 
     await clickOption(user, 'Images')
-    await flushPromises()
-    expect(screen.getByText('Pick everything that applies')).toBeVisible()
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await flushPromises()
-    expect(screen.getByText('What do you want to make?')).toBeVisible()
+    expect(await screen.findByText('What do you want to make?')).toBeVisible()
   })
 
   it('offers Next on an already-answered single-select reached via Back', async () => {
@@ -143,14 +140,14 @@ describe('DynamicSurveyForm', () => {
     renderForm(twoStepSurvey)
 
     await clickOption(user, 'Images')
-    await flushPromises()
+    await screen.findByText('Pick everything that applies')
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await flushPromises()
 
-    const next = screen.getByRole('button', { name: 'Next' })
+    const next = await screen.findByRole('button', { name: 'Next' })
     await user.click(next)
-    await flushPromises()
-    expect(screen.getByText('Pick everything that applies')).toBeVisible()
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
   })
 
   it('reveals a branched follow-up step from the answer and submits it', async () => {
@@ -158,18 +155,17 @@ describe('DynamicSurveyForm', () => {
     const { emitted } = renderForm(branchedSurvey)
 
     await clickOption(user, 'Workflows')
-    await flushPromises()
-    expect(screen.getByText('What are you building?')).toBeVisible()
+    expect(await screen.findByText('What are you building?')).toBeVisible()
 
     await clickOption(user, 'Custom nodes')
-    await flushPromises()
-    await user.click(screen.getByRole('button', { name: 'Submit' }))
-    await flushPromises()
+    await user.click(await screen.findByRole('button', { name: 'Submit' }))
 
-    expect(firstSubmitPayload(emitted())).toEqual({
-      intent: 'workflows',
-      focus: 'custom_nodes'
-    })
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({
+        intent: 'workflows',
+        focus: 'custom_nodes'
+      })
+    )
   })
 
   it('hides the branched step when the answer does not match', async () => {
@@ -178,15 +174,16 @@ describe('DynamicSurveyForm', () => {
 
     // 'images' is the last visible step (focus hidden) → Submit, no branch.
     await clickOption(user, 'Images')
-    await flushPromises()
+    const submit = await screen.findByRole('button', { name: 'Submit' })
     expect(screen.queryByText('What are you building?')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Submit' }))
-    await flushPromises()
-    expect(firstSubmitPayload(emitted())).toEqual({
-      intent: 'images',
-      focus: ''
-    })
+    await user.click(submit)
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({
+        intent: 'images',
+        focus: ''
+      })
+    )
   })
 
   it('requires the "other" free-text before submitting, then submits it', async () => {
@@ -212,20 +209,19 @@ describe('DynamicSurveyForm', () => {
 
     // Selecting 'other' must NOT auto-advance — the text box is required.
     await clickOption(user, 'Somewhere else')
-    await flushPromises()
-    const submit = screen.getByRole('button', { name: 'Submit' })
+    const submit = await screen.findByRole('button', { name: 'Submit' })
     expect(submit).toBeDisabled()
 
     await user.type(
-      screen.getByPlaceholderText('Where did you find us?'),
+      await screen.findByPlaceholderText('Where did you find us?'),
       'A newsletter'
     )
-    await flushPromises()
-    expect(submit).toBeEnabled()
+    await waitFor(() => expect(submit).toBeEnabled())
 
     await user.click(submit)
-    await flushPromises()
-    expect(firstSubmitPayload(emitted())).toEqual({ source: 'A newsletter' })
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({ source: 'A newsletter' })
+    )
   })
 
   it('surfaces the free-text error once "other" text is touched then cleared', async () => {
@@ -250,14 +246,14 @@ describe('DynamicSurveyForm', () => {
     renderForm(otherSurvey)
 
     await clickOption(user, 'Somewhere else')
-    await flushPromises()
-    const input = screen.getByPlaceholderText('Where did you find us?')
+    const input = await screen.findByPlaceholderText('Where did you find us?')
     // Type then clear → the free-text field is touched but empty, so its
     // required error surfaces.
     await user.type(input, 'x')
     await user.clear(input)
-    await flushPromises()
-    expect(screen.getByText('Please describe your answer.')).toBeVisible()
+    expect(
+      await screen.findByText('Please describe your answer.')
+    ).toBeVisible()
   })
 
   it('shows a required-field error only after the user interacts, not before', async () => {
@@ -282,10 +278,10 @@ describe('DynamicSurveyForm', () => {
 
     // Select then clear → field is touched but empty → error surfaces.
     await user.click(screen.getByText('Making A'))
-    await flushPromises()
     await user.click(screen.getByText('Making A'))
-    await flushPromises()
-    expect(screen.getByText('Please select at least one option.')).toBeVisible()
+    expect(
+      await screen.findByText('Please select at least one option.')
+    ).toBeVisible()
   })
 
   it('allows advancing past an optional field while still empty', async () => {
@@ -317,8 +313,7 @@ describe('DynamicSurveyForm', () => {
     expect(next).toBeEnabled()
 
     await user.click(next)
-    await flushPromises()
-    expect(screen.getByText('Required question?')).toBeVisible()
+    expect(await screen.findByText('Required question?')).toBeVisible()
   })
 
   it('resets to the first step when the survey prop changes', async () => {
@@ -337,13 +332,13 @@ describe('DynamicSurveyForm', () => {
     })
 
     await clickOption(user, 'Images')
-    await flushPromises()
-    expect(screen.getByText('Pick everything that applies')).toBeVisible()
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
 
     await rerender({ survey: branchedSurvey })
-    await flushPromises()
     // Back on step 0 of the new survey (no Back button on the first step).
-    expect(screen.getByText('What do you want to make?')).toBeVisible()
+    expect(await screen.findByText('What do you want to make?')).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Back' })
     ).not.toBeInTheDocument()
