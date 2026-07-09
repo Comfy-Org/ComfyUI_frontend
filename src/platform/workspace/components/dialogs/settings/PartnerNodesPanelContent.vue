@@ -58,7 +58,7 @@
             v-for="node in filteredNodes"
             :key="node.id"
             :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-            class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:transition-colors [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r [&[data-state=selected]>td]:bg-secondary-background/50"
+            class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/60 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
             @click="toggleSelection(node.id)"
           >
             <TableCell>

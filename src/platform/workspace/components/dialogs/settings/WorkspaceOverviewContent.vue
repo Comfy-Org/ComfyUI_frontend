@@ -113,7 +113,7 @@
                 <TableRow
                   v-for="row in snapshotRows"
                   :key="row.userName"
-                  class="hover:bg-transparent [&:nth-child(even)>td]:bg-secondary-background/25 [&>td:first-child]:rounded-l [&>td:last-child]:rounded-r"
+                  class="hover:bg-transparent [&:hover>td]:bg-secondary-background/30 [&>td]:border-b [&>td]:border-interface-stroke/60"
                 >
                   <TableCell>
                     <div class="flex items-center gap-2">
