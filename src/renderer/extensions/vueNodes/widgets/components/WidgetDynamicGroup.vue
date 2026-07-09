@@ -37,7 +37,7 @@
         <div
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              'z-10 -ml-3 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               fw.linked && 'opacity-100'
             )
           "
