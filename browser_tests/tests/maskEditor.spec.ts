@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { toNodeId } from '@/types/nodeId'
 
 const wstest = mergeTests(test, webSocketFixture)
 
@@ -45,6 +46,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     { tag: ['@smoke', '@screenshot'] },
     async ({ comfyPage, maskEditor }) => {
       const { nodeId } = await maskEditor.loadImageOnNode()
+      await comfyPage.canvasOps.pan({ x: 0, y: 40 }, { x: 300, y: 300 })
 
       const nodeHeader = comfyPage.vueNodes
         .getNodeLocator(nodeId)
@@ -331,7 +333,8 @@ wstest(
 
     async function getNodeOutput() {
       return await comfyPage.page.evaluate(
-        () => graph!.getNodeById('1')!.images?.[0]?.filename
+        (nodeId) => graph!.getNodeById(nodeId)!.images?.[0]?.filename,
+        toNodeId(1)
       )
     }
 

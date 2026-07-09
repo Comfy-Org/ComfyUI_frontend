@@ -1,7 +1,7 @@
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 
-export interface AccountPreconditionContext {
+interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
 }
@@ -24,7 +24,9 @@ export function useAccountPreconditionDialog() {
         )
         return
       case 'subscription':
-        void dialogService.showSubscriptionRequiredDialog()
+        void dialogService.showSubscriptionRequiredDialog({
+          reason: 'subscription_required'
+        })
         return
       case 'credits':
         void dialogService.showTopUpCreditsDialog({

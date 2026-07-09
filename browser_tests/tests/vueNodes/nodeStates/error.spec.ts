@@ -5,6 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 import {
   cleanupFakeModel,
   dismissErrorOverlay,
@@ -59,12 +60,13 @@ async function selectLoadImageNodeForPaste(
   comfyPage: ComfyPage,
   loadImageId: string
 ): Promise<void> {
+  const localLoadImageId = toNodeId(loadImageId)
   await comfyPage.page.evaluate((nodeId) => {
-    const node = window.app!.graph.getNodeById(Number(nodeId))
+    const node = window.app!.graph.getNodeById(nodeId)
     if (!node) throw new Error(`Load Image node ${nodeId} not found`)
     window.app!.canvas.selectNode(node)
     window.app!.canvas.current_node = node
-  }, loadImageId)
+  }, localLoadImageId)
 }
 
 async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
@@ -147,7 +149,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
             }
             return index
           },
-          { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
+          { nodeId: toNodeId(ksamplerId), inputName: KSAMPLER_MODEL_INPUT_NAME }
         )
         const modelInputSlotRow = comfyPage.vueNodes.getInputSlotRow(
           ksamplerId,

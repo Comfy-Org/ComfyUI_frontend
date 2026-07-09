@@ -96,11 +96,11 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -109,14 +109,15 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
+const { t } = useI18n()
+
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const customerEventService = useCustomerEventsService()
 
-const { flags } = useFeatureFlags()
-const useBillingApi = computed(() => isCloud && flags.teamWorkspacesEnabled)
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const pagination = ref({
   page: 1,
@@ -139,7 +140,12 @@ const tooltipContentMap = computed(() => {
   return map
 })
 
+// A billing-route flip can overlap two loads against different backends; only
+// the latest may mutate state, so a superseded response is discarded.
+let latestLoadToken = 0
+
 const loadEvents = async () => {
+  const loadToken = ++latestLoadToken
   loading.value = true
   error.value = null
 
@@ -148,9 +154,16 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = useBillingApi.value
+    const response = shouldUseWorkspaceBilling.value
       ? await workspaceApi.getBillingEvents(params)
       : await customerEventService.getMyEvents(params)
+
+    // Completion telemetry must run even when a mid-checkout route flip
+    // supersedes this load, since legacy and workspace backends emit different
+    // top-up events and the winning fetch may not carry the completion yet.
+    useTelemetry()?.checkForCompletedTopup(response?.events)
+
+    if (loadToken !== latestLoadToken) return
 
     if (response) {
       if (response.events) {
@@ -165,24 +178,25 @@ const loadEvents = async () => {
         pagination.value.limit = response.limit
       }
 
-      if (response.total) {
+      if (response.total != null) {
         pagination.value.total = response.total
       }
 
-      if (response.totalPages) {
+      if (response.totalPages != null) {
         pagination.value.totalPages = response.totalPages
       }
-
-      // Check if a pending top-up has completed
-      useTelemetry()?.checkForCompletedTopup(response.events)
     } else {
-      error.value = customerEventService.error.value || 'Failed to load events'
+      const legacyError = shouldUseWorkspaceBilling.value
+        ? null
+        : customerEventService.error.value
+      error.value = legacyError || t('credits.loadEventsError')
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Unknown error'
+    if (loadToken !== latestLoadToken) return
+    error.value = t('credits.loadEventsUnknownError')
     console.error('Error loading events:', err)
   } finally {
-    loading.value = false
+    if (loadToken === latestLoadToken) loading.value = false
   }
 }
 
@@ -197,6 +211,12 @@ const refresh = async () => {
   pagination.value.page = 1
   await loadEvents()
 }
+
+watch(shouldUseWorkspaceBilling, () => {
+  refresh().catch((error) => {
+    console.error('Error loading events:', error)
+  })
+})
 
 defineExpose({
   refresh

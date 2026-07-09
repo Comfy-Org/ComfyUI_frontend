@@ -73,7 +73,7 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionErrorStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
           ? 'Execution error'
           : null
       "
