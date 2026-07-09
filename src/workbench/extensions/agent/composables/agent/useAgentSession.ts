@@ -34,7 +34,7 @@ interface SentAttachment {
 
 // A consumed @-tag: the node id rides the POST selection, the title stays
 // behind on the transcript's user entry. The id resolves against the graph
-// uploaded with the same POST (workflow.content).
+// uploaded with the same POST (workflow.graph).
 interface SentTag {
   id: string
   title: string
