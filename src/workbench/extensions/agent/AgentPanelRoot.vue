@@ -80,9 +80,15 @@ const {
   isLive: () => agentPanelStore.isOpen
 })
 
-// The @ picker lists the active graph's nodes, computed on open (not watched).
+// The graph the canvas is showing (root or an open subgraph); the deprecated
+// app.graph getter only ever returns root, which misses subgraph-inner nodes.
+function viewedGraphNodes() {
+  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+}
+
+// The @ picker lists the viewed graph's nodes, computed on open (not watched).
 function mentionableNodes(): SelectedNode[] {
-  return (app.graph?.nodes ?? []).map((node) => ({
+  return viewedGraphNodes().map((node) => ({
     id: String(node.id),
     title: node.title || node.type
   }))
@@ -372,12 +378,23 @@ const coachSteps: CoachStep[] = [
   }
 ]
 
+// The agent's server-side draft never mirrors the live canvas, so a tagged
+// node travels with its serialized definition (dropped if it left the graph).
+function tagsWithNodeData(tags: SelectedNode[]) {
+  return tags.map((tag) => ({
+    ...tag,
+    data: viewedGraphNodes()
+      .find((node) => String(node.id) === tag.id)
+      ?.serialize()
+  }))
+}
+
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(text, attachments, consumeSelection())
+  void sendMessage(text, attachments, tagsWithNodeData(consumeSelection()))
 }
 
 function onStop(): void {
