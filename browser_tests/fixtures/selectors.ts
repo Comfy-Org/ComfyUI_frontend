@@ -110,7 +110,8 @@ export const TestIds = {
   },
   propertiesPanel: {
     root: 'properties-panel',
-    errorsTab: 'panel-tab-errors'
+    errorsTab: 'panel-tab-errors',
+    selectionContextStrip: 'selection-context-strip'
   },
   assets: {
     browserModal: 'asset-browser-modal',
