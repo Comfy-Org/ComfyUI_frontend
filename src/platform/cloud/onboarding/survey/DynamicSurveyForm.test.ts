@@ -1,320 +1,383 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
 import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
 import DynamicSurveyForm from './DynamicSurveyForm.vue'
-
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { back: 'Back', next: 'Next', submit: 'Submit' },
-      cloudOnboarding: {
-        survey: {
-          intro: 'Help us tailor your ComfyUI experience.',
-          errors: {
-            chooseAnOption: 'Please choose an option.',
-            selectAtLeastOne: 'Please select at least one option.',
-            describeAnswer: 'Please describe your answer.'
-          }
-        }
-      }
-    }
-  }
-})
+import { defaultOnboardingSurvey } from './defaultSurveySchema'
 
 const renderForm = (survey: OnboardingSurvey) =>
   render(DynamicSurveyForm, {
-    global: { plugins: [PrimeVue, i18n] },
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: enMessages }
+        })
+      ]
+    },
     props: { survey }
   })
 
+const clickOption = (user: ReturnType<typeof userEvent.setup>, label: string) =>
+  user.click(screen.getByText(label))
+
+const firstSubmitPayload = (
+  emitted: Record<string, unknown[]>
+): Record<string, unknown> | undefined =>
+  (emitted.submit?.[0] as [Record<string, unknown>] | undefined)?.[0]
+
 const twoStepSurvey: OnboardingSurvey = {
   version: 1,
-  introKey: 'cloudOnboarding.survey.intro',
   fields: [
     {
-      id: 'usage',
-      type: 'single',
-      label: 'How do you plan to use ComfyUI?',
-      required: true,
-      options: [
-        { value: 'personal', label: 'Personal use' },
-        { value: 'work', label: 'Work' }
-      ]
-    },
-    {
       id: 'intent',
-      type: 'multi',
-      label: 'What do you want to create with ComfyUI?',
+      type: 'single',
+      label: 'What do you want to make?',
       required: true,
       options: [
         { value: 'images', label: 'Images' },
-        { value: 'videos', label: 'Videos' }
+        { value: 'video', label: 'Video' }
+      ]
+    },
+    {
+      id: 'making',
+      type: 'multi',
+      label: 'Pick everything that applies',
+      required: true,
+      options: [
+        { value: 'a', label: 'Making A' },
+        { value: 'b', label: 'Making B' }
       ]
     }
   ]
 }
 
-describe('DynamicSurveyForm', () => {
-  it('renders the intro text and the first field options', () => {
-    renderForm(twoStepSurvey)
+const branchedSurvey: OnboardingSurvey = {
+  version: 1,
+  fields: [
+    {
+      id: 'intent',
+      type: 'single',
+      label: 'What do you want to make?',
+      required: true,
+      options: [
+        { value: 'workflows', label: 'Workflows' },
+        { value: 'images', label: 'Images' }
+      ]
+    },
+    {
+      id: 'focus',
+      type: 'single',
+      label: 'What are you building?',
+      required: true,
+      showWhen: { field: 'intent', equals: 'workflows' },
+      options: [{ value: 'custom_nodes', label: 'Custom nodes' }]
+    }
+  ]
+}
 
-    expect(
-      screen.getByText('Help us tailor your ComfyUI experience.')
-    ).toBeInTheDocument()
-    expect(screen.getByText('How do you plan to use ComfyUI?')).toBeVisible()
-    expect(screen.getByLabelText('Personal use')).toBeInTheDocument()
-    expect(screen.getByLabelText('Work')).toBeInTheDocument()
+describe('DynamicSurveyForm', () => {
+  it('renders the real default schema (v3) with its first question and options', () => {
+    expect(defaultOnboardingSurvey.version).toBe(3)
+    const firstField = defaultOnboardingSurvey.fields[0]!
+    renderForm(defaultOnboardingSurvey)
+
+    expect(screen.getByText('What do you want to make?')).toBeVisible()
+    expect(screen.getByText('Images')).toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(
+      firstField.options!.length
+    )
   })
 
-  it('disables Next until the user selects an option, then advances', async () => {
+  it('auto-advances when a single-select option is chosen', async () => {
     const user = userEvent.setup()
     renderForm(twoStepSurvey)
 
-    const next = screen.getByRole('button', { name: 'Next' })
-    expect(next).toBeDisabled()
-
-    await user.click(screen.getByLabelText('Personal use'))
-    expect(next).toBeEnabled()
-
-    await user.click(next)
-    await flushPromises()
+    // No Next click — choosing the card advances the wizard.
+    await clickOption(user, 'Images')
 
     expect(
-      screen.getByText('What do you want to create with ComfyUI?')
+      await screen.findByText('Pick everything that applies')
     ).toBeVisible()
-    expect(screen.getByLabelText('Images')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+  })
+
+  it('does not auto-advance a multi-select step; Submit gates on a choice', async () => {
+    const user = userEvent.setup()
+    renderForm(twoStepSurvey)
+
+    await clickOption(user, 'Images')
+
+    const submit = await screen.findByRole('button', { name: 'Submit' })
+    expect(submit).toBeDisabled()
+
+    await clickOption(user, 'Making A')
+    // Still on the multi step (no auto-advance), now submittable.
+    expect(screen.getByText('Pick everything that applies')).toBeVisible()
+    await waitFor(() => expect(submit).toBeEnabled())
   })
 
   it('navigates back to the previous step', async () => {
     const user = userEvent.setup()
     renderForm(twoStepSurvey)
 
-    await user.click(screen.getByLabelText('Personal use'))
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await flushPromises()
+    await clickOption(user, 'Images')
     expect(
-      screen.getByText('What do you want to create with ComfyUI?')
+      await screen.findByText('Pick everything that applies')
     ).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await flushPromises()
-    expect(screen.getByText('How do you plan to use ComfyUI?')).toBeVisible()
+    expect(await screen.findByText('What do you want to make?')).toBeVisible()
   })
 
-  it('resolves option and field labels via labelKey when provided', () => {
-    const localizedI18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: {
-        en: {
-          g: { back: 'Back', next: 'Next', submit: 'Submit' },
-          cloudOnboarding: {
-            survey: {
-              intro: 'Help us tailor your ComfyUI experience.',
-              errors: {
-                chooseAnOption: '',
-                selectAtLeastOne: '',
-                describeAnswer: ''
-              }
-            }
-          },
-          survey_label: 'Localized question?',
-          survey_a: 'Localized A',
-          survey_b: 'Localized B'
-        }
-      }
-    })
+  it('offers Next on an already-answered single-select reached via Back', async () => {
+    const user = userEvent.setup()
+    renderForm(twoStepSurvey)
 
-    render(DynamicSurveyForm, {
-      global: { plugins: [PrimeVue, localizedI18n] },
-      props: {
-        survey: {
-          version: 1,
-          fields: [
-            {
-              id: 'q',
-              type: 'single',
-              labelKey: 'survey_label',
-              required: true,
-              options: [
-                { value: 'a', labelKey: 'survey_a' },
-                { value: 'b', labelKey: 'survey_b' }
-              ]
-            }
-          ]
-        }
-      }
-    })
+    await clickOption(user, 'Images')
+    await screen.findByText('Pick everything that applies')
+    await user.click(screen.getByRole('button', { name: 'Back' }))
 
-    expect(screen.getByText('Localized question?')).toBeVisible()
-    expect(screen.getByLabelText('Localized A')).toBeInTheDocument()
-    expect(screen.getByLabelText('Localized B')).toBeInTheDocument()
+    const next = await screen.findByRole('button', { name: 'Next' })
+    await user.click(next)
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
   })
 
-  it('renders server-supplied translations from a label locale map', () => {
-    const koreanI18n = createI18n({
-      legacy: false,
-      locale: 'ko',
-      fallbackLocale: 'en',
-      messages: {
-        en: {
-          g: { back: 'Back', next: 'Next', submit: 'Submit' },
-          cloudOnboarding: {
-            survey: {
-              intro: '',
-              errors: {
-                chooseAnOption: '',
-                selectAtLeastOne: '',
-                describeAnswer: ''
-              }
-            }
-          }
-        },
-        ko: { g: { back: '뒤로', next: '다음', submit: '제출' } }
-      }
-    })
+  it('reveals a branched follow-up step from the answer and submits it', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderForm(branchedSurvey)
 
-    render(DynamicSurveyForm, {
-      global: { plugins: [PrimeVue, koreanI18n] },
-      props: {
-        survey: {
-          version: 1,
-          fields: [
-            {
-              id: 'usage',
-              type: 'single',
-              label: {
-                en: 'How will you use it?',
-                ko: '어떻게 사용하시겠어요?'
-              },
-              required: true,
-              options: [
-                {
-                  value: 'personal',
-                  label: { en: 'Personal use', ko: '개인 용도' }
-                },
-                { value: 'work', label: { en: 'Work', ko: '업무' } }
-              ]
-            }
-          ]
-        }
-      }
-    })
+    await clickOption(user, 'Workflows')
+    expect(await screen.findByText('What are you building?')).toBeVisible()
 
-    expect(screen.getByText('어떻게 사용하시겠어요?')).toBeVisible()
-    expect(screen.getByLabelText('개인 용도')).toBeInTheDocument()
-    expect(screen.getByLabelText('업무')).toBeInTheDocument()
+    await clickOption(user, 'Custom nodes')
+    await user.click(await screen.findByRole('button', { name: 'Submit' }))
+
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({
+        intent: 'workflows',
+        focus: 'custom_nodes'
+      })
+    )
   })
 
-  it('falls back to English when current locale missing from label map', () => {
-    const fallbackI18n = createI18n({
-      legacy: false,
-      locale: 'fr',
-      fallbackLocale: 'en',
-      messages: {
-        en: {
-          g: { back: 'Back', next: 'Next', submit: 'Submit' },
-          cloudOnboarding: {
-            survey: {
-              intro: '',
-              errors: {
-                chooseAnOption: '',
-                selectAtLeastOne: '',
-                describeAnswer: ''
-              }
-            }
-          }
-        },
-        fr: {}
-      }
-    })
+  it('hides the branched step when the answer does not match', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderForm(branchedSurvey)
 
-    render(DynamicSurveyForm, {
-      global: { plugins: [PrimeVue, fallbackI18n] },
-      props: {
-        survey: {
-          version: 1,
-          fields: [
-            {
-              id: 'q',
-              type: 'single',
-              label: { en: 'English question', ko: '한국어' },
-              required: true,
-              options: [
-                { value: 'a', label: { en: 'English A', ko: '한국어 A' } }
-              ]
-            }
+    // 'images' is the last visible step (focus hidden) → Submit, no branch.
+    await clickOption(user, 'Images')
+    const submit = await screen.findByRole('button', { name: 'Submit' })
+    expect(screen.queryByText('What are you building?')).not.toBeInTheDocument()
+
+    await user.click(submit)
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({
+        intent: 'images',
+        focus: ''
+      })
+    )
+  })
+
+  it('requires the "other" free-text before submitting, then submits it', async () => {
+    const user = userEvent.setup()
+    const otherSurvey: OnboardingSurvey = {
+      version: 1,
+      fields: [
+        {
+          id: 'source',
+          type: 'single',
+          label: 'How did you find us?',
+          required: true,
+          allowOther: true,
+          otherFieldId: 'sourceOther',
+          options: [
+            { value: 'search', label: 'Web search' },
+            { value: 'other', label: 'Somewhere else' }
           ]
         }
-      }
+      ]
+    }
+    const { emitted } = renderForm(otherSurvey)
+
+    // Selecting 'other' must NOT auto-advance — the text box is required.
+    await clickOption(user, 'Somewhere else')
+    const submit = await screen.findByRole('button', { name: 'Submit' })
+    expect(submit).toBeDisabled()
+
+    await user.type(
+      await screen.findByPlaceholderText('Where did you find us?'),
+      'A newsletter'
+    )
+    await waitFor(() => expect(submit).toBeEnabled())
+
+    await user.click(submit)
+    await waitFor(() =>
+      expect(firstSubmitPayload(emitted())).toEqual({ source: 'A newsletter' })
+    )
+  })
+
+  it('surfaces the free-text error once "other" text is touched then cleared', async () => {
+    const user = userEvent.setup()
+    const otherSurvey: OnboardingSurvey = {
+      version: 1,
+      fields: [
+        {
+          id: 'source',
+          type: 'single',
+          label: 'How did you find us?',
+          required: true,
+          allowOther: true,
+          otherFieldId: 'sourceOther',
+          options: [
+            { value: 'search', label: 'Web search' },
+            { value: 'other', label: 'Somewhere else' }
+          ]
+        }
+      ]
+    }
+    renderForm(otherSurvey)
+
+    await clickOption(user, 'Somewhere else')
+    const input = await screen.findByPlaceholderText('Where did you find us?')
+    // Type then clear → the free-text field is touched but empty, so its
+    // required error surfaces.
+    await user.type(input, 'x')
+    await user.clear(input)
+    expect(
+      await screen.findByText('Please describe your answer.')
+    ).toBeVisible()
+  })
+
+  it('shows a required-field error only after the user interacts, not before', async () => {
+    const user = userEvent.setup()
+    renderForm({
+      version: 1,
+      fields: [
+        {
+          id: 'making',
+          type: 'multi',
+          label: 'Pick everything that applies',
+          required: true,
+          options: [{ value: 'a', label: 'Making A' }]
+        }
+      ]
     })
 
-    // fr is not in the map → falls back to en
-    expect(screen.getByText('English question')).toBeVisible()
-    expect(screen.getByLabelText('English A')).toBeInTheDocument()
+    // No error on first render (field untouched).
+    expect(
+      screen.queryByText('Please select at least one option.')
+    ).not.toBeInTheDocument()
+
+    // Select then clear → field is touched but empty → error surfaces.
+    await user.click(screen.getByText('Making A'))
+    await user.click(screen.getByText('Making A'))
+    expect(
+      await screen.findByText('Please select at least one option.')
+    ).toBeVisible()
   })
 
   it('allows advancing past an optional field while still empty', async () => {
     const user = userEvent.setup()
-    render(DynamicSurveyForm, {
-      global: { plugins: [PrimeVue, i18n] },
-      props: {
-        survey: {
-          version: 1,
-          fields: [
-            {
-              id: 'q1',
-              type: 'single',
-              label: 'Optional question?',
-              options: [
-                { value: 'a', label: 'A' },
-                { value: 'b', label: 'B' }
-              ]
-              // no required: true — should be skippable
-            },
-            {
-              id: 'q2',
-              type: 'single',
-              label: 'Required question?',
-              required: true,
-              options: [{ value: 'c', label: 'C' }]
-            }
+    renderForm({
+      version: 1,
+      fields: [
+        {
+          id: 'q1',
+          type: 'single',
+          label: 'Optional question?',
+          options: [
+            { value: 'a', label: 'A' },
+            { value: 'b', label: 'B' }
           ]
+          // no required: true — should be skippable
+        },
+        {
+          id: 'q2',
+          type: 'single',
+          label: 'Required question?',
+          required: true,
+          options: [{ value: 'c', label: 'C' }]
         }
-      }
+      ]
     })
 
     const next = screen.getByRole('button', { name: 'Next' })
     expect(next).toBeEnabled()
 
     await user.click(next)
-    await flushPromises()
-    expect(screen.getByText('Required question?')).toBeVisible()
+    expect(await screen.findByText('Required question?')).toBeVisible()
   })
 
-  it('enables Submit only after the multi-select field has at least one choice', async () => {
+  it('resets to the first step when the survey prop changes', async () => {
     const user = userEvent.setup()
-    renderForm(twoStepSurvey)
+    const { rerender } = render(DynamicSurveyForm, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      },
+      props: { survey: twoStepSurvey }
+    })
 
-    await user.click(screen.getByLabelText('Work'))
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await flushPromises()
+    await clickOption(user, 'Images')
+    expect(
+      await screen.findByText('Pick everything that applies')
+    ).toBeVisible()
 
-    const submitBtn = screen.getByRole('button', { name: 'Submit' })
-    expect(submitBtn).toBeDisabled()
+    await rerender({ survey: branchedSurvey })
+    // Back on step 0 of the new survey (no Back button on the first step).
+    expect(await screen.findByText('What do you want to make?')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Back' })
+    ).not.toBeInTheDocument()
+  })
 
-    await user.click(screen.getByRole('checkbox', { name: /Images/i }))
-    await flushPromises()
-    expect(submitBtn).toBeEnabled()
+  it('renders server-supplied label translations and falls back to English', () => {
+    render(DynamicSurveyForm, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'ko',
+            fallbackLocale: 'en',
+            messages: { en: enMessages, ko: { g: { next: '다음' } } }
+          })
+        ]
+      },
+      props: {
+        survey: {
+          version: 1,
+          fields: [
+            {
+              id: 'intent',
+              type: 'single',
+              label: { en: 'What will you make?', ko: '무엇을 만들 건가요?' },
+              required: true,
+              options: [
+                // ko provided → localized; ko missing → English fallback
+                { value: 'images', label: { en: 'Images', ko: '이미지' } },
+                { value: 'video', label: { en: 'Video' } }
+              ]
+            }
+          ]
+        }
+      }
+    })
+
+    expect(screen.getByText('무엇을 만들 건가요?')).toBeVisible()
+    expect(screen.getByText('이미지')).toBeInTheDocument()
+    expect(screen.getByText('Video')).toBeInTheDocument()
   })
 })

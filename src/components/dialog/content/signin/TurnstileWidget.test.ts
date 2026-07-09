@@ -261,4 +261,138 @@ describe('TurnstileWidget', () => {
 
     expect(api.remove).toHaveBeenCalledWith('widget-id')
   })
+
+  // A widget that never resolves (broken script, ad-blocker, CDN outage, or a
+  // hung challenge) must eventually tell the parent it cannot be relied on,
+  // so submission can fall back instead of blocking a legitimate signup
+  // forever.
+  describe('unavailable fallback', () => {
+    it('reports unavailable when the Turnstile script fails to load', async () => {
+      mockLoadTurnstile.mockRejectedValue(new Error('script failed'))
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+    })
+
+    it('reports unavailable on a challenge error', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      options()!['error-callback']!()
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+    })
+
+    it('clears the unavailable fallback once a token is solved', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+
+      const { emitted } = renderWidget()
+      await flush()
+
+      options()!['error-callback']!()
+      await flush()
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+
+      options()!.callback!('token-abc')
+      await flush()
+
+      expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+    })
+
+    it('falls back once the widget fails to resolve within the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+
+        const { emitted } = renderWidget()
+        // Let the onMounted hook's `await loadTurnstile()` microtask settle
+        // and render() run, without yet advancing to the timeout itself.
+        await vi.advanceTimersByTimeAsync(0)
+        expect(options()).toBeDefined()
+        expect(emitted()['update:unavailable']).toBeUndefined()
+
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('does not fall back once a token arrives before the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+
+        const { emitted } = renderWidget()
+        await vi.advanceTimersByTimeAsync(0)
+
+        options()!.callback!('token-abc')
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']).toBeUndefined()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('resets the widget to fetch a fresh challenge on token expiry', async () => {
+      const { api, options } = fakeTurnstile()
+      mockLoadTurnstile.mockResolvedValue(api)
+      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+      renderWidget()
+      await flush()
+
+      options()!.callback!('token-abc')
+      options()!['expired-callback']!()
+      await flush()
+
+      expect(api.reset).toHaveBeenCalledWith('widget-id')
+    })
+
+    it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        const { api, options } = fakeTurnstile()
+        mockLoadTurnstile.mockResolvedValue(api)
+        window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+        const { emitted } = renderWidget()
+        await vi.advanceTimersByTimeAsync(0)
+
+        // Establish a solved, available widget: an initial error marks it
+        // unavailable, then solving a challenge clears that (the same
+        // transition the existing "clears the unavailable fallback" test
+        // verifies), so the expiry below is the only thing driving fallback.
+        options()!['error-callback']!()
+        options()!.callback!('token-abc')
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+
+        // The token later expires (e.g. tab backgrounded past its ~300s
+        // lifetime) without the widget itself erroring.
+        options()!['expired-callback']!()
+        await vi.advanceTimersByTimeAsync(0)
+
+        // A fresh challenge was requested, but nothing solves it before the
+        // re-armed load timeout elapses, so submission must eventually be
+        // unblocked rather than staying stuck forever.
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([false])
+        await vi.advanceTimersByTimeAsync(9_000)
+
+        expect(emitted()['update:unavailable']?.at(-1)).toEqual([true])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
 })

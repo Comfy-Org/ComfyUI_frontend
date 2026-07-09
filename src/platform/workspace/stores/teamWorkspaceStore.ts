@@ -103,6 +103,14 @@ function setLastWorkspaceId(workspaceId: string): void {
   }
 }
 
+function clearLastWorkspaceId(): void {
+  try {
+    localStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
+  } catch {
+    console.warn('Failed to clear last workspace ID from localStorage')
+  }
+}
+
 const MAX_OWNED_WORKSPACES = 10
 export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
@@ -360,6 +368,20 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     } finally {
       isFetchingWorkspaces.value = false
     }
+  }
+
+  /**
+   * Drop a revoked/deleted active workspace and reload so init falls back to the
+   * personal workspace. Skips the personal workspace to avoid a reload loop.
+   */
+  function forgetRevokedActiveWorkspace(workspaceId: string): void {
+    if (activeWorkspaceId.value !== workspaceId) return
+
+    const revoked = workspaces.value.find((w) => w.id === workspaceId)
+    if (revoked?.type === 'personal') return
+
+    clearLastWorkspaceId()
+    window.location.reload()
   }
 
   /**
@@ -744,6 +766,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Workspace Actions
     switchWorkspace,
+    forgetRevokedActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
     renameWorkspace,

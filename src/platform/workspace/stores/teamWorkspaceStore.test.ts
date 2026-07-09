@@ -360,6 +360,35 @@ describe('useTeamWorkspaceStore', () => {
     })
   })
 
+  describe('forgetRevokedActiveWorkspace', () => {
+    it.for([
+      { type: 'team', workspace: mockTeamWorkspace, reloads: 1 },
+      { type: 'personal', workspace: mockPersonalWorkspace, reloads: 0 }
+    ])(
+      'reloads $reloads time(s) when the active $type workspace is revoked',
+      async ({ workspace, reloads }) => {
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+        store.activeWorkspaceId = workspace.id
+
+        store.forgetRevokedActiveWorkspace(workspace.id)
+
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledTimes(reloads)
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
+      }
+    )
+
+    it('is a no-op when the workspace is not the active one', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.activeWorkspaceId = mockTeamWorkspace.id
+
+      store.forgetRevokedActiveWorkspace('some-other-workspace')
+
+      expect(mockReload).not.toHaveBeenCalled()
+    })
+  })
+
   describe('createWorkspace', () => {
     it('creates workspace and triggers reload', async () => {
       const newWorkspace = {

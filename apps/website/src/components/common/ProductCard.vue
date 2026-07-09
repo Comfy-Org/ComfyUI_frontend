@@ -30,7 +30,12 @@ const { title, description, cta, href, bg } = defineProps<{
       <p class="text-sm text-white/70">
         {{ description }}
       </p>
-      <Button as="span" variant="default" size="sm" class="mt-4">
+      <Button
+        as="span"
+        variant="default"
+        size="sm"
+        class="mt-4 h-auto whitespace-normal"
+      >
         {{ cta }}
       </Button>
     </div>
