@@ -110,7 +110,10 @@ async function loadWorkflow(item: AssetItem | undefined) {
       size="icon"
       :disabled="!selectedItem"
       :aria-label="t('linearMode.reuseParameters')"
-      @click="() => loadWorkflow(selectedItem)"
+      @click="
+        () =>
+          loadWorkflow(selectedItem).catch(useErrorHandling().toastErrorHandler)
+      "
     >
       <i class="icon-[lucide--list-restart]" />
     </Button>

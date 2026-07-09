@@ -44,9 +44,15 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   // Cards for the generating screen's fan: selected (feed) and non-selected
   // outputs interleaved by true arrival order so the newest is always first,
-  // regardless of which list it came from.
+  // regardless of which list it came from. Scoped to the tracked job so
+  // pending-resolve leftovers from a previous run never appear in a new fan.
   const generatingCards = computed<InProgressItem[]>(() =>
-    [...activeWorkflowInProgressItems.value, ...generatingExtraCards.value]
+    [
+      ...activeWorkflowInProgressItems.value.filter(
+        (i) => i.jobId === trackedJobId.value
+      ),
+      ...generatingExtraCards.value
+    ]
       .sort((a, b) => b.seq - a.seq)
       .slice(0, GENERATING_CARD_LIMIT)
   )

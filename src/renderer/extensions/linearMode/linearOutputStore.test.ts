@@ -925,6 +925,22 @@ describe('linearOutputStore', () => {
     )
   })
 
+  it('excludes pending-resolve cards from a prior job in the generating fan', () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.onJobComplete('job-1')
+    expect(store.pendingResolve.has('job-1')).toBe(true)
+
+    store.onJobStart('job-2')
+
+    expect(store.generatingCards.some((c) => c.jobId === 'job-1')).toBe(false)
+    expect(store.generatingCards.some((c) => c.jobId === 'job-2')).toBe(true)
+  })
+
   it('does not auto-select for jobs belonging to another workflow', () => {
     const store = useLinearOutputStore()
 
