@@ -224,6 +224,114 @@
   opacity: 0;
 }
 
+/* Gentle chromatic crossfade used when hero node images swap. The incoming
+   frame eases in with a soft RGB split that resolves smoothly while the
+   outgoing frame fades beneath it — no positional jumps. Reduced-motion users
+   get a near-instant swap via the global override below. */
+@keyframes hero-glitch-in {
+  0% {
+    opacity: 0;
+    filter: drop-shadow(7px 0 0 rgb(255 0 92 / 0.5))
+      drop-shadow(-7px 0 0 rgb(0 209 255 / 0.5));
+  }
+  60% {
+    opacity: 1;
+    filter: drop-shadow(3px 0 0 rgb(255 0 92 / 0.28))
+      drop-shadow(-3px 0 0 rgb(0 209 255 / 0.28));
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+.hero-glitch-enter-active,
+.hero-glitch-leave-active {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-glitch-enter-active {
+  animation: hero-glitch-in 0.55s ease-out both;
+  z-index: 1;
+}
+
+.hero-glitch-leave-active {
+  transition: opacity 0.55s ease;
+}
+
+.hero-glitch-leave-to {
+  opacity: 0;
+}
+
+/* ComfyUI-style canvas dot grid behind the hero graph. */
+.hero-dot-grid {
+  background-image: radial-gradient(
+    rgb(255 255 255 / 0.07) 1px,
+    transparent 1.5px
+  );
+  background-size: 26px 26px;
+}
+
+/* Workflow connectors: a short bright dash flows from each upstream node toward
+   the OUTPUT while a control node is engaged. path-length is normalized to 1 so
+   the dash travels at a consistent rate regardless of wire length. */
+.hero-wire-pulse {
+  stroke-dashoffset: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hero-wire-active .hero-wire-pulse {
+  opacity: 0.9;
+  animation: hero-wire-flow 1.2s linear infinite;
+}
+
+@keyframes hero-wire-flow {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hero-live-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hero-live-dot {
+  animation: hero-live-pulse 1.8s ease-in-out infinite;
+}
+
+/* Soft breathing glow inside the LIGHTING direction pad. */
+.hero-light-glow {
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgb(242 255 89 / 0.25),
+    transparent 65%
+  );
+  animation: hero-light-breathe 3s ease-in-out infinite;
+}
+
+@keyframes hero-light-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

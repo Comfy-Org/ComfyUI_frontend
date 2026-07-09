@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -150,6 +151,121 @@ test.describe('Product showcase accordion @interaction', () => {
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+})
+
+test.describe('Hero image picker @interaction', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  // Exclude the glitch swap's outgoing image, which lingers in the DOM until
+  // the transition settles, so the locator always resolves to the current one.
+  const activeImage = (page: Page) =>
+    page.locator(
+      '[data-testid="hero-active-image"]:visible:not(.hero-glitch-leave-active)'
+    )
+
+  const outputImage = (page: Page) =>
+    page.locator(
+      '[data-testid="hero-output-image"]:visible:not(.hero-glitch-leave-active)'
+    )
+
+  test('defaults to the portrait variant with its thumbnail selected', async ({
+    page
+  }) => {
+    await expect(activeImage(page)).toHaveAttribute(
+      'src',
+      /input-portrait\.png/
+    )
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-cyberpunk\.png/
+    )
+    await expect(
+      page.getByRole('button', { name: /portrait/i })
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('hovering a thumbnail swaps the large image and moves selection', async ({
+    page
+  }) => {
+    const deerThumb = page.getByRole('button', { name: /deer/i })
+    await deerThumb.hover()
+
+    await expect(activeImage(page)).toHaveAttribute('src', /input-deer\.png/)
+    await expect(deerThumb).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      page.getByRole('button', { name: /portrait/i })
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('selecting an input cascades the matching output', async ({ page }) => {
+    await page.getByRole('button', { name: /vase/i }).click()
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-vase\.png/
+    )
+
+    await page.getByRole('button', { name: /deer/i }).click()
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-deer\.png/
+    )
+  })
+
+  test('thumbnails are keyboard operable', async ({ page }) => {
+    const mirrorThumb = page.getByRole('button', { name: /mirror/i })
+    await mirrorThumb.focus()
+    await page.keyboard.press('Enter')
+
+    await expect(activeImage(page)).toHaveAttribute('src', /input-mirror\.png/)
+    await expect(mirrorThumb).toHaveAttribute('aria-pressed', 'true')
+  })
+})
+
+test.describe('Hero graph drag bounds @interaction', () => {
+  async function dragNodeTo(page: Page, node: Locator, x: number, y: number) {
+    const box = (await node.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(x, y, { steps: 15 })
+    await page.mouse.up()
+  }
+
+  test('a dragged node stops at the stage edges instead of escaping', async ({
+    page,
+    viewport
+  }) => {
+    await page.goto('/')
+
+    const node = page.locator('[data-node="texture"]')
+    await expect(node).toBeVisible()
+    const stageBox = (await page.getByTestId('hero-stage').boundingBox())!
+
+    await dragNodeTo(page, node, 1, viewport!.height - 1)
+    await expect
+      .poll(async () => {
+        const box = (await node.boundingBox())!
+        return {
+          atLeftEdge: Math.abs(box.x - stageBox.x) <= 2,
+          atBottomEdge:
+            Math.abs(box.y + box.height - (stageBox.y + stageBox.height)) <= 2
+        }
+      })
+      .toEqual({ atLeftEdge: true, atBottomEdge: true })
+
+    await dragNodeTo(page, node, viewport!.width - 1, 1)
+    await expect
+      .poll(async () => {
+        const box = (await node.boundingBox())!
+        return {
+          atRightEdge:
+            Math.abs(box.x + box.width - (stageBox.x + stageBox.width)) <= 2,
+          atTopEdge: Math.abs(box.y - stageBox.y) <= 2
+        }
+      })
+      .toEqual({ atRightEdge: true, atTopEdge: true })
   })
 })
 
