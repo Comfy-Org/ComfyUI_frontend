@@ -130,16 +130,16 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
-  createTestRootGraph,
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+  nodeError,
+  validationError
+} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
@@ -502,19 +502,9 @@ describe('useErrorGroups', () => {
 
     it('groups lifted boundary errors under the host node card', async () => {
       const { store, groups } = createErrorGroups()
-      const rootGraph = createTestRootGraph()
-      const subgraph = createTestSubgraph({
-        rootGraph,
-        inputs: [{ name: 'seed', type: '*' }]
+      const { rootGraph, host } = createBoundaryLinkedSubgraph({
+        interiorType: 'InteriorClass'
       })
-      const host = createTestSubgraphNode(subgraph, { id: 12 })
-      host.title = 'Host Subgraph'
-      rootGraph.add(host)
-      const interior = new LGraphNode('InteriorClass')
-      interior.id = toNodeId(5)
-      const input = interior.addInput('seed_input', '*')
-      subgraph.add(interior)
-      subgraph.inputNode.slots[0].connect(input, interior)
       const { getNodeByExecutionId: actualGetNodeByExecutionId } =
         await vi.importActual<typeof GraphTraversalUtil>(
           '@/utils/graphTraversalUtil'
@@ -523,20 +513,17 @@ describe('useErrorGroups', () => {
         return actualGetNodeByExecutionId(rootGraph, String(nodeId))
       })
       store.lastNodeErrors = {
-        '12:5': {
-          class_type: 'InteriorClass',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'required_input_missing',
-              message: 'Required input is missing',
-              details: 'seed_input',
-              extra_info: {
-                input_name: 'seed_input'
-              }
-            }
-          ]
-        }
+        '12:5': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'seed_input',
+              {},
+              'Required input is missing'
+            )
+          ],
+          'InteriorClass'
+        )
       }
       await nextTick()
 

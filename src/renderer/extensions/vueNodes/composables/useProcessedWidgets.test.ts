@@ -667,7 +667,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     )
   })
 
-  it('clears promoted validation errors through the source execution id', () => {
+  it('clears raw interior errors through widget.sourceExecutionId, which boundary lift relies on', () => {
     const sourceExecutionId = createNodeExecutionId([65, 18])
     const widget = createMockWidget({
       name: 'display_slot',

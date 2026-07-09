@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
-import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import {
+  getLiftedErrorSource,
+  liftNodeErrorsToBoundary
+} from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -33,12 +36,8 @@ import {
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
-interface NodeErrorClearTarget {
+interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
-  slotName?: string
-}
-
-interface SlotNodeErrorClearTarget extends NodeErrorClearTarget {
   slotName: string
 }
 
@@ -139,49 +138,32 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (!surface) return []
 
     return surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
-      if (error.extra_info?.input_name !== slotName) return []
+      const source = getLiftedErrorSource(error)
+      if (!source || source.input_name !== slotName) return []
 
-      const sourceExecutionId = error.extra_info?.source_execution_id
-      const sourceInputName = error.extra_info?.source_input_name
-      if (
-        typeof sourceExecutionId !== 'string' ||
-        typeof sourceInputName !== 'string'
-      ) {
-        return []
-      }
-
-      const normalizedExecutionId =
-        tryNormalizeNodeExecutionId(sourceExecutionId)
+      const normalizedExecutionId = tryNormalizeNodeExecutionId(
+        source.source_execution_id
+      )
       return normalizedExecutionId
-        ? [{ executionId: normalizedExecutionId, slotName: sourceInputName }]
+        ? [
+            {
+              executionId: normalizedExecutionId,
+              slotName: source.source_input_name
+            }
+          ]
         : []
     })
   }
 
-  function getRawClearTargets(
-    executionId: NodeExecutionId,
-    slotName: string
-  ): SlotNodeErrorClearTarget[]
-  function getRawClearTargets(
-    executionId: NodeExecutionId,
-    slotName?: undefined
-  ): NodeErrorClearTarget[]
-  function getRawClearTargets(
-    executionId: NodeExecutionId,
-    slotName?: string
-  ): NodeErrorClearTarget[]
   /** Raw targets are keys into lastNodeErrors, not surfacedNodeErrors. */
   function getRawClearTargets(
     executionId: NodeExecutionId,
-    slotName?: string
-  ): NodeErrorClearTarget[] {
-    const targets: NodeErrorClearTarget[] = [{ executionId, slotName }]
-
-    if (slotName !== undefined) {
-      targets.push(...getLiftedErrorSourceTargets(executionId, slotName))
-    }
-
-    return targets
+    slotName: string
+  ): SlotNodeErrorClearTarget[] {
+    return [
+      { executionId, slotName },
+      ...getLiftedErrorSourceTargets(executionId, slotName)
+    ]
   }
 
   function isTargetStillOutOfRange(
@@ -212,7 +194,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (!lastNodeErrors.value) return
 
     let updated = lastNodeErrors.value
-    for (const target of getRawClearTargets(executionId, slotName)) {
+    const targets =
+      slotName === undefined
+        ? [{ executionId, slotName }]
+        : getRawClearTargets(executionId, slotName)
+
+    for (const target of targets) {
       updated =
         clearSimpleNodeErrorsFromRecord(
           updated,

@@ -7,11 +7,17 @@ import {
   parseNodeExecutionId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { isImageNotLoadedValidationError } from '@/utils/executionErrorUtil'
+import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 type NodeValidationError = NodeError['errors'][number]
+
+export interface LiftedErrorExtraInfo {
+  input_name: string
+  source_execution_id: string
+  source_input_name: string
+}
 
 interface LiftedSurface {
   hostExecId: NodeExecutionId
@@ -19,24 +25,37 @@ interface LiftedSurface {
   hostTitle: string
 }
 
-interface ErrorPlacement {
-  sourceExecId: string
+interface OwnErrorPlacement {
+  kind: 'own'
   targetExecId: string
-  targetTitle?: string
   error: NodeValidationError
 }
 
-// Mirrors validationErrorResolver's node-level type classification; keep in sync.
-const NODE_LEVEL_ERROR_TYPES = new Set([
-  'exception_during_validation',
-  'dependency_cycle'
-])
+interface LiftedErrorPlacement {
+  kind: 'lifted'
+  targetExecId: string
+  targetTitle: string
+  error: NodeValidationError
+}
 
-function isNodeLevelError(error: NodeValidationError): boolean {
-  return (
-    NODE_LEVEL_ERROR_TYPES.has(error.type) ||
-    isImageNotLoadedValidationError(error)
-  )
+type ErrorPlacement = OwnErrorPlacement | LiftedErrorPlacement
+
+export function getLiftedErrorSource(
+  error: NodeError['errors'][number]
+): LiftedErrorExtraInfo | null {
+  const extraInfo = error.extra_info
+  if (!extraInfo) return null
+
+  const { input_name, source_execution_id, source_input_name } = extraInfo
+  if (
+    typeof input_name !== 'string' ||
+    typeof source_execution_id !== 'string' ||
+    typeof source_input_name !== 'string'
+  ) {
+    return null
+  }
+
+  return { input_name, source_execution_id, source_input_name }
 }
 
 function getHostExecutionId(executionId: string): NodeExecutionId | null {
@@ -87,6 +106,7 @@ function createEmptyNodeError(nodeError: NodeError): NodeError {
   }
 }
 
+// Lifted host entries use the host title for display; SubgraphNode.type is a UUID.
 function createLiftedHostEntry(hostTitle: string): NodeError {
   return {
     class_type: hostTitle,
@@ -102,32 +122,47 @@ function toErrorPlacement(
 ): ErrorPlacement {
   const inputName = error.extra_info?.input_name
   const surface =
-    inputName && !isNodeLevelError(error)
+    inputName && !isNodeLevelValidationError(error)
       ? resolveLiftedSurface(rootGraph, executionId, inputName)
       : null
 
   if (!inputName || !surface) {
     return {
-      sourceExecId: executionId,
+      kind: 'own',
       targetExecId: executionId,
       error
     }
   }
 
+  const liftedExtraInfo: LiftedErrorExtraInfo = {
+    input_name: surface.hostInputName,
+    source_execution_id: executionId,
+    source_input_name: inputName
+  }
+
   return {
-    sourceExecId: executionId,
+    kind: 'lifted',
     targetExecId: surface.hostExecId,
     targetTitle: surface.hostTitle,
     error: {
       ...error,
       extra_info: {
         ...error.extra_info,
-        input_name: surface.hostInputName,
-        source_execution_id: executionId,
-        source_input_name: inputName
+        ...liftedExtraInfo
       }
     }
   }
+}
+
+function getLiftedTargetTitle(placements: ErrorPlacement[]): string {
+  const liftedPlacement = placements.find(
+    (placement): placement is LiftedErrorPlacement =>
+      placement.kind === 'lifted'
+  )
+  if (!liftedPlacement) {
+    throw new Error('Expected lifted placement to provide a target title')
+  }
+  return liftedPlacement.targetTitle
 }
 
 export function liftNodeErrorsToBoundary(
@@ -158,11 +193,11 @@ export function liftNodeErrorsToBoundary(
   )) {
     const baseEntry = nodeErrors[targetExecId]
       ? createEmptyNodeError(nodeErrors[targetExecId])
-      : createLiftedHostEntry(targetPlacements[0]?.targetTitle ?? '')
+      : createLiftedHostEntry(getLiftedTargetTitle(targetPlacements))
 
     const [ownErrors, liftedErrors] = partition(
       targetPlacements,
-      (placement) => placement.sourceExecId === targetExecId
+      (placement) => placement.kind === 'own'
     )
 
     output[targetExecId] = {

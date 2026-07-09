@@ -3,85 +3,20 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
+  nodeError,
+  validationError
+} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { NodeError } from '@/schemas/apiSchema'
 import { toNodeId } from '@/types/nodeId'
 
 import { liftNodeErrorsToBoundary } from './liftNodeErrorsToBoundary'
-
-type NodeValidationError = NodeError['errors'][number]
-
-interface BoundarySetup {
-  rootGraph: LGraph
-  subgraph: Subgraph
-  host: SubgraphNode
-  interior: LGraphNode
-}
-
-function validationError(
-  type: string,
-  inputName?: string,
-  extraInfo: Record<string, unknown> = {},
-  message = `${type} message`
-): NodeValidationError {
-  return {
-    type,
-    message,
-    details: `${type} details`,
-    ...(inputName
-      ? { extra_info: { ...extraInfo, input_name: inputName } }
-      : {})
-  }
-}
-
-function nodeError(
-  errors: NodeValidationError[],
-  classType = 'InteriorNode'
-): NodeError {
-  return {
-    class_type: classType,
-    dependent_outputs: [],
-    errors
-  }
-}
-
-function createBoundarySetup({
-  rootGraph = createTestRootGraph(),
-  hostId = 12,
-  interiorId = 5,
-  boundaryName = 'seed',
-  inputName = 'seed_input'
-}: {
-  rootGraph?: LGraph
-  hostId?: number
-  interiorId?: number
-  boundaryName?: string
-  inputName?: string
-} = {}): BoundarySetup {
-  const subgraph = createTestSubgraph({
-    rootGraph,
-    inputs: [{ name: boundaryName, type: '*' }]
-  })
-  const host = createTestSubgraphNode(subgraph, { id: hostId })
-  host.title = 'Host Subgraph'
-  rootGraph.add(host)
-
-  const interior = new LGraphNode('InteriorNode')
-  interior.id = toNodeId(interiorId)
-  const input = interior.addInput(inputName, '*')
-  subgraph.add(interior)
-  subgraph.inputNode.slots[0].connect(input, interior)
-
-  return { rootGraph, subgraph, host, interior }
-}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -89,7 +24,7 @@ beforeEach(() => {
 
 describe('liftNodeErrorsToBoundary', () => {
   it('lifts a boundary-linked slot error to the host', () => {
-    const { host, rootGraph } = createBoundarySetup()
+    const { host, rootGraph } = createBoundaryLinkedSubgraph()
     const errors = {
       '12:5': nodeError([
         validationError('required_input_missing', 'seed_input')
@@ -225,7 +160,7 @@ describe('liftNodeErrorsToBoundary', () => {
   })
 
   it('keeps errors without a liftable subject on the interior node', () => {
-    const { rootGraph } = createBoundarySetup()
+    const { rootGraph } = createBoundaryLinkedSubgraph()
     const errors = {
       '12:5': nodeError([
         validationError('required_input_missing'),
@@ -243,8 +178,19 @@ describe('liftNodeErrorsToBoundary', () => {
     expect(liftNodeErrorsToBoundary(rootGraph, errors)).toEqual(errors)
   })
 
+  it('keeps unknown typed validation errors on the interior node', () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    const errors = {
+      '12:5': nodeError([
+        validationError('future_backend_validation_type', 'seed_input')
+      ])
+    }
+
+    expect(liftNodeErrorsToBoundary(rootGraph, errors)).toEqual(errors)
+  })
+
   it('splits liftable and non-liftable errors from the same node entry', () => {
-    const { rootGraph } = createBoundarySetup()
+    const { rootGraph } = createBoundaryLinkedSubgraph()
 
     const result = liftNodeErrorsToBoundary(rootGraph, {
       '12:5': nodeError([
@@ -260,7 +206,7 @@ describe('liftNodeErrorsToBoundary', () => {
   })
 
   it('merges a lifted error into an existing host entry', () => {
-    const { rootGraph } = createBoundarySetup()
+    const { rootGraph } = createBoundaryLinkedSubgraph()
     const errors = {
       '12': {
         class_type: 'ExistingHostClass',

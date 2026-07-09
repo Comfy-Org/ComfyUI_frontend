@@ -2,13 +2,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MissingNodeType } from '@/types/comfy'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
-  createTestRootGraph,
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+  nodeError,
+  validationError
+} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import type { MissingNodeType } from '@/types/comfy'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import {
   createNodeExecutionId,
@@ -48,25 +47,6 @@ vi.mock(
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
-
-function createBoundaryErrorGraph() {
-  const rootGraph = createTestRootGraph()
-  const subgraph = createTestSubgraph({
-    rootGraph,
-    inputs: [{ name: 'seed', type: '*' }]
-  })
-  const host = createTestSubgraphNode(subgraph, { id: 12 })
-  host.title = 'Host Subgraph'
-  rootGraph.add(host)
-
-  const interior = new LGraphNode('InteriorNode')
-  interior.id = toNodeId(5)
-  const input = interior.addInput('seed_input', '*')
-  subgraph.add(interior)
-  subgraph.inputNode.slots[0].connect(input, interior)
-
-  return { rootGraph, host }
-}
 
 describe('executionErrorStore — node error operations', () => {
   beforeEach(() => {
@@ -331,24 +311,15 @@ describe('executionErrorStore — node error operations', () => {
     })
 
     it('clears a lifted host slot error from the raw interior record', () => {
-      const { rootGraph } = createBoundaryErrorGraph()
+      const { rootGraph } = createBoundaryLinkedSubgraph()
       vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
       vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        '12:5': {
-          class_type: 'InteriorNode',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'required_input_missing',
-              message: 'Missing',
-              details: '',
-              extra_info: { input_name: 'seed_input' }
-            }
-          ]
-        }
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
       }
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
@@ -360,24 +331,20 @@ describe('executionErrorStore — node error operations', () => {
     })
 
     it('does not clear lifted host slot errors when the raw error is not simple', () => {
-      const { rootGraph } = createBoundaryErrorGraph()
+      const { rootGraph } = createBoundaryLinkedSubgraph()
       vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
       vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        '12:5': {
-          class_type: 'InteriorNode',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'custom_validation_failed',
-              message: 'Custom validation failed',
-              details: '',
-              extra_info: { input_name: 'seed_input' }
-            }
-          ]
-        }
+        '12:5': nodeError([
+          validationError(
+            'custom_validation_failed',
+            'seed_input',
+            {},
+            'Custom validation failed'
+          )
+        ])
       }
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
@@ -481,24 +448,15 @@ describe('executionErrorStore — node error operations', () => {
     })
 
     it('does not clear lifted range errors until the host value is in range', () => {
-      const { rootGraph } = createBoundaryErrorGraph()
+      const { rootGraph } = createBoundaryLinkedSubgraph()
       vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
       vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        '12:5': {
-          class_type: 'InteriorNode',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'value_bigger_than_max',
-              message: 'Too high',
-              details: '',
-              extra_info: { input_name: 'seed_input' }
-            }
-          ]
-        }
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {}, 'Too high')
+        ])
       }
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
@@ -528,24 +486,15 @@ describe('executionErrorStore — node error operations', () => {
 
   describe('surfacedNodeErrors', () => {
     it('derives boundary-lifted errors while preserving the raw record', () => {
-      const { rootGraph, host } = createBoundaryErrorGraph()
+      const { rootGraph, host } = createBoundaryLinkedSubgraph()
       vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
       vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        '12:5': {
-          class_type: 'InteriorNode',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'required_input_missing',
-              message: 'Missing',
-              details: '',
-              extra_info: { input_name: 'seed_input' }
-            }
-          ]
-        }
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
       }
 
       const hostLocatorId = createNodeLocatorId(null, toNodeId(12))

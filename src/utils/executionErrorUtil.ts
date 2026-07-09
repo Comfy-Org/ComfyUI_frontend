@@ -105,6 +105,28 @@ export const SIMPLE_ERROR_TYPES = new Set([
   'required_input_missing'
 ])
 
+const INPUT_LEVEL_VALIDATION_ERROR_TYPES = new Set([
+  'required_input_missing',
+  'bad_linked_input',
+  'return_type_mismatch',
+  'invalid_input_type',
+  'value_smaller_than_min',
+  'value_bigger_than_max',
+  'value_not_in_list',
+  'custom_validation_failed',
+  'exception_during_inner_validation'
+])
+
+export const NODE_LEVEL_VALIDATION_ERROR_TYPES = new Set([
+  'exception_during_validation',
+  'dependency_cycle'
+])
+
+const KNOWN_VALIDATION_ERROR_TYPES = new Set([
+  ...INPUT_LEVEL_VALIDATION_ERROR_TYPES,
+  ...NODE_LEVEL_VALIDATION_ERROR_TYPES
+])
+
 export function isImageNotLoadedValidationError(
   error: NodeError['errors'][number]
 ): boolean {
@@ -113,6 +135,16 @@ export function isImageNotLoadedValidationError(
     /invalid image file|\[errno 21\].*is a directory/i.test(
       [error.message, error.details].filter(Boolean).join('\n')
     )
+  )
+}
+
+export function isNodeLevelValidationError(
+  error: NodeError['errors'][number]
+): boolean {
+  return (
+    !KNOWN_VALIDATION_ERROR_TYPES.has(error.type) ||
+    NODE_LEVEL_VALIDATION_ERROR_TYPES.has(error.type) ||
+    isImageNotLoadedValidationError(error)
   )
 }
 

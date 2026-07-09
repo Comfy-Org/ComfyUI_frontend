@@ -11,7 +11,10 @@ import {
   translateOptionalCatalogMessage
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
-import { isImageNotLoadedValidationError } from '@/utils/executionErrorUtil'
+import {
+  NODE_LEVEL_VALIDATION_ERROR_TYPES,
+  isImageNotLoadedValidationError
+} from '@/utils/executionErrorUtil'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
 
@@ -63,6 +66,14 @@ const VALUE_SPECIFIC_COPY_RULES: Record<
   }
 }
 
+const NODE_LEVEL_VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> =
+  Object.fromEntries(
+    Array.from(NODE_LEVEL_VALIDATION_ERROR_TYPES, (type) => [
+      type,
+      { catalogId: type, itemLabel: 'node' } satisfies ValidationCatalogRule
+    ])
+  )
+
 const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
   [REQUIRED_INPUT_MISSING_TYPE]: {
     catalogId: MISSING_CONNECTION_CATALOG_ID,
@@ -100,14 +111,7 @@ const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
     catalogId: 'exception_during_inner_validation',
     itemLabel: 'nodeInput'
   },
-  exception_during_validation: {
-    catalogId: 'exception_during_validation',
-    itemLabel: 'node'
-  },
-  dependency_cycle: {
-    catalogId: 'dependency_cycle',
-    itemLabel: 'node'
-  }
+  ...NODE_LEVEL_VALIDATION_ERROR_RULES
 }
 
 // Image-not-loaded shares the custom_validation_failed type, so type-keyed
