@@ -30,6 +30,14 @@ vi.mock('@/platform/distribution/types', () => ({
 describe('useFeatureFlags', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
+    localStorage.clear()
+    remoteConfig.value = {}
+    remoteConfigState.value = 'unloaded'
+    cachedTeamWorkspacesEnabled.value = undefined
+    cachedConsolidatedBillingEnabled.value = undefined
+    vi.mocked(distributionTypes).isCloud = false
+    vi.mocked(distributionTypes).isNightly = false
   })
 
   describe('flags object', () => {
@@ -224,6 +232,69 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
+    })
+
+    it('teamWorkspacesEnabled is disabled outside cloud builds', () => {
+      vi.mocked(distributionTypes).isCloud = false
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(false)
+    })
+
+    it('teamWorkspacesEnabled uses the cached value before authenticated config loads', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      cachedTeamWorkspacesEnabled.value = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(api.getServerFeature).not.toHaveBeenCalled()
+    })
+
+    it('teamWorkspacesEnabled falls back to the server after authenticated config loads', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfigState.value = 'authenticated'
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.TEAM_WORKSPACES_ENABLED) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.teamWorkspacesEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
+        false
+      )
+    })
+
+    it('nodeLibraryEssentialsEnabled checks config outside nightly and dev builds', () => {
+      vi.stubEnv('DEV', false)
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED)
+            return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        false
+      )
+    })
+
+    it('nodeLibraryEssentialsEnabled uses remote config before the server fallback', () => {
+      vi.stubEnv('DEV', false)
+      remoteConfig.value = {
+        node_library_essentials_enabled: true
+      }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
+      expect(api.getServerFeature).not.toHaveBeenCalled()
     })
 
     it('consolidatedBillingEnabled override bypasses isCloud and isAuthenticatedConfigLoaded guards', () => {

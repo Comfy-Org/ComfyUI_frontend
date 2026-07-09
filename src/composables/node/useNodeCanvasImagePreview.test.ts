@@ -65,4 +65,29 @@ describe('useNodeCanvasImagePreview', () => {
 
     expect(imagePreviewWidget).not.toHaveBeenCalled()
   })
+
+  it('does nothing when removing from a node without widgets', () => {
+    const node = Object.assign(new LGraphNode('test'), { widgets: undefined })
+
+    useNodeCanvasImagePreview().removeCanvasImagePreview(node)
+
+    expect(imagePreviewWidget).not.toHaveBeenCalled()
+  })
+
+  it('removes an existing preview widget and calls its cleanup', () => {
+    const node = new LGraphNode('test')
+    const widget = node.addWidget(
+      'text',
+      '$$canvas-image-preview',
+      '',
+      () => undefined,
+      {}
+    )
+    widget.onRemove = vi.fn()
+
+    useNodeCanvasImagePreview().removeCanvasImagePreview(node)
+
+    expect(widget.onRemove).toHaveBeenCalledOnce()
+    expect(node.widgets).toHaveLength(0)
+  })
 })

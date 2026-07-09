@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -87,7 +87,7 @@ function makeMediaCombo(
   value: string,
   options: string[] = []
 ): IComboWidget {
-  return fromAny<IComboWidget, unknown>({
+  return fromPartial<IComboWidget>({
     type: 'combo',
     name,
     value,
@@ -102,17 +102,20 @@ function makeMediaNode(
   mode: number = 0,
   executionId?: string
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const node: unknown = {
     id,
     type,
     widgets,
     mode,
     _testExecutionId: executionId ?? String(id)
-  })
+  }
+  return node as LGraphNode & { _testExecutionId?: string }
 }
 
 function makeGraph(nodes: LGraphNode[]): LGraph {
-  return fromAny<LGraph, unknown>({ _testNodes: nodes })
+  return fromPartial<LGraph & { _testNodes: LGraphNode[] }>({
+    _testNodes: nodes
+  })
 }
 
 function makeAsset(name: string, assetHash: string | null = null): AssetItem {
@@ -147,7 +150,7 @@ function makeHistoryJob(
   filename: string,
   options: { id?: string; subfolder?: string } = {}
 ): JobListItem {
-  return fromAny<JobListItem, unknown>({
+  return fromPartial<JobListItem>({
     id: options.id ?? filename,
     status: 'completed',
     create_time: 0,
@@ -202,6 +205,42 @@ describe('scanNodeMediaCandidates', () => {
   it('returns empty for node with no widgets', () => {
     const graph = makeGraph([])
     const node = makeMediaNode(1, 'LoadImage', [], 0)
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty when a media node has no execution id', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', [])],
+      0,
+      ''
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('ignores widgets that cannot provide a media filename', () => {
+    const graph = makeGraph([])
+    const nodeObj: unknown = {
+      id: 1,
+      type: 'LoadImage',
+      widgets: [
+        { type: 'number', name: 'image', value: 'photo.png' },
+        { type: 'combo', name: 'other', value: 'photo.png' },
+        { type: 'combo', name: 'image', value: '' },
+        { type: 'combo', name: 'image', value: 42 }
+      ],
+      mode: 0,
+      _testExecutionId: '1'
+    }
+    const node = nodeObj as LGraphNode & { _testExecutionId?: string }
 
     const result = scanNodeMediaCandidates(graph, node, false)
 
@@ -377,6 +416,37 @@ describe('scanNodeMediaCandidates', () => {
 })
 
 describe('scanAllMediaCandidates', () => {
+  it('returns empty when no root graph is available', () => {
+    const nullGraph: unknown = null
+    expect(scanAllMediaCandidates(nullGraph as LGraph, false)).toEqual([])
+  })
+
+  it('skips nodes without widgets and subgraph nodes', () => {
+    const withoutWidgetsObj: unknown = {
+      id: 1,
+      type: 'LoadImage',
+      widgets: undefined,
+      mode: 0
+    }
+    const withoutWidgets = withoutWidgetsObj as LGraphNode
+    const subgraphNode = makeMediaNode(
+      2,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', [])],
+      0
+    )
+    const alwaysSubgraph: unknown = () => true
+    subgraphNode.isSubgraphNode =
+      alwaysSubgraph as typeof subgraphNode.isSubgraphNode
+
+    const result = scanAllMediaCandidates(
+      makeGraph([withoutWidgets, subgraphNode]),
+      false
+    )
+
+    expect(result).toEqual([])
+  })
+
   it('skips muted nodes (mode === NEVER)', () => {
     const node = makeMediaNode(
       1,

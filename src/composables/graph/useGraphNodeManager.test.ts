@@ -1,9 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  extractVueNodeData,
+  getControlWidget,
+  useGraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { widgetId } from '@/types/widgetId'
 import {
@@ -13,9 +18,12 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { toNodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 describe('Node Reactivity', () => {
   beforeEach(() => {
@@ -262,6 +270,26 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     await nextTick()
 
     expect(widgetData.slotMetadata).toBeUndefined()
+  })
+
+  it('maps widget slot metadata even when the input slot name is empty', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    const input = node.addInput('', 'STRING')
+    input.widget = { name: 'prompt' }
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetData = vueNodeData
+      .get(node.id)
+      ?.widgets?.find((w) => w.name === 'prompt')
+
+    expect(widgetData?.slotMetadata).toMatchObject({
+      index: 0,
+      linked: false,
+      type: 'STRING'
+    })
   })
 })
 
@@ -754,5 +782,541 @@ describe('Pre-remove vueNodeData drain', () => {
       vueNodeData.size,
       'node:before-removed listener must drain vueNodeData when clear() removes every node'
     ).toBe(0)
+  })
+})
+
+describe('Graph node manager property triggers', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('updates Vue node data for LiteGraph property change events', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'title',
+      newValue: 'Renamed'
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'has_errors',
+      newValue: true
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'flags.collapsed',
+      newValue: true
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'flags.ghost',
+      newValue: true
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'flags.pinned',
+      newValue: true
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'mode',
+      newValue: 4
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'color',
+      newValue: '#123456'
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'bgcolor',
+      newValue: '#abcdef'
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'shape',
+      newValue: 2
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'showAdvanced',
+      newValue: true
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'badges',
+      newValue: [{ text: 'hot' }]
+    })
+
+    expect(vueNodeData.get(node.id)).toMatchObject({
+      title: 'Renamed',
+      hasErrors: true,
+      flags: {
+        collapsed: true,
+        ghost: true,
+        pinned: true
+      },
+      mode: 4,
+      color: '#123456',
+      bgcolor: '#abcdef',
+      shape: 2,
+      showAdvanced: true,
+      badges: [{ text: 'hot' }]
+    })
+  })
+
+  it('normalizes invalid property payloads to safe Vue node data', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'mode',
+      newValue: 'invalid'
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'color',
+      newValue: false
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'bgcolor',
+      newValue: 123
+    })
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'shape',
+      newValue: 'round'
+    })
+
+    expect(vueNodeData.get(node.id)).toMatchObject({
+      mode: 0,
+      color: undefined,
+      bgcolor: undefined,
+      shape: undefined
+    })
+  })
+
+  it('ignores property events for nodes the manager does not track', () => {
+    const graph = new LGraph()
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(() =>
+      graph.trigger('node:property:changed', {
+        nodeId: 'missing',
+        property: 'title',
+        newValue: 'ignored'
+      })
+    ).not.toThrow()
+    expect(vueNodeData.has(toNodeId('missing'))).toBe(false)
+    expect(vueNodeData.size).toBe(0)
+  })
+
+  it('ignores non-input slot link events and refreshes slot error metadata', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined)
+    const input = node.addInput('prompt', 'STRING')
+    input.widget = { name: 'prompt' }
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetData = vueNodeData
+      .get(node.id)
+      ?.widgets?.find((w) => w.name === 'prompt')
+
+    graph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.OUTPUT
+    })
+    expect(widgetData?.slotMetadata?.linked).toBe(false)
+
+    const linkId: unknown = 123
+    input.link = linkId as typeof input.link
+    graph.trigger('node:slot-errors:changed', {
+      nodeId: node.id
+    })
+
+    expect(widgetData?.slotMetadata?.linked).toBe(true)
+  })
+})
+
+describe('extractVueNodeData widget mapping', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('normalizes widget callback values and redraws sibling widgets', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const callback = vi.fn()
+    const siblingTriggerDraw = vi.fn()
+    node.addWidget('string', 'prompt', 'hello', callback)
+    node.addCustomWidget(
+      fromPartial<IBaseWidget>({
+        name: 'sibling',
+        type: 'text',
+        value: '',
+        options: {},
+        triggerDraw: siblingTriggerDraw
+      })
+    )
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgetData = vueNodeData
+      .get(node.id)
+      ?.widgets?.find((widget) => widget.name === 'prompt')
+    if (!widgetData?.callback) throw new Error('Missing widget callback')
+
+    widgetData.callback(null)
+    expect(node.widgets![0].value).toBeUndefined()
+
+    widgetData.callback('text')
+    expect(node.widgets![0].value).toBe('text')
+
+    widgetData.callback(3)
+    expect(node.widgets![0].value).toBe(3)
+
+    widgetData.callback(true)
+    expect(node.widgets![0].value).toBe(true)
+
+    const objectValue = { nested: true }
+    widgetData.callback(objectValue)
+    expect(node.widgets![0].value).toStrictEqual(objectValue)
+
+    const fileValues = [new File(['x'], 'x.txt')]
+    widgetData.callback(fileValues)
+    expect(node.widgets![0].value).toHaveLength(1)
+    expect((node.widgets![0].value as File[])[0]).toBeInstanceOf(File)
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    widgetData.callback(Symbol('invalid'))
+
+    expect(node.widgets![0].value).toBeUndefined()
+    expect(callback).toHaveBeenLastCalledWith(undefined, app.canvas, node)
+    expect(siblingTriggerDraw).toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Invalid widget value type: symbol',
+      expect.any(Symbol)
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('extracts display, DOM, layout, tooltip, and duplicate widget metadata', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addCustomWidget({
+      name: 'plain',
+      type: 'text',
+      value: 'a'
+    } as IBaseWidget)
+    const domWidget: unknown = {
+      name: 'plain',
+      type: 'text',
+      value: 'b',
+      advanced: true,
+      element: document.createElement('input'),
+      computeLayoutSize: () => ({ minWidth: 1, minHeight: 1 }),
+      options: {
+        canvasOnly: true,
+        hidden: true,
+        read_only: true
+      },
+      tooltip: 'Details'
+    }
+    node.addCustomWidget(domWidget as IBaseWidget)
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const widgets = vueNodeData.get(node.id)?.widgets
+
+    expect(widgets?.[0]?.options).toBeUndefined()
+    expect(widgets?.[1]).toMatchObject({
+      name: 'plain',
+      type: 'text',
+      hasLayoutSize: true,
+      isDOMWidget: true,
+      tooltip: 'Details',
+      options: {
+        canvasOnly: true,
+        advanced: true,
+        hidden: true,
+        read_only: true
+      }
+    })
+    expect(widgets?.[0]?.widgetId).toBeDefined()
+    expect(widgets?.[1]?.widgetId).toBeDefined()
+  })
+
+  it('falls back to safe widget data when a widget mapper throws', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = new LGraphNode('test')
+    const badWidgetObj: unknown = {
+      name: 'broken',
+      type: 'custom',
+      value: 'x',
+      get options() {
+        throw new Error('bad options')
+      }
+    }
+    node.widgets = [badWidgetObj as IBaseWidget]
+
+    const data = extractVueNodeData(node)
+
+    expect(data.widgets?.[0]).toEqual({ name: 'broken', type: 'custom' })
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[safeWidgetMapper] Failed to map widget:',
+      'broken',
+      expect.any(Error)
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('falls back to unknown widget data when a broken widget has no name or type', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = new LGraphNode('test')
+    const badWidgetObj2: unknown = {
+      value: 'x',
+      get options() {
+        throw new Error('bad options')
+      }
+    }
+    node.widgets = [badWidgetObj2 as IBaseWidget]
+
+    const data = extractVueNodeData(node)
+
+    expect(data.widgets?.[0]).toEqual({ name: 'unknown', type: 'text' })
+    warnSpy.mockRestore()
+  })
+
+  it('keeps custom widgets getter results in sync', () => {
+    const node = new LGraphNode('test')
+    let widgets = [
+      {
+        name: 'first',
+        type: 'text',
+        value: 'one',
+        options: {}
+      } as IBaseWidget
+    ]
+    Object.defineProperty(node, 'widgets', {
+      get() {
+        return widgets
+      },
+      configurable: true
+    })
+
+    const data = extractVueNodeData(node)
+    expect(data.widgets?.map((widget) => widget.name)).toEqual(['first'])
+
+    widgets = [
+      {
+        name: 'second',
+        type: 'text',
+        value: 'two',
+        options: {}
+      } as IBaseWidget
+    ]
+
+    expect(node.widgets?.map((widget) => widget.name)).toEqual(['second'])
+    expect(data.widgets?.map((widget) => widget.name)).toEqual(['second'])
+  })
+
+  it('treats undefined custom widget getter results as an empty widget list', () => {
+    const node = new LGraphNode('test')
+    Object.defineProperty(node, 'widgets', {
+      get() {
+        return undefined
+      },
+      configurable: true
+    })
+
+    const data = extractVueNodeData(node)
+
+    expect(data.widgets?.length).toBe(0)
+  })
+
+  it('derives node type fallbacks and subgraph id from graph context', () => {
+    const node = new LGraphNode('')
+    node.type = ''
+    Object.defineProperty(node, 'constructor', {
+      value: { title: 'FallbackTitle', nodeData: { api_node: true } },
+      configurable: true
+    })
+    node.graph = {
+      id: 'subgraph-id',
+      rootGraph: new LGraph()
+    } as LGraph
+
+    const data = extractVueNodeData(node)
+
+    expect(data.type).toBe('FallbackTitle')
+    expect(data.subgraphId).toBe('subgraph-id')
+    expect(data.apiNode).toBe(true)
+  })
+
+  it('preserves flags when extracting Vue node data', () => {
+    const node = new LGraphNode('test')
+    node.flags = { collapsed: true, pinned: true }
+
+    const data = extractVueNodeData(node)
+
+    expect(data.flags).toEqual({ collapsed: true, pinned: true })
+  })
+
+  it('keeps existing promoted widget state when mapping host widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'ckpt_input', type: '*' }]
+    })
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    const interiorInput = interiorNode.addInput('ckpt_input', '*')
+    interiorNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'source.safetensors',
+      () => undefined,
+      {
+        values: ['source.safetensors']
+      }
+    )
+    interiorInput.widget = { name: 'ckpt_name' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+    const rootGraphSpy = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(graph)
+
+    const id = subgraphNode.inputs[0].widgetId
+    if (!id) throw new Error('Expected promoted input to have widgetId')
+    const widgetStore = useWidgetValueStore()
+    if (widgetStore.getWidget(id)) {
+      widgetStore.setValue(id, 'existing.safetensors')
+    } else {
+      widgetStore.registerWidget(id, {
+        type: 'combo',
+        value: 'existing.safetensors',
+        options: {},
+        label: 'Existing'
+      })
+    }
+
+    useGraphNodeManager(graph)
+
+    expect(widgetStore.getWidget(id)?.value).toBe('existing.safetensors')
+    rootGraphSpy.mockRestore()
+  })
+})
+
+describe('Graph node manager lifecycle hooks', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('defers layout extraction until graph configuration completes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.title = 'Before'
+    const originalOnNodeAdded = vi.fn()
+    const originalAfterConfigured = vi.fn()
+    graph.onNodeAdded = originalOnNodeAdded
+    node.onAfterGraphConfigured = originalAfterConfigured
+    const originalWindowApp = window.app
+    window.app = { configuringGraph: true } as Window['app']
+
+    try {
+      const { vueNodeData } = useGraphNodeManager(graph)
+      graph.add(node)
+
+      expect(originalOnNodeAdded).toHaveBeenCalledWith(node)
+      expect(vueNodeData.get(node.id)?.title).toBe('Before')
+
+      node.title = 'After'
+      node.onAfterGraphConfigured?.()
+
+      expect(originalAfterConfigured).toHaveBeenCalled()
+      expect(vueNodeData.get(node.id)?.title).toBe('After')
+    } finally {
+      window.app = originalWindowApp
+    }
+  })
+
+  it('chains original remove and trigger handlers, then restores them on cleanup', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const originalOnNodeAdded = vi.fn()
+    const originalOnNodeRemoved = vi.fn()
+    const originalOnTrigger = vi.fn()
+    graph.onNodeAdded = originalOnNodeAdded
+    graph.onNodeRemoved = originalOnNodeRemoved
+    graph.onTrigger = originalOnTrigger
+
+    const manager = useGraphNodeManager(graph)
+    graph.add(node)
+    graph.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'title',
+      newValue: 'Renamed'
+    })
+    graph.remove(node)
+
+    expect(originalOnNodeAdded).toHaveBeenCalledWith(node)
+    expect(originalOnTrigger).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'node:property:changed' })
+    )
+    expect(originalOnNodeRemoved).toHaveBeenCalledWith(node)
+    expect(manager.vueNodeData.size).toBe(0)
+
+    manager.cleanup()
+
+    expect(graph.onNodeAdded).toBe(originalOnNodeAdded)
+    expect(graph.onNodeRemoved).toBe(originalOnNodeRemoved)
+    expect(graph.onTrigger).toBe(originalOnTrigger)
+  })
+
+  it('cleans up to undefined when no original callbacks existed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    const manager = useGraphNodeManager(graph)
+    expect(manager.vueNodeData.has(node.id)).toBe(true)
+
+    manager.cleanup()
+
+    expect(graph.onNodeAdded).toBeUndefined()
+    expect(graph.onNodeRemoved).toBeUndefined()
+    expect(graph.onTrigger).toBeUndefined()
+    expect(manager.vueNodeData.size).toBe(0)
+  })
+})
+
+describe('getControlWidget', () => {
+  it('normalizes linked control widget values and updates the source widget', () => {
+    const linkedControl = {
+      [IS_CONTROL_WIDGET]: true,
+      value: 'fixed'
+    }
+    const widgetObj: unknown = { linkedWidgets: [linkedControl] }
+    const widget = widgetObj as IBaseWidget
+
+    const control = getControlWidget(widget)
+
+    expect(control?.value).toBe('fixed')
+
+    control?.update('unexpected')
+
+    expect(linkedControl.value).toBe('randomize')
   })
 })
