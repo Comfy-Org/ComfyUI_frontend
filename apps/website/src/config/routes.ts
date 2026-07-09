@@ -47,13 +47,26 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterpriseMsa'
 ])
 
+const LOCALE_INVARIANT_PATHS = new Set<string>(
+  [...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key])
+)
+
+/**
+ * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * URLs and locale-invariant routes pass through unchanged.
+ */
+export function localizeHref(href: string, locale: Locale = 'en'): string {
+  if (locale === 'en' || !href.startsWith('/')) return href
+  if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  return `/${locale}${href}`
+}
+
 export function getRoutes(locale: Locale = 'en'): Routes {
   if (locale === 'en') return baseRoutes
-  const prefix = `/${locale}`
   return Object.fromEntries(
-    Object.entries(baseRoutes).map(([k, v]) => [
-      k,
-      LOCALE_INVARIANT_ROUTE_KEYS.has(k as keyof Routes) ? v : `${prefix}${v}`
+    Object.entries(baseRoutes).map(([key, path]) => [
+      key,
+      localizeHref(path, locale)
     ])
   ) as unknown as Routes
 }
@@ -72,7 +85,6 @@ export const externalLinks = {
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',
-  mcpServer: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',

@@ -3,6 +3,7 @@ import type { Locale, TranslationKey } from '../i18n/translations'
 
 import { t } from '../i18n/translations'
 import { resolveRel } from '../utils/cta'
+import { localizeHref } from './routes'
 
 // The banner "CMS": a single typed config resolved through i18n at build time.
 // `isActive` is the master on/off switch (supersedes the old SHOW_ANNOUNCEMENT_BANNER).
@@ -73,7 +74,7 @@ export function getBannerData(
       : undefined,
     link: link
       ? {
-          href: link.href,
+          href: localizeHref(link.href, locale),
           title: t(link.titleKey, locale),
           target,
           rel: resolveRel({ target: target ?? '_self' }),
