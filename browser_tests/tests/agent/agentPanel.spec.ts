@@ -101,6 +101,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     postedMessages,
     getWebSocket
   }) => {
+    // Boot + open + full turn can exceed the cloud project's 15s budget on a
+    // loaded CI runner; same widening precedent as versionMismatchWarnings:91.
+    test.setTimeout(30_000)
+
     const page = comfyPage.page
 
     // Flag on: the top-bar button is exposed. Open the panel.
@@ -169,6 +173,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     postedMessages,
     getWebSocket
   }) => {
+    // Boot + open + full turn can exceed the cloud project's 15s budget on a
+    // loaded CI runner; same widening precedent as versionMismatchWarnings:91.
+    test.setTimeout(30_000)
+
     const page = comfyPage.page
     const panel = page.locator('#agent-panel-root')
 
