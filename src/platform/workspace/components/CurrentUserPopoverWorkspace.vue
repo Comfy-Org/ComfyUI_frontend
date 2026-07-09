@@ -130,10 +130,6 @@
       </Button>
     </div>
 
-    <div v-if="showUsageBar" class="px-4 pb-2">
-      <ProgressBar :value="usage.usedFraction" />
-    </div>
-
     <Divider class="mx-0 my-2" />
 
     <!-- Plans & Pricing (PERSONAL and OWNER only) -->
@@ -234,9 +230,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import ProgressBar from '@/platform/workspace/components/dialogs/settings/ProgressBar.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -284,17 +278,6 @@ const {
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
-
-const { allowanceTotalCredits, usage } = useSubscriptionCredits()
-// Mirror the credits tile: show the monthly-usage bar only for an active,
-// paid plan that actually has an allowance to measure against.
-const showUsageBar = computed(
-  () =>
-    isActiveSubscription.value &&
-    !isFreeTier.value &&
-    !isLoading.value &&
-    (allowanceTotalCredits.value ?? 0) > 0
-)
 
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
