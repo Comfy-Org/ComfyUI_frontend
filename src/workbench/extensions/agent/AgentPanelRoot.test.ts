@@ -1357,13 +1357,10 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('stages a chip from the @ node picker and sends its id + definition', async () => {
+  it('stages a chip from the @ node picker and sends its id', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
-    const serialized = { id: 9, type: 'VAEDecode', widgets_values: [] }
-    appMock.graph.nodes = [
-      { id: 9, title: 'VAE Decode', serialize: () => serialized }
-    ]
+    appMock.graph.nodes = [{ id: 9, title: 'VAE Decode' }]
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
@@ -1381,21 +1378,16 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    expect(bodies[0]).toMatchObject({
-      selection: { node_ids: ['9'], nodes: [serialized] }
-    })
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['9'] } })
   })
 
   it('resolves @ picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
-    const serialized = { id: 12, type: 'KSampler', widgets_values: [7] }
     // The canvas is showing an open subgraph whose inner node is absent from
-    // the root graph; both the picker and the sent definition must use it.
+    // the root graph; the picker must list it.
     appMock.canvas = {
-      graph: {
-        nodes: [{ id: 12, title: 'KSampler', serialize: () => serialized }]
-      }
+      graph: { nodes: [{ id: 12, title: 'KSampler' }] }
     }
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1409,9 +1401,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    expect(bodies[0]).toMatchObject({
-      selection: { node_ids: ['12'], nodes: [serialized] }
-    })
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
   })
 
   it('uploads the canvas once per change and binds the minted id for in-place applies', async () => {
