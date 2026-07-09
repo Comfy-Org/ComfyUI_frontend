@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-const { name, previewUrl } = defineProps<{
+const {
+  name,
+  previewUrl,
+  uploading = false
+} = defineProps<{
   name: string
   previewUrl?: string
+  uploading?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
 
@@ -14,8 +19,13 @@ const { t } = useI18n()
   <span
     class="rounded-agent bg-agent-pill text-agent-fg inline-flex items-center gap-1.5 py-1 pr-2 pl-1 text-xs"
   >
+    <span
+      v-if="uploading"
+      :aria-label="t('agent.uploading')"
+      class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 animate-spin"
+    />
     <img
-      v-if="previewUrl"
+      v-else-if="previewUrl"
       :src="previewUrl"
       :alt="name"
       class="size-5 rounded-sm object-cover"

@@ -47,7 +47,9 @@ function onEnter(event: KeyboardEvent): void {
 // Parent (asset tray / file picker) stages attachments through this.
 defineExpose({
   insert: composer.insert,
-  addAttachment: composer.addAttachment
+  addAttachment: composer.addAttachment,
+  updateAttachment: composer.updateAttachment,
+  removeAttachment: composer.removeAttachment
 })
 </script>
 
@@ -73,6 +75,7 @@ defineExpose({
         :key="item.id"
         :name="item.name"
         :preview-url="item.previewUrl"
+        :uploading="item.uploading"
         @remove="composer.removeAttachment(item.id)"
       />
     </div>
