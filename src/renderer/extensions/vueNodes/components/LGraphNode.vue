@@ -60,7 +60,7 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
+          hasAnyError ? '-inset-1.75' : '-inset-0.75',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
@@ -101,10 +101,10 @@
             multi
             class="absolute right-0 translate-x-1/2"
           />
-          <NodeSlots :node-data="nodeData" unified />
+          <NodeSlots :node-data unified />
         </template>
         <NodeHeader
-          :node-data="nodeData"
+          :node-data
           :collapsed="isCollapsed"
           :price-badges="badges.pricing"
           @collapse="handleCollapse"
@@ -124,7 +124,7 @@
       />
 
       <template v-if="!isCollapsed && isRerouteNode">
-        <NodeSlots :node-data="nodeData" />
+        <NodeSlots :node-data />
       </template>
 
       <template v-else-if="!isCollapsed">
@@ -151,20 +151,16 @@
           "
           :data-testid="`node-body-${nodeData.id}`"
         >
-          <NodeSlots :node-data="nodeData" />
+          <NodeSlots :node-data />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets v-if="hasRenderableWidgets" :node-data />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
-            <NodeContent
-              v-if="nodeMedia"
-              :node-data="nodeData"
-              :media="nodeMedia"
-            />
+            <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
               v-for="preview in promotedPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-              :node-data="nodeData"
+              :node-data
               :media="preview"
             />
           </div>
@@ -297,6 +293,10 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -719,18 +719,30 @@ const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
 useGLSLPreview(lgraphNode)
 
+const widgetValueStore = useWidgetValueStore()
+const widgetIds = computed(() => {
+  const graphId = app.rootGraph?.id
+  const bareNodeId = stripGraphPrefix(nodeData.id)
+  if (!graphId || !bareNodeId) return []
+
+  return widgetValueStore.getNodeWidgetIds(graphId, bareNodeId) ?? []
+})
+
+const hasRenderableWidgets = computed(() => widgetIds.value.length > 0)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
   if (isCollapsed.value) return false
-
-  // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     return hasUnpromotedWidgets(node)
   }
 
-  // For regular nodes: show button if there are advanced widgets and they're currently hidden
-  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
+  const hasAdvancedWidgets = widgetIds.value.some((id) => {
+    const renderState = widgetValueStore.getWidgetRenderState(id)
+    const widgetState = widgetValueStore.getWidget(id)
+    return renderState?.advanced ?? widgetState?.options?.advanced
+  })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )

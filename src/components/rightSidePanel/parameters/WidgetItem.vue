@@ -3,7 +3,6 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -21,7 +20,11 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getControlWidget } from '@/types/simplifiedWidget'
+import type {
+  SimplifiedWidget,
+  WidgetValue as SimplifiedWidgetValue
+} from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -61,6 +64,7 @@ const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const { nodeManager } = useVueNodeLifecycle()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -68,13 +72,17 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
+// Read inputs from the manager's reactive projection: link mutations happen in
+// place on node.inputs (no reactive signal), whereas vueNodeData is re-set on
+// slot-link changes. Falls back to node.inputs for unmanaged nodes.
 const isLinked = computed(() => {
-  const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(node.id)
-    ?.widgets?.find((w) => w.name === widget.name)
-  return safeWidget?.slotMetadata
-    ? !!safeWidget.slotMetadata.linked
-    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+  const inputs =
+    nodeManager.value?.vueNodeData.get(node.id)?.inputs ?? node.inputs
+  return Boolean(
+    inputs?.some(
+      (input) => input.widget?.name === widget.name && input.link != null
+    )
+  )
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
@@ -93,7 +101,9 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   return {
     name: widgetName,
     type: widgetType,
-    value: widgetState?.value ?? widget.value,
+    value: (widgetState
+      ? widgetState.value
+      : widget.value) as SimplifiedWidgetValue,
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),

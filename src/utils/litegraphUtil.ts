@@ -379,6 +379,26 @@ export function getWidgetIdForNode(
   return widgetId(graphId, nodeId, name)
 }
 
+/**
+ * Maps a node's live widgets to their {@link WidgetId}, replicating the
+ * duplicate-name disambiguation used when the ids were minted. Building the map
+ * once lets callers resolve widgets by id in O(1) instead of rescanning.
+ */
+export function mapLiveWidgetsById(
+  node: LGraphNode
+): Map<WidgetId, IBaseWidget> {
+  const byId = new Map<WidgetId, IBaseWidget>()
+  const duplicateIndexByKey = new Map<string, number>()
+  for (const widget of node.widgets ?? []) {
+    const duplicateKey = `${widget.name}:${widget.type}`
+    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+    if (id) byId.set(id, widget)
+  }
+  return byId
+}
+
 export function isLoad3dNode(node: LGraphNode) {
   return (
     node &&

@@ -38,7 +38,6 @@ const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
   executing: false,
   inputs: [],
   outputs: [],
-  widgets: [],
   flags: { collapsed: false },
   ...overrides
 })

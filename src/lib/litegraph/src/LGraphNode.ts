@@ -9,6 +9,7 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
@@ -96,6 +97,7 @@ import type {
 } from './types/widgets'
 import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
+import { getWidgetIds } from './utils/widget'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -2055,6 +2057,20 @@ export class LGraphNode
 
     widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
+
+    const graphId = this.graph?.rootGraph.id
+    if (graphId) {
+      const widgetValueStore = useWidgetValueStore()
+      // Drop the widget from the render order but keep its stored value, so a
+      // remove-then-re-add of the same widget id preserves what the user set.
+      if (widget.widgetId)
+        widgetValueStore.removeNodeWidgetOrder(widget.widgetId)
+      widgetValueStore.setNodeWidgetOrder(
+        graphId,
+        this.id,
+        getWidgetIds(this.widgets)
+      )
+    }
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {

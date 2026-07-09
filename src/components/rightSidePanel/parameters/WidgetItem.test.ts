@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -10,6 +11,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
@@ -44,6 +46,19 @@ vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
 vi.mock('@/composables/graph/useGraphNodeManager', () => ({
   getControlWidget: vi.fn(() => undefined)
 }))
+
+const managerMock = vi.hoisted(() => ({
+  vueNodeData: undefined as Map<unknown, { inputs?: unknown[] }> | undefined
+}))
+
+vi.mock('@/composables/graph/useVueNodeLifecycle', async () => {
+  const { reactive, shallowRef } = await import('vue')
+  const vueNodeData = reactive(new Map<unknown, { inputs?: unknown[] }>())
+  managerMock.vueNodeData = vueNodeData
+  return {
+    useVueNodeLifecycle: () => ({ nodeManager: shallowRef({ vueNodeData }) })
+  }
+})
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
@@ -127,6 +142,7 @@ describe('WidgetItem', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    managerMock.vueNodeData?.clear()
   })
 
   describe('widget state rendering', () => {
@@ -203,6 +219,41 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.value).toBe('model_a.safetensors')
+    })
+
+    it('passes null from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: null,
+        options: {}
+      })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.value).toBe('null')
+    })
+
+    it('updates disabled options when the widget input is linked', async () => {
+      // Mirrors production: link changes reach the panel through the manager
+      // re-setting vueNodeData (refreshNodeInputs), not through in-place mutation
+      // of node.inputs.
+      const node = createMockNode()
+      const widget = createMockWidget({ name: 'seed', options: {} })
+      const seedInput = { name: 'seed', widget: { name: 'seed' }, link: null }
+      managerMock.vueNodeData!.set(node.id, { inputs: [seedInput] })
+
+      const { container } = renderWidgetItem(widget, node)
+      expect(getStubWidget(container).options.disabled).toBeUndefined()
+
+      managerMock.vueNodeData!.set(node.id, {
+        inputs: [{ ...seedInput, link: toLinkId(1) }]
+      })
+      await nextTick()
+
+      expect(getStubWidget(container).options.disabled).toBe(true)
     })
   })
 })

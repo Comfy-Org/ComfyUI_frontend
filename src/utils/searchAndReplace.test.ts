@@ -1,10 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 describe('applyTextReplacements', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   // Test specifically the filename sanitization part
   describe('filename sanitization', () => {
     it('should replace invalid filename characters with underscores', () => {

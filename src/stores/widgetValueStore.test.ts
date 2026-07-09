@@ -141,7 +141,7 @@ describe('useWidgetValueStore', () => {
       expect(registered?.value).toBe(100)
     })
 
-    it('getNodeWidgets returns all widgets for a node', () => {
+    it('getNodeWidgets returns widgets in registration order', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
         widgetId(graphA, toNodeId('node-1'), 'seed'),
@@ -157,8 +157,40 @@ describe('useWidgetValueStore', () => {
       )
 
       const widgets = store.getNodeWidgets(graphA, toNodeId('node-1'))
-      expect(widgets).toHaveLength(2)
-      expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
+      expect(widgets.map((w) => w.name)).toEqual(['seed', 'steps'])
+    })
+
+    it('getNodeWidgetIds returns the explicit node widget order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      const cfg = widgetId(graphA, toNodeId('node-1'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(steps, state('number', 20))
+      store.registerWidget(cfg, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [cfg, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        cfg,
+        seed,
+        steps
+      ])
+      expect(
+        store.getNodeWidgets(graphA, toNodeId('node-1')).map((w) => w.name)
+      ).toEqual(['cfg', 'seed', 'steps'])
+    })
+
+    it('ignores widget IDs from other nodes when setting order', () => {
+      const store = useWidgetValueStore()
+      const seed = widgetId(graphA, toNodeId('node-1'), 'seed')
+      const other = widgetId(graphA, toNodeId('node-2'), 'cfg')
+      store.registerWidget(seed, state('number', 1))
+      store.registerWidget(other, state('number', 7))
+
+      store.setNodeWidgetOrder(graphA, toNodeId('node-1'), [other, seed])
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([seed])
     })
   })
 
@@ -174,13 +206,32 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
-    it('deleteWidget removes registered widgets', () => {
+    it('deleteWidget removes registered widgets from node order', () => {
       const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
       store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
 
       expect(store.deleteWidget(seedA)).toBe(true)
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
       expect(store.deleteWidget(seedA)).toBe(false)
+    })
+
+    it('removeNodeWidgetOrder drops the id from order but keeps its value', () => {
+      const store = useWidgetValueStore()
+      const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
+      store.registerWidget(seedA, state('number', 100))
+      store.registerWidget(steps, state('number', 20))
+
+      store.removeNodeWidgetOrder(seedA)
+
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
+        steps
+      ])
+      expect(store.getWidget(seedA)?.value).toBe(100)
     })
   })
 

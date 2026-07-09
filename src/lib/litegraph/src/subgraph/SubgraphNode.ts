@@ -32,6 +32,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
@@ -643,20 +644,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
+    const store = useWidgetValueStore()
     input.widgetId = id
-    useWidgetValueStore().registerWidget(id, {
-      type: interiorWidget.type,
-      value: interiorWidget.value,
-      options: cloneDeep(interiorWidget.options ?? {}),
-      label: input.label ?? subgraphInput.name,
-      serialize: interiorWidget.serialize,
-      disabled: interiorWidget.disabled,
-      isDOMWidget:
-        'isDOMWidget' in interiorWidget &&
-        typeof interiorWidget.isDOMWidget === 'boolean'
-          ? interiorWidget.isDOMWidget
-          : undefined
-    })
+    store.registerWidget(
+      id,
+      {
+        type: interiorWidget.type,
+        value: interiorWidget.value,
+        options: cloneDeep(interiorWidget.options ?? {}),
+        label: input.label ?? subgraphInput.name,
+        serialize: interiorWidget.serialize,
+        disabled: interiorWidget.disabled
+      },
+      deriveWidgetRenderState(interiorWidget)
+    )
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)

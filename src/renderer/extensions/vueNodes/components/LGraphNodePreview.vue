@@ -19,9 +19,11 @@
     >
       <NodeSlots :node-data="nodeData" />
 
-      <NodeWidgets
-        v-if="nodeData.widgets?.length"
-        :node-data="nodeData"
+      <WidgetGrid
+        v-if="previewWidgets.length"
+        :processed-widgets="previewWidgets"
+        :node-type="nodeData.type"
+        :node-id="nodeData.id"
         class="pointer-events-none"
       />
     </div>
@@ -36,14 +38,17 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
-import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -58,39 +63,9 @@ const {
 
 const widgetStore = useWidgetStore()
 
-// Convert nodeDef into VueNodeData
 const nodeData = computed<VueNodeData>(() => {
-  const widgets = Object.entries(nodeDef.inputs || {})
-    .filter(([_, input]) => widgetStore.inputIsWidget(input))
-    .map(([name, input]) => {
-      const comboValues =
-        input.type === 'COMBO' && Array.isArray(input.options)
-          ? input.options
-          : undefined
-      // Preview nodes have no widget-value store entry, so combo widgets
-      // render their first option; lead with the requested value to show it.
-      const leadValue = widgetValues?.[name]
-      return {
-        nodeId: toNodeId('-1'),
-        name,
-        type: input.widgetType || input.type,
-        value:
-          input.default !== undefined
-            ? input.default
-            : (comboValues?.[0] ?? ''),
-        options: {
-          hidden: input.hidden,
-          advanced: input.advanced,
-          values:
-            leadValue && comboValues
-              ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
-              : comboValues
-        } satisfies IWidgetOptions
-      }
-    })
-
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
-    .filter(([_, input]) => !widgetStore.inputIsWidget(input))
+    .filter(([, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
       name,
       type: input.type,
@@ -119,16 +94,44 @@ const nodeData = computed<VueNodeData>(() => {
     id: toNodeId(`preview-${nodeDef.name}`),
     title: nodeDef.display_name || nodeDef.name,
     type: nodeDef.name,
-    mode: 0, // Normal mode
+    mode: 0,
     selected: false,
     executing: false,
-    widgets,
     inputs,
     outputs,
-
     flags: {
       collapsed: false
     }
   }
 })
+
+const previewWidgets = computed<WidgetGridItem[]>(() =>
+  Object.entries(nodeDef.inputs || {})
+    .filter(
+      ([, input]) =>
+        widgetStore.inputIsWidget(input) && !input.hidden && !input.advanced
+    )
+    .map(([name, input]) => {
+      const comboValues =
+        input.type === 'COMBO' && Array.isArray(input.options)
+          ? input.options
+          : undefined
+      const leadValue = widgetValues?.[name]
+      const value = (leadValue ??
+        input.default ??
+        comboValues?.[0] ??
+        '') as WidgetValue
+      const type = input.widgetType || input.type
+      const values =
+        leadValue !== undefined && comboValues
+          ? [leadValue, ...comboValues.filter((option) => option !== leadValue)]
+          : comboValues
+      return {
+        visible: true,
+        renderKey: `preview:${nodeDef.name}:${name}`,
+        vueComponent: getComponent(type) ?? WidgetLegacy,
+        simplified: { name, type, value, options: { values }, spec: input }
+      }
+    })
+)
 </script>

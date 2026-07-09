@@ -13,8 +13,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -256,7 +256,10 @@ function clearWidgetErrors(
       source.sourceWidgetName,
       source.sourceWidgetName,
       value,
-      options
+      {
+        min: source.sourceWidget.options?.min,
+        max: source.sourceWidget.options?.max
+      }
     )
   }
 

@@ -8,25 +8,32 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   comfyPage,
   comfyMouse
 }) => {
+  let legacyNodeId = toNodeId(10)
+
   await test.step('setup', async () => {
-    await comfyPage.nodeOps.addNode('DevToolsNodeWithLegacyWidget', undefined, {
-      x: 0,
-      y: 0
-    })
-    await comfyPage.appMode.enterAppModeWithInputs([['10', 'legacy_widget']])
+    const legacyNode = await comfyPage.nodeOps.addNode(
+      'DevToolsNodeWithLegacyWidget',
+      undefined,
+      {
+        x: 0,
+        y: 0
+      }
+    )
+    legacyNodeId = legacyNode.id
+    await comfyPage.appMode.enterAppModeWithInputs([
+      [String(legacyNodeId), 'legacy_widget']
+    ])
   })
 
-  const getWidth = () =>
-    comfyPage.page.evaluate(
-      (nodeId) => graph!.getNodeById(nodeId)!.widgets![0].width ?? 0,
-      toNodeId(10)
-    )
+  const getWidth = async () =>
+    (await comfyPage.appMode.linearWidgets.locator('canvas').boundingBox())
+      ?.width ?? 0
 
   await test.step('Mouse clicks resolve to button regions', async () => {
     const legacyWidget = comfyPage.appMode.linearWidgets.locator('canvas')
     const { width, height } = (await legacyWidget.boundingBox())!
 
-    const nodeRef = await comfyPage.nodeOps.getNodeRefById(10)
+    const nodeRef = await comfyPage.nodeOps.getNodeRefById(legacyNodeId)
     const legacyWidgetRef = await nodeRef.getWidget(0)
     expect(await legacyWidgetRef.getValue()).toBe(0)
     await legacyWidget.click({ position: { x: 20, y: height / 2 } })
@@ -36,8 +43,8 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   })
 
   await test.step('Resize to update width', async () => {
+    await expect.poll(getWidth).toBeGreaterThan(0)
     const initialWidth = await getWidth()
-    expect(initialWidth).toBeGreaterThan(0)
 
     const gutter = comfyPage.page.getByRole('separator')
 

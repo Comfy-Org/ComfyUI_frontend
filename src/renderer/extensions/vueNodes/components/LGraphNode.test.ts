@@ -60,7 +60,7 @@ vi.mock(
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { getNodeById: vi.fn() },
+    rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() }
   }
 }))
@@ -161,7 +161,6 @@ const mockNodeData: VueNodeData = {
   flags: {},
   inputs: [],
   outputs: [],
-  widgets: [],
   selected: false,
   executing: false
 }
@@ -178,6 +177,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -274,17 +274,16 @@ describe('LGraphNode', () => {
   })
 
   it('should hide advanced footer button while the node is collapsed', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        flags: { collapsed: true }
       }
     })
 
@@ -294,18 +293,17 @@ describe('LGraphNode', () => {
   })
 
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
         flags: { collapsed: true },
-        hasErrors: true,
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        hasErrors: true
       }
     })
 

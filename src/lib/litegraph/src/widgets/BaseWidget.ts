@@ -17,6 +17,7 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -147,12 +148,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 
-    this._state = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+    const store = useWidgetValueStore()
+    const id = widgetId(graphId, nodeId, this.name)
+    this._state = store.registerWidget(
+      id,
       {
         ...this._state,
+        type: this.type,
         value: this.value
-      }
+      },
+      deriveWidgetRenderState(this)
     )
   }
 

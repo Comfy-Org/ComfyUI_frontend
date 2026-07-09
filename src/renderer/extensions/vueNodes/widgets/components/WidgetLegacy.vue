@@ -126,7 +126,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] min-w-0 basis-0"
+    class="relative mx-[-12px] w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
