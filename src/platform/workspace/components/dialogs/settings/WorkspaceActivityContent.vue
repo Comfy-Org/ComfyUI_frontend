@@ -15,13 +15,13 @@
                 <i :class="sortIcon('date')" />
               </button>
             </TableHead>
-            <TableHead :aria-sort="ariaSort('user')">
+            <TableHead class="w-56" :aria-sort="ariaSort('user')">
               <button :class="sortHeaderClass" @click="toggleSort('user')">
                 {{ $t('workspacePanel.activity.columns.user') }}
                 <i :class="sortIcon('user')" />
               </button>
             </TableHead>
-            <TableHead class="w-48" :aria-sort="ariaSort('eventType')">
+            <TableHead :aria-sort="ariaSort('eventType')">
               <button :class="sortHeaderClass" @click="toggleSort('eventType')">
                 {{ $t('workspacePanel.activity.columns.eventType') }}
                 <i :class="sortIcon('eventType')" />
