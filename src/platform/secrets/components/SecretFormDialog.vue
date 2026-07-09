@@ -41,7 +41,7 @@
                     <img
                       v-if="option.logo"
                       :src="option.logo"
-                      :alt="option.label"
+                      alt=""
                       class="size-4"
                     />
                     {{ option.label }}
