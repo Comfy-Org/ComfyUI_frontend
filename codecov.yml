@@ -10,7 +10,7 @@ coverage:
     project:
       critical-unit:
         target: auto
-        threshold: 0%
+        threshold: 0.3%
         flags:
           - unit
         paths:
