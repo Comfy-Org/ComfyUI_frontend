@@ -151,6 +151,9 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  // A persisted thread id would make every later mount hydrate from the
+  // server and surface mock-shaped replies as errors.
+  localStorage.clear()
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
@@ -171,21 +174,24 @@ describe('AgentPanelRoot session notices', () => {
     vi.restoreAllMocks()
   })
 
-  it('forwards a session notice to the host toast as an error', async () => {
+  it('surfaces a session error notice via the host error modal, not a toast', async () => {
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const toast = useToastStore()
 
-    // A malformed agent_message_done with no readable message_id makes the session push an
-    // error notice (i18n agent.malformedEvent). The root watch must surface it as a toast.
+    // A malformed agent_message_done with no readable message_id makes the
+    // session push an error notice; errors share the ONE host error modal.
     socket.emit('message', {
       data: JSON.stringify({ type: 'agent_message_done', data: {} })
     })
     await nextTick()
 
-    expect(toast.messagesToAdd).toHaveLength(1)
-    expect(toast.messagesToAdd[0]).toMatchObject({
-      severity: 'error',
-      summary: i18n.global.t('agent.malformedEvent')
+    expect(toast.messagesToAdd).toHaveLength(0)
+    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_api_failed',
+      details: i18n.global.t('agent.malformedEvent')
     })
   })
 })
@@ -360,7 +366,9 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeTruthy()
   })
 
-  it('removes the chip, revokes its preview, and toasts when the upload fails', async () => {
+  it('removes the chip, revokes its preview, and raises the error modal when the upload fails', async () => {
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     let failUpload: () => void = () => {}
     vi.stubGlobal(
@@ -383,7 +391,6 @@ describe('AgentPanelRoot attach flow', () => {
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    const toast = useToastStore()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     await userEvent.upload(
@@ -397,9 +404,10 @@ describe('AgentPanelRoot attach flow', () => {
       expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
     )
     expect(revoke).toHaveBeenCalledTimes(1)
-    expect(toast.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'error',
-      summary: 'cat.png could not be uploaded'
+    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_api_failed',
+      details: 'cat.png could not be uploaded'
     })
     revoke.mockRestore()
   })

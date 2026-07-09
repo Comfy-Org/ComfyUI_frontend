@@ -4322,6 +4322,10 @@
       "agent_draft_apply_failed": {
         "title": "An error was found",
         "desc": "Couldn't apply the agent's draft to the canvas."
+      },
+      "agent_api_failed": {
+        "title": "An error was found",
+        "desc": "Comfy Agent hit a server error."
       }
     }
   },
