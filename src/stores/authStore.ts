@@ -23,6 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
+import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -102,6 +103,18 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const lastTokenUserId = ref<string | null>(null)
 
+  /**
+   * The uid present before the latest auth-state change, so a clear can be
+   * distinguished from the initial unauthenticated boot (no prior user).
+   */
+  const previousUid = ref<string | null>(null)
+  /**
+   * Set true immediately before a user-initiated `signOut`, read (and reset)
+   * in the `onAuthStateChanged` null branch to tell a normal logout apart from
+   * a spontaneous Firebase clear.
+   */
+  let userInitiatedLogout = false
+
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Providers
@@ -138,10 +151,40 @@ export const useAuthStore = defineStore('auth', () => {
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
 
+  /**
+   * Emit a diagnostic telemetry event whenever the Firebase auth state is
+   * cleared for a previously-signed-in user, capturing the layer responsible
+   * (user logout vs. spontaneous clear vs. same-origin account switch) and any
+   * in-flight MCP OAuth flow. Strictly additive: never throws into the handler.
+   */
+  function reportAuthStateCleared(previousUserId: string) {
+    const oauthRequestInFlight = getOAuthRequestId() !== null
+    if (!userInitiatedLogout) {
+      console.warn(
+        `[authStore] Firebase auth state cleared without a user-initiated logout (previous_user_id=${previousUserId}, oauth_request_in_flight=${oauthRequestInFlight})`
+      )
+    }
+    useTelemetry()?.trackAuthCleared({
+      user_initiated: userInitiatedLogout,
+      previous_user_id: previousUserId,
+      oauth_request_in_flight: oauthRequestInFlight,
+      visibility_state: document.visibilityState,
+      has_session_cookie: document.cookie
+        .split('; ')
+        .some((cookie) => cookie.startsWith('session='))
+    })
+  }
+
   onAuthStateChanged(auth, (user) => {
+    const clearedUid = previousUid.value
     currentUser.value = user
     isInitialized.value = true
+    previousUid.value = user?.uid ?? null
     if (user === null) {
+      if (isCloud && clearedUid !== null) {
+        reportAuthStateCleared(clearedUid)
+      }
+      userInitiatedLogout = false
       lastTokenUserId.value = null
       useWorkspaceAuthStore().clearWorkspaceContext()
     } else if (isCloud) {
@@ -528,7 +571,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+    executeAuthAction(async (authInstance) => {
+      userInitiatedLogout = true
+      try {
+        await signOut(authInstance)
+      } catch (error) {
+        // signOut failed, so the auth state was not cleared; drop the flag so a
+        // later spontaneous clear is not misattributed as user-initiated.
+        userInitiatedLogout = false
+        throw error
+      }
+    })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction((authInstance) =>

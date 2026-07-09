@@ -1,6 +1,10 @@
 import { api } from '@/scripts/api'
 
-import type { TelemetryProvider, WorkflowImportMetadata } from '../../types'
+import type {
+  AuthClearedMetadata,
+  TelemetryProvider,
+  WorkflowImportMetadata
+} from '../../types'
 
 /**
  * ClickHouse Telemetry Provider - Cloud Build Implementation
@@ -22,6 +26,19 @@ export class ClickHouseTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.reportMissingNodes(metadata)
+  }
+
+  trackAuthCleared(metadata: AuthClearedMetadata): void {
+    api
+      .fetchApi('/internal/cloud_analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_name: 'auth_state_cleared',
+          event_data: metadata
+        })
+      })
+      .catch(() => {})
   }
 
   private reportMissingNodes(metadata: WorkflowImportMetadata): void {
