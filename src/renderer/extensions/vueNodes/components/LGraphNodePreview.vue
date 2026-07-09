@@ -107,7 +107,10 @@ const nodeData = computed<VueNodeData>(() => {
 
 const previewWidgets = computed<WidgetGridItem[]>(() =>
   Object.entries(nodeDef.inputs || {})
-    .filter(([, input]) => widgetStore.inputIsWidget(input) && !input.hidden)
+    .filter(
+      ([, input]) =>
+        widgetStore.inputIsWidget(input) && !input.hidden && !input.advanced
+    )
     .map(([name, input]) => {
       const comboValues =
         input.type === 'COMBO' && Array.isArray(input.options)

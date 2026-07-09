@@ -93,14 +93,14 @@ const mappedSelections = computed((): WidgetEntry[] => {
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     ensureSelectedWidgetState(widgetId, widget)
-    const fullNodeData = nodeToNodeData(node, widgetId)
     if (isWidgetInputLinked(node, widget.name)) return []
 
+    const fullNodeData = nodeToNodeData(node, widgetId)
     return [
       {
         key: widgetId,
         persistedHeight: config?.height,
-        nodeData: fullNodeData,
+        nodeData: { ...fullNodeData, inputs: [] },
         widgetIds: [widgetId],
         action: { widget, node }
       }

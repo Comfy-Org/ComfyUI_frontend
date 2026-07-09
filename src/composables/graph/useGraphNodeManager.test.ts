@@ -216,8 +216,10 @@ describe('Widget input link reactivity', () => {
 
     await nextTick()
 
+    const updatedData = vueNodeData.get(node.id)!
+    expect(updatedData).not.toBe(nodeData)
     expect(
-      nodeData.inputs?.some(
+      updatedData.inputs?.some(
         (slot) => slot.name === 'prompt' && slot.widget?.name === 'prompt'
       )
     ).toBe(false)
