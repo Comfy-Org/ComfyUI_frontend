@@ -18,34 +18,50 @@ const SEARCH_FIELDS = [
 // never overrides a clearly-better text match. 5% tuned empirically.
 const USAGE_TIEBREAK_BAND = 0.05
 
+// Script-matched so spaced neighbors like Korean fall to the word tokenizer.
+const CJK = /[\p{scx=Han}\p{scx=Hiragana}\p{scx=Katakana}]/u
+const CJK_RUN = new RegExp(`${CJK.source}+`, 'gu')
+
+// Unigrams + bigrams so any substring of an unspaced run lands on a token.
+function cjkGrams(word: string): string[] {
+  const grams: string[] = []
+  for (const run of word.match(CJK_RUN) ?? []) {
+    const characters = run.split('')
+    grams.push(...characters)
+    for (let i = 1; i < characters.length; i++) {
+      grams.push(characters[i - 1] + characters[i])
+    }
+  }
+  return grams
+}
+
 /**
- * Also emits sub-parts so an identifier matches however it's typed: `-`/`_`
- * splits (`video_ltx2_3_t2v` → `t2v`) and a trailing version splits off its name
- * (`wan2.7` → `wan`, `2.7`, so `wan 2.7` matches too).
+ * Emits sub-parts so a term matches however it's typed: `-`/`_` splits, a
+ * trailing version (`wan2.7` → `wan`, `2.7`), and CJK character grams.
  */
 export function tokenize(text: string): string[] {
-  const tokens: string[] = []
+  const tokens = new Set<string>()
   for (const word of text.toLowerCase().split(/\s+/).filter(Boolean)) {
-    tokens.push(word)
-    const parts = new Set<string>()
+    for (const gram of cjkGrams(word)) tokens.add(gram)
+    // A pure-CJK run has no whole-word token — its grams already cover it.
+    if (CJK.test(word) && !/[a-z0-9]/.test(word)) continue
+    tokens.add(word)
     for (const part of word.split(/[-_]/)) {
-      if (part) parts.add(part)
+      if (part) tokens.add(part)
     }
     const version = word.match(/^([a-z][a-z.]*?)(\d+(?:\.\d+)*)$/)
     if (version) {
-      parts.add(version[1].replace(/\.$/, ''))
-      parts.add(version[2])
+      tokens.add(version[1].replace(/\.$/, ''))
+      tokens.add(version[2])
     }
-    parts.delete(word)
-    tokens.push(...parts)
   }
-  return tokens
+  return [...tokens]
 }
 
-// Exact for ≤3-char and digit-bearing terms so `2.5` ≠ `3.5` and short noise
-// doesn't over-match; ~2 edits otherwise (forgives `conrtol` → `control`).
+// Exact for ≤3-char and digit-bearing terms; otherwise 20% of length, so a typo
+// is forgiven but `upscale` can't fuzzy-match the shorter `scale`.
 export function termFuzziness(term: string): number | false {
-  return term.length <= 3 || /\d/.test(term) ? false : 0.3
+  return term.length <= 3 || /\d/.test(term) ? false : 0.2
 }
 
 function searchOptions(combineWith: 'AND' | 'OR' = 'AND') {

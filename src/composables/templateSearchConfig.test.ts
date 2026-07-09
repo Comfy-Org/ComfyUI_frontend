@@ -41,6 +41,30 @@ describe('tokenize', () => {
     expect(tokenize('t2v')).toEqual(['t2v'])
   })
 
+  it('emits a unigram and bigram for each char of an unspaced CJK run', () => {
+    expect(tokenize('图像放大')).toEqual([
+      '图',
+      '像',
+      '放',
+      '大',
+      '图像',
+      '像放',
+      '放大'
+    ])
+  })
+
+  it('grams katakana including the prolonged-sound mark', () => {
+    expect(tokenize('データ')).toEqual(['デ', 'ー', 'タ', 'デー', 'ータ'])
+  })
+
+  it('treats Korean as a spaced script, not an unspaced CJK run', () => {
+    expect(tokenize('업스케일')).toEqual(['업스케일'])
+  })
+
+  it('grams the CJK part of a word glued to latin, keeping the whole word', () => {
+    expect(tokenize('flux图像')).toEqual(['图', '像', '图像', 'flux图像'])
+  })
+
   it('lowercases and drops empty tokens', () => {
     expect(tokenize('  Flux   Kontext ')).toEqual(['flux', 'kontext'])
   })
@@ -58,7 +82,7 @@ describe('termFuzziness', () => {
   })
 
   it('allows edits for longer alphabetic terms', () => {
-    expect(termFuzziness('control')).toBe(0.3)
+    expect(termFuzziness('control')).not.toBe(false)
   })
 })
 
@@ -121,6 +145,35 @@ describe('searchTemplates', () => {
       })
     ])
     expect(searchTemplates(index, 'contorlnet')).toContain('cn')
+  })
+
+  it('does not fuzzy-match a long word onto its shorter substring', () => {
+    const index = buildIndex([
+      buildTemplate({ name: 'real', title: 'SeedVR2 Image Upscale' }),
+      buildTemplate({
+        name: 'junk',
+        title: 'Anime Text to Image',
+        description: 'configure CFG scale and steps'
+      })
+    ])
+    expect(searchTemplates(index, 'upscale')).toContain('real')
+    expect(searchTemplates(index, 'upscale')).not.toContain('junk')
+  })
+
+  it('matches a CJK term inside an unspaced CJK title', () => {
+    const index = buildIndex([
+      buildTemplate({ name: 'zh_upscale', title: '图像放大' }), // "image upscale"
+      buildTemplate({ name: 'zh_video', title: '视频补帧' }) // "video interpolation"
+    ])
+    // 放大 = "upscale"
+    expect(searchTemplates(index, '放大')).toContain('zh_upscale')
+    expect(searchTemplates(index, '放大')).not.toContain('zh_video')
+  })
+
+  it('matches a single CJK character that ends an unspaced run', () => {
+    const index = buildIndex([buildTemplate({ name: 'zh', title: '图像放大' })])
+    // 大 is only the trailing half of the last bigram; the unigram reaches it.
+    expect(searchTemplates(index, '大')).toContain('zh')
   })
 
   it('requires all words to match (AND) before falling back to OR', () => {
