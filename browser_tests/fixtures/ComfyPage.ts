@@ -56,12 +56,16 @@ class ComfyPropertiesPanel {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
+  readonly toggleButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.titleEditor = new TitleEditor(this.root)
+    this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
   }
 }
 
@@ -533,7 +537,6 @@ export const comfyPageFixture = base.extend<{
         'Comfy.TutorialCompleted': true,
         'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,

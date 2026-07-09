@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -17,7 +18,8 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -430,9 +432,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -530,6 +532,21 @@ export const useDialogService = () => {
     })
   }
 
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -595,6 +612,53 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
+   * understand" confirm dialog when the workspace has no other members;
+   * failures on that path surface as an error toast.
+   */
+  async function showDowngradeToPersonalDialog(options: {
+    planName: string
+    planSlug: string
+  }) {
+    const { useDowngradeToPersonal } =
+      await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
+      useDowngradeToPersonal()
+
+    try {
+      await refreshMembers()
+      if (!hasOtherMembers.value) {
+        await downgradeToPersonal(options.planSlug)
+        return
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.downgrade.failed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return
+    }
+
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'downgrade-remove-members',
+      component,
+      props: {
+        planName: options.planName,
+        planSlug: options.planSlug,
+        onConfirm: downgradeToPersonal
+      },
+      dialogComponentProps: {
+        ...workspaceDialogProps,
+        closable: false,
+        dismissableMask: false
+      }
+    })
+  }
+
   /** Shows one-time cloud notification modal for macOS desktop users. */
   async function showCloudNotification(): Promise<void> {
     const { default: component } = await lazyCloudNotificationContent()
@@ -652,10 +716,12 @@ export const useDialogService = () => {
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
+    showChangeMemberRoleDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    showDowngradeToPersonalDialog
   }
 }

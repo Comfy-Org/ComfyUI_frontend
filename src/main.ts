@@ -30,19 +30,24 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
+// against the server's runtime values instead of the build-time defaults.
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
 if (isCloud) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -110,7 +115,9 @@ app
       modal: 1800,
       overlay: 1800,
       menu: 1800,
-      tooltip: 1800
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
     },
     theme: {
       preset: ComfyUIPreset,

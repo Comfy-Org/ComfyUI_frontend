@@ -11,7 +11,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
 const mockFocusNode = vi.hoisted(() => vi.fn())
-const mockEnterSubgraph = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -35,16 +34,9 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   }))
 }))
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: vi.fn(() => ({
-    fitView: vi.fn()
-  }))
-}))
-
 vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: vi.fn(() => ({
-    focusNode: mockFocusNode,
-    enterSubgraph: mockEnterSubgraph
+    focusNode: mockFocusNode
   }))
 }))
 
@@ -333,6 +325,9 @@ describe('TabErrors.vue', () => {
     expect(screen.getAllByText('CLIPTextEncode').length).toBeGreaterThanOrEqual(
       1
     )
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('1')
+    ).toBeInTheDocument()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
@@ -548,6 +543,73 @@ describe('TabErrors.vue', () => {
     )
 
     expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('4')
+  })
+
+  it('sums the summary hero count across error types', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'Node'
+    } as ReturnType<typeof getNodeByExecutionId>)
+
+    renderComponent({
+      executionError: {
+        lastNodeErrors: {
+          '1': {
+            class_type: 'KSampler',
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: model',
+                extra_info: { input_name: 'model' }
+              },
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: positive',
+                extra_info: { input_name: 'positive' }
+              }
+            ]
+          },
+          '2': {
+            class_type: 'CLIPTextEncode',
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: clip',
+                extra_info: { input_name: 'clip' }
+              }
+            ]
+          }
+        }
+      },
+      missingMedia: {
+        missingMediaCandidates: [
+          {
+            nodeId: '3',
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'a.png',
+            isMissing: true
+          },
+          {
+            nodeId: '4',
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'b.png',
+            isMissing: true
+          }
+        ]
+      } satisfies { missingMediaCandidates: MissingMediaCandidate[] }
+    })
+
+    // 3 validation items + 2 missing media references
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('5')
+    ).toBeInTheDocument()
   })
 
   it('renders swap node rows below the section display message', () => {

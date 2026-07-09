@@ -12,6 +12,7 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { toNodeId } from '@/types/nodeId'
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -52,8 +53,9 @@ export function useNodeResize(
     const nodeElement = target.closest('[data-node-id]')
     if (!(nodeElement instanceof HTMLElement)) return
 
-    const nodeId = nodeElement.dataset.nodeId
-    if (!nodeId) return
+    const rawNodeId = nodeElement.dataset.nodeId
+    if (!rawNodeId) return
+    const nodeId = toNodeId(rawNodeId)
 
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z

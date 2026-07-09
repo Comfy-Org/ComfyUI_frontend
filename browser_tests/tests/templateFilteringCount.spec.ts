@@ -1,13 +1,13 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
-const test = mergeTests(comfyPageFixture, templateApiFixture)
+const test = mergeTests(createCloudAssetsFixture([]), templateApiFixture)
 
 const Cloud = TemplateIncludeOnDistributionEnum.Cloud
 const Desktop = TemplateIncludeOnDistributionEnum.Desktop
@@ -17,7 +17,7 @@ test.describe(
   'Template distribution filtering count',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage, templateApi }) => {
+    test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
       await comfyPage.settings.setSetting(
         'Comfy.Templates.SelectedUseCases',
@@ -25,8 +25,6 @@ test.describe(
       )
       await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
       await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
-
-      await templateApi.mockThumbnails()
     })
 
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
@@ -56,7 +54,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -101,7 +99,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -143,7 +141,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -184,7 +182,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
@@ -222,7 +220,7 @@ test.describe(
           })
         ])
       )
-      await templateApi.mockIndex()
+      await templateApi.mock()
 
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()

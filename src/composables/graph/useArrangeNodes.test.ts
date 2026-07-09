@@ -1,23 +1,8 @@
 import { describe, expect, it } from 'vitest'
-
 import { computeArrangement } from '@/composables/graph/useArrangeNodes'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-
-interface MockNodeSpec {
-  id: number | string
-  pos: [number, number]
-  size: [number, number]
-  title_mode?: TitleMode
-}
-
-const makeNode = (spec: MockNodeSpec): LGraphNode =>
-  ({
-    id: spec.id,
-    pos: spec.pos,
-    size: spec.size,
-    title_mode: spec.title_mode
-  }) as unknown as LGraphNode
+import { toNodeId } from '@/types/nodeId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const GAP = 12
 const TITLE = 30 // LiteGraph.NODE_TITLE_HEIGHT default
@@ -27,7 +12,13 @@ describe('computeArrangement', () => {
     expect(computeArrangement([], 'vertical')).toEqual([])
     expect(
       computeArrangement(
-        [makeNode({ id: 1, pos: [0, 0], size: [100, 50] })],
+        [
+          createMockLGraphNode({
+            id: toNodeId(1),
+            pos: [0, 0],
+            size: [100, 50]
+          })
+        ],
         'grid'
       )
     ).toEqual([])
@@ -36,9 +27,21 @@ describe('computeArrangement', () => {
   describe('vertical', () => {
     it('left-aligns to anchor x and stacks downward sorted by current y', () => {
       const nodes = [
-        makeNode({ id: 'a', pos: [10, 100], size: [100, 50] }),
-        makeNode({ id: 'b', pos: [200, 0], size: [80, 30] }),
-        makeNode({ id: 'c', pos: [50, 200], size: [120, 40] })
+        createMockLGraphNode({
+          id: toNodeId('a'),
+          pos: [10, 100],
+          size: [100, 50]
+        }),
+        createMockLGraphNode({
+          id: toNodeId('b'),
+          pos: [200, 0],
+          size: [80, 30]
+        }),
+        createMockLGraphNode({
+          id: toNodeId('c'),
+          pos: [50, 200],
+          size: [120, 40]
+        })
       ]
       // Anchor: 'a' has smallest x+y (110). Sort by Y: b(0), a(100), c(200).
       // Visual top of layout = anchor.posY - TITLE = 100 - 30 = 70.
@@ -56,14 +59,14 @@ describe('computeArrangement', () => {
 
     it('omits the title-height contribution for NO_TITLE nodes', () => {
       const nodes = [
-        makeNode({
-          id: 1,
+        createMockLGraphNode({
+          id: toNodeId(1),
           pos: [0, 0],
           size: [100, 100],
           title_mode: TitleMode.NO_TITLE
         }),
-        makeNode({
-          id: 2,
+        createMockLGraphNode({
+          id: toNodeId(2),
           pos: [0, 200],
           size: [100, 100],
           title_mode: TitleMode.NO_TITLE
@@ -74,22 +77,26 @@ describe('computeArrangement', () => {
       // 2: pos.y = 112.
       const result = computeArrangement(nodes, 'vertical')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 0, y: 100 + GAP } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 0, y: 100 + GAP } }
       ])
     })
 
     it('preserves heterogeneous heights when computing gaps', () => {
       const nodes = [
-        makeNode({ id: 1, pos: [0, 0], size: [100, 200] }),
-        makeNode({ id: 2, pos: [0, 50], size: [100, 50] })
+        createMockLGraphNode({
+          id: toNodeId(1),
+          pos: [0, 0],
+          size: [100, 200]
+        }),
+        createMockLGraphNode({ id: toNodeId(2), pos: [0, 50], size: [100, 50] })
       ]
       // visualTop=-30. 1: pos.y=0; visualTop += (200+30)+12 = 212.
       // 2: pos.y = 212+30 = 242.
       const result = computeArrangement(nodes, 'vertical')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 0, y: 200 + TITLE + GAP } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 0, y: 200 + TITLE + GAP } }
       ])
     })
   })
@@ -97,9 +104,21 @@ describe('computeArrangement', () => {
   describe('horizontal', () => {
     it('top-aligns to anchor y and lays out rightward sorted by current x', () => {
       const nodes = [
-        makeNode({ id: 'a', pos: [100, 50], size: [80, 40] }),
-        makeNode({ id: 'b', pos: [0, 200], size: [60, 30] }),
-        makeNode({ id: 'c', pos: [300, 80], size: [50, 50] })
+        createMockLGraphNode({
+          id: toNodeId('a'),
+          pos: [100, 50],
+          size: [80, 40]
+        }),
+        createMockLGraphNode({
+          id: toNodeId('b'),
+          pos: [0, 200],
+          size: [60, 30]
+        }),
+        createMockLGraphNode({
+          id: toNodeId('c'),
+          pos: [300, 80],
+          size: [50, 50]
+        })
       ]
       // Anchor: smallest x+y → a(150), b(200), c(380) → anchor 'a' at (100, 50).
       // Sort by X: b(0), a(100), c(300)
@@ -119,10 +138,22 @@ describe('computeArrangement', () => {
   describe('grid', () => {
     it('lays out 4 nodes as 2x2 with column/row sizes from max width/height', () => {
       const nodes = [
-        makeNode({ id: 1, pos: [0, 0], size: [100, 50] }),
-        makeNode({ id: 2, pos: [200, 0], size: [80, 60] }),
-        makeNode({ id: 3, pos: [0, 100], size: [120, 40] }),
-        makeNode({ id: 4, pos: [200, 100], size: [90, 30] })
+        createMockLGraphNode({ id: toNodeId(1), pos: [0, 0], size: [100, 50] }),
+        createMockLGraphNode({
+          id: toNodeId(2),
+          pos: [200, 0],
+          size: [80, 60]
+        }),
+        createMockLGraphNode({
+          id: toNodeId(3),
+          pos: [0, 100],
+          size: [120, 40]
+        }),
+        createMockLGraphNode({
+          id: toNodeId(4),
+          pos: [200, 100],
+          size: [90, 30]
+        })
       ]
       // Anchor: 1 at (0,0). Sort by Y then X: 1, 2, 3, 4. cols=2, rows=2.
       // Col widths: col0=max(100,120)=120; col1=max(80,90)=90.
@@ -131,18 +162,18 @@ describe('computeArrangement', () => {
       // pos.y = rowVisualTop + 30 (titleHeight).
       const result = computeArrangement(nodes, 'grid')
       expect(result).toEqual([
-        { nodeId: 1, position: { x: 0, y: 0 } },
-        { nodeId: 2, position: { x: 132, y: 0 } },
-        { nodeId: 3, position: { x: 0, y: 102 } },
-        { nodeId: 4, position: { x: 132, y: 102 } }
+        { nodeId: '1', position: { x: 0, y: 0 } },
+        { nodeId: '2', position: { x: 132, y: 0 } },
+        { nodeId: '3', position: { x: 0, y: 102 } },
+        { nodeId: '4', position: { x: 132, y: 102 } }
       ])
     })
 
     it('uses ceil(sqrt(n)) columns for non-square counts', () => {
       // 5 nodes → ceil(sqrt(5))=3 cols, 2 rows. Last cell empty.
       const nodes = Array.from({ length: 5 }, (_, i) =>
-        makeNode({
-          id: i + 1,
+        createMockLGraphNode({
+          id: toNodeId(i + 1),
           pos: [i * 50, i * 50],
           size: [40, 40]
         })
@@ -164,11 +195,23 @@ describe('computeArrangement', () => {
     it('picks the node with smallest x+y, not min-x or min-y alone', () => {
       const nodes = [
         // min y but large x: x+y = 1000
-        makeNode({ id: 'minY', pos: [1000, 0], size: [50, 50] }),
+        createMockLGraphNode({
+          id: toNodeId('minY'),
+          pos: [1000, 0],
+          size: [50, 50]
+        }),
         // min x but large y: x+y = 1000
-        makeNode({ id: 'minX', pos: [0, 1000], size: [50, 50] }),
+        createMockLGraphNode({
+          id: toNodeId('minX'),
+          pos: [0, 1000],
+          size: [50, 50]
+        }),
         // smallest x+y: 600
-        makeNode({ id: 'anchor', pos: [300, 300], size: [50, 50] })
+        createMockLGraphNode({
+          id: toNodeId('anchor'),
+          pos: [300, 300],
+          size: [50, 50]
+        })
       ]
       const result = computeArrangement(nodes, 'vertical')
       // All updates left-align to anchor.x = 300. First in sort = minY (y=0).

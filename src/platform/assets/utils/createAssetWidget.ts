@@ -12,7 +12,10 @@ import {
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+
+type WidgetWithNode = IBaseWidget & { node: LGraphNode }
 
 interface CreateAssetWidgetParams {
   /** The node to add the widget to */
@@ -25,34 +28,26 @@ interface CreateAssetWidgetParams {
   inputNameForBrowser?: string
   /** Default value for the widget */
   defaultValue?: string
-  /** Callback when widget value changes */
-  onValueChange?: (
-    widget: IBaseWidget,
-    newValue: string,
-    oldValue: unknown
-  ) => void
 }
 
-/**
- * Creates an asset widget that opens the Asset Browser dialog for model selection.
- * Used by both regular nodes (via useComboWidget) and PrimitiveNode.
- *
- * @param params - Configuration for the asset widget
- * @returns The created asset widget
- */
-export function createAssetWidget(
-  params: CreateAssetWidgetParams
-): IBaseWidget {
-  const {
-    node,
-    widgetName,
-    nodeTypeForBrowser,
-    inputNameForBrowser,
-    defaultValue,
-    onValueChange
-  } = params
+interface CreateAssetWidgetOptionsParams {
+  widgetName: string
+  nodeTypeForBrowser: string
+  inputNameForBrowser?: string
+}
 
-  const displayLabel = defaultValue ?? t('widgets.selectModel')
+function hasOwnerNode(widget: IBaseWidget): widget is WidgetWithNode {
+  return (
+    'node' in widget && typeof widget.node === 'object' && widget.node !== null
+  )
+}
+
+function createAssetWidgetOptions({
+  widgetName,
+  nodeTypeForBrowser,
+  inputNameForBrowser
+}: CreateAssetWidgetOptionsParams): IWidgetAssetOptions {
+  const inputName = inputNameForBrowser ?? widgetName
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
@@ -60,8 +55,8 @@ export function createAssetWidget(
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
-      inputName: inputNameForBrowser ?? widgetName,
-      currentValue: widget.value as string,
+      inputName,
+      currentValue: String(widget.value ?? ''),
       onAssetSelected: (asset) => {
         const validatedAsset = assetItemSchema.safeParse(asset)
 
@@ -98,15 +93,44 @@ export function createAssetWidget(
 
         const oldValue = widget.value
         widget.value = validatedFilename.data
-        onValueChange?.(widget, validatedFilename.data, oldValue)
+        widget.callback?.(widget.value)
+        if (hasOwnerNode(widget)) {
+          widget.node.onWidgetChanged?.(
+            widget.name,
+            validatedFilename.data,
+            oldValue,
+            widget
+          )
+        }
+        if (oldValue !== validatedFilename.data) {
+          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+        }
       }
     })
   }
 
-  const options: IWidgetAssetOptions = {
+  return {
     openModal,
     nodeType: nodeTypeForBrowser
   }
+}
 
+export function createAssetWidget(
+  params: CreateAssetWidgetParams
+): IBaseWidget {
+  const {
+    node,
+    widgetName,
+    nodeTypeForBrowser,
+    inputNameForBrowser,
+    defaultValue
+  } = params
+
+  const displayLabel = defaultValue ?? t('widgets.selectModel')
+  const options = createAssetWidgetOptions({
+    widgetName,
+    nodeTypeForBrowser,
+    inputNameForBrowser
+  })
   return node.addWidget('asset', widgetName, displayLabel, () => {}, options)
 }

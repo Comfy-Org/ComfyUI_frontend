@@ -2,7 +2,7 @@ import { sumBy } from 'es-toolkit'
 
 import type { MissingMediaGroup, MissingMediaViewModel } from './types'
 
-export interface MissingMediaReference {
+interface MissingMediaReference {
   mediaItem: MissingMediaViewModel
   nodeRef: MissingMediaViewModel['referencingNodes'][number]
 }
