@@ -1270,3 +1270,57 @@ test(
     })
   }
 )
+
+test.fail('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.nodeOps.clearGraph()
+  const previewNodePos = { position: { x: 800, y: 200 } }
+  await comfyPage.searchBoxV2.addNode('Preview Image', previewNodePos)
+  const previewNode =
+    await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+  await test.step('Create floating reroute', async () => {
+    const reroutePos = { targetPosition: { x: 700, y: 400 } }
+    await previewNode
+      .getSlot('images')
+      .first()
+      .dragTo(comfyPage.canvas, reroutePos)
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+    await comfyPage.searchBoxV2.addNode('Load Image')
+  })
+
+  await test.step('Connect node on top of floating link', async () => {
+    const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await loadNode
+      .getSlot('IMAGE')
+      .first()
+      .dragTo(previewNode.getSlot('images').first())
+  })
+
+  await test.step('Create node from floating reroute', async () => {
+    await comfyPage.canvas.dragTo(comfyPage.canvas, {
+      sourcePosition: { x: 680, y: 400 },
+      targetPosition: { x: 500, y: 500 }
+    })
+    await comfyPage.contextMenu.clickLitegraphMenuItem('LoadImage')
+  })
+
+  await expect
+    .poll(
+      () =>
+        comfyPage.page.evaluate(() => {
+          if (!graph || graph.links.size !== 1) return 'invalid link count'
+          if (graph.reroutes.size !== 1) return 'invalid reroutes count'
+
+          const linkId = graph.nodes.find((n) => n.title === 'Preview Image')
+            ?.inputs[0].link
+          if (!linkId) return 'failed to resolve link id'
+
+          const rerouteId = graph.getLink(linkId)?.parentId
+          if (!rerouteId) return 'failed to resolve reroute id'
+
+          return graph.reroutes.has(rerouteId) && 'reroute does not exist'
+        }),
+      'old link is disconnected, reroute is part of new connection'
+    )
+    .toBe(false)
+})
