@@ -115,10 +115,21 @@ export const useAgentConversationStore = defineStore(
       activeTurnId.value = null
     }
 
+    // Dropped transcript previews are object URLs pinning image buffers;
+    // release them or every sent image outlives its conversation.
+    function dropAttachmentPreviews(): void {
+      for (const attachments of userAttachments.value.values()) {
+        for (const { previewUrl } of attachments) {
+          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+        }
+      }
+      userAttachments.value = new Map()
+    }
+
     function reset(): void {
       messages.value = []
       userTexts.value = new Map()
-      userAttachments.value = new Map()
+      dropAttachmentPreviews()
       threadId.value = null
       clearActive()
     }
@@ -157,7 +168,7 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = texts
       // The history endpoint does not return attachment refs yet; hydrated
       // turns render text-only until the BE persists them on the message row.
-      userAttachments.value = new Map()
+      dropAttachmentPreviews()
     }
 
     const entries = computed<ConversationEntry[]>(() =>
