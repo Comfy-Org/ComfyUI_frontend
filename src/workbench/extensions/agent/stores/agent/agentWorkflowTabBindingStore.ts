@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-/**
- * 1:1 association between a server-minted agent workflow_id and the canvas tab
- * (ComfyWorkflow.path) it renders into. Sends resolve the active tab to its
- * workflow_id; draft patches resolve their workflow_id back to the tab so
- * sequential agent edits land in ONE tab instead of minting a new tab per patch.
- */
+// 1:1 workflow_id ↔ tab-path binding: sends resolve the active tab to its id,
+// patches resolve back to their tab, so sequential agent edits land in ONE tab.
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {

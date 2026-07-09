@@ -283,6 +283,153 @@ describe('AgentPanelRoot attach flow', () => {
       screen.queryByLabelText(i18n.global.t('agent.uploading'))
     ).not.toBeInTheDocument()
   })
+
+  it('renders the attachment on the turn that sent it, not earlier turns', async () => {
+    let acks = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/upload/image')) {
+          return new Response(
+            JSON.stringify({
+              name: 'uploaded_cat.png',
+              subfolder: '',
+              type: 'input'
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        if (init?.method === 'POST' && url.includes('/messages')) {
+          acks += 1
+          return new Response(
+            JSON.stringify({ thread_id: 'th-1', message_id: `m-${acks}` }),
+            { status: 202, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response(JSON.stringify({ threads: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'agent_message_done',
+        data: { message_id: 'm-1', thread_id: 'th-1' }
+      })
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const file = new File(['x'], 'cat.png', { type: 'image/png' })
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      file
+    )
+    await screen.findByText('cat.png')
+    await userEvent.type(screen.getByRole('textbox'), 'second message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // Exactly one thumbnail, positioned after the first turn's bubble — keying
+    // the record to the wrong turn would render it inside the first user entry.
+    // (index -1: the session bar title also mirrors the first prompt's text.)
+    const thumbs = screen.getAllByAltText('cat.png')
+    expect(thumbs).toHaveLength(1)
+    const firstBubble = screen.getAllByText('first message').at(-1)!
+    expect(
+      firstBubble.compareDocumentPosition(thumbs[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('removes the chip, revokes its preview, and toasts when the upload fails', async () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    let failUpload: () => void = () => {}
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/upload/image')) {
+          await new Promise<void>((resolve) => {
+            failUpload = resolve
+          })
+          return new Response('{"error":"disk full"}', {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+        return new Response('{"threads":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const toast = useToastStore()
+
+    const file = new File(['x'], 'cat.png', { type: 'image/png' })
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      file
+    )
+    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+
+    failUpload()
+    await vi.waitFor(() =>
+      expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    )
+    expect(revoke).toHaveBeenCalledTimes(1)
+    expect(toast.messagesToAdd.at(-1)).toMatchObject({
+      severity: 'error',
+      summary: 'cat.png could not be uploaded'
+    })
+    revoke.mockRestore()
+  })
+
+  it('dismissing a staged chip removes it and releases its preview', async () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/upload/image')) {
+          return new Response(
+            JSON.stringify({
+              name: 'uploaded_cat.png',
+              subfolder: '',
+              type: 'input'
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response('{"threads":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const file = new File(['x'], 'cat.png', { type: 'image/png' })
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      file
+    )
+    expect(await screen.findByText('cat.png')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+    expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
+    expect(revoke).toHaveBeenCalledTimes(1)
+    revoke.mockRestore()
+  })
 })
 
 describe('AgentPanelRoot draft binding', () => {
@@ -741,6 +888,18 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('current')).toBeInTheDocument()
+
+    // Reactive: switching tabs renames the strip.
+    const other: FakeTab = {
+      path: 'workflows/other.json',
+      filename: 'other',
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(other.path, other)
+    hostStores.workflow.activeWorkflow = other
+    expect(await screen.findByText('other')).toBeInTheDocument()
+    expect(screen.queryByText('current')).not.toBeInTheDocument()
   })
 
   it("sends the active tab's saved workflow id and applies patches in place", async () => {
@@ -899,9 +1058,11 @@ describe('AgentPanelRoot workflow binding', () => {
     tab.isModified = true
     patch(1, { version: 0.4, nodes: [] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    // The X close is a defer, same as Cancel: nothing applies.
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
+      screen.getByRole('button', { name: i18n.global.t('g.close') })
     )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
 
     socket.emit('message', {
       data: JSON.stringify({
@@ -1105,5 +1266,43 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['5'] } })
     // Consumed on send: the chip clears and the same selection does not re-tag.
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+  })
+  it('coalesces patches that stream faster than the canvas apply settles', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    let releaseApply: () => void = () => {}
+    vi.mocked(app.loadGraphData).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseApply = resolve
+        })
+    )
+    const g1 = { version: 0.4, nodes: [{ id: 1 }] }
+    patch(1, g1)
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
+
+    // Two more patches land while the first apply is still settling: they must
+    // queue into ONE trailing re-run, never interleave a second loadGraphData.
+    patch(2, { version: 0.4, nodes: [{ id: 2 }] })
+    await nextTick()
+    patch(3, { version: 0.4, nodes: [{ id: 3 }] })
+    await nextTick()
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+
+    releaseApply()
+    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
+    // The trailing re-run applies the LATEST draft only (v3), skipping v2.
+    expect(vi.mocked(app.loadGraphData).mock.calls[1][0]).toEqual({
+      version: 0.4,
+      nodes: [{ id: 3 }]
+    })
+    expect(vi.mocked(app.loadGraphData).mock.calls[1][3]).toBe(tab)
   })
 })

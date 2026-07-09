@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ActiveTab } from '../../composables/agent/useCanvasContext'
+import type { ActiveTab } from './ActiveTabStrip.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {

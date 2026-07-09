@@ -21,7 +21,7 @@ import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import type { ConflictChoice } from './components/agent/safety/safetyTypes'
 import { useAttachment } from './composables/agent/useAttachment'
-import type { ActiveTab } from './composables/agent/useCanvasContext'
+import type { ActiveTab } from './components/agent/ActiveTabStrip.vue'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import { useCanvasSelection } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
@@ -96,11 +96,7 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
 // B17/Jo QA: the panel names the tab the agent acts on.
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
-  if (!active) return null
-  return {
-    name: active.filename,
-    id: bindingStore.workflowIdFor(active.path) ?? null
-  }
+  return active ? { name: active.filename } : null
 })
 
 // Bind only when the server confirmed the id we sent for that tab; a freshly

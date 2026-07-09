@@ -33,6 +33,53 @@ describe('useComposer', () => {
     expect(composer.attachments.value).toEqual([])
   })
 
+  it('blocks send while any attachment is uploading, unblocks on settle', () => {
+    const { composer, onSend } = setup()
+    composer.draft.value = 'wire it in'
+    composer.addAttachment({
+      id: 'u1',
+      name: 'cat.png',
+      ref: '',
+      uploading: true
+    })
+
+    expect(composer.canSend.value).toBe(false)
+    composer.submit()
+    expect(onSend).not.toHaveBeenCalled()
+
+    composer.updateAttachment('u1', {
+      ref: 'uploaded_cat.png',
+      uploading: false
+    })
+    expect(composer.canSend.value).toBe(true)
+  })
+
+  it('revokes a dismissed blob preview but never a submitted one', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const { composer } = setup()
+    composer.addAttachment({
+      id: 'a1',
+      name: 'a.png',
+      ref: 'r1',
+      previewUrl: 'blob:a'
+    })
+    composer.removeAttachment('a1')
+    expect(revoke).toHaveBeenCalledWith('blob:a')
+
+    // A submitted preview lives on in the transcript; submit must not touch it.
+    revoke.mockClear()
+    composer.draft.value = 'send it'
+    composer.addAttachment({
+      id: 'a2',
+      name: 'b.png',
+      ref: 'r2',
+      previewUrl: 'blob:b'
+    })
+    composer.submit()
+    expect(revoke).not.toHaveBeenCalled()
+    revoke.mockRestore()
+  })
+
   it('allows an attachment-only send with empty text', () => {
     const { composer, onSend } = setup()
     composer.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })

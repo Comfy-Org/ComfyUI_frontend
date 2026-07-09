@@ -365,6 +365,20 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it("(i2) loadThread drops the previous thread's draft binding", async () => {
+    const rest = fakeRest()
+    const { source } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('bind me')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
+
+    // A late patch for the abandoned thread must find nothing to land on.
+    await session.loadThread('th-2')
+    expect(useAgentDraftStore().workflowId).toBeNull()
+  })
+
   it('(j) a rebind during resyncDraft does not adopt the stale workflow draft', async () => {
     let resolveDraft: ((snapshot: AgentDraftSnapshot) => void) | undefined
     const getDraft = vi.fn<(workflowId: string) => Promise<AgentDraftSnapshot>>(

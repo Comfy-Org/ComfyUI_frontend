@@ -202,4 +202,27 @@ describe('useAgentConversationStore', () => {
     store.reset()
     expect(store.threadId).toBeNull()
   })
+
+  it('revokes transcript blob previews on reset and on hydrate', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.recordUser(T1, 'with picture', [
+      { name: 'a.png', previewUrl: 'blob:a' }
+    ])
+    store.reset()
+    expect(revoke).toHaveBeenCalledWith('blob:a')
+
+    revoke.mockClear()
+    store.startTurn(T2)
+    store.recordUser(T2, 'again', [{ name: 'b.png', previewUrl: 'blob:b' }])
+    store.hydrate([])
+    expect(revoke).toHaveBeenCalledWith('blob:b')
+    expect(
+      store.entries.every(
+        (entry) => entry.role !== 'user' || entry.attachments === undefined
+      )
+    ).toBe(true)
+    revoke.mockRestore()
+  })
 })
