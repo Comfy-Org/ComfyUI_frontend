@@ -32,38 +32,12 @@ interface SentAttachment {
   previewUrl?: string
 }
 
-// A consumed @-tag: the node id and serialized definition ride the POST
-// selection, the title stays behind on the transcript's user entry.
+// A consumed @-tag: the node id rides the POST selection, the title stays
+// behind on the transcript's user entry. The id resolves against the graph
+// uploaded with the same POST (workflow.content).
 interface SentTag {
   id: string
   title: string
-  data?: unknown
-}
-
-// The server-side draft never mirrors the live canvas (it starts empty even
-// for saved workflows), so bare node_ids resolve to nothing there; the
-// serialized definitions ride along instead. The context primes the model
-// honestly: claim inline definitions only for tags that resolved, name the
-// gap when some did not, and nudge a save when the tab has no server-side
-// workflow at all.
-function selectionPayload(tags: SentTag[], hasWorkflow: boolean) {
-  const nodes = tags.flatMap((tag) =>
-    tag.data === undefined ? [] : [tag.data]
-  )
-  const context = [
-    nodes.length > 0
-      ? 'Serialized definitions for the referenced node_ids are included under "nodes"; they come from the user\'s live canvas, which your workflow draft does not mirror. Treat them as the source of truth for what the user sees.'
-      : null,
-    nodes.length < tags.length
-      ? 'Some referenced node_ids have no inline definition because they could not be resolved at send time; tell the user which nodes you cannot see instead of guessing.'
-      : null,
-    hasWorkflow
-      ? null
-      : 'The user is on a local unsaved workflow the server cannot read; ask them to save it if you need the full graph.'
-  ]
-    .filter((line) => line !== null)
-    .join(' ')
-  return { node_ids: tags.map((tag) => tag.id), nodes, context }
 }
 
 // The active tab resolved for a turn. `speculative` marks an id the server has
@@ -202,7 +176,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       content: text,
       selection:
         tags !== undefined && tags.length > 0
-          ? selectionPayload(tags, wfContext !== undefined)
+          ? { node_ids: tags.map((tag) => tag.id) }
           : undefined,
       attachments: attachments?.map((attachment) => attachment.ref),
       workflow: upload
