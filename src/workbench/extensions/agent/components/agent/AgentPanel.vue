@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {
   ApprovalCard,
   ConflictChoice,
@@ -33,6 +34,7 @@ const {
   canRevert = false,
   canAttach = false,
   isMaximized = false,
+  selectionTags = [],
   historyGroups
 } = defineProps<{
   entries: ConversationEntry[]
@@ -45,12 +47,14 @@ const {
   canRevert?: boolean
   canAttach?: boolean
   isMaximized?: boolean
+  selectionTags?: SelectedNode[]
   historyGroups: HistoryGroups
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
   attach: []
+  removeTag: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   answer: [approvalId: string, approved: boolean]
   takeControl: []
@@ -166,9 +170,11 @@ defineExpose({ addAttachment })
             :streaming="streaming"
             :submitting="submitting"
             :can-attach="canAttach"
+            :selection-tags="selectionTags"
             @send="(text, attachments) => emit('send', text, attachments)"
             @stop="emit('stop')"
             @attach="emit('attach')"
+            @remove-tag="emit('removeTag', $event)"
           />
           <p class="text-agent-fg-muted my-0 text-center text-xs">
             {{ t('agent.caption') }}
