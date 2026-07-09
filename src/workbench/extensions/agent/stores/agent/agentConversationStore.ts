@@ -12,12 +12,20 @@ import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
+// What a sent attachment leaves behind in the transcript: the upload's display
+// name plus a local preview (object URL); the server ref is not re-fetchable yet.
+export interface UserAttachment {
+  name: string
+  previewUrl?: string
+}
+
 // Recorded at send time because the event stream is assistant-only; paired to its
 // assistant turn by the shared TurnId (the server-minted message_id).
 interface UserEntry {
   id: TurnId
   role: 'user'
   text: string
+  attachments?: UserAttachment[]
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -32,6 +40,7 @@ export const useAgentConversationStore = defineStore(
     // server threads.
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
+    const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
 
     let transport: AgentEventTransport | null = null
     // Reactive so status/isStreaming re-derive the instant a turn opens or settles; a plain
@@ -42,8 +51,14 @@ export const useAgentConversationStore = defineStore(
       if (activeIndex.value >= 0) messages.value[activeIndex.value] = message
     }
 
-    function recordUser(turnId: TurnId, text: string): void {
+    function recordUser(
+      turnId: TurnId,
+      text: string,
+      attachments?: UserAttachment[]
+    ): void {
       userTexts.value.set(turnId, text)
+      if (attachments !== undefined && attachments.length > 0)
+        userAttachments.value.set(turnId, attachments)
     }
 
     function setThreadId(id: string | null): void {
@@ -103,6 +118,7 @@ export const useAgentConversationStore = defineStore(
     function reset(): void {
       messages.value = []
       userTexts.value = new Map()
+      userAttachments.value = new Map()
       threadId.value = null
       clearActive()
     }
@@ -139,6 +155,9 @@ export const useAgentConversationStore = defineStore(
         return message
       })
       userTexts.value = texts
+      // The history endpoint does not return attachment refs yet; hydrated
+      // turns render text-only until the BE persists them on the message row.
+      userAttachments.value = new Map()
     }
 
     const entries = computed<ConversationEntry[]>(() =>
@@ -146,7 +165,15 @@ export const useAgentConversationStore = defineStore(
         const text = userTexts.value.get(message.id)
         return text === undefined
           ? [message]
-          : [{ id: message.id, role: 'user', text }, message]
+          : [
+              {
+                id: message.id,
+                role: 'user',
+                text,
+                attachments: userAttachments.value.get(message.id)
+              },
+              message
+            ]
       })
     )
 
