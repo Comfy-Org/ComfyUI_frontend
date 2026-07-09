@@ -180,40 +180,49 @@ const {
   }
 })
 
-const noticeSeverity = {
-  error: 'error',
-  warning: 'warn',
-  info: 'info'
-} as const
+// Every agent error goes through the ONE existing host error modal — no
+// bespoke toasts. Warnings/info stay transient toasts.
+const executionErrorStore = useExecutionErrorStore()
+
+function surfaceAgentError(
+  type: 'agent_api_failed' | 'agent_draft_apply_failed',
+  details: string
+): void {
+  executionErrorStore.lastPromptError = {
+    type,
+    message: t(`errorCatalog.promptErrors.${type}.desc`),
+    details
+  }
+  executionErrorStore.showErrorOverlay()
+}
+
+const noticeSeverity = { warning: 'warn', info: 'info' } as const
 let noticesSeen = 0
 watch(
   () => notices.value.length,
   (length) => {
     for (const notice of notices.value.slice(noticesSeen)) {
-      toast.add({
-        severity: noticeSeverity[notice.level],
-        summary: notice.text
-      })
+      if (notice.level === 'error')
+        surfaceAgentError('agent_api_failed', notice.text)
+      else
+        toast.add({
+          severity: noticeSeverity[notice.level],
+          summary: notice.text
+        })
     }
     noticesSeen = length
   }
 )
 
 // The draft rides the wire untyped; validate through the host schema. A failed
-// apply is a workflow error, surfaced via the host overlay once per failure streak.
-const executionErrorStore = useExecutionErrorStore()
+// apply is a workflow error, surfaced once per failure streak.
 let draftRejectionNotified = false
 
 function surfaceDraftApplyFailure(details: string): void {
   console.warn(details)
   if (draftRejectionNotified) return
   draftRejectionNotified = true
-  executionErrorStore.lastPromptError = {
-    type: 'agent_draft_apply_failed',
-    message: t('errorCatalog.promptErrors.agent_draft_apply_failed.desc'),
-    details
-  }
-  executionErrorStore.showErrorOverlay()
+  surfaceAgentError('agent_draft_apply_failed', details)
 }
 
 // B16 graph write: patches route to their workflow_id's bound tab — in place when
@@ -459,7 +468,7 @@ const attachment = useAttachment({
   upload: async (file) => ({
     ref: (await rest.uploadImage(file, file.name)).name
   }),
-  onError: (message) => toast.add({ severity: 'error', summary: message }),
+  onError: (message) => surfaceAgentError('agent_api_failed', message),
   stage: (staged) => panelRef.value?.addAttachment(staged),
   update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
   remove: (id) => panelRef.value?.removeAttachment(id)
