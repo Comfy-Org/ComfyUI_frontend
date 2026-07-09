@@ -56,12 +56,15 @@
         >
       </template>
     </i18n-t>
-    <div class="flex flex-col gap-1 overflow-hidden">
+    <div class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5">
       <MissingPackGroupRow
         v-for="group in missingPackGroups"
         :key="group.packId ?? '__unknown__'"
         :group="group"
         :show-info-button="showInfoButton"
+        :highlighted="
+          someNodeTypeInSelection(group.nodeTypes, highlightedNodeIds)
+        "
         @locate-node="emit('locateNode', $event)"
         @open-manager-info="emit('openManagerInfo', $event)"
       />
@@ -106,10 +109,13 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
+import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean
   missingPackGroups: MissingPackGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{

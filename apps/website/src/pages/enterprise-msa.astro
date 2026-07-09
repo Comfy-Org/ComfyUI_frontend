@@ -1,0 +1,36 @@
+---
+// Enterprise Customer Agreement (Enterprise MSA) — English only, by design.
+// Legal-reviewed copy must not be served under a localized route until legal
+// explicitly approves a translation; rendering an unreviewed translation as
+// the active MSA exposes us to liability from the translation diverging from
+// the approved English source. See the matching comment in
+// src/i18n/translations.ts for the i18n block, and the entry in
+// LOCALE_INVARIANT_ROUTE_KEYS in src/config/routes.ts.
+import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../components/legal/HeroSection.vue'
+import LegalContentSection from '../components/legal/LegalContentSection.vue'
+import { t } from '../i18n/translations'
+---
+
+<BaseLayout
+  title={t('enterprise-msa.page.title')}
+  description={t('enterprise-msa.page.description')}
+>
+  <HeroSection title={t('enterprise-msa.page.heading')} />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('enterprise-msa.page.effectiveDateLabel')}: {
+      t('enterprise-msa.effective-date')
+    }
+  </p>
+  <p
+    class="text-primary-comfy-canvas mx-auto mt-8 max-w-3xl px-4 text-center text-sm/relaxed lg:px-0"
+  >
+    {t('enterprise-msa.page.parties')}
+  </p>
+  <LegalContentSection
+    prefix="enterprise-msa"
+    locale="en"
+    tocLabelKey="enterprise-msa.page.tocLabel"
+    client:load
+  />
+</BaseLayout>
