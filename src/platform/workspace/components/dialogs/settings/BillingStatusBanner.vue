@@ -10,12 +10,12 @@
           :class="
             cn(
               'size-4 shrink-0',
-              banner.kind === 'outOfCredits'
-                ? 'icon-[lucide--triangle-alert]'
-                : 'icon-[lucide--circle-alert]',
+              // Triangle + amber for problems that need action (out of credits,
+              // payment failed); circle + muted for informational status notices
+              // (paused).
               banner.kind === 'paused'
-                ? 'text-muted-foreground'
-                : 'text-warning-background'
+                ? 'icon-[lucide--circle-alert] text-muted-foreground'
+                : 'icon-[lucide--triangle-alert] text-warning-background'
             )
           "
         />
