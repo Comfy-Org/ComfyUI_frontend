@@ -79,7 +79,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
 })
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAuth: vi.fn() })
+  useTelemetry: () => ({ trackAuth: vi.fn(), trackAuthCleared: vi.fn() })
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({

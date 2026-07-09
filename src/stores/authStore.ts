@@ -109,9 +109,10 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const previousUid = ref<string | null>(null)
   /**
-   * Set true immediately before a user-initiated `signOut`, read (and reset)
-   * in the `onAuthStateChanged` null branch to tell a normal logout apart from
-   * a spontaneous Firebase clear.
+   * Set true immediately before a user-initiated `signOut`, read in the
+   * `onAuthStateChanged` null branch to tell a normal logout apart from a
+   * spontaneous Firebase clear. Reset on every auth-state event so a resolved
+   * signOut that never produces a clear can't leave it stuck true.
    */
   let userInitiatedLogout = false
 
@@ -153,26 +154,32 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Emit a diagnostic telemetry event whenever the Firebase auth state is
-   * cleared for a previously-signed-in user, capturing the layer responsible
-   * (user logout vs. spontaneous clear vs. same-origin account switch) and any
-   * in-flight MCP OAuth flow. Strictly additive: never throws into the handler.
+   * cleared (currentUser -> null) for a previously-signed-in user, recording
+   * whether the clear was user-initiated and any in-flight MCP OAuth flow.
+   * Strictly additive: fully guarded so a failure here (e.g. sessionStorage or
+   * document access throwing in a sandboxed context) never aborts the
+   * synchronous auth-state handler and its logout cleanup.
    */
   function reportAuthStateCleared(previousUserId: string) {
-    const oauthRequestInFlight = getOAuthRequestId() !== null
-    if (!userInitiatedLogout) {
-      console.warn(
-        `[authStore] Firebase auth state cleared without a user-initiated logout (previous_user_id=${previousUserId}, oauth_request_in_flight=${oauthRequestInFlight})`
-      )
+    try {
+      const oauthRequestInFlight = getOAuthRequestId() !== null
+      if (!userInitiatedLogout) {
+        console.warn(
+          `[authStore] Firebase auth state cleared without a user-initiated logout (previous_user_id=${previousUserId}, oauth_request_in_flight=${oauthRequestInFlight})`
+        )
+      }
+      useTelemetry()?.trackAuthCleared({
+        user_initiated: userInitiatedLogout,
+        previous_user_id: previousUserId,
+        oauth_request_in_flight: oauthRequestInFlight,
+        visibility_state: document.visibilityState,
+        has_session_cookie: document.cookie
+          .split('; ')
+          .some((cookie) => cookie.startsWith('session='))
+      })
+    } catch (error) {
+      console.warn('[authStore] Failed to report auth-state clear', error)
     }
-    useTelemetry()?.trackAuthCleared({
-      user_initiated: userInitiatedLogout,
-      previous_user_id: previousUserId,
-      oauth_request_in_flight: oauthRequestInFlight,
-      visibility_state: document.visibilityState,
-      has_session_cookie: document.cookie
-        .split('; ')
-        .some((cookie) => cookie.startsWith('session='))
-    })
   }
 
   onAuthStateChanged(auth, (user) => {
@@ -187,10 +194,16 @@ export const useAuthStore = defineStore('auth', () => {
       userInitiatedLogout = false
       lastTokenUserId.value = null
       useWorkspaceAuthStore().clearWorkspaceContext()
-    } else if (isCloud) {
-      // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off).
-      void useWorkspaceAuthStore().mintAtLogin()
+    } else {
+      // Any non-null auth event means the pending logout either never produced a
+      // clear or is now stale; drop the flag so it can't misattribute a later
+      // spontaneous clear as user-initiated.
+      userInitiatedLogout = false
+      if (isCloud) {
+        // Mint the single Cloud JWT at login (flag-guarded inside the store; a
+        // no-op when unified_cloud_auth is off).
+        void useWorkspaceAuthStore().mintAtLogin()
+      }
     }
 
     // Reset balance when auth state changes

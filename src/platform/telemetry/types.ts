@@ -58,7 +58,7 @@ export interface AuthMetadata {
  * Diagnostic event for the un-reproduced MCP-induced web logout: it names the
  * layer responsible for each clear so a real occurrence self-diagnoses in the
  * field. `user_initiated: false` is the bug we're hunting — a spontaneous
- * Firebase clear or same-origin account switch, not a user logout.
+ * Firebase clear, not a user logout.
  */
 export interface AuthClearedMetadata {
   user_initiated: boolean

@@ -555,6 +555,34 @@ describe('useAuthStore', () => {
       )
     })
 
+    it('does not carry a resolved logout over to a later spontaneous clear', async () => {
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+      // signOut resolves without an intervening null event (already signed out
+      // or Firebase coalesced the event), then a fresh sign-in arrives.
+      await store.logout()
+      authStateCallback(mockUser)
+
+      authStateCallback(null)
+
+      expect(mockTrackAuthCleared).toHaveBeenLastCalledWith(
+        expect.objectContaining({ user_initiated: false })
+      )
+    })
+
+    it('still clears workspace context when telemetry reporting throws', () => {
+      const clearWorkspaceContext = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      mockTrackAuthCleared.mockImplementation(() => {
+        throw new Error('telemetry boom')
+      })
+
+      expect(() => authStateCallback(null)).not.toThrow()
+      expect(clearWorkspaceContext).toHaveBeenCalled()
+    })
+
     it('does not emit on the initial unauthenticated boot (no prior user)', () => {
       let bootCallback: (user: User | null) => void = () => {}
       vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
