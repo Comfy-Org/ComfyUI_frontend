@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// Staged for FE-1187 host wiring (tab context is a V0 tech-design surface); built and tested, not yet wired into the shipped panel.
 import type { ActiveTab } from '../../composables/agent/useCanvasContext'
 
 // Shows which workflow the agent is acting on. Hidden when there is no active tab.
