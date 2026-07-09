@@ -4400,7 +4400,7 @@
     "name": "Name",
     "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
-    "providerHint": "Optional. Selecting a provider enables automatic token usage.",
+    "providerHint": "Select a provider to enable automatic token usage.",
     "providerHelp": {
       "runway": "Enter your Runway API key. You can find it in your Runway account settings under API keys.",
       "gemini": "Enter your Google Gemini API key. You can generate one in Google AI Studio."

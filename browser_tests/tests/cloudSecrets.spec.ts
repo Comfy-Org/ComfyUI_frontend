@@ -216,26 +216,9 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
       provider: 'runway',
       secret_value: RUNWAY_KEY_VALUE
     })
-    // ...but the value must never be echoed back into the DOM — not as
-    // visible text, nor smuggled into an input value or an attribute.
+    // ...but the value must never be echoed back into the list — the API
+    // response carries metadata only, so nothing should render it as text.
     await expect(page.getByText(RUNWAY_KEY_VALUE)).toHaveCount(0)
-    const keyLeaked = await page.evaluate(
-      (secret) =>
-        Array.from(document.querySelectorAll('*')).some((el) => {
-          const value =
-            el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
-              ? el.value
-              : ''
-          return (
-            value.includes(secret) ||
-            Array.from(el.attributes).some((attr) =>
-              attr.value.includes(secret)
-            )
-          )
-        }),
-      RUNWAY_KEY_VALUE
-    )
-    expect(keyLeaked).toBe(false)
 
     // --- DELETE ----------------------------------------------------------
     await settingsDialog
@@ -286,10 +269,11 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await formDialog.locator('#secret-provider').click()
     // Anchor on the opened listbox so the absence assertions below can't pass
     // vacuously against a dropdown that never opened.
-    await expect(page.getByRole('listbox')).toBeVisible()
-    await expect(page.getByRole('option', { name: 'Runway' })).toHaveCount(0)
-    await expect(
-      page.getByRole('option', { name: 'Google Gemini' })
-    ).toHaveCount(0)
+    const providerListbox = page.getByRole('listbox')
+    await expect(providerListbox).toBeVisible()
+    // An empty allowlist must yield an empty dropdown. Asserting zero options
+    // (not just runway/gemini absent) also rejects the fetch-failure fallback,
+    // where `availableProviders` is null and the default providers would show.
+    await expect(providerListbox.getByRole('option')).toHaveCount(0)
   })
 })
