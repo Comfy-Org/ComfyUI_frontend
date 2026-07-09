@@ -9,14 +9,13 @@ import type { CriticalCoverageComparison } from './criticalCoverageReport'
 interface Options {
   base: string
   head: string
-  allowedDrop: number
 }
 
 const options = parseOptions(process.argv.slice(2))
 const base = readCriticalCoverageReport(options.base)
 const head = readCriticalCoverageReport(options.head)
 const comparison = compareCriticalCoverageReports(base, head)
-const summary = formatComparison(comparison, options.allowedDrop)
+const summary = formatComparison(comparison)
 
 process.stdout.write(`${summary}\n`)
 
@@ -29,17 +28,15 @@ if (comparison.commonBranches === 0) {
   process.exit(1)
 }
 
-if (comparison.coveredBranchDelta < -options.allowedDrop) {
+if (comparison.coveredBranchDelta < 0) {
   process.stderr.write(
-    `Critical unit coverage dropped by ${Math.abs(comparison.coveredBranchDelta)} covered branches.\n`
+    `Critical unit coverage dropped by ${Math.abs(comparison.coveredBranchDelta)} covered branches on the shared branch set.\n`
   )
   process.exit(1)
 }
 
 function parseOptions(args: string[]): Options {
-  const options: Partial<Options> = {
-    allowedDrop: 0
-  }
+  const options: Partial<Options> = {}
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
@@ -55,13 +52,6 @@ function parseOptions(args: string[]): Options {
       i++
     } else if (arg.startsWith('--head=')) {
       options.head = arg.slice('--head='.length)
-    } else if (arg === '--allowed-drop' && next) {
-      options.allowedDrop = parseAllowedDrop(next)
-      i++
-    } else if (arg.startsWith('--allowed-drop=')) {
-      options.allowedDrop = parseAllowedDrop(
-        arg.slice('--allowed-drop='.length)
-      )
     }
   }
 
@@ -73,30 +63,17 @@ function parseOptions(args: string[]): Options {
 
   return {
     base: options.base,
-    head: options.head,
-    allowedDrop: options.allowedDrop ?? 0
+    head: options.head
   }
 }
 
-function parseAllowedDrop(value: string): number {
-  const parsed = Number(value)
-
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(`Invalid --allowed-drop value: ${value}`)
-  }
-
-  return parsed
-}
-
-function formatComparison(
-  comparison: CriticalCoverageComparison,
-  allowedDrop: number
-): string {
+function formatComparison(comparison: CriticalCoverageComparison): string {
+  const passed = comparison.coveredBranchDelta >= 0
   const lines = [
-    '## Critical Unit Coverage Regression',
+    `## Critical Unit Coverage Gate: ${passed ? 'PASS' : 'FAIL'}`,
     '',
-    `Base: \`${comparison.baseSha}\``,
-    `Head: \`${comparison.headSha}\``,
+    `Base tested commit: \`${comparison.baseSha}\``,
+    `PR tested commit: \`${comparison.headSha}\``,
     '',
     '| Metric | Count |',
     '|---|--:|',
@@ -104,15 +81,14 @@ function formatComparison(
     `| Covered in base | ${comparison.commonCoveredBranchesInBase} |`,
     `| Covered in head | ${comparison.commonCoveredBranchesInHead} |`,
     `| Covered branch delta | ${formatSignedCount(comparison.coveredBranchDelta)} |`,
-    `| Allowed covered branch drop | ${allowedDrop} |`,
     `| Base-only branches | ${comparison.baseOnlyBranches} |`,
     `| Head-only branches | ${comparison.headOnlyBranches} |`,
     `| Covered-to-uncovered branches | ${comparison.regressions.length} |`,
     ''
   ]
 
-  if (comparison.coveredBranchDelta >= -allowedDrop) {
-    lines.push('Critical branch coverage is within the allowed drift.')
+  if (passed) {
+    lines.push('PASS: Critical branch coverage did not decrease.')
     return lines.join('\n')
   }
 
