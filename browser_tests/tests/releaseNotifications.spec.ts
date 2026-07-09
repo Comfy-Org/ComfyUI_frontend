@@ -22,6 +22,12 @@ test.describe('Release Notifications', () => {
   test('should show help center with release information', async ({
     comfyPage
   }) => {
+    // Version-update notifications default off on local installs
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      true
+    )
+
     // Mock release API with test data instead of empty array
     await comfyPage.page.route('**/releases**', async (route) => {
       const url = route.request().url()
@@ -72,10 +78,10 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeHidden()
   })
 
-  test('should not show release notifications when mocked (default behavior)', async ({
+  test('should hide "What\'s New" section by default on local installs', async ({
     comfyPage
   }) => {
-    // Use default setup (mockReleases: true)
+    // Use default setup (mockReleases: true); notifications default off locally
     await comfyPage.setup()
 
     // Open help center
@@ -87,16 +93,11 @@ test.describe('Release Notifications', () => {
     const helpMenu = comfyPage.page.locator('.help-center-menu')
     await expect(helpMenu).toBeVisible()
 
-    // Verify "What's New?" section shows no releases
+    // "What's New?" section is hidden because the setting defaults off
     const whatsNewSection = comfyPage.page.getByTestId(
       TestIds.dialogs.whatsNewSection
     )
-    await expect(whatsNewSection).toBeVisible()
-
-    // Should show "No recent releases" message
-    await expect(
-      whatsNewSection.locator('text=No recent releases')
-    ).toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
 
     // Should not show any popups or toasts
     await expect(comfyPage.page.locator('.whats-new-popup')).toBeHidden()
@@ -106,6 +107,12 @@ test.describe('Release Notifications', () => {
   })
 
   test('should handle release API errors gracefully', async ({ comfyPage }) => {
+    // Version-update notifications default off on local installs
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      true
+    )
+
     // Mock API to return an error
     await comfyPage.page.route('**/releases**', async (route) => {
       const url = route.request().url()
