@@ -2,28 +2,41 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetSettingsMenu from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 import type { SortBy } from '@/platform/assets/components/MediaAssetSettingsMenu.vue'
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
 const KEYS = {
-  list: 'sideToolbar.queueProgressOverlay.viewList',
-  grid: 'sideToolbar.queueProgressOverlay.viewGrid',
-  newest: 'sideToolbar.mediaAssets.sortNewestFirst',
-  oldest: 'sideToolbar.mediaAssets.sortOldestFirst',
-  longest: 'sideToolbar.mediaAssets.sortLongestFirst',
-  fastest: 'sideToolbar.mediaAssets.sortFastestFirst'
+  list: 'List view',
+  gridSmall: 'Grid (small)',
+  gridLarge: 'Grid (large)',
+  newest: 'Newest first',
+  oldest: 'Oldest first',
+  longest: 'Generation time (longest first)',
+  fastest: 'Generation time (fastest first)',
+  az: 'Name (A → Z)',
+  za: 'Name (Z → A)'
 } as const
 
+type ViewMode = 'list' | 'grid-small' | 'grid-large'
+
 interface MountOptions {
-  viewMode?: 'list' | 'grid'
+  viewMode?: ViewMode
   sortBy?: SortBy
   showSortOptions?: boolean
   showGenerationTimeSort?: boolean
 }
 
 function mountWithModels(options: MountOptions = {}) {
-  const viewMode = ref<'list' | 'grid'>(options.viewMode ?? 'list')
+  const viewMode = ref<ViewMode>(options.viewMode ?? 'list')
   const sortBy = ref<SortBy>(options.sortBy ?? 'newest')
 
   const Host = defineComponent({
@@ -48,9 +61,7 @@ function mountWithModels(options: MountOptions = {}) {
 
   const utils = render(Host, {
     global: {
-      mocks: {
-        $t: (key: string) => key
-      }
+      plugins: [i18n]
     }
   })
   return { ...utils, viewMode, sortBy, user: userEvent.setup() }
@@ -62,16 +73,17 @@ function getButton(label: string): HTMLElement {
 
 describe('MediaAssetSettingsMenu', () => {
   describe('view-mode options (always visible)', () => {
-    it('renders both list and grid view options', () => {
+    it('renders list and both grid view options', () => {
       mountWithModels()
       expect(getButton(KEYS.list)).toBeTruthy()
-      expect(getButton(KEYS.grid)).toBeTruthy()
+      expect(getButton(KEYS.gridSmall)).toBeTruthy()
+      expect(getButton(KEYS.gridLarge)).toBeTruthy()
     })
 
     it('updates the v-model:viewMode when an option is clicked', async () => {
       const { viewMode, user } = mountWithModels({ viewMode: 'list' })
-      await user.click(getButton(KEYS.grid))
-      expect(viewMode.value).toBe('grid')
+      await user.click(getButton(KEYS.gridLarge))
+      expect(viewMode.value).toBe('grid-large')
     })
   })
 
@@ -112,7 +124,9 @@ describe('MediaAssetSettingsMenu', () => {
       { key: 'newest', expected: 'newest' },
       { key: 'oldest', expected: 'oldest' },
       { key: 'longest', expected: 'longest' },
-      { key: 'fastest', expected: 'fastest' }
+      { key: 'fastest', expected: 'fastest' },
+      { key: 'az', expected: 'az' },
+      { key: 'za', expected: 'za' }
     ]
 
     for (const { key, expected } of cases) {

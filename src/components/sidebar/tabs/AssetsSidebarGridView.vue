@@ -1,7 +1,10 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Assets Grid -->
+    <!-- key on gridMode remounts the virtualizer so it re-measures cell size
+         when switching density (it caches item height/width otherwise). -->
     <VirtualGrid
+      :key="gridMode"
       class="flex-1"
       :items="assetItems"
       :grid-style="gridStyle"
@@ -28,13 +31,22 @@ import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import { gridColumnsForMode } from '@/platform/assets/components/mediaAssetViewOptions'
+import type { MediaAssetViewMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
+const {
+  assets,
+  isSelected,
+  showOutputCount,
+  getOutputCount,
+  gridMode = 'grid-small'
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
+  gridMode?: MediaAssetViewMode
 }>()
 
 const emit = defineEmits<{
@@ -54,10 +66,10 @@ const assetItems = computed<AssetGridItem[]>(() =>
   }))
 )
 
-const gridStyle = {
+const gridStyle = computed(() => ({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
+  gridTemplateColumns: gridColumnsForMode(gridMode),
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
+}))
 </script>

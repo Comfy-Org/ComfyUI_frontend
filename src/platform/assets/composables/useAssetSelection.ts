@@ -8,6 +8,25 @@ import {
   getTotalAssetOutputCount
 } from '@/platform/assets/utils/outputAssetUtil'
 
+/**
+ * True when a Cmd/Ctrl+A keydown should become "select all assets": the chord
+ * matches, focus is inside the asset pane, and the target is not a text-entry
+ * element (those keep native select-all).
+ */
+export function shouldInterceptSelectAll(
+  event: KeyboardEvent,
+  pane: HTMLElement | undefined
+): boolean {
+  if (event.key !== 'a' && event.key !== 'A') return false
+  if (!event.metaKey && !event.ctrlKey) return false
+  const target = event.target
+  if (!(target instanceof HTMLElement) || !pane?.contains(target)) return false
+  return !(
+    target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+  )
+}
+
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
 
@@ -83,7 +102,16 @@ export function useAssetSelection() {
       return
     }
 
-    // Normal Click: Single selection
+    // Normal Click: deselect when it is already the sole selection, otherwise
+    // collapse to a single selection.
+    if (
+      selectionStore.isSelected(assetId) &&
+      selectionStore.selectedCount === 1
+    ) {
+      selectionStore.clearSelection()
+      setAnchor(-1, null)
+      return
+    }
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
     setAnchor(index, assetId)

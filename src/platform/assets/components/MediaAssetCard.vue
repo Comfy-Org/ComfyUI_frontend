@@ -11,6 +11,7 @@
         : $t('assetBrowser.ariaLabel.loadingAsset')
     "
     :tabindex="loading ? -1 : 0"
+    :aria-pressed="selected"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -54,20 +55,19 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
-      <!-- Action buttons overlay (top-left) -->
+      <!-- Action buttons overlay (top-right) -->
       <div
         v-if="showActionsOverlay"
-        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
+        class="absolute top-2 right-2 flex flex-wrap justify-end gap-2"
       >
         <IconGroup background-class="bg-white">
           <Button
-            v-if="canInspect"
             variant="overlay-white"
             size="icon"
-            :aria-label="$t('mediaAsset.actions.zoom')"
-            @click.stop="handleZoomClick"
+            :aria-label="$t('mediaAsset.actions.download')"
+            @click.stop="asset && actions.downloadAssets([asset])"
           >
-            <i class="icon-[lucide--zoom-in] size-4" />
+            <i class="icon-[lucide--download] size-4" />
           </Button>
           <Button
             variant="overlay-white"
@@ -80,6 +80,15 @@
             <i class="icon-[lucide--ellipsis] size-4" />
           </Button>
         </IconGroup>
+      </div>
+
+      <!-- Selected check (top-left) -->
+      <div
+        v-if="selected"
+        class="absolute top-2 left-2 flex size-6 items-center justify-center rounded-full bg-white text-black shadow-sm"
+        aria-hidden="true"
+      >
+        <i class="icon-[lucide--check] size-4" />
       </div>
     </div>
 
@@ -101,34 +110,30 @@
       </div>
 
       <!-- Content -->
-      <div
-        v-else-if="asset && adaptedAsset"
-        class="flex items-end justify-between gap-1.5"
-      >
-        <!-- Left side: Media name and metadata -->
-        <div class="flex flex-col gap-1">
-          <!-- Title -->
-          <MediaTitle :file-name="fileName" />
-          <!-- Metadata -->
-          <div class="flex gap-1.5 text-xs text-muted-foreground">
-            <span v-if="formattedDuration">{{ formattedDuration }}</span>
-            <span v-if="metaInfo">{{ metaInfo }}</span>
+      <div v-else-if="asset && adaptedAsset" class="flex flex-col gap-1">
+        <!-- Title + output count -->
+        <div class="flex items-center justify-between gap-1.5">
+          <MediaTitle :file-name="fileName" class="min-w-0" />
+          <!-- Output count -->
+          <div v-if="showOutputCount" class="shrink-0">
+            <Button
+              v-tooltip.top.pt:pointer-events-none="
+                $t('mediaAsset.actions.seeMoreOutputs')
+              "
+              :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
+              variant="secondary"
+              size="sm"
+              @click.stop="handleOutputCountClick"
+            >
+              <i class="icon-[lucide--layers] size-4" />
+              <span>{{ outputCount }}</span>
+            </Button>
           </div>
         </div>
-
-        <!-- Right side: Output count -->
-        <div v-if="showOutputCount" class="shrink-0">
-          <Button
-            v-tooltip.top.pt:pointer-events-none="
-              $t('mediaAsset.actions.seeMoreOutputs')
-            "
-            :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
-            variant="secondary"
-            @click.stop="handleOutputCountClick"
-          >
-            <i class="icon-[lucide--layers] size-4" />
-            <span>{{ outputCount }}</span>
-          </Button>
+        <!-- File details -->
+        <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span v-if="formattedDuration">{{ formattedDuration }}</span>
+          <span v-if="metaInfo">{{ metaInfo }}</span>
         </div>
       </div>
     </div>
@@ -285,16 +290,24 @@ const displayImageDimensions = computed(() =>
   resolveDisplayImageDimensions(asset, imageDimensions.value)
 )
 
-// Get metadata info based on file kind
+const format = computed(() => {
+  const suffix = getFilenameDetails(asset?.name ?? '').suffix
+  return suffix ? suffix.toUpperCase() : ''
+})
+
+// Meta line: "FORMAT dimensions" for images, otherwise "FORMAT size".
 const metaInfo = computed(() => {
   if (!asset) return ''
+  const parts: string[] = []
+  if (format.value) parts.push(format.value)
   if (fileKind.value === 'image' && displayImageDimensions.value) {
-    return `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    parts.push(
+      `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    )
+  } else if (asset.size) {
+    parts.push(formatSize(asset.size))
   }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
-    return formatSize(asset.size)
-  }
-  return ''
+  return parts.join(' ')
 })
 
 const showActionsOverlay = computed(() => {
