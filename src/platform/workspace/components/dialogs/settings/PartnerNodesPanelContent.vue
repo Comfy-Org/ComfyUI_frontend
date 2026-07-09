@@ -1,5 +1,5 @@
 <template>
-  <div class="relative flex min-h-0 flex-1 flex-col gap-4">
+  <div class="relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
     <div class="flex w-full items-center gap-9">
       <span class="min-w-0 flex-1 text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.description') }}

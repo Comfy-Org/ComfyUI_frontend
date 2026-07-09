@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4">
+  <div class="flex min-h-0 flex-1 flex-col gap-4 pb-6">
     <!-- Header: tabs (left) + search / invite (right), above the card -->
     <div class="flex w-full items-center gap-9">
       <div class="flex min-w-0 flex-1 items-center gap-2">
