@@ -58,11 +58,14 @@ function choose(choice: ConflictChoice): void {
             {{ t('agent.acceptAgent') }}
           </Button>
           <DropdownMenuRoot>
-            <DropdownMenuTrigger
-              :aria-label="t('agent.moreApplyOptions')"
-              class="bg-agent-accent text-agent-accent-fg hover:bg-agent-accent/90 border-agent-surface/30 rounded-agent flex h-8 w-6 cursor-pointer items-center justify-center rounded-l-none border-l"
-            >
-              <span class="icon-[lucide--chevron-down] size-3.5" />
+            <DropdownMenuTrigger as-child>
+              <Button
+                size="sm"
+                class="border-agent-surface/30 w-6 rounded-l-none border-l px-0"
+                :aria-label="t('agent.moreApplyOptions')"
+              >
+                <span class="icon-[lucide--chevron-down] size-3.5" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
