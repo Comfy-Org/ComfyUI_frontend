@@ -162,9 +162,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const wfContext = workflow?.current()
     const input = {
       content: text,
+      // Tags on a tab with no server-side workflow reference nothing the agent
+      // can read; the context note lets it answer honestly instead of guessing.
       selection:
         tags !== undefined && tags.length > 0
-          ? { node_ids: tags.map((tag) => tag.id) }
+          ? {
+              node_ids: tags.map((tag) => tag.id),
+              ...(wfContext === undefined && {
+                context:
+                  'The referenced nodes are on a local unsaved workflow the server cannot read yet. Ask the user to save the workflow if its contents are needed.'
+              })
+            }
           : undefined,
       attachments: attachments?.map((attachment) => attachment.ref)
     }

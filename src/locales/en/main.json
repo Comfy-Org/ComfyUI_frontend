@@ -5018,6 +5018,7 @@
     "copied": "Copied!",
     "remove": "Remove",
     "uploading": "Uploading",
+    "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "you": "You",
     "sessionOptions": "Chat options",

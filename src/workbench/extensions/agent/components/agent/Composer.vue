@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Textarea from '../ui/Textarea.vue'
@@ -14,19 +22,28 @@ const {
   streaming = false,
   submitting = false,
   canAttach = false,
-  selectionTags = []
+  selectionTags = [],
+  getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
   submitting?: boolean
   canAttach?: boolean
   selectionTags?: SelectedNode[]
+  getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
   attach: []
   removeTag: [id: string]
+  mentionPick: [node: SelectedNode]
 }>()
+
+// Snapshotted when the @ menu opens; the graph is not watched.
+const mentionNodes = ref<SelectedNode[]>([])
+function onMentionOpen(open: boolean): void {
+  if (open) mentionNodes.value = getMentionNodes()
+}
 
 const { t } = useI18n()
 
@@ -99,14 +116,41 @@ defineExpose({
         >
           <span class="icon-[lucide--paperclip] size-4" />
         </button>
-        <button
-          type="button"
-          :aria-label="t('agent.mention')"
-          class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
-          @click="composer.insert('@')"
-        >
-          <span class="icon-[lucide--at-sign] size-4" />
-        </button>
+        <DropdownMenuRoot @update:open="onMentionOpen">
+          <DropdownMenuTrigger
+            :aria-label="t('agent.mention')"
+            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          >
+            <span class="icon-[lucide--at-sign] size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              :side-offset="4"
+              class="rounded-agent border-agent-border bg-agent-surface-raised z-1100 max-h-64 w-64 overflow-y-auto border p-1 shadow-lg"
+            >
+              <DropdownMenuItem
+                v-for="node in mentionNodes"
+                :key="node.id"
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover rounded-agent flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-xs outline-none"
+                @select="emit('mentionPick', node)"
+              >
+                <span class="truncate">{{ node.title }}</span>
+                <span class="text-agent-fg-subtle ml-auto shrink-0">
+                  #{{ node.id }}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                v-if="!mentionNodes.length"
+                disabled
+                class="text-agent-fg-subtle px-2 py-1.5 text-xs"
+              >
+                {{ t('agent.noNodesToMention') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
       </div>
 
       <div class="flex items-center gap-1">
