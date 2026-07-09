@@ -14,7 +14,7 @@
       <CloudTemplateFooter />
     </div>
     <div
-      v-if="!hideHero"
+      v-if="!route.meta.hideHero"
       class="relative hidden flex-1 overflow-hidden py-2 pr-2 lg:block"
     >
       <CloudHeroCarousel />
@@ -23,14 +23,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import CloudHeroCarousel from '@/platform/cloud/onboarding/components/CloudHeroCarousel.vue'
 import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTemplateFooter.vue'
 
 const route = useRoute()
-const hideHero = computed(() => Boolean(route.meta.hideHero))
 </script>
 <style>
 @import '../assets/css/fonts.css';
