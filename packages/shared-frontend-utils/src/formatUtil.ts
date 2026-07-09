@@ -669,12 +669,7 @@ export function getMediaTypeFromFilename(
 }
 
 export function isPreviewableMediaType(mediaType: MediaType): boolean {
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === '3D'
-  )
+  return mediaType !== 'other'
 }
 
 export function formatTime(seconds: number): string {

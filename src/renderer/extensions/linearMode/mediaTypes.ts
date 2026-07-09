@@ -30,5 +30,6 @@ export function getMediaType(output?: ResultItemImpl) {
   if (!output) return ''
   if (output.isVideo) return 'video'
   if (output.isImage) return 'images'
+  if (output.isText) return 'text'
   return output.mediaType
 }

@@ -39,6 +39,9 @@ const WidgetGalleria = defineAsyncComponent(
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
 )
+const WidgetTextPreview = defineAsyncComponent(
+  () => import('../components/WidgetTextPreview.vue')
+)
 const WidgetLegacy = defineAsyncComponent(
   () => import('../components/WidgetLegacy.vue')
 )
@@ -151,6 +154,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
+  [
+    'textPreview',
+    {
+      component: WidgetTextPreview,
+      aliases: ['TEXT_PREVIEW'],
+      essential: false
+    }
+  ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
@@ -242,6 +253,7 @@ export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
+  'textPreview',
   'load3D',
   'curve',
   'painter',
