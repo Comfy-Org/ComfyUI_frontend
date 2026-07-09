@@ -158,10 +158,10 @@
     <!-- Credit auto-reload -->
     <AutoReloadSection v-if="canManageBilling" />
 
-    <!-- Footer links follow the content (no mt-auto) so the gap above them
-    matches the other tabs instead of floating to the panel's bottom edge. -->
+    <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
+    the other tabs) keeps it level with their footers. -->
     <div
-      class="flex h-8 shrink-0 items-center gap-4 text-sm text-muted-foreground"
+      class="mt-auto flex h-8 shrink-0 items-center gap-4 text-sm text-muted-foreground"
     >
       <a
         :href="learnMoreUrl"
