@@ -197,11 +197,11 @@ describe('WidgetDynamicGroup', () => {
     )
   })
 
-  it('only shows remove buttons for rows above the minimum', () => {
+  it('shows a remove button for every row while above the minimum count', () => {
     mountWidgetDynamicGroup(createDynamicGroupNode({ min: 2, rows: [0, 1, 2] }))
 
     const removeButtons = screen.getAllByRole('button', { name: 'Remove Lora' })
-    expect(removeButtons).toHaveLength(1)
+    expect(removeButtons).toHaveLength(3)
   })
 
   it('hides all remove buttons when row count equals min', () => {

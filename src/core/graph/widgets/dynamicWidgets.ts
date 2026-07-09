@@ -261,16 +261,29 @@ const isGroupField = (group: string, name: string) =>
 const belongsToRow = (group: string, name: string, row: number): boolean =>
   name.startsWith(`${group}.${row}.`)
 
+function rowIndexOf(group: string, name: string): number | undefined {
+  if (!isGroupField(group, name)) return undefined
+  const rest = name.slice(group.length + 1)
+  const dot = rest.indexOf('.')
+  if (dot === -1) return undefined
+  const row = Number(rest.slice(0, dot))
+  return Number.isInteger(row) ? row : undefined
+}
+
+/**
+ * Counts distinct rows in the group. Fields may be backed by a widget, an input
+ * socket, or both, so both collections are scanned to keep the count accurate
+ * for socket-only field types (e.g. IMAGE).
+ */
 function countGroupRows(group: string, node: LGraphNode): number {
   const rows = new Set<number>()
   for (const w of node.widgets ?? []) {
-    if (!isGroupField(group, w.name)) continue
-    const rest = w.name.slice(group.length + 1)
-    const dot = rest.indexOf('.')
-    if (dot !== -1) {
-      const row = Number(rest.slice(0, dot))
-      if (Number.isInteger(row)) rows.add(row)
-    }
+    const row = rowIndexOf(group, w.name)
+    if (row !== undefined) rows.add(row)
+  }
+  for (const input of node.inputs) {
+    const row = rowIndexOf(group, input.name)
+    if (row !== undefined) rows.add(row)
   }
   return rows.size
 }
@@ -290,8 +303,7 @@ function createRow(
       ...spec,
       name: fieldName(group, row, spec.name),
       display_name: spec.display_name ?? spec.name,
-      hidden: true,
-      socketless: true
+      hidden: true
     })
 
   return node.widgets!.splice(startLen)
@@ -342,17 +354,29 @@ function addRow(group: string, node: DynamicGroupNode): void {
 
 function removeRow(group: string, row: number, node: DynamicGroupNode): void {
   const state = node.comfyDynamic.dynamicGroup[group]
-  if (!state || row < state.min) return
+  if (!state || countGroupRows(group, node) <= state.min) return
+
+  const store = useWidgetValueStore()
+  const graphId = resolveNodeRootGraphId(node)
+  const keyFor = (name: string) =>
+    graphId ? widgetId(graphId, node.id, name) : undefined
 
   for (const w of remove(node.widgets!, (w) =>
     belongsToRow(group, w.name, row)
-  ))
+  )) {
     w.onRemove?.()
+    const key = keyFor(w.name)
+    if (key) store.deleteWidget(key)
+  }
   removeGroupInputs(node, (name) => belongsToRow(group, name, row))
 
   for (const w of node.widgets ?? []) {
     const shifted = shiftedFieldName(group, w.name, row)
-    if (shifted !== undefined) w.name = shifted
+    if (shifted === undefined) continue
+    const from = keyFor(w.name)
+    const to = keyFor(shifted)
+    if (from && to) store.renameWidget(from, to)
+    w.name = shifted
   }
   for (const inp of node.inputs) {
     const shifted = shiftedFieldName(group, inp.name, row)

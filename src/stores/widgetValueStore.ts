@@ -60,6 +60,24 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
+  /**
+   * Moves an existing widget state to a new id, preserving the state object
+   * identity so any widget holding a reference to it stays in sync. Any state
+   * already stored under `toId` is discarded.
+   */
+  function renameWidget(fromId: WidgetId, toId: WidgetId): boolean {
+    if (fromId === toId) return false
+    const { graphId: fromGraphId } = parseWidgetId(fromId)
+    const state = getGraphWidgetStates(fromGraphId).get(fromId)
+    if (!state) return false
+
+    const { graphId: toGraphId, name } = parseWidgetId(toId)
+    getGraphWidgetStates(fromGraphId).delete(fromId)
+    state.name = name
+    getGraphWidgetStates(toGraphId).set(toId, state)
+    return true
+  }
+
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
     return [...getGraphWidgetStates(graphId).values()].filter(
       (state) => state.nodeId === localNodeId
@@ -75,6 +93,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     setValue,
     deleteWidget,
+    renameWidget,
     getNodeWidgets,
     clearGraph
   }

@@ -1,10 +1,10 @@
 <template>
   <div
-    class="col-span-2 grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-x-2 gap-y-1"
+    class="col-span-2 grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-x-2 gap-y-1"
   >
     <template v-for="row in rowIndices" :key="row">
       <div
-        class="col-span-2 mt-1 flex items-center justify-between border-t border-node-component-surface pt-1"
+        class="col-span-full mt-1 flex items-center justify-between border-t border-node-component-surface pt-1"
       >
         <span
           class="truncate text-xs font-medium text-node-component-slot-text"
@@ -14,7 +14,7 @@
           }}
         </span>
         <button
-          v-if="row >= minRows"
+          v-if="canRemoveRows"
           v-tooltip.top="
             t('dynamicGroup.removeGroup', { group_name: groupName })
           "
@@ -29,21 +29,43 @@
           />
         </button>
       </div>
-      <component
-        :is="fw.component"
+      <div
         v-for="fw in rowWidgets(row)"
         :key="fw.name"
-        :model-value="fw.value"
-        :widget="fw.simplified"
-        :node-id="nodeId"
-        :node-type="nodeType"
-        class="col-span-2"
-        @update:model-value="fw.onUpdate"
-      />
+        class="group col-span-full grid grid-cols-subgrid items-stretch"
+      >
+        <div
+          :class="
+            cn(
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+              fw.linked && 'opacity-100'
+            )
+          "
+        >
+          <InputSlot
+            v-if="fw.slotData && fw.inputIndex !== undefined"
+            :slot-data="fw.slotData"
+            :node-id="resolvedNodeId"
+            :node-type="nodeType"
+            :index="fw.inputIndex"
+            :connected="fw.linked"
+            dot-only
+          />
+        </div>
+        <component
+          :is="fw.component"
+          :model-value="fw.value"
+          :widget="fw.simplified"
+          :node-id="nodeId"
+          :node-type="nodeType"
+          class="col-span-2"
+          @update:model-value="fw.onUpdate"
+        />
+      </div>
     </template>
     <Button
       :disabled="addDisabled"
-      class="col-span-2 mt-1 border-0 bg-component-node-widget-background text-node-component-slot-text"
+      class="col-span-full mt-1 border-0 bg-component-node-widget-background text-node-component-slot-text"
       size="sm"
       variant="textonly"
       @click="onAddRow"
@@ -64,7 +86,9 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { DynamicGroupNode } from '@/core/graph/widgets/dynamicWidgets'
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import InputSlot from '@/renderer/extensions/vueNodes/components/InputSlot.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { app } from '@/scripts/app'
@@ -76,7 +100,9 @@ import {
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState } from '@/types/widgetState'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId, nodeType } = defineProps<{
   widget: SimplifiedWidget<number>
@@ -90,9 +116,10 @@ const nodeDefStore = useNodeDefStore()
 
 const group = widget.name
 
-const node = computed(
-  () => app.graph?.getNodeById(toNodeId(nodeId)) as DynamicGroupNode | undefined
-)
+const node = computed(() => {
+  const graph = app.canvas?.graph ?? app.graph
+  return graph?.getNodeById(toNodeId(nodeId)) as DynamicGroupNode | undefined
+})
 
 const groupState = computed(
   () => node.value?.comfyDynamic?.dynamicGroup?.[group]
@@ -110,6 +137,9 @@ interface FieldWidgetView {
   simplified: SimplifiedWidget
   value: WidgetValue
   onUpdate: (value: WidgetValue) => void
+  slotData?: INodeSlot
+  inputIndex?: number
+  linked: boolean
 }
 
 function resolveWidgetState(w: IBaseWidget): WidgetState | undefined {
@@ -129,12 +159,19 @@ function toFieldView(
 ): FieldWidgetView {
   const state = resolveWidgetState(w)
   const value = state?.value ?? w.value
+  const inputIndex = n.inputs.findIndex(
+    (input) => input.name === w.name || input.widget?.name === w.name
+  )
+  const slotData = inputIndex === -1 ? undefined : n.inputs[inputIndex]
+  const linked = slotData?.link != null
   const simplified: SimplifiedWidget = {
     name: w.name,
     type: state?.type ?? w.type,
     value,
     label: state?.label ?? w.label ?? fieldName,
-    options: state?.options ?? w.options,
+    options: linked
+      ? { ...(state?.options ?? w.options), disabled: true }
+      : (state?.options ?? w.options),
     spec: nodeDefStore.getInputSpecForWidget(n, w.name)
   }
   return {
@@ -147,7 +184,10 @@ function toFieldView(
       if (state) state.value = next
       w.value = next ?? undefined
       w.callback?.(next)
-    }
+    },
+    slotData,
+    inputIndex: inputIndex === -1 ? undefined : inputIndex,
+    linked
   }
 }
 
@@ -175,6 +215,10 @@ const rowIndices = computed(() =>
 const addDisabled = computed(
   () => rowIndices.value.length >= (groupState.value?.max ?? Infinity)
 )
+
+const canRemoveRows = computed(() => rowIndices.value.length > minRows.value)
+
+const resolvedNodeId = computed<NodeId>(() => toNodeId(nodeId))
 
 function rowWidgets(row: number): FieldWidgetView[] {
   return fieldWidgets.value.filter((fw) => fw.row === row)
