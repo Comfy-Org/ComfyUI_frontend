@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "معاينة"
-      },
-      "preview_text": {
-        "name": "معاينة"
-      },
+      "preview_mode": "وضع المعاينة",
+      "preview_text": {},
       "source": {
         "name": "المصدر"
       }

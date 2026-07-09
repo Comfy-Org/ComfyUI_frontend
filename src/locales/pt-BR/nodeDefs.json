@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Pré-visualização"
-      },
-      "preview_text": {
-        "name": "Pré-visualização"
-      },
+      "preview_mode": "Modo de visualização",
+      "preview_text": {},
       "source": {
         "name": "source"
       }

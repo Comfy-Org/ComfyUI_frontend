@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Предпросмотр"
-      },
-      "preview_text": {
-        "name": "Предпросмотр"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "источник"
       }

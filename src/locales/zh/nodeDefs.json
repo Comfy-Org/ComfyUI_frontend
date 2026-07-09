@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "预览"
-      },
-      "preview_text": {
-        "name": "预览"
-      },
+      "preview_mode": "预览模式",
+      "preview_text": {},
       "source": {
         "name": "源"
       }

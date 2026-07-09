@@ -1572,6 +1572,7 @@
     "extensions": "Eklentiler",
     "failed": "Başarısız",
     "failedToCopyJobId": "İş kimliği kopyalanamadı",
+    "failedToDownloadFile": "Dosya indirilemedi",
     "failedToDownloadImage": "Görüntü indirilemedi",
     "failedToDownloadVideo": "Video indirilemedi",
     "favorites": "Favoriler",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "Toplam RAM",
     "systemStatsTemplatesVersion": "Şablon Sürümü",
     "terminal": "Terminal",
+    "textFailedToLoad": "Metin yüklenemedi",
     "title": "Başlık",
     "triggerPhrase": "Tetikleyici ifade",
     "unknownError": "Bilinmeyen hata",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "örn. API Anahtarım",
     "noSecrets": "Henüz gizli bilgi yok. Başlamak için ilk API anahtarınızı ekleyin.",
     "provider": "Sağlayıcı",
+    "providerHelp": {
+      "gemini": "Google Gemini API anahtarınızı girin. Bunu Google AI Studio'da oluşturabilirsiniz.",
+      "runway": "Runway API anahtarınızı girin. Bunu Runway hesap ayarlarınızda, API anahtarları bölümünde bulabilirsiniz."
+    },
     "providerHint": "İsteğe bağlı. Bir sağlayıcı seçmek otomatik anahtar kullanımını etkinleştirir.",
     "secretValue": "Gizli Değer",
     "secretValueHint": "Bu değer şifrelenecek ve tekrar görüntülenemeyecek.",

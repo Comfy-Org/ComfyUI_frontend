@@ -1572,6 +1572,7 @@
     "extensions": "הרחבות",
     "failed": "נכשל",
     "failedToCopyJobId": "העתקת מזהה המשימה נכשלה",
+    "failedToDownloadFile": "הורדת הקובץ נכשלה",
     "failedToDownloadImage": "הורדת התמונה נכשלה",
     "failedToDownloadVideo": "הורדת הסרטון נכשלה",
     "favorites": "מועדפים",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "RAM כולל",
     "systemStatsTemplatesVersion": "גרסת תבניות",
     "terminal": "טרמינל",
+    "textFailedToLoad": "טעינת הטקסט נכשלה",
     "title": "כותרת",
     "triggerPhrase": "ביטוי הפעלה",
     "unknownError": "שגיאה לא ידועה",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "לדוגמה, מפתח ה-API שלי",
     "noSecrets": "לא אוחסנו סודות. הוסף את מפתח ה-API הראשון שלך כדי להתחיל.",
     "provider": "ספק",
+    "providerHelp": {
+      "gemini": "הזן את מפתח ה-API של Google Gemini. ניתן ליצור אחד ב-Google AI Studio.",
+      "runway": "הזן את מפתח ה-API של Runway. ניתן למצוא אותו בהגדרות החשבון שלך ב-Runway תחת מפתחות API."
+    },
     "providerHint": "אופציונלי. בחירת ספק מאפשרת שימוש אוטומטי באסימון.",
     "secretValue": "ערך הסוד",
     "secretValueHint": "ערך זה יוצפן ולא ניתן יהיה לצפות בו שוב.",

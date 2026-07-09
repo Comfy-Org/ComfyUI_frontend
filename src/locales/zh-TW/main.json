@@ -1572,6 +1572,7 @@
     "extensions": "擴充功能",
     "failed": "失敗",
     "failedToCopyJobId": "複製工作 ID 失敗",
+    "failedToDownloadFile": "檔案下載失敗",
     "failedToDownloadImage": "下載圖片失敗",
     "failedToDownloadVideo": "下載影片失敗",
     "favorites": "我的最愛",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "總記憶體",
     "systemStatsTemplatesVersion": "範本版本",
     "terminal": "終端機",
+    "textFailedToLoad": "文字載入失敗",
     "title": "標題",
     "triggerPhrase": "觸發詞",
     "unknownError": "未知錯誤",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "例如：我的 API 金鑰",
     "noSecrets": "尚未儲存任何機密。新增您的第一個 API 金鑰以開始使用。",
     "provider": "供應商",
+    "providerHelp": {
+      "gemini": "請輸入您的 Google Gemini API 金鑰。您可以在 Google AI Studio 產生一組。",
+      "runway": "請輸入您的 Runway API 金鑰。您可以在 Runway 帳戶設定的 API 金鑰區找到。"
+    },
     "providerHint": "選填。選擇供應商可自動啟用權杖使用。",
     "secretValue": "機密值",
     "secretValueHint": "此值將被加密，且無法再次查看。",

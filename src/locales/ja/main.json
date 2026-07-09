@@ -1572,6 +1572,7 @@
     "extensions": "拡張機能",
     "failed": "失敗",
     "failedToCopyJobId": "ジョブIDのコピーに失敗しました",
+    "failedToDownloadFile": "ファイルのダウンロードに失敗しました",
     "failedToDownloadImage": "画像のダウンロードに失敗しました",
     "failedToDownloadVideo": "ビデオのダウンロードに失敗しました",
     "favorites": "お気に入り",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "総RAM",
     "systemStatsTemplatesVersion": "テンプレートバージョン",
     "terminal": "ターミナル",
+    "textFailedToLoad": "テキストの読み込みに失敗しました",
     "title": "タイトル",
     "triggerPhrase": "トリガーフレーズ",
     "unknownError": "不明なエラー",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "例：My API Key",
     "noSecrets": "シークレットが保存されていません。最初のAPIキーを追加して始めましょう。",
     "provider": "プロバイダー",
+    "providerHelp": {
+      "gemini": "Google Gemini APIキーを入力してください。Google AI Studioで生成できます。",
+      "runway": "Runway APIキーを入力してください。APIキーはRunwayアカウント設定の「API keys」で確認できます。"
+    },
     "providerHint": "任意。プロバイダーを選択するとトークンの自動利用が有効になります。",
     "secretValue": "シークレット値",
     "secretValueHint": "この値は暗号化され、再度表示することはできません。",

@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "Vista previa de cualquier",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Vista previa"
-      },
-      "preview_text": {
-        "name": "Vista previa"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "fuente"
       }

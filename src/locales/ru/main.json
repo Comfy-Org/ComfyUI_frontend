@@ -1572,6 +1572,7 @@
     "extensions": "Расширения",
     "failed": "Ошибка",
     "failedToCopyJobId": "Не удалось скопировать ID задания",
+    "failedToDownloadFile": "Не удалось загрузить файл",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
     "favorites": "Избранное",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "Всего ОЗУ",
     "systemStatsTemplatesVersion": "Версия шаблонов",
     "terminal": "Терминал",
+    "textFailedToLoad": "Не удалось загрузить текст",
     "title": "Заголовок",
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "например, Мой API-ключ",
     "noSecrets": "Секреты не сохранены. Добавьте свой первый API-ключ, чтобы начать.",
     "provider": "Провайдер",
+    "providerHelp": {
+      "gemini": "Введите ваш API-ключ Google Gemini. Вы можете сгенерировать его в Google AI Studio.",
+      "runway": "Введите ваш API-ключ Runway. Вы можете найти его в настройках аккаунта Runway в разделе API keys."
+    },
     "providerHint": "Необязательно. Выбор провайдера позволяет использовать токен автоматически.",
     "secretValue": "Значение секрета",
     "secretValueHint": "Это значение будет зашифровано и не может быть просмотрено повторно.",

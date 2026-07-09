@@ -14642,13 +14642,8 @@
       "source": {
         "name": "source"
       },
-      "preview_markdown": {
-        "name": "Preview"
-      },
-      "preview_text": {
-        "name": "Preview"
-      },
-      "previewMode": {}
+      "preview_mode": {},
+      "preview_text": {}
     }
   },
   "PreviewAudio": {

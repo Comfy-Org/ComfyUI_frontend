@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "پیش‌نمایش به صورت متن",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "پیش‌نمایش"
-      },
-      "preview_text": {
-        "name": "پیش‌نمایش"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "سورس"
       }

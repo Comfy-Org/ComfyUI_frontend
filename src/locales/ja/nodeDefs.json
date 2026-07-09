@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "プレビュー"
-      },
-      "preview_text": {
-        "name": "プレビュー"
-      },
+      "preview_mode": "プレビューモード",
+      "preview_text": {},
       "source": {
         "name": "ソース"
       }

@@ -1572,6 +1572,7 @@
     "extensions": "Extensiones",
     "failed": "Fallido",
     "failedToCopyJobId": "Error al copiar el ID de trabajo",
+    "failedToDownloadFile": "No se pudo descargar el archivo",
     "failedToDownloadImage": "Falló la descarga de imagen",
     "failedToDownloadVideo": "Falló la descarga de video",
     "favorites": "Favoritos",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "RAM Total",
     "systemStatsTemplatesVersion": "Versión de Plantillas",
     "terminal": "Terminal",
+    "textFailedToLoad": "No se pudo cargar el texto",
     "title": "Título",
     "triggerPhrase": "Frase de activación",
     "unknownError": "Error desconocido",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "p. ej., Mi clave API",
     "noSecrets": "No hay secretos guardados. Agrega tu primera clave API para comenzar.",
     "provider": "Proveedor",
+    "providerHelp": {
+      "gemini": "Introduce tu clave API de Google Gemini. Puedes generarla en Google AI Studio.",
+      "runway": "Introduce tu clave API de Runway. Puedes encontrarla en la configuración de tu cuenta de Runway, en la sección de claves API."
+    },
     "providerHint": "Opcional. Seleccionar un proveedor habilita el uso automático del token.",
     "secretValue": "Valor secreto",
     "secretValueHint": "Este valor será cifrado y no podrá ser visto nuevamente.",

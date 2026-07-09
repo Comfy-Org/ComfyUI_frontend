@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Önizleme"
-      },
-      "preview_text": {
-        "name": "Önizleme"
-      },
+      "preview_mode": "Önizleme modu",
+      "preview_text": {},
       "source": {
         "name": "kaynak"
       }

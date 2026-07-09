@@ -1572,6 +1572,7 @@
     "extensions": "الملحقات",
     "failed": "فشل",
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
+    "failedToDownloadFile": "فشل في تنزيل الملف",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
     "failedToDownloadVideo": "فشل في تنزيل الفيديو",
     "favorites": "المفضلة",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "إجمالي الذاكرة (RAM)",
     "systemStatsTemplatesVersion": "إصدار القوالب",
     "terminal": "الطرفية",
+    "textFailedToLoad": "فشل تحميل النص",
     "title": "العنوان",
     "triggerPhrase": "عبارة التشغيل",
     "unknownError": "خطأ غير معروف",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "مثال: مفتاح API الخاص بي",
     "noSecrets": "لا توجد أسرار مخزنة. أضف أول مفتاح API للبدء.",
     "provider": "المزود",
+    "providerHelp": {
+      "gemini": "أدخل مفتاح Google Gemini API الخاص بك. يمكنك إنشاء واحد في Google AI Studio.",
+      "runway": "أدخل مفتاح Runway API الخاص بك. يمكنك العثور عليه في إعدادات حسابك على Runway ضمن مفاتيح API."
+    },
     "providerHint": "اختياري. اختيار مزود يتيح استخدام الرمز تلقائيًا.",
     "secretValue": "قيمة السر",
     "secretValueHint": "سيتم تشفير هذه القيمة ولا يمكن عرضها مرة أخرى.",

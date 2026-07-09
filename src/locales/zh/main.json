@@ -1572,6 +1572,7 @@
     "extensions": "扩展",
     "failed": "失败",
     "failedToCopyJobId": "未能复制队列 ID",
+    "failedToDownloadFile": "文件下载失败",
     "failedToDownloadImage": "图片下载失败",
     "failedToDownloadVideo": "视频下载失败",
     "favorites": "收藏夹",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "总内存",
     "systemStatsTemplatesVersion": "模板版本",
     "terminal": "终端",
+    "textFailedToLoad": "文本加载失败",
     "title": "标题",
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "例如：我的 API 密钥",
     "noSecrets": "尚未存储任何机密。添加您的第一个 API 密钥以开始使用。",
     "provider": "提供商",
+    "providerHelp": {
+      "gemini": "请输入您的 Google Gemini API 密钥。您可以在 Google AI Studio 生成。",
+      "runway": "请输入您的 Runway API 密钥。您可以在 Runway 账户设置的 API 密钥中找到。"
+    },
     "providerHint": "可选。选择提供商可自动使用令牌。",
     "secretValue": "机密值",
     "secretValueHint": "该值将被加密，之后无法再次查看。",

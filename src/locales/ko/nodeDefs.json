@@ -14639,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "미리보기"
-      },
-      "preview_text": {
-        "name": "미리보기"
-      },
+      "preview_mode": "미리보기 모드",
+      "preview_text": {},
       "source": {
         "name": "소스"
       }

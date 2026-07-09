@@ -1572,6 +1572,7 @@
     "extensions": "확장 프로그램",
     "failed": "실패",
     "failedToCopyJobId": "작업 ID 복사 실패",
+    "failedToDownloadFile": "파일 다운로드에 실패했습니다",
     "failedToDownloadImage": "이미지 다운로드 실패",
     "failedToDownloadVideo": "비디오 다운로드 실패",
     "favorites": "즐겨찾기",
@@ -1816,6 +1817,7 @@
     "systemStatsRAMTotal": "총 RAM",
     "systemStatsTemplatesVersion": "템플릿 버전",
     "terminal": "터미널",
+    "textFailedToLoad": "텍스트를 불러오지 못했습니다",
     "title": "제목",
     "triggerPhrase": "트리거 문구",
     "unknownError": "알 수 없는 오류",
@@ -3238,6 +3240,10 @@
     "namePlaceholder": "예: My API Key",
     "noSecrets": "저장된 시크릿이 없습니다. 첫 번째 API 키를 추가하여 시작하세요.",
     "provider": "공급자",
+    "providerHelp": {
+      "gemini": "Google Gemini API 키를 입력하세요. Google AI Studio에서 생성할 수 있습니다.",
+      "runway": "Runway API 키를 입력하세요. Runway 계정 설정의 API 키 항목에서 확인할 수 있습니다."
+    },
     "providerHint": "선택 사항입니다. 공급자를 선택하면 토큰이 자동으로 사용됩니다.",
     "secretValue": "시크릿 값",
     "secretValueHint": "이 값은 암호화되며 다시 볼 수 없습니다.",
