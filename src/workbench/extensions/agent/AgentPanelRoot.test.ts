@@ -1418,8 +1418,8 @@ describe('AgentPanelRoot workflow binding', () => {
     // First send carries the serialized canvas; the tab is unsaved, so no id.
     expect(bodies[0]).toMatchObject({
       workflow: {
-        content: { version: 0.4, nodes: [{ id: 1 }] },
-        base_version: null
+        graph: { version: 0.4, nodes: [{ id: 1 }] },
+        last_seen_version: null
       }
     })
     expect(bodies[0]).not.toHaveProperty('workflow_id')
