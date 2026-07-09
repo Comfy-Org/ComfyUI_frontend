@@ -44,14 +44,16 @@ The gate protects against two distinct things, and the proof covers both:
   is the primary thing the gate guards on every frontend PR. These breaks live
   in `src/`.
 - **Pack-bug** - a pack itself ships a bug (or a pinned pack is bumped to a
-  broken version). The gate catches these too. On CI these breaks are
-  delivered the only way a frontend-repo commit can deliver them: through the
-  manifest (`browser_tests/fixtures/data/customNodeManifest.json`), by
-  pointing the pack's `repo`/`pin` at a fork commit that carries the bug -
-  which is exactly the pinned-bump scenario the mode describes. CI clones
-  every pack fresh at its pin, so editing pack files in the frontend repo
-  does nothing there; direct pack-file edits only work against a local
-  backend (which is how the exact reds below were captured).
+  broken version). The gate catches these too. CI clones every pack fresh at
+  its pin, so editing pack files in the frontend repo does nothing - the clone
+  overwrites them. Two ways deliver a pack break on CI: (a) point the manifest
+  (`browser_tests/fixtures/data/customNodeManifest.json`) `repo`/`pin` at a
+  broken fork, which is exactly the pinned-bump scenario and the most
+  production-faithful; or (b) a self-contained CI step that patches each cloned
+  pack in place right after install. The proof PR uses (b) - no external repos,
+  and each patch asserts it landed (`grep`, fails the job otherwise) so a silent
+  no-op cannot fake a pass. Both reproduce the same edits captured against a
+  local backend (which is how the exact reds below were captured).
 
 Each row below is labelled with its mode.
 
@@ -65,18 +67,18 @@ change WHICH pair or node the message names without weakening the catch - the
 promise is the tier and the failure class, not byte-identical offender text
 across pin changes. Sections refer to [ARCHITECTURE.md](ARCHITECTURE.md).
 
-| #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                          | The one-file break                                                                                                                                                                     | CI check that catches it                   | Exact red                                                                                                   |
-| --- | ------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| 1   | Mount completeness, canvas / v1 (s1, s5)         | FE   | A change dropping declared parts on the canvas renderer (class; no single ticket - the v2 wave below shows how this family presents)  | `src/services/litegraphService.ts` `addInputs`: stop materializing the last declared input                                                                                             | Tests Custom Nodes / mount tier            | `BatchCount+: instance is missing declared input "batch" (litegraph)`                                       |
-| 2   | Mount completeness, DOM / v2 (s1, s5)            | FE   | Widgets missing under Nodes 2.0 (FE-627/FE-634 iTools buttons; FE-841 is the adjacent wrong-style class, present but unproven caught) | `src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts`: drop the `int` widget component mapping                                                                         | Tests Custom Nodes / mount tier (Vue pass) | `Ideogram4PromptBuilderKJ: Vue mounts 9 of 15 widgets`                                                      |
-| 3   | Persistence, save/reload (s1, s8)                | FE   | Widgets reverting to socket-only on reload: the defaultInput migration regression that PR #12279 (open) exists to fix                 | `src/lib/litegraph/src/LGraphNode.ts` `configure`: off-by-one drops the last `widgets_values` entry                                                                                    | Tests Custom Nodes / persistence tier      | `Seed (rgthree): widgets_values [1,"fixed"] -> [1,"randomize"] on set-values reload`                        |
-| 4   | Wiring - type compatibility (s5, s6)             | FE   | A frontend change narrowing connectable types (class; no single verified ticket)                                                      | `src/lib/litegraph/src/LiteGraphGlobal.ts` `isValidConnection`: reject IMAGE links                                                                                                     | Tests Custom Nodes / connectivity sweep    | `AddLabel.IMAGE -> FastPreviewBatch.input: CONNECT_REJECTED` (full pair list)                               |
-| 5   | Wiring - drop resolution (s5)                    | FE   | Drag/slot resolution family (nearest reported symptoms: FE-625/FE-632 EditUtils connections shift after drag)                         | `src/lib/litegraph/src/canvas/measureSlots.ts` `getNodeInputOnPos`: return undefined                                                                                                   | Tests Custom Nodes / connectivity drag     | `EmptyImage.IMAGE -> ImageBatch.image2 with VueNodes=false`                                                 |
-| 6   | Execution - frontend prompt serialization (s7)   | FE   | A prompt-serialization change corrupting inputs (class; no single verified ticket)                                                    | `src/utils/executionUtil.ts`: drop numeric widget values from the API prompt                                                                                                           | Tests Custom Nodes / curated run (T1)      | `Prompt outputs failed validation; ImpactInt: value; ImpactFloat: value`                                    |
-| 7   | Zero-visible-errors / load hook (s1)             | FE   | An extension hook crashing on graph load, the mechanism packs hook (FE-751 class; the break is in a core extension, hence FE mode)    | `src/composables/node/useNodeBadge.ts` `afterConfigureGraph`: throw                                                                                                                    | Tests Custom Nodes / curated run (T1)      | `Error calling extension 'Comfy.NodeBadge' method 'afterConfigureGraph' ...`                                |
-| 8   | Console / pageerror ledger (s10)                 | Pack | An uncaught pack-JS error during save/reload (the betterCombos.js `typeof null` bug this suite found)                                 | manifest pin swap: point ComfyUI-Custom-Scripts at a fork commit whose `showText.js` logs a `console.error` in `onConfigure` (captured locally by editing the installed pack directly) | Tests Custom Nodes / curated run (T1)      | `console errors during curated run` + the exact text + script URL                                           |
-| 9   | Execution - runtime (s7)                         | Pack | A pack node raising at execution (WAS Text Find/Replace infinite loop; KJ ImageGridtoBatch min violation)                             | manifest pin swap: point was-node-suite at a fork commit whose `return_constant_number` raises (captured locally by editing the installed pack directly)                               | Tests Custom Nodes / auto-run tier         | `Constant Number: EXECUTION_ERROR (Constant Number: ValueError) - not in cannotRunAlone; a regression, ...` |
-| 10  | Registration / expectedNodes sentinels (s5, s10) | Pack | A pinned pack bump renaming a node key                                                                                                | manifest pin swap: point ComfyUI-Impact-Pack at a fork commit that renames the `ImpactInt` mapping key (captured locally by editing the installed pack directly)                       | Tests Custom Nodes / zero-skip gate        | job goes red on `skipped != 0` (T0 + T1 skip; the workflow's "Forbid skipped tests" step fails)             |
+| #   | Surface (ARCH section)                           | Mode | Real regression it recreates                                                                                                          | The one-file break                                                                                                                                                  | CI check that catches it                   | Exact red                                                                                                   |
+| --- | ------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 1   | Mount completeness, canvas / v1 (s1, s5)         | FE   | A change dropping declared parts on the canvas renderer (class; no single ticket - the v2 wave below shows how this family presents)  | `src/services/litegraphService.ts` `addInputs`: stop materializing the last declared input                                                                          | Tests Custom Nodes / mount tier            | `BatchCount+: instance is missing declared input "batch" (litegraph)`                                       |
+| 2   | Mount completeness, DOM / v2 (s1, s5)            | FE   | Widgets missing under Nodes 2.0 (FE-627/FE-634 iTools buttons; FE-841 is the adjacent wrong-style class, present but unproven caught) | `src/renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts`: drop the `int` widget component mapping                                                      | Tests Custom Nodes / mount tier (Vue pass) | `Ideogram4PromptBuilderKJ: Vue mounts 9 of 15 widgets`                                                      |
+| 3   | Persistence, save/reload (s1, s8)                | FE   | Widgets reverting to socket-only on reload: the defaultInput migration regression that PR #12279 (open) exists to fix                 | `src/lib/litegraph/src/LGraphNode.ts` `configure`: off-by-one drops the last `widgets_values` entry                                                                 | Tests Custom Nodes / persistence tier      | `Seed (rgthree): widgets_values [1,"fixed"] -> [1,"randomize"] on set-values reload`                        |
+| 4   | Wiring - type compatibility (s5, s6)             | FE   | A frontend change narrowing connectable types (class; no single verified ticket)                                                      | `src/lib/litegraph/src/LiteGraphGlobal.ts` `isValidConnection`: reject IMAGE links                                                                                  | Tests Custom Nodes / connectivity sweep    | `AddLabel.IMAGE -> FastPreviewBatch.input: CONNECT_REJECTED` (full pair list)                               |
+| 5   | Wiring - drop resolution (s5)                    | FE   | Drag/slot resolution family (nearest reported symptoms: FE-625/FE-632 EditUtils connections shift after drag)                         | `src/lib/litegraph/src/canvas/measureSlots.ts` `getNodeInputOnPos`: return undefined                                                                                | Tests Custom Nodes / connectivity drag     | `EmptyImage.IMAGE -> ImageBatch.image2 with VueNodes=false`                                                 |
+| 6   | Execution - frontend prompt serialization (s7)   | FE   | A prompt-serialization change corrupting inputs (class; no single verified ticket)                                                    | `src/utils/executionUtil.ts`: drop numeric widget values from the API prompt                                                                                        | Tests Custom Nodes / curated run (T1)      | `Prompt outputs failed validation; ImpactInt: value; ImpactFloat: value`                                    |
+| 7   | Zero-visible-errors / load hook (s1)             | FE   | An extension hook crashing on graph load, the mechanism packs hook (FE-751 class; the break is in a core extension, hence FE mode)    | `src/composables/node/useNodeBadge.ts` `afterConfigureGraph`: throw                                                                                                 | Tests Custom Nodes / curated run (T1)      | `Error calling extension 'Comfy.NodeBadge' method 'afterConfigureGraph' ...`                                |
+| 8   | Console / pageerror ledger (s10)                 | Pack | An uncaught pack-JS error during save/reload (the betterCombos.js `typeof null` bug this suite found)                                 | CI step patches the cloned ComfyUI-Custom-Scripts `showText.js` to log a `console.error` in `onConfigure` (captured locally by editing the installed pack directly) | Tests Custom Nodes / curated run (T1)      | `console errors during curated run` + the exact text + script URL                                           |
+| 9   | Execution - runtime (s7)                         | Pack | A pack node raising at execution (WAS Text Find/Replace infinite loop; KJ ImageGridtoBatch min violation)                             | CI step patches the cloned was-node-suite `return_constant_number` to raise on entry (captured locally by editing the installed pack directly)                      | Tests Custom Nodes / auto-run tier         | `Constant Number: EXECUTION_ERROR (Constant Number: ValueError) - not in cannotRunAlone; a regression, ...` |
+| 10  | Registration / expectedNodes sentinels (s5, s10) | Pack | A pinned pack bump renaming a node key                                                                                                | CI step patches the cloned ComfyUI-Impact-Pack `__init__.py` to rename the `ImpactInt` mapping key (captured locally by editing the installed pack directly)        | Tests Custom Nodes / zero-skip gate        | job goes red on `skipped != 0` (T0 + T1 skip; the workflow's "Forbid skipped tests" step fails)             |
 
 ### Links of various types (surface 4/5 expanded)
 
@@ -155,23 +157,28 @@ against an environment that changed under it, not a suite defect. Therefore:
 ## Building the proof PR
 
 1. Branch off the suite branch: `git checkout -b nathaniel/detection-proof nathaniel/custom-node-e2e-suite`.
-2. For the three Pack-mode rows, first publish the broken fork commits (one
-   fork per pack, each a one-line change matching its row); the demo commit in
-   this repo is then the manifest `repo`/`pin` edit pointing at that fork. The
-   FE-mode rows need no forks - their break is a direct `src/` edit.
-3. One commit per matrix row, each a single-file break. FE-mode rows carry an
-   inline comment in the changed `src/` file:
-   `// DETECTION PROOF: recreates <FE-xxx / PR #12279> - <surface>. Expected: custom-nodes check red at <tier>.`
-   Pack-mode rows change only the JSON manifest, which cannot carry a comment
-   (a `//` line would break both the CI jq install loop and the loader's
-   JSON.parse), so their provenance lives in the commit message per step 4.
-4. Commit message names the surface and the reference, e.g.
-   `demo(detection): break Vue widget mount (recreates FE-627/FE-634) - expect mount tier red`.
+2. One commit per matrix row, each breaking one surface, stacked so all breaks
+   are live at HEAD at once (not reverted between commits - the goal is to see
+   every surface broken together, and the `Tests Custom Nodes` job reds across
+   every tier in one run). FE-mode rows (1-7) are a direct `src/` edit carrying
+   an inline comment in the changed file:
+   `// DETECTION PROOF (row N, surface): recreates <FE-xxx / PR #12279>. Expected: <tier> red <message>.`
+3. Pack-mode rows (8-10) are delivered by one CI step
+   (`DETECTION PROOF - break packs`, on this branch only) that patches each
+   cloned pack in place right after install. Each patch asserts it landed
+   (`grep`, fails the job otherwise) so a silent no-op cannot fake a pass. The
+   step is fenced to this never-merge branch and must never be ported to a real
+   suite branch.
+4. Commit message names the surface, e.g.
+   `detection-proof: break mount (v2 Vue renderer) - drops the int widget mapping`.
 5. Open the PR against the suite branch (not main) with the correlation matrix as
    the description and a bold header: **This PR must never merge. Every commit is
    a deliberate break; green would mean the gate missed a regression.**
-6. Let CI run. Each commit turns its named check red at the named tier. The
-   reviewer bisects commit-by-commit to correlate break -> catch.
+6. Let CI run on HEAD. With every break live, the `Tests Custom Nodes` job reds
+   across every tier in one run. Attribute a red to its cause via the labelled
+   comment on the matching `src/` file (rows 1-7) or in the CI break step
+   (rows 8-10); checking out commit N (which contains breaks 1..N) narrows it
+   further.
 
 ## References
 
