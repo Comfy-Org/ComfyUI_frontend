@@ -31,12 +31,21 @@ export function groupLinksByTuple(
 /**
  * Finds the link ID actually referenced by an input on the target node.
  * Cannot rely on target_slot index because widget-to-input conversions
- * during configure() can shift slot indices.
+ * during configure() can shift slot indices. The serialized node data is the
+ * authority: store registration is load-order first-wins, so when a stale
+ * duplicate precedes the referenced link in the link map, the registered id
+ * is the orphan (issue #10291).
  */
 export function selectSurvivorLink(
   ids: LinkId[],
-  node: LGraphNode | null
+  node: LGraphNode | null,
+  nodeData?: ISerialisedNode
 ): LinkId {
+  const referenced = nodeData?.inputs?.find(
+    (input) => input.link != null && ids.includes(toLinkId(input.link))
+  )?.link
+  if (referenced != null) return toLinkId(referenced)
+
   if (!node?.graph) return ids[0]
 
   for (const [index] of (node.inputs ?? []).entries()) {
