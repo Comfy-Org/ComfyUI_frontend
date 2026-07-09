@@ -52,7 +52,7 @@ satisfy these; existing code migrates toward them incrementally.
 
 2. **Valid-on-read.** A caller asking for a credential gets a currently-valid one
    or a definitive failure — never a known-expired one. Validity is checked at the
-   point of use (expiry-aware), not assumed because a background timer *should*
+   point of use (expiry-aware), not assumed because a background timer _should_
    have refreshed. Timers may be an optimization, never the guarantee.
 
 3. **Single-flight.** Concurrent requests for the same credential share one
