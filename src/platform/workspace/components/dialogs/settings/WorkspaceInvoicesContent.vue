@@ -60,7 +60,7 @@
           <TableRow
             v-for="invoice in pagedItems"
             :key="invoice.id"
-            class="hover:bg-transparent [&>td]:border-b [&>td]:border-interface-stroke/20"
+            class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(invoice.date) }}

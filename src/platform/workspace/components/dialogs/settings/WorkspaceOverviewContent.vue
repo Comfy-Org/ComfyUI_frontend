@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-0 scrollbar-hide flex-1 flex-col gap-4 overflow-y-auto pb-10"
+    class="flex min-h-0 scrollbar-hide flex-1 flex-col gap-4 overflow-y-auto pb-6"
   >
     <!-- Plan + credits + member snapshot -->
     <div
@@ -113,7 +113,7 @@
                 <TableRow
                   v-for="row in snapshotRows"
                   :key="row.userName"
-                  class="hover:bg-transparent [&>td]:border-b [&>td]:border-interface-stroke/20"
+                  class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20"
                 >
                   <TableCell>
                     <div class="flex items-center gap-2">
@@ -158,11 +158,10 @@
     <!-- Credit auto-reload -->
     <AutoReloadSection v-if="canManageBilling" />
 
-    <!-- Footer links: mt-auto floats them to the bottom when the content is
-    short (e.g. a member's near-empty tab); when content overflows, mt-auto
-    collapses and they scroll below it. -->
+    <!-- Footer links follow the content (no mt-auto) so the gap above them
+    matches the other tabs instead of floating to the panel's bottom edge. -->
     <div
-      class="mt-auto flex h-8 shrink-0 items-center gap-4 text-sm text-muted-foreground"
+      class="flex h-8 shrink-0 items-center gap-4 text-sm text-muted-foreground"
     >
       <a
         :href="learnMoreUrl"
