@@ -21,16 +21,30 @@ export interface SessionNotice {
   text: string
 }
 
+// The host resolves the active canvas tab to the workflow the turn should edit.
+// `speculative` marks an id the server has not confirmed owning (a saved tab's
+// persisted uuid): a 403 on it retries once without, letting the server fall
+// back to the thread's workflow or mint a draft.
+export interface WorkflowTurnContext {
+  id: string
+  speculative: boolean
+  tabPath: string
+}
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   selection?: () => Record<string, unknown> | undefined
+  workflow?: {
+    current(): WorkflowTurnContext | undefined
+    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+  }
 }
 
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, selection } = deps
+  const { rest, events, selection, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
   const draftStore = useAgentDraftStore()
@@ -132,15 +146,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     sending.value = true
+    const wfContext = workflow?.current()
+    // Built once: the selection dep consumes the staged tags, so a 403 retry
+    // must reuse this object rather than re-invoking it.
+    const input = {
+      content: text,
+      selection: selection?.(),
+      attachments
+    }
+    async function postTurn(threadId: string) {
+      try {
+        return await rest.postMessage(
+          threadId,
+          wfContext ? { ...input, workflowId: wfContext.id } : input
+        )
+      } catch (error) {
+        const speculativeDenied =
+          wfContext?.speculative === true &&
+          error instanceof AgentApiError &&
+          error.status === 403
+        if (!speculativeDenied) throw error
+        return await rest.postMessage(threadId, input)
+      }
+    }
     try {
-      const ack = await rest.postMessage(conversationStore.threadId ?? 'new', {
-        content: text,
-        selection: selection?.(),
-        attachments
-      })
+      const ack = await postTurn(conversationStore.threadId ?? 'new')
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
-      if (ack.workflow_id !== undefined) draftStore.bind(ack.workflow_id)
+      if (ack.workflow_id !== undefined) {
+        draftStore.bind(ack.workflow_id)
+        workflow?.adopted(ack.workflow_id, wfContext)
+      }
       // The ONE branding seam: the server-minted message_id becomes the TurnId.
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(turnId, text)
@@ -188,6 +224,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // ids synchronously, so the reset below cannot race it.
     void stopTurn()
     conversationStore.reset()
+    // A late patch or resync for the abandoned thread's workflow must not land here.
+    draftStore.reset()
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
@@ -197,6 +235,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function loadThread(threadId: string): Promise<void> {
     void stopTurn()
+    // The switched-to thread's workflow binds on its next ack; drop the old one.
+    draftStore.reset()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
     await hydrateFromServer(threadId)
