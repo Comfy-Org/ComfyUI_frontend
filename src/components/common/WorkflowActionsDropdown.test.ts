@@ -116,8 +116,11 @@ describe('WorkflowActionsDropdown', () => {
   it('labels the inactive segment with its switch action only', () => {
     renderDropdown()
 
-    const inactive = screen.getByRole('button', { name: 'Enter app mode' })
-    expect(inactive).toHaveAttribute('aria-label', 'Enter app mode')
+    // getByRole with a string name requires an exact accessible-name match,
+    // so this also proves the name has no "mode, workflow actions" suffix.
+    expect(
+      screen.getByRole('button', { name: 'Enter app mode' })
+    ).toBeInTheDocument()
   })
 
   it('flips the segment roles when app mode is active', () => {
@@ -129,7 +132,7 @@ describe('WorkflowActionsDropdown', () => {
     expect(active).toHaveAttribute('aria-label', 'App mode, workflow actions')
     expect(
       screen.getByRole('button', { name: 'Enter node graph' })
-    ).toHaveAttribute('aria-label', 'Enter node graph')
+    ).toBeInTheDocument()
   })
 
   it('derives the active segment from the real mode, not the lagged display mode', () => {

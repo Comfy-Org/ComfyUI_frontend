@@ -11,7 +11,7 @@
         data-testid="help-center-button"
         :label="$t('menu.help')"
         :tooltip="$t('linearMode.giveFeedback')"
-        :is-small="isSmall"
+        :is-small
       />
     </template>
     <div
@@ -37,7 +37,7 @@
     :tooltip="$t('sideToolbar.helpCenter')"
     :icon-badge="shouldShowRedDot ? '•' : ''"
     badge-class="-top-1 -right-1 min-w-2 w-2 h-2 p-0 rounded-full text-[0px] bg-[#ff3b30]"
-    :is-small="isSmall"
+    :is-small
     @click="toggleHelpCenter()"
   />
 </template>
@@ -49,12 +49,11 @@ import { computed, useTemplateRef } from 'vue'
 import Popover from '@/components/ui/Popover.vue'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { APP_MODE_FEEDBACK_TYPEFORM_ID } from '@/platform/surveys/appModeFeedback'
 import { useTypeformEmbed } from '@/platform/surveys/useTypeformEmbed'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SidebarIcon from './SidebarIcon.vue'
-
-const APP_MODE_FEEDBACK_TYPEFORM_ID = 'jmmzmlKw'
 
 defineProps<{
   isSmall: boolean

@@ -95,7 +95,7 @@ const home = computed(() => ({
       button_id: 'breadcrumb_subgraph_root_selected',
       element_group: 'breadcrumb'
     })
-    const canvas = useCanvasStore().getCanvas()
+    const canvas = canvasStore.getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
     canvas.setGraph(canvas.graph.rootGraph)
@@ -111,13 +111,13 @@ const items = computed(() => {
         button_id: 'breadcrumb_subgraph_item_selected',
         element_group: 'breadcrumb'
       })
-      const canvas = useCanvasStore().getCanvas()
+      const canvas = canvasStore.getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
       canvas.setGraph(subgraph)
     },
     updateTitle: (title: string) => {
-      const rootGraph = useCanvasStore().getCanvas().graph?.rootGraph
+      const rootGraph = canvasStore.getCanvas().graph?.rootGraph
       if (!rootGraph) return
 
       forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
