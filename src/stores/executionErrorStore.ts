@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
+import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -16,7 +17,10 @@ import type {
   NodeError,
   PromptError
 } from '@/schemas/apiSchema'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
@@ -28,6 +32,15 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+
+interface NodeErrorClearTarget {
+  executionId: NodeExecutionId
+  slotName?: string
+}
+
+interface SlotNodeErrorClearTarget extends NodeErrorClearTarget {
+  slotName: string
+}
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
 export const useExecutionErrorStore = defineStore('executionError', () => {
@@ -79,31 +92,27 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastPromptError.value = null
   }
 
-  /**
-   * Removes a node's errors if they consist entirely of simple, auto-resolvable
-   * types. When `slotName` is provided, only errors for that slot are checked.
-   */
-  function clearSimpleNodeErrors(
+  function clearSimpleNodeErrorsFromRecord(
+    nodeErrors: Record<string, NodeError>,
     executionId: NodeExecutionId,
     slotName?: string
-  ): void {
-    if (!lastNodeErrors.value) return
-    const nodeError = lastNodeErrors.value[executionId]
-    if (!nodeError) return
+  ): Record<string, NodeError> | null {
+    const nodeError = nodeErrors[executionId]
+    if (!nodeError) return null
 
     const isSlotScoped = slotName !== undefined
-
     const relevantErrors = isSlotScoped
       ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
       : nodeError.errors
 
-    if (relevantErrors.length === 0) return
-    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) return
+    if (relevantErrors.length === 0) return null
+    if (!relevantErrors.every((e) => SIMPLE_ERROR_TYPES.has(e.type))) {
+      return null
+    }
 
-    const updated = { ...lastNodeErrors.value }
+    const updated = { ...nodeErrors }
 
     if (isSlotScoped) {
-      // Remove only the target slot's errors if they were all simple
       const remainingErrors = nodeError.errors.filter(
         (e) => e.extra_info?.input_name !== slotName
       )
@@ -116,10 +125,103 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         }
       }
     } else {
-      // If no slot specified and all errors were simple, clear the whole node
       delete updated[executionId]
     }
 
+    return updated
+  }
+
+  function getLiftedErrorSourceTargets(
+    executionId: NodeExecutionId,
+    slotName: string
+  ): SlotNodeErrorClearTarget[] {
+    const surface = surfacedNodeErrors.value?.[executionId]
+    if (!surface) return []
+
+    return surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
+      if (error.extra_info?.input_name !== slotName) return []
+
+      const sourceExecutionId = error.extra_info?.source_execution_id
+      const sourceInputName = error.extra_info?.source_input_name
+      if (
+        typeof sourceExecutionId !== 'string' ||
+        typeof sourceInputName !== 'string'
+      ) {
+        return []
+      }
+
+      const normalizedExecutionId =
+        tryNormalizeNodeExecutionId(sourceExecutionId)
+      return normalizedExecutionId
+        ? [{ executionId: normalizedExecutionId, slotName: sourceInputName }]
+        : []
+    })
+  }
+
+  function getRawClearTargets(
+    executionId: NodeExecutionId,
+    slotName: string
+  ): SlotNodeErrorClearTarget[]
+  function getRawClearTargets(
+    executionId: NodeExecutionId,
+    slotName?: undefined
+  ): NodeErrorClearTarget[]
+  function getRawClearTargets(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): NodeErrorClearTarget[]
+  /** Raw targets are keys into lastNodeErrors, not surfacedNodeErrors. */
+  function getRawClearTargets(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): NodeErrorClearTarget[] {
+    const targets: NodeErrorClearTarget[] = [{ executionId, slotName }]
+
+    if (slotName !== undefined) {
+      targets.push(...getLiftedErrorSourceTargets(executionId, slotName))
+    }
+
+    return targets
+  }
+
+  function isTargetStillOutOfRange(
+    nodeErrors: Record<string, NodeError>,
+    executionId: NodeExecutionId,
+    slotName: string,
+    value: number,
+    options: { min?: number; max?: number }
+  ): boolean {
+    const nodeError = nodeErrors[executionId]
+    if (!nodeError) return false
+
+    const errors = nodeError.errors.filter(
+      (error) => error.extra_info?.input_name === slotName
+    )
+
+    return isValueStillOutOfRange(value, errors, options)
+  }
+
+  /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked.
+   */
+  function clearSimpleNodeErrors(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): void {
+    if (!lastNodeErrors.value) return
+
+    let updated = lastNodeErrors.value
+    for (const target of getRawClearTargets(executionId, slotName)) {
+      updated =
+        clearSimpleNodeErrorsFromRecord(
+          updated,
+          target.executionId,
+          target.slotName
+        ) ?? updated
+    }
+
+    if (updated === lastNodeErrors.value) return
     lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
   }
 
@@ -138,13 +240,21 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     newValue: unknown,
     options?: { min?: number; max?: number }
   ): void {
-    if (typeof newValue === 'number' && lastNodeErrors.value) {
-      const nodeErrors = lastNodeErrors.value[executionId]
-      if (nodeErrors) {
-        const errs = nodeErrors.errors.filter(
-          (e) => e.extra_info?.input_name === widgetName
+    const nodeErrors = lastNodeErrors.value
+    if (typeof newValue === 'number' && nodeErrors) {
+      const targets = getRawClearTargets(executionId, widgetName)
+      if (
+        targets.some((target) =>
+          isTargetStillOutOfRange(
+            nodeErrors,
+            target.executionId,
+            target.slotName,
+            newValue,
+            options ?? {}
+          )
         )
-        if (isValueStillOutOfRange(newValue, errs, options || {})) return
+      ) {
+        return
       }
     }
     clearSimpleNodeErrors(executionId, widgetName)
@@ -224,6 +334,13 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
   )
 
+  // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
+  const surfacedNodeErrors = computed(() =>
+    lastNodeErrors.value && app.isGraphReady
+      ? liftNodeErrorsToBoundary(app.rootGraph, lastNodeErrors.value)
+      : lastNodeErrors.value
+  )
+
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
@@ -236,8 +353,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const allErrorExecutionIds = computed<string[]>(() => {
     const ids: string[] = []
-    if (lastNodeErrors.value) {
-      ids.push(...Object.keys(lastNodeErrors.value))
+    if (surfacedNodeErrors.value) {
+      ids.push(...Object.keys(surfacedNodeErrors.value))
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
@@ -279,8 +396,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     // Fall back to rootGraph when currentGraph hasn't been initialized yet
     const activeGraph = canvasStore.currentGraph ?? app.rootGraph
 
-    if (lastNodeErrors.value) {
-      for (const executionId of Object.keys(lastNodeErrors.value)) {
+    if (surfacedNodeErrors.value) {
+      for (const executionId of Object.keys(surfacedNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
         if (graphNode?.graph === activeGraph) {
           ids.add(String(graphNode.id))
@@ -302,12 +419,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /** Map of node errors indexed by locator ID. */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
     () => {
-      if (!lastNodeErrors.value) return {}
+      if (!surfacedNodeErrors.value) return {}
 
       const map: Record<NodeLocatorId, NodeError> = {}
 
       for (const [executionId, nodeError] of Object.entries(
-        lastNodeErrors.value
+        surfacedNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
         if (locatorId) {
@@ -361,7 +478,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(lastNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
 
   return {
     // Raw state
@@ -380,6 +497,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     dismissErrorOverlay,
 
     // Derived state
+    surfacedNodeErrors,
     hasExecutionError,
     hasPromptError,
     hasNodeError,

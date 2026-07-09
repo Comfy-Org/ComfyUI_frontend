@@ -11,6 +11,7 @@ import {
   translateOptionalCatalogMessage
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
+import { isImageNotLoadedValidationError } from '@/utils/executionErrorUtil'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
 
@@ -128,26 +129,6 @@ function getInputName(error: NodeValidationError): string {
   return (
     inputName?.trim() ||
     translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
-  )
-}
-
-function getErrorText(error: NodeValidationError) {
-  return [
-    'message' in error ? error.message : undefined,
-    'details' in error ? error.details : undefined
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
-
-function isImageNotLoadedText(text: string): boolean {
-  return /invalid image file|\[errno 21\].*is a directory/i.test(text)
-}
-
-function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
-  return (
-    error.type === 'custom_validation_failed' &&
-    isImageNotLoadedText(getErrorText(error))
   )
 }
 

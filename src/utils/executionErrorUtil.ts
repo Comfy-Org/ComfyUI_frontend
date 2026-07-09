@@ -105,6 +105,17 @@ export const SIMPLE_ERROR_TYPES = new Set([
   'required_input_missing'
 ])
 
+export function isImageNotLoadedValidationError(
+  error: NodeError['errors'][number]
+): boolean {
+  return (
+    error.type === 'custom_validation_failed' &&
+    /invalid image file|\[errno 21\].*is a directory/i.test(
+      [error.message, error.details].filter(Boolean).join('\n')
+    )
+  )
+}
+
 /**
  * Returns true if `value` still violates a recorded range constraint.
  * Pass errors already filtered to the target widget (by `input_name`).

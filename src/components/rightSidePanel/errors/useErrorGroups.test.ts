@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
@@ -128,11 +130,16 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import { useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
@@ -490,6 +497,60 @@ describe('useErrorGroups', () => {
       expect(error.toastTitle).toBe('Required input missing')
       expect(error.toastMessage).toBe(
         'KSampler is missing a required input: model'
+      )
+    })
+
+    it('groups lifted boundary errors under the host node card', async () => {
+      const { store, groups } = createErrorGroups()
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const host = createTestSubgraphNode(subgraph, { id: 12 })
+      host.title = 'Host Subgraph'
+      rootGraph.add(host)
+      const interior = new LGraphNode('InteriorClass')
+      interior.id = toNodeId(5)
+      const input = interior.addInput('seed_input', '*')
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(input, interior)
+      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
+        await vi.importActual<typeof GraphTraversalUtil>(
+          '@/utils/graphTraversalUtil'
+        )
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+      })
+      store.lastNodeErrors = {
+        '12:5': {
+          class_type: 'InteriorClass',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'seed_input',
+              extra_info: {
+                input_name: 'seed_input'
+              }
+            }
+          ]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      expect(card.nodeId).toBe('12')
+      expect(card.title).toBe(host.title)
+      expect(card.errors[0].displayDetails).toBe(
+        `${host.title} is missing a required input: seed`
       )
     })
 

@@ -667,6 +667,36 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     )
   })
 
+  it('clears promoted validation errors through the source execution id', () => {
+    const sourceExecutionId = createNodeExecutionId([65, 18])
+    const widget = createMockWidget({
+      name: 'display_slot',
+      nodeId: NODE_ID,
+      sourceExecutionId,
+      sourceWidgetName: 'ckpt_name'
+    })
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      [sourceExecutionId]: {
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Invalid model',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ],
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: []
+      }
+    }
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler('real_model.safetensors')
+
+    expect(executionErrorStore.lastNodeErrors).toBeNull()
+  })
+
   it('clears execution errors on update', () => {
     const widget = createMockWidget({
       name: 'seed',
