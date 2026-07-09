@@ -73,11 +73,20 @@ const selectedNodes = computed<SelectedNode[]>(() =>
 const {
   staged: selectionTags,
   consume: consumeSelection,
-  remove: removeSelectionTag
+  remove: removeSelectionTag,
+  add: addSelectionTag
 } = useCanvasSelection({
   selection: selectedNodes,
   isLive: () => agentPanelStore.isOpen
 })
+
+// The @ picker lists the active graph's nodes, computed on open (not watched).
+function mentionableNodes(): SelectedNode[] {
+  return (app.graph?.nodes ?? []).map((node) => ({
+    id: String(node.id),
+    title: node.title || node.type
+  }))
+}
 
 // A bound tab resolves to its id; a cloud-saved tab offers its persisted uuid
 // speculatively (the server 403s foreign ids and the send retries without).
@@ -245,6 +254,10 @@ async function applyDraft(): Promise<void> {
       await loadDraft(workflowId, version, content, boundTab)
       return
     }
+    // The server's freshly minted draft starts empty; conjuring a blank tab
+    // for it only confuses. Park until a patch carries actual nodes.
+    const nodes = (content as { nodes?: unknown }).nodes
+    if (!Array.isArray(nodes) || nodes.length === 0) return
     await loadDraft(workflowId, version, content, null)
   } finally {
     applying = false
@@ -426,10 +439,12 @@ async function onFilesPicked(event: Event): Promise<void> {
       :selection-tags="selectionTags"
       :active-tab="activeTab"
       :conflict-open="conflictOpen"
+      :get-mention-nodes="mentionableNodes"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
       @remove-tag="removeSelectionTag"
+      @mention-pick="addSelectionTag"
       @resolve-conflict="onResolveConflict"
       @feedback="onFeedback"
       @new-chat="onNewChat"

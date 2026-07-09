@@ -55,5 +55,12 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     staged.value = staged.value.filter((node) => node.id !== id)
   }
 
-  return { staged, consume, remove }
+  // Manual staging from the @ picker; a later canvas-selection change still
+  // replaces the whole set (last gesture wins).
+  function add(node: SelectedNode): void {
+    if (staged.value.some((tag) => tag.id === node.id)) return
+    staged.value = [...staged.value, node]
+  }
+
+  return { staged, consume, remove, add }
 }
