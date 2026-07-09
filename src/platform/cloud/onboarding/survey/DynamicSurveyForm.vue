@@ -234,7 +234,7 @@ const markTouched = (id: string) => {
   touched.value = new Set(touched.value).add(id)
 }
 
-const onFieldChange = async (id: string, value: string | string[]) => {
+const onFieldChange = async (id: string, value?: string | string[]) => {
   if (isAdvancing.value) return
   markTouched(id)
   setFieldValue(id, value)

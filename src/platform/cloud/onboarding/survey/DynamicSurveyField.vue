@@ -9,10 +9,9 @@
     </legend>
     <ToggleGroup
       v-if="field.type === 'single'"
-      :model-value="(modelValue as string) ?? ''"
+      v-model="stringValue"
       type="single"
       class="flex w-full flex-col gap-2"
-      @update:model-value="onSingleChange"
     >
       <ToggleGroupItem
         v-for="option in field.options"
@@ -34,10 +33,9 @@
     </ToggleGroup>
     <ToggleGroup
       v-else
-      :model-value="(modelValue as string[]) ?? []"
+      v-model="multiValue"
       type="multiple"
       class="flex w-full flex-col gap-2"
-      @update:model-value="onMultiChange"
     >
       <ToggleGroupItem
         v-for="option in field.options"
@@ -59,7 +57,7 @@
     </ToggleGroup>
     <Input
       v-if="field.allowOther && field.otherFieldId && isOtherSelected"
-      :model-value="(otherValue as string) ?? ''"
+      v-model="otherValue"
       :class="inputClass"
       :maxlength="OTHER_TEXT_MAX_LENGTH"
       :placeholder="
@@ -68,7 +66,6 @@
           $t('cloudOnboarding.survey.otherPlaceholder')
         )
       "
-      @update:model-value="onOtherChange"
     />
     <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
   </fieldset>
@@ -81,11 +78,10 @@
     </label>
     <Input
       :id="controlId"
-      :model-value="(modelValue as string) ?? ''"
+      v-model="stringValue"
       :placeholder="field.placeholder"
       :aria-invalid="Boolean(errorMessage)"
       :class="inputClass"
-      @update:model-value="onTextChange"
     />
     <p v-if="errorMessage" class="text-danger text-xs">{{ errorMessage }}</p>
   </div>
@@ -106,22 +102,23 @@ import type {
 
 import { OTHER_TEXT_MAX_LENGTH } from './surveySchema'
 
-const {
-  field,
-  modelValue,
-  otherValue,
-  errorMessage = ''
-} = defineProps<{
+const modelValue = defineModel<string | string[]>()
+const otherValue = defineModel<string>('otherValue')
+
+const { field, errorMessage = '' } = defineProps<{
   field: OnboardingSurveyField
-  modelValue: string | string[] | undefined
-  otherValue?: string
   errorMessage?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | string[]]
-  'update:otherValue': [value: string]
-}>()
+const stringValue = computed({
+  get: () => (typeof modelValue.value === 'string' ? modelValue.value : ''),
+  set: (value) => (modelValue.value = value)
+})
+
+const multiValue = computed({
+  get: () => (Array.isArray(modelValue.value) ? modelValue.value : []),
+  set: (value) => (modelValue.value = value)
+})
 
 const { t, te, locale } = useI18n()
 const controlId = useId()
@@ -136,9 +133,9 @@ const inputClass =
   'border-smoke-800/10 bg-smoke-800/10 text-primary-comfy-canvas placeholder:text-primary-comfy-canvas/50 focus-visible:ring-inset'
 
 const isOtherSelected = computed(() =>
-  Array.isArray(modelValue)
-    ? modelValue.includes('other')
-    : modelValue === 'other'
+  Array.isArray(modelValue.value)
+    ? modelValue.value.includes('other')
+    : modelValue.value === 'other'
 )
 
 const resolveLocalized = (value: LocalizedString): string => {
@@ -156,22 +153,5 @@ const resolveOptionLabel = (option: OnboardingSurveyOption): string => {
   if (option.labelKey && te(option.labelKey)) return t(option.labelKey)
   if (option.label != null) return resolveLocalized(option.label)
   return option.value
-}
-
-const onSingleChange = (value: unknown) => {
-  emit('update:modelValue', typeof value === 'string' ? value : '')
-}
-const onMultiChange = (value: unknown) => {
-  const selected = Array.isArray(value) ? value : []
-  emit(
-    'update:modelValue',
-    selected.filter((v): v is string => typeof v === 'string')
-  )
-}
-const onTextChange = (value: string | number | undefined) => {
-  emit('update:modelValue', String(value ?? ''))
-}
-const onOtherChange = (value: string | number | undefined) => {
-  emit('update:otherValue', String(value ?? ''))
 }
 </script>
