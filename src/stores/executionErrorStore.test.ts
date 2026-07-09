@@ -48,6 +48,11 @@ import { useExecutionErrorStore } from './executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
+function mockGraphReady(rootGraph: typeof app.rootGraph) {
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+}
+
 describe('executionErrorStore — node error operations', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -312,8 +317,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears a lifted host slot error from the raw interior record', () => {
       const { rootGraph } = createBoundaryLinkedSubgraph()
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-      vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+      mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
@@ -332,8 +336,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear lifted host slot errors when the raw error is not simple', () => {
       const { rootGraph } = createBoundaryLinkedSubgraph()
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-      vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+      mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
@@ -449,8 +452,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear lifted range errors until the host value is in range', () => {
       const { rootGraph } = createBoundaryLinkedSubgraph()
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-      vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+      mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
@@ -487,8 +489,7 @@ describe('executionErrorStore — node error operations', () => {
   describe('surfacedNodeErrors', () => {
     it('derives boundary-lifted errors while preserving the raw record', () => {
       const { rootGraph, host } = createBoundaryLinkedSubgraph()
-      vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-      vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+      mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
