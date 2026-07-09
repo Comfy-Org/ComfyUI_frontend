@@ -11,6 +11,7 @@ import {
   WORKSPACE_FEATURE_FLAG
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
   url: string
@@ -92,9 +93,7 @@ export class CloudWorkspaceMockHelper {
     await page.route('**/api/auth/session', (r) =>
       r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
     )
-    await page.route('**/api/auth/token', (r) =>
-      r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-    )
+    await mockWorkspaceTokenMint(page, TEAM_WORKSPACE)
     await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
     await page.route('**/api/workspaces', (r) =>

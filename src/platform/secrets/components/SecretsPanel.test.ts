@@ -12,6 +12,7 @@ import type { SecretMetadata } from '@/platform/secrets/types'
 const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
 const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)
 const mockFetchSecrets = vi.fn().mockResolvedValue(undefined)
+const mockFetchProviders = vi.fn().mockResolvedValue(undefined)
 const mockCloseDialog = vi.fn()
 
 const mockSecret: SecretMetadata = {
@@ -26,9 +27,11 @@ vi.mock('@/platform/secrets/composables/useSecrets', () => ({
   useSecrets: () => ({
     loading: ref(false),
     secrets: ref<SecretMetadata[]>([mockSecret]),
+    availableProviders: ref<string[]>([]),
     operatingSecretId: ref(null),
     existingProviders: ref([]),
     fetchSecrets: mockFetchSecrets,
+    fetchProviders: mockFetchProviders,
     deleteSecret: mockDeleteSecret
   })
 }))
