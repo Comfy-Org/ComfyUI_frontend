@@ -35,10 +35,10 @@
           :class="
             sidebarLocation === 'left'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'pointer-events-auto bg-comfy-menu-bg'
+              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
           :min-size="
             sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
@@ -82,7 +82,7 @@
             </SplitterPanel>
             <SplitterPanel
               v-show="bottomPanelVisible && !focusMode"
-              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
+              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -95,10 +95,10 @@
           :class="
             sidebarLocation === 'right'
               ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
                   sidebarPanelVisible && 'min-w-78'
                 )
-              : 'pointer-events-auto bg-comfy-menu-bg'
+              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
           :min-size="
             sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
