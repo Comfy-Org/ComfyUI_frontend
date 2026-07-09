@@ -44,21 +44,23 @@ export const useIntWidget = () => {
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const display_type = inputSpec.display
     const widgetType =
-      inputSpec.component === 'SetRandomInt'
-        ? 'setrandomint'
-        : sliderEnabled && display_type == 'slider'
-          ? 'slider'
-          : display_type == 'knob'
-            ? 'knob'
-            : 'number'
+      sliderEnabled && display_type == 'slider'
+        ? 'slider'
+        : display_type == 'knob'
+          ? 'knob'
+          : 'number'
 
     const step = inputSpec.step ?? 1
+    
+    const inputSpecAny = inputSpec as any
+    const component = inputSpecAny.component
+
     const max =
-      inputSpec.component === 'SetRandomInt'
+      component === 'SetRandomInt'
         ? Math.min(inputSpec.max ?? SAFE_INTEGER_MAX, SAFE_INTEGER_MAX)
         : (inputSpec.max ?? 2048)
-    /** Assertion {@link inputSpec.default} */
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
+    
     const widget = node.addWidget(
       widgetType,
       inputSpec.name,
@@ -67,12 +69,17 @@ export const useIntWidget = () => {
       {
         min: inputSpec.min ?? 0,
         max,
-        /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10,
         step2: step,
-        precision: 0
-      }
+        precision: 0,
+        component: component
+      } as any
     )
+    
+    if (component) {
+      if (!widget.options) widget.options = {};
+      (widget.options as any).component = component;
+    }
 
     const controlAfterGenerate =
       inputSpec.control_after_generate ??

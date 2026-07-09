@@ -9,9 +9,6 @@ import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
-const WidgetSetRandomInt = defineAsyncComponent(
-  () => import('../components/WidgetSetRandomInt.vue')
-)
 const WidgetInputText = defineAsyncComponent(
   () => import('../components/WidgetInputText.vue')
 )
@@ -54,9 +51,6 @@ const AudioPreviewPlayer = defineAsyncComponent(
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
-const Load3DAdvanced = defineAsyncComponent(
-  () => import('@/components/load3d/Load3DAdvanced.vue')
-)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -71,12 +65,6 @@ const WidgetPainter = defineAsyncComponent(
 )
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
-)
-const WidgetBoundingBoxes = defineAsyncComponent(
-  () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
-)
-const WidgetColors = defineAsyncComponent(
-  () => import('@/components/palette/WidgetColors.vue')
 )
 
 export const FOR_TESTING = {
@@ -100,10 +88,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
-  ],
-  [
-    'setrandomint',
-    { component: WidgetSetRandomInt, aliases: [], essential: false }
   ],
   [
     'string',
@@ -186,14 +170,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
   [
-    'load3DAdvanced',
-    {
-      component: Load3DAdvanced,
-      aliases: ['LOAD_3D_ADVANCED'],
-      essential: false
-    }
-  ],
-  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -232,22 +208,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['RANGE'],
       essential: false
     }
-  ],
-  [
-    'boundingboxes',
-    {
-      component: WidgetBoundingBoxes,
-      aliases: ['BOUNDING_BOXES'],
-      essential: false
-    }
-  ],
-  [
-    'colors',
-    {
-      component: WidgetColors,
-      aliases: ['COLORS'],
-      essential: false
-    }
   ]
 ]
 
@@ -283,12 +243,10 @@ const EXPANDING_TYPES = [
   'textarea',
   'markdown',
   'load3D',
-  'load3DAdvanced',
   'curve',
   'painter',
   'imagecompare',
-  'range',
-  'boundingboxes'
+  'range'
 ] as const
 
 export function shouldExpand(type: string): boolean {

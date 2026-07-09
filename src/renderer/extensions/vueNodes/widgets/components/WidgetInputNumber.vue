@@ -11,6 +11,9 @@ import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
 
+import WidgetRandomizeButton from './WidgetRandomizeButton.vue'
+import { randomizeNumberValue } from '@/scripts/valueControl'
+
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
@@ -33,6 +36,10 @@ const widgetComponent = computed(() => {
       return WidgetInputNumberInput
   }
 })
+
+function randomize() {
+  modelValue.value = randomizeNumberValue(props.widget.options ?? {})
+}
 </script>
 
 <template>
@@ -48,5 +55,10 @@ const widgetComponent = computed(() => {
     v-model="modelValue"
     :widget="widget"
     v-bind="$attrs"
+  />
+  
+  <WidgetRandomizeButton
+    v-if="props.widget.options?.component === 'SetRandomInt'"
+    @click="randomize"
   />
 </template>

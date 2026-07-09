@@ -273,7 +273,7 @@
     "details": "Details",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
-    "randomizeSeed": "Randomize Seed",
+    "randomize": "Randomize",
     "relativeTime": {
       "now": "now",
       "yearsAgo": "{count}y ago",

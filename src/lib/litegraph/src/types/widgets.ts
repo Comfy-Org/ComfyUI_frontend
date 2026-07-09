@@ -1,7 +1,6 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
   CanvasColour,
@@ -139,12 +138,9 @@ export type IWidget =
   | IAssetWidget
   | IImageCropWidget
   | IBoundingBoxWidget
-  | ISetRandomIntWidget
   | ICurveWidget
   | IPainterWidget
   | IRangeWidget
-  | IBoundingBoxesWidget
-  | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -337,15 +333,6 @@ export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   value: Bounds
 }
 
-/** Integer widget with a button to set a random value */
-export interface ISetRandomIntWidget extends IBaseWidget<
-  number,
-  'setrandomint'
-> {
-  type: 'setrandomint'
-  value: number
-}
-
 export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {
   type: 'curve'
   value: CurveData
@@ -354,19 +341,6 @@ export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {
 export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   type: 'painter'
   value: string
-}
-
-export interface IBoundingBoxesWidget extends IBaseWidget<
-  BoundingBox[],
-  'boundingboxes'
-> {
-  type: 'boundingboxes'
-  value: BoundingBox[]
-}
-
-export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {
-  type: 'colors'
-  value: string[]
 }
 
 export interface RangeValue {
@@ -425,7 +399,7 @@ export interface IBaseWidget<
 
   linkedWidgets?: IBaseWidget[]
 
-  readonly widgetId?: WidgetId
+  readonly entityId?: WidgetEntityId
 
   name: string
   options: TOptions
