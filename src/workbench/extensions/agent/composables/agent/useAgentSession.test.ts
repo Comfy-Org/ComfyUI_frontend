@@ -387,15 +387,15 @@ describe('useAgentSession (v1 composition root)', () => {
         current: () => undefined,
         adopted,
         snapshot: () => ({
-          content: { nodes: [{ id: 1 }] },
-          base_version: null
+          graph: { nodes: [{ id: 1 }] },
+          last_seen_version: null
         })
       }
     })
     session.start()
     await session.sendMessage('hi')
     expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toMatchObject({
-      workflow: { content: { nodes: [{ id: 1 }] }, base_version: null }
+      workflow: { graph: { nodes: [{ id: 1 }] }, last_seen_version: null }
     })
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined, true)
   })
