@@ -55,7 +55,7 @@ function makeMockOrbitControls() {
 
 describe('GizmoManager', () => {
   let scene: THREE.Scene
-  let renderer: THREE.WebGLRenderer
+  let interactionElement: HTMLElement
   let camera: THREE.PerspectiveCamera
   let orbitControls: ReturnType<typeof makeMockOrbitControls>
   let manager: GizmoManager
@@ -66,9 +66,7 @@ describe('GizmoManager', () => {
     vi.clearAllMocks()
 
     scene = new THREE.Scene()
-    renderer = {
-      domElement: document.createElement('canvas')
-    } as unknown as THREE.WebGLRenderer
+    interactionElement = document.createElement('div')
     camera = new THREE.PerspectiveCamera()
     orbitControls = makeMockOrbitControls()
     onTransformChange = vi.fn()
@@ -80,7 +78,7 @@ describe('GizmoManager', () => {
 
     manager = new GizmoManager(
       scene,
-      renderer,
+      interactionElement,
       orbitControls,
       () => camera,
       onTransformChange
