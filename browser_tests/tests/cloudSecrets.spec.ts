@@ -80,6 +80,16 @@ async function mockSecretsBackend(
     const { pathname } = new URL(request.url())
     const method = request.method()
 
+    // The glob `**/api/secrets**` also matches the panel's own lazy-loaded
+    // source module (`/src/platform/secrets/api/secretsApi.ts`), whose path
+    // contains the `/api/secrets` substring. Fulfilling that dev-server module
+    // request with JSON breaks the dynamic import and the panel never mounts.
+    // Anchor to the start of the pathname so only genuine `/api/secrets…` API
+    // routes are handled; everything else falls through to the real Vite server.
+    if (!/^\/api\/secrets(\/|$)/.test(pathname)) {
+      return route.continue()
+    }
+
     // GET /secrets/providers — the entitlement-gated provider allowlist.
     if (pathname.endsWith('/secrets/providers')) {
       return route.fulfill(
