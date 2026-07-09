@@ -165,17 +165,14 @@ export const useAuthStore = defineStore('auth', () => {
       const oauthRequestInFlight = getOAuthRequestId() !== null
       if (!userInitiatedLogout) {
         console.warn(
-          `[authStore] Firebase auth state cleared without a user-initiated logout (previous_user_id=${previousUserId}, oauth_request_in_flight=${oauthRequestInFlight})`
+          `[authStore] Firebase auth state cleared without a user-initiated logout (oauth_request_in_flight=${oauthRequestInFlight})`
         )
       }
       useTelemetry()?.trackAuthCleared({
         user_initiated: userInitiatedLogout,
         previous_user_id: previousUserId,
         oauth_request_in_flight: oauthRequestInFlight,
-        visibility_state: document.visibilityState,
-        has_session_cookie: document.cookie
-          .split('; ')
-          .some((cookie) => cookie.startsWith('session='))
+        visibility_state: document.visibilityState
       })
     } catch (error) {
       console.warn('[authStore] Failed to report auth-state clear', error)
