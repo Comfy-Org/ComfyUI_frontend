@@ -2,7 +2,10 @@
   <div
     :class="
       cn(
-        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5',
+        '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5 transition-opacity',
+        // Paused subscriptions can't spend credits, so dim the whole tile to
+        // read as frozen and defer to the Update-payment banner.
+        isPaused && 'opacity-50',
         customClass
       )
     "
