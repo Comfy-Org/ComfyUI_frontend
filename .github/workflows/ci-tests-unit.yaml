@@ -38,6 +38,20 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Generate critical unit coverage artifact
+        run: >
+          pnpm coverage:critical:extract
+          --sha=${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Upload critical unit coverage artifact
+        if: github.event_name != 'merge_group'
+        uses: actions/upload-artifact@v6
+        with:
+          name: critical-unit-coverage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: coverage/critical-unit-coverage.json
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v6
