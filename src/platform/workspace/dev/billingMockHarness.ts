@@ -45,7 +45,7 @@ type State =
   | 'cancelled'
   | 'inactive'
   | 'changing'
-  | 'past_due'
+  | 'at_risk'
   | 'paused'
 // 'full' = fresh cycle, monthly credits reset, nobody has used anything (all
 // member usage is 0); 'partial' = members have used some of the monthly allotment.
@@ -101,7 +101,7 @@ const OPTIONS: Record<
   ws: ['personal', 'team'],
   role: ['owner', 'admin', 'member'],
   tier: ['free', 'standard', 'creator', 'pro', 'enterprise'],
-  state: ['active', 'cancelled', 'inactive', 'changing', 'past_due', 'paused'],
+  state: ['active', 'cancelled', 'inactive', 'changing', 'at_risk', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
   roleChange: ['200', '500'],
   autoReload: ['notset', 'nobudget', 'healthy', 'nearlimit', 'paused', 'off']
@@ -221,7 +221,7 @@ const subStatus = () =>
     cancelled: 'canceled',
     inactive: 'ended',
     changing: 'scheduled',
-    past_due: 'active',
+    at_risk: 'active',
     paused: 'paused'
   })[cfg.state]
 
@@ -237,7 +237,7 @@ function billingStatus(): unknown {
     billing_status:
       cfg.state === 'inactive'
         ? 'inactive'
-        : cfg.state === 'past_due' || cfg.state === 'paused'
+        : cfg.state === 'at_risk' || cfg.state === 'paused'
           ? 'payment_failed'
           : 'paid',
     renewal_date: FUTURE,
