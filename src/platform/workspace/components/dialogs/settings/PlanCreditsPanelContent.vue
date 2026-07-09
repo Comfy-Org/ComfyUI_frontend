@@ -2,14 +2,16 @@
   <div
     :class="
       cn(
-        'flex min-h-0 flex-1 flex-col gap-4',
+        '@container flex min-h-0 flex-1 flex-col gap-4',
         // The panel runs flush to the bottom edge (BaseModalLayout 'flush'); the
         // Activity/Invoices tables keep their prior bottom gap, Overview doesn't.
         activeView !== 'overview' && 'pb-6'
       )
     "
   >
-    <div class="flex w-full items-center gap-9">
+    <div
+      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
+    >
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <Button
           v-for="tab in tabs"
@@ -26,7 +28,7 @@
         v-model="searchQuery"
         :placeholder="$t('g.search')"
         size="lg"
-        class="w-64"
+        class="w-full @2xl:w-64"
       />
     </div>
 

@@ -1,7 +1,9 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4 pb-6">
+  <div class="@container flex min-h-0 flex-1 flex-col gap-4 pb-6">
     <!-- Header: tabs (left) + search / invite (right), above the card -->
-    <div class="flex w-full items-center gap-9">
+    <div
+      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
+    >
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <template v-if="showViewTabs">
           <Button
@@ -31,13 +33,13 @@
           {{ $t('workspacePanel.members.tabs.membersCount', memberCount) }}
         </span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex w-full items-center gap-2 @2xl:w-auto">
         <SearchInput
           v-if="showSearch"
           v-model="searchQuery"
           :placeholder="$t('workspacePanel.members.searchPlaceholder')"
           size="lg"
-          class="w-64"
+          class="min-w-0 flex-1 @2xl:w-64 @2xl:flex-none"
         />
         <Button
           v-if="showInviteButton"
@@ -48,6 +50,7 @@
           "
           variant="secondary"
           size="lg"
+          class="shrink-0"
           :disabled="isInviteDisabled"
           :aria-label="$t('workspacePanel.inviteMember')"
           @click="handleInviteMember"

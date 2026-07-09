@@ -5,7 +5,7 @@
          action there), so we drop this one to avoid stacking two banners. -->
     <div
       v-if="!isPaused"
-      class="flex items-center justify-between gap-4 rounded-2xl border border-interface-stroke/60 p-4"
+      class="flex flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-4 @2xl:flex-row @2xl:items-center @2xl:justify-between"
     >
       <div class="flex flex-col gap-2">
         <span class="text-sm text-muted-foreground">

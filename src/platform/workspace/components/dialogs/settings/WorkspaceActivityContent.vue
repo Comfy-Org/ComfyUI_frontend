@@ -159,8 +159,11 @@
       </Table>
     </div>
 
-    <div class="flex h-8 items-center">
-      <div v-if="canViewTeamUsage" class="flex items-center gap-6">
+    <div class="flex flex-col gap-3 @2xl:h-8 @2xl:flex-row @2xl:items-center">
+      <div
+        v-if="canViewTeamUsage"
+        class="flex flex-wrap items-center gap-x-6 gap-y-2"
+      >
         <a
           :href="fullActivityUrl"
           target="_blank"
@@ -187,7 +190,7 @@
         v-model:page="page"
         :total="total"
         :items-per-page="itemsPerPage"
-        class="ml-auto"
+        class="@2xl:ml-auto"
       />
     </div>
   </div>

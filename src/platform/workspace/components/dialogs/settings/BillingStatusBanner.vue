@@ -2,7 +2,7 @@
   <div
     v-if="banner"
     role="status"
-    class="flex items-center gap-2 rounded-2xl border border-interface-stroke/60 bg-base-background p-4"
+    class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <div class="flex items-center gap-2">
@@ -22,7 +22,10 @@
       </div>
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
     </div>
-    <div v-if="banner.showAction" class="flex shrink-0 items-center gap-2">
+    <div
+      v-if="banner.showAction"
+      class="flex shrink-0 flex-wrap items-center gap-2 pl-6 @2xl:pl-0"
+    >
       <slot name="actions" />
       <template v-if="banner.kind === 'outOfCredits'">
         <Button variant="textonly" size="lg" @click="dismiss">

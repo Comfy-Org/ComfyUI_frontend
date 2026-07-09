@@ -1,5 +1,5 @@
 <template>
-  <td :class="cn('px-2 py-2.5 align-middle', className)">
+  <td :class="cn('px-2 py-2.5 align-middle whitespace-nowrap', className)">
     <slot />
   </td>
 </template>

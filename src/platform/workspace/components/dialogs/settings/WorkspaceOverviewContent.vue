@@ -7,7 +7,10 @@
       class="flex flex-col gap-6 rounded-2xl border border-interface-stroke/60 p-6"
     >
       <!-- Lapsed team/enterprise plan: reactivation header replaces the live one -->
-      <div v-if="isInactive" class="flex items-start justify-between gap-4">
+      <div
+        v-if="isInactive"
+        class="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between"
+      >
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">
             {{ $t('workspacePanel.overview.inactive.title') }}
@@ -31,7 +34,10 @@
         </div>
       </div>
 
-      <div v-else class="flex items-start justify-between gap-4">
+      <div
+        v-else
+        class="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between"
+      >
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
           <p
@@ -81,7 +87,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
         <CreditsTile class="border-0" :frozen="isInactive" />
 
         <!-- Member snapshot tile (hidden while the plan is lapsed) -->
@@ -186,7 +192,7 @@
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
     <div
-      class="mt-auto flex h-8 shrink-0 items-center gap-4 text-sm text-muted-foreground"
+      class="mt-auto flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground @2xl:h-8"
     >
       <a
         :href="learnMoreUrl"

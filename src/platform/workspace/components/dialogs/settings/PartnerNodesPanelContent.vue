@@ -1,6 +1,8 @@
 <template>
-  <div class="relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
-    <div class="flex w-full items-center gap-9">
+  <div class="@container relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
+    <div
+      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
+    >
       <span class="min-w-0 flex-1 text-sm text-muted-foreground">
         {{ $t('workspacePanel.partnerNodes.description') }}
       </span>
@@ -8,7 +10,7 @@
         v-model="searchQuery"
         :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
         size="lg"
-        class="w-64"
+        class="w-full @2xl:w-64"
       />
     </div>
 

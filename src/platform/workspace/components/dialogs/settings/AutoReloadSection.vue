@@ -9,7 +9,9 @@
       )
     "
   >
-    <div class="flex items-start justify-between gap-4">
+    <div
+      class="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between"
+    >
       <div class="flex flex-col gap-1">
         <span class="text-sm font-medium text-base-foreground">
           {{ $t('workspacePanel.autoReload.title') }}
@@ -34,7 +36,7 @@
 
     <!-- Empty / not-set-up state — same one-column grid as the configured tile
          so both sit at the top tiles' width. -->
-    <div v-if="!isConfigured" class="grid grid-cols-2 gap-4">
+    <div v-if="!isConfigured" class="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
       <div
         class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
       >
@@ -49,7 +51,7 @@
 
     <!-- Configured tile — constrained to one column of the same grid the top
          tiles use, so it matches their width (empty second column left open). -->
-    <div v-else class="grid grid-cols-2 gap-4">
+    <div v-else class="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
       <div
         :class="
           cn(
