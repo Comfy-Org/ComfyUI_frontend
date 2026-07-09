@@ -85,6 +85,8 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { WidgetSlotMetadata } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { DynamicGroupNode } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -113,6 +115,7 @@ const { widget, nodeId, nodeType } = defineProps<{
 const { t } = useI18n()
 const widgetValueStore = useWidgetValueStore()
 const nodeDefStore = useNodeDefStore()
+const { nodeManager } = useVueNodeLifecycle()
 
 const group = widget.name
 
@@ -124,6 +127,19 @@ const node = computed(() => {
 const groupState = computed(
   () => node.value?.comfyDynamic?.dynamicGroup?.[group]
 )
+
+// Reading `input.link` off the raw litegraph node isn't reactive, so widgets
+// wouldn't gray out on connect. The graph node manager tracks link changes and
+// exposes them via `slotMetadata`, which updates on `node:slot-links:changed`.
+const slotMetadataByName = computed(() => {
+  const map = new Map<string, WidgetSlotMetadata>()
+  const id = node.value?.id
+  if (id == null) return map
+  for (const w of nodeManager.value?.vueNodeData.get(id)?.widgets ?? []) {
+    if (w.slotMetadata) map.set(w.name, w.slotMetadata)
+  }
+  return map
+})
 
 const minRows = computed(() => groupState.value?.min ?? 0)
 const groupName = computed(
@@ -159,11 +175,14 @@ function toFieldView(
 ): FieldWidgetView {
   const state = resolveWidgetState(w)
   const value = state?.value ?? w.value
-  const inputIndex = n.inputs.findIndex(
-    (input) => input.name === w.name || input.widget?.name === w.name
-  )
+  const slotMeta = slotMetadataByName.value.get(w.name)
+  const inputIndex =
+    slotMeta?.index ??
+    n.inputs.findIndex(
+      (input) => input.name === w.name || input.widget?.name === w.name
+    )
   const slotData = inputIndex === -1 ? undefined : n.inputs[inputIndex]
-  const linked = slotData?.link != null
+  const linked = slotMeta?.linked ?? slotData?.link != null
   const simplified: SimplifiedWidget = {
     name: w.name,
     type: state?.type ?? w.type,

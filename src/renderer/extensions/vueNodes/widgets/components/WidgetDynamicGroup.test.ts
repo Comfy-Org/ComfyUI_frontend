@@ -3,8 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { WidgetSlotMetadata } from '@/composables/graph/useGraphNodeManager'
 import type { DynamicGroupNode } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -18,6 +20,10 @@ const appMocks = vi.hoisted(() => ({
   graph: null as LGraph | null
 }))
 
+const lifecycleMocks = vi.hoisted(() => ({
+  manager: null as { vueNodeData: Map<unknown, unknown> } | null
+}))
+
 const FieldStub = vi.hoisted(() => ({
   name: 'FieldStub',
   props: {
@@ -26,7 +32,7 @@ const FieldStub = vi.hoisted(() => ({
   },
   emits: ['update:modelValue'],
   template:
-    '<input data-testid="field" :aria-label="widget.name" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
+    '<input data-testid="field" :aria-label="widget.name" :data-disabled="widget.options?.disabled ? \'true\' : \'false\'" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -43,6 +49,16 @@ vi.mock(
     getComponent: () => FieldStub
   })
 )
+
+vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
+  useVueNodeLifecycle: () => ({
+    nodeManager: {
+      get value() {
+        return lifecycleMocks.manager
+      }
+    }
+  })
+}))
 
 const ButtonStub = {
   name: 'Button',
@@ -147,6 +163,7 @@ describe('WidgetDynamicGroup', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia())
     appMocks.graph = null
+    lifecycleMocks.manager = null
   })
 
   it('renders one row per field widget with the configured group name', () => {
@@ -240,6 +257,31 @@ describe('WidgetDynamicGroup', () => {
     await user.type(field, 'my-lora')
 
     expect(rowWidget.value).toBe('my-lora')
+  })
+
+  it('disables a field as soon as its input slot becomes connected', async () => {
+    const node = createDynamicGroupNode({ rows: [0] })
+    const slotMetadata = reactive<WidgetSlotMetadata>({
+      index: 0,
+      linked: false,
+      type: 'STRING'
+    })
+    lifecycleMocks.manager = {
+      vueNodeData: new Map([
+        [node.id, { widgets: [{ name: 'loras.0.text', slotMetadata }] }]
+      ])
+    }
+
+    mountWidgetDynamicGroup(node)
+    expect(screen.getByTestId('field')).toHaveAttribute(
+      'data-disabled',
+      'false'
+    )
+
+    slotMetadata.linked = true
+    await nextTick()
+
+    expect(screen.getByTestId('field')).toHaveAttribute('data-disabled', 'true')
   })
 
   it('uses the default group name when groupName is not configured', () => {
