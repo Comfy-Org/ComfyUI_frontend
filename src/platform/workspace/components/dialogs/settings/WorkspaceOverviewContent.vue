@@ -9,7 +9,7 @@
       <!-- Lapsed team/enterprise plan: reactivation header replaces the live one -->
       <div
         v-if="isInactive"
-        class="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between"
+        class="flex flex-col gap-4 @4xl:flex-row @4xl:items-start @4xl:justify-between"
       >
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">
@@ -36,13 +36,13 @@
 
       <div
         v-else
-        class="flex flex-col gap-4 @2xl:flex-row @2xl:items-start @2xl:justify-between"
+        class="flex flex-col gap-4 @4xl:flex-row @4xl:items-start @4xl:justify-between"
       >
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
           <p
             v-if="canManageBilling"
-            class="m-0 flex items-center gap-1.5 text-base font-semibold text-base-foreground"
+            class="m-0 flex items-center gap-1.5 text-base font-semibold whitespace-nowrap text-base-foreground"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ plan.monthlyCredits.toLocaleString() }}
@@ -87,7 +87,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
         <CreditsTile class="border-0" :frozen="isInactive" />
 
         <!-- Member snapshot tile (hidden while the plan is lapsed) -->
