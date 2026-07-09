@@ -32,6 +32,23 @@ export interface CriticalCoverageReport {
   branches: CriticalBranchCoverage[]
 }
 
+export interface CriticalCoverageRegression extends CriticalBranchCoverage {
+  baseTaken: number | null
+  headTaken: number | null
+}
+
+export interface CriticalCoverageComparison {
+  baseSha: string
+  headSha: string
+  commonBranches: number
+  baseOnlyBranches: number
+  headOnlyBranches: number
+  commonCoveredBranchesInBase: number
+  commonCoveredBranchesInHead: number
+  coveredBranchDelta: number
+  regressions: CriticalCoverageRegression[]
+}
+
 interface CreateReportOptions {
   inputPath: string
   sha: string
@@ -72,6 +89,77 @@ export function writeCriticalCoverageReport(
 ): void {
   mkdirSync(dirname(outputPath), { recursive: true })
   writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`)
+}
+
+export function readCriticalCoverageReport(
+  inputPath: string
+): CriticalCoverageReport {
+  const parsed: unknown = JSON.parse(readFileSync(inputPath, 'utf-8'))
+
+  if (!isCriticalCoverageReport(parsed)) {
+    throw new Error(`Invalid critical coverage report: ${inputPath}`)
+  }
+
+  return parsed
+}
+
+export function compareCriticalCoverageReports(
+  base: CriticalCoverageReport,
+  head: CriticalCoverageReport
+): CriticalCoverageComparison {
+  const baseBranches = new Map(
+    base.branches.map((branch) => [branch.key, branch])
+  )
+  const headBranches = new Map(
+    head.branches.map((branch) => [branch.key, branch])
+  )
+  const regressions: CriticalCoverageRegression[] = []
+  let commonBranches = 0
+  let commonCoveredBranchesInBase = 0
+  let commonCoveredBranchesInHead = 0
+  let baseOnlyBranches = 0
+
+  for (const [key, baseBranch] of baseBranches) {
+    const headBranch = headBranches.get(key)
+
+    if (!headBranch) {
+      baseOnlyBranches++
+      continue
+    }
+
+    commonBranches++
+
+    if (baseBranch.covered) {
+      commonCoveredBranchesInBase++
+    }
+
+    if (headBranch.covered) {
+      commonCoveredBranchesInHead++
+    }
+
+    if (baseBranch.covered && !headBranch.covered) {
+      regressions.push({
+        ...baseBranch,
+        baseTaken: baseBranch.taken,
+        headTaken: headBranch.taken
+      })
+    }
+  }
+
+  return {
+    baseSha: base.sha,
+    headSha: head.sha,
+    commonBranches,
+    baseOnlyBranches,
+    headOnlyBranches: [...headBranches.keys()].filter(
+      (key) => !baseBranches.has(key)
+    ).length,
+    commonCoveredBranchesInBase,
+    commonCoveredBranchesInHead,
+    coveredBranchDelta:
+      commonCoveredBranchesInHead - commonCoveredBranchesInBase,
+    regressions: regressions.sort(compareBranches)
+  }
 }
 
 function parseCriticalBranches(
@@ -184,4 +272,51 @@ function normalizeCoveragePath(filePath: string, cwd: string): string {
 
   const srcIndex = normalizedPath.indexOf('/src/')
   return srcIndex === -1 ? normalizedPath : normalizedPath.slice(srcIndex + 1)
+}
+
+function isCriticalCoverageReport(
+  value: unknown
+): value is CriticalCoverageReport {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const totals = value.totals
+
+  return (
+    value.schemaVersion === 1 &&
+    value.source === 'lcov' &&
+    typeof value.sha === 'string' &&
+    typeof value.generatedAt === 'string' &&
+    typeof value.inputPath === 'string' &&
+    Array.isArray(value.criticalDirs) &&
+    isRecord(totals) &&
+    typeof totals.files === 'number' &&
+    typeof totals.branches === 'number' &&
+    typeof totals.coveredBranches === 'number' &&
+    Array.isArray(value.branches) &&
+    value.branches.every(isCriticalBranchCoverage)
+  )
+}
+
+function isCriticalBranchCoverage(
+  value: unknown
+): value is CriticalBranchCoverage {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.key === 'string' &&
+    typeof value.file === 'string' &&
+    typeof value.line === 'number' &&
+    typeof value.block === 'string' &&
+    typeof value.branch === 'string' &&
+    (typeof value.taken === 'number' || value.taken === null) &&
+    typeof value.covered === 'boolean'
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
