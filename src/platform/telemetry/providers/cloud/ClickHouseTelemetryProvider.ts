@@ -29,33 +29,25 @@ export class ClickHouseTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuthCleared(metadata: AuthClearedMetadata): void {
-    api
-      .fetchApi('/internal/cloud_analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_name: 'auth_state_cleared',
-          event_data: metadata
-        })
-      })
-      .catch(() => {})
+    this.postAnalyticsEvent('auth_state_cleared', metadata)
   }
 
   private reportMissingNodes(metadata: WorkflowImportMetadata): void {
     if (metadata.missing_node_count <= 0) return
 
+    this.postAnalyticsEvent('node_missing', {
+      missing_class_types: metadata.missing_node_types,
+      missing_count: metadata.missing_node_count,
+      source: metadata.open_source ?? 'unknown'
+    })
+  }
+
+  private postAnalyticsEvent(eventName: string, eventData: unknown): void {
     api
       .fetchApi('/internal/cloud_analytics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_name: 'node_missing',
-          event_data: {
-            missing_class_types: metadata.missing_node_types,
-            missing_count: metadata.missing_node_count,
-            source: metadata.open_source ?? 'unknown'
-          }
-        })
+        body: JSON.stringify({ event_name: eventName, event_data: eventData })
       })
       .catch(() => {})
   }

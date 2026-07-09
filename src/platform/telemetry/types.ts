@@ -64,8 +64,7 @@ export interface AuthClearedMetadata {
   user_initiated: boolean
   previous_user_id?: string
   oauth_request_in_flight: boolean
-  visibility_state: string
-  has_session_cookie: boolean
+  visibility_state: DocumentVisibilityState
 }
 
 /** Survey field ids → answers. Fields are backend-overridable, so all optional. */
