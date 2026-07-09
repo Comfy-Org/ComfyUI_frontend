@@ -794,6 +794,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     workspaceTokenExpiresAt.value = null
     scheduledRefreshRetryCount = 0
     recoveryCooldownUntil = 0
+    // refreshRequestId bump above aborts any in-flight switch before it commits.
     inFlightSwitchPromise = null
     error.value = null
     clearSessionStorage()
