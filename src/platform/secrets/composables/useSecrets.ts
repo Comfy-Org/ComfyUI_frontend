@@ -9,7 +9,7 @@ import {
   listSecrets,
   SecretsApiError
 } from '../api/secretsApi'
-import type { SecretMetadata, SecretProvider } from '../types'
+import type { SecretMetadata } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
@@ -20,10 +20,8 @@ export function useSecrets() {
   const availableProviders = ref<string[] | null>(null)
   const operatingSecretId = ref<string | null>(null)
 
-  const existingProviders = computed<SecretProvider[]>(() =>
-    secrets.value
-      .map((s) => s.provider)
-      .filter((p): p is SecretProvider => p !== undefined)
+  const existingProviders = computed<string[]>(() =>
+    secrets.value.map((s) => s.provider).filter((p): p is string => p != null)
   )
 
   async function fetchSecrets() {

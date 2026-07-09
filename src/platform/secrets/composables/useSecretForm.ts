@@ -1,16 +1,22 @@
 import { whenever } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
-import { computed, reactive, ref, toValue } from 'vue'
+import { computed, reactive, ref, toValue, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
-import { SECRET_PROVIDERS } from '../providers'
-import type { SecretErrorCode, SecretMetadata, SecretProvider } from '../types'
+import {
+  DEFAULT_PROVIDER_IDS,
+  getProviderHelpKey,
+  getProviderLabel,
+  getProviderLogo
+} from '../providers'
+import type { SecretErrorCode, SecretMetadata } from '../types'
 
 interface SecretFormState {
   name: string
   secretValue: string
-  provider: SecretProvider | null
+  // Free-form string: the set of selectable providers is server-driven.
+  provider: string | null
 }
 
 interface SecretFormErrors {
@@ -21,14 +27,15 @@ interface SecretFormErrors {
 
 interface ProviderOption {
   label: string
-  value: SecretProvider
+  value: string
+  logo?: string
   disabled: boolean
 }
 
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
-  existingProviders: MaybeRefOrGetter<SecretProvider[]>
+  existingProviders: MaybeRefOrGetter<string[]>
   availableProviders?: MaybeRefOrGetter<string[] | null>
   visible: { value: boolean }
   onSaved: () => void
@@ -62,18 +69,49 @@ export function useSecretForm(options: UseSecretFormOptions) {
   })
 
   const providerOptions = computed<ProviderOption[]>(() => {
+    // Which provider ids to render:
+    // - edit mode: the field is disabled; show the defaults plus the stored
+    //   provider so the disabled selector can display its label/logo.
+    // - create + list not yet loaded (null): show the defaults as a sensible
+    //   placeholder while the request is in flight.
+    // - create + list loaded: render exactly what the server returned, so
+    //   providers added server-side (e.g. runway/gemini) appear with no FE
+    //   change and providers omitted server-side do not appear.
     const available = toValue(availableProviders)
-    const providers =
-      mode === 'edit' || available === null
-        ? SECRET_PROVIDERS
-        : SECRET_PROVIDERS.filter((p) => available.includes(p.value))
-    return providers.map((p) => ({
-      label: p.label,
-      value: p.value,
-      disabled:
-        mode === 'edit' ? false : toValue(existingProviders).includes(p.value)
+    let ids: string[]
+    if (mode === 'edit') {
+      const stored = toValue(secretRef)?.provider
+      ids =
+        stored && !DEFAULT_PROVIDER_IDS.some((id) => id === stored)
+          ? [...DEFAULT_PROVIDER_IDS, stored]
+          : [...DEFAULT_PROVIDER_IDS]
+    } else {
+      ids =
+        available === null ? [...DEFAULT_PROVIDER_IDS] : [...new Set(available)]
+    }
+
+    const existing = toValue(existingProviders)
+    return ids.map((id) => ({
+      value: id,
+      label: getProviderLabel(id),
+      logo: getProviderLogo(id),
+      disabled: mode === 'edit' ? false : existing.includes(id)
     }))
   })
+
+  // Once the server allowlist resolves, drop a selection the resolved list no
+  // longer offers so the user cannot submit an unlisted provider.
+  watch(providerOptions, (options) => {
+    if (form.provider && !options.some((o) => o.value === form.provider)) {
+      form.provider = null
+    }
+  })
+
+  // Provider-specific help text when the selected provider defines it, else the
+  // generic hint. Sourced from the presentational registry, not the server.
+  const providerHelp = computed(() =>
+    t(getProviderHelpKey(form.provider ?? undefined) ?? 'secrets.providerHint')
+  )
 
   const apiError = computed(() => {
     if (!apiErrorCode.value && !apiErrorMessage.value) return null
@@ -91,10 +129,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
       form.name = secret.name
-      // Stored provider is a free-form string; in edit mode the field is
-      // disabled and only needs to be non-empty for validation (it is never
-      // re-sent), so narrowing to the form's known-provider type is safe here.
-      form.provider = (secret.provider ?? null) as SecretProvider | null
+      form.provider = secret.provider ?? null
       form.secretValue = ''
     } else {
       form.name = ''
@@ -176,6 +211,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     loading,
     apiError,
     providerOptions,
+    providerHelp,
     handleSubmit
   }
 }
