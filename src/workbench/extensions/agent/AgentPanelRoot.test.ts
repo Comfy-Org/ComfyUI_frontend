@@ -48,7 +48,8 @@ vi.mock('@/scripts/api', () => {
 
 const appMock = vi.hoisted(() => ({
   loadGraphData: vi.fn(),
-  graph: { nodes: [] as unknown[] }
+  graph: { nodes: [] as unknown[] },
+  canvas: undefined as { graph: { nodes: unknown[] } } | undefined
 }))
 
 vi.mock('@/scripts/app', () => ({ app: appMock }))
@@ -148,6 +149,7 @@ beforeEach(() => {
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   appMock.graph.nodes = []
+  appMock.canvas = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -1340,10 +1342,13 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('stages a chip from the @ node picker and sends its id', async () => {
+  it('stages a chip from the @ node picker and sends its id + definition', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
-    appMock.graph.nodes = [{ id: 9, title: 'VAE Decode' }]
+    const serialized = { id: 9, type: 'VAEDecode', widgets_values: [] }
+    appMock.graph.nodes = [
+      { id: 9, title: 'VAE Decode', serialize: () => serialized }
+    ]
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
@@ -1361,6 +1366,36 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['9'] } })
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['9'], nodes: [serialized] }
+    })
+  })
+
+  it('resolves @ picker nodes from the viewed subgraph, not the root graph', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    const serialized = { id: 12, type: 'KSampler', widgets_values: [7] }
+    // The canvas is showing an open subgraph whose inner node is absent from
+    // the root graph; both the picker and the sent definition must use it.
+    appMock.canvas = {
+      graph: {
+        nodes: [{ id: 12, title: 'KSampler', serialize: () => serialized }]
+      }
+    }
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
+    )
+    await userEvent.click(await screen.findByText('KSampler'))
+    await userEvent.type(screen.getByRole('textbox'), 'explain this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['12'], nodes: [serialized] }
+    })
   })
 })

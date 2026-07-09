@@ -365,16 +365,28 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it('(h2) tags ride as node_ids; a context note is added only without a workflow', async () => {
+  it('(h2) tags ride as node_ids + serialized nodes; the save nudge appears only without a workflow', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
-    await session.sendMessage('explain', undefined, [{ id: '5', title: 'K' }])
+    const nodeData = { id: 5, type: 'KSampler', widgets_values: [20] }
+    await session.sendMessage('explain', undefined, [
+      { id: '5', title: 'K', data: nodeData },
+      { id: '6', title: 'gone' }
+    ])
     const blindBody = vi.mocked(rest.postMessage).mock.calls[0][1]
-    expect(blindBody.selection).toMatchObject({ node_ids: ['5'] })
-    expect(blindBody.selection).toHaveProperty('context')
+    // A tag whose node left the graph still sends its id, but no definition,
+    // and the context names the gap instead of claiming full coverage.
+    expect(blindBody.selection).toMatchObject({
+      node_ids: ['5', '6'],
+      nodes: [nodeData]
+    })
+    expect(blindBody.selection?.context).toContain('included under')
+    expect(blindBody.selection?.context).toContain('cannot see')
+    expect(blindBody.selection?.context).toContain('ask them to save')
 
-    // With a resolvable workflow the agent can read the tab: no note.
+    // With a resolvable workflow the definitions still ride (the server draft
+    // starts empty even for saved ids), but the save nudge is dropped.
     const rest2 = fakeRest()
     const sighted = useAgentSession({
       rest: rest2,
@@ -385,10 +397,27 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     })
     sighted.start()
-    await sighted.sendMessage('explain', undefined, [{ id: '5', title: 'K' }])
+    await sighted.sendMessage('explain', undefined, [
+      { id: '5', title: 'K', data: nodeData }
+    ])
     const sightedBody = vi.mocked(rest2.postMessage).mock.calls[0][1]
-    expect(sightedBody.selection).toMatchObject({ node_ids: ['5'] })
-    expect(sightedBody.selection).not.toHaveProperty('context')
+    expect(sightedBody.selection).toMatchObject({
+      node_ids: ['5'],
+      nodes: [nodeData]
+    })
+    expect(sightedBody.selection?.context).not.toContain('cannot see')
+    expect(sightedBody.selection?.context).not.toContain('ask them to save')
+  })
+
+  it('(h3) a selection whose definitions all dropped does not claim they are included', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('explain', undefined, [{ id: '5', title: 'K' }])
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toMatchObject({ node_ids: ['5'], nodes: [] })
+    expect(body.selection?.context).not.toContain('included under')
+    expect(body.selection?.context).toContain('cannot see')
   })
 
   it("(i2) loadThread drops the previous thread's draft binding", async () => {
