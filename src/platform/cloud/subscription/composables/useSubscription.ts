@@ -313,11 +313,19 @@ function useSubscriptionInternal() {
     }
   }
 
-  /**
-   * Fetch the current cloud subscription status for the authenticated user
-   * @returns Subscription status or null if no subscription exists
-   */
+  // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
+  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
+    null
+
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    if (inFlightStatusFetch) return inFlightStatusFetch
+    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
+      inFlightStatusFetch = null
+    })
+    return inFlightStatusFetch
+  }
+
+  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
     const response = await fetchWithUnifiedRemint(
