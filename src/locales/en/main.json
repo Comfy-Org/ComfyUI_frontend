@@ -2983,17 +2983,8 @@
       },
       "inactive": {
         "title": "Inactive team subscription",
-        "zeroPrice": "0 USD / mo",
-        "subtitle": "Reactivate your team plan to add more members and run workflows.",
-        "manageBilling": "Manage billing",
-        "reactivate": "Reactivate plan",
-        "valuePropTitle": "An active plan features everything in Pro, plus:",
-        "valueProps": {
-          "inviteMembers": "Invite members",
-          "concurrentWorkflows": "Members can run workflows concurrently",
-          "sharedCredits": "Shared credit pool for all members",
-          "rolePermissions": "Role-based permissions"
-        }
+        "subtitle": "Reactivate your team plan to add more members and run workflows",
+        "reactivate": "Reactivate plan"
       }
     },
     "activity": {

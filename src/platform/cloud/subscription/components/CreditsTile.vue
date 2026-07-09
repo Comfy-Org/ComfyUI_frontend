@@ -4,8 +4,9 @@
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5 transition-opacity',
         // Paused subscriptions can't spend credits, so dim the whole tile to
-        // read as frozen and defer to the Update-payment banner.
-        isPaused && 'opacity-50',
+        // read as frozen and defer to the Update-payment banner. A lapsed plan
+        // (frozen) reads the same way.
+        (isPaused || frozen) && 'opacity-50',
         customClass
       )
     "
@@ -120,7 +121,7 @@
         :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
         size="lg"
         class="w-full font-normal"
-        :disabled="isPaused"
+        :disabled="isPaused || frozen"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -148,9 +149,18 @@ import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
-const { zeroState = false, class: customClass } = defineProps<{
+const {
+  zeroState = false,
+  frozen = false,
+  class: customClass
+} = defineProps<{
   /** Forces the zero-credit display (e.g. unsubscribed / member view). */
   zeroState?: boolean
+  /**
+   * Renders the full breakdown but dimmed and non-interactive, for a lapsed
+   * subscription that still has a shape to show. Mirrors the paused treatment.
+   */
+  frozen?: boolean
   class?: HTMLAttributes['class']
 }>()
 
@@ -220,7 +230,9 @@ const cycleUsageLabel = computed(() =>
   })
 )
 
-const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
+const showBreakdown = computed(
+  () => (isActiveSubscription.value || frozen) && !zeroState
+)
 const showBar = computed(
   () =>
     showBreakdown.value &&
@@ -228,12 +240,16 @@ const showBar = computed(
     allowanceTotalCredits.value > 0
 )
 const showActionButton = computed(
-  () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
+  () =>
+    (isActiveSubscription.value || frozen) &&
+    !zeroState &&
+    permissions.value.canTopUp
 )
 
 const isAllowanceDepleted = computed(
   () =>
     !isPaused.value &&
+    !frozen &&
     showBar.value &&
     !isLoadingBalance.value &&
     balance.value != null &&

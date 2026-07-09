@@ -12,16 +12,13 @@
           <span class="text-sm text-base-foreground">
             {{ $t('workspacePanel.overview.inactive.title') }}
           </span>
-          <p class="m-0 text-base font-semibold text-base-foreground">
-            {{ $t('workspacePanel.overview.inactive.zeroPrice') }}
-          </p>
           <span class="text-sm text-muted-foreground">
             {{ $t('workspacePanel.overview.inactive.subtitle') }}
           </span>
         </div>
         <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
           <Button variant="secondary" size="lg">
-            {{ $t('workspacePanel.overview.inactive.manageBilling') }}
+            {{ $t('workspacePanel.overview.managePayment') }}
           </Button>
           <Button
             variant="inverted"
@@ -85,31 +82,11 @@
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <CreditsTile class="border-0" />
+        <CreditsTile class="border-0" :frozen="isInactive" />
 
-        <!-- Value proposition replaces the snapshot while the plan is lapsed -->
+        <!-- Member snapshot tile (hidden while the plan is lapsed) -->
         <div
-          v-if="isInactive"
-          class="flex flex-col gap-4 rounded-xl bg-modal-panel-background px-6 py-5"
-        >
-          <p class="m-0 text-sm text-base-foreground">
-            {{ $t('workspacePanel.overview.inactive.valuePropTitle') }}
-          </p>
-          <ul class="m-0 flex list-none flex-col gap-3 p-0">
-            <li
-              v-for="prop in valueProps"
-              :key="prop"
-              class="flex items-center gap-2 text-sm text-base-foreground"
-            >
-              <i class="icon-[lucide--check] size-4 shrink-0 text-credit" />
-              {{ prop }}
-            </li>
-          </ul>
-        </div>
-
-        <!-- Member snapshot tile -->
-        <div
-          v-else-if="canManageBilling"
+          v-if="canManageBilling && !isInactive"
           class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
         >
           <Tabs v-model="snapshotView">
@@ -203,8 +180,13 @@
       </div>
     </div>
 
-    <!-- Credit auto-reload -->
-    <AutoReloadSection v-if="canManageBilling && !isInactive" />
+    <!-- Credit auto-reload; frozen alongside the tile while the plan is lapsed -->
+    <div
+      v-if="canManageBilling"
+      :class="cn(isInactive && 'pointer-events-none opacity-50')"
+    >
+      <AutoReloadSection />
+    </div>
 
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
@@ -271,6 +253,7 @@ import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{ navigate: [view: 'activity'] }>()
 
@@ -295,13 +278,6 @@ const { showCancelSubscriptionDialog } = useDialogService()
 // state in place of the live plan header, snapshot, and auto-reload.
 const { hasLapsedTeamPlan: isInactive } = useTeamPlan()
 const { isResubscribing, handleResubscribe } = useResubscribe()
-
-const valueProps = computed(() => [
-  t('workspacePanel.overview.inactive.valueProps.inviteMembers'),
-  t('workspacePanel.overview.inactive.valueProps.concurrentWorkflows'),
-  t('workspacePanel.overview.inactive.valueProps.sharedCredits'),
-  t('workspacePanel.overview.inactive.valueProps.rolePermissions')
-])
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const learnMoreUrl = buildDocsUrl('/get_started/cloud', {
