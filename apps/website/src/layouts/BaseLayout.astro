@@ -7,6 +7,7 @@ import SiteFooter from '../components/common/SiteFooter.vue'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
@@ -55,12 +56,15 @@ const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 // Announcement banner — build-time visibility gate + content-hash version key.
+// A promo never advertises the page you are already on, so the banner is
+// suppressed when its CTA points at the current path.
 const bannerData = getBannerData(bannerConfig, locale)
-const bannerVisible = evaluateBannerVisibility(bannerConfig, {
-  currentLocale: locale,
-  currentSection: 'sitewide',
-  now: new Date(),
-})
+const bannerVisible =
+  evaluateBannerVisibility(bannerConfig, {
+    currentLocale: locale,
+    currentSection: 'sitewide',
+    now: new Date(),
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const gtmId = 'GTM-NP9JM6K7'

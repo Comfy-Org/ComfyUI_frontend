@@ -7,6 +7,7 @@ import {
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -60,6 +61,7 @@ const previewColor = computed(() => {
 const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
 const isOpen = ref(false)
+const contentStyle = useModalLiftedZIndex(isOpen)
 </script>
 
 <template>
@@ -116,6 +118,7 @@ const isOpen = ref(false)
         :side-offset="7"
         :collision-padding="10"
         class="z-1700"
+        :style="contentStyle"
       >
         <ColorPickerPanel
           v-model:hsva="hsva"

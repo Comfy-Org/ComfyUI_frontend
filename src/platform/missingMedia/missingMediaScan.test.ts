@@ -559,6 +559,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
   })
@@ -652,10 +653,93 @@ describe('verifyMediaCandidates', () => {
       generatedMatchNames: new Set([
         '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
       ]),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
     expect(candidates[0]).toMatchObject({
       name: '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png [output]',
+      isMissing: false
+    })
+  })
+
+  it('matches cloud output videos with history subfolders against flat asset hashes', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    const resolveAssetSources = makeAssetResolver(
+      [],
+      [makeAsset('ComfyUI_00001_.mp4', outputHash)]
+    )
+
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
+
+    expect(resolveAssetSources).toHaveBeenCalledWith({
+      signal: undefined,
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([outputHash]),
+      generatedHashRequiredNames: new Set([outputHash]),
+      allowCompactSuffix: true
+    })
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
+      isMissing: false
+    })
+  })
+
+  it('does not match subfoldered cloud output media against unrelated flat asset names', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    const resolveAssetSources = makeAssetResolver([], [makeAsset(outputHash)])
+
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
+
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
+      isMissing: true
+    })
+  })
+
+  it('stops cloud output paging after a subfoldered candidate matches a flat asset hash', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([makeAsset('ComfyUI_00001_.mp4', outputHash)], {
+        hasMore: true
+      })
+    )
+
+    await verifyMediaCandidates(candidates, { isCloud: true })
+
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
       isMissing: false
     })
   })
@@ -733,6 +817,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: false,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: false
     })
     expect(candidates[0].isMissing).toBe(true)
