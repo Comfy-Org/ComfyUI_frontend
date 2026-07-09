@@ -40,6 +40,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import { useAssetVisibilityStore } from './useAssetVisibilityStore'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -77,6 +78,7 @@ export function useMediaAssetActions() {
   const { t } = useI18n()
   const toast = useToast()
   const dialogStore = useDialogStore()
+  const visibilityStore = useAssetVisibilityStore()
   const mediaContext = inject(MediaAssetKey, null)
   const { copyToClipboard } = useCopyToClipboard()
   const workflowActions = useWorkflowActionsService()
@@ -847,9 +849,91 @@ export function useMediaAssetActions() {
     })
   }
 
+  /**
+   * Share asset(s) with the workspace after confirmation. Flips each asset's
+   * visibility to shared (via the visibility store) and shows a success toast.
+   *
+   * REFERENCE BUILD: visibility is tracked client-side only — no share endpoint
+   * is called yet; wire the real persistence here when it exists.
+   * @returns true if the user confirmed, false if cancelled
+   */
+  const shareAssets = async (
+    assets: AssetItem | AssetItem[]
+  ): Promise<boolean> => {
+    const assetArray = Array.isArray(assets) ? assets : [assets]
+    if (assetArray.length === 0) return false
+
+    const isSingle = assetArray.length === 1
+
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key: 'share-assets-confirmation',
+        title: isSingle
+          ? t('mediaAsset.shareAssetTitle')
+          : t('mediaAsset.shareSelectedTitle'),
+        component: ConfirmationDialogContent,
+        props: {
+          message: isSingle
+            ? t('mediaAsset.shareAssetDescription')
+            : t('mediaAsset.shareSelectedDescription', assetArray.length),
+          type: 'default',
+          itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
+          onConfirm: () => {
+            visibilityStore.share(assetArray.map((asset) => asset.id))
+            toast.add({
+              severity: 'success',
+              summary: t('g.success'),
+              detail: isSingle
+                ? t('mediaAsset.assetSharedSuccessfully')
+                : t(
+                    'mediaAsset.selection.assetsSharedSuccessfully',
+                    assetArray.length
+                  ),
+              life: 2000
+            })
+            resolve(true)
+          }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
+          // Fires on every close path (Cancel, ESC, backdrop); resolving after
+          // a confirm is a no-op, so this settles the cancel case.
+          onClose: () => resolve(false)
+        }
+      })
+    })
+  }
+
+  /**
+   * Make asset(s) private again — retracts workspace visibility immediately
+   * (no confirmation) and shows a success toast. Client-side only in this
+   * reference build (see {@link shareAssets}).
+   */
+  const unshareAssets = (assets: AssetItem | AssetItem[]) => {
+    const assetArray = Array.isArray(assets) ? assets : [assets]
+    if (assetArray.length === 0) return
+
+    visibilityStore.unshare(assetArray.map((asset) => asset.id))
+    toast.add({
+      severity: 'success',
+      summary: t('g.success'),
+      detail:
+        assetArray.length === 1
+          ? t('mediaAsset.assetUnsharedSuccessfully')
+          : t(
+              'mediaAsset.selection.assetsUnsharedSuccessfully',
+              assetArray.length
+            ),
+      life: 2000
+    })
+  }
+
   return {
     downloadAssets,
     deleteAssets,
+    shareAssets,
+    unshareAssets,
     copyJobId,
     addWorkflow,
     addMultipleToWorkflow,

@@ -1,6 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useAssetVisibilityStore } from '@/platform/assets/composables/useAssetVisibilityStore'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -38,6 +41,10 @@ function ids(assets: AssetItem[]): string[] {
 }
 
 describe('useMediaAssetFiltering', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   describe('media-type filter', () => {
     it('returns all assets when no filters are selected', () => {
       const assets = ref<AssetItem[]>([
@@ -192,6 +199,67 @@ describe('useMediaAssetFiltering', () => {
 
       sortBy.value = 'za'
       expect(ids(filteredAssets.value)).toEqual(['c', 'b', 'a'])
+    })
+  })
+
+  describe('visibility filter', () => {
+    function twoAssets() {
+      return ref<AssetItem[]>([
+        makeAsset({ id: 'shared', name: 'a.png' }),
+        makeAsset({ id: 'private', name: 'b.png' })
+      ])
+    }
+
+    it('returns every asset when set to all', () => {
+      const { visibilityFilter, filteredAssets } =
+        useMediaAssetFiltering(twoAssets())
+
+      useAssetVisibilityStore().share(['shared'])
+      visibilityFilter.value = 'all'
+      expect(ids(filteredAssets.value).sort()).toEqual(['private', 'shared'])
+    })
+
+    it('keeps only shared assets when set to shared', () => {
+      const { visibilityFilter, filteredAssets } =
+        useMediaAssetFiltering(twoAssets())
+
+      useAssetVisibilityStore().share(['shared'])
+      visibilityFilter.value = 'shared'
+      expect(ids(filteredAssets.value)).toEqual(['shared'])
+    })
+
+    it('keeps only private assets when set to private', () => {
+      const { visibilityFilter, filteredAssets } =
+        useMediaAssetFiltering(twoAssets())
+
+      useAssetVisibilityStore().share(['shared'])
+      visibilityFilter.value = 'private'
+      expect(ids(filteredAssets.value)).toEqual(['private'])
+    })
+  })
+
+  describe('author filter', () => {
+    it('returns every asset when no author is selected', () => {
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'a', name: 'a.png' }),
+        makeAsset({ id: 'b', name: 'b.png' })
+      ])
+      const { filteredAssets } = useMediaAssetFiltering(assets)
+
+      expect(ids(filteredAssets.value).sort()).toEqual(['a', 'b'])
+    })
+
+    it('keeps only assets matching the injected author predicate', () => {
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'mine', name: 'a.png' }),
+        makeAsset({ id: 'theirs', name: 'b.png' })
+      ])
+      const { authorFilter, filteredAssets } = useMediaAssetFiltering(assets, {
+        matchesAuthor: (id, author) => author === 'Me' && id === 'mine'
+      })
+
+      authorFilter.value = 'Me'
+      expect(ids(filteredAssets.value)).toEqual(['mine'])
     })
   })
 

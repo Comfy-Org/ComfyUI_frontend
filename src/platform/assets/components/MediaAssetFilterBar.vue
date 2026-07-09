@@ -13,8 +13,11 @@
       <template #actions>
         <MediaAssetFilterMenu
           v-if="isCloud"
+          v-model:visibility-filter="visibilityFilter"
+          v-model:author-filter="authorFilter"
           v-model:date-filter="dateFilter"
           :media-type-filters
+          :author-options
           :active="hasActiveFilters"
           @update:media-type-filters="handleMediaTypeFiltersChange"
         />
@@ -55,6 +58,8 @@ import { useI18n } from 'vue-i18n'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { isCloud } from '@/platform/distribution/types'
 
+import { AUTHOR_ME } from '../composables/useAssetSharing'
+import type { VisibilityFilter } from '../composables/useMediaAssetFiltering'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 import type { FilterChipDescriptor } from './MediaAssetFilterChips.vue'
 import MediaAssetFilterChips from './MediaAssetFilterChips.vue'
@@ -67,11 +72,13 @@ import type { SortBy } from './MediaAssetSettingsMenu.vue'
 const {
   showGenerationTimeSort = false,
   bottomDivider = false,
-  mediaTypeFilters
+  mediaTypeFilters,
+  authorOptions = []
 } = defineProps<{
   searchQuery: string
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
+  authorOptions?: string[]
   bottomDivider?: boolean
 }>()
 
@@ -82,6 +89,10 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
+const visibilityFilter = defineModel<VisibilityFilter>('visibilityFilter', {
+  required: true
+})
+const authorFilter = defineModel<string>('authorFilter', { required: true })
 const dateFilter = defineModel<string>('dateFilter', { required: true })
 
 const { t } = useI18n()
@@ -92,6 +103,11 @@ const MEDIA_TYPE_LABELS: Record<string, string> = {
   audio: 'sideToolbar.mediaAssets.filterAudio',
   '3d': 'sideToolbar.mediaAssets.filter3D',
   text: 'sideToolbar.mediaAssets.filterText'
+}
+
+const VISIBILITY_LABELS: Record<Exclude<VisibilityFilter, 'all'>, string> = {
+  shared: 'sideToolbar.mediaAssets.visibilityShared',
+  private: 'sideToolbar.mediaAssets.visibilityPrivate'
 }
 
 const DATE_LABELS: Record<string, string> = {
@@ -106,6 +122,21 @@ const filterChips = computed<FilterChipDescriptor[]>(() => {
     key: `media:${type}`,
     label: t(MEDIA_TYPE_LABELS[type] ?? type)
   }))
+  if (authorFilter.value) {
+    chips.push({
+      key: 'author',
+      label:
+        authorFilter.value === AUTHOR_ME
+          ? t('sideToolbar.mediaAssets.authorMe')
+          : authorFilter.value
+    })
+  }
+  if (visibilityFilter.value !== 'all') {
+    chips.push({
+      key: 'visibility',
+      label: t(VISIBILITY_LABELS[visibilityFilter.value])
+    })
+  }
   if (dateFilter.value) {
     chips.push({
       key: 'date',
@@ -126,6 +157,14 @@ const handleMediaTypeFiltersChange = (value: string[]) => {
 }
 
 function removeChip(key: string) {
+  if (key === 'visibility') {
+    visibilityFilter.value = 'all'
+    return
+  }
+  if (key === 'author') {
+    authorFilter.value = ''
+    return
+  }
   if (key === 'date') {
     dateFilter.value = ''
     return
@@ -138,6 +177,8 @@ function removeChip(key: string) {
 }
 
 function clearAllFilters() {
+  visibilityFilter.value = 'all'
+  authorFilter.value = ''
   dateFilter.value = ''
   emit('update:mediaTypeFilters', [])
 }

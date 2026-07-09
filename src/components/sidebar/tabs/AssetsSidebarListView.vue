@@ -19,12 +19,7 @@
           <AssetsListItem
             role="button"
             tabindex="0"
-            :aria-label="
-              t('assetBrowser.ariaLabel.assetCard', {
-                name: getAssetDisplayName(item.asset),
-                type: getAssetMediaType(item.asset)
-              })
-            "
+            :aria-label="getAssetAriaLabel(item.asset)"
             :class="
               cn(
                 getAssetCardClass(isSelected(item.asset.id)),
@@ -36,7 +31,6 @@
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
-            :secondary-text="getAssetSecondaryText(item.asset)"
             :stack-count="getStackCount(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
@@ -48,6 +42,21 @@
             @preview-click="emit('preview-asset', item.asset)"
             @stack-toggle="void toggleStack(item.asset)"
           >
+            <template #secondary>
+              <div class="flex min-w-0 items-center gap-1.5">
+                <span
+                  class="truncate"
+                  :title="getAssetSecondaryText(item.asset)"
+                >
+                  {{ getAssetSecondaryText(item.asset) }}
+                </span>
+                <AssetOwnerBadge
+                  v-if="sharedOwner(item.asset.id)"
+                  :owner="sharedOwner(item.asset.id)!"
+                  class="shrink-0"
+                />
+              </div>
+            </template>
             <template v-if="hoveredAssetId === item.asset.id" #actions>
               <Button
                 variant="secondary"
@@ -72,7 +81,9 @@ import { useI18n } from 'vue-i18n'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
+import AssetOwnerBadge from '@/platform/assets/components/AssetOwnerBadge.vue'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import type { AssetOwner } from '@/platform/assets/composables/assetOwnerMock'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -91,12 +102,14 @@ const {
   assetItems,
   selectableAssets,
   isSelected,
+  sharedOwner = () => undefined,
   isStackExpanded,
   toggleStack
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  sharedOwner?: (assetId: string) => AssetOwner | undefined
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
 }>()
@@ -122,6 +135,18 @@ const listGridStyle = {
 
 function getAssetPrimaryText(asset: AssetItem): string {
   return truncateFilename(getAssetDisplayName(asset))
+}
+
+// The role=button aria-label masks the row's text, so shared-by attribution
+// has to ride along in the accessible name (same as the grid card).
+function getAssetAriaLabel(asset: AssetItem): string {
+  const label = t('assetBrowser.ariaLabel.assetCard', {
+    name: getAssetDisplayName(asset),
+    type: getAssetMediaType(asset)
+  })
+  const owner = sharedOwner(asset.id)
+  if (!owner) return label
+  return `${label}. ${t('mediaAsset.sharedByWorkspace', { name: owner.name })}`
 }
 
 function getAssetMediaType(asset: AssetItem) {

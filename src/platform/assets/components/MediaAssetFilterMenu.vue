@@ -75,7 +75,11 @@
               <DropdownMenuLabel :class="groupLabelClass">
                 {{ $t(group.label) }}
               </DropdownMenuLabel>
-              <DropdownMenuSub v-for="cat in group.cats" :key="cat">
+              <DropdownMenuSub
+                v-for="cat in group.cats"
+                :key="cat"
+                @update:open="resetSubSearch(cat)"
+              >
                 <DropdownMenuSubTrigger
                   :class="
                     cn(
@@ -100,9 +104,27 @@
                     :style="contentStyle"
                     :class="menuClass"
                   >
+                    <template v-if="cat === 'author'">
+                      <div class="flex h-10 items-center gap-2 px-3">
+                        <i
+                          class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <input
+                          v-model="authorQuery"
+                          type="text"
+                          :placeholder="
+                            $t('sideToolbar.mediaAssets.searchPeople')
+                          "
+                          class="min-w-0 flex-1 border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+                          @keydown="onSearchKeydown"
+                        />
+                      </div>
+                      <DropdownMenuSeparator class="h-px bg-border-subtle" />
+                    </template>
                     <div class="p-1">
                       <DropdownMenuCheckboxItem
-                        v-for="opt in valuesFor(cat)"
+                        v-for="opt in visibleSubValues(cat)"
                         :key="opt.value"
                         :model-value="isApplied(cat, opt.value)"
                         :class="rowClass"
@@ -114,6 +136,12 @@
                           :class="checkClass"
                         />
                       </DropdownMenuCheckboxItem>
+                      <div
+                        v-if="visibleSubValues(cat).length === 0"
+                        class="px-2 py-1.5 text-sm text-muted-foreground"
+                      >
+                        {{ $t('sideToolbar.mediaAssets.filterNoMatches') }}
+                      </div>
                     </div>
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
@@ -157,20 +185,34 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
-type FacetKey = 'media' | 'date'
+import { AUTHOR_ME } from '../composables/useAssetSharing'
+import type { VisibilityFilter } from '../composables/useMediaAssetFiltering'
+
+type FacetKey = 'author' | 'visibility' | 'media' | 'date'
 interface ValueOption {
   value: string
   text: string
 }
 
-const { mediaTypeFilters, dateFilter } = defineProps<{
+const {
+  mediaTypeFilters,
+  visibilityFilter,
+  authorFilter,
+  dateFilter,
+  authorOptions
+} = defineProps<{
   mediaTypeFilters: string[]
+  visibilityFilter: VisibilityFilter
+  authorFilter: string
   dateFilter: string
+  authorOptions: string[]
   active?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:mediaTypeFilters': [value: string[]]
+  'update:visibilityFilter': [value: VisibilityFilter]
+  'update:authorFilter': [value: string]
   'update:dateFilter': [value: string]
 }>()
 
@@ -180,6 +222,7 @@ const open = ref(false)
 const contentStyle = useModalLiftedZIndex(open)
 const searchRef = ref<HTMLInputElement>()
 const query = ref('')
+const authorQuery = ref('')
 
 const menuClass =
   'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 flex w-56 flex-col rounded-lg border border-border-subtle bg-base-background shadow-sm will-change-[opacity,transform]'
@@ -194,16 +237,25 @@ const countClass =
   'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-secondary-background px-1 text-xs text-muted-foreground tabular-nums'
 
 const CAT_ICON: Record<FacetKey, string> = {
+  author: 'icon-[lucide--user]',
+  visibility: 'icon-[lucide--eye]',
   media: 'icon-[lucide--image]',
   date: 'icon-[lucide--calendar]'
 }
 const CAT_LABEL: Record<FacetKey, string> = {
+  author: 'sideToolbar.mediaAssets.filterCreatedBy',
+  visibility: 'sideToolbar.mediaAssets.visibilityLabel',
   media: 'sideToolbar.mediaAssets.filterMediaType',
   date: 'sideToolbar.mediaAssets.filterDate'
 }
 const catLabel = (cat: FacetKey) => t(CAT_LABEL[cat])
 
 const groups: { key: string; label: string; cats: FacetKey[] }[] = [
+  {
+    key: 'sharing',
+    label: 'sideToolbar.mediaAssets.filterGroupSharing',
+    cats: ['author', 'visibility']
+  },
   {
     key: 'attribute',
     label: 'sideToolbar.mediaAssets.filterGroupAttribute',
@@ -216,6 +268,27 @@ const CLEAR_VALUES = new Set(['', 'all'])
 
 function valuesFor(cat: FacetKey): ValueOption[] {
   switch (cat) {
+    case 'author':
+      return [
+        { value: '', text: t('sideToolbar.mediaAssets.authorEveryone') },
+        ...authorOptions.map((name) => ({
+          value: name,
+          text:
+            name === AUTHOR_ME ? t('sideToolbar.mediaAssets.authorMe') : name
+        }))
+      ]
+    case 'visibility':
+      return [
+        { value: 'all', text: t('sideToolbar.mediaAssets.visibilityAll') },
+        {
+          value: 'shared',
+          text: t('sideToolbar.mediaAssets.visibilityShared')
+        },
+        {
+          value: 'private',
+          text: t('sideToolbar.mediaAssets.visibilityPrivate')
+        }
+      ]
     case 'media':
       return [
         { value: 'image', text: t('sideToolbar.mediaAssets.filterImage') },
@@ -235,6 +308,20 @@ function valuesFor(cat: FacetKey): ValueOption[] {
   }
 }
 
+// The Created-by list can get long, so its flyout has its own search box that
+// narrows only that list.
+function visibleSubValues(cat: FacetKey): ValueOption[] {
+  const values = valuesFor(cat)
+  if (cat !== 'author') return values
+  const q = authorQuery.value.trim().toLowerCase()
+  if (!q) return values
+  return values.filter((opt) => opt.text.toLowerCase().includes(q))
+}
+
+function resetSubSearch(cat: FacetKey) {
+  if (cat === 'author') authorQuery.value = ''
+}
+
 const searchSections = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return []
@@ -251,6 +338,10 @@ const searchSections = computed(() => {
 
 function isApplied(cat: FacetKey, value: string): boolean {
   switch (cat) {
+    case 'author':
+      return authorFilter === value
+    case 'visibility':
+      return visibilityFilter === value
     case 'media':
       return mediaTypeFilters.includes(value)
     case 'date':
@@ -260,6 +351,10 @@ function isApplied(cat: FacetKey, value: string): boolean {
 
 function appliedCount(cat: FacetKey): number {
   switch (cat) {
+    case 'author':
+      return authorFilter ? 1 : 0
+    case 'visibility':
+      return visibilityFilter !== 'all' ? 1 : 0
     case 'media':
       return mediaTypeFilters.length
     case 'date':
@@ -270,6 +365,15 @@ function appliedCount(cat: FacetKey): number {
 // Single-select facets toggle OFF when their applied value is picked again.
 function select(cat: FacetKey, value: string) {
   switch (cat) {
+    case 'author':
+      emit('update:authorFilter', authorFilter === value ? '' : value)
+      break
+    case 'visibility':
+      emit(
+        'update:visibilityFilter',
+        (visibilityFilter === value ? 'all' : value) as VisibilityFilter
+      )
+      break
     case 'date':
       emit('update:dateFilter', dateFilter === value ? '' : value)
       break
@@ -283,10 +387,18 @@ function select(cat: FacetKey, value: string) {
   }
 }
 
-const anyApplied = computed(() => mediaTypeFilters.length > 0 || !!dateFilter)
+const anyApplied = computed(
+  () =>
+    mediaTypeFilters.length > 0 ||
+    visibilityFilter !== 'all' ||
+    !!authorFilter ||
+    !!dateFilter
+)
 
 function clearAll() {
   emit('update:mediaTypeFilters', [])
+  emit('update:visibilityFilter', 'all')
+  emit('update:authorFilter', '')
   emit('update:dateFilter', '')
 }
 

@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
+import type { VisibilityFilter } from '@/platform/assets/composables/useMediaAssetFiltering'
 
 const i18n = createI18n({
   legacy: false,
@@ -14,25 +15,44 @@ const i18n = createI18n({
 
 interface Overrides {
   mediaTypeFilters?: string[]
+  visibilityFilter?: VisibilityFilter
+  authorFilter?: string
   dateFilter?: string
+  authorOptions?: string[]
 }
 
 function renderMenu(overrides: Overrides = {}) {
   const onMedia = vi.fn()
+  const onVisibility = vi.fn()
+  const onAuthor = vi.fn()
   const onDate = vi.fn()
   const utils = render(MediaAssetFilterMenu, {
     props: {
       mediaTypeFilters: overrides.mediaTypeFilters ?? [],
+      visibilityFilter: overrides.visibilityFilter ?? 'all',
+      authorFilter: overrides.authorFilter ?? '',
       dateFilter: overrides.dateFilter ?? '',
+      authorOptions: overrides.authorOptions ?? ['Me', 'Mei Chen'],
       'onUpdate:mediaTypeFilters': onMedia,
+      'onUpdate:visibilityFilter': onVisibility,
+      'onUpdate:authorFilter': onAuthor,
       'onUpdate:dateFilter': onDate
     },
     global: { plugins: [i18n] }
   })
-  return { ...utils, onMedia, onDate, user: userEvent.setup() }
+  return {
+    ...utils,
+    onMedia,
+    onVisibility,
+    onAuthor,
+    onDate,
+    user: userEvent.setup()
+  }
 }
 
 const CAT = {
+  author: 'Created by',
+  visibility: 'Visibility',
   media: 'Media type',
   date: 'Date'
 }
@@ -49,6 +69,8 @@ describe('MediaAssetFilterMenu', () => {
   it('lists every filter category', async () => {
     const { user } = renderMenu()
     await openMenu(user)
+    expect(categoryItem(CAT.author)).toBeTruthy()
+    expect(categoryItem(CAT.visibility)).toBeTruthy()
     expect(categoryItem(CAT.media)).toBeTruthy()
     expect(categoryItem(CAT.date)).toBeTruthy()
   })
@@ -97,13 +119,72 @@ describe('MediaAssetFilterMenu', () => {
     expect(onMedia).toHaveBeenCalledWith([])
   })
 
+  it('clears a single-select facet when its active value is picked again', async () => {
+    const { onVisibility, user } = renderMenu({ visibilityFilter: 'shared' })
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'shared')
+
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Shared' }))
+    expect(onVisibility).toHaveBeenCalledWith('all')
+  })
+
   it('shows Clear all and resets every facet when a filter is applied', async () => {
-    const { onMedia, onDate, user } = renderMenu({
+    const { onMedia, onVisibility, onAuthor, onDate, user } = renderMenu({
       mediaTypeFilters: ['image']
     })
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Clear all' }))
     expect(onMedia).toHaveBeenCalledWith([])
+    expect(onVisibility).toHaveBeenCalledWith('all')
+    expect(onAuthor).toHaveBeenCalledWith('')
     expect(onDate).toHaveBeenCalledWith('')
+  })
+
+  describe('Created by submenu search', () => {
+    const TEAM = ['Me', 'Mei Chen', 'Jordan Lee', 'Priya Nair']
+
+    async function openAuthorSubmenu(user: ReturnType<typeof userEvent.setup>) {
+      await openMenu(user)
+      await user.click(categoryItem(CAT.author))
+      return screen.getByPlaceholderText('Search people...')
+    }
+
+    it('narrows only the people list and applies a match', async () => {
+      const { onAuthor, user } = renderMenu({ authorOptions: TEAM })
+      const search = await openAuthorSubmenu(user)
+
+      search.focus()
+      await user.keyboard('jordan')
+
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Jordan Lee' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('menuitemcheckbox', { name: 'Mei Chen' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('menuitemcheckbox', { name: 'Everyone' })
+      ).not.toBeInTheDocument()
+      expect(categoryItem(CAT.media)).toBeTruthy()
+
+      await user.keyboard('{ArrowDown}')
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Jordan Lee' })
+      ).toHaveFocus()
+
+      await user.keyboard('{Enter}')
+      expect(onAuthor).toHaveBeenCalledWith('Jordan Lee')
+    })
+
+    it('shows a no-matches note for an unknown name', async () => {
+      const { user } = renderMenu({ authorOptions: TEAM })
+      const search = await openAuthorSubmenu(user)
+
+      search.focus()
+      await user.keyboard('zzz')
+
+      expect(screen.queryAllByRole('menuitemcheckbox')).toHaveLength(0)
+      expect(screen.getByText('No matches')).toBeInTheDocument()
+    })
   })
 })
