@@ -26,13 +26,8 @@ test.describe('Brand portal @smoke', () => {
     ).toBeVisible()
   })
 
-  test('offers a single logo bundle download and shows all four marks', async ({
-    page
-  }) => {
+  test('shows all four marks', async ({ page }) => {
     const logos = page.locator('#logos')
-    await expect(
-      logos.getByRole('link', { name: 'Download logos' })
-    ).toHaveAttribute('href', BRAND_ASSETS_ZIP)
     for (const name of [
       'Core Logo',
       'Logomark',
@@ -43,9 +38,14 @@ test.describe('Brand portal @smoke', () => {
     }
   })
 
-  test('the hero cta opens the gated brand guidelines', async ({ page }) => {
+  test('the hero ctas open the gated guidelines and the logo bundle', async ({
+    page
+  }) => {
     await expect(
       page.getByRole('link', { name: 'View brand guidelines' })
     ).toHaveAttribute('href', BRAND_GUIDELINES_PDF)
+    await expect(
+      page.getByRole('link', { name: 'Download logos' })
+    ).toHaveAttribute('href', BRAND_ASSETS_ZIP)
   })
 })

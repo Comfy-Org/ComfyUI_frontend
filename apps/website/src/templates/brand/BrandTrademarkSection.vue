@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes.ts'
 import { t } from '../../i18n/translations'
 
@@ -21,14 +22,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <p>{{ t('brand.trademark.body2', locale) }}</p>
       <p>
         {{ t('brand.trademark.body3', locale) }}
-        <a
+        <Button
+          as="a"
+          variant="inline"
           :href="externalLinks.support"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-primary-comfy-yellow underline"
         >
           {{ t('brand.trademark.contact', locale) }}
-        </a>
+        </Button>
       </p>
     </div>
   </section>

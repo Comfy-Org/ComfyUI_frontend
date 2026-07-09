@@ -2171,6 +2171,7 @@ const translations = {
   'nav.youtube': { en: 'YouTube', 'zh-CN': 'YouTube' },
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
@@ -4051,10 +4052,6 @@ const translations = {
     en: 'Logos come in light and dark options. Use as provided. Do not distort, recolor, or outline. Make sure the logo is legible against its background.',
     'zh-CN':
       '标志提供浅色和深色两种版本。请按原样使用，不要变形、改色或描边。确保标志在其背景上清晰可辨。'
-  },
-  'brand.logos.download': {
-    en: 'Download logos',
-    'zh-CN': '下载标志'
   },
   'brand.colors.heading': {
     en: 'Every color earns its place.',

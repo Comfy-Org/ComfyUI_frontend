@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import { Download } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import { affiliateBrandAssets } from '../../data/affiliateBrandAssets'
-import { BRAND_ASSETS_ZIP } from '../../data/brandAssets'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -26,15 +25,6 @@ const assets = affiliateBrandAssets.map((asset) =>
       </template>
     </SectionHeader>
 
-    <a
-      :href="BRAND_ASSETS_ZIP"
-      download
-      class="text-primary-comfy-yellow mt-6 inline-flex items-baseline gap-2 text-sm font-extrabold tracking-[0.7px] uppercase hover:underline"
-    >
-      {{ t('brand.logos.download', locale) }}
-      <Download class="size-5" aria-hidden="true" />
-    </a>
-
     <ul class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <li
         v-for="asset in assets"
@@ -45,7 +35,14 @@ const assets = affiliateBrandAssets.map((asset) =>
           <img
             :src="asset.preview"
             :alt="asset.title[locale]"
-            class="max-h-24 max-w-[75%] object-contain"
+            :class="
+              cn(
+                'object-contain',
+                asset.id === 'icon'
+                  ? 'size-24 rounded-[23%] border border-white/10'
+                  : 'max-h-24 max-w-[75%]'
+              )
+            "
             loading="lazy"
             decoding="async"
           />
