@@ -275,8 +275,14 @@ function onResolveConflict(choice: ConflictChoice): void {
   const version = draftStore.version
   const content = draftStore.content
   if (workflowId === null || version === null || content === null) return
-  if (choice === 'mine') {
+  if (choice === 'cancel') {
     applySuppressed = true
+    return
+  }
+  if (choice === 'mine') {
+    // Decided: this draft version stays off the canvas; only a NEWER agent
+    // edit asks again.
+    lastApplied = { workflowId, version }
     return
   }
   // 'agent' overwrites the bound tab; 'newtab' leaves it with the user's state
