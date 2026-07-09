@@ -84,6 +84,7 @@ const scrimStyle = {
             :src="layer.backdrop.src"
             :poster="layer.backdrop.poster"
             :aria-label="layer.backdrop.alt"
+            :aria-hidden="layer.backdrop.alt ? undefined : true"
             :autoplay="!reduceMotion"
             loop
             muted
