@@ -36,19 +36,6 @@
 
     <template v-if="showBreakdown">
       <div
-        v-if="emptyStateNotice"
-        class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
-      >
-        <i
-          class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
-        />
-        <div class="flex flex-col gap-1">
-          <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
-          <span class="text-muted">{{ emptyStateNotice.description }}</span>
-        </div>
-      </div>
-
-      <div
         v-if="showBar"
         :class="cn('flex flex-col gap-2', isAllowanceDepleted && 'opacity-30')"
       >
@@ -127,7 +114,7 @@
       </Button>
       <Button
         v-else
-        :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
+        variant="tertiary"
         size="lg"
         class="w-full font-normal"
         :disabled="isPaused"
@@ -223,17 +210,6 @@ const usage = computed(() => {
   return isPaused.value ? { ...base, used: 0, usedFraction: 0 } : base
 })
 
-const refillsDateShort = computed(() => {
-  const raw = subscription.value?.renewalDate
-  if (!raw) return ''
-  const date = new Date(raw)
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
-})
-
-const hasRefillsDate = computed(() => refillsDateShort.value !== '')
-
 const cycleLabel = computed(() =>
   subscription.value?.duration === 'ANNUAL'
     ? t('subscription.yearly')
@@ -293,34 +269,9 @@ const isAllowanceDepleted = computed(
     balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
-const isOutOfCredits = computed(
-  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
-)
 const isSpendingAdditional = computed(
   () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
 )
-
-const emptyStateNotice = computed(() => {
-  if (isOutOfCredits.value) {
-    return {
-      title: hasRefillsDate.value
-        ? t('subscription.outOfCreditsTitle', { date: refillsDateShort.value })
-        : t('subscription.outOfCreditsTitleNoDate'),
-      description: t('subscription.outOfCreditsDescription')
-    }
-  }
-  if (isAllowanceDepleted.value) {
-    return {
-      title: hasRefillsDate.value
-        ? t('subscription.monthlyCreditsUsedUpTitle', {
-            date: refillsDateShort.value
-          })
-        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
-      description: t('subscription.monthlyCreditsUsedUpDescription')
-    }
-  }
-  return null
-})
 
 const handleRefresh = wrapWithErrorHandlingAsync(async () => {
   await Promise.all([fetchBalance(), fetchStatus()])

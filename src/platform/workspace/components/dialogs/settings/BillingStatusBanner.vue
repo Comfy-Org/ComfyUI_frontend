@@ -9,10 +9,13 @@
         <i
           :class="
             cn(
-              'icon-[lucide--circle-alert] size-4 shrink-0',
-              banner.kind === 'warning'
-                ? 'text-warning-background'
-                : 'text-muted-foreground'
+              'size-4 shrink-0',
+              banner.kind === 'outOfCredits'
+                ? 'icon-[lucide--triangle-alert]'
+                : 'icon-[lucide--circle-alert]',
+              banner.kind === 'paused'
+                ? 'text-muted-foreground'
+                : 'text-warning-background'
             )
           "
         />
@@ -22,7 +25,15 @@
     </div>
     <div v-if="banner.showAction" class="flex shrink-0 items-center gap-2">
       <slot name="actions" />
-      <Button variant="inverted" size="lg">
+      <template v-if="banner.kind === 'outOfCredits'">
+        <Button variant="textonly" size="lg" @click="dismiss">
+          {{ $t('workspacePanel.billingStatus.outOfCredits.dismiss') }}
+        </Button>
+        <Button variant="secondary" size="lg" @click="handleAddCredits">
+          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
+        </Button>
+      </template>
+      <Button v-else variant="inverted" size="lg">
         {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
     </div>
@@ -30,23 +41,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, d } = useI18n()
-const { billingStatus, isPaused, renewalDate } = useBillingContext()
+const {
+  billingStatus,
+  isPaused,
+  isActiveSubscription,
+  subscription,
+  renewalDate
+} = useBillingContext()
 const { permissions, isInPersonalWorkspace } = useWorkspaceUI()
+const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
 
-// A payment failure surfaces one banner across every workspace tab. Paused takes
-// priority over the grace-period warning; the warning is owner/admin-only since
-// members can't act on it (they see nothing until it actually pauses).
+const cycleResetDate = computed(() => {
+  const raw = renewalDate.value
+  return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
+})
+
+// Out of credits: an active, non-paused team that has exhausted its balance.
+// Paused takes over this slot (see priority below). Dismissible for the session.
+const dismissed = ref(false)
+const isOutOfCredits = computed(
+  () =>
+    isActiveSubscription.value &&
+    !isPaused.value &&
+    subscription.value?.hasFunds === false
+)
+
+// One status banner slot across every workspace tab, in priority order: paused →
+// payment-failure warning → out of credits. All owner/admin-only (members can't
+// act on any of them).
 const banner = computed(() => {
   if (isInPersonalWorkspace.value) return null
 
@@ -62,17 +96,37 @@ const banner = computed(() => {
   }
 
   if (billingStatus.value === 'payment_failed' && canManage.value) {
-    const raw = renewalDate.value
     return {
       kind: 'warning' as const,
       title: t('workspacePanel.billingStatus.warning.title'),
       body: t('workspacePanel.billingStatus.warning.body', {
-        date: raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
+        date: cycleResetDate.value
       }),
+      showAction: true
+    }
+  }
+
+  if (isOutOfCredits.value && canManage.value && !dismissed.value) {
+    return {
+      kind: 'outOfCredits' as const,
+      title: t('workspacePanel.billingStatus.outOfCredits.title'),
+      body: cycleResetDate.value
+        ? t('workspacePanel.billingStatus.outOfCredits.body', {
+            date: cycleResetDate.value
+          })
+        : t('workspacePanel.billingStatus.outOfCredits.bodyNoDate'),
       showAction: true
     }
   }
 
   return null
 })
+
+function dismiss() {
+  dismissed.value = true
+}
+
+function handleAddCredits() {
+  void dialogService.showTopUpCreditsDialog()
+}
 </script>

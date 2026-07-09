@@ -106,14 +106,6 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after plan credits run out',
-        monthlyCreditsUsedUpTitle:
-          'Monthly credits are used up. Refills {date}',
-        monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
-        monthlyCreditsUsedUpDescription:
-          "You're now spending additional credits.",
-        outOfCreditsTitle: "You're out of credits. Credits refill {date}",
-        outOfCreditsTitleNoDate: "You're out of credits",
-        outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
       }
@@ -235,23 +227,6 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Monthly')).not.toBeInTheDocument()
   })
 
-  it('uses a dateless out-of-credits notice when renewal date is invalid', () => {
-    activeProSubscription()
-    state.subscription = {
-      tier: 'PRO',
-      duration: 'MONTHLY',
-      renewalDate: 'not-a-date'
-    }
-    state.balance = {
-      amountMicros: 0,
-      cloudCreditBalanceMicros: 0,
-      prepaidBalanceMicros: 0
-    }
-    const { container } = renderTile()
-    expect(container.textContent).toContain("You're out of credits")
-    expect(container.textContent).not.toContain('Credits refill')
-  })
-
   it('hides the breakdown and forces zeros in the zero state', () => {
     activeProSubscription()
     const { container } = renderTile({ zeroState: true })
@@ -271,11 +246,9 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows no depletion notice or in-use badge while monthly credits remain', () => {
+  it('shows no in-use badge while monthly credits remain', () => {
     activeProSubscription()
-    const { container } = renderTile()
-    expect(container.textContent).not.toContain('Monthly credits are used up')
-    expect(container.textContent).not.toContain("You're out of credits")
+    renderTile()
     expect(screen.queryByText('In use')).toBeNull()
   })
 
@@ -286,42 +259,29 @@ describe('CreditsTile', () => {
       cloudCreditBalanceMicros: 0,
       prepaidBalanceMicros: 300
     }
-    const { container } = renderTile()
-    expect(container.textContent).toContain(
-      'Monthly credits are used up. Refills Feb 20'
-    )
-    expect(container.textContent).toContain(
-      "You're now spending additional credits."
-    )
+    renderTile()
     expect(screen.getByText('In use')).toBeTruthy()
     expect(screen.getByText('Add credits').dataset.variant).toBe('tertiary')
   })
 
-  it('emphasizes add-credits when fully out of credits', () => {
+  it('shows a lean out-of-credits state without a punch-out notice', () => {
     activeProSubscription()
     state.balance = {
       amountMicros: 0,
       cloudCreditBalanceMicros: 0,
       prepaidBalanceMicros: 0
     }
-    const { container } = renderTile()
-    expect(container.textContent).toContain(
-      "You're out of credits. Credits refill Feb 20"
-    )
-    expect(container.textContent).toContain(
-      'Add more credits to continue generating.'
-    )
+    renderTile()
     expect(screen.queryByText('In use')).toBeNull()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('inverted')
+    expect(screen.getByText('Add credits').dataset.variant).toBe('tertiary')
   })
 
-  it('suppresses the depletion notice until the balance has loaded', () => {
+  it('shows no in-use badge until the balance has loaded', () => {
     activeProSubscription()
     state.balance = null
     state.isLoading = true
-    const { container } = renderTile()
-    expect(container.textContent).not.toContain('Monthly credits are used up')
-    expect(container.textContent).not.toContain("You're out of credits")
+    renderTile()
+    expect(screen.queryByText('In use')).toBeNull()
   })
 
   it('routes add-credits through telemetry + the top-up dialog', async () => {
