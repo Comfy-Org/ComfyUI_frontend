@@ -125,7 +125,10 @@ import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { frozen = false } = defineProps<{
-  /** Lapsed plan: render the whole section dimmed, off, and non-interactive. */
+  /**
+   * The plan can't spend (lapsed or paused): render the whole section dimmed,
+   * off, and non-interactive.
+   */
   frozen?: boolean
 }>()
 

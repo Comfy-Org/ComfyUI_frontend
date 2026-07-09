@@ -186,8 +186,12 @@
       </div>
     </div>
 
-    <!-- Credit auto-reload; frozen alongside the tile while the plan is lapsed -->
-    <AutoReloadSection v-if="canManageBilling" :frozen="isInactive" />
+    <!-- Credit auto-reload; frozen alongside the tile whenever the plan can't
+    spend — lapsed or paused. -->
+    <AutoReloadSection
+      v-if="canManageBilling"
+      :frozen="isInactive || isPaused"
+    />
 
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
