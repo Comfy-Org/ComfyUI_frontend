@@ -859,8 +859,14 @@ describe('AgentPanelRoot workflow binding', () => {
     patch(1, graph)
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
 
+    // 'Open in new tab' lives in the dropdown attached to the primary action.
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.openNewTab') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.moreApplyOptions')
+      })
+    )
+    await userEvent.click(
+      await screen.findByText(i18n.global.t('agent.openNewTab'))
     )
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
@@ -882,7 +888,7 @@ describe('AgentPanelRoot workflow binding', () => {
     patch(1, { version: 0.4, nodes: [] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
 
     socket.emit('message', {
@@ -916,7 +922,7 @@ describe('AgentPanelRoot workflow binding', () => {
     patch(1, { version: 0.4, nodes: [] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
 
     // New chat: the abandoned thread's parked draft must not leak forward.
@@ -992,9 +998,9 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // 'Keep mine' parks the draft: later patches stay un-applied this turn.
+    // Cancel defers: later patches stay un-applied this turn.
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+      screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
     patch(2, { version: 0.4, nodes: [] })
     await nextTick()
@@ -1004,7 +1010,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeInTheDocument()
 
     // The next turn re-arms applies; the still-edited tab re-raises the dialog
-    // and 'Let the agent continue' overwrites in place.
+    // and 'Accept agent changes' overwrites in place.
     socket.emit('message', {
       data: JSON.stringify({
         type: 'agent_message_done',
@@ -1019,13 +1025,53 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     await userEvent.click(
       screen.getByRole('button', {
-        name: i18n.global.t('agent.letAgentContinue')
+        name: i18n.global.t('agent.acceptAgent')
       })
     )
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
     expect(tab.isModified).toBe(false)
+  })
+
+  it("'Keep my changes' retires the pending draft version for good", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    tab.isModified = true
+    patch(1, { version: 0.4, nodes: [] })
+    await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+    )
+
+    // The decision sticks: the next turn does NOT re-ask about this version...
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'agent_message_done',
+        data: { message_id: 'm-1', thread_id: 'th-1' }
+      })
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    await userEvent.type(screen.getByRole('textbox'), 'something else')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await nextTick()
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
+
+    // ...but a NEWER agent edit is a fresh decision.
+    patch(2, { version: 0.4, nodes: [{ id: 3 }] })
+    expect(
+      await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    ).toBeInTheDocument()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('stages selected nodes as chips and sends their ids once', async () => {
