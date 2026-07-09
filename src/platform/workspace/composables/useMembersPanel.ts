@@ -119,7 +119,7 @@ export function sortPendingInvites(
 }
 
 export function useMembersPanel() {
-  const { t, d } = useI18n()
+  const { t } = useI18n()
   const toast = useToast()
   const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
   const {
@@ -143,39 +143,13 @@ export function useMembersPanel() {
   const { permissions, uiConfig } = useWorkspaceUI()
   const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const { balance, renewalDate, fetchBalance } = useBillingContext()
+  const { fetchBalance } = useBillingContext()
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.
   const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
 
   const memberCount = computed(() => members.value.length)
-
-  // Out-of-credits banner: shown once the team's balance is drained, until the
-  // user dismisses it for the session. Reset date comes from the renewal cycle.
-  const bannerDismissed = ref(false)
-  const isOutOfCredits = computed(
-    () =>
-      isOnTeamPlan.value &&
-      balance.value != null &&
-      balance.value.amountMicros <= 0
-  )
-  const showOutOfCreditsBanner = computed(
-    () => isOutOfCredits.value && !bannerDismissed.value
-  )
-  const creditResetDate = computed(() =>
-    renewalDate.value
-      ? d(new Date(renewalDate.value), { month: 'short', day: 'numeric' })
-      : null
-  )
-
-  function dismissOutOfCreditsBanner() {
-    bannerDismissed.value = true
-  }
-
-  function handleAddCredits() {
-    subscriptionDialog.show({ planMode: 'team', reason: 'out_of_credits' })
-  }
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
@@ -356,10 +330,6 @@ export function useMembersPanel() {
     isOnTeamPlan,
     hasLapsedTeamPlan,
     hasMultipleMembers,
-    showOutOfCreditsBanner,
-    creditResetDate,
-    dismissOutOfCreditsBanner,
-    handleAddCredits,
     fetchBalance,
     showSearch,
     showViewTabs,

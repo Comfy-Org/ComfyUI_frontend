@@ -17,8 +17,6 @@ const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
-const mockDismissBanner = vi.fn()
-const mockHandleAddCredits = vi.fn()
 const mockFetchBalance = vi.fn()
 
 const {
@@ -37,7 +35,6 @@ const {
   mockSearchQuery,
   mockSortField,
   mockSortDirection,
-  mockShowOutOfCreditsBanner,
   mockPermissions,
   mockUiConfig
 } = vi.hoisted(() => {
@@ -60,7 +57,6 @@ const {
     mockSearchQuery: ref(''),
     mockSortField: ref('role'),
     mockSortDirection: ref('desc'),
-    mockShowOutOfCreditsBanner: ref(false),
     mockPermissions: ref({
       canViewPendingInvites: true,
       canInviteMembers: true,
@@ -116,10 +112,6 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
     userPhotoUrl: ref(null),
-    showOutOfCreditsBanner: mockShowOutOfCreditsBanner,
-    creditResetDate: computed(() => 'Feb 20'),
-    dismissOutOfCreditsBanner: mockDismissBanner,
-    handleAddCredits: mockHandleAddCredits,
     fetchBalance: mockFetchBalance,
     isCurrentUser: (m: WorkspaceMember) =>
       m.email.toLowerCase() === 'owner@example.com',
@@ -220,7 +212,6 @@ describe('MembersPanelContent', () => {
     mockIsInviteDisabled.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
-    mockShowOutOfCreditsBanner.value = false
     mockPermissions.value = {
       canViewPendingInvites: true,
       canInviteMembers: true,
@@ -364,45 +355,6 @@ describe('MembersPanelContent', () => {
       expect(
         within(otherRow).getByRole('button', { name: 'g.moreOptions' })
       ).toBeInTheDocument()
-    })
-  })
-
-  describe('out-of-credits banner', () => {
-    it('renders the banner when the workspace is out of credits', () => {
-      mockShowOutOfCreditsBanner.value = true
-      renderComponent()
-      expect(
-        screen.getByText('workspacePanel.members.outOfCredits.title')
-      ).toBeTruthy()
-    })
-
-    it('is hidden when the workspace has credits', () => {
-      renderComponent()
-      expect(
-        screen.queryByText('workspacePanel.members.outOfCredits.title')
-      ).toBeNull()
-    })
-
-    it('dismisses the banner from the Dismiss action', async () => {
-      mockShowOutOfCreditsBanner.value = true
-      renderComponent()
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: 'workspacePanel.members.outOfCredits.dismiss'
-        })
-      )
-      expect(mockDismissBanner).toHaveBeenCalled()
-    })
-
-    it('opens the add-credits flow from the banner action', async () => {
-      mockShowOutOfCreditsBanner.value = true
-      renderComponent()
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: 'workspacePanel.members.outOfCredits.addCredits'
-        })
-      )
-      expect(mockHandleAddCredits).toHaveBeenCalled()
     })
   })
 

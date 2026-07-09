@@ -60,14 +60,6 @@
 
     <BillingStatusBanner />
 
-    <!-- Hidden while paused: the paused banner already covers the zero balance. -->
-    <MembersOutOfCreditsBanner
-      v-if="showOutOfCreditsBanner && !isPaused"
-      :reset-date="creditResetDate"
-      @dismiss="dismissOutOfCreditsBanner"
-      @add-credits="handleAddCredits"
-    />
-
     <!-- Card: fills height, table scrolls inside -->
     <div
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
@@ -234,12 +226,10 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MemberTableRow from '@/platform/workspace/components/dialogs/settings/MemberTableRow.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
-import MembersOutOfCreditsBanner from '@/platform/workspace/components/dialogs/settings/MembersOutOfCreditsBanner.vue'
 import PendingInviteRow from '@/platform/workspace/components/dialogs/settings/PendingInviteRow.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -269,10 +259,6 @@ const {
   pendingInvites,
   permissions,
   uiConfig,
-  showOutOfCreditsBanner,
-  creditResetDate,
-  dismissOutOfCreditsBanner,
-  handleAddCredits,
   fetchBalance,
   isCurrentUser,
   isOriginalOwner,
@@ -284,7 +270,6 @@ const {
 
 const { staticUrls } = useExternalLink()
 const { t } = useI18n()
-const { isPaused } = useBillingContext()
 
 // Owners get "Need more members?" after the count, where the period reads as a
 // separator; members see just the count, so drop the trailing period.

@@ -2916,13 +2916,6 @@
         "hoursAgo": "{n} hr ago",
         "daysAgo": "{count} day ago | {count} days ago"
       },
-      "outOfCredits": {
-        "title": "Out of credits",
-        "body": "Your team has used all its credits. Workflow runs are blocked until additional credits are added.",
-        "bodyWithReset": "Your team has used all its credits. Workflow runs are blocked until additional credits are added or the cycle resets on {date}.",
-        "dismiss": "Dismiss",
-        "addCredits": "Add credits"
-      },
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
