@@ -137,6 +137,27 @@ test.describe('Mobile menu @mobile', () => {
     }
   })
 
+  test('NEW badge shows on Products and Community only', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+
+    for (const label of ['Products', 'Community']) {
+      await expect(
+        menu.getByRole('button', { name: label }).getByText('NEW', {
+          exact: true
+        })
+      ).toBeVisible()
+    }
+
+    await expect(
+      menu.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
+    ).toHaveCount(0)
+  })
+
   test('clicking section with subitems drills down and back works', async ({
     page
   }) => {
