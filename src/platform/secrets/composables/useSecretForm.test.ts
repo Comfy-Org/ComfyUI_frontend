@@ -268,6 +268,27 @@ describe('useSecretForm', () => {
       ])
     })
 
+    it('passes a server-listed provider absent from the local registry through with its raw id as label and no logo', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['brand-new-provider'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'brand-new-provider',
+          label: 'brand-new-provider',
+          logo: undefined,
+          disabled: false
+        }
+      ])
+      expect(providerOptions.value[0]?.logo).toBeUndefined()
+    })
+
     it('omits BYOK providers the server does not list', () => {
       const visible = ref(true)
       const { providerOptions } = useSecretForm({
