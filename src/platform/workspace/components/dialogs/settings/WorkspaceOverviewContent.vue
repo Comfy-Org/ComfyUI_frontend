@@ -6,7 +6,35 @@
     <div
       class="flex flex-col gap-6 rounded-2xl border border-interface-stroke/60 p-6"
     >
-      <div class="flex items-start justify-between gap-4">
+      <!-- Lapsed team/enterprise plan: reactivation header replaces the live one -->
+      <div v-if="isInactive" class="flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-1">
+          <span class="text-sm text-base-foreground">
+            {{ $t('workspacePanel.overview.inactive.title') }}
+          </span>
+          <p class="m-0 text-base font-semibold text-base-foreground">
+            {{ $t('workspacePanel.overview.inactive.zeroPrice') }}
+          </p>
+          <span class="text-sm text-muted-foreground">
+            {{ $t('workspacePanel.overview.inactive.subtitle') }}
+          </span>
+        </div>
+        <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" size="lg">
+            {{ $t('workspacePanel.overview.inactive.manageBilling') }}
+          </Button>
+          <Button
+            variant="inverted"
+            size="lg"
+            :loading="isResubscribing"
+            @click="handleResubscribe"
+          >
+            {{ $t('workspacePanel.overview.inactive.reactivate') }}
+          </Button>
+        </div>
+      </div>
+
+      <div v-else class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">{{ plan.name }}</span>
           <p
@@ -59,9 +87,29 @@
       <div class="grid grid-cols-2 gap-4">
         <CreditsTile class="border-0" />
 
+        <!-- Value proposition replaces the snapshot while the plan is lapsed -->
+        <div
+          v-if="isInactive"
+          class="flex flex-col gap-4 rounded-xl bg-modal-panel-background px-6 py-5"
+        >
+          <p class="m-0 text-sm text-base-foreground">
+            {{ $t('workspacePanel.overview.inactive.valuePropTitle') }}
+          </p>
+          <ul class="m-0 flex list-none flex-col gap-3 p-0">
+            <li
+              v-for="prop in valueProps"
+              :key="prop"
+              class="flex items-center gap-2 text-sm text-base-foreground"
+            >
+              <i class="icon-[lucide--check] size-4 shrink-0 text-credit" />
+              {{ prop }}
+            </li>
+          </ul>
+        </div>
+
         <!-- Member snapshot tile -->
         <div
-          v-if="canManageBilling"
+          v-else-if="canManageBilling"
           class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
         >
           <Tabs v-model="snapshotView">
@@ -156,7 +204,7 @@
     </div>
 
     <!-- Credit auto-reload -->
-    <AutoReloadSection v-if="canManageBilling" />
+    <AutoReloadSection v-if="canManageBilling && !isInactive" />
 
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
@@ -218,6 +266,8 @@ import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
+import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -240,6 +290,18 @@ const {
 const canManageBilling = computed(() => permissions.value.canManageSubscription)
 const { isFreeTier, isPaused, subscription } = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
+
+// A team (or enterprise) workspace whose plan has lapsed shows the reactivation
+// state in place of the live plan header, snapshot, and auto-reload.
+const { hasLapsedTeamPlan: isInactive } = useTeamPlan()
+const { isResubscribing, handleResubscribe } = useResubscribe()
+
+const valueProps = computed(() => [
+  t('workspacePanel.overview.inactive.valueProps.inviteMembers'),
+  t('workspacePanel.overview.inactive.valueProps.concurrentWorkflows'),
+  t('workspacePanel.overview.inactive.valueProps.sharedCredits'),
+  t('workspacePanel.overview.inactive.valueProps.rolePermissions')
+])
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const learnMoreUrl = buildDocsUrl('/get_started/cloud', {
