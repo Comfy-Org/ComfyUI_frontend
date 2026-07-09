@@ -13,7 +13,6 @@ import type {
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
-import ActiveTabStrip from './ActiveTabStrip.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -130,6 +129,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
   >
     <PanelHeader
       :is-maximized="isMaximized"
+      :active-tab="activeTab"
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
@@ -148,8 +148,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <SessionBar :title="sessionTitle" @open-history="onOpenHistory" />
-
-      <ActiveTabStrip :tab="activeTab" />
 
       <LockBanner :state="lockState" @take-control="emit('takeControl')" />
 

@@ -5,11 +5,16 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '../ui/Button.vue'
+import type { ActiveTab } from './ActiveTabStrip.vue'
+import ActiveTabStrip from './ActiveTabStrip.vue'
 
-// Header per the design reference: title + neutral ALPHA badge (no logo mark), then new
-// chat, width toggle (420 <-> 960 dock), close. History is reached from the session bar
-// (B4), not the header.
-const { isMaximized = false } = defineProps<{ isMaximized?: boolean }>()
+// Header per the design reference: title + neutral ALPHA badge (no logo mark) + the
+// active tab name, then new chat, width toggle (420 <-> 960 dock), close. History is
+// reached from the session bar (B4), not the header.
+const { isMaximized = false, activeTab = null } = defineProps<{
+  isMaximized?: boolean
+  activeTab?: ActiveTab | null
+}>()
 
 const emit = defineEmits<{
   newChat: []
@@ -35,10 +40,12 @@ const sizeToggleLabel = computed(() =>
       {{ t('agent.title') }}
     </h1>
     <span
-      class="border-agent-border-strong text-agent-fg-muted rounded-full border px-2 py-0.5 text-xs"
+      class="border-agent-border-strong text-agent-fg-muted shrink-0 rounded-full border px-2 py-0.5 text-xs"
     >
       {{ t('agent.alpha') }}
     </span>
+
+    <ActiveTabStrip :tab="activeTab" />
 
     <div class="ml-auto flex items-center gap-1">
       <Button

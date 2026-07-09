@@ -2,15 +2,30 @@
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 
 // User message per the design reference: a right-aligned pill, no avatar, with
-// sent attachments kept visible as a 2-up thumbnail grid above the text (B11).
-const { text, attachments = [] } = defineProps<{
+// sent attachments (B11 thumbnail grid) and @-tags kept visible above the text.
+const {
+  text,
+  attachments = [],
+  tags = []
+} = defineProps<{
   text: string
   attachments?: UserAttachment[]
+  tags?: string[]
 }>()
 </script>
 
 <template>
   <div class="flex flex-col items-end gap-1.5">
+    <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
+      <span
+        v-for="(tag, index) in tags"
+        :key="`${tag}:${index}`"
+        class="rounded-agent bg-agent-pill text-agent-fg-muted inline-flex items-center gap-1 px-1.5 py-0.5 text-xs"
+      >
+        <span class="icon-[lucide--at-sign] size-3" />
+        {{ tag }}
+      </span>
+    </div>
     <div
       v-if="attachments.length"
       class="grid w-56 max-w-full grid-cols-2 gap-1.5"

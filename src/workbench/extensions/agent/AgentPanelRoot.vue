@@ -125,10 +125,6 @@ const {
 } = useAgentSession({
   rest,
   events,
-  selection: () => {
-    const tags = consumeSelection()
-    return tags.length > 0 ? { node_ids: tags.map((tag) => tag.id) } : undefined
-  },
   workflow: {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted
@@ -368,7 +364,7 @@ function onSend(text: string, attachments: ComposerAttachment[]): void {
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(text, attachments)
+  void sendMessage(text, attachments, consumeSelection())
 }
 
 function onStop(): void {

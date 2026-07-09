@@ -29,6 +29,13 @@ interface SentAttachment {
   previewUrl?: string
 }
 
+// A consumed @-tag: the node id rides the POST selection, the title stays
+// behind on the transcript's user entry.
+interface SentTag {
+  id: string
+  title: string
+}
+
 // The active tab resolved for a turn. `speculative` marks an id the server has
 // not confirmed owning; a 403 on it retries the send once without the id.
 export interface WorkflowTurnContext {
@@ -40,7 +47,6 @@ export interface WorkflowTurnContext {
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
-  selection?: () => Record<string, unknown> | undefined
   workflow?: {
     current(): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
@@ -50,7 +56,7 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, selection, workflow } = deps
+  const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
   const draftStore = useAgentDraftStore()
@@ -140,7 +146,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   // False on any failure; hosts may restore the composer draft from it.
   async function sendMessage(
     text: string,
-    attachments?: SentAttachment[]
+    attachments?: SentAttachment[],
+    tags?: SentTag[]
   ): Promise<boolean> {
     if (sending.value) {
       // The composer already cleared its draft; a silently dropped send loses the text.
@@ -153,11 +160,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     sending.value = true
     const wfContext = workflow?.current()
-    // Built once: the selection dep consumes the staged tags, so a 403 retry
-    // must reuse this object rather than re-invoking it.
     const input = {
       content: text,
-      selection: selection?.(),
+      selection:
+        tags !== undefined && tags.length > 0
+          ? { node_ids: tags.map((tag) => tag.id) }
+          : undefined,
       attachments: attachments?.map((attachment) => attachment.ref)
     }
     async function postTurn(threadId: string) {
@@ -188,7 +196,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.recordUser(
         turnId,
         text,
-        attachments?.map(({ name, previewUrl }) => ({ name, previewUrl }))
+        attachments?.map(({ name, previewUrl }) => ({ name, previewUrl })),
+        tags?.map((tag) => tag.title)
       )
       conversationStore.startTurn(turnId)
       return true

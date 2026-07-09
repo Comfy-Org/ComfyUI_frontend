@@ -26,6 +26,7 @@ interface UserEntry {
   role: 'user'
   text: string
   attachments?: UserAttachment[]
+  tags?: string[]
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -41,6 +42,7 @@ export const useAgentConversationStore = defineStore(
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
+    const userTags = ref(new Map<TurnId, string[]>())
 
     let transport: AgentEventTransport | null = null
     // Reactive so status/isStreaming re-derive the instant a turn opens or settles; a plain
@@ -54,11 +56,14 @@ export const useAgentConversationStore = defineStore(
     function recordUser(
       turnId: TurnId,
       text: string,
-      attachments?: UserAttachment[]
+      attachments?: UserAttachment[],
+      tags?: string[]
     ): void {
       userTexts.value.set(turnId, text)
       if (attachments !== undefined && attachments.length > 0)
         userAttachments.value.set(turnId, attachments)
+      if (tags !== undefined && tags.length > 0)
+        userTags.value.set(turnId, tags)
     }
 
     function setThreadId(id: string | null): void {
@@ -129,6 +134,7 @@ export const useAgentConversationStore = defineStore(
     function reset(): void {
       messages.value = []
       userTexts.value = new Map()
+      userTags.value = new Map()
       dropAttachmentPreviews()
       threadId.value = null
       clearActive()
@@ -166,8 +172,9 @@ export const useAgentConversationStore = defineStore(
         return message
       })
       userTexts.value = texts
-      // The history endpoint does not return attachment refs yet; hydrated
-      // turns render text-only until the BE persists them on the message row.
+      // The history endpoint does not return attachment refs or tags yet;
+      // hydrated turns render text-only until the BE persists them.
+      userTags.value = new Map()
       dropAttachmentPreviews()
     }
 
@@ -181,7 +188,8 @@ export const useAgentConversationStore = defineStore(
                 id: message.id,
                 role: 'user',
                 text,
-                attachments: userAttachments.value.get(message.id)
+                attachments: userAttachments.value.get(message.id),
+                tags: userTags.value.get(message.id)
               },
               message
             ]

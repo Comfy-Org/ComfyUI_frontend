@@ -1151,6 +1151,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
+    // The surviving tag persists on the transcript; the dismissed one is gone.
+    expect(screen.getByText('VAEDecode')).toBeInTheDocument()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
   it('raises the conflict dialog on a user-edited bound tab and honors the choice', async () => {
@@ -1264,8 +1267,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['5'] } })
-    // Consumed on send: the chip clears and the same selection does not re-tag.
-    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    // Consumed on send: the composer chip clears (no remove button left), but
+    // the tag stays visible on the transcript's user message.
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.remove') })
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
   it('coalesces patches that stream faster than the canvas apply settles', async () => {
     const tab = makeTab('wf-42')

@@ -61,6 +61,7 @@ watch(
             v-if="entry.role === 'user'"
             :text="entry.text"
             :attachments="entry.attachments"
+            :tags="entry.tags"
           />
           <AgentMessage
             v-else
