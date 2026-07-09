@@ -8,6 +8,10 @@ inputs:
   head-sha:
     description: The commit SHA to find runs for
     required: true
+  event:
+    description: Optional workflow event to match
+    required: false
+    default: ''
   not-found-status:
     description: Status to output when no run exists
     required: false
@@ -33,6 +37,7 @@ runs:
       env:
         WORKFLOW_ID: ${{ inputs.workflow-id }}
         HEAD_SHA: ${{ inputs.head-sha }}
+        EVENT_NAME: ${{ inputs.event }}
         NOT_FOUND_STATUS: ${{ inputs.not-found-status }}
       with:
         github-token: ${{ inputs.token }}
@@ -42,6 +47,7 @@ runs:
             repo: context.repo.repo,
             workflow_id: process.env.WORKFLOW_ID,
             head_sha: process.env.HEAD_SHA,
+            event: process.env.EVENT_NAME || undefined,
             per_page: 1,
           });
 
