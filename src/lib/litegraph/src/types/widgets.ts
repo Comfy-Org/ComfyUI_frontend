@@ -1,6 +1,9 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { WidgetEntityId } from '@/world/entityIds'
+import type { BoundingBox } from '@/types/boundingBoxes'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 
 import type {
   CanvasColour,
@@ -9,12 +12,7 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  NodeId
-} from '../litegraph'
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
@@ -46,6 +44,14 @@ export interface IWidgetOptions<TValues = unknown> {
   socketless?: boolean
   /** If `true`, the widget will not be rendered by the Vue renderer. */
   canvasOnly?: boolean
+  /**
+   * If `true`, the widget still renders on the node but is omitted from the
+   * right side panel. Unlike {@link IWidgetOptions.canvasOnly}, the node body
+   * keeps rendering it via the Vue renderer. Used for widgets that hold
+   * non-syncable state (e.g. a Three.js viewport) where a second instance in
+   * the panel would diverge from the one on the node.
+   */
+  hideInPanel?: boolean
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 

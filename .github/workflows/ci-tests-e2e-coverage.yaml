@@ -88,9 +88,9 @@ jobs:
       - name: Strip non-source entries from coverage
         if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
-          # Drop served bundle scripts (localhost-8188/assets/*.js) that V8 records but have no source file on disk, which would abort genhtml.
           lcov --remove coverage/playwright/coverage.lcov \
             '*localhost-8188*' \
+            'assets/images/*' \
             -o coverage/playwright/coverage.lcov \
             --ignore-errors unused
           wc -l coverage/playwright/coverage.lcov
@@ -121,7 +121,8 @@ jobs:
             --title "ComfyUI E2E Coverage" \
             --no-function-coverage \
             --precision 1 \
-            --ignore-errors source,unmapped
+            --ignore-errors source,unmapped \
+            --synthesize-missing
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'

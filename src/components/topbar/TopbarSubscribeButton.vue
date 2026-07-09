@@ -21,6 +21,6 @@ const { isFreeTier } = useBillingContext()
 const subscriptionDialog = useSubscriptionDialog()
 
 function handleClick() {
-  subscriptionDialog.showPricingTable()
+  subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
 }
 </script>

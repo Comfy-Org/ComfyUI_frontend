@@ -210,9 +210,8 @@ describe('NodeSearchContent', () => {
     it('should show only essential nodes when Essentials is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
+          name: 'LoadImage',
+          display_name: 'Load Image'
         }),
         createMockNodeDef({
           name: 'RegularNode',
@@ -226,10 +225,9 @@ describe('NodeSearchContent', () => {
       await waitFor(() => {
         const items = screen.getAllByTestId('node-item')
         expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Essential Node')
+        expect(items[0]).toHaveTextContent('Load Image')
       })
     })
-
     it('should show only API nodes when Partner Nodes filter is active', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
