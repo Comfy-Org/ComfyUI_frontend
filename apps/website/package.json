@@ -17,7 +17,8 @@
     "test:visual:update": "playwright test --project visual --update-snapshots",
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
-    "generate:models": "tsx ./scripts/generate-models.ts"
+    "generate:models": "tsx ./scripts/generate-models.ts",
+    "validate:jsonld": "tsx ./scripts/validate-jsonld.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
