@@ -18,11 +18,16 @@ export function useAutoPageSize(
   function measure() {
     const container = containerRef.value
     if (!container) return
+    // Use fractional (getBoundingClientRect) heights, not the integer
+    // offsetHeight: truncating each row's height makes the floor below think an
+    // extra partial row fits, which overflows the container by a few pixels and
+    // shows a scrollbar. Fractional heights keep a not-quite-fitting row out.
     const rowHeight =
-      container.querySelector<HTMLElement>('tbody tr')?.offsetHeight ||
-      FALLBACK_ROW_HEIGHT
+      container.querySelector<HTMLElement>('tbody tr')?.getBoundingClientRect()
+        .height || FALLBACK_ROW_HEIGHT
     const headerHeight =
-      container.querySelector<HTMLElement>('thead')?.offsetHeight ?? 0
+      container.querySelector<HTMLElement>('thead')?.getBoundingClientRect()
+        .height ?? 0
     const fit = Math.floor((container.clientHeight - headerHeight) / rowHeight)
     pageSize.value = Math.max(min, fit)
   }
