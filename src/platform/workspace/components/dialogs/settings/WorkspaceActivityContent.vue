@@ -76,7 +76,7 @@
                     {{ event.userName }}
                   </span>
                 </HoverCardTrigger>
-                <HoverCardContent class="w-64">
+                <HoverCardContent class="w-64" align="start">
                   <div class="flex w-full flex-col gap-2">
                     <div class="flex h-5 items-center justify-between">
                       <span class="text-sm text-muted-foreground">
@@ -123,7 +123,7 @@
                 <HoverCardTrigger as="span" class="cursor-default">
                   {{ event.eventType }}
                 </HoverCardTrigger>
-                <HoverCardContent class="w-72">
+                <HoverCardContent class="w-72" align="start">
                   <div class="flex h-5 items-center justify-between gap-4">
                     <span
                       class="text-sm whitespace-nowrap text-muted-foreground"
