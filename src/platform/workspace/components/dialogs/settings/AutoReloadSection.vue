@@ -1,6 +1,13 @@
 <template>
   <div
-    class="flex flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6"
+    :class="
+      cn(
+        'flex flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6 transition-opacity',
+        // A lapsed plan can't auto-reload, so freeze the whole section: dim it,
+        // block interaction, and force the toggle to read Disabled.
+        frozen && 'pointer-events-none opacity-50'
+      )
+    "
   >
     <div class="flex items-start justify-between gap-4">
       <div class="flex flex-col gap-1">
@@ -14,7 +21,10 @@
       <div v-if="isConfigured" class="flex shrink-0 items-center gap-3">
         <span class="flex items-center gap-2 text-sm text-muted-foreground">
           {{ enabledLabel }}
-          <Switch :model-value="isEnabled" @update:model-value="setEnabled" />
+          <Switch
+            :model-value="displayEnabled"
+            @update:model-value="setEnabled"
+          />
         </span>
         <Button variant="secondary" size="lg" @click="openConfig">
           {{ $t('workspacePanel.autoReload.edit') }}
@@ -44,7 +54,8 @@
         :class="
           cn(
             'flex flex-col gap-4 rounded-xl bg-modal-panel-background px-6 py-5 transition-opacity',
-            !isEnabled && 'opacity-50'
+            // Skip this dim when frozen — the section root already dims uniformly.
+            !frozen && !isEnabled && 'opacity-50'
           )
         "
       >
@@ -111,6 +122,11 @@ import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const { frozen = false } = defineProps<{
+  /** Lapsed plan: render the whole section dimmed, off, and non-interactive. */
+  frozen?: boolean
+}>()
+
 const { t, n: fmtNumber } = useI18n()
 
 const {
@@ -123,6 +139,8 @@ const {
   isWarning,
   setEnabled
 } = useAutoReload()
+
+const displayEnabled = computed(() => !frozen && isEnabled.value)
 
 const { showAutoReloadDialog } = useDialogService()
 
@@ -140,12 +158,13 @@ const fmtUsd = (cents: number) =>
   })
 
 const enabledLabel = computed(() =>
-  isEnabled.value
+  displayEnabled.value
     ? t('workspacePanel.autoReload.enabled')
     : t('workspacePanel.autoReload.disabled')
 )
 
 const badge = computed(() => {
+  if (frozen) return t('workspacePanel.autoReload.badge.off')
   if (isPaused.value) return t('workspacePanel.autoReload.badge.paused')
   if (!isEnabled.value) return t('workspacePanel.autoReload.badge.off')
   return ''

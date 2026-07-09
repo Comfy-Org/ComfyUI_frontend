@@ -181,12 +181,7 @@
     </div>
 
     <!-- Credit auto-reload; frozen alongside the tile while the plan is lapsed -->
-    <div
-      v-if="canManageBilling"
-      :class="cn(isInactive && 'pointer-events-none opacity-50')"
-    >
-      <AutoReloadSection />
-    </div>
+    <AutoReloadSection v-if="canManageBilling" :frozen="isInactive" />
 
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
@@ -253,7 +248,6 @@ import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorkspaceOverview'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{ navigate: [view: 'activity'] }>()
 
