@@ -423,27 +423,12 @@ const coachSteps: CoachStep[] = [
   }
 ]
 
-// The agent's server-side draft never mirrors the live canvas, so a tagged
-// node travels with its serialized definition (dropped if it left the graph).
-function tagsWithNodeData(tags: SelectedNode[]) {
-  return tags.map((tag) => ({
-    ...tag,
-    data: viewedGraphNodes()
-      .find((node) => String(node.id) === tag.id)
-      ?.serialize()
-  }))
-}
-
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(
-    text,
-    attachments,
-    tagsWithNodeData(consumeSelection())
-  ).then((ok) => {
+  void sendMessage(text, attachments, consumeSelection()).then((ok) => {
     // A failed send consumed the snapshot guard without reaching the
     // server; drop it so the next send re-uploads.
     if (!ok) resetSnapshotGuard()
