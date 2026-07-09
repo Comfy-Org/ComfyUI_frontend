@@ -2856,6 +2856,11 @@
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
+      "ending": {
+        "title": "Your team plan ends on {date}",
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan"
+      },
       "updatePayment": "Update payment"
     },
     "charactersLeft": "{count} character left | {count} characters left",

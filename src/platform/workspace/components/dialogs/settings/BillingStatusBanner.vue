@@ -7,7 +7,16 @@
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <div class="flex items-center gap-2">
         <i
-          class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
+          :class="
+            cn(
+              'size-4 shrink-0',
+              // Muted circle for the calm plan-ending notice; amber triangle for
+              // every action-needed problem (paused, payment failed, out of credits).
+              banner.kind === 'ending'
+                ? 'icon-[lucide--circle-alert] text-muted-foreground'
+                : 'icon-[lucide--triangle-alert] text-warning-background'
+            )
+          "
         />
         <span class="text-sm text-base-foreground">{{ banner.title }}</span>
       </div>
@@ -23,6 +32,15 @@
           {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
         </Button>
       </template>
+      <Button
+        v-else-if="banner.kind === 'ending'"
+        variant="secondary"
+        size="lg"
+        :loading="isResubscribing"
+        @click="handleResubscribe"
+      >
+        {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
+      </Button>
       <Button v-else variant="inverted" size="lg">
         {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
@@ -36,8 +54,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, d } = useI18n()
 const {
@@ -49,12 +69,20 @@ const {
 } = useBillingContext()
 const { permissions, isInPersonalWorkspace } = useWorkspaceUI()
 const dialogService = useDialogService()
+const { isResubscribing, handleResubscribe } = useResubscribe()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
 
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
+})
+
+const planEndDate = computed(() => {
+  const raw = subscription.value?.endDate
+  return raw
+    ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
+    : ''
 })
 
 // Out of credits: an active, non-paused team that has exhausted its balance.
@@ -67,9 +95,20 @@ const isOutOfCredits = computed(
     subscription.value?.hasFunds === false
 )
 
+// A cancelled-but-still-active plan is winding down to its end date. Unlike the
+// states above it's a calm, owner-initiated notice (not a problem), so it sits
+// last and reads with the muted circle icon and a low-key secondary action.
+const isEnding = computed(
+  () =>
+    isActiveSubscription.value &&
+    !isPaused.value &&
+    (subscription.value?.isCancelled ?? false) &&
+    planEndDate.value !== ''
+)
+
 // One status banner slot across every workspace tab, in priority order: paused →
-// payment-failure warning → out of credits. All owner/admin-only (members can't
-// act on any of them).
+// payment-failure warning → out of credits → plan ending. All owner/admin-only
+// (members can't act on any of them).
 const banner = computed(() => {
   if (isInPersonalWorkspace.value) return null
 
@@ -104,6 +143,17 @@ const banner = computed(() => {
             date: cycleResetDate.value
           })
         : t('workspacePanel.billingStatus.outOfCredits.bodyNoDate'),
+      showAction: true
+    }
+  }
+
+  if (isEnding.value && canManage.value) {
+    return {
+      kind: 'ending' as const,
+      title: t('workspacePanel.billingStatus.ending.title', {
+        date: planEndDate.value
+      }),
+      body: t('workspacePanel.billingStatus.ending.body'),
       showAction: true
     }
   }
