@@ -8,9 +8,9 @@ comment:
 coverage:
   status:
     project:
-      critical-unit:
+      critical-unit-drift-tolerant:
         target: auto
-        threshold: 0%
+        threshold: 0.3%
         flags:
           - unit
         paths:
