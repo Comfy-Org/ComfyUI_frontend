@@ -13,10 +13,10 @@
       >
         <div class="flex flex-col gap-1">
           <span class="text-sm text-base-foreground">
-            {{ $t('workspacePanel.overview.inactive.title') }}
+            {{ inactiveTitle }}
           </span>
           <span class="text-sm text-muted-foreground">
-            {{ $t('workspacePanel.overview.inactive.subtitle') }}
+            {{ inactiveSubtitle }}
           </span>
         </div>
         <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
@@ -323,6 +323,18 @@ const planMenuEntries = computed<MenuItem[]>(() =>
 )
 
 const { plan, topSpenders, recentActivity } = useWorkspaceOverview()
+
+// Enterprise workspaces read "enterprise" in the lapsed copy, not "team".
+const inactiveTitle = computed(() =>
+  plan.value.name === 'Enterprise'
+    ? t('workspacePanel.overview.inactive.titleEnterprise')
+    : t('workspacePanel.overview.inactive.title')
+)
+const inactiveSubtitle = computed(() =>
+  plan.value.name === 'Enterprise'
+    ? t('workspacePanel.overview.inactive.subtitleEnterprise')
+    : t('workspacePanel.overview.inactive.subtitle')
+)
 
 const { navigateToPanel } = useSettingsNavigation()
 

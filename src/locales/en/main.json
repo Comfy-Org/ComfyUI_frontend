@@ -2983,7 +2983,9 @@
       },
       "inactive": {
         "title": "Inactive team subscription",
+        "titleEnterprise": "Inactive enterprise subscription",
         "subtitle": "Reactivate your team plan to add more members and run workflows",
+        "subtitleEnterprise": "Reactivate your enterprise plan to add more members and run workflows",
         "reactivate": "Reactivate plan"
       }
     },
