@@ -264,7 +264,7 @@ describe('CreditsTile', () => {
     expect(screen.getByText('Add credits').dataset.variant).toBe('tertiary')
   })
 
-  it('shows a lean out-of-credits state without a punch-out notice', () => {
+  it('emphasizes add-credits when fully out of credits, without a punch-out notice', () => {
     activeProSubscription()
     state.balance = {
       amountMicros: 0,
@@ -273,7 +273,7 @@ describe('CreditsTile', () => {
     }
     renderTile()
     expect(screen.queryByText('In use')).toBeNull()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('tertiary')
+    expect(screen.getByText('Add credits').dataset.variant).toBe('inverted')
   })
 
   it('shows no in-use badge until the balance has loaded', () => {

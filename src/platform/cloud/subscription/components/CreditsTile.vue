@@ -117,7 +117,7 @@
       </Button>
       <Button
         v-else
-        variant="tertiary"
+        :variant="isOutOfCredits ? 'inverted' : 'tertiary'"
         size="lg"
         class="w-full font-normal"
         :disabled="isPaused"
@@ -274,6 +274,11 @@ const isAllowanceDepleted = computed(
 )
 const isSpendingAdditional = computed(
   () => isAllowanceDepleted.value && prepaidCreditsValue.value > 0
+)
+// Fully out (monthly depleted and no additional credits left): emphasize the
+// add-credits button. Spending-additional keeps the quieter tertiary.
+const isOutOfCredits = computed(
+  () => isAllowanceDepleted.value && prepaidCreditsValue.value <= 0
 )
 
 const handleRefresh = wrapWithErrorHandlingAsync(async () => {
