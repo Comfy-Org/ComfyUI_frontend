@@ -11,7 +11,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog
+  dismissTemplatesDialog,
+  drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
@@ -46,6 +47,15 @@ test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   await dismissTemplatesDialog(comfyPage)
+})
+
+// Leave the shared backend idle so the next test starts clean (drainBackendToIdle).
+test.afterEach(async ({ comfyPage }) => {
+  // The drain is a no-op when the queue is already idle, so it costs
+  // ~nothing in the common path; the 10s ceiling only bounds a genuinely
+  // busy backend. A backend still busy past it is wedged, and the auto-run
+  // tier's 150s guard surfaces that with the restart diagnostic.
+  await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
 async function expectNoVisibleErrors(

@@ -29,7 +29,8 @@ import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
-  dismissTemplatesDialog
+  dismissTemplatesDialog,
+  drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
 
@@ -44,37 +45,6 @@ const AUTO_RUN_BATCH = 10
 // slow CPU run as a regression.
 const SINGLE_RERUN_TIMEOUT = 60_000
 const GRID_SPACING = { x: 420, y: 360 }
-
-// Interrupt any running prompt, clear the pending queue, and poll until the
-// backend reports idle (or the budget runs out). getQueue swallows a failed
-// fetch and returns an empty queue, so throw-on-error and treat a failed read
-// as still-busy - the drain must never exit early on a transient error.
-// Returns 0 when idle, 1 when still busy after the budget (a wedged backend).
-async function drainUntilIdle(page: Page, budgetMs: number): Promise<number> {
-  const depth = () =>
-    page.evaluate(async () => {
-      try {
-        const queue = await window.app!.api.getQueue({ throwOnError: true })
-        return queue.Running.length + queue.Pending.length
-      } catch {
-        return Number.POSITIVE_INFINITY
-      }
-    })
-  if ((await depth()) === 0) return 0
-  await page.evaluate(async () => {
-    await window.app!.api.interrupt(null)
-    await window.app!.api.clearItems('queue')
-  })
-  const deadline = Date.now() + budgetMs
-  let remaining = await depth()
-  while (remaining !== 0 && Date.now() < deadline) {
-    await page.evaluate(
-      () => new Promise((resolve) => setTimeout(resolve, 500))
-    )
-    remaining = await depth()
-  }
-  return remaining === 0 ? 0 : 1
-}
 
 // Nodes unsafe to execute on a bare backend; every entry names the mechanism.
 const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
@@ -274,6 +244,18 @@ test.use({ initialSettings: customNodeSuiteSettings })
 
 test.beforeEach(async ({ comfyPage }) => {
   await dismissTemplatesDialog(comfyPage)
+})
+
+// Leave the shared backend idle after every test so the next test's fresh
+// page never connects to a still-running execution and inherits its async
+// errors (see drainBackendToIdle). This is what makes the tiers order- and
+// run-independent on one shared backend.
+test.afterEach(async ({ comfyPage }) => {
+  // The drain is a no-op when the queue is already idle, so it costs
+  // ~nothing in the common path; the 10s ceiling only bounds a genuinely
+  // busy backend. A backend still busy past it is wedged, and the auto-run
+  // tier's 150s guard surfaces that with the restart diagnostic.
+  await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
 async function expectNoVisibleErrors(
@@ -887,13 +869,14 @@ for (const entry of loadManifest()) {
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
 
       // A prior pack's slow CPU execution can still be draining when this tier
-      // starts (all packs share one backend in a local full run; CI shards so
-      // it never happens there). Wait it out rather than hard-fail: interrupt,
+      // starts (all packs share one backend, locally and on CI alike; CI's
+      // unloaded runner keeps executions fast, a busy local machine may not).
+      // Wait it out rather than hard-fail: interrupt,
       // clear the pending queue, and poll until the backend is idle. Slow-but-
       // finite executions drain within the budget; only a truly wedged backend
       // (which the exclusions already prevent) stays busy past it. The wait is
       // free when the queue is already idle, so it costs nothing on CI.
-      const queueBusy = await drainUntilIdle(comfyPage.page, 150_000)
+      const queueBusy = await drainBackendToIdle(comfyPage.page, 150_000)
       expect(
         queueBusy,
         'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
@@ -1053,7 +1036,7 @@ async function runBatch(
     // calling it hung, so the caller can re-run it alone with the longer
     // single timeout. Only a truly non-interruptible execution stays busy
     // past this, and that genuinely needs a backend restart.
-    if ((await drainUntilIdle(page, 90_000)) !== 0)
+    if ((await drainBackendToIdle(page, 90_000)) !== 0)
       return 'HUNG_BACKEND (non-interruptible execution; backend restart required)'
   }
   if (result.outcome === 'PASS') {

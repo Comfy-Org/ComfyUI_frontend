@@ -27,10 +27,11 @@ to catch, and names the offender in the failure message.
 - **One commit per surface.** Each commit is a single-file change plus a comment
   naming the historical regression it recreates and the red it should produce.
   Check out a commit, watch the named CI check go red, read the message, move on.
-- **CI is the source of truth, not a local full run.** The CI job shards one
-  fresh backend per pack, so it is deterministic. A local run of the whole
+- **CI is the source of truth, not a local full run.** The CI job runs the
+  suite against one fresh backend on an unloaded runner, which keeps every
+  execution inside its budget. A local run of the whole
   suite against a single CPU backend is not reliable for this (see
-  [Honest caveat](#honest-caveat-local-full-run-is-not-the-oracle)); run CI, or
+  [Honest caveat](#honest-caveat-local-full-runs-and-machine-load)); run CI, or
   run one pack locally at a time.
 
 ## Two protection modes
@@ -110,27 +111,28 @@ suite itself, and those fixes are already committed on the suite branch:
   design (documented in ARCHITECTURE.md section 10 and README), backstopped by
   the startup zero-visible-errors check.
 
-## Honest caveat: a local full run is not the oracle
+## Honest caveat: local full runs and machine load
 
-Running the entire suite (all 7 packs) locally against one shared CPU backend is
-**not** reliably green-on-green, and this is expected, not a suite defect. The
-execution tiers run real nodes; back-to-back across 7 packs on one CPU backend
-they contend for the backend (async execution events bleed across test
-boundaries, and the batch timeout tips different packs over on different runs).
-Four full local runs failed a _different_ set of packs each time. An
-in-suite backend-drain between tests was investigated and did not fix it (the
-contention is timing, not queue state), so it was not kept.
+All tests share ONE backend, locally and on CI alike (the CI job is
+deliberately unsharded), and the suite enforces per-test backend isolation
+itself: every test's
+afterEach drains the backend to idle (`drainBackendToIdle`), the auto-run tier
+waits out a still-draining prior execution instead of hard-failing, and the
+non-executing tiers filter a foreign execution's async console lines
+(`isForeignExecutionNoise`). This fixed the cross-test bleed class outright: a
+test can no longer leave work running for the next test to inherit, and the
+mount/persistence/wiring tiers no longer catch a neighbor's execution errors.
 
-CI does not hit this because it **shards one fresh backend per pack**. For the
-Detection Proof, therefore:
+What remains genuinely load-sensitive is execution TIMING, not isolation: on a
+machine that is busy with other work, slow CPU nodes can exceed even the raised
+budgets (20s batch, 60s single re-run), which flips their classification and
+trips the two-way cannotRunAlone baseline. That is the baseline doing its job
+against an environment that changed under it, not a suite defect. Therefore:
 
-- Use **CI** as the pass/fail oracle (deterministic, per-pack isolated).
-- If reproducing locally, run **one pack at a time** (or restart the backend
-  between packs), never all 7 serially against one backend.
-
-Making a local single-backend full run deterministic would need per-pack backend
-isolation locally (a wrapper that restarts the backend between packs, mirroring
-CI sharding) - tracked as follow-up, not required for the proof.
+- Use **CI** as the pass/fail oracle for the Detection Proof (a fresh backend
+  on an unloaded runner, every run).
+- A local full run is meaningful on an otherwise-idle machine; do not run it
+  concurrently with heavy local work and expect baseline-exact results.
 
 ## Building the proof PR
 
