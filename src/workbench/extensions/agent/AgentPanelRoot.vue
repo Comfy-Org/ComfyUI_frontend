@@ -132,7 +132,7 @@ function takeWorkflowSnapshot(): WorkflowUpload | undefined {
     return undefined
   lastSentGraph = serialized
   snapshotTabPath = workflowStore.activeWorkflow?.path ?? null
-  return { content: graph, base_version: draftStore.version }
+  return { graph, last_seen_version: draftStore.version }
 }
 
 // A fresh thread gets a fresh draft on the server: re-upload on next send.

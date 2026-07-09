@@ -42,11 +42,12 @@ export interface AgentRestClientDeps {
 }
 
 // The client's canvas, uploaded with a turn so the server seeds the thread's
-// draft from it before the agent runs. base_version null force-seeds; a
-// non-null value guards against clobbering an agent write (server 409s).
+// draft from it before the agent runs. last_seen_version null force-seeds; a
+// non-null value is the draft version the client last received, so the server
+// can reject an upload built on a draft the agent has since moved past.
 export interface WorkflowUpload {
-  content: unknown
-  base_version: number | null
+  graph: unknown
+  last_seen_version: number | null
 }
 
 export interface PostMessageInput {
