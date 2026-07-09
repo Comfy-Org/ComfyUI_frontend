@@ -50,8 +50,57 @@ vi.mock('@/scripts/app', () => ({
   app: { loadGraphData: vi.fn() }
 }))
 
-vi.mock('@/platform/workflow/validation/schemas/workflowSchema', () => ({
-  validateComfyWorkflow: vi.fn(async (content: unknown) => content)
+vi.mock(
+  '@/platform/workflow/validation/schemas/workflowSchema',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    validateComfyWorkflow: vi.fn(async (content: unknown) => content)
+  })
+)
+
+// Controllable host-store fakes: a tab registry with an active tab, and the
+// canvas selection the @-tag chips read. Reactive so the root's watches fire.
+type FakeTab = {
+  path: string
+  isModified: boolean
+  activeState: { id?: string } | null
+}
+const hostStores = vi.hoisted(() => ({
+  workflow: null as unknown as {
+    activeWorkflow: FakeTab | null
+    openWorkflows: FakeTab[]
+    tabs: Map<string, FakeTab>
+    getWorkflowByPath: (path: string) => FakeTab | null
+  },
+  canvas: null as unknown as { selectedItems: unknown[] }
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const { reactive } = await import('vue')
+  const tabs = new Map<string, FakeTab>()
+  const store = reactive({
+    activeWorkflow: null as FakeTab | null,
+    get openWorkflows() {
+      return Array.from(tabs.values())
+    },
+    tabs,
+    getWorkflowByPath: (path: string) => tabs.get(path) ?? null
+  })
+  hostStores.workflow = store
+  return { useWorkflowStore: () => store }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+  const { reactive } = await import('vue')
+  const store = reactive({ selectedItems: [] as unknown[] })
+  hostStores.canvas = store
+  return { useCanvasStore: () => store }
+})
+
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  isLGraphNode: (item: unknown) =>
+    (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
 // Light stand-in for the host execution-error store the draft-apply failure writes to.
@@ -86,8 +135,15 @@ import { zAgentWsEvent } from './schemas/agentApiSchema'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
+
+beforeEach(() => {
+  hostStores.workflow.tabs.clear()
+  hostStores.workflow.activeWorkflow = null
+  hostStores.canvas.selectedItems = []
+})
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
   zAgentWsEvent.parse(raw) as AgentChatEvent
@@ -178,6 +234,8 @@ describe('AgentPanelRoot draft binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     socket.clear()
+    vi.mocked(app.loadGraphData).mockClear()
+    vi.mocked(validateComfyWorkflow).mockClear()
   })
 
   afterEach(() => {
@@ -228,8 +286,9 @@ describe('AgentPanelRoot draft binding', () => {
       })
     })
 
+    // No tab is bound to wf-42 yet, so the first apply opens a new tab.
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph)
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
   })
@@ -557,5 +616,382 @@ describe('AgentPanelRoot greeting', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('Hello Jo,')).toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot workflow binding', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    socket.clear()
+    vi.mocked(app.loadGraphData).mockClear()
+    vi.mocked(validateComfyWorkflow).mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  function makeTab(id?: string): FakeTab {
+    const tab: FakeTab = {
+      path: 'workflows/current.json',
+      isModified: false,
+      activeState: id === undefined ? null : { id }
+    }
+    hostStores.workflow.tabs.set(tab.path, tab)
+    hostStores.workflow.activeWorkflow = tab
+    return tab
+  }
+
+  function mockMessagesEndpoint(ackWorkflowId: string): unknown[] {
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages')) {
+          bodies.push(JSON.parse(String(init?.body)))
+          return new Response(
+            JSON.stringify({
+              thread_id: 'th-1',
+              message_id: `m-${bodies.length}`,
+              workflow_id: ackWorkflowId
+            }),
+            { status: 202, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+    return bodies
+  }
+
+  const patch = (version: number, content: unknown): void =>
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'draft_patch',
+        data: {
+          workflow_id: 'wf-42',
+          base_version: version - 1,
+          version,
+          content
+        }
+      })
+    })
+
+  it("sends the active tab's saved workflow id and applies patches in place", async () => {
+    const tab = makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
+
+    // The ack confirmed the id we sent, so the patch lands IN the active tab
+    // (no new tab) and the graph write re-baselines the user-edit flag.
+    tab.isModified = false
+    const graph = { version: 0.4, nodes: [{ id: 1 }] }
+    patch(1, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries once without the speculative id when the server rejects it', async () => {
+    makeTab('someone-elses-uuid')
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (!url.includes('/messages'))
+          return new Response('{}', { status: 200 })
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+        bodies.push(body)
+        if (body.workflow_id !== undefined) {
+          return new Response(
+            JSON.stringify({ error: 'workflow not found or access denied' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response(
+          JSON.stringify({
+            thread_id: 'th-1',
+            message_id: 'm-1',
+            workflow_id: 'wf-fresh'
+          }),
+          { status: 202, headers: { 'Content-Type': 'application/json' } }
+        )
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies).toHaveLength(2)
+    expect(bodies[0]).toMatchObject({ workflow_id: 'someone-elses-uuid' })
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+
+    // The minted id was NOT adopted onto the active tab (it is not the id we
+    // sent), so its first patch takes the new-tab path, not the active tab.
+    const graph = { version: 0.4, nodes: [{ id: 9 }] }
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'draft_patch',
+        data: {
+          workflow_id: 'wf-fresh',
+          base_version: 0,
+          version: 1,
+          content: graph
+        }
+      })
+    })
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+    )
+  })
+
+  it('parks a patch for a backgrounded bound tab and applies it on refocus', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // The bound tab goes to the background before the patch lands.
+    const other: FakeTab = {
+      path: 'workflows/other.json',
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(other.path, other)
+    hostStores.workflow.activeWorkflow = other
+
+    const graph = { version: 0.4, nodes: [{ id: 3 }] }
+    patch(1, graph)
+    await nextTick()
+    await nextTick()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+
+    // Refocusing the bound tab applies the parked draft exactly once.
+    hostStores.workflow.activeWorkflow = tab
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+  })
+
+  it("leaves the edited tab alone when the user picks 'Open new tab'", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    tab.isModified = true
+    const graph = { version: 0.4, nodes: [{ id: 4 }] }
+    patch(1, graph)
+    await screen.findByText(i18n.global.t('agent.conflictTitle'))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.openNewTab') })
+    )
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+    )
+    expect(tab.isModified).toBe(true)
+  })
+
+  it('replays a parked draft on the next turn even when its version is unchanged', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    tab.isModified = true
+    patch(1, { version: 0.4, nodes: [] })
+    await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+    )
+
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'agent_message_done',
+        data: { message_id: 'm-1', thread_id: 'th-1' }
+      })
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    // No new patch arrives; the send itself must re-drive the parked draft,
+    // which re-raises the dialog against the still-edited tab.
+    await userEvent.type(screen.getByRole('textbox'), 'go ahead')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(
+      await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    ).toBeInTheDocument()
+  })
+
+  it('drops the parked draft when a new chat starts', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    tab.isModified = true
+    patch(1, { version: 0.4, nodes: [] })
+    await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+    )
+
+    // New chat: the abandoned thread's parked draft must not leak forward.
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+
+    // A stale patch for the abandoned workflow is rejected by the reset store;
+    // were it adopted, the send below would replay it onto the clean tab.
+    patch(2, { version: 0.4, nodes: [{ id: 6 }] })
+    await nextTick()
+    await nextTick()
+    tab.isModified = false
+
+    await userEvent.type(screen.getByRole('textbox'), 'fresh start')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
+
+    // The new conversation's own patches flow normally into the still-bound tab.
+    const graph = { version: 0.4, nodes: [{ id: 8 }] }
+    patch(3, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+  })
+
+  it('sends only the surviving chip ids after one is dismissed', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' },
+      { isNodeFake: true, id: 7, title: 'VAEDecode' }
+    ]
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+    expect(screen.getByText('VAEDecode')).toBeInTheDocument()
+
+    // Dismiss the first chip; the unchanged canvas selection must not resurrect it.
+    await userEvent.click(
+      screen.getAllByRole('button', { name: i18n.global.t('agent.remove') })[0]
+    )
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('textbox'), 'decode it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
+  })
+
+  it('raises the conflict dialog on a user-edited bound tab and honors the choice', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // The user edited the tab after the turn started: no silent overwrite.
+    tab.isModified = true
+    patch(1, { version: 0.4, nodes: [] })
+    expect(
+      await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    ).toBeInTheDocument()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+
+    // 'Keep mine' parks the draft: later patches stay un-applied this turn.
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
+    )
+    patch(2, { version: 0.4, nodes: [] })
+    await nextTick()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
+
+    // The next turn re-arms applies; the still-edited tab re-raises the dialog
+    // and 'Let the agent continue' overwrites in place.
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'agent_message_done',
+        data: { message_id: 'm-1', thread_id: 'th-1' }
+      })
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    await userEvent.type(screen.getByRole('textbox'), 'go on')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const graph = { version: 0.4, nodes: [{ id: 2 }] }
+    patch(3, graph)
+    await screen.findByText(i18n.global.t('agent.conflictTitle'))
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.letAgentContinue')
+      })
+    )
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+    expect(tab.isModified).toBe(false)
+  })
+
+  it('stages selected nodes as chips and sends their ids once', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 5, title: 'KSampler' }
+    ]
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('textbox'), 'tweak the sampler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['5'] } })
+    // Consumed on send: the chip clears and the same selection does not re-tag.
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 })
