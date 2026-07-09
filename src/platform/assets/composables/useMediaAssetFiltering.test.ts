@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -166,6 +166,92 @@ describe('useMediaAssetFiltering', () => {
       const { filteredAssets } = useMediaAssetFiltering(assets)
 
       expect(ids(filteredAssets.value)).toEqual(['b', 'a'])
+    })
+  })
+
+  describe('alphabetical sort', () => {
+    it('sorts A→Z by display name (case-insensitive)', () => {
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'b', name: 'banana.png' }),
+        makeAsset({ id: 'a', name: 'Apple.png' }),
+        makeAsset({ id: 'c', name: 'cherry.png' })
+      ])
+      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
+
+      sortBy.value = 'az'
+      expect(ids(filteredAssets.value)).toEqual(['a', 'b', 'c'])
+    })
+
+    it('sorts Z→A by display name (case-insensitive)', () => {
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'b', name: 'banana.png' }),
+        makeAsset({ id: 'a', name: 'Apple.png' }),
+        makeAsset({ id: 'c', name: 'cherry.png' })
+      ])
+      const { sortBy, filteredAssets } = useMediaAssetFiltering(assets)
+
+      sortBy.value = 'za'
+      expect(ids(filteredAssets.value)).toEqual(['c', 'b', 'a'])
+    })
+  })
+
+  describe('date filter', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function datedAssets() {
+      const now = Date.now()
+      return ref<AssetItem[]>([
+        makeAsset({ id: 'recent', name: 'a.png', createTime: now }),
+        makeAsset({
+          id: 'stale',
+          name: 'b.png',
+          createTime: now - 40 * 86_400_000
+        })
+      ])
+    }
+
+    it('returns every asset when no date preset is set', () => {
+      const { filteredAssets } = useMediaAssetFiltering(datedAssets())
+
+      expect(ids(filteredAssets.value).sort()).toEqual(['recent', 'stale'])
+    })
+
+    it('keeps only assets inside the selected preset window', () => {
+      const { dateFilter, filteredAssets } =
+        useMediaAssetFiltering(datedAssets())
+
+      dateFilter.value = 'month'
+      expect(ids(filteredAssets.value)).toEqual(['recent'])
+    })
+
+    it('today cuts off at local midnight', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0))
+      const midnight = new Date(2026, 5, 15, 0, 0, 0).getTime()
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'this-morning', name: 'a.png', createTime: midnight }),
+        makeAsset({ id: 'yesterday', name: 'b.png', createTime: midnight - 1 })
+      ])
+      const { dateFilter, filteredAssets } = useMediaAssetFiltering(assets)
+
+      dateFilter.value = 'today'
+      expect(ids(filteredAssets.value)).toEqual(['this-morning'])
+    })
+
+    it('year cuts off at January 1', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 5, 15))
+      const janFirst = new Date(2026, 0, 1).getTime()
+      const assets = ref<AssetItem[]>([
+        makeAsset({ id: 'this-year', name: 'a.png', createTime: janFirst }),
+        makeAsset({ id: 'last-year', name: 'b.png', createTime: janFirst - 1 })
+      ])
+      const { dateFilter, filteredAssets } = useMediaAssetFiltering(assets)
+
+      dateFilter.value = 'year'
+      expect(ids(filteredAssets.value)).toEqual(['this-year'])
     })
   })
 

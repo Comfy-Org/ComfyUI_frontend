@@ -6,14 +6,14 @@
     >
       <Button
         v-tooltip.top="{
-          value: $t('mediaAsset.selection.deselectAll'),
+          value: $t('mediaAsset.selection.unselectCount', { count }),
           showDelay: 300
         }"
         variant="inverted"
         size="icon-lg"
         type="button"
         data-testid="assets-deselect-selected"
-        :aria-label="$t('mediaAsset.selection.deselectAll')"
+        :aria-label="$t('mediaAsset.selection.unselectCount', { count })"
         class="rounded-lg hover:bg-base-background/10"
         @click="emit('deselect')"
       >

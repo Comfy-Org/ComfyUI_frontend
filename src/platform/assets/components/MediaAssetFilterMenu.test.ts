@@ -1,94 +1,109 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterMenu from '@/platform/assets/components/MediaAssetFilterMenu.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
-function renderMenu(mediaTypeFilters: string[] = []) {
-  const onUpdate = vi.fn()
+interface Overrides {
+  mediaTypeFilters?: string[]
+  dateFilter?: string
+}
+
+function renderMenu(overrides: Overrides = {}) {
+  const onMedia = vi.fn()
+  const onDate = vi.fn()
   const utils = render(MediaAssetFilterMenu, {
     props: {
-      mediaTypeFilters,
-      'onUpdate:mediaTypeFilters': onUpdate
+      mediaTypeFilters: overrides.mediaTypeFilters ?? [],
+      dateFilter: overrides.dateFilter ?? '',
+      'onUpdate:mediaTypeFilters': onMedia,
+      'onUpdate:dateFilter': onDate
     },
-    global: {
-      mocks: {
-        $t: (key: string) => key
-      }
-    }
+    global: { plugins: [i18n] }
   })
-  return { ...utils, onUpdate, user: userEvent.setup() }
+  return { ...utils, onMedia, onDate, user: userEvent.setup() }
 }
 
-const labelByType: Record<string, string> = {
-  image: 'sideToolbar.mediaAssets.filterImage',
-  video: 'sideToolbar.mediaAssets.filterVideo',
-  audio: 'sideToolbar.mediaAssets.filterAudio',
-  '3d': 'sideToolbar.mediaAssets.filter3D',
-  text: 'sideToolbar.mediaAssets.filterText'
+const CAT = {
+  media: 'Media type',
+  date: 'Date'
 }
 
-function getCheckbox(type: keyof typeof labelByType): HTMLElement {
-  return screen.getByRole('checkbox', { name: labelByType[type] })
+async function openMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Filter by' }))
+}
+
+function categoryItem(label: string) {
+  return screen.getByRole('menuitem', { name: new RegExp(label) })
 }
 
 describe('MediaAssetFilterMenu', () => {
-  it('renders all media-type checkboxes', () => {
-    renderMenu()
-
-    const checkboxes = screen.getAllByRole('checkbox')
-    expect(checkboxes).toHaveLength(5)
-    for (const type of Object.keys(labelByType)) {
-      expect(getCheckbox(type)).toBeTruthy()
-    }
+  it('lists every filter category', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+    expect(categoryItem(CAT.media)).toBeTruthy()
+    expect(categoryItem(CAT.date)).toBeTruthy()
   })
 
-  it('reflects checked state from the prop via aria-checked', () => {
-    renderMenu(['image', '3d'])
+  it('surfaces a matching value via flat search and applies it', async () => {
+    const { onMedia, user } = renderMenu()
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'video')
 
-    expect(getCheckbox('image').getAttribute('aria-checked')).toBe('true')
-    expect(getCheckbox('3d').getAttribute('aria-checked')).toBe('true')
-    expect(getCheckbox('video').getAttribute('aria-checked')).toBe('false')
-    expect(getCheckbox('audio').getAttribute('aria-checked')).toBe('false')
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Video' }))
+    expect(onMedia).toHaveBeenCalledWith(['video'])
   })
 
-  it('emits an array containing the new type when an unchecked box is clicked', async () => {
-    const { onUpdate, user } = renderMenu([])
-    await user.click(getCheckbox('video'))
+  it('applies a date preset via flat search', async () => {
+    const { onDate, user } = renderMenu()
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'today')
 
-    expect(onUpdate).toHaveBeenCalledTimes(1)
-    expect(onUpdate).toHaveBeenCalledWith(['video'])
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Today' }))
+    expect(onDate).toHaveBeenCalledWith('today')
   })
 
-  it('emits an array without the type when a checked box is clicked again', async () => {
-    const { onUpdate, user } = renderMenu(['image', 'audio'])
-    await user.click(getCheckbox('audio'))
+  it('moves focus into the results with arrow keys after searching', async () => {
+    const { user } = renderMenu()
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'a')
 
-    expect(onUpdate).toHaveBeenCalledWith(['image'])
+    const results = screen.getAllByRole('menuitemcheckbox')
+    await user.keyboard('{ArrowDown}')
+    expect(results[0]).toHaveFocus()
+
+    screen.getByRole('textbox').focus()
+    await user.keyboard('{ArrowUp}')
+    expect(results[results.length - 1]).toHaveFocus()
   })
 
-  it('appends to the existing filter list rather than replacing it', async () => {
-    const { onUpdate, user } = renderMenu(['image'])
-    await user.click(getCheckbox('video'))
+  it('toggles a media value off when it is already applied', async () => {
+    const { onMedia, user } = renderMenu({ mediaTypeFilters: ['video'] })
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'video')
 
-    expect(onUpdate).toHaveBeenCalledWith(['image', 'video'])
+    const row = screen.getByRole('menuitemcheckbox', { name: 'Video' })
+    expect(row).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(row)
+    expect(onMedia).toHaveBeenCalledWith([])
   })
 
-  it('toggles via keyboard (Enter and Space)', async () => {
-    const { onUpdate, user } = renderMenu([])
-
-    getCheckbox('image').focus()
-    await user.keyboard('{Enter}')
-    expect(onUpdate).toHaveBeenLastCalledWith(['image'])
-
-    getCheckbox('audio').focus()
-    await user.keyboard(' ')
-    expect(onUpdate).toHaveBeenLastCalledWith(['audio'])
+  it('shows Clear all and resets every facet when a filter is applied', async () => {
+    const { onMedia, onDate, user } = renderMenu({
+      mediaTypeFilters: ['image']
+    })
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Clear all' }))
+    expect(onMedia).toHaveBeenCalledWith([])
+    expect(onDate).toHaveBeenCalledWith('')
   })
 })
