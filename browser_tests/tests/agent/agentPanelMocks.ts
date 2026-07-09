@@ -237,8 +237,19 @@ export async function mockAgentBoot(
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  // Must satisfy WorkspaceTokenResponseSchema (workspaceAuthStore.ts): a bare
+  // {token} fails validation, and the auth recovery/retry loop then toasts
+  // over the docked panel, swallowing clicks.
   await page.route('**/api/auth/token', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
+    r.fulfill(
+      jsonRoute({
+        token: 'mock-workspace-token',
+        expires_at: '2100-01-01T00:00:00.000Z',
+        workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
+        role: 'owner',
+        permissions: ['owner:*']
+      })
+    )
   )
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/workspaces', (r) =>
