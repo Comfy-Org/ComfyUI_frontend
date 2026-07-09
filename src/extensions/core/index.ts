@@ -21,6 +21,7 @@ if (!isCloud) {
 import './noteNode'
 import './painter'
 import './previewAny'
+import './publishToWorkspace'
 import './saveText'
 import './rerouteNode'
 import './saveImageExtraOutput'

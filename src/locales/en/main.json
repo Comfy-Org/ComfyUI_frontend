@@ -4380,6 +4380,9 @@
       "failed": "Failed"
     }
   },
+  "publishToWorkspace": {
+    "widgetLabel": "Share with team"
+  },
   "exportToast": {
     "exportingAssets": "Exporting Assets",
     "preparingExport": "Preparing export...",
