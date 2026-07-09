@@ -159,8 +159,9 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 const { onClose, reason, onChooseTeam } = defineProps<{
@@ -188,7 +189,7 @@ const formattedMonthlyPrice = new Intl.NumberFormat(
     maximumFractionDigits: 0
   }
 ).format(MONTHLY_SUBSCRIPTION_PRICE)
-const commandStore = useCommandStore()
+const { openSupport } = useSupportContext()
 const telemetry = useTelemetry()
 
 // Always show custom pricing table for cloud subscriptions
@@ -219,13 +220,13 @@ const handleClose = () => {
   onClose()
 }
 
-const handleContactUs = async () => {
+const handleContactUs = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'subscription'
   })
-  await commandStore.execute('Comfy.ContactSupport')
+  openSupport(SupportForm.Billing, { productArea: 'Billing' })
 }
 
 const handleViewEnterprise = () => {
