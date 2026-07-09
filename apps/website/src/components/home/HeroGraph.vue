@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import HeroColorNode from './HeroColorNode.vue'
@@ -44,13 +45,15 @@ const NODE_W: Record<NodeId, number> = {
 
 // Whole graph is nudged left of the stage centre so the OUTPUT node bleeds less
 // far off the right edge.
-const positions = ref<Record<NodeId, Point>>({
+const INITIAL_POSITIONS: Record<NodeId, Point> = {
   image: { x: 16, y: 28 },
   texture: { x: 52, y: 512 },
   color: { x: 404, y: 446 },
   lighting: { x: 662, y: 446 },
   output: { x: 956, y: 110 }
-})
+}
+
+const positions = ref<Record<NodeId, Point>>(structuredClone(INITIAL_POSITIONS))
 
 const frameRef = ref<HTMLElement>()
 const stageRef = ref<HTMLElement>()
@@ -86,6 +89,18 @@ const stageStyle = computed(() => ({
   height: `${STAGE_H}px`,
   transform: `translateX(-50%) scale(${scale.value})`
 }))
+
+// Keeps a dragged node inside the stage: it can slide until it touches an edge
+// but not past it. Nodes authored to bleed off an edge (e.g. OUTPUT) keep that
+// original overflow as their limit, so grabbing them never snaps them inward.
+function clampPosition(id: NodeId, x: number, y: number): Point {
+  const maxX = Math.max(STAGE_W - NODE_W[id], INITIAL_POSITIONS[id].x)
+  const maxY = Math.max(
+    STAGE_H - (heights.value[id] ?? 0),
+    INITIAL_POSITIONS[id].y
+  )
+  return { x: clamp(x, 0, maxX), y: clamp(y, 0, maxY) }
+}
 
 function nodeStyle(id: NodeId) {
   return {
@@ -129,10 +144,11 @@ function onPointerMove(e: PointerEvent) {
   const dx = e.clientX - drag.px
   const dy = e.clientY - drag.py
   if (Math.hypot(dx, dy) < 4) return
-  positions.value[drag.id] = {
-    x: drag.ox + dx / scale.value,
-    y: drag.oy + dy / scale.value
-  }
+  positions.value[drag.id] = clampPosition(
+    drag.id,
+    drag.ox + dx / scale.value,
+    drag.oy + dy / scale.value
+  )
 }
 
 function onPointerUp() {
@@ -153,12 +169,7 @@ onBeforeUnmount(() => {
 
 const wires = computed(() => computeWires(anchors.value))
 
-const dots = computed<{ p: Point; accent: boolean }[]>(() =>
-  wires.value.flatMap((w) => [
-    { p: w.from, accent: w.accent },
-    { p: w.to, accent: w.accent }
-  ])
-)
+const dots = computed<Point[]>(() => wires.value.flatMap((w) => [w.from, w.to]))
 </script>
 
 <template>
@@ -183,44 +194,23 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
             v-for="(wire, i) in wires"
             :key="i"
             :d="wire.d"
-            :stroke="
-              wire.accent
-                ? 'var(--color-primary-comfy-yellow)'
-                : 'rgba(255,255,255,0.16)'
-            "
-            :stroke-width="wire.accent ? 2 : 1.5"
+            stroke="var(--color-primary-comfy-yellow)"
+            stroke-width="2"
             stroke-linecap="round"
           />
           <circle
             v-for="(dot, i) in dots"
             :key="`d${i}`"
-            :cx="dot.p.x"
-            :cy="dot.p.y"
-            :r="dot.accent ? 4 : 3"
-            :fill="
-              dot.accent
-                ? 'var(--color-primary-comfy-yellow)'
-                : 'rgba(255,255,255,0.3)'
-            "
+            :cx="dot.x"
+            :cy="dot.y"
+            r="4"
+            fill="var(--color-primary-comfy-yellow)"
           />
-          <!-- Energy pulses that flow toward the OUTPUT while a control node is
-               engaged; idle-hidden via opacity, animated through CSS. -->
-          <g :class="cn(activeNode && 'hero-wire-active')">
-            <path
-              v-for="(wire, i) in wires"
-              :key="`p${i}`"
-              :d="wire.d"
-              class="hero-wire-pulse"
-              stroke="var(--color-primary-comfy-yellow)"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              pathLength="1"
-              stroke-dasharray="0.18 0.82"
-            />
-          </g>
         </svg>
 
-        <div class="absolute top-[150px] left-[636px] z-20 -translate-x-1/2">
+        <div
+          class="pointer-events-none absolute top-[150px] left-[636px] z-40 -translate-x-1/2"
+        >
           <HeroHeadline :locale />
         </div>
 
@@ -228,35 +218,33 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="image"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing',
               dragging === 'image' && 'z-30 cursor-grabbing'
             )
           "
           :style="nodeStyle('image')"
           @pointerdown="onPointerDown('image', $event)"
         >
-          <HeroGraphNode :label="t('hero.node.image', locale)" accent>
-            <HeroImagePicker
-              :variants="imageVariants"
-              :active-id="activeId"
-              :locale
-              @select="(id) => (activeId = id)"
-            />
-          </HeroGraphNode>
+          <HeroImagePicker
+            :variants="imageVariants"
+            :active-id="activeId"
+            :locale
+            @select="(id) => (activeId = id)"
+          />
         </div>
 
         <div
           data-node="texture"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing',
               dragging === 'texture' && 'z-30 cursor-grabbing'
             )
           "
           :style="nodeStyle('texture')"
           @pointerdown="onPointerDown('texture', $event)"
         >
-          <HeroGraphNode :label="t('hero.node.texture', locale)" accent>
+          <HeroGraphNode :label="t('hero.node.texture', locale)">
             <div class="aspect-square w-full overflow-hidden rounded-xl">
               <img
                 :src="textureImage.src"
@@ -272,7 +260,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="color"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing',
               dragging === 'color' && 'z-30 cursor-grabbing'
             )
           "
@@ -293,7 +281,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="lighting"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing',
               dragging === 'lighting' && 'z-30 cursor-grabbing'
             )
           "
@@ -314,21 +302,19 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           data-node="output"
           :class="
             cn(
-              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              'absolute z-10 cursor-grab touch-none select-none active:cursor-grabbing',
               dragging === 'output' && 'z-30 cursor-grabbing'
             )
           "
           :style="nodeStyle('output')"
           @pointerdown="onPointerDown('output', $event)"
         >
-          <HeroGraphNode :label="t('hero.node.output', locale)">
-            <HeroOutputFrame
-              :controls
-              :variant="activeVariant"
-              :locale
-              class="h-[560px]"
-            />
-          </HeroGraphNode>
+          <HeroOutputFrame
+            :controls
+            :variant="activeVariant"
+            :locale
+            class="h-[560px]"
+          />
         </div>
       </div>
     </div>
@@ -340,7 +326,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
       <HeroHeadline :locale compact />
 
       <div class="mt-3 w-full max-w-sm sm:max-w-md">
-        <HeroGraphNode :label="t('hero.node.image', locale)" accent>
+        <HeroGraphNode :label="t('hero.node.image', locale)">
           <HeroImagePicker
             :variants="imageVariants"
             :active-id="activeId"
@@ -360,15 +346,15 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           >
             <path
               d="M50 3 C 50 22 25 14 25 34"
-              stroke="rgba(255,255,255,0.22)"
-              stroke-width="1.5"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="2"
               stroke-linecap="round"
               vector-effect="non-scaling-stroke"
             />
             <path
               d="M50 3 C 50 22 75 14 75 34"
-              stroke="rgba(255,255,255,0.22)"
-              stroke-width="1.5"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="2"
               stroke-linecap="round"
               vector-effect="non-scaling-stroke"
             />
@@ -377,10 +363,10 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
             class="bg-primary-comfy-yellow absolute top-0 left-1/2 size-1.5 -translate-x-1/2 rounded-full"
           />
           <span
-            class="absolute bottom-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+            class="bg-primary-comfy-yellow absolute bottom-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full"
           />
           <span
-            class="absolute bottom-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+            class="bg-primary-comfy-yellow absolute bottom-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full"
           />
         </div>
 
@@ -402,31 +388,31 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           >
             <path
               d="M25 2 C 25 18 50 14 50 33"
-              stroke="rgba(255,255,255,0.22)"
-              stroke-width="1.5"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="2"
               stroke-linecap="round"
               vector-effect="non-scaling-stroke"
             />
             <path
               d="M75 2 C 75 18 50 14 50 33"
-              stroke="rgba(255,255,255,0.22)"
-              stroke-width="1.5"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="2"
               stroke-linecap="round"
               vector-effect="non-scaling-stroke"
             />
           </svg>
           <span
-            class="absolute top-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+            class="bg-primary-comfy-yellow absolute top-0 left-1/4 size-1.5 -translate-x-1/2 rounded-full"
           />
           <span
-            class="absolute top-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full bg-white/40"
+            class="bg-primary-comfy-yellow absolute top-0 left-3/4 size-1.5 -translate-x-1/2 rounded-full"
           />
           <span
             class="bg-primary-comfy-yellow absolute bottom-0 left-1/2 size-1.5 -translate-x-1/2 rounded-full"
           />
         </div>
 
-        <HeroGraphNode :label="t('hero.node.output', locale)" accent>
+        <HeroGraphNode :label="t('hero.node.output', locale)">
           <HeroOutputFrame
             :controls
             :variant="activeVariant"

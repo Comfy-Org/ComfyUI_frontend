@@ -255,12 +255,11 @@
   opacity: 0;
 }
 
-/* The two headline lines are split apart with a gap; #hero-goo only bridges
-   them where this blob sits, so as the blob glides side to side it drags a
-   liquid link back and forth between the words. Travel is kept well inside the
-   narrower lower line (~±72px) so the bridge glides through the centre without
-   reaching either edge and poking out past a line. */
-@keyframes hero-liquid-link {
+/* The two headline lines are split apart by a gap; the connector sits in that
+   gap and glides side to side, keeping the words linked. Travel is kept well
+   inside the narrower lower line so the bridge never reaches an edge and pokes
+   out past a line. */
+@keyframes hero-headline-link {
   0% {
     transform: translate(calc(-50% - 64px), -50%) scale(1, 1.03);
   }
@@ -272,99 +271,9 @@
   }
 }
 
-/* Slow, mostly-horizontal glide keeps the liquid link premium and readable. */
-.hero-liquid-link {
-  animation: hero-liquid-link 5s ease-in-out infinite;
-}
-
-/* Workflow connectors: a short bright dash flows from each upstream node toward
-   the OUTPUT while a control node is engaged. path-length is normalized to 1 so
-   the dash travels at a consistent rate regardless of wire length. */
-.hero-wire-pulse {
-  stroke-dashoffset: 1;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.hero-wire-active .hero-wire-pulse {
-  opacity: 0.9;
-  animation: hero-wire-flow 1.2s linear infinite;
-}
-
-@keyframes hero-wire-flow {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* OUTPUT frame responds to an engaged control node with a soft neon rim and a
-   slow specular sweep — premium, not flashy. */
-.hero-output-live {
-  box-shadow:
-    0 0 0 1px rgb(242 255 89 / 0.35),
-    0 0 45px -8px rgb(242 255 89 / 0.45);
-}
-
-.hero-output-sweep::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 45%;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    rgb(255 255 255 / 0.16),
-    transparent
-  );
-  animation: hero-output-sweep 2.8s ease-in-out infinite;
-}
-
-@keyframes hero-output-sweep {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(160%);
-  }
-}
-
-@keyframes hero-live-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.hero-live-dot {
-  animation: hero-live-pulse 1.8s ease-in-out infinite;
-}
-
-/* Soft breathing glow inside the LIGHTING direction pad. */
-.hero-light-glow {
-  background: radial-gradient(
-    circle at 50% 40%,
-    rgb(242 255 89 / 0.25),
-    transparent 65%
-  );
-  animation: hero-light-breathe 3s ease-in-out infinite;
-}
-
-@keyframes hero-light-breathe {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.9;
-  }
+/* Slow, mostly-horizontal glide keeps the link premium and readable. */
+.hero-headline-link {
+  animation: hero-headline-link 5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

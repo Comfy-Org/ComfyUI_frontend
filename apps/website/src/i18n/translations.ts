@@ -90,6 +90,22 @@ const translations = {
     en: 'Output: couple at a cracked mirror in neon bathroom light',
     'zh-CN': '输出：霓虹浴室灯光下裂镜前的情侣'
   },
+  'hero.image.prompt1': {
+    en: 'Restage this portrait among glowing CRT screens, cyberpunk grade.',
+    'zh-CN': '将这张人像重置于发光的 CRT 屏幕之间，赛博朋克调色。'
+  },
+  'hero.image.prompt2': {
+    en: 'Relight this vase on a plinth in a dim library, cinematic grade.',
+    'zh-CN': '将花瓶重新打光，置于昏暗图书馆的基座上，电影级调色。'
+  },
+  'hero.image.prompt3': {
+    en: 'Set the deer before a neon skyline with an iridescent remap.',
+    'zh-CN': '让鹿站在霓虹天际线前，施以虹彩色彩重映射。'
+  },
+  'hero.image.prompt4': {
+    en: 'Push the mirror scene into glitchy neon bathroom light.',
+    'zh-CN': '将镜前场景推向故障感的霓虹浴室灯光。'
+  },
   'hero.image.pickerLabel': {
     en: 'Choose input image variant',
     'zh-CN': '选择输入图像变体'
@@ -115,16 +131,8 @@ const translations = {
   'hero.light.mode.studio': { en: 'Studio', 'zh-CN': '影棚' },
   'hero.light.intensity': { en: 'Light', 'zh-CN': '光强' },
   'hero.light.direction': { en: 'Light direction', 'zh-CN': '光照方向' },
-  'hero.output.grade': {
-    en: 'cinematic-grade_v2',
-    'zh-CN': 'cinematic-grade_v2'
-  },
-  'hero.output.colorActive': {
-    en: 'color remap active',
-    'zh-CN': '色彩重映射已启用'
-  },
-  'hero.output.lightingSuffix': { en: 'lighting', 'zh-CN': '光照' },
-  'hero.output.live': { en: 'Live preview', 'zh-CN': '实时预览' },
+  'hero.output.pillColor': { en: 'Color', 'zh-CN': '颜色' },
+  'hero.output.pillLighting': { en: 'Lighting', 'zh-CN': '光照' },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {

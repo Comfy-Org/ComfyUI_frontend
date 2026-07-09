@@ -23,6 +23,9 @@ function isExcludedFromSitemap(page: string): boolean {
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  server: {
+    port: Number(process.env.PORT) || 4321
+  },
   prefetch: { prefetchAll: true },
   redirects: {
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':

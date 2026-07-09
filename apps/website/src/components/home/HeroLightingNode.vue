@@ -66,10 +66,7 @@ function onUp(e: PointerEvent) {
         @pointercancel.stop="onUp"
       >
         <div
-          class="hero-light-glow pointer-events-none absolute inset-0 rounded-full"
-        />
-        <div
-          class="bg-primary-comfy-yellow pointer-events-none absolute size-3 -translate-1/2 rounded-full shadow-[0_0_10px_2px_rgb(242_255_89/0.6)]"
+          class="bg-primary-comfy-yellow pointer-events-none absolute size-3 -translate-1/2 rounded-full"
           :style="dotStyle"
         />
       </div>

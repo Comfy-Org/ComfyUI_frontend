@@ -14,7 +14,6 @@ export interface Wire {
   d: string
   from: Point
   to: Point
-  accent: boolean
 }
 
 type Axis = 'h' | 'v'
@@ -32,6 +31,16 @@ const bottomPort =
 const topPort =
   (f = 0.5): Port =>
   (r) => ({ x: r.x + r.w * f, y: r.y })
+// Enters the left edge at a fixed offset from the top, so a wire can point at
+// an element pinned inside the node (e.g. the OUTPUT pills) regardless of the
+// node's measured height.
+const leftPortAtY =
+  (y: number): Port =>
+  (r) => ({ x: r.x, y: r.y + y })
+
+// Vertical centers of the OUTPUT card's stacked COLOR / LIGHTING pills
+// (top-4 inset, ~29px pill, gap-2), in design coordinates.
+const OUTPUT_PILL_Y = { color: 31, lighting: 68 }
 
 function clampOffset(d: number): number {
   return Math.min(Math.max(Math.abs(d) * 0.5, 55), 120)
@@ -56,7 +65,6 @@ interface Connection {
   fromPort: Port
   toPort: Port
   axis: Axis
-  accent?: boolean
 }
 
 export const connections: Connection[] = [
@@ -65,28 +73,34 @@ export const connections: Connection[] = [
     to: 'texture',
     fromPort: bottomPort(0.4),
     toPort: topPort(0.5),
-    axis: 'v',
-    accent: true
+    axis: 'v'
   },
   {
     from: 'texture',
     to: 'color',
-    fromPort: rightPort(0.5),
+    fromPort: rightPort(0.35),
     toPort: leftPort(0.5),
     axis: 'h'
   },
   {
-    from: 'color',
+    from: 'texture',
     to: 'lighting',
-    fromPort: rightPort(0.5),
-    toPort: leftPort(0.45),
+    fromPort: rightPort(0.7),
+    toPort: leftPort(0.6),
+    axis: 'h'
+  },
+  {
+    from: 'color',
+    to: 'output',
+    fromPort: rightPort(0.3),
+    toPort: leftPortAtY(OUTPUT_PILL_Y.color),
     axis: 'h'
   },
   {
     from: 'lighting',
     to: 'output',
     fromPort: rightPort(0.4),
-    toPort: leftPort(0.4),
+    toPort: leftPortAtY(OUTPUT_PILL_Y.lighting),
     axis: 'h'
   }
 ]
@@ -102,7 +116,6 @@ export function computeWires(anchors: Partial<Record<NodeId, Rect>>): Wire[] {
       {
         from,
         to: dest,
-        accent: c.accent ?? false,
         d: spline(from, dest, c.axis)
       }
     ]

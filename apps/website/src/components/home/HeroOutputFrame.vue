@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import type { ImageVariant } from './heroGraphData'
@@ -21,47 +20,14 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
-const {
-  activeNode,
-  reducedMotion,
-  pointer,
-  outputFilter,
-  colorLayerStyle,
-  lightLayerStyle,
-  lightMode
-} = controls
+const { outputFilter, colorLayerStyle, lightLayerStyle } = controls
 
-const metaText = computed(
-  () =>
-    `${t('hero.output.grade', locale)} · ${t('hero.output.colorActive', locale)} · ${t(lightMode.value.labelKey, locale)} ${t('hero.output.lightingSuffix', locale)}`
-)
-
-function onMove(e: PointerEvent) {
-  if (reducedMotion.value || e.pointerType !== 'mouse') return
-  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  pointer.value = {
-    x: (e.clientX - r.left) / r.width,
-    y: (e.clientY - r.top) / r.height
-  }
-}
-
-function onLeave() {
-  pointer.value = null
-}
+const pill =
+  'flex items-center gap-1.5 rounded-xl bg-primary-comfy-yellow px-3.5 py-2 text-xs leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-ink uppercase'
 </script>
 
 <template>
-  <div
-    :class="
-      cn(
-        'relative w-full overflow-hidden rounded-xl transition-shadow duration-500',
-        activeNode && 'hero-output-live',
-        customClass
-      )
-    "
-    @pointermove="onMove"
-    @pointerleave="onLeave"
-  >
+  <div :class="cn('relative w-full overflow-hidden rounded-3xl', customClass)">
     <div class="relative size-full" :style="{ filter: outputFilter }">
       <Transition name="hero-glitch">
         <img
@@ -83,26 +49,17 @@ function onLeave() {
       class="pointer-events-none absolute inset-0 mix-blend-screen transition-opacity duration-500"
       :style="lightLayerStyle"
     />
-    <div
-      v-if="activeNode"
-      class="hero-output-sweep pointer-events-none absolute inset-0"
-    />
 
     <div
-      class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-black/70 to-transparent px-3 pt-6 pb-2"
+      class="pointer-events-none absolute top-4 left-4 flex flex-col items-start gap-2"
     >
-      <span class="truncate font-mono text-[0.6rem] text-white/70">
-        {{ metaText }}
+      <span :class="pill">
+        <span class="size-1.5 rounded-full bg-primary-comfy-ink" />
+        {{ t('hero.output.pillColor', locale) }}
       </span>
-      <span class="flex shrink-0 items-center gap-1">
-        <span
-          class="hero-live-dot bg-primary-comfy-yellow size-1.5 rounded-full"
-        />
-        <span
-          class="text-[0.6rem] font-medium tracking-wide whitespace-nowrap text-white/70 uppercase"
-        >
-          {{ t('hero.output.live', locale) }}
-        </span>
+      <span :class="pill">
+        <span class="size-1.5 rounded-full bg-primary-comfy-ink" />
+        {{ t('hero.output.pillLighting', locale) }}
       </span>
     </div>
   </div>

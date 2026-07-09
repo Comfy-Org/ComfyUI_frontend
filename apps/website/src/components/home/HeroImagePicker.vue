@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { computed } from 'vue'
 
+import HeroGraphNode from './HeroGraphNode.vue'
 import type { ImageVariant } from './heroGraphData'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -11,22 +12,12 @@ const {
   variants,
   activeId,
   locale = 'en',
-  previewSrc,
-  previewAlt,
-  previewTestId = 'hero-active-image',
-  hint,
   hidePreview = false,
   thumbClass = 'aspect-square'
 } = defineProps<{
   variants: readonly ImageVariant[]
   activeId: string
   locale?: Locale
-  // Override the large preview with the result the active input produces, so the
-  // mobile card can lead with the OUTPUT while the thumbnails stay the selector.
-  previewSrc?: string
-  previewAlt?: string
-  previewTestId?: string
-  hint?: string
   // Render only the thumbnail strip, e.g. beneath a standalone output frame.
   hidePreview?: boolean
   // Sizing for each thumbnail; defaults to square, overridable for tight rows.
@@ -39,11 +30,6 @@ const active = computed(
   () => variants.find((v) => v.id === activeId) ?? variants[0]
 )
 
-const preview = computed(() => ({
-  src: previewSrc ?? active.value.src,
-  alt: previewAlt ?? t(active.value.altKey, locale)
-}))
-
 // Hover (mouse) and focus (keyboard) both swap the active variant. Click stays
 // as the activation path for touch, where there is no hover.
 function selectOnHover(id: string, e: PointerEvent) {
@@ -53,25 +39,26 @@ function selectOnHover(id: string, e: PointerEvent) {
 
 <template>
   <div>
-    <div
-      v-if="!hidePreview"
-      class="relative aspect-square w-full overflow-hidden rounded-xl"
-    >
-      <Transition name="hero-glitch">
-        <img
-          :key="preview.src"
-          :src="preview.src"
-          :alt="preview.alt"
-          :data-testid="previewTestId"
-          draggable="false"
-          class="absolute inset-0 size-full object-cover"
-        />
-      </Transition>
-    </div>
+    <HeroGraphNode v-if="!hidePreview" :label="t('hero.node.image', locale)">
+      <p
+        class="mb-2.5 rounded-2xl bg-white/10 px-3 py-2 text-xs/relaxed text-primary-comfy-canvas"
+      >
+        {{ t(active.promptKey, locale) }}
+      </p>
 
-    <p v-if="hint" class="text-primary-warm-gray pl-1 text-xs/relaxed">
-      {{ hint }}
-    </p>
+      <div class="relative aspect-square w-full overflow-hidden rounded-xl">
+        <Transition name="hero-glitch">
+          <img
+            :key="active.src"
+            :src="active.src"
+            :alt="t(active.altKey, locale)"
+            data-testid="hero-active-image"
+            draggable="false"
+            class="absolute inset-0 size-full object-cover"
+          />
+        </Transition>
+      </div>
+    </HeroGraphNode>
 
     <div
       class="mt-2 flex gap-2"

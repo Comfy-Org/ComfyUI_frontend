@@ -44,11 +44,12 @@ describe('connections', () => {
     expect(pairs).not.toContain('image->color')
   })
 
-  it('chains image → texture → color → lighting → output', () => {
+  it('fans texture out to both controls, each feeding the output', () => {
     expect(connections.map((c) => `${c.from}->${c.to}`)).toEqual([
       'image->texture',
       'texture->color',
-      'color->lighting',
+      'texture->lighting',
+      'color->output',
       'lighting->output'
     ])
   })
@@ -66,11 +67,5 @@ describe('computeWires', () => {
   it('only emits wires for nodes that have been measured', () => {
     expect(computeWires({ image: anchors.image }).length).toBe(0)
     expect(computeWires(anchors).length).toBe(connections.length)
-  })
-
-  it('marks the image → texture wire as the accent wire', () => {
-    const wires = computeWires(anchors)
-    expect(wires[0].accent).toBe(true)
-    expect(wires.slice(1).every((w) => !w.accent)).toBe(true)
   })
 })
