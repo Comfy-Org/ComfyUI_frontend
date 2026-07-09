@@ -41,11 +41,20 @@ export interface AgentRestClientDeps {
   fetchImpl?: typeof fetch
 }
 
+// The client's canvas, uploaded with a turn so the server seeds the thread's
+// draft from it before the agent runs. base_version null force-seeds; a
+// non-null value guards against clobbering an agent write (server 409s).
+export interface WorkflowUpload {
+  content: unknown
+  base_version: number | null
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
+  workflow?: WorkflowUpload
 }
 
 interface IngestErrorBody {
@@ -129,6 +138,7 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.workflow !== undefined) body.workflow = req.workflow
     return request(
       `/api/agent/threads/${threadId}/messages`,
       await jsonInit('POST', body),
