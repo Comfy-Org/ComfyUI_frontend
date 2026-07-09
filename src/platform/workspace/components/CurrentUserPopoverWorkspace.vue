@@ -59,7 +59,7 @@
     <!-- Credits Section -->
 
     <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-amber-400" />
+      <i class="icon-[lucide--coins] text-sm text-amber-400" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"

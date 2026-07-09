@@ -2851,8 +2851,8 @@
       },
       "outOfCredits": {
         "title": "Out of credits",
-        "body": "Your team has used all its credits. Workflow runs are blocked until additional credits are added or the cycle resets on {date}.",
-        "bodyNoDate": "Your team has used all its credits. Workflow runs are blocked until additional credits are added.",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
