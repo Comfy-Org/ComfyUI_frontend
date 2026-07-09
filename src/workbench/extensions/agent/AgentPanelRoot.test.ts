@@ -46,9 +46,12 @@ vi.mock('@/scripts/api', () => {
   }
 })
 
-vi.mock('@/scripts/app', () => ({
-  app: { loadGraphData: vi.fn() }
+const appMock = vi.hoisted(() => ({
+  loadGraphData: vi.fn(),
+  graph: { nodes: [] as unknown[] }
 }))
+
+vi.mock('@/scripts/app', () => ({ app: appMock }))
 
 vi.mock(
   '@/platform/workflow/validation/schemas/workflowSchema',
@@ -144,6 +147,7 @@ beforeEach(() => {
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
+  appMock.graph.nodes = []
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -543,7 +547,7 @@ describe('AgentPanelRoot draft binding', () => {
             workflow_id: 'wf-42',
             base_version: version - 1,
             version,
-            content: { nodes: [] }
+            content: { nodes: [{ id: 1 }] }
           }
         })
       })
@@ -618,7 +622,7 @@ describe('AgentPanelRoot draft binding', () => {
           workflow_id: 'wf-42',
           base_version: 0,
           version: 1,
-          content: { version: 0.4, nodes: [] }
+          content: { version: 0.4, nodes: [{ id: 1 }] }
         }
       })
     })
@@ -1311,5 +1315,52 @@ describe('AgentPanelRoot workflow binding', () => {
       nodes: [{ id: 3 }]
     })
     expect(vi.mocked(app.loadGraphData).mock.calls[1][3]).toBe(tab)
+  })
+  it('parks an empty unbound draft instead of opening a blank tab', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'hi')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // The server's freshly minted draft is empty: nothing should apply.
+    patch(1, { version: 0.4, nodes: [] })
+    await nextTick()
+    await nextTick()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+
+    // The first patch with real nodes opens the tab as usual.
+    const graph = { version: 0.4, nodes: [{ id: 1 }] }
+    patch(2, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+    )
+  })
+
+  it('stages a chip from the @ node picker and sends its id', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [{ id: 9, title: 'VAE Decode' }]
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
+    )
+    await userEvent.click(await screen.findByText('VAE Decode'))
+    // Picked node staged as a removable chip.
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+    ).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('textbox'), 'explain this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['9'] } })
   })
 })

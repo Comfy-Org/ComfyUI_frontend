@@ -365,6 +365,32 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('(h2) tags ride as node_ids; a context note is added only without a workflow', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('explain', undefined, [{ id: '5', title: 'K' }])
+    const blindBody = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(blindBody.selection).toMatchObject({ node_ids: ['5'] })
+    expect(blindBody.selection).toHaveProperty('context')
+
+    // With a resolvable workflow the agent can read the tab: no note.
+    const rest2 = fakeRest()
+    const sighted = useAgentSession({
+      rest: rest2,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-1', speculative: false, tabPath: 'p' }),
+        adopted: () => {}
+      }
+    })
+    sighted.start()
+    await sighted.sendMessage('explain', undefined, [{ id: '5', title: 'K' }])
+    const sightedBody = vi.mocked(rest2.postMessage).mock.calls[0][1]
+    expect(sightedBody.selection).toMatchObject({ node_ids: ['5'] })
+    expect(sightedBody.selection).not.toHaveProperty('context')
+  })
+
   it("(i2) loadThread drops the previous thread's draft binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
