@@ -33,7 +33,11 @@
       </i18n-t>
     </div>
 
-    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
+    <PricingTable
+      :reason
+      class="flex-1"
+      @choose-team-workspace="handleChooseTeam"
+    />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
@@ -157,11 +161,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   onChooseTeam?: () => void
 }>()
 

@@ -7,7 +7,8 @@ import { remoteConfig } from './remoteConfig'
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    apiURL: vi.fn((route: string) => `/ComfyUI/api${route}`)
   }
 }))
 
@@ -43,9 +44,10 @@ describe('refreshRemoteConfig', () => {
 
       await refreshRemoteConfig({ useAuth: true })
 
-      expect(api.fetchApi).toHaveBeenCalledWith('/features', {
-        cache: 'no-store'
-      })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/features',
+        expect.objectContaining({ cache: 'no-store' })
+      )
       expect(global.fetch).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
@@ -59,20 +61,53 @@ describe('refreshRemoteConfig', () => {
       expect(api.fetchApi).toHaveBeenCalled()
       expect(global.fetch).not.toHaveBeenCalled()
     })
+
+    it('does not pass an abort signal on the authed branch (so it is never aborted)', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: true })
+
+      const init = vi.mocked(api.fetchApi).mock.calls[0][1]
+      expect(init?.signal).toBeUndefined()
+    })
   })
 
   describe('without auth', () => {
-    it('uses raw fetch when useAuth is false', async () => {
+    it('builds the no-auth url via api.apiURL so a path prefix is respected', async () => {
       vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: false })
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/features', {
-        cache: 'no-store'
-      })
+      expect(api.apiURL).toHaveBeenCalledWith('/features')
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/ComfyUI/api/features',
+        expect.objectContaining({ cache: 'no-store' })
+      )
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
+    })
+  })
+
+  describe('timeout', () => {
+    it('passes an AbortSignal so a wedged /features cannot hang startup', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      const init = vi.mocked(global.fetch).mock.calls[0][1]
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+    })
+
+    it('falls back to empty config when the request aborts', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(
+        new DOMException('Aborted', 'AbortError')
+      )
+
+      await refreshRemoteConfig({ useAuth: false })
+
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
     })
   })
 

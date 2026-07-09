@@ -7,12 +7,8 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  inputForWidget,
-  promotedInputSource,
-  promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -21,7 +17,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
@@ -30,7 +27,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 import { getWidgetIdForNode } from '@/utils/litegraphUtil'
-import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 
@@ -46,12 +42,11 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
   linked: boolean
-  originNodeId?: string
+  originNodeId?: NodeId
   originOutputName?: string
   type: string
 }
@@ -92,15 +87,13 @@ export interface SafeWidgetData {
   slotMetadata?: WidgetSlotMetadata
   /**
    * Execution ID of the interior node that owns the source widget.
-   * Only set for promoted widgets where the source node differs from the
-   * host subgraph node. Used for missing-model lookups that key by
-   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   * Only set for promoted widgets where the source node differs from the host
+   * subgraph node. Retained for source-scoped validation errors.
    */
   sourceExecutionId?: NodeExecutionId
   /**
-   * Interior source widget name. Only set for promoted widgets, where `name`
-   * is the host input slot name; missing-model lookups key by the interior
-   * widget name, which can differ from the slot name (e.g. after a rename).
+   * Interior source widget name. Only set for promoted widgets, where `name` is
+   * the host input slot name and the source widget name can differ.
    */
   sourceWidgetName?: string
   /** Tooltip text from the resolved widget. */
@@ -136,10 +129,10 @@ export interface VueNodeData {
 
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
-  vueNodeData: ReadonlyMap<string, VueNodeData>
+  vueNodeData: ReadonlyMap<NodeId, VueNodeData>
 
   // Access to original LiteGraph nodes (non-reactive)
-  getNode(id: WorkflowNodeId): LGraphNode | undefined
+  getNode(id: NodeId): LGraphNode | undefined
 
   // Lifecycle methods
   cleanup(): void
@@ -241,31 +234,20 @@ function resolvePromotedMetadata(
   node: SubgraphNode,
   widget: IBaseWidget
 ): PromotedWidgetMetadata | undefined {
-  const input = inputForWidget(node, widget)
-  if (!input?.widgetId) return undefined
-  const source = promotedInputSource(node, input)
+  const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
   if (!source) return undefined
 
-  const resolution = resolveConcretePromotedWidget(
-    node,
-    source.nodeId,
-    source.widgetName
+  ensurePromotedHostWidgetState(
+    source.input.widgetId,
+    source.input,
+    source.sourceWidget
   )
-  const resolved =
-    resolution.status === 'resolved' ? resolution.resolved : undefined
-  const sourceWidget = resolved?.widget
-  const sourceNode = resolved?.node
-
-  ensurePromotedHostWidgetState(input.widgetId, input, sourceWidget)
 
   return {
-    controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
-    isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
-    sourceExecutionId:
-      sourceNode && app.rootGraph
-        ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
-        : undefined,
-    sourceWidgetName: sourceWidget?.name
+    controlWidget: getControlWidget(source.sourceWidget),
+    isDOMWidget: isDOMBackedWidget(source.sourceWidget),
+    sourceExecutionId: source.sourceExecutionId,
+    sourceWidgetName: source.sourceWidgetName
   }
 }
 
@@ -353,14 +335,14 @@ function buildSlotMetadata(
 ): Map<string, WidgetSlotMetadata> {
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
-    let originNodeId: string | undefined
+    let originNodeId: NodeId | undefined
     let originOutputName: string | undefined
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
       const originNode = link ? graphRef.getNodeById(link.origin_id) : null
       if (link && originNode) {
-        originNodeId = String(link.origin_id)
+        originNodeId = link.origin_id
         originOutputName = originNode.outputs?.[link.origin_slot]?.name
       }
     }
@@ -471,7 +453,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
 
   return {
-    id: String(node.id),
+    id: node.id,
     title: typeof node.title === 'string' ? node.title : '',
     type: nodeType,
     mode: node.mode || 0,
@@ -498,12 +480,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
-  const vueNodeData = reactive(new Map<string, VueNodeData>())
+  const vueNodeData = reactive(new Map<NodeId, VueNodeData>())
 
   // Non-reactive storage for original LiteGraph nodes
-  const nodeRefs = new Map<string, LGraphNode>()
+  const nodeRefs = new Map<NodeId, LGraphNode>()
 
-  const refreshNodeSlots = (nodeId: string) => {
+  const refreshNodeSlots = (nodeId: NodeId) => {
     const nodeRef = nodeRefs.get(nodeId)
     const currentData = vueNodeData.get(nodeId)
 
@@ -518,14 +500,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Get access to original LiteGraph node (non-reactive)
-  const getNode = (id: WorkflowNodeId): LGraphNode | undefined => {
-    return nodeRefs.get(String(id))
+  const getNode = (id: NodeId): LGraphNode | undefined => {
+    return nodeRefs.get(id)
   }
 
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
-    const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
+    const currentNodes = new Set(graph._nodes.map((n) => n.id))
 
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
@@ -537,7 +519,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
-      const id = String(node.id)
+      const id = node.id
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
@@ -555,7 +537,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
+    const id = node.id
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -610,8 +592,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  const dropNodeReferences = (node: LGraphNode) => {
-    const id = String(node.id)
+  const dropNodeReferences = (id: NodeId) => {
     nodeRefs.delete(id)
     vueNodeData.delete(id)
   }
@@ -620,9 +601,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
+    const id = node.id
+
+    // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
+    dropNodeReferences(id)
     originalCallback?.(node)
   }
 
@@ -670,7 +654,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const beforeNodeRemovedListener = (
       e: CustomEvent<{ node: LGraphNode }>
     ) => {
-      dropNodeReferences(e.detail.node)
+      dropNodeReferences(e.detail.node.id)
     }
     graph.events.addEventListener(
       'node:before-removed',
@@ -681,7 +665,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
     } = {
       'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
+        const nodeId = toNodeId(propertyEvent.nodeId)
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
@@ -777,15 +761,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
       },
       'node:slot-errors:changed': (slotErrorsEvent) => {
-        refreshNodeSlots(String(slotErrorsEvent.nodeId))
+        refreshNodeSlots(toNodeId(slotErrorsEvent.nodeId))
       },
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
-          refreshNodeSlots(String(slotLinksEvent.nodeId))
+          refreshNodeSlots(toNodeId(slotLinksEvent.nodeId))
         }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
-        const nodeId = String(slotLabelEvent.nodeId)
+        const nodeId = toNodeId(slotLabelEvent.nodeId)
         const nodeRef = nodeRefs.get(nodeId)
         if (!nodeRef) return
 
