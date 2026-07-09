@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { ResultItemImpl } from '@/stores/queueStore'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -17,6 +18,11 @@ const appModeState = vi.hoisted(() => ({
 
 const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false
+}))
+
+const linearOutputState = vi.hoisted(() => ({
+  selectedId: null as string | null,
+  isFollowing: true
 }))
 
 const spies = vi.hoisted(() => ({
@@ -45,6 +51,10 @@ vi.mock('@/renderer/extensions/linearMode/useOutputHistory', async () => {
     })
   }
 })
+
+vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
+  useLinearOutputStore: () => linearOutputState
+}))
 
 vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
@@ -106,7 +116,9 @@ function renderPreview(
         },
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
-        MediaOutputPreview: true,
+        MediaOutputPreview: {
+          template: '<div data-testid="media-output-preview" />'
+        },
         OutputHistory: outputHistoryStub
       }
     }
@@ -120,6 +132,8 @@ describe('LinearPreview', () => {
     appModeState.isBuilderMode = false
     appModeState.isArrangeMode = false
     outputHistoryState.isWorkflowActive = false
+    linearOutputState.selectedId = null
+    linearOutputState.isFollowing = true
   })
 
   it('renders the welcome screen and output history when idle', () => {
@@ -156,6 +170,36 @@ describe('LinearPreview', () => {
     await user.click(screen.getByTestId('generating-screen'))
 
     expect(spies.cancelActiveWorkflowJobs).toHaveBeenCalled()
+  })
+
+  it('shows the selected output instead of the generating screen when browsing history during a run', async () => {
+    outputHistoryState.isWorkflowActive = true
+    linearOutputState.selectedId = 'history:asset-1:0'
+    linearOutputState.isFollowing = false
+
+    const output = new ResultItemImpl({
+      filename: 'old.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    })
+    renderPreview({}, { output, canShowPreview: false })
+
+    expect(
+      await screen.findByTestId('media-output-preview')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('generating-screen')).not.toBeInTheDocument()
+  })
+
+  it('keeps the generating screen when an in-progress slot is selected during a run', () => {
+    outputHistoryState.isWorkflowActive = true
+    linearOutputState.selectedId = 'slot:job-1-0'
+    linearOutputState.isFollowing = false
+
+    renderPreview()
+
+    expect(screen.getByTestId('generating-screen')).toBeInTheDocument()
   })
 
   it('disables the selection-dependent actions when nothing is selected', () => {

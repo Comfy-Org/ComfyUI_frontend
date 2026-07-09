@@ -906,6 +906,48 @@ describe('linearOutputStore', () => {
     ])
   })
 
+  it('keeps a streaming latent preview on top, then lets outputs cover it', () => {
+    vi.useFakeTimers()
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    store.onLatentPreview('job-1', 'blob:frame-1')
+    vi.advanceTimersByTime(16)
+    expect(store.generatingCards[0].state).toBe('latent')
+
+    // Non-selected output covers the last frame...
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'extra.png', subfolder: '', type: 'output' }],
+        '1'
+      )
+    )
+    expect(store.generatingCards[0].output?.filename).toBe('extra.png')
+
+    // ...until the next frame surfaces again
+    store.onLatentPreview('job-1', 'blob:frame-2')
+    vi.advanceTimersByTime(16)
+    expect(store.generatingCards[0].state).toBe('latent')
+    expect(store.generatingCards[0].latentPreviewUrl).toBe('blob:frame-2')
+
+    // Node finishes: final output leads, latent gone
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'final.png', subfolder: '', type: 'output' }],
+        '2'
+      )
+    )
+    expect(store.generatingCards[0].output?.filename).toBe('final.png')
+    expect(store.generatingCards.some((c) => c.state === 'latent')).toBe(false)
+    vi.useRealTimers()
+  })
+
   it('clears stale non-selected cards from a prior run on the next job start', () => {
     selectedOutputsRef.value = ['2']
     const store = useLinearOutputStore()

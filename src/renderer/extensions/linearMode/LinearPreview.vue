@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -21,6 +21,7 @@ import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
@@ -32,9 +33,16 @@ const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
+const linearOutputStore = useLinearOutputStore()
 const { mobile } = defineProps<{
   mobile?: boolean
 }>()
+
+const isBrowsingHistory = computed(
+  () =>
+    !linearOutputStore.isFollowing &&
+    (linearOutputStore.selectedId?.startsWith('history:') ?? false)
+)
 
 const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
@@ -146,7 +154,7 @@ async function loadWorkflow(item: AssetItem | undefined) {
     </Button>
   </section>
   <GeneratingScreen
-    v-if="isWorkflowActive"
+    v-if="isWorkflowActive && !isBrowsingHistory"
     @stop="cancelActiveWorkflowJobs()"
   />
   <ImagePreview

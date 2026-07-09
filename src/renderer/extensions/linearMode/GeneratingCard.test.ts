@@ -1,3 +1,4 @@
+/* eslint-disable testing-library/no-container, testing-library/no-node-access -- decorative media has no ARIA role to query */
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -32,7 +33,6 @@ describe('GeneratingCard', () => {
       state: 'latent',
       latentPreviewUrl: 'blob:preview'
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative <img> has no ARIA role
     expect(container.querySelector('img')).toHaveAttribute(
       'src',
       'blob:preview'
@@ -48,7 +48,6 @@ describe('GeneratingCard', () => {
       state: 'image',
       output: out
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative <img> has no ARIA role
     expect(container.querySelector('img')).toHaveAttribute('src', out.url)
   })
 
@@ -61,9 +60,7 @@ describe('GeneratingCard', () => {
       state: 'image',
       output: out
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video>/<img> have no ARIA role in happy-dom
     expect(container.querySelector('img')).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     expect(container.querySelector('video')).toHaveAttribute('src', out.url)
   })
 
@@ -75,11 +72,8 @@ describe('GeneratingCard', () => {
       state: 'image',
       output: output('sound.flac', 'audio')
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative media/icon have no ARIA role
     expect(container.querySelector('img')).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative media/icon have no ARIA role
     expect(container.querySelector('video')).not.toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative icon has no ARIA role
     expect(container.querySelector('i')).toBeInTheDocument()
   })
 
@@ -91,7 +85,6 @@ describe('GeneratingCard', () => {
       state: 'latent',
       latentPreviewUrl: 'blob:preview'
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative <img> has no ARIA role
     const img = container.querySelector('img')!
     expect(img).toHaveClass('opacity-0')
 

@@ -107,8 +107,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
       if (existing) {
         const wasEmpty = existing.state === 'skeleton'
+        // Fresh seq per frame keeps the streaming preview newest in the fan
         replaceItem(existing.id, (i) => ({
           ...i,
+          seq: nextSeq++,
           state: 'latent',
           latentPreviewUrl: url
         }))
@@ -162,8 +164,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     )
 
     if (skeletonItem) {
+      // Fresh seq puts the finished output above cards that arrived mid-run
       const imageItem: InProgressItem = {
         ...skeletonItem,
+        seq: nextSeq++,
         state: 'image',
         output: newOutputs[0],
         latentPreviewUrl: undefined
@@ -399,6 +403,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     generatingCards,
     resolvedOutputsCache,
     selectedId,
+    isFollowing,
     pendingResolve,
     select,
     selectAsLatest,
