@@ -409,6 +409,29 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(sightedBody.selection?.context).not.toContain('ask them to save')
   })
 
+  it('(h4) attaches the workflow snapshot and reports the upload to adopted', async () => {
+    const rest = fakeRest()
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted,
+        snapshot: () => ({
+          content: { nodes: [{ id: 1 }] },
+          base_version: null
+        })
+      }
+    })
+    session.start()
+    await session.sendMessage('hi')
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toMatchObject({
+      workflow: { content: { nodes: [{ id: 1 }] }, base_version: null }
+    })
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, true)
+  })
+
   it('(h3) a selection whose definitions all dropped does not claim they are included', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })

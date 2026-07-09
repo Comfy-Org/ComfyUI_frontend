@@ -4,7 +4,10 @@ import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
-import type { AgentRestClient } from '../../services/agent/agentRestClient'
+import type {
+  AgentRestClient,
+  WorkflowUpload
+} from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
@@ -76,7 +79,14 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   workflow?: {
     current(): WorkflowTurnContext | undefined
-    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    adopted(
+      workflowId: string,
+      sent: WorkflowTurnContext | undefined,
+      uploaded: boolean
+    ): void
+    // The canvas snapshot to seed the server draft with, or undefined when
+    // unchanged since the last upload.
+    snapshot?(): WorkflowUpload | undefined
   }
 }
 
@@ -187,13 +197,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     sending.value = true
     const wfContext = workflow?.current()
+    const upload = workflow?.snapshot?.()
     const input = {
       content: text,
       selection:
         tags !== undefined && tags.length > 0
           ? selectionPayload(tags, wfContext !== undefined)
           : undefined,
-      attachments: attachments?.map((attachment) => attachment.ref)
+      attachments: attachments?.map((attachment) => attachment.ref),
+      workflow: upload
     }
     async function postTurn(threadId: string) {
       try {
@@ -216,7 +228,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
         draftStore.bind(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+        workflow?.adopted(ack.workflow_id, wfContext, upload !== undefined)
       }
       // The ONE branding seam: the server-minted message_id becomes the TurnId.
       const turnId = ack.message_id as TurnId

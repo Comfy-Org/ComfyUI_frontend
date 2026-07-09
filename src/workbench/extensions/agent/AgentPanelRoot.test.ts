@@ -46,11 +46,17 @@ vi.mock('@/scripts/api', () => {
   }
 })
 
-const appMock = vi.hoisted(() => ({
-  loadGraphData: vi.fn(),
-  graph: { nodes: [] as unknown[] },
-  canvas: undefined as { graph: { nodes: unknown[] } } | undefined
-}))
+const appMock = vi.hoisted(() => {
+  const graph = {
+    nodes: [] as unknown[],
+    serialize: () => ({ version: 0.4, nodes: graph.nodes })
+  }
+  return {
+    loadGraphData: vi.fn(),
+    graph,
+    canvas: undefined as { graph: { nodes: unknown[] } } | undefined
+  }
+})
 
 vi.mock('@/scripts/app', () => ({ app: appMock }))
 
@@ -932,7 +938,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('retries once without the speculative id when the server rejects it', async () => {
-    makeTab('someone-elses-uuid')
+    const tab = makeTab('someone-elses-uuid')
     const bodies: unknown[] = []
     vi.stubGlobal(
       'fetch',
@@ -968,8 +974,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'someone-elses-uuid' })
     expect(bodies[1]).not.toHaveProperty('workflow_id')
 
-    // The minted id was NOT adopted onto the active tab (it is not the id we
-    // sent), so its first patch takes the new-tab path, not the active tab.
+    // The send uploaded this tab's canvas, so the minted id binds to it and
+    // its first patch applies IN the active tab (the draft mirrors the tab).
     const graph = { version: 0.4, nodes: [{ id: 9 }] }
     socket.emit('message', {
       data: JSON.stringify({
@@ -983,7 +989,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     })
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
   })
 
@@ -1062,7 +1068,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     tab.isModified = true
-    patch(1, { version: 0.4, nodes: [] })
+    patch(1, { version: 0.4, nodes: [{ id: 2 }] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     // The X close is a defer, same as Cancel: nothing applies.
     await userEvent.click(
@@ -1098,7 +1104,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     tab.isModified = true
-    patch(1, { version: 0.4, nodes: [] })
+    patch(1, { version: 0.4, nodes: [{ id: 2 }] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('g.cancel') })
@@ -1174,7 +1180,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     // The user edited the tab after the turn started: no silent overwrite.
     tab.isModified = true
-    patch(1, { version: 0.4, nodes: [] })
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
     expect(
       await screen.findByText(i18n.global.t('agent.conflictTitle'))
     ).toBeInTheDocument()
@@ -1184,7 +1190,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
-    patch(2, { version: 0.4, nodes: [] })
+    patch(2, { version: 0.4, nodes: [{ id: 1 }] })
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(
@@ -1227,7 +1233,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     tab.isModified = true
-    patch(1, { version: 0.4, nodes: [] })
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
@@ -1318,8 +1324,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     expect(vi.mocked(app.loadGraphData).mock.calls[1][3]).toBe(tab)
   })
-  it('parks an empty unbound draft instead of opening a blank tab', async () => {
-    makeTab()
+  it('parks an empty minted draft, then applies the first real patch to the uploading tab', async () => {
+    const tab = makeTab()
     mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1334,11 +1340,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // The first patch with real nodes opens the tab as usual.
+    // The send uploaded this tab's canvas, so the minted id is bound to it
+    // and the first patch with real nodes applies in place.
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(2, graph)
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
   })
 
@@ -1397,5 +1404,118 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({
       selection: { node_ids: ['12'], nodes: [serialized] }
     })
+  })
+
+  it('uploads the canvas once per change and binds the minted id for in-place applies', async () => {
+    const tab = makeTab()
+    const bodies = mockMessagesEndpoint('wf-mint')
+    appMock.graph.nodes = [{ id: 1 }]
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'help me')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // First send carries the serialized canvas; the tab is unsaved, so no id.
+    expect(bodies[0]).toMatchObject({
+      workflow: {
+        content: { version: 0.4, nodes: [{ id: 1 }] },
+        base_version: null
+      }
+    })
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'agent_message_done',
+        data: { message_id: 'm-1', thread_id: 'th-1' }
+      })
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    // Unchanged graph: the second send skips the upload.
+    await userEvent.type(screen.getByRole('textbox'), 'and more')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(2))
+    expect(bodies[1]).not.toHaveProperty('workflow')
+
+    // The uploaded draft mirrors the tab, so the minted id applies in place.
+    const graph = { version: 0.4, nodes: [{ id: 2 }] }
+    socket.emit('message', {
+      data: JSON.stringify({
+        type: 'draft_patch',
+        data: {
+          workflow_id: 'wf-mint',
+          base_version: 0,
+          version: 1,
+          content: graph
+        }
+      })
+    })
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+  })
+
+  it('parks an empty draft even for the bound tab', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'help me')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    // The server's initial empty draft must neither blank the bound tab nor
+    // raise the conflict dialog against a user-edited one.
+    tab.isModified = true
+    patch(1, { version: 0.4, nodes: [] })
+    await nextTick()
+    await nextTick()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('re-uploads the canvas after a failed send', async () => {
+    makeTab()
+    appMock.graph.nodes = [{ id: 1 }]
+    const bodies: unknown[] = []
+    let calls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (!url.includes('/messages') || init?.method !== 'POST')
+          return new Response('{}', { status: 200 })
+        calls += 1
+        bodies.push(JSON.parse(String(init?.body)))
+        if (calls === 1) return new Response('{}', { status: 500 })
+        return new Response(
+          JSON.stringify({
+            thread_id: 'th-1',
+            message_id: 'm-1',
+            workflow_id: 'wf-mint'
+          }),
+          { status: 202, headers: { 'Content-Type': 'application/json' } }
+        )
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'one')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+
+    // The failed send consumed the guard without reaching the server; the
+    // retry must carry the canvas again.
+    await userEvent.type(screen.getByRole('textbox'), 'two')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(2))
+    expect(bodies[0]).toHaveProperty('workflow')
+    expect(bodies[1]).toHaveProperty('workflow')
   })
 })
