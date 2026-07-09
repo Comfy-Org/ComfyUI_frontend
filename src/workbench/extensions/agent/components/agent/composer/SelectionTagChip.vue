@@ -18,10 +18,10 @@ const { t } = useI18n()
     <button
       type="button"
       :aria-label="t('agent.remove')"
-      class="text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-4 items-center justify-center rounded-full transition-colors"
+      class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg -my-1 -mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full transition-colors"
       @click="emit('remove')"
     >
-      <span class="icon-[lucide--x] size-3" />
+      <span class="icon-[lucide--x] size-3.5" />
     </button>
   </span>
 </template>
