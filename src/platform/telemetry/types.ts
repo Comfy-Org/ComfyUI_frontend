@@ -71,16 +71,26 @@ export interface AuthErrorMetadata {
  * Survey response data for user profiling
  * Maps 1-to-1 with actual survey fields
  */
+
+/** Survey field ids → answers. Fields are backend-overridable, so all optional. */
 export interface SurveyResponses {
+  // Current default schema (see defaultSurveySchema.ts)
+  intent?: string | string[]
+  intentOther?: string
+  experience?: string
+  focus?: string
+  source?: string
+  sourceOther?: string
+  source_social?: string
+  // Legacy fields — only emitted by older backend-supplied schemas, never by
+  // the current default. Kept so historical responses still typecheck.
   familiarity?: string
   industry?: string
   useCase?: string
   making?: string[]
   role?: string
   teamSize?: string
-  source?: string
   usage?: string
-  intent?: string[]
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
