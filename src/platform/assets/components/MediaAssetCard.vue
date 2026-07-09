@@ -2,14 +2,7 @@
   <div
     ref="cardContainerRef"
     role="button"
-    :aria-label="
-      asset
-        ? $t('assetBrowser.ariaLabel.assetCard', {
-            name: getAssetDisplayName(asset),
-            type: fileKind
-          })
-        : $t('assetBrowser.ariaLabel.loadingAsset')
-    "
+    :aria-label="cardAriaLabel"
     :tabindex="loading ? -1 : 0"
     :aria-pressed="selected"
     :class="
@@ -130,10 +123,15 @@
             </Button>
           </div>
         </div>
-        <!-- File details -->
+        <!-- File details + owner name -->
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span v-if="formattedDuration">{{ formattedDuration }}</span>
           <span v-if="metaInfo">{{ metaInfo }}</span>
+          <AssetOwnerBadge
+            v-if="sharedOwner"
+            :owner="sharedOwner"
+            class="ml-auto"
+          />
         </div>
       </div>
     </div>
@@ -144,6 +142,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -159,7 +158,9 @@ import {
 } from '@/utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
+import { assetCardAriaLabel } from '../utils/assetAriaLabel'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { useAssetSharing } from '../composables/useAssetSharing'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -168,6 +169,7 @@ import {
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import AssetOwnerBadge from './AssetOwnerBadge.vue'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -220,6 +222,24 @@ const imageDimensions = ref<{ width: number; height: number } | undefined>()
 const isHovered = useElementHover(cardContainerRef)
 
 const actions = useMediaAssetActions()
+const sharing = useAssetSharing()
+
+// Owner shown on shared cards; private assets show nothing.
+const sharedOwner = computed(() =>
+  asset ? sharing.sharedOwnerFor(asset.id) : undefined
+)
+
+const { t } = useI18n()
+
+const cardAriaLabel = computed(() =>
+  asset
+    ? assetCardAriaLabel(t, {
+        name: getAssetDisplayName(asset),
+        type: fileKind.value,
+        owner: sharedOwner.value
+      })
+    : t('assetBrowser.ariaLabel.loadingAsset')
+)
 
 // Get asset type from tags
 const assetType = computed(() => {
