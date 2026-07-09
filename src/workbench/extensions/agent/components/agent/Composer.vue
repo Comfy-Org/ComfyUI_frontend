@@ -4,23 +4,28 @@ import { useI18n } from 'vue-i18n'
 import Textarea from '../ui/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
+import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
+import SelectionTagChip from './composer/SelectionTagChip.vue'
 
 const {
   streaming = false,
   submitting = false,
-  canAttach = false
+  canAttach = false,
+  selectionTags = []
 } = defineProps<{
   streaming?: boolean
   submitting?: boolean
   canAttach?: boolean
+  selectionTags?: SelectedNode[]
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
   stop: []
   attach: []
+  removeTag: [id: string]
 }>()
 
 const { t } = useI18n()
@@ -50,6 +55,15 @@ defineExpose({
   <div
     class="border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors"
   >
+    <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
+      <SelectionTagChip
+        v-for="tag in selectionTags"
+        :key="tag.id"
+        :title="tag.title"
+        @remove="emit('removeTag', tag.id)"
+      />
+    </div>
+
     <div
       v-if="composer.attachments.value.length"
       class="flex flex-wrap gap-1.5 px-4 pt-3"

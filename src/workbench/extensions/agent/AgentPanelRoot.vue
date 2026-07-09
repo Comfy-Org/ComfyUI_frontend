@@ -5,22 +5,33 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
+import type { ConflictChoice } from './components/agent/safety/safetyTypes'
 import { useAttachment } from './composables/agent/useAttachment'
+import type { SelectedNode } from './composables/agent/useCanvasSelection'
+import { useCanvasSelection } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import type { AgentThreadSummary } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
+import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
+import { useAgentDraftStore } from './stores/agent/agentDraftStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { createReconnectingEventSource } from './services/agent/agentEventSource'
@@ -44,6 +55,53 @@ const rest = createAgentRestClient({
 // close/reopen) so the panel is not left deaf after a reconnect.
 const events = createReconnectingEventSource(api)
 
+const workflowStore = useWorkflowStore()
+const bindingStore = useAgentWorkflowTabBindingStore()
+const draftStore = useAgentDraftStore()
+const agentPanelStore = useAgentPanelStore()
+
+// B7 @-tagging: selected nodes stage removable chips; consume() on send clears
+// them and the same selection does not re-tag until it changes.
+const canvasStore = useCanvasStore()
+const selectedNodes = computed<SelectedNode[]>(() =>
+  canvasStore.selectedItems.filter(isLGraphNode).map((node) => ({
+    id: String(node.id),
+    title: node.title || node.type
+  }))
+)
+const {
+  staged: selectionTags,
+  consume: consumeSelection,
+  remove: removeSelectionTag
+} = useCanvasSelection({
+  selection: selectedNodes,
+  isLive: () => agentPanelStore.isOpen
+})
+
+// A bound tab resolves to its id; a cloud-saved tab offers its persisted uuid
+// speculatively (the server 403s foreign ids and the send retries without).
+function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
+  const active = workflowStore.activeWorkflow
+  if (!active) return undefined
+  const bound = bindingStore.workflowIdFor(active.path)
+  if (bound !== undefined)
+    return { id: bound, speculative: false, tabPath: active.path }
+  const savedId = active.activeState?.id
+  return typeof savedId === 'string'
+    ? { id: savedId, speculative: true, tabPath: active.path }
+    : undefined
+}
+
+// Bind only when the server confirmed the id we sent for that tab; a freshly
+// minted id stays unbound so its first patch opens (and binds) its own tab.
+function onWorkflowAdopted(
+  workflowId: string,
+  sent: WorkflowTurnContext | undefined
+): void {
+  if (sent !== undefined && sent.id === workflowId)
+    bindingStore.bind(workflowId, sent.tabPath)
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -57,7 +115,18 @@ const {
   threadId,
   listThreads,
   loadThread
-} = useAgentSession({ rest, events })
+} = useAgentSession({
+  rest,
+  events,
+  selection: () => {
+    const tags = consumeSelection()
+    return tags.length > 0 ? { node_ids: tags.map((tag) => tag.id) } : undefined
+  },
+  workflow: {
+    current: activeWorkflowTurnContext,
+    adopted: onWorkflowAdopted
+  }
+})
 
 const noticeSeverity = {
   error: 'error',
@@ -95,22 +164,130 @@ function surfaceDraftApplyFailure(details: string): void {
   executionErrorStore.showErrorOverlay()
 }
 
-useDraftCanvasApply((content) => {
-  void (async () => {
-    const workflow = await validateComfyWorkflow(content, (error) => {
-      surfaceDraftApplyFailure(error)
-    })
-    if (!workflow) return
-    try {
-      await app.loadGraphData(workflow)
-      draftRejectionNotified = false
-    } catch (error) {
-      surfaceDraftApplyFailure(
-        error instanceof Error ? error.message : String(error)
+// B16 graph write: patches route to their workflow_id's bound tab — in place when
+// active, lazily on refocus, via the conflict dialog when the user edited the tab.
+const conflictOpen = ref(false)
+// 'Keep mine' parks the draft until the user's next turn re-arms applies.
+let applySuppressed = false
+let lastApplied: { workflowId: string; version: number } | null = null
+let applying = false
+let reapplyQueued = false
+
+function boundTabFor(workflowId: string): ComfyWorkflow | null {
+  const path = bindingStore.tabPathFor(workflowId)
+  return path === undefined ? null : workflowStore.getWorkflowByPath(path)
+}
+
+async function loadDraft(
+  workflowId: string,
+  version: number,
+  content: Record<string, unknown>,
+  tab: ComfyWorkflow | null
+): Promise<void> {
+  const workflow = await validateComfyWorkflow(content, (error) => {
+    surfaceDraftApplyFailure(error)
+  })
+  if (!workflow) return
+  // A user tab-switch mid-load must not misbind: identify the minted tab by
+  // diffing the open set rather than trusting post-await focus.
+  const openBefore = new Set(workflowStore.openWorkflows.map((w) => w.path))
+  try {
+    await app.loadGraphData(workflow, true, true, tab)
+    draftRejectionNotified = false
+    lastApplied = { workflowId, version }
+    if (tab === null) {
+      const opened = workflowStore.openWorkflows.find(
+        (w) => !openBefore.has(w.path)
       )
+      if (opened) bindingStore.bind(workflowId, opened.path)
+      return
     }
-  })()
-})
+    // The canvas now equals the agent draft; clear the stale user-edit flag so
+    // the next patch is not misread as a divergence.
+    tab.isModified = false
+  } catch (error) {
+    surfaceDraftApplyFailure(
+      error instanceof Error ? error.message : String(error)
+    )
+  }
+}
+
+async function applyDraft(): Promise<void> {
+  // Patches stream faster than loadGraphData settles; serialize applies and
+  // coalesce whatever arrived meanwhile into one trailing re-run.
+  if (applying) {
+    reapplyQueued = true
+    return
+  }
+  applying = true
+  try {
+    const workflowId = draftStore.workflowId
+    const version = draftStore.version
+    const content = draftStore.content
+    if (workflowId === null || version === null || content === null) return
+    if (applySuppressed) return
+    if (
+      lastApplied !== null &&
+      lastApplied.workflowId === workflowId &&
+      lastApplied.version >= version
+    )
+      return
+    const boundTab = boundTabFor(workflowId)
+    if (boundTab) {
+      if (workflowStore.activeWorkflow?.path !== boundTab.path) return
+      if (boundTab.isModified) {
+        conflictOpen.value = true
+        return
+      }
+      await loadDraft(workflowId, version, content, boundTab)
+      return
+    }
+    await loadDraft(workflowId, version, content, null)
+  } finally {
+    applying = false
+    if (reapplyQueued) {
+      reapplyQueued = false
+      void applyDraft()
+    }
+  }
+}
+
+useDraftCanvasApply(() => void applyDraft())
+// A patch parked while its tab was backgrounded applies when the tab refocuses.
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => void applyDraft()
+)
+// A rebind opens a new epoch: guards scoped to the old workflow must not leak
+// into it (a parked 'mine', a stale lastApplied, an open dialog).
+watch(
+  () => draftStore.workflowId,
+  () => {
+    lastApplied = null
+    applySuppressed = false
+    conflictOpen.value = false
+  }
+)
+
+function onResolveConflict(choice: ConflictChoice): void {
+  conflictOpen.value = false
+  const workflowId = draftStore.workflowId
+  const version = draftStore.version
+  const content = draftStore.content
+  if (workflowId === null || version === null || content === null) return
+  if (choice === 'mine') {
+    applySuppressed = true
+    return
+  }
+  // 'agent' overwrites the bound tab; 'newtab' leaves it with the user's state
+  // and rebinds the workflow to a fresh tab, where future patches follow.
+  void loadDraft(
+    workflowId,
+    version,
+    content,
+    choice === 'agent' ? boundTabFor(workflowId) : null
+  )
+}
 
 start()
 onBeforeUnmount(() => {
@@ -120,7 +297,6 @@ onBeforeUnmount(() => {
 })
 
 const history = useAgentChatHistoryStore()
-const agentPanelStore = useAgentPanelStore()
 
 const { copy } = useClipboard({ legacy: true })
 
@@ -175,6 +351,10 @@ const coachSteps: CoachStep[] = [
 ]
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
+  // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
+  // its version may never advance, so the version watch alone cannot re-drive.
+  applySuppressed = false
+  void applyDraft()
   void sendMessage(
     text,
     attachments.map((attachment) => attachment.ref)
@@ -238,9 +418,13 @@ async function onFilesPicked(event: Event): Promise<void> {
       :can-attach="true"
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
+      :selection-tags="selectionTags"
+      :conflict-open="conflictOpen"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @remove-tag="removeSelectionTag"
+      @resolve-conflict="onResolveConflict"
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
