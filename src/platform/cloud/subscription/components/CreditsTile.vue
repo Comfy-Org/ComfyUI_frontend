@@ -143,12 +143,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import {
-  DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierCredits
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -168,7 +162,6 @@ const {
   balance,
   isActiveSubscription,
   isFreeTier,
-  currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
@@ -177,41 +170,15 @@ const {
   totalCredits,
   monthlyBonusCreditsValue,
   prepaidCreditsValue,
-  isLoadingBalance
+  isLoadingBalance,
+  allowanceTotalCredits,
+  usage
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
 const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
-
-const tierKey = computed(() => {
-  const tier = subscription.value?.tier
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
-})
-
-// Annual plans grant the whole year's credits upfront, so the allowance the
-// bar tracks is the monthly nominal times the number of months in the cycle.
-const cycleMonths = computed(() =>
-  subscription.value?.duration === 'ANNUAL' ? 12 : 1
-)
-
-const allowanceTotalCredits = computed<number | null>(() => {
-  const teamStop = currentTeamCreditStop.value
-  const monthly = teamStop
-    ? teamStop.credits_monthly
-    : getTierCredits(tierKey.value)
-  return monthly === null ? null : monthly * cycleMonths.value
-})
-
-const usage = computed(() => {
-  const base = computeMonthlyUsage(
-    monthlyBonusCreditsValue.value,
-    allowanceTotalCredits.value ?? 0
-  )
-  return isPaused.value ? { ...base, used: 0, usedFraction: 0 } : base
-})
 
 const cycleLabel = computed(() =>
   subscription.value?.duration === 'ANNUAL'
