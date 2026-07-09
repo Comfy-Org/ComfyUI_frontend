@@ -49,7 +49,7 @@
           <TableRow
             v-for="event in pagedItems"
             :key="event.id"
-            class="hover:bg-transparent [&:hover>td]:bg-secondary-background/30 [&>td]:border-b [&>td]:border-interface-stroke/30"
+            class="hover:bg-transparent [&>td]:border-b [&>td]:border-interface-stroke/20"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(event.date) }}

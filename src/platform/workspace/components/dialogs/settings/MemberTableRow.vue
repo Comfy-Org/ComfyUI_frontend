@@ -1,7 +1,7 @@
 <template>
   <TableRow
     :data-testid="`member-row-${member.id}`"
-    class="group hover:bg-transparent [&:hover>td]:bg-secondary-background/30 [&>td]:border-b [&>td]:border-interface-stroke/30"
+    class="group hover:bg-transparent [&>td]:border-b [&>td]:border-interface-stroke/20"
   >
     <TableCell>
       <div class="flex items-center gap-3">
