@@ -1271,7 +1271,7 @@ test(
   }
 )
 
-test.fail('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
   await comfyPage.nodeOps.clearGraph()
   const previewNodePos = { position: { x: 800, y: 200 } }
   await comfyPage.searchBoxV2.addNode('Preview Image', previewNodePos)
@@ -1318,7 +1318,7 @@ test.fail('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
           const rerouteId = graph.getLink(linkId)?.parentId
           if (!rerouteId) return 'failed to resolve reroute id'
 
-          return graph.reroutes.has(rerouteId) && 'reroute does not exist'
+          return !graph.reroutes.has(rerouteId) && 'reroute does not exist'
         }),
       'old link is disconnected, reroute is part of new connection'
     )

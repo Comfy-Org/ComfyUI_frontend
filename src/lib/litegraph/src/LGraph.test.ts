@@ -261,6 +261,44 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
   })
+
+  test('reroute is retained when a node is created from a floating reroute sharing an input slot with a real link', ({
+    expect
+  }) => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const preview = new LGraphNode('Preview Image')
+    preview.addInput('images', 'IMAGE')
+    const loadA = new LGraphNode('Load A')
+    loadA.addOutput('IMAGE', 'IMAGE')
+    const loadB = new LGraphNode('Load B')
+    loadB.addOutput('IMAGE', 'IMAGE')
+    graph.add(preview)
+    graph.add(loadA)
+    graph.add(loadB)
+
+    const reroute = preview.connectFloatingReroute(
+      [700, 400],
+      preview.inputs[0]
+    )
+    loadA.connect(0, preview, 0)
+    expect(graph.links.size).toBe(1)
+    expect(graph.reroutes.size).toBe(1)
+
+    // Creating a node from the floating reroute reuses its reroute chain and
+    // must not prune the reroute while replacing the existing real link.
+    loadB.connect(0, preview, 0, reroute.id)
+
+    expect(graph.links.size).toBe(1)
+    expect(graph.reroutes.size).toBe(1)
+
+    const linkId = preview.inputs[0].link
+    expect(linkId).not.toBeNull()
+    const link = graph.getLink(linkId!)
+    expect(link?.origin_id).toBe(loadB.id)
+    expect(link?.parentId).toBeDefined()
+    expect(graph.reroutes.has(link!.parentId!)).toBe(true)
+  })
 })
 
 describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
