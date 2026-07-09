@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { usePreferredReducedMotion } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'
 import { computeFanLayout } from '@/renderer/extensions/linearMode/fanLayout'
@@ -17,6 +18,8 @@ const { card, depth, total } = defineProps<{
   depth: number
   total: number
 }>()
+
+const { t } = useI18n()
 
 // Skip the drop-in entrance entirely when the user prefers reduced motion.
 const reducedMotion = usePreferredReducedMotion()
@@ -73,7 +76,11 @@ const innerStyle = computed(() => {
       <img
         v-if="imageSrc"
         :src="imageSrc"
-        alt=""
+        :alt="
+          card.state === 'latent'
+            ? t('linearMode.generationPreview')
+            : card.output?.filename
+        "
         :class="
           cn(
             'size-full object-cover',
@@ -87,12 +94,15 @@ const innerStyle = computed(() => {
         <video
           class="size-full object-cover"
           preload="metadata"
+          :aria-label="card.output.filename"
           :src="card.output.url"
         />
         <VideoPlayOverlay size="sm" />
       </template>
       <i
         v-else-if="card.output"
+        role="img"
+        :aria-label="mediaTypes[mediaType]?.content"
         :class="cn(mediaTypes[mediaType]?.iconClass, 'm-auto block size-12')"
       />
     </div>

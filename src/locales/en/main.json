@@ -3699,6 +3699,7 @@
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "generating": "Generating…",
+    "generationPreview": "Generation preview",
     "stopGeneration": "Stop generation",
     "reuseParameters": "Reuse Parameters",
     "downloadAll": "Download {count} assets from this run",
