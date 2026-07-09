@@ -231,6 +231,8 @@ defineExpose({ handleDragDrop })
     >
       <WidgetDescription
         :description
+        label-class="drag-handle"
+        label-type="div"
         :disabled="!builderMode"
         :widget="action.widget"
       />
