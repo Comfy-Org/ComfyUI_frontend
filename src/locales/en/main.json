@@ -3055,7 +3055,7 @@
     },
     "memberLimitDialog": {
       "title": "Workspace is at the member limit",
-      "message": "All {count} seats are filled. To invite someone new, remove a member or request more seats."
+      "message": "All seats are filled. To invite someone new, remove a member, rescind an invite, or request more seats."
     },
     "workflowQueuedDialog": {
       "title": "Your workflow is queued",

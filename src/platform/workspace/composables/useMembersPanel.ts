@@ -191,7 +191,7 @@ export function useMembersPanel() {
     }
     if (isCancelled.value) return
     if (isMemberLimitReached.value) {
-      void showMemberLimitDialog(maxSeats.value)
+      void showMemberLimitDialog()
       return
     }
     void showInviteMemberDialog()

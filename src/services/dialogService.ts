@@ -595,7 +595,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function showMemberLimitDialog(maxSeats: number) {
+  async function showMemberLimitDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
     const { staticUrls } = useExternalLink()
@@ -605,9 +605,7 @@ export const useDialogService = () => {
       props: {
         dialogKey: 'member-limit',
         title: t('workspacePanel.memberLimitDialog.title'),
-        message: t('workspacePanel.memberLimitDialog.message', {
-          count: maxSeats
-        }),
+        message: t('workspacePanel.memberLimitDialog.message'),
         onRequestMore: () =>
           window.open(
             staticUrls.teamPlanRequests,
