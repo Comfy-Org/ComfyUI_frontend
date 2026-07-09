@@ -21,18 +21,16 @@ export interface SessionNotice {
   text: string
 }
 
-// A settled upload as the send path consumes it: the server ref rides the POST,
-// name + preview stay behind on the transcript's user entry.
-export interface SentAttachment {
+// A settled upload: the server ref rides the POST, name + preview stay behind
+// on the transcript's user entry.
+interface SentAttachment {
   ref: string
   name: string
   previewUrl?: string
 }
 
-// The host resolves the active canvas tab to the workflow the turn should edit.
-// `speculative` marks an id the server has not confirmed owning (a saved tab's
-// persisted uuid): a 403 on it retries once without, letting the server fall
-// back to the thread's workflow or mint a draft.
+// The active tab resolved for a turn. `speculative` marks an id the server has
+// not confirmed owning; a 403 on it retries the send once without the id.
 export interface WorkflowTurnContext {
   id: string
   speculative: boolean

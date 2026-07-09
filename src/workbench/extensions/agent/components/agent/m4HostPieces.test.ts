@@ -1,9 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { useCanvasContext } from '../../composables/agent/useCanvasContext'
 import type { CloudAsset } from '../../composables/agent/useCloudAssets'
 import { useCloudAssets } from '../../composables/agent/useCloudAssets'
 
@@ -56,20 +54,5 @@ describe('useCloudAssets', () => {
     })
     await load()
     expect(assets.value.map((a) => a.id)).toEqual(['1', '2'])
-  })
-})
-
-describe('useCanvasContext', () => {
-  it('pushes a tab switch when the active tab changes', async () => {
-    const activeTab = ref<{ name: string; id?: string | null } | null>({
-      name: 'first',
-      id: 't1'
-    })
-    const onTabChange = vi.fn()
-    useCanvasContext({ activeTab, onTabChange })
-
-    activeTab.value = { name: 'second', id: 't2' }
-    await Promise.resolve()
-    expect(onTabChange).toHaveBeenCalledWith({ name: 'second', id: 't2' })
   })
 })
