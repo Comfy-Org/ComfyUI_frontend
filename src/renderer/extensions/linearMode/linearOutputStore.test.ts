@@ -2,7 +2,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import {
+  GENERATING_CARD_LIMIT,
+  useLinearOutputStore
+} from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 
@@ -801,6 +804,183 @@ describe('linearOutputStore', () => {
     const imageItems = store.inProgressItems.filter((i) => i.state === 'image')
     expect(imageItems).toHaveLength(1)
     expect(imageItems[0].output?.nodeId).toBe('2')
+  })
+
+  it('pops non-selected outputs into the generating fan without feeding history', () => {
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    // Node 1 is not a selected output — it must not enter the feed...
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+    expect(
+      store.inProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(0)
+    expect(
+      store.activeWorkflowInProgressItems.filter((i) => i.state === 'image')
+    ).toHaveLength(0)
+
+    // ...but it still pops as a card in the generating screen.
+    expect(
+      store.generatingCards.filter(
+        (c) => c.state === 'image' && c.output?.nodeId === '1'
+      )
+    ).toHaveLength(1)
+  })
+
+  it('orders generating cards by arrival, non-selected above earlier selected', () => {
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    // Selected output completes first (fills the skeleton slot)...
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'selected.png', subfolder: '', type: 'output' }],
+        '2'
+      )
+    )
+    // ...then a non-selected output arrives later.
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'extra.png', subfolder: '', type: 'output' }],
+        '1'
+      )
+    )
+
+    // The later non-selected card is newest, so it leads the fan.
+    expect(store.generatingCards[0].output?.filename).toBe('extra.png')
+    expect(store.generatingCards[1].output?.filename).toBe('selected.png')
+  })
+
+  it('clears non-selected generating cards when the run ends', async () => {
+    const { nextTick } = await import('vue')
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+    expect(store.generatingCards.some((c) => c.output?.nodeId === '1')).toBe(
+      true
+    )
+
+    activeJobIdRef.value = null
+    await nextTick()
+
+    expect(store.generatingCards.some((c) => c.output?.nodeId === '1')).toBe(
+      false
+    )
+  })
+
+  it('caps the generating fan at GENERATING_CARD_LIMIT, keeping the newest', () => {
+    selectedOutputsRef.value = ['1']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    const outputs = Array.from(
+      { length: GENERATING_CARD_LIMIT + 2 },
+      (_, i) => ({
+        filename: `out-${i}.png`,
+        subfolder: '',
+        type: 'output'
+      })
+    )
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', outputs, '1'))
+
+    const fan = store.generatingCards
+    expect(fan).toHaveLength(GENERATING_CARD_LIMIT)
+    // The newest GENERATING_CARD_LIMIT outputs survive; the earliest drop off.
+    expect(fan.map((c) => c.output?.filename)).toEqual([
+      'out-4.png',
+      'out-3.png',
+      'out-2.png'
+    ])
+  })
+
+  it('keeps a streaming latent preview on top, then lets outputs cover it', () => {
+    vi.useFakeTimers()
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    store.onLatentPreview('job-1', 'blob:frame-1')
+    vi.advanceTimersByTime(16)
+    expect(store.generatingCards[0].state).toBe('latent')
+
+    // Non-selected output covers the last frame...
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'extra.png', subfolder: '', type: 'output' }],
+        '1'
+      )
+    )
+    expect(store.generatingCards[0].output?.filename).toBe('extra.png')
+
+    // ...until the next frame surfaces again
+    store.onLatentPreview('job-1', 'blob:frame-2')
+    vi.advanceTimersByTime(16)
+    expect(store.generatingCards[0].state).toBe('latent')
+    expect(store.generatingCards[0].latentPreviewUrl).toBe('blob:frame-2')
+
+    // Node finishes: final output leads, latent gone
+    store.onNodeExecuted(
+      'job-1',
+      makeExecutedDetail(
+        'job-1',
+        [{ filename: 'final.png', subfolder: '', type: 'output' }],
+        '2'
+      )
+    )
+    expect(store.generatingCards[0].output?.filename).toBe('final.png')
+    expect(store.generatingCards.some((c) => c.state === 'latent')).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('clears stale non-selected cards from a prior run on the next job start', () => {
+    selectedOutputsRef.value = ['2']
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+    store.onJobStart('job-1')
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1', undefined, '1'))
+    expect(store.generatingCards.some((c) => c.output?.nodeId === '1')).toBe(
+      true
+    )
+
+    store.onJobStart('job-2')
+
+    expect(store.generatingCards.some((c) => c.output?.nodeId === '1')).toBe(
+      false
+    )
+  })
+
+  it('excludes pending-resolve cards from a prior job in the generating fan', () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.onJobComplete('job-1')
+    expect(store.pendingResolve.has('job-1')).toBe(true)
+
+    store.onJobStart('job-2')
+
+    expect(store.generatingCards.some((c) => c.jobId === 'job-1')).toBe(false)
+    expect(store.generatingCards.some((c) => c.jobId === 'job-2')).toBe(true)
   })
 
   it('does not auto-select for jobs belonging to another workflow', () => {

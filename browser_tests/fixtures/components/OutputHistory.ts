@@ -70,11 +70,6 @@ export class OutputHistoryComponent {
     return this.page.getByTestId(ids.headerProgressBar)
   }
 
-  /** The in-progress item's progress bar (inside the thumbnail). */
-  get itemProgressBar(): Locator {
-    return this.inProgressItems.first().getByTestId(ids.itemProgressBar)
-  }
-
   /** Overall progress in the header bar. */
   get headerOverallProgress(): Locator {
     return this.headerProgressBar.getByTestId(ids.progressOverall)
@@ -83,15 +78,5 @@ export class OutputHistoryComponent {
   /** Node progress in the header bar. */
   get headerNodeProgress(): Locator {
     return this.headerProgressBar.getByTestId(ids.progressNode)
-  }
-
-  /** Overall progress in the in-progress item bar. */
-  get itemOverallProgress(): Locator {
-    return this.itemProgressBar.getByTestId(ids.progressOverall)
-  }
-
-  /** Node progress in the in-progress item bar. */
-  get itemNodeProgress(): Locator {
-    return this.itemProgressBar.getByTestId(ids.progressNode)
   }
 }

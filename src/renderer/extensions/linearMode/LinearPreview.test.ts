@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { ResultItemImpl } from '@/stores/queueStore'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -18,9 +20,15 @@ const outputHistoryState = vi.hoisted(() => ({
   isWorkflowActive: false
 }))
 
+const linearOutputState = vi.hoisted(() => ({
+  selectedId: null as string | null,
+  isFollowing: true
+}))
+
 const spies = vi.hoisted(() => ({
   cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  deleteAssets: vi.fn(),
+  openShareDialog: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@/composables/useAppMode', async () => {
@@ -44,6 +52,10 @@ vi.mock('@/renderer/extensions/linearMode/useOutputHistory', async () => {
   }
 })
 
+vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
+  useLinearOutputStore: () => linearOutputState
+}))
+
 vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
 }))
@@ -52,14 +64,19 @@ vi.mock('@/scripts/app', () => ({
   app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
 }))
 
+vi.mock('@/platform/workflow/sharing/composables/lazyShareDialog', () => ({
+  openShareDialog: spies.openShareDialog,
+  prefetchShareDialog: vi.fn()
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: { download: 'Download', moreOptions: 'More Options' },
+      actionbar: { shareTooltip: 'Share workflow' },
       linearMode: {
-        rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
         cancelThisRun: 'Cancel this run',
         deleteAllAssets: 'Delete all',
@@ -88,15 +105,20 @@ function renderPreview(
   const result = render(LinearPreview, {
     props,
     global: {
-      plugins: [i18n],
+      plugins: [i18n, createPinia()],
       directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
-        LatentPreview: { template: '<div data-testid="latent-preview" />' },
+        GeneratingScreen: {
+          emits: ['stop'],
+          template:
+            '<button data-testid="generating-screen" @click="$emit(\'stop\')" />'
+        },
         LinearWelcome: { template: '<div data-testid="linear-welcome" />' },
         LinearArrange: { template: '<div data-testid="linear-arrange" />' },
-        MediaOutputPreview: true,
-        Popover: { template: '<div data-testid="output-popover" />' },
+        MediaOutputPreview: {
+          template: '<div data-testid="media-output-preview" />'
+        },
         OutputHistory: outputHistoryStub
       }
     }
@@ -110,6 +132,8 @@ describe('LinearPreview', () => {
     appModeState.isBuilderMode = false
     appModeState.isArrangeMode = false
     outputHistoryState.isWorkflowActive = false
+    linearOutputState.selectedId = null
+    linearOutputState.isFollowing = true
   })
 
   it('renders the welcome screen and output history when idle', () => {
@@ -136,19 +160,68 @@ describe('LinearPreview', () => {
     expect(screen.queryByTestId('linear-welcome')).not.toBeInTheDocument()
   })
 
-  it('shows the latent preview and cancel control while a workflow is active', async () => {
+  it('shows the generating screen and cancels the run on stop while a workflow is active', async () => {
     outputHistoryState.isWorkflowActive = true
 
     const { user } = renderPreview()
 
-    expect(screen.getByTestId('latent-preview')).toBeInTheDocument()
+    expect(screen.getByTestId('linear-output-info')).toBeInTheDocument()
 
-    await user.click(screen.getByTestId('linear-cancel-run'))
+    await user.click(screen.getByTestId('generating-screen'))
 
     expect(spies.cancelActiveWorkflowJobs).toHaveBeenCalled()
   })
 
-  it('shows the selected asset actions and latent image when a selection is made', async () => {
+  it('shows the selected output instead of the generating screen when browsing history during a run', async () => {
+    outputHistoryState.isWorkflowActive = true
+    linearOutputState.selectedId = 'history:asset-1:0'
+    linearOutputState.isFollowing = false
+
+    const output = new ResultItemImpl({
+      filename: 'old.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    })
+    renderPreview({}, { output, canShowPreview: false })
+
+    expect(
+      await screen.findByTestId('media-output-preview')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('generating-screen')).not.toBeInTheDocument()
+  })
+
+  it('keeps the generating screen when an in-progress slot is selected during a run', () => {
+    outputHistoryState.isWorkflowActive = true
+    linearOutputState.selectedId = 'slot:job-1-0'
+    linearOutputState.isFollowing = false
+
+    renderPreview()
+
+    expect(screen.getByTestId('generating-screen')).toBeInTheDocument()
+  })
+
+  it('disables the selection-dependent actions when nothing is selected', () => {
+    renderPreview()
+
+    expect(
+      screen.getByRole('button', { name: 'Reuse Parameters' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'More Options' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Share workflow' })).toBeEnabled()
+  })
+
+  it('opens the share dialog from the share button', async () => {
+    const { user } = renderPreview()
+
+    await user.click(screen.getByRole('button', { name: 'Share workflow' }))
+
+    expect(spies.openShareDialog).toHaveBeenCalled()
+  })
+
+  it('enables the asset actions and shows the latent image when a selection is made', async () => {
     const asset: AssetItem = { id: 'a1', name: 'out.png', tags: [] }
     const selection: OutputSelection = {
       asset,
@@ -158,10 +231,9 @@ describe('LinearPreview', () => {
 
     renderPreview({}, selection)
 
-    expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
+    const reuse = screen.getByRole('button', { name: 'Reuse Parameters' })
+    await waitFor(() => expect(reuse).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'More Options' })).toBeEnabled()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('output-popover')).toBeInTheDocument()
-    expect(screen.getByText('Rerun')).toBeInTheDocument()
-    expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })
 })
