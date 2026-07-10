@@ -806,18 +806,29 @@ export class LinkConnector {
       return
     }
 
-    // Connecting to output. Resolve the source once: re-anchoring the first
-    // link's chain onto the reroute changes its membership immediately.
-    const result = reroute.findSourceOutput()
-    if (!result) return
-    const { node, output } = result
+    // Connecting to output.
+    const drop = this._resolveOutputDrop(reroute)
+    if (!drop) return
 
-    for (const link of this.renderLinks) {
-      if (link.toType !== 'output') continue
-      if (!link.canConnectToOutput(node, output)) continue
-
+    const { node, output, links } = drop
+    for (const link of links) {
       link.connectToRerouteOutput(reroute, node, output, this.events)
     }
+  }
+
+  /** Resolves once: connecting a link re-anchors its chain, changing membership. */
+  private _resolveOutputDrop(reroute: Reroute) {
+    const result = reroute.findSourceOutput()
+    if (!result) return
+
+    const { node, output } = result
+    const links = this.renderLinks.filter(
+      (link) =>
+        link.toType === 'output' &&
+        link.canConnectToReroute(reroute) &&
+        link.canConnectToOutput(node, output)
+    )
+    return { node, output, links }
   }
 
   /** @internal Temporary workaround - requires refactor. */
@@ -1005,16 +1016,7 @@ export class LinkConnector {
         }
       }
     } else {
-      const result = reroute.findSourceOutput()
-      if (!result) return false
-
-      const { node, output } = result
-
-      for (const renderLink of this.renderLinks) {
-        if (renderLink.toType !== 'output') continue
-        if (!renderLink.canConnectToReroute(reroute)) continue
-        if (renderLink.canConnectToOutput(node, output)) return true
-      }
+      return !!this._resolveOutputDrop(reroute)?.links.length
     }
 
     return false
