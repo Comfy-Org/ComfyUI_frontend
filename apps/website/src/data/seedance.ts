@@ -56,7 +56,7 @@ export const seedanceSteps: readonly SeedanceStep[] = [
   }
 ] as const
 
-export type SeedanceModelTier = 'free' | 'premium'
+type SeedanceModelTier = 'free' | 'premium'
 
 export interface SeedanceModel {
   id: string
