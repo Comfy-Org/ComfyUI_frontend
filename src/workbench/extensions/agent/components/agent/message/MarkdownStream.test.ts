@@ -71,4 +71,27 @@ describe('MarkdownStream', () => {
     expect(screen.getByText('npm i', { selector: 'code' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
   })
+
+  it('keeps a 4-space-indented block as prose-rendered code, not a framed block', () => {
+    render(MarkdownStream, {
+      props: { text: 'steps:\n\n    npm install\n\ndone' },
+      global: { plugins: [i18n] }
+    })
+    expect(
+      screen.getByText('npm install', { selector: 'code' })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
+  })
+
+  it('labels a bare fence with no language as text', () => {
+    render(MarkdownStream, {
+      props: { text: '```\nplain body\n```' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('text')).toBeInTheDocument()
+    expect(
+      screen.getByText('plain body', { selector: 'code' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument()
+  })
 })

@@ -44,6 +44,34 @@
   --radius-agent: 0.75rem;
 }
 
+/* Structural (theme-independent) collapsible animation for the agent tool
+   disclosures, driven by the --reka-collapsible-content-height var Reka sets on
+   the content element. Namespaced agent-* so this globally-imported sheet cannot
+   retarget the host's animate-collapsible-* utilities (undefined on main) in the
+   sharing dialogs. */
+@theme {
+  --animate-agent-collapsible-down: agent-collapsible-down 200ms ease-out;
+  --animate-agent-collapsible-up: agent-collapsible-up 200ms ease-out;
+}
+
+@keyframes agent-collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-collapsible-content-height);
+  }
+}
+
+@keyframes agent-collapsible-up {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
 /* Shimmering "Thinking…" text (design reference): a light band sweeps across the muted
    label while the agent reasons. Falls back to the muted color under reduced-motion. */
 @keyframes agent-shimmer {
