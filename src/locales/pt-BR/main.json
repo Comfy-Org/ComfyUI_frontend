@@ -515,57 +515,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Por favor, mantenha sua resposta com menos de {max} caracteres.",
         "chooseAnOption": "Por favor, escolha uma opção.",
         "describeAnswer": "Por favor, descreva sua resposta.",
         "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
       },
       "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Usuário avançado (fluxos de trabalho personalizados)",
-          "basics": "Confortável com o básico",
-          "expert": "Especialista (ajuda outras pessoas)",
-          "new": "Novo no ComfyUI (nunca usei antes)",
-          "starting": "Começando agora (seguindo tutoriais)"
+        "experience": {
+          "new": "Novo no ComfyUI",
+          "pro": "Sou um usuário avançado",
+          "some": "Já conheço um pouco"
+        },
+        "focus": {
+          "custom_nodes": "Nós personalizados",
+          "pipelines": "Pipelines automatizados",
+          "products": "Produtos para outros"
         },
         "intent": {
-          "3d_game": "Assets 3D / assets para jogos",
-          "api": "Endpoints de API para executar workflows",
-          "apps": "Apps simplificados a partir de workflows",
-          "audio": "Áudio / música",
-          "custom_nodes": "Nodes personalizados",
+          "apps_api": "Apps e APIs",
+          "exploring": "Só explorando",
           "images": "Imagens",
-          "not_sure": "Não tenho certeza",
-          "videos": "Vídeos",
+          "other": "Outra coisa",
+          "otherPlaceholder": "O que você quer criar?",
+          "video": "Vídeo",
           "workflows": "Workflows ou pipelines personalizados"
         },
         "source": {
-          "conference": "Conferência ou evento",
-          "discord": "Discord / comunidade",
+          "community": "Uma comunidade ou fórum",
           "friend": "Amigo ou colega",
-          "github": "GitHub",
+          "other": "Outro",
+          "otherPlaceholder": "Onde você nos encontrou?",
+          "search": "Google / busca",
+          "social": "Mídias sociais"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Newsletter ou blog",
-          "other": "Outro",
           "reddit": "Reddit",
-          "search": "Google / busca",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Educação (estudante ou educador)",
-          "personal": "Uso pessoal",
-          "work": "Trabalho"
         }
       },
+      "otherPlaceholder": "Conte-nos mais",
       "placeholder": "Espaço reservado para perguntas da pesquisa",
-      "steps": {
-        "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "intent": "O que você deseja criar com o ComfyUI?",
-        "source": "Onde você ouviu falar do ComfyUI?",
-        "usage": "Como você pretende usar o ComfyUI?"
-      },
       "title": "Pesquisa da Nuvem"
     }
   },
@@ -578,10 +573,11 @@
   "cloudStart_learnAboutButton": "Saiba mais sobre a Nuvem",
   "cloudStart_title": "comece a criar em segundos",
   "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
-  "cloudSurvey_steps_familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
+  "cloudSurvey_steps_experience": "Qual o seu nível de conhecimento do ComfyUI?",
+  "cloudSurvey_steps_focus": "O que você está construindo?",
   "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
   "cloudSurvey_steps_source": "Onde você ouviu falar do ComfyUI?",
-  "cloudSurvey_steps_usage": "Como você pretende usar o ComfyUI?",
+  "cloudSurvey_steps_source_social": "Em qual plataforma?",
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {

@@ -2237,6 +2237,13 @@ const translations = {
   'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
   'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
+  'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
+  'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -4108,7 +4115,6 @@ const translations = {
     en: 'This page is being redesigned. Check back soon.',
     'zh-CN': '此页面正在重新设计中，请稍后再来。'
   },
-  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
@@ -4203,10 +4209,6 @@ const translations = {
   'models.index.subtitle': {
     en: "Run the world's leading AI models in ComfyUI",
     'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
-  },
-  'models.breadcrumb.home': {
-    en: 'Home',
-    'zh-CN': '首页'
   },
   'models.breadcrumb.models': {
     en: 'Supported Models',

@@ -515,57 +515,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "답변은 {max}자 이내로 작성해 주세요.",
         "chooseAnOption": "옵션을 선택해 주세요.",
         "describeAnswer": "답변을 설명해 주세요.",
         "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
       },
       "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
-        "familiarity": {
-          "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
-          "basics": "기본 기능에 익숙함",
-          "expert": "전문가 (다른 사용자 도움)",
-          "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
-          "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
+        "experience": {
+          "new": "ComfyUI가 처음이에요",
+          "pro": "전문 사용자입니다",
+          "some": "기본적인 사용법을 알아요"
+        },
+        "focus": {
+          "custom_nodes": "커스텀 노드",
+          "pipelines": "자동화 파이프라인",
+          "products": "타인을 위한 제품"
         },
         "intent": {
-          "3d_game": "3D 에셋 / 게임 에셋",
-          "api": "워크플로우 실행용 API 엔드포인트",
-          "apps": "워크플로우 기반 간소화 앱",
-          "audio": "오디오 / 음악",
-          "custom_nodes": "커스텀 노드",
+          "apps_api": "앱 및 API",
+          "exploring": "그냥 둘러보는 중",
           "images": "이미지",
-          "not_sure": "잘 모르겠음",
-          "videos": "비디오",
+          "other": "기타",
+          "otherPlaceholder": "무엇을 만들고 싶으신가요?",
+          "video": "비디오",
           "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
         "source": {
-          "conference": "컨퍼런스 또는 이벤트",
-          "discord": "Discord / 커뮤니티",
+          "community": "커뮤니티 또는 포럼",
           "friend": "친구 또는 동료",
-          "github": "GitHub",
+          "other": "기타",
+          "otherPlaceholder": "어디서 저희를 알게 되셨나요?",
+          "search": "Google / 검색",
+          "social": "소셜 미디어"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "뉴스레터 또는 블로그",
-          "other": "기타",
           "reddit": "Reddit",
-          "search": "Google / 검색",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "교육용(학생 또는 교육자)",
-          "personal": "개인용",
-          "work": "업무용"
         }
       },
+      "otherPlaceholder": "자세히 알려주세요",
       "placeholder": "설문 질문 자리표시자",
-      "steps": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
-        "source": "ComfyUI를 어디에서 알게 되셨나요?",
-        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
-      },
       "title": "클라우드 설문"
     }
   },
@@ -578,10 +573,11 @@
   "cloudStart_learnAboutButton": "클라우드 알아보기",
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
-  "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+  "cloudSurvey_steps_experience": "ComfyUI를 얼마나 잘 알고 계신가요?",
+  "cloudSurvey_steps_focus": "무엇을 만들고 계신가요?",
   "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
   "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
-  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
+  "cloudSurvey_steps_source_social": "어떤 플랫폼에서 알게 되셨나요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {

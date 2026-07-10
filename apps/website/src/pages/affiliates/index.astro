@@ -9,34 +9,36 @@ import HeroSection from '../../templates/affiliate/HeroSection.vue'
 import HowItWorksSection from '../../templates/affiliate/HowItWorksSection.vue'
 import { affiliateFaqs } from '../../data/affiliateFaq'
 import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
 
-const locale = 'en' as const
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
+const pageTitle = t('affiliate.page.title', 'en')
+const pageDescription = t('affiliate.page.description', 'en')
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
+  '@id': jsonLdId(url, 'faq'),
   mainEntity: affiliateFaqs.map((faq) => ({
     '@type': 'Question',
     name: faq.question[locale],
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: faq.answer[locale]
-    }
-  }))
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer[locale] },
+  })),
 }
 ---
 
 <BaseLayout
-  title={t('affiliate.page.title', locale)}
-  description={t('affiliate.page.description', locale)}
+  title={pageTitle}
+  description={pageDescription}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: pageTitle },
+  ]}
+  extraJsonLd={[faqPage]}
 >
-  <Fragment slot="head">
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(faqJsonLd)}
-    />
-  </Fragment>
 
   <HeroSection />
   <HowItWorksSection />
