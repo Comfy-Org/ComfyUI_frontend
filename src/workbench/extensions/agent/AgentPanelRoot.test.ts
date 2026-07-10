@@ -816,8 +816,8 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-9' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-9' }]
     ])
   })
 })
@@ -994,6 +994,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     expect(tab.changeTracker?.reset).toHaveBeenCalled()
+    expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-42',
       target: 'existing_tab'
