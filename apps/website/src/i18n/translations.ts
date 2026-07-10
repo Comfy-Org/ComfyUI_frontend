@@ -4446,6 +4446,115 @@ const translations = {
   'launches.section.title': {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
+  },
+
+  'breadcrumb.models': { en: 'Models', 'zh-CN': '模型' },
+
+  // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
+  // copy carries placeholder intent from Figma and may change (June, CRE-145).
+  'seedance.meta.title': {
+    en: 'Seedance 2.5 on Comfy — Cinematic AI Video Model',
+    'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
+  },
+  'seedance.meta.description': {
+    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video from text or image, 1080p to 4K. Draft free on Wan 2.2 and spend credits only on the final render.',
+    'zh-CN':
+      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成多镜头电影级视频，支持 1080p 至 4K。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+  },
+  'seedance.breadcrumb.model': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
+  'seedance.breadcrumb.updated': {
+    en: 'Updated July 2026',
+    'zh-CN': '更新于 2026 年 7 月'
+  },
+  'seedance.hero.badge': { en: 'Now on', 'zh-CN': '现已登陆' },
+  'seedance.hero.title': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
+  'seedance.hero.description': {
+    en: "ByteDance's cinematic video model — multi-shot sequences, 1080p to 4K, text or image in. You direct on the canvas; Seedance renders the cut. Draft free on Wan 2.2 and spend credits only on the final.",
+    'zh-CN':
+      '字节跳动的电影级视频模型：多镜头序列，1080p 至 4K，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。先用 Wan 2.2 免费打样，只在最终成片时消耗积分。'
+  },
+  'seedance.hero.primaryCta': {
+    en: 'RUN SEEDANCE 2.5',
+    'zh-CN': '运行 Seedance 2.5'
+  },
+  'seedance.hero.secondaryCta': { en: 'SEE THE PRESETS', 'zh-CN': '查看预设' },
+  'seedance.hero.footnote': {
+    en: 'Pay-as-you-go credits · No watermark · Commercial use included',
+    'zh-CN': '按量付费积分 · 无水印 · 包含商业使用授权'
+  },
+  'seedance.showcase.heading': {
+    en: 'Multi-shot sequences, 4K',
+    'zh-CN': '多镜头序列，4K'
+  },
+  'seedance.showcase.promptLabel': { en: 'Prompt', 'zh-CN': '提示词' },
+  'seedance.showcase.cta': { en: 'RUN SEEDANCE', 'zh-CN': '运行 Seedance' },
+  'seedance.showcase.prev': {
+    en: 'Previous example',
+    'zh-CN': '上一个示例'
+  },
+  'seedance.showcase.next': { en: 'Next example', 'zh-CN': '下一个示例' },
+  'seedance.steps.heading': {
+    en: 'Direct your first Seedance shot',
+    'zh-CN': '执导你的第一个 Seedance 镜头'
+  },
+  'seedance.steps.leadIn': {
+    en: 'The model is the artist. You write the brief.',
+    'zh-CN': '模型即艺术家，你只需写下创意简报。'
+  },
+  'seedance.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'seedance.models.eyebrow': {
+    en: 'Every model · one canvas',
+    'zh-CN': '每个模型 · 同一画布'
+  },
+  'seedance.models.heading': {
+    en: 'The rest of the video stack',
+    'zh-CN': '完整的视频模型阵容'
+  },
+  'seedance.models.subtitle': {
+    en: 'Same canvas, same workflow. Draft on the free anchors, finish on the model the shot demands.',
+    'zh-CN':
+      '同一画布，同一工作流。先用免费模型打样，再用最合适的模型完成镜头。'
+  },
+  'seedance.models.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'seedance.models.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
+  'seedance.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'seedance.cta.heading': {
+    en: 'Multi-shot. One director.',
+    'zh-CN': '多镜头，一位导演。'
+  },
+  'seedance.cta.subtitle': {
+    en: 'Draft free on Wan 2.2 — switch to Seedance when the shot is ready.',
+    'zh-CN': '先用 Wan 2.2 免费打样，镜头就绪后再切换到 Seedance。'
+  },
+  'seedance.cta.primaryCta': {
+    en: 'RUN WAN 2.2 FOR FREE',
+    'zh-CN': '免费运行 Wan 2.2'
+  },
+  'seedance.cta.secondaryCta': {
+    en: 'RUN SEEDANCE 2.5',
+    'zh-CN': '运行 Seedance 2.5'
+  },
+  'seedance.cta.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'seedance.cta.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'seedance.cta.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'seedance.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'seedance.runOptions.subtitle': {
+    en: 'Run Seedance in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN':
+      '今天就在浏览器中运行 Seedance。用 API 批量制作，或部署到自有环境。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

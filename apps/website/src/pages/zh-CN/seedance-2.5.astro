@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
+import PriceSection from '../../components/pricing/PriceSection.vue'
+import SeedanceCtaSection from '../../templates/seedance/SeedanceCtaSection.vue'
+import SeedanceFaqSection from '../../templates/seedance/SeedanceFaqSection.vue'
+import SeedanceHeroSection from '../../templates/seedance/SeedanceHeroSection.vue'
+import SeedanceModelsSection from '../../templates/seedance/SeedanceModelsSection.vue'
+import SeedanceRunOptionsSection from '../../templates/seedance/SeedanceRunOptionsSection.vue'
+import SeedanceShowcaseSection from '../../templates/seedance/SeedanceShowcaseSection.vue'
+import SeedanceStepsSection from '../../templates/seedance/SeedanceStepsSection.vue'
+import { getRoutes } from '../../config/routes'
+import { seedanceFaqs } from '../../data/seedance'
+import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
+
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const routes = getRoutes(locale)
+
+const crumbs = [
+  { label: t('breadcrumb.home', locale), href: routes.home },
+  { label: t('breadcrumb.models', locale), href: routes.models },
+  { label: t('seedance.breadcrumb.model', locale) },
+]
+
+const faqPage: JsonLdNode = {
+  '@type': 'FAQPage',
+  '@id': jsonLdId(url, 'faq'),
+  mainEntity: seedanceFaqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question[locale],
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer[locale] },
+  })),
+}
+---
+
+<BaseLayout
+  title={t('seedance.meta.title', locale)}
+  description={t('seedance.meta.description', locale)}
+  breadcrumbs={[
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, routes.home),
+    },
+    {
+      name: t('breadcrumb.models', locale),
+      url: absoluteUrl(Astro.site, routes.models),
+    },
+    { name: t('seedance.breadcrumb.model', locale) },
+  ]}
+  extraJsonLd={[faqPage]}
+>
+  <BreadcrumbBar
+    crumbs={crumbs}
+    updated={t('seedance.breadcrumb.updated', locale)}
+  />
+  <SeedanceHeroSection client:load locale="zh-CN" />
+  <SeedanceShowcaseSection client:visible locale="zh-CN" />
+  <SeedanceStepsSection locale="zh-CN" />
+  <SeedanceModelsSection locale="zh-CN" />
+  <PriceSection client:load locale="zh-CN" />
+  <SeedanceFaqSection client:visible locale="zh-CN" />
+  <SeedanceCtaSection locale="zh-CN" />
+  <SeedanceRunOptionsSection locale="zh-CN" />
+</BaseLayout>

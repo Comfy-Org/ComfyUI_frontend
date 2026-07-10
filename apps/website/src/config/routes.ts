@@ -21,7 +21,8 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  mcp: '/mcp'
+  mcp: '/mcp',
+  seedance: '/seedance-2.5'
 } as const
 
 type Routes = typeof baseRoutes

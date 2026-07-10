@@ -16,8 +16,9 @@ type TermsLink = {
   href: string
 }
 
-const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
+const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
   heading: string
+  subtitle?: string
   primaryCta: Cta
   secondaryCta?: Cta
   termsLink?: TermsLink
@@ -33,6 +34,13 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
     >
       {{ heading }}
     </h2>
+
+    <p
+      v-if="subtitle"
+      class="mt-4 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas/80 lg:text-lg/relaxed"
+    >
+      {{ subtitle }}
+    </p>
 
     <div class="mt-10 flex flex-col gap-4 sm:flex-row lg:mt-12">
       <Button
