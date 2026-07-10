@@ -9,7 +9,8 @@
  * the module registry and dynamically imports the modules it needs — a
  * mid-test failure then cannot wedge the queue for later tests.
  */
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/i18n', () => ({
@@ -32,6 +33,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+/**
+ * Macrotask flush: releasing the FIFO queue takes several promise hops inside
+ * enqueueGlobalPrompt, and a macrotask runs only after all pending microtasks.
+ * `nextTick()` awaits a fixed number of hops and would couple these tests to
+ * that internal chain depth.
+ */
 function flushQueue() {
   return new Promise((resolve) => setTimeout(resolve))
 }
@@ -47,7 +54,7 @@ async function importDialogModules() {
 describe('dialogService global prompt FIFO queue', () => {
   beforeEach(() => {
     vi.resetModules()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('settles both promises when two confirm() calls race', async () => {

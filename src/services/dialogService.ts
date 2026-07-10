@@ -236,8 +236,6 @@ export const useDialogService = () => {
           renderer: 'reka',
           contentClass: HUG_CONTENT_CLASS,
           closable: false,
-          // onRemoved (not onClose) so the promise also settles when the
-          // dialog is cap-evicted rather than closed by the user.
           onRemoved: () => resolve(false)
         }
       })
@@ -265,8 +263,6 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          // onRemoved (not onClose) so the promise also settles when the
-          // dialog is cap-evicted rather than closed by the user.
           onRemoved: () => resolve(false)
         }
       })
@@ -303,8 +299,6 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          // onRemoved (not onClose) so the promise also settles when the
-          // dialog is cap-evicted rather than closed by the user.
           onRemoved: () => {
             resolve(null)
           }
@@ -342,8 +336,6 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          // onRemoved (not onClose) so the promise also settles when the
-          // dialog is cap-evicted rather than closed by the user.
           onRemoved: () => resolve(null)
         }
       }
@@ -709,8 +701,6 @@ export const useDialogService = () => {
           closable: false,
           contentClass:
             'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
-          // onRemoved (not onClose) so the promise also settles when the
-          // dialog is cap-evicted rather than closed by the user.
           onRemoved: () => resolve()
         }
       })
