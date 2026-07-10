@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 
@@ -10,14 +13,33 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const isOpen = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
 
+  let openedAt: number | null = null
+
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
-  function toggle(): void {
-    isOpen.value = !isOpen.value
+  function open(): void {
+    if (isOpen.value) return
+    isOpen.value = true
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
   }
 
-  function close(): void {
+  // Idempotent: the flag gate re-syncs close() on every flag evaluation, and a
+  // no-op close must not emit a phantom closed event or corrupt the duration.
+  function close(source: AgentPanelCloseSource): void {
+    if (!isOpen.value) return
     isOpen.value = false
+    const openDurationMs = openedAt === null ? null : Date.now() - openedAt
+    openedAt = null
+    useTelemetry()?.trackAgentPanelClosed({
+      source,
+      open_duration_ms: openDurationMs
+    })
+  }
+
+  function toggle(): void {
+    if (isOpen.value) close('topbar_button')
+    else open()
   }
 
   function setWidth(px: number): void {

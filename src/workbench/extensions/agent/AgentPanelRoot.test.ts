@@ -137,9 +137,18 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
 }))
 
-const trackAgentMessageFeedback = vi.hoisted(() => vi.fn())
+const telemetry = vi.hoisted(() => ({
+  trackAgentMessageFeedback: vi.fn(),
+  trackAgentWorkflowApplied: vi.fn(),
+  trackAgentMessageSent: vi.fn(),
+  trackAgentNodeTagged: vi.fn(),
+  trackAgentAttachButtonClicked: vi.fn(),
+  trackAgentCloseButtonClicked: vi.fn(),
+  trackAgentPanelOpened: vi.fn(),
+  trackAgentPanelClosed: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAgentMessageFeedback })
+  useTelemetry: () => telemetry
 }))
 
 import type { TurnId } from './schemas/agentApiSchema'
@@ -742,7 +751,7 @@ describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     socket.clear()
-    trackAgentMessageFeedback.mockClear()
+    telemetry.trackAgentMessageFeedback.mockClear()
   })
 
   afterEach(() => {
@@ -779,9 +788,9 @@ describe('AgentPanelRoot feedback capture', () => {
       await screen.findByRole('button', { name: 'Helpful' })
     )
 
-    expect(trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up' }],
-      [{ message_id: 'turn-9', vote: null }]
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
     ])
   })
 })
@@ -946,6 +955,10 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     expect(tab.changeTracker?.reset).toHaveBeenCalled()
+    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+      workflow_id: 'wf-42',
+      target: 'existing_tab'
+    })
   })
 
   it('autosaves a minted tab so the next patch applies without a conflict', async () => {
@@ -980,6 +993,10 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     const minted = hostStores.workflow.tabs.get(mintedPath)
     expect(minted?.changeTracker?.reset).toHaveBeenCalled()
+    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+      workflow_id: 'wf-42',
+      target: 'new_tab'
+    })
 
     const graph = { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
     patch(2, graph)
