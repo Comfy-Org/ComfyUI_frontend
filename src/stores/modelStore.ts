@@ -163,6 +163,21 @@ export enum ResourceState {
 }
 
 /**
+ * Resolves the preview image for a model: embedded metadata thumbnail when
+ * loaded, otherwise the server-rendered `.webp` preview. The preview endpoint
+ * reads a rendered thumbnail off local disk, which is unavailable on Cloud
+ * (model bytes live in object storage), so Cloud resolves to no preview.
+ */
+export function getModelPreviewUrl(model: ComfyModelDef): string {
+  if (model.image) return model.image
+  if (isCloud) return ''
+  const extension = model.file_name.split('.').pop()
+  const filename = model.file_name.replace(`.${extension}`, '.webp')
+  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  return `/api/experiment/models/preview/${model.directory}/${model.path_index}/${encodedFilename}`
+}
+
+/**
  * FE-owned copy of core's default `supported_pt_extensions`, applied to
  * match-all folders (empty registered allowlist) so they don't surface
  * README/config noise. Accepted to go stale across core version bumps; the
@@ -375,15 +390,17 @@ export const useModelStore = defineStore('models', () => {
     await reloadModels()
   }
 
-  api.addCustomEventListener('assets.seed.fast_complete', (event) => {
+  api.addCustomEventListener('assets.seed.fast_complete', async (event) => {
     const created = (event?.detail as { created?: unknown } | null)?.created
     if (typeof created === 'number' && created > 0) {
       // oxlint-disable-next-line no-console
       console.log(`Model scan discovered ${created} new model file(s).`)
     }
-    void reloadModels().catch((error) => {
+    try {
+      await reloadModels()
+    } catch (error) {
       console.error('Failed to reload the model library after a scan', error)
-    })
+    }
   })
 
   return {

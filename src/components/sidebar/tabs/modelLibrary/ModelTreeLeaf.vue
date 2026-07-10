@@ -24,9 +24,9 @@ import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
+import { getModelPreviewUrl } from '@/stores/modelStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
@@ -38,22 +38,7 @@ const props = defineProps<{
 // Note: The leaf node should always have a model definition on node.data.
 const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 
-const modelPreviewUrl = computed(() => {
-  if (modelDef.value.image) {
-    return modelDef.value.image
-  }
-  // The preview endpoint reads a rendered thumbnail off local disk, which is
-  // unavailable on Cloud (model bytes live in object storage).
-  if (isCloud) {
-    return ''
-  }
-  const folder = modelDef.value.directory
-  const path_index = modelDef.value.path_index
-  const extension = modelDef.value.file_name.split('.').pop()
-  const filename = modelDef.value.file_name.replace(`.${extension}`, '.webp')
-  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
-  return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
-})
+const modelPreviewUrl = computed(() => getModelPreviewUrl(modelDef.value))
 
 const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
 const modelPreviewStyle = ref<CSSProperties>({
