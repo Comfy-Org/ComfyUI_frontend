@@ -5,7 +5,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
-  TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
@@ -53,45 +52,6 @@ export function useTemplateWorkflows() {
   const selectTemplateCategory = (category: WorkflowTemplates | null) => {
     selectedTemplate.value = category
     return category !== null
-  }
-
-  /**
-   * Gets template thumbnail URL
-   */
-  const getTemplateThumbnailUrl = (
-    template: TemplateInfo,
-    sourceModule: string,
-    index = '1'
-  ) => {
-    const basePath =
-      sourceModule === 'default'
-        ? api.fileURL(`/templates/${template.name}`)
-        : api.apiURL(`/workflow_templates/${sourceModule}/${template.name}`)
-
-    const indexSuffix = sourceModule === 'default' && index ? `-${index}` : ''
-    return `${basePath}${indexSuffix}.${template.mediaSubtype}`
-  }
-
-  /**
-   * Gets formatted template title
-   */
-  const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
-    const fallback =
-      template.title ?? template.name ?? `${sourceModule} Template`
-    return sourceModule === 'default'
-      ? (template.localizedTitle ?? fallback)
-      : fallback
-  }
-
-  /**
-   * Gets formatted template description
-   */
-  const getTemplateDescription = (template: TemplateInfo) => {
-    return (
-      (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
-        .trim() ?? ''
-    )
   }
 
   /**
@@ -177,9 +137,6 @@ export function useTemplateWorkflows() {
     loadTemplates,
     selectFirstTemplateCategory,
     selectTemplateCategory,
-    getTemplateThumbnailUrl,
-    getTemplateTitle,
-    getTemplateDescription,
     loadWorkflowTemplate
   }
 }

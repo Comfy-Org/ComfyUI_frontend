@@ -110,7 +110,7 @@ function dragDrop(e: DragEvent) {
     </div>
     <Splitter
       :key="splitterKey"
-      class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
+      class="h-[calc(100%-var(--workflow-tabs-height))] w-full border-none bg-base-background"
       @resizestart="$event.originalEvent.preventDefault()"
       @resizeend="onResizeEnd"
     >
@@ -145,10 +145,9 @@ function dragDrop(e: DragEvent) {
         />
       </SplitterPanel>
       <SplitterPanel
-        id="linearCenterPanel"
         data-testid="linear-center-panel"
         :size="CENTER_PANEL_SIZE"
-        class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+        class="relative flex min-w-[20vw] flex-col gap-4 bg-interface-canvas-background text-muted-foreground outline-none"
         @drop="dragDrop"
       >
         <LinearProgressBar

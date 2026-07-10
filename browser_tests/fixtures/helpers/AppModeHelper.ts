@@ -42,16 +42,16 @@ export class AppModeHelper {
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
   public readonly runButton: Locator
-  /** The welcome screen shown when app mode has no outputs or no nodes. */
+  /** The welcome card shown when the graph has nodes or outputs (build prompt / ready to run). */
   public readonly welcome: Locator
-  /** The empty workflow message shown when no nodes exist. */
-  public readonly emptyWorkflowText: Locator
   /** The "Build app" button shown when nodes exist but no outputs. */
   public readonly buildAppButton: Locator
-  /** The "Back to workflow" button on the welcome screen. */
-  public readonly backToWorkflowButton: Locator
-  /** The "Load template" button shown when no nodes exist. */
-  public readonly loadTemplateButton: Locator
+  /** The get started page shown when the graph is empty. */
+  public readonly getStarted: Locator
+  /** The "Discover all templates" button on the get started page. */
+  public readonly getStartedDiscoverButton: Locator
+  /** Featured template cards on the get started page. */
+  public readonly getStartedTemplateCards: Locator
   /** The cancel button for an in-progress run in the output history. */
   public readonly cancelRunButton: Locator
   /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
@@ -111,15 +111,13 @@ export class AppModeHelper {
       .getByTestId(TestIds.linear.runButton)
       .getByRole('button', { name: /run/i })
     this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
-    this.emptyWorkflowText = this.page.getByTestId(
-      TestIds.appMode.emptyWorkflow
-    )
     this.buildAppButton = this.page.getByTestId(TestIds.appMode.buildApp)
-    this.backToWorkflowButton = this.page.getByTestId(
-      TestIds.appMode.backToWorkflow
+    this.getStarted = this.page.getByTestId(TestIds.appMode.getStarted)
+    this.getStartedDiscoverButton = this.page.getByTestId(
+      TestIds.appMode.getStartedDiscover
     )
-    this.loadTemplateButton = this.page.getByTestId(
-      TestIds.appMode.loadTemplate
+    this.getStartedTemplateCards = this.page.getByTestId(
+      TestIds.appMode.getStartedTemplate
     )
     this.cancelRunButton = this.page.getByTestId(
       TestIds.outputHistory.cancelRun
