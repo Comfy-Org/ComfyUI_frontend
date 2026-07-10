@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const hoisted = vi.hoisted(() => {
   const analytics = {
     identify: vi.fn(),
+    page: vi.fn(),
     track: vi.fn(),
     reset: vi.fn(),
     register: vi.fn().mockResolvedValue(undefined)
@@ -71,6 +72,30 @@ describe('CustomerIoTelemetryProvider', () => {
       expect.objectContaining({ siteId: SITE_ID })
     )
     expect(hoisted.analytics.register).toHaveBeenCalled()
+  })
+
+  it('reports the current page after registering the in-app plugin', async () => {
+    createProvider()
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.page).toHaveBeenCalledWith()
+    expect(hoisted.analytics.register.mock.invocationCallOrder[0]).toBeLessThan(
+      hoisted.analytics.page.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('reports client-side route changes', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+    hoisted.analytics.page.mockClear()
+
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.page).toHaveBeenCalledWith()
   })
 
   it('does not initialize without a write key', async () => {
