@@ -87,8 +87,6 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-// Computed (not a snapshot) so results stay live when a reload — e.g. a
-// completed scan — adds or removes models while a search is active.
 const filteredModels = computed<ComfyModelDef[]>(() => {
   const search = searchQuery.value.toLocaleLowerCase()
   if (!search) return []
