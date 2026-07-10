@@ -166,16 +166,14 @@ interface ValueOption {
   text: string
 }
 
-const { mediaTypeFilters, dateFilter } = defineProps<{
-  mediaTypeFilters: string[]
-  dateFilter: string
+const { active = false } = defineProps<{
   active?: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:mediaTypeFilters': [value: string[]]
-  'update:dateFilter': [value: string]
-}>()
+const mediaTypeFilters = defineModel<string[]>('mediaTypeFilters', {
+  required: true
+})
+const dateFilter = defineModel<string>('dateFilter', { required: true })
 
 const { t } = useI18n()
 
@@ -250,49 +248,48 @@ const searchSections = computed(() => {
 function isApplied(cat: FacetKey, value: string): boolean {
   switch (cat) {
     case 'media':
-      return mediaTypeFilters.includes(value)
+      return mediaTypeFilters.value.includes(value)
     case 'date':
-      return dateFilter === value
+      return dateFilter.value === value
   }
 }
 
 function appliedCount(cat: FacetKey): number {
   switch (cat) {
     case 'media':
-      return mediaTypeFilters.length
+      return mediaTypeFilters.value.length
     case 'date':
-      return dateFilter ? 1 : 0
+      return dateFilter.value ? 1 : 0
   }
 }
 
 function toggleFacetValue(cat: FacetKey, value: string) {
   switch (cat) {
     case 'date':
-      emit('update:dateFilter', dateFilter === value ? '' : value)
-      break
+      dateFilter.value = dateFilter.value === value ? '' : value
+      return
     case 'media':
-      emit(
-        'update:mediaTypeFilters',
-        mediaTypeFilters.includes(value)
-          ? mediaTypeFilters.filter((v) => v !== value)
-          : [...mediaTypeFilters, value]
-      )
+      mediaTypeFilters.value = mediaTypeFilters.value.includes(value)
+        ? mediaTypeFilters.value.filter((v) => v !== value)
+        : [...mediaTypeFilters.value, value]
   }
 }
 
-const anyApplied = computed(() => mediaTypeFilters.length > 0 || !!dateFilter)
+const anyApplied = computed(
+  () => mediaTypeFilters.value.length > 0 || !!dateFilter.value
+)
 
 function clearAll() {
-  emit('update:mediaTypeFilters', [])
-  emit('update:dateFilter', '')
+  mediaTypeFilters.value = []
+  dateFilter.value = ''
 }
 
 function menuItems(fromEl: HTMLElement): HTMLElement[] {
-  const content = fromEl.closest('[data-reka-menu-content]')
-  return content
+  const menu = fromEl.closest('[role="menu"]')
+  return menu
     ? Array.from(
-        content.querySelectorAll<HTMLElement>(
-          '[data-reka-collection-item]:not([data-disabled])'
+        menu.querySelectorAll<HTMLElement>(
+          '[role^="menuitem"]:not([aria-disabled="true"])'
         )
       )
     : []

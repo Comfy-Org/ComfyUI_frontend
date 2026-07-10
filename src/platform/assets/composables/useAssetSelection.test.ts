@@ -149,6 +149,21 @@ describe('useAssetSelection', () => {
       expect(selectedCount.value).toBe(0)
     })
 
+    it('starts a new selection after deselecting the anchor', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      handleAssetClick(assets[0], 0, assets)
+      mockShiftKey.value = true
+      handleAssetClick(assets[2], 2, assets)
+
+      expect(isSelected('asset-0')).toBe(false)
+      expect(isSelected('asset-2')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
     it('collapses a multi-selection to the clicked asset rather than deselecting', () => {
       const { handleAssetClick, isSelected, selectedCount } =
         useAssetSelection()

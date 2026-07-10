@@ -80,11 +80,17 @@ describe('MediaAssetSettingsMenu', () => {
       expect(getButton(KEYS.gridLarge)).toBeTruthy()
     })
 
-    it('updates the v-model:viewMode when an option is clicked', async () => {
-      const { viewMode, user } = mountWithModels({ viewMode: 'list' })
-      await user.click(getButton(KEYS.gridLarge))
-      expect(viewMode.value).toBe('grid-large')
-    })
+    it.for([
+      { key: KEYS.gridSmall, expected: 'grid-small' },
+      { key: KEYS.gridLarge, expected: 'grid-large' }
+    ] as const)(
+      'updates the v-model:viewMode to $expected when an option is clicked',
+      async ({ key, expected }) => {
+        const { viewMode, user } = mountWithModels({ viewMode: 'list' })
+        await user.click(getButton(key))
+        expect(viewMode.value).toBe(expected)
+      }
+    )
   })
 
   describe('sort options (gated by showSortOptions)', () => {

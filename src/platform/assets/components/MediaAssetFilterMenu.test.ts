@@ -71,6 +71,18 @@ describe('MediaAssetFilterMenu', () => {
     expect(onDate).toHaveBeenCalledWith('today')
   })
 
+  it('toggles a date preset off when it is already applied', async () => {
+    const { onDate, user } = renderMenu({ dateFilter: 'today' })
+    await openMenu(user)
+    await user.type(screen.getByRole('textbox'), 'today')
+
+    const row = screen.getByRole('menuitemcheckbox', { name: 'Today' })
+    expect(row).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(row)
+    expect(onDate).toHaveBeenCalledWith('')
+  })
+
   it('moves focus into the results with arrow keys after searching', async () => {
     const { user } = renderMenu()
     await openMenu(user)
@@ -99,7 +111,8 @@ describe('MediaAssetFilterMenu', () => {
 
   it('shows Clear all and resets every facet when a filter is applied', async () => {
     const { onMedia, onDate, user } = renderMenu({
-      mediaTypeFilters: ['image']
+      mediaTypeFilters: ['image'],
+      dateFilter: 'today'
     })
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Clear all' }))
