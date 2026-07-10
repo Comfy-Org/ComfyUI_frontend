@@ -19,7 +19,8 @@ const env = vi.hoisted(() => {
     teamWorkspacesEnabled: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace'
+    billingType: 'legacy' as 'legacy' | 'workspace',
+    canManagePartnerNodes: false
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -75,6 +76,16 @@ vi.mock('@/platform/settings/settingStore', () => ({
   getSettingInfo: vi.fn()
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return { canManagePartnerNodes: env.state.canManagePartnerNodes }
+      }
+    }
+  })
+}))
+
 interface MockSettingParams {
   id: string
   name: string
@@ -116,7 +127,8 @@ describe('useSettingUI', () => {
       teamWorkspacesEnabled: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
-      billingType: 'legacy'
+      billingType: 'legacy',
+      canManagePartnerNodes: false
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -232,6 +244,18 @@ describe('useSettingUI', () => {
           }
         }
       }
+    })
+
+    it('shows the partner nodes entry only to owners and admins', () => {
+      env.state.canManagePartnerNodes = false
+      expect(navKeys(useSettingUI().navGroups.value)).not.toContain(
+        'workspace-partner-nodes'
+      )
+
+      env.state.canManagePartnerNodes = true
+      expect(navKeys(useSettingUI().navGroups.value)).toContain(
+        'workspace-partner-nodes'
+      )
     })
   })
 })
