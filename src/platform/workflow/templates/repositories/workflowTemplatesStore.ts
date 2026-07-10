@@ -3,10 +3,6 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  normalizeProviderKey,
-  usePartnerNodeAccessStore
-} from '@/platform/workspace/partnerNodeAccess/partnerNodeAccessStore'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
@@ -29,39 +25,6 @@ interface EnhancedTemplate extends TemplateInfo {
   isEssential?: boolean
   isPartnerNode?: boolean // Computed from OpenSource === false
   searchableText?: string
-}
-
-/** Normalized provider keys declared by a template's logo overlay metadata. */
-function templateProviderKeys(template: EnhancedTemplate): string[] {
-  return (template.logos ?? [])
-    .flatMap((logo) =>
-      Array.isArray(logo.provider) ? logo.provider : [logo.provider]
-    )
-    .map(normalizeProviderKey)
-}
-
-/**
- * PROTOTYPE (DES-484): whether a template must be hidden because of the
- * workspace partner-node policy. The template index carries no node-type
- * list, so provider identity from logo metadata is the only per-partner
- * signal; `isPartnerNode` (openSource === false) marks partner templates
- * that may lack that metadata.
- *
- * @param template - The template under evaluation; `template.isPartnerNode`
- *   is true when the template runs on partner/API nodes.
- * @param providerKeys - Normalized provider keys from the template's logos
- *   (may be empty when metadata is missing).
- * @param disabledPartners - Normalized keys of partners whose nodes are all
- *   disabled in this workspace.
- */
-function isTemplateBlockedByPartnerPolicy(
-  template: EnhancedTemplate,
-  providerKeys: string[],
-  disabledPartners: Set<string>
-): boolean {
-  if (!template.isPartnerNode) return false
-  if (!providerKeys.length) return true
-  return providerKeys.some((key) => disabledPartners.has(key))
 }
 
 export const useWorkflowTemplatesStore = defineStore(
@@ -286,16 +249,7 @@ export const useWorkflowTemplatesStore = defineStore(
             (template) => !template.requiresCustomNodes?.length
           )
 
-      const disabledPartners = usePartnerNodeAccessStore().fullyDisabledPartners
-      if (!disabledPartners.size) return filteredTemplates
-      return filteredTemplates.filter(
-        (template) =>
-          !isTemplateBlockedByPartnerPolicy(
-            template,
-            templateProviderKeys(template),
-            disabledPartners
-          )
-      )
+      return filteredTemplates
     })
 
     /**

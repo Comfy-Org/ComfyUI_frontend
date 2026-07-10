@@ -1566,7 +1566,7 @@
     "Workspace": "Workspace",
     "Error System": "Error System",
     "Other": "Other",
-    "PartnerNodes": "Partner Nodes",
+    "PartnerNodes": "Partner Nodes Prototype",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
     "PointCloud": "Point Cloud"
@@ -2856,14 +2856,18 @@
   },
   "workspacePanel": {
     "partnerNodes": {
-      "title": "Partner Nodes",
-      "description": "Control which partner (API) nodes this workspace can discover and run.",
+      "title": "Partner Nodes Prototype",
+      "description": "Preview which partner nodes appear in the modern node library and search.",
+      "prototypeTitle": "Local UX prototype",
+      "prototypeDescription": "Changes are stored only in this browser for the active workspace. They do not enforce node insertion, templates, or backend execution.",
       "searchPlaceholder": "Search partner nodes",
-      "enableAll": "Enable all",
-      "disableAll": "Disable all",
+      "enableFiltered": "Enable filtered",
+      "disableFiltered": "Disable filtered",
       "enabledCount": "{enabled} of {total} enabled",
       "empty": "No partner nodes are available on this server.",
-      "autoEnableLabel": "Auto-enable newly added partner nodes"
+      "noResults": "No partner nodes match this search.",
+      "toggleLabel": "Show {node} in modern node discovery",
+      "defaultDeny": "Newly discovered partner nodes start disabled in this prototype."
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
@@ -4405,14 +4409,8 @@
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
     "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
-    "hideDisabledPartnerNodes": "Hide Disabled Partner Nodes",
-    "hideDisabledPartnerNodesDescription": "Hides partner nodes disabled by workspace policy"
-  },
-  "partnerNodeAccess": {
-    "insertBlockedTitle": "Partner node disabled",
-    "insertBlockedDetail": "{node} is disabled for this workspace. A workspace owner or admin can re-enable it in Settings > Partner Nodes.",
-    "runBlockedTitle": "Workflow uses disabled partner nodes",
-    "runBlockedDetail": "This workflow can't run because it uses partner nodes disabled for this workspace: {nodes}. A workspace owner or admin can re-enable them in Settings > Partner Nodes."
+    "hidePrototypeDisabledPartnerNodes": "Hide Prototype-Disabled Partner Nodes",
+    "hidePrototypeDisabledPartnerNodesDescription": "Hides partner nodes disabled in the local UX prototype from modern node discovery"
   },
   "secrets": {
     "title": "API Keys & Secrets",

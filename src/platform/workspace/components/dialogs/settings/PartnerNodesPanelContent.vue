@@ -1,155 +1,201 @@
 <template>
-  <TabPanel value="PartnerNodes" class="h-full">
-    <div class="flex h-full flex-col">
+  <div class="flex size-full flex-col gap-4">
+    <header>
+      <h2 class="m-0 text-2xl font-semibold text-base-foreground">
+        {{ $t('workspacePanel.partnerNodes.title') }}
+      </h2>
+      <p class="mt-1 mb-0 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.partnerNodes.description') }}
+      </p>
+    </header>
+
+    <div
+      role="note"
+      class="flex gap-3 rounded-lg bg-secondary-background p-3 text-sm text-base-foreground"
+    >
+      <i
+        class="mt-0.5 icon-[lucide--flask-conical] size-4 shrink-0"
+        aria-hidden="true"
+      />
       <div>
-        <h2 class="text-2xl font-bold">
-          {{ $t('workspacePanel.partnerNodes.title') }}
-        </h2>
-        <div class="mt-1 flex items-center justify-between gap-4">
-          <p class="my-0 text-sm text-muted">
-            {{ $t('workspacePanel.partnerNodes.description') }}
-          </p>
-          <div class="flex shrink-0 gap-2">
-            <Button variant="textonly" size="sm" @click="setAllFiltered(true)">
-              {{ $t('workspacePanel.partnerNodes.enableAll') }}
-            </Button>
-            <Button variant="textonly" size="sm" @click="setAllFiltered(false)">
-              {{ $t('workspacePanel.partnerNodes.disableAll') }}
-            </Button>
-          </div>
-        </div>
+        <p class="m-0 font-semibold">
+          {{ $t('workspacePanel.partnerNodes.prototypeTitle') }}
+        </p>
+        <p class="mt-1 mb-0 text-muted-foreground">
+          {{ $t('workspacePanel.partnerNodes.prototypeDescription') }}
+        </p>
       </div>
+    </div>
 
-      <Divider class="my-4" />
-
+    <div class="flex flex-wrap items-center gap-2">
       <SearchInput
         v-model="searchQuery"
         :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-        class="mb-4"
+        class="min-w-64 flex-1"
       />
-
-      <div
-        v-if="!accessStore.partnerNodes.length"
-        class="py-8 text-center text-sm text-muted"
+      <Button
+        variant="textonly"
+        :disabled="!filteredNodes.length"
+        @click="setAllFiltered(true)"
       >
-        {{ $t('workspacePanel.partnerNodes.empty') }}
-      </div>
+        {{ $t('workspacePanel.partnerNodes.enableFiltered') }}
+      </Button>
+      <Button
+        variant="textonly"
+        :disabled="!filteredNodes.length"
+        @click="setAllFiltered(false)"
+      >
+        {{ $t('workspacePanel.partnerNodes.disableFiltered') }}
+      </Button>
+    </div>
 
-      <div v-else class="min-h-0 flex-1 overflow-y-auto">
-        <section
-          v-for="group in groupedNodes"
-          :key="group.partner"
-          class="mb-6"
+    <p
+      v-if="!prototypeStore.partnerNodes.length"
+      class="my-8 text-center text-sm text-muted-foreground"
+    >
+      {{ $t('workspacePanel.partnerNodes.empty') }}
+    </p>
+
+    <p
+      v-else-if="!filteredNodes.length"
+      class="my-8 text-center text-sm text-muted-foreground"
+    >
+      {{ $t('workspacePanel.partnerNodes.noResults') }}
+    </p>
+
+    <div v-else class="min-h-0 flex-1 overflow-y-auto pr-1">
+      <section
+        v-for="group in groupedNodes"
+        :key="group.provider"
+        class="mb-4 overflow-hidden rounded-lg border border-interface-stroke"
+      >
+        <h3
+          class="m-0 flex items-center justify-between bg-secondary-background px-4 py-2 text-sm font-semibold text-base-foreground"
         >
-          <h3 class="mb-1 text-sm font-semibold">
-            {{ group.partner }}
-            <span class="ml-2 font-normal text-muted">
-              {{
-                $t('workspacePanel.partnerNodes.enabledCount', {
-                  enabled: group.enabledCount,
-                  total: group.nodes.length
+          <span>{{ group.provider }}</span>
+          <span class="font-normal text-muted-foreground">
+            {{
+              $t('workspacePanel.partnerNodes.enabledCount', {
+                enabled: group.enabledCount,
+                total: group.nodes.length
+              })
+            }}
+          </span>
+        </h3>
+        <ul class="m-0 list-none divide-y divide-interface-stroke p-0">
+          <li
+            v-for="node in group.nodes"
+            :key="node.name"
+            class="flex min-h-12 items-center justify-between gap-4 px-4 py-1"
+          >
+            <div class="min-w-0">
+              <p class="m-0 truncate text-sm text-base-foreground">
+                {{ node.displayName }}
+              </p>
+              <p class="m-0 truncate text-xs text-muted-foreground">
+                {{ node.name }}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="prototypeStore.isEnabled(node.name)"
+              :aria-label="
+                $t('workspacePanel.partnerNodes.toggleLabel', {
+                  node: node.displayName
                 })
-              }}
-            </span>
-          </h3>
-          <ul class="m-0 list-none p-0">
-            <li
-              v-for="node in group.nodes"
-              :key="node.name"
-              class="flex items-center justify-between py-1.5"
+              "
+              class="group focus-visible:ring-ring flex h-11 w-14 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent focus-visible:ring-1 focus-visible:outline-none"
+              @click="toggleNode(node.name)"
             >
               <span
                 :class="
                   cn(
-                    'text-sm',
-                    !accessStore.isNodeTypeEnabled(node.name) && 'opacity-40'
+                    'relative h-6 w-11 rounded-full border border-interface-stroke transition-colors',
+                    prototypeStore.isEnabled(node.name)
+                      ? 'bg-primary-background group-hover:bg-primary-background-hover'
+                      : 'bg-secondary-background group-hover:bg-secondary-background-hover'
                   )
                 "
+                aria-hidden="true"
               >
-                {{ node.displayName }}
+                <span
+                  :class="
+                    cn(
+                      'absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-sm transition-transform',
+                      prototypeStore.isEnabled(node.name) && 'translate-x-5'
+                    )
+                  "
+                />
               </span>
-              <ToggleSwitch
-                :model-value="accessStore.isNodeTypeEnabled(node.name)"
-                @update:model-value="
-                  accessStore.setEnabled([node.name], $event)
-                "
-              />
-            </li>
-          </ul>
-        </section>
-      </div>
-
-      <div class="mt-4 flex items-center gap-2 pt-2">
-        <ToggleSwitch
-          :model-value="accessStore.autoEnableNew"
-          @update:model-value="accessStore.setAutoEnableNew($event)"
-        />
-        <span
-          :class="cn('text-sm', !accessStore.autoEnableNew && 'text-muted')"
-        >
-          {{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}
-        </span>
-      </div>
+            </button>
+          </li>
+        </ul>
+      </section>
     </div>
-  </TabPanel>
+
+    <p class="m-0 text-xs text-muted-foreground">
+      {{ $t('workspacePanel.partnerNodes.defaultDeny') }}
+    </p>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Divider from 'primevue/divider'
-import TabPanel from 'primevue/tabpanel'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import type { PartnerNodeEntry } from '@/platform/workspace/partnerNodeAccess/partnerNodeAccessStore'
-import { usePartnerNodeAccessStore } from '@/platform/workspace/partnerNodeAccess/partnerNodeAccessStore'
+import type { PartnerNodePrototypeEntry } from '@/platform/workspace/partnerNodePrototype/partnerNodePrototypeStore'
+import { usePartnerNodePrototypeStore } from '@/platform/workspace/partnerNodePrototype/partnerNodePrototypeStore'
 
-interface PartnerGroup {
-  partner: string
-  nodes: PartnerNodeEntry[]
+interface PartnerNodePrototypeGroup {
+  provider: string
+  nodes: PartnerNodePrototypeEntry[]
   enabledCount: number
 }
 
-const accessStore = usePartnerNodeAccessStore()
+const prototypeStore = usePartnerNodePrototypeStore()
 const searchQuery = ref('')
 
-const filteredNodes = computed<PartnerNodeEntry[]>(() => {
+const filteredNodes = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return accessStore.partnerNodes
-  return accessStore.partnerNodes.filter(
+  if (!query) return prototypeStore.partnerNodes
+  return prototypeStore.partnerNodes.filter(
     (node) =>
       node.displayName.toLowerCase().includes(query) ||
       node.name.toLowerCase().includes(query) ||
-      node.partner.toLowerCase().includes(query)
+      node.provider.toLowerCase().includes(query)
   )
 })
 
-const groupedNodes = computed<PartnerGroup[]>(() => {
-  const byPartner = new Map<string, PartnerNodeEntry[]>()
+const groupedNodes = computed<PartnerNodePrototypeGroup[]>(() => {
+  const nodesByProvider = new Map<string, PartnerNodePrototypeEntry[]>()
   for (const node of filteredNodes.value) {
-    const nodes = byPartner.get(node.partner) ?? []
+    const nodes = nodesByProvider.get(node.provider) ?? []
     nodes.push(node)
-    byPartner.set(node.partner, nodes)
+    nodesByProvider.set(node.provider, nodes)
   }
-  return [...byPartner.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([partner, nodes]) => ({
-      partner,
-      nodes: nodes.toSorted((a, b) =>
-        a.displayName.localeCompare(b.displayName)
+  return [...nodesByProvider.entries()]
+    .sort(([first], [second]) => first.localeCompare(second))
+    .map(([provider, nodes]) => ({
+      provider,
+      nodes: nodes.toSorted((first, second) =>
+        first.displayName.localeCompare(second.displayName)
       ),
-      enabledCount: nodes.filter((node) =>
-        accessStore.isNodeTypeEnabled(node.name)
-      ).length
+      enabledCount: nodes.filter((node) => prototypeStore.isEnabled(node.name))
+        .length
     }))
 })
 
 function setAllFiltered(enabled: boolean) {
-  accessStore.setEnabled(
+  prototypeStore.setEnabled(
     filteredNodes.value.map((node) => node.name),
     enabled
   )
+}
+
+function toggleNode(nodeType: string) {
+  prototypeStore.setEnabled([nodeType], !prototypeStore.isEnabled(nodeType))
 }
 </script>

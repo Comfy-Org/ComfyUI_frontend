@@ -12,7 +12,7 @@ import { computed, onMounted, watch } from 'vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
-import { installPartnerNodeEnforcement } from '@/platform/workspace/partnerNodeAccess/installPartnerNodeEnforcement'
+import { installPartnerNodePrototype } from '@/platform/workspace/partnerNodePrototype/installPartnerNodePrototype'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -22,7 +22,7 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
-installPartnerNodeEnforcement()
+installPartnerNodePrototype()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)

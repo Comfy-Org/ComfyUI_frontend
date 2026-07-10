@@ -19,7 +19,9 @@ const env = vi.hoisted(() => {
     teamWorkspacesEnabled: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace'
+    billingType: 'legacy' as 'legacy' | 'workspace',
+    workspaceType: 'personal' as 'personal' | 'team',
+    workspaceRole: 'owner' as 'owner' | 'member'
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -70,6 +72,13 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    workspaceType: env.fakeRef('workspaceType'),
+    workspaceRole: env.fakeRef('workspaceRole')
+  })
+}))
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
@@ -116,7 +125,9 @@ describe('useSettingUI', () => {
       teamWorkspacesEnabled: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
-      billingType: 'legacy'
+      billingType: 'legacy',
+      workspaceType: 'personal',
+      workspaceRole: 'owner'
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -178,6 +189,27 @@ describe('useSettingUI', () => {
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
+  })
+
+  it('shows the partner-node prototype only to team workspace owners', () => {
+    Object.assign(env.state, {
+      isCloud: true,
+      isLoggedIn: true,
+      teamWorkspacesEnabled: true,
+      workspaceType: 'team',
+      workspaceRole: 'owner'
+    })
+
+    const ownerNavIds = useSettingUI().navGroups.value.flatMap((group) =>
+      group.items.map((item) => item.id)
+    )
+    expect(ownerNavIds).toContain('workspace-partner-nodes')
+
+    env.state.workspaceRole = 'member'
+    const memberNavIds = useSettingUI().navGroups.value.flatMap((group) =>
+      group.items.map((item) => item.id)
+    )
+    expect(memberNavIds).not.toContain('workspace-partner-nodes')
   })
 
   describe('legacy billing in the workspace layout', () => {

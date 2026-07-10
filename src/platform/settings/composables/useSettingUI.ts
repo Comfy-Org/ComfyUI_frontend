@@ -13,6 +13,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -55,6 +56,7 @@ export function useSettingUI(
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { workspaceRole, workspaceType } = useWorkspaceUI()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -193,9 +195,13 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
-  // PROTOTYPE (DES-484): unconditionally registered so the demo works on any
-  // distribution. Production gates on shouldShowWorkspacePanel +
-  // permissions.canManagePartnerNodes (owner/admin only).
+  const shouldShowPartnerNodesPrototype = computed(
+    () =>
+      shouldShowWorkspacePanel.value &&
+      workspaceType.value === 'team' &&
+      workspaceRole.value === 'owner'
+  )
+
   const partnerNodesPanel: SettingPanelItem = {
     node: {
       key: 'workspace-partner-nodes',
@@ -261,7 +267,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      partnerNodesPanel,
+      ...(shouldShowPartnerNodesPrototype.value ? [partnerNodesPanel] : []),
       ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
       keybindingPanel,
       extensionPanel,
@@ -313,7 +319,9 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
-        partnerNodesPanel.node,
+        ...(shouldShowPartnerNodesPrototype.value
+          ? [partnerNodesPanel.node]
+          : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -360,7 +368,6 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        partnerNodesPanel.node,
         ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
           ? [subscriptionPanel.node]
           : []),

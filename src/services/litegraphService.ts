@@ -38,7 +38,6 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { usePartnerNodeAccessStore } from '@/platform/workspace/partnerNodeAccess/partnerNodeAccessStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -895,18 +894,6 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
-    if (usePartnerNodeAccessStore().disabledNodeTypes.has(nodeDef.name)) {
-      useToastStore().add({
-        severity: 'warn',
-        summary: t('partnerNodeAccess.insertBlockedTitle'),
-        detail: t('partnerNodeAccess.insertBlockedDetail', {
-          node: nodeDef.display_name ?? nodeDef.name
-        }),
-        life: 5000
-      })
-      return null
-    }
-
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {
