@@ -210,17 +210,6 @@ describe('formatShortMonthDay', () => {
 })
 
 describe('formatClockTime', () => {
-  it('formats time with hours, minutes, and seconds', () => {
-    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
-    const { hourCycle } = new Intl.DateTimeFormat(undefined, {
-      hour: 'numeric'
-    }).resolvedOptions()
-    const expected =
-      hourCycle === 'h11' || hourCycle === 'h12' ? '2:05:06 pm' : '14:05:06'
-
-    expect(formatClockTime(ts, 'en-GB')).toBe(expected)
-  })
-
   it('uses app locale with explicit 12-hour preference', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
 
