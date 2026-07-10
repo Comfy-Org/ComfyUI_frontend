@@ -132,6 +132,29 @@ export function usePartnerNodes() {
     }
   }
 
+  async function setAllFilteredEnabled(enabled: boolean) {
+    const ids = filteredNodes.value.map((n) => n.id)
+    if (ids.length === 0) return
+    const previous = new Map(
+      nodes.value.map((n) => [
+        n.id,
+        { enabled: n.enabled, last_modified: n.last_modified }
+      ])
+    )
+    applyEnabled(ids, enabled)
+    try {
+      await partnerNodesApi.setEnabledBulk(ids, enabled)
+    } catch {
+      nodes.value = nodes.value.map((n) =>
+        previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
+      )
+      toast.add({
+        severity: 'error',
+        summary: t('workspacePanel.partnerNodes.updateError')
+      })
+    }
+  }
+
   async function setAutoEnableNew(value: boolean) {
     const previous = autoEnableNew.value
     autoEnableNew.value = value
@@ -180,6 +203,7 @@ export function usePartnerNodes() {
     toggleSort,
     setEnabled,
     setSelectedEnabled,
+    setAllFilteredEnabled,
     setAutoEnableNew,
     toggleSelection,
     toggleSelectAll,

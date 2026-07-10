@@ -1,8 +1,26 @@
 <template>
   <div class="@container relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
-    <span class="text-sm text-muted-foreground">
-      {{ $t('workspacePanel.partnerNodes.description') }}
-    </span>
+    <div class="flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-6">
+      <span class="min-w-0 flex-1 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.partnerNodes.description') }}
+      </span>
+      <div class="flex shrink-0 items-center gap-2">
+        <Button
+          variant="textonly"
+          size="md"
+          @click="setAllFilteredEnabled(true)"
+        >
+          {{ $t('workspacePanel.allowlist.enableAll') }}
+        </Button>
+        <Button
+          variant="textonly"
+          size="md"
+          @click="setAllFilteredEnabled(false)"
+        >
+          {{ $t('workspacePanel.allowlist.disableAll') }}
+        </Button>
+      </div>
+    </div>
 
     <BillingStatusBanner />
 
@@ -162,6 +180,7 @@ import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
@@ -191,6 +210,7 @@ const {
   toggleSort,
   setEnabled,
   setSelectedEnabled,
+  setAllFilteredEnabled,
   setAutoEnableNew,
   toggleSelection,
   toggleSelectAll,

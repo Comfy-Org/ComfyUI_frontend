@@ -2900,7 +2900,9 @@
       "tabs": {
         "partnerNodes": "Partner nodes",
         "models": "Models"
-      }
+      },
+      "enableAll": "Enable all",
+      "disableAll": "Disable all"
     },
     "models": {
       "descriptionLead": "Choose which models your team can use.",

@@ -137,10 +137,12 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
   })
 
   const selectedCount = computed(() => selectedIds.value.size)
-  const allFilteredSelected = computed(
+  // The header checkbox works page-by-page: selecting 1,400 rows in one click
+  // is a different action (Enable/Disable all) than building a selection.
+  const allPageSelected = computed(
     () =>
-      filteredModels.value.length > 0 &&
-      filteredModels.value.every((m) => selectedIds.value.has(m.id))
+      pagedModels.value.length > 0 &&
+      pagedModels.value.every((m) => selectedIds.value.has(m.id))
   )
 
   function toggleSort(field: SortField) {
@@ -168,6 +170,16 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
     applyEnabled([...selectedIds.value], enabled)
   }
 
+  // Acts on the filtered set, so a search narrows the blast radius (e.g.
+  // search "tts" → Disable all). Maps onto the eventual server-side
+  // bulk-by-query operation.
+  function setAllFilteredEnabled(enabled: boolean) {
+    applyEnabled(
+      filteredModels.value.map((m) => m.id),
+      enabled
+    )
+  }
+
   function setAutoEnableNew(value: boolean) {
     autoEnableNew.value = value
   }
@@ -179,12 +191,14 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
     selectedIds.value = next
   }
 
-  function toggleSelectAll() {
-    if (allFilteredSelected.value) {
-      clearSelection()
-      return
+  function toggleSelectAllPage() {
+    const next = new Set(selectedIds.value)
+    if (allPageSelected.value) {
+      for (const m of pagedModels.value) next.delete(m.id)
+    } else {
+      for (const m of pagedModels.value) next.add(m.id)
     }
-    selectedIds.value = new Set(filteredModels.value.map((m) => m.id))
+    selectedIds.value = next
   }
 
   function clearSelection() {
@@ -198,7 +212,7 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
     sortDirection,
     selectedIds,
     selectedCount,
-    allFilteredSelected,
+    allPageSelected,
     filteredModels,
     page,
     total,
@@ -207,9 +221,10 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
     toggleSort,
     setEnabled,
     setSelectedEnabled,
+    setAllFilteredEnabled,
     setAutoEnableNew,
     toggleSelection,
-    toggleSelectAll,
+    toggleSelectAllPage,
     clearSelection
   }
 }

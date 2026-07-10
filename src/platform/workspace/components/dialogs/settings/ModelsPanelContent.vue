@@ -1,12 +1,30 @@
 <template>
   <div class="@container relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
-    <span class="text-sm text-muted-foreground">
-      {{ $t('workspacePanel.models.descriptionLead') }}
-      <span class="font-semibold text-base-foreground">
-        {{ $t('workspacePanel.models.descriptionImport') }}
+    <div class="flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-6">
+      <span class="min-w-0 flex-1 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.models.descriptionLead') }}
+        <span class="font-semibold text-base-foreground">
+          {{ $t('workspacePanel.models.descriptionImport') }}
+        </span>
+        {{ $t('workspacePanel.models.descriptionWorkflows') }}
       </span>
-      {{ $t('workspacePanel.models.descriptionWorkflows') }}
-    </span>
+      <div class="flex shrink-0 items-center gap-2">
+        <Button
+          variant="textonly"
+          size="md"
+          @click="setAllFilteredEnabled(true)"
+        >
+          {{ $t('workspacePanel.allowlist.enableAll') }}
+        </Button>
+        <Button
+          variant="textonly"
+          size="md"
+          @click="setAllFilteredEnabled(false)"
+        >
+          {{ $t('workspacePanel.allowlist.disableAll') }}
+        </Button>
+      </div>
+    </div>
 
     <BillingStatusBanner />
 
@@ -21,9 +39,9 @@
           >
             <TableHead class="w-6">
               <Checkbox
-                :model-value="allFilteredSelected"
+                :model-value="allPageSelected"
                 :aria-label="$t('workspacePanel.models.selectAll')"
-                @update:model-value="toggleSelectAll"
+                @update:model-value="toggleSelectAllPage"
               />
             </TableHead>
             <TableHead :aria-sort="ariaSort('name')">
@@ -170,6 +188,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -198,7 +217,7 @@ const {
   sortDirection,
   selectedIds,
   selectedCount,
-  allFilteredSelected,
+  allPageSelected,
   filteredModels,
   page,
   total,
@@ -207,9 +226,10 @@ const {
   toggleSort,
   setEnabled,
   setSelectedEnabled,
+  setAllFilteredEnabled,
   setAutoEnableNew,
   toggleSelection,
-  toggleSelectAll,
+  toggleSelectAllPage,
   clearSelection
 } = useModelAllowlist(pageSize)
 
