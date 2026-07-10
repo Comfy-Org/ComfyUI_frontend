@@ -37,10 +37,41 @@ const {
 // (WCAG 2.2.2). The paused video falls back to its poster/first frame.
 const reduceMotion = computed(() => prefersReducedMotion())
 
+// Removing the reactive `autoplay` attribute only suppresses the *initial*
+// play; it can't pause a video the browser has already started. That is
+// exactly the SSR case: the server renders `autoplay` (it can't read the
+// client's motion preference), the browser begins playback on parse, and the
+// post-hydration attribute removal is too late. Pause on mount so
+// reduced-motion users get the poster frame instead of a looping video.
+const pauseIfReduced = (el: unknown) => {
+  if (el instanceof HTMLVideoElement && reduceMotion.value) el.pause()
+}
+
 // On mobile the backdrop is an in-flow rounded card above the content; on
-// desktop it is the full-bleed background behind it. When a distinct
-// mobileBackdrop is supplied, render both assets and toggle by breakpoint;
-// otherwise a single element serves both roles responsively.
+// desktop it is the full-bleed background behind it. A single element serves
+// both roles via responsive classes — mobileBackdrop only swaps the source.
+const sharedBackdropClass =
+  'relative aspect-3/2 w-full rounded-3xl object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:size-full lg:rounded-none'
+
+// When both breakpoints use images, serve them from a single responsive <img>
+// so the browser fetches only the source matching the viewport. Two
+// `hidden`/`lg:hidden`-toggled <img> layers would each download (display:none
+// does not stop the fetch), doubling the high-priority load on an
+// LCP-critical hero. Videos or a mixed image/video pair can't collapse this
+// way and fall back to breakpoint-toggled layers below.
+const responsiveImage = computed(() => {
+  if (backdrop?.type !== 'image') return null
+  if (mobileBackdrop && mobileBackdrop.type !== 'image') return null
+  const base = mobileBackdrop ?? backdrop
+  return {
+    src: base.src,
+    alt: backdrop.alt ?? mobileBackdrop?.alt ?? '',
+    // Larger-viewport source; omitted when one image serves both breakpoints.
+    desktopSrc: mobileBackdrop ? backdrop.src : undefined
+  }
+})
+
+// Fallback for videos and mixed image/video pairs: toggle assets by breakpoint.
 const backdropLayers = computed(() => {
   if (!backdrop) return []
   if (mobileBackdrop) {
@@ -55,13 +86,7 @@ const backdropLayers = computed(() => {
       }
     ]
   }
-  return [
-    {
-      backdrop,
-      class:
-        'relative aspect-3/2 w-full rounded-3xl object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:size-full lg:rounded-none'
-    }
-  ]
+  return [{ backdrop, class: sharedBackdropClass }]
 })
 
 const scrimShape = 'farthest-side at 50% 50%'
@@ -78,27 +103,46 @@ const scrimStyle = {
   >
     <div class="relative overflow-hidden rounded-3xl">
       <slot name="backdrop">
-        <template v-for="(layer, i) in backdropLayers" :key="i">
-          <video
-            v-if="layer.backdrop.type === 'video'"
-            :src="layer.backdrop.src"
-            :poster="layer.backdrop.poster"
-            :aria-label="layer.backdrop.alt"
-            :autoplay="!reduceMotion"
-            loop
-            muted
-            playsinline
-            preload="metadata"
-            :class="layer.class"
+        <picture v-if="responsiveImage" class="contents">
+          <source
+            v-if="responsiveImage.desktopSrc"
+            :srcset="responsiveImage.desktopSrc"
+            media="(min-width: 1024px)"
           />
           <img
-            v-else
-            :src="layer.backdrop.src"
-            :alt="layer.backdrop.alt ?? ''"
+            :src="responsiveImage.src"
+            :alt="responsiveImage.alt"
             fetchpriority="high"
             decoding="async"
-            :class="layer.class"
+            :class="sharedBackdropClass"
           />
+        </picture>
+
+        <template v-else>
+          <template v-for="(layer, i) in backdropLayers" :key="i">
+            <video
+              v-if="layer.backdrop.type === 'video'"
+              :ref="pauseIfReduced"
+              :src="layer.backdrop.src"
+              :poster="layer.backdrop.poster"
+              :aria-label="layer.backdrop.alt"
+              :aria-hidden="layer.backdrop.alt ? undefined : true"
+              :autoplay="!reduceMotion"
+              loop
+              muted
+              playsinline
+              preload="metadata"
+              :class="layer.class"
+            />
+            <img
+              v-else
+              :src="layer.backdrop.src"
+              :alt="layer.backdrop.alt ?? ''"
+              fetchpriority="high"
+              decoding="async"
+              :class="layer.class"
+            />
+          </template>
         </template>
       </slot>
 

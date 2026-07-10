@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "Gere fala, música, efeitos sonoros e diálogos com múltiplos falantes a partir de um único prompt com o ByteDance Seed Audio 1.0. Descreva as vozes, emoção, ambiente, música de fundo e efeitos sonoros no prompt, e inclua as falas a serem ditas. Opcionalmente, escolha uma voz predefinida, clone vozes de até 3 clipes de referência (marcados como @Audio1-3 no prompt), ou derive uma voz a partir de uma imagem de personagem. Até 2 minutos de áudio por execução.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "Volume. 0 = normal, 100 = 2.0x, -50 = 0.5x."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "Alteração de tom em semitons (-12 a 12)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "Como condicionar a voz: 'somente texto' (descreva tudo no prompt), 'referência de áudio' (clone até 3 vozes, marcadas como @Audio1-3), 'referência de imagem' (derive uma voz de uma imagem de personagem), ou 'voz predefinida' (escolha uma voz nomeada que lê o prompt)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Taxa de amostragem de saída em Hz."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "Velocidade da fala. 0 = normal, 100 = 2.0x, -50 = 0.5x."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Descreva as vozes, emoção, ritmo, ambiente, música de fundo e efeitos sonoros, e inclua as falas a serem ditas (nomeie os personagens no texto para diálogos). No modo 'referência de áudio', faça referência aos clipes conectados pela ordem como @Audio1, @Audio2, @Audio3. Máximo de 3000 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "Gere respostas de texto com os modelos Seed 2.0 da ByteDance. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens ou vídeos para contexto multimodal.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "modelo"
       },
-      "model_fail_on_partial": {
-        "name": "falhar_em_parcial"
-      },
       "model_height": {
         "name": "altura"
-      },
-      "model_max_images": {
-        "name": "máx_imagens"
       },
       "model_size_preset": {
         "name": "predefinição_de_tamanho"
@@ -2009,6 +2045,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2273,17 @@
       },
       "conditioning_to": {
         "name": "condicionamento_para"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Condicionamento (Multiplicar)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -5196,6 +5247,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "Gere um vídeo com áudio a partir de um prompt de texto usando o modelo Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para guiar ou editar o resultado. Descreva o comprimento desejado (3-10s) e a proporção (16:9 ou 9:16) diretamente no prompt.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo Gemini de vídeo usado para gerar o vídeo."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6162,94 +6247,6 @@
       },
       "width": {
         "name": "largura"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "Gera imagens usando o modelo Ideogram V1.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "A proporção da imagem para geração."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determina se o MagicPrompt deve ser usado na geração"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Descrição do que deve ser excluído da imagem"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração da imagem"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Se deve usar o modo turbo (geração mais rápida, potencialmente menor qualidade)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "Gera imagens usando o modelo Ideogram V2.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "A proporção da imagem para geração. Ignorado se a resolução não estiver definida como AUTO."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determina se o MagicPrompt deve ser usado na geração"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Descrição do que deve ser excluído da imagem"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração da imagem"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "A resolução para geração da imagem. Se não estiver definida como AUTO, esta opção sobrescreve a configuração de aspect_ratio."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "Tipo de estilo para geração (apenas V2)"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Se deve usar o modo turbo (geração mais rápida, potencialmente menor qualidade)"
       }
     },
     "outputs": {
@@ -14642,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Pré-visualização"
-      },
-      "preview_text": {
-        "name": "Pré-visualização"
-      },
+      "preview_mode": "Modo de visualização",
+      "preview_text": {},
       "source": {
         "name": "source"
       }
@@ -18465,293 +18457,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "Transforma parte de uma amostra de áudio existente usando instruções de texto.",
-    "display_name": "Stability AI Audio Inpaint",
-    "inputs": {
-      "audio": {
-        "name": "áudio",
-        "tooltip": "O áudio deve ter entre 6 e 190 segundos de duração."
-      },
-      "control_after_generate": {
-        "name": "controle_após_gerar"
-      },
-      "duration": {
-        "name": "duração",
-        "tooltip": "Controla a duração em segundos do áudio gerado."
-      },
-      "mask_end": {
-        "name": "fim_da_mascara"
-      },
-      "mask_start": {
-        "name": "início_da_mascara"
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "A semente aleatória usada para a geração."
-      },
-      "steps": {
-        "name": "passos",
-        "tooltip": "Controla o número de etapas de amostragem."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "Transforma amostras de áudio existentes em novas composições de alta qualidade usando instruções de texto.",
-    "display_name": "Stability AI Áudio para Áudio",
-    "inputs": {
-      "audio": {
-        "name": "áudio",
-        "tooltip": "O áudio deve ter entre 6 e 190 segundos de duração."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duração",
-        "tooltip": "Controla a duração em segundos do áudio gerado."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "A semente aleatória usada para a geração."
-      },
-      "steps": {
-        "name": "etapas",
-        "tooltip": "Controla o número de etapas de amostragem."
-      },
-      "strength": {
-        "name": "força",
-        "tooltip": "Parâmetro que controla o quanto o parâmetro de áudio influencia o áudio gerado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "Gera imagens de forma síncrona com base no prompt e na resolução.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Imagem",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "proporção",
-        "tooltip": "Proporção da imagem gerada."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "Quão estritamente o processo de difusão segue o texto do prompt (valores mais altos mantêm sua imagem mais próxima do prompt)"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "image_denoise": {
-        "name": "redução de ruído da imagem",
-        "tooltip": "Redução de ruído da imagem de entrada; 0.0 gera uma imagem idêntica à entrada, 1.0 é como se nenhuma imagem tivesse sido fornecida."
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "prompt negativo",
-        "tooltip": "Palavras-chave do que você não deseja ver na imagem de saída. Este é um recurso avançado."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O que você deseja ver na imagem de saída. Um prompt forte e descritivo que define claramente elementos, cores e temas levará a melhores resultados."
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "A semente aleatória usada para criar o ruído."
-      },
-      "style_preset": {
-        "name": "estilo predefinido",
-        "tooltip": "Estilo desejado opcional da imagem gerada."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "Gera imagens de forma síncrona com base no prompt e na resolução.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Proporção da imagem gerada."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Denoise da imagem de entrada; 0.0 gera uma imagem idêntica à entrada, 1.0 é como se nenhuma imagem tivesse sido fornecida."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Um texto descrevendo o que você NÃO deseja ver na imagem de saída. Este é um recurso avançado."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O que você deseja ver na imagem de saída. Um prompt forte e descritivo que define claramente elementos, cores e assuntos levará a melhores resultados. Para controlar o peso de uma determinada palavra, use o formato `(palavra:peso)`, onde `palavra` é a palavra que você deseja controlar o peso e `peso` é um valor entre 0 e 1. Por exemplo: `O céu estava de um (azul:0.3) e (verde:0.8) intenso` indicaria um céu azul e verde, mas mais verde do que azul."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "A semente aleatória usada para criar o ruído."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Estilo opcional desejado para a imagem gerada."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "Gera músicas e efeitos sonoros de alta qualidade a partir de descrições em texto.",
-    "display_name": "Stability AI Text To Audio",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Controla a duração em segundos do áudio gerado."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "A semente aleatória usada para a geração."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Controla o número de etapas de amostragem."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "Aumenta a resolução da imagem para 4K com alterações mínimas.",
-    "display_name": "Stability AI Upscale Conservative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "creativity": {
-        "name": "creativity",
-        "tooltip": "Controla a probabilidade de criar detalhes adicionais não fortemente condicionados pela imagem inicial."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Palavras-chave do que você NÃO deseja ver na imagem de saída. Este é um recurso avançado."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O que você deseja ver na imagem de saída. Um prompt forte e descritivo que define claramente elementos, cores e assuntos levará a melhores resultados."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "A semente aleatória usada para criar o ruído."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "Aumente a resolução da imagem para 4K com alterações mínimas.",
-    "display_name": "Stability AI Upscale Criativo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle após gerar"
-      },
-      "creativity": {
-        "name": "criatividade",
-        "tooltip": "Controla a probabilidade de criar detalhes adicionais não fortemente condicionados pela imagem inicial."
-      },
-      "image": {
-        "name": "imagem"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Palavras-chave do que você NÃO deseja ver na imagem de saída. Este é um recurso avançado."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "O que você deseja ver na imagem de saída. Um prompt forte e descritivo, que define claramente elementos, cores e assuntos, levará a melhores resultados."
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "A semente aleatória usada para criar o ruído."
-      },
-      "style_preset": {
-        "name": "estilo_predefinido",
-        "tooltip": "Estilo desejado opcional para a imagem gerada."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "Aumenta rapidamente a imagem para 4x o tamanho original via chamada à API da Stability; indicado para imagens de baixa qualidade ou comprimidas.",
-    "display_name": "Stability AI Upscale Rápido",
-    "inputs": {
-      "image": {
-        "name": "imagem"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -19755,6 +19460,42 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "Desenha uma sobreposição de texto em uma imagem ou lote de imagens.",
+    "display_name": "Desenhar Sobreposição de Texto",
+    "inputs": {
+      "align": {
+        "name": "alinhamento"
+      },
+      "color": {
+        "name": "cor",
+        "tooltip": "Cor do texto."
+      },
+      "font_size": {
+        "name": "tamanho_da_fonte",
+        "tooltip": "Tamanho da fonte como porcentagem da altura da imagem."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "outline": {
+        "name": "contorno",
+        "tooltip": "Desenhar um contorno preto ao redor do texto."
+      },
+      "position": {
+        "name": "posição"
+      },
+      "text": {
+        "name": "texto"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
         "tooltip": null
       }
     }
