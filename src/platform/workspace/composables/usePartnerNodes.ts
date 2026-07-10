@@ -1,6 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import type { MaybeRefOrGetter } from 'vue'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PartnerNode } from '@/platform/workspace/api/partnerNodesApi'
@@ -34,9 +33,7 @@ function compareNodes(
   return a[key].localeCompare(b[key]) * dir
 }
 
-export function usePartnerNodes(
-  pageSize: MaybeRefOrGetter<number> = Number.POSITIVE_INFINITY
-) {
+export function usePartnerNodes() {
   const { t } = useI18n()
   const toast = useToast()
 
@@ -60,23 +57,6 @@ export function usePartnerNodes(
     return filtered.sort((a, b) =>
       compareNodes(a, b, sortField.value, sortDirection.value)
     )
-  })
-
-  const page = ref(1)
-  const perPage = computed(() => Math.max(1, toValue(pageSize)))
-  const total = computed(() => filteredNodes.value.length)
-  const pagedNodes = computed(() => {
-    const start = (page.value - 1) * perPage.value
-    return filteredNodes.value.slice(start, start + perPage.value)
-  })
-
-  watch([total, perPage], ([count]) => {
-    const lastPage = Math.max(1, Math.ceil(count / perPage.value))
-    if (page.value > lastPage) page.value = lastPage
-  })
-
-  watch(searchQuery, () => {
-    page.value = 1
   })
 
   // Nodes grouped by provider; groups sort alphabetically, children follow the
@@ -143,14 +123,6 @@ export function usePartnerNodes(
       filteredNodes.value.length > 0 &&
       filteredNodes.value.every((n) => selectedIds.value.has(n.id))
   )
-  // The header checkbox works page-by-page; whole-set toggling is the explicit
-  // Enable/Disable all actions.
-  const allPageSelected = computed(
-    () =>
-      pagedNodes.value.length > 0 &&
-      pagedNodes.value.every((n) => selectedIds.value.has(n.id))
-  )
-
   async function fetch() {
     isLoading.value = true
     try {
@@ -281,16 +253,6 @@ export function usePartnerNodes(
     selectedIds.value = new Set(filteredNodes.value.map((n) => n.id))
   }
 
-  function toggleSelectAllPage() {
-    const next = new Set(selectedIds.value)
-    if (allPageSelected.value) {
-      for (const n of pagedNodes.value) next.delete(n.id)
-    } else {
-      for (const n of pagedNodes.value) next.add(n.id)
-    }
-    selectedIds.value = next
-  }
-
   function clearSelection() {
     selectedIds.value = new Set()
   }
@@ -305,16 +267,11 @@ export function usePartnerNodes(
     selectedIds,
     selectedCount,
     allFilteredSelected,
-    allPageSelected,
     filteredNodes,
     groups,
     togglePartnerCollapsed,
     groupSelectionState,
     toggleGroupSelection,
-    page,
-    total,
-    itemsPerPage: perPage,
-    pagedNodes,
     fetch,
     toggleSort,
     setEnabled,
@@ -323,7 +280,6 @@ export function usePartnerNodes(
     setAutoEnableNew,
     toggleSelection,
     toggleSelectAll,
-    toggleSelectAllPage,
     clearSelection
   }
 }
