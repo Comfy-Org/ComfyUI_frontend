@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
@@ -20,15 +21,37 @@ import {
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'role'
+type SortField =
+  | 'email'
+  | 'role'
+  | 'lastActivity'
+  | 'credits'
+  | 'inviteDate'
+  | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
   sortDirection: SortDirection,
-  originalOwnerId: string | null = null
+  originalOwnerId: string | null = null,
+  sortField: SortField = 'role'
 ): WorkspaceMember[] {
+  const dir = sortDirection === 'asc' ? 1 : -1
+
+  if (sortField === 'email') {
+    return [...members].sort((a, b) => dir * a.name.localeCompare(b.name))
+  }
+  if (sortField === 'lastActivity') {
+    const at = (m: WorkspaceMember) => m.lastActivity?.getTime() ?? 0
+    return [...members].sort((a, b) => dir * (at(a) - at(b)))
+  }
+  if (sortField === 'credits') {
+    const used = (m: WorkspaceMember) => m.creditsUsedThisMonth ?? 0
+    return [...members].sort((a, b) => dir * (used(a) - used(b)))
+  }
+
+  // Default (role) ordering pins the creator, then groups by role, then recency.
   return [...members].sort((a, b) => {
     const aIsOriginalOwner = a.id === originalOwnerId
     const bIsOriginalOwner = b.id === originalOwnerId
@@ -97,7 +120,8 @@ export function useMembersPanel() {
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
     showInviteMemberDialog,
-    showInviteMemberUpsellDialog
+    showInviteMemberUpsellDialog,
+    showMemberLimitDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
@@ -112,10 +136,13 @@ export function useMembersPanel() {
   const { permissions, uiConfig } = useWorkspaceUI()
   const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
+  const { fetchBalance } = useBillingContext()
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.
   const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
+
+  const memberCount = computed(() => members.value.length)
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
@@ -138,16 +165,16 @@ export function useMembersPanel() {
     () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
   )
 
-  // Invite is allowed only on an active (non-cancelled) team plan that is under
-  // the member cap.
+  // Invite stays enabled at the seat cap so the button can surface the
+  // "at the member limit" dialog; only an inactive/cancelled plan disables it.
   const isInviteDisabled = computed(
-    () => !isOnTeamPlan.value || isCancelled.value || isMemberLimitReached.value
+    () => !isOnTeamPlan.value || isCancelled.value
   )
 
   const inviteTooltip = computed(() => {
     if (!isOnTeamPlan.value) return null
     if (!isMemberLimitReached.value) return null
-    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
+    return t('workspacePanel.inviteLimitReached')
   })
 
   function handleInviteMember() {
@@ -155,7 +182,11 @@ export function useMembersPanel() {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isCancelled.value || isMemberLimitReached.value) return
+    if (isCancelled.value) return
+    if (isMemberLimitReached.value) {
+      void showMemberLimitDialog()
+      return
+    }
     void showInviteMemberDialog()
   }
 
@@ -190,7 +221,7 @@ export function useMembersPanel() {
       {
         label: t('workspacePanel.members.actions.changeRole'),
         items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
+          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleAdmin')),
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
@@ -215,13 +246,14 @@ export function useMembersPanel() {
       searched,
       userEmail.value ?? null,
       sortDirection.value,
-      originalOwnerId.value
+      originalOwnerId.value,
+      sortField.value
     )
   })
 
   // Built once per member list rather than per row on every render, so an
   // unrelated re-render (e.g. typing in the search box) doesn't rebuild every
-  // row's menu and churn MemberListItem's props.
+  // row's menu and churn MemberTableRow's props.
   const memberMenus = computed(
     () => new Map(filteredMembers.value.map((m) => [m.id, memberMenuItems(m)]))
   )
@@ -286,9 +318,11 @@ export function useMembersPanel() {
     sortField,
     sortDirection,
     maxSeats,
+    memberCount,
     isOnTeamPlan,
     hasLapsedTeamPlan,
     hasMultipleMembers,
+    fetchBalance,
     showSearch,
     showViewTabs,
     showInviteButton,

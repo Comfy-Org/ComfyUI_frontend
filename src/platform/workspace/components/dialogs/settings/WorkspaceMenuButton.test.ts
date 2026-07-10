@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { useWorkspaceRename } from '@/platform/workspace/composables/useWorkspaceRename'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
@@ -75,6 +76,25 @@ describe('WorkspaceMenuButton', () => {
     mockUiConfig.value = ownerConfig
     mockIsCurrentUserOriginalOwner.value = false
     mockIsWorkspaceSubscribed.value = false
+    useWorkspaceRename().stopRenaming()
+  })
+
+  it('offers Rename to an editor and starts inline renaming', async () => {
+    const user = userEvent.setup()
+    const { isRenaming } = useWorkspaceRename()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Rename Workspace' }))
+    expect(isRenaming.value).toBe(true)
+  })
+
+  it('hides Rename from a member', () => {
+    mockUiConfig.value = memberConfig
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Rename Workspace' })
+    ).not.toBeInTheDocument()
   })
 
   it('lets a member leave and offers no destructive workspace actions', () => {

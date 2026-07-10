@@ -188,6 +188,18 @@ export function useSettingUI(
     )
   }
 
+  const membersPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-members',
+      label: 'Members',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue')
+    )
+  }
+
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
@@ -245,7 +257,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...(shouldShowWorkspacePanel.value ? [workspacePanel, membersPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -295,7 +307,9 @@ export function useSettingUI(
       key: 'workspace',
       label: 'Workspace',
       children: [
-        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        ...(shouldShowWorkspacePanel.value
+          ? [workspacePanel.node, membersPanel.node]
+          : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
