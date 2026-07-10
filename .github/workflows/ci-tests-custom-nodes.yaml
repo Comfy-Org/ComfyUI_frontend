@@ -75,6 +75,12 @@ jobs:
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: 'false'
+          # Pin the backend to a known-good ComfyUI release so this gate is
+          # deterministic. Unpinned master let a core boot regression (0.27.0
+          # hangs frontend app-init) turn the whole suite red through no fault
+          # of the frontend. Pack-vs-latest-ComfyUI drift is the nightly
+          # canary's job, not this per-PR gate's.
+          comfyui_ref: 'v0.26.2'
 
       # Install every pack the manifest declares (DRY: a new pack row installs
       # itself here, no workflow change). A clone or dependency failure fails the
