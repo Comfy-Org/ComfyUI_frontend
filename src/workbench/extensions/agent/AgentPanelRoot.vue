@@ -115,9 +115,8 @@ const activeTab = computed<ActiveTab | null>(() => {
 // The turn runs against the canvas as of the send: upload the serialized
 // graph when it changed since the last upload so the server can seed the
 // thread's draft from it (cloud postMessage.workflow contract; servers
-// without the field ignore it). Oversized graphs are skipped, matching the
-// server's 413 limit.
-const MAX_UPLOAD_CHARS = 2_000_000
+// without the field ignore it). No client-side size cap: the server owns
+// its own limits.
 let lastSentGraph: string | null = null
 let snapshotTabPath: string | null = null
 
@@ -125,8 +124,7 @@ function takeWorkflowSnapshot(): WorkflowUpload | undefined {
   const graph = app.graph?.serialize()
   if (!graph) return undefined
   const serialized = JSON.stringify(graph)
-  if (serialized === lastSentGraph || serialized.length > MAX_UPLOAD_CHARS)
-    return undefined
+  if (serialized === lastSentGraph) return undefined
   lastSentGraph = serialized
   snapshotTabPath = workflowStore.activeWorkflow?.path ?? null
   return { graph, last_seen_version: draftStore.version }
