@@ -15,8 +15,6 @@ describe('useOnboarding', () => {
     first.finish()
     expect(first.active.value).toBe(false)
 
-    // useStorage flushes the write asynchronously; let it land before a fresh instance
-    // reads the persisted flag and confirms it does not re-run.
     await nextTick()
     const second = useOnboarding(KEY)
     expect(second.active.value).toBe(false)

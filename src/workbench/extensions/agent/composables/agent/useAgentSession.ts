@@ -11,39 +11,27 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
-// Headless composition root. Turns are addressed by the server-minted assistant
-// message_id from the send ack; the panel never mints turn ids.
-
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
   onStatus?(listener: (live: boolean) => void): () => void
 }
 
-// Only errors surface out of the session today; widen the union when the wire
-// grows a non-error notice.
 export interface SessionNotice {
   level: 'error'
   text: string
 }
 
-// A settled upload: the server ref rides the POST, name + preview stay behind
-// on the transcript's user entry.
 interface SentAttachment {
   ref: string
   name: string
   previewUrl?: string
 }
 
-// A consumed @-tag: the node id rides the POST selection, the title stays
-// behind on the transcript's user entry. The id resolves against the graph
-// uploaded with the same POST (workflow.graph).
 interface SentTag {
   id: string
   title: string
 }
 
-// The active tab resolved for a turn. `speculative` marks an id the server has
-// not confirmed owning; a 403 on it retries the send once without the id.
 export interface WorkflowTurnContext {
   id: string
   speculative: boolean
@@ -60,8 +48,6 @@ export interface AgentSessionDeps {
       sent: WorkflowTurnContext | undefined,
       uploaded: boolean
     ): void
-    // The canvas snapshot to seed the server draft with, or undefined when
-    // empty or unchanged since the last upload.
     snapshot?(): DraftUpload | undefined
   }
 }
@@ -76,11 +62,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const notices = ref<SessionNotice[]>([])
   let resyncing = false
-  // The 202 ack races the socket frames; a second send in that window must not open a
-  // second wire turn.
   const sending = ref(false)
 
-  // Local-only turn ids for failed sends, which have no server-minted message_id.
   let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
     return `local-error-${++localErrorCount}` as TurnId
@@ -99,7 +82,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     resyncing = true
     try {
       const snapshot = await rest.getDraft(id)
-      // A rebind during the fetch must not adopt the stale workflow's draft.
       if (draftStore.workflowId === id) draftStore.adoptSnapshot(snapshot)
     } catch (error) {
       if (error instanceof AgentApiError) {
@@ -107,7 +89,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         pushError(error.message)
         return
       }
-      // Callers void this promise; surface instead of an unhandled rejection.
       pushError(error instanceof Error ? error.message : String(error))
     } finally {
       resyncing = false
@@ -117,8 +98,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    // A same-page reopen already has the conversation in the store; only a fresh page
-    // restores the persisted thread.
     if (
       conversationStore.threadId === null &&
       conversationStore.messages.length === 0
@@ -131,11 +110,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  // A 404 means the thread expired or was deleted: forget the stale id, not an error.
   async function hydrateFromServer(threadId: string): Promise<void> {
     try {
       const history = await rest.getMessages(threadId)
-      // newChat may have replaced the thread while the fetch was in flight.
       if (conversationStore.threadId === threadId)
         conversationStore.hydrate(history)
     } catch (error) {
@@ -156,14 +133,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus = null
   }
 
-  // False on any failure; hosts may restore the composer draft from it.
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[]
   ): Promise<boolean> {
     if (sending.value) {
-      // The composer already cleared its draft; a silently dropped send loses the text.
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -197,13 +172,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return await post(threadId, upload)
       } catch (error) {
         if (!(error instanceof AgentApiError)) throw error
-        // A speculative id the server does not own: retry once without it.
         if (wfContext?.speculative === true && error.status === 403) {
           const input = buildInput(upload)
           return await rest.postMessage(threadId, input)
         }
-        // The agent's draft advanced past the version we based this upload
-        // on: adopt the server's version and retry once.
         const serverVersion = (error.body as { version?: unknown } | null)
           ?.version
         if (
@@ -224,7 +196,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         draftStore.bind(ack.workflow_id)
         workflow?.adopted(ack.workflow_id, wfContext, upload !== undefined)
       }
-      // The ONE branding seam: the server-minted message_id becomes the TurnId.
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
         turnId,
@@ -241,7 +212,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : error instanceof Error
             ? error.message
             : String(error)
-      // Inline row only: a toast would double-surface this and overlap the docked panel.
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -261,8 +231,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await rest.cancelMessage(threadId, turnId)
     } catch (error) {
       if (error instanceof AgentApiError) {
-        // 409 = already settled server-side; the socket still delivers the terminal
-        // delta + done, so no local abort.
         if (error.status === 409) return
         pushError(error.message)
         return
@@ -272,11 +240,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function newChat(): void {
-    // Cancel first: an abandoned turn keeps generating and billing. stopTurn reads its
-    // ids synchronously, so the reset below cannot race it.
     void stopTurn()
     conversationStore.reset()
-    // A late patch or resync for the abandoned thread's workflow must not land here.
     draftStore.reset()
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
@@ -287,7 +252,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function loadThread(threadId: string): Promise<void> {
     void stopTurn()
-    // The switched-to thread's workflow binds on its next ack; drop the old one.
     draftStore.reset()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
@@ -297,13 +261,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function onRaw(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
-    // The event source subscribes by agent type, but gate again before paying for a
-    // zod parse so a mis-wired source cannot feed foreign frames into the turn logic.
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      // A malformed done for OUR turn must still settle it (or the spinner hangs);
-      // a readable FOREIGN message_id must not abort our turn.
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
       if (
@@ -320,7 +280,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const event = parsed.data
     switch (event.type) {
       case 'draft_patch':
-        // Drafts are shared workflow state, never turn-filtered.
         draftStore.applyPatch(event.data)
         return
       case 'draft_version':
@@ -333,7 +292,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    // Drop: settle the turn so no spinner hangs. Recover: resync missed draft patches.
     if (live) void resyncDraft()
     else conversationStore.abortActiveTurn()
   }

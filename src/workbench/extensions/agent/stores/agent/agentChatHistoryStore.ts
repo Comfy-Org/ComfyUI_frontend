@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 export interface ChatSession {
   id: string
   title: string
-  // epoch ms of the last activity in the session
   updatedAt: number
 }
 
@@ -27,7 +26,6 @@ export function groupSessionsByRecency(
   now: number
 ): HistoryGroups {
   const startToday = startOfLocalDay(now)
-  // Local-day start, not startToday - 24h, so a DST 23h/25h day doesn't misbucket yesterday.
   const startYesterday = startOfLocalDay(startToday - 1)
   const groups: HistoryGroups = {
     current: [],

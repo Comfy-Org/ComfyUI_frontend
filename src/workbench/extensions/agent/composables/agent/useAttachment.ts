@@ -20,8 +20,6 @@ export interface UseAttachmentOptions {
 let stagedCount = 0
 
 export function useAttachment(options: UseAttachmentOptions) {
-  // Each file stages an uploading chip immediately (local object-URL preview),
-  // then settles in place: the upload's ref on success, removal + error on failure.
   async function addFiles(files: Iterable<File>): Promise<void> {
     for (const file of files) {
       if (file.size > MAX_ATTACHMENT_BYTES) {
@@ -54,7 +52,6 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function onDrop(event: DragEvent): Promise<void> {
-    // preventDefault before any await — a default drop navigates the tab away.
     event.preventDefault()
     const files = event.dataTransfer?.files
     return files && files.length > 0

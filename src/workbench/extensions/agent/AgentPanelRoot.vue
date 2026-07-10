@@ -50,8 +50,6 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-// Rides the api's own typed /ws dispatch (which survives socket reconnects), so the
-// panel is not left deaf after a reconnect and each frame is JSON-parsed only once.
 const events = createAgentEventSource(api)
 
 const workflowStore = useWorkflowStore()
@@ -59,8 +57,6 @@ const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
 const agentPanelStore = useAgentPanelStore()
 
-// B7 @-tagging: selected nodes stage removable chips; consume() on send clears
-// them and the same selection does not re-tag until it changes.
 const canvasStore = useCanvasStore()
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map((node) => ({
@@ -78,13 +74,10 @@ const {
   isLive: () => agentPanelStore.isOpen
 })
 
-// The graph the canvas is showing (root or an open subgraph); the deprecated
-// app.graph getter only ever returns root, which misses subgraph-inner nodes.
 function viewedGraphNodes() {
   return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
 }
 
-// The @ picker lists the viewed graph's nodes, computed on open (not watched).
 function mentionableNodes(): SelectedNode[] {
   return viewedGraphNodes().map((node) => ({
     id: String(node.id),
@@ -92,8 +85,6 @@ function mentionableNodes(): SelectedNode[] {
   }))
 }
 
-// A bound tab resolves to its id; a cloud-saved tab offers its persisted uuid
-// speculatively (the server 403s foreign ids and the send retries without).
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
@@ -106,18 +97,11 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
     : undefined
 }
 
-// B17/Jo QA: the panel names the tab the agent acts on.
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
   return active ? { name: active.filename } : null
 })
 
-// The turn runs against the canvas as of the send: upload the serialized
-// graph (save format) so the server seeds the thread's draft from it. Gate
-// on canvas-non-empty, not workflow_id - that is what makes templates,
-// unsaved tabs, and new tabs work. Skipping an unchanged canvas is the
-// server-blessed optimization (identical content no-ops server-side). No
-// client-side size cap: the server owns its own limits.
 let lastSentGraph: string | null = null
 let snapshotTabPath: string | null = null
 
@@ -131,15 +115,11 @@ function takeWorkflowSnapshot(): DraftUpload | undefined {
   return { content: graph, version: draftStore.version }
 }
 
-// A fresh thread gets a fresh draft on the server: re-upload on next send.
 function resetSnapshotGuard(): void {
   lastSentGraph = null
   snapshotTabPath = null
 }
 
-// Bind when the server confirmed the id we sent for that tab, or when the
-// send uploaded this tab's canvas: the draft then mirrors the tab, so even a
-// freshly minted id applies in place instead of opening a new tab.
 function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined,
@@ -176,8 +156,6 @@ const {
   }
 })
 
-// Every agent error goes through the ONE existing host error modal — no
-// bespoke toasts.
 const executionErrorStore = useExecutionErrorStore()
 
 function surfaceAgentError(
@@ -202,8 +180,6 @@ watch(
   }
 )
 
-// The draft rides the wire untyped; validate through the host schema. A failed
-// apply is a workflow error, surfaced once per failure streak.
 let draftRejectionNotified = false
 
 function surfaceDraftApplyFailure(details: string): void {
@@ -213,10 +189,7 @@ function surfaceDraftApplyFailure(details: string): void {
   surfaceAgentError('agent_draft_apply_failed', details)
 }
 
-// B16 graph write: patches route to their workflow_id's bound tab — in place when
-// active, lazily on refocus, via the conflict dialog when the user edited the tab.
 const conflictOpen = ref(false)
-// 'Keep mine' parks the draft until the user's next turn re-arms applies.
 let applySuppressed = false
 let lastApplied: { workflowId: string; version: number } | null = null
 let applying = false
@@ -227,12 +200,6 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
   return path === undefined ? null : workflowStore.getWorkflowByPath(path)
 }
 
-// Agent writes autosave: re-baseline the tracker to the canvas as loaded (a
-// minted tab's stored baseline carries an id the canvas never adopts, so the
-// next capture would flip isModified and every following patch would raise
-// the conflict dialog). The baseline must be the RAW serialization, not the
-// schema-normalized form: captures compare raw serialize() output via strict
-// graphEqual, so a normalized baseline would re-flip isModified unedited.
 function autosaveAppliedDraft(tab: ComfyWorkflow): void {
   const canvasState = app.graph?.serialize()
   if (!canvasState) return
@@ -250,8 +217,6 @@ async function loadDraft(
     surfaceDraftApplyFailure(error)
   })
   if (!workflow) return
-  // A user tab-switch mid-load must not misbind: identify the minted tab by
-  // diffing the open set rather than trusting post-await focus.
   const openBefore = new Set(workflowStore.openWorkflows.map((w) => w.path))
   try {
     await app.loadGraphData(workflow, true, true, tab)
@@ -280,8 +245,6 @@ async function loadDraft(
 }
 
 async function applyDraft(): Promise<void> {
-  // Patches stream faster than loadGraphData settles; serialize applies and
-  // coalesce whatever arrived meanwhile into one trailing re-run.
   if (applying) {
     reapplyQueued = true
     return
@@ -299,9 +262,6 @@ async function applyDraft(): Promise<void> {
       lastApplied.version >= version
     )
       return
-    // An agent draft with no nodes is noise (the server's freshly minted
-    // draft starts empty): applying it would blank a bound tab or conjure an
-    // empty one. Park until a patch carries actual nodes.
     const nodes = (content as { nodes?: unknown }).nodes
     if (!Array.isArray(nodes) || nodes.length === 0) return
     const boundTab = boundTabFor(workflowId)
@@ -325,13 +285,10 @@ async function applyDraft(): Promise<void> {
 }
 
 useDraftCanvasApply(() => void applyDraft())
-// A patch parked while its tab was backgrounded applies when the tab refocuses.
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => void applyDraft()
 )
-// A rebind opens a new epoch: guards scoped to the old workflow must not leak
-// into it (a parked 'mine', a stale lastApplied, an open dialog).
 watch(
   () => draftStore.workflowId,
   () => {
@@ -352,13 +309,9 @@ function onResolveConflict(choice: ConflictChoice): void {
     return
   }
   if (choice === 'mine') {
-    // Decided: this draft version stays off the canvas; only a NEWER agent
-    // edit asks again.
     lastApplied = { workflowId, version }
     return
   }
-  // 'agent' overwrites the bound tab; 'newtab' leaves it with the user's state
-  // and rebinds the workflow to a fresh tab, where future patches follow.
   void loadDraft(
     workflowId,
     version,
@@ -369,8 +322,6 @@ function onResolveConflict(choice: ConflictChoice): void {
 
 start()
 onBeforeUnmount(() => {
-  // Cancel any in-flight turn so it does not keep generating and billing while the panel
-  // is closed; unsubscribe only after the cancel settles so its ack is not torn down.
   void stopTurn().finally(stop)
 })
 
@@ -378,8 +329,6 @@ const history = useAgentChatHistoryStore()
 
 const { copy } = useClipboard({ legacy: true })
 
-// A null vote is a retraction of a prior thumb and is forwarded so the eval pipeline
-// records it rather than dropping it.
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
@@ -388,8 +337,6 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
-// title is "" until the server names the thread, so the row falls back to the preview
-// (the first prompt).
 function toChatSession(thread: AgentThreadSummary): ChatSession {
   const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
   const updatedAt = stamp ? Date.parse(stamp) : Date.now()
@@ -421,8 +368,6 @@ async function onSelectHistory(id: string): Promise<void> {
   void refreshHistory()
 }
 
-// Only the active in-memory conversation has a transcript; a non-active id has nothing
-// to serialize and gets an info toast instead.
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
@@ -435,8 +380,6 @@ const coachStep: CoachStep = {
 }
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
-  // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
-  // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
   const nodeTags = consumeSelection()
@@ -445,8 +388,6 @@ function onSend(text: string, attachments: ComposerAttachment[]): void {
     node_tag_count: nodeTags.length
   })
   void sendMessage(text, attachments, nodeTags).then((ok) => {
-    // A failed send consumed the snapshot guard without reaching the
-    // server; drop it so the next send re-uploads.
     if (!ok) resetSnapshotGuard()
   })
 }
@@ -460,8 +401,6 @@ function onNewChat(): void {
   newChat()
 }
 
-// uploadImage answers {name, subfolder, type}; the send path forwards `name` as the
-// LoadImage-style ref.
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 
@@ -496,7 +435,6 @@ async function onFilesPicked(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const files = input.files
   if (files && files.length > 0) await attachment.addFiles(Array.from(files))
-  // Clear so re-picking the same file fires change again.
   input.value = ''
 }
 </script>

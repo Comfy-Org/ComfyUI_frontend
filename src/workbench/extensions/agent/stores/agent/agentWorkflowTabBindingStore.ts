@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
-// 1:1 workflow_id ↔ tab-path binding: sends resolve the active tab to its id,
-// patches resolve back to their tab, so sequential agent edits land in ONE tab.
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {

@@ -15,7 +15,6 @@ describe('useCanvasSelection', () => {
     expect(staged.value).toEqual([])
 
     isLive.value = true
-    // watch re-evaluates on the reactive isLive change
     expect(staged.value).toEqual([nodeA])
   })
 
@@ -30,7 +29,6 @@ describe('useCanvasSelection', () => {
     expect(consume()).toEqual([nodeA])
     expect(staged.value).toEqual([])
 
-    // Same selection stays empty (already consumed) even after a reactive tick.
     selection.value = [nodeA]
     await Promise.resolve()
     expect(staged.value).toEqual([])

@@ -9,13 +9,6 @@ import { app } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-// A controllable stand-in for the host api's typed /ws dispatch: the event source
-// registers per message type (addCustomEventListener) and each emitted frame's data
-// arrives as the CustomEvent detail — the same shape api.ts dispatches after its
-// single JSON.parse of a frame. Emitting a malformed agent frame through it is the
-// one seam that drives a session notice at mount without a live backend, which is
-// what FIX 5 forwards to the toast. Hoisted so the api mock factory can close over
-// the same listener map the test emits through.
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()
@@ -36,8 +29,6 @@ const ws = vi.hoisted(() => {
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    // Same route mapping as the real fetchApi, delegating to global fetch so the
-    // per-test fetch stubs below keep shaping bodies and statuses.
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     socket: { readyState: 1 },
@@ -70,8 +61,6 @@ vi.mock(
   })
 )
 
-// Controllable host-store fakes: a tab registry with an active tab, and the
-// canvas selection the @-tag chips read. Reactive so the root's watches fire.
 type FakeTab = {
   path: string
   filename: string
@@ -117,7 +106,6 @@ vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
-// Light stand-in for the host execution-error store the draft-apply failure writes to.
 const executionErrors = vi.hoisted(() => ({
   lastPromptError: null as {
     type: string
@@ -160,8 +148,6 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
-  // A persisted thread id would make every later mount hydrate from the
-  // server and surface mock-shaped replies as errors.
   localStorage.clear()
   hostStores.workflow.tabs.clear()
   hostStores.workflow.activeWorkflow = null
@@ -187,8 +173,6 @@ describe('AgentPanelRoot session notices', () => {
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
     executionErrors.lastPromptError = null
     executionErrors.showErrorOverlay.mockClear()
-    // The mount-time history prefetch must resolve, or its failure would also
-    // raise the error modal and double-count the overlay call below.
     vi.stubGlobal(
       'fetch',
       vi.fn(
@@ -202,8 +186,6 @@ describe('AgentPanelRoot session notices', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const toast = useToastStore()
 
-    // A malformed agent_message_done with no readable message_id makes the
-    // session push an error notice; errors share the ONE host error modal.
     ws.emit('agent_message_done', {})
     await nextTick()
 
@@ -240,7 +222,6 @@ describe('AgentPanelRoot attach flow', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      // The messages POST that carries the send payload.
       messageBodies.push(JSON.parse(String(init?.body)))
       return new Response(
         JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }),
@@ -260,7 +241,6 @@ describe('AgentPanelRoot attach flow', () => {
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
     await userEvent.upload(input, file)
 
-    // The uploaded file's server name renders as a staged chip.
     expect(await screen.findByText('cat.png')).toBeInTheDocument()
 
     await userEvent.type(screen.getByRole('textbox'), 'make it pop')
@@ -276,8 +256,6 @@ describe('AgentPanelRoot attach flow', () => {
       node_tag_count: 0
     })
 
-    // The sent attachment stays visible in the transcript's user message
-    // (thumbnail + name), not just on the wire.
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByText('cat.png')).toBeInTheDocument()
   })
@@ -313,8 +291,6 @@ describe('AgentPanelRoot attach flow', () => {
       file
     )
 
-    // The chip is visible the moment the file is picked, marked uploading,
-    // and the send stays blocked so the unfinished ref cannot be dropped.
     expect(await screen.findByText('cat.png')).toBeInTheDocument()
     expect(
       screen.getByLabelText(i18n.global.t('agent.uploading'))
@@ -378,9 +354,6 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // Exactly one thumbnail, positioned after the first turn's bubble — keying
-    // the record to the wrong turn would render it inside the first user entry.
-    // (index -1: the session bar title also mirrors the first prompt's text.)
     const thumbs = screen.getAllByAltText('cat.png')
     expect(thumbs).toHaveLength(1)
     const firstBubble = screen.getAllByText('first message').at(-1)!
@@ -491,7 +464,6 @@ describe('AgentPanelRoot draft binding', () => {
 
   it('binds the draft to the workflow id from the message ack and reloads the canvas on a patch', async () => {
     const fetchMock = vi.fn(async (url: string) => {
-      // The server owns the workflow and returns its id in the message ack.
       if (url.includes('/messages')) {
         return new Response(
           JSON.stringify({
@@ -512,7 +484,6 @@ describe('AgentPanelRoot draft binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // A draft_patch carrying the ack's workflow id now drives the canvas; a foreign one does not.
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     ws.emit('draft_patch', {
       workflow_id: 'other',
@@ -527,7 +498,6 @@ describe('AgentPanelRoot draft binding', () => {
       content: graph
     })
 
-    // No tab is bound to wf-42 yet, so the first apply opens a new tab.
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
     )
@@ -553,14 +523,10 @@ describe('AgentPanelRoot draft binding', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    // Module-level fns retain calls across tests (restoreAllMocks only restores spies).
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     executionErrors.lastPromptError = null
     executionErrors.showErrorOverlay.mockClear()
-    // The schema rejects the first two patches (e.g. content missing its required
-    // version field, as observed live); the third passes through and must both load
-    // the canvas and reset the failure streak so a later rejection surfaces again.
     vi.mocked(validateComfyWorkflow)
       .mockImplementationOnce(async (_content, onError) => {
         onError?.('rejected: version required')
@@ -585,7 +551,6 @@ describe('AgentPanelRoot draft binding', () => {
         content: { nodes: [{ id: 1 }] }
       })
 
-    // One patch per tick: the version watcher batches same-tick bumps into one fire.
     patch(1)
     await vi.waitFor(() =>
       expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
@@ -595,7 +560,6 @@ describe('AgentPanelRoot draft binding', () => {
       expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(2)
     )
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    // The failure lands on the host workflow-error surface, once per streak.
     expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_draft_apply_failed',
@@ -605,7 +569,6 @@ describe('AgentPanelRoot draft binding', () => {
     patch(3)
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
 
-    // A rejection after a successful apply is a NEW streak and surfaces again.
     vi.mocked(validateComfyWorkflow).mockImplementationOnce(
       async (_content, onError) => {
         onError?.('rejected again')
@@ -682,8 +645,6 @@ describe('AgentPanelRoot history', () => {
   it('populates Chat History from the server thread list on mount', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.endsWith('/api/agent/threads')) {
-        // Live envelope shape: {threads, pagination}; title is "" until the server
-        // names the thread, with the first prompt in preview.
         return new Response(
           JSON.stringify({
             threads: [
@@ -719,7 +680,6 @@ describe('AgentPanelRoot history', () => {
       id: 'th-9',
       title: 'build a text to image graph'
     })
-    // An unnamed thread falls back to its preview for the row title.
     expect(history.sessions[1]).toMatchObject({
       id: 'th-10',
       title: 'make a duck'
@@ -785,10 +745,8 @@ describe('AgentPanelRoot feedback capture', () => {
   it('forwards a thumbs vote to telemetry with the message id and vote', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    // The thread's bound draft workflow attributes the vote (PM-98).
     useAgentDraftStore().workflowId = 'wf-9'
 
-    // Seed a settled assistant turn so its feedback control renders.
     const store = useAgentConversationStore()
     const turnId = 'turn-9' as TurnId
     store.recordUser(turnId, 'make a cat')
@@ -810,7 +768,6 @@ describe('AgentPanelRoot feedback capture', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Helpful' })
     )
-    // A second click on the active thumb retracts the vote; null must forward, not be dropped.
     await userEvent.click(
       await screen.findByRole('button', { name: 'Helpful' })
     )
@@ -864,12 +821,10 @@ describe('AgentPanelRoot lifecycle', () => {
 
     await userEvent.type(screen.getByRole('textbox'), 'hello')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    // The turn is in flight once the Stop control shows (activeTurnId + thread adopted).
     await screen.findByRole('button', { name: 'Stop' })
 
     unmount()
 
-    // Closing the panel must POST the cancel so the turn does not keep billing unheard.
     await vi.waitFor(() =>
       expect(urls.some((url) => url.endsWith('/cancel'))).toBe(true)
     )
@@ -887,7 +842,6 @@ describe('AgentPanelRoot greeting', () => {
   })
 
   it('personalizes the empty-state greeting with the account first name', async () => {
-    // useCurrentUser is mocked to "Jo Rivera"; the greeting shows the first name only.
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('Hello Jo,')).toBeInTheDocument()
@@ -959,7 +913,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(await screen.findByText('current')).toBeInTheDocument()
 
-    // Reactive: switching tabs renames the strip.
     const other: FakeTab = {
       path: 'workflows/other.json',
       filename: 'other',
@@ -984,8 +937,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
 
-    // The ack confirmed the id we sent, so the patch lands IN the active tab
-    // (no new tab) and the graph write re-baselines the user-edit flag.
     tab.isModified = false
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(1, graph)
@@ -1004,8 +955,6 @@ describe('AgentPanelRoot workflow binding', () => {
   it('autosaves a minted tab so the next patch applies without a conflict', async () => {
     mockMessagesEndpoint('wf-42')
     const mintedPath = 'workflows/Unsaved Workflow.json'
-    // The host mints the temporary tab focused and born modified: its stored
-    // baseline diverges from what the canvas serializes after the load.
     vi.mocked(app.loadGraphData).mockImplementation(
       async (_graph, _clean, _restore, workflowTab) => {
         if (workflowTab !== null) return
@@ -1127,8 +1076,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'someone-elses-uuid' })
     expect(bodies[1]).not.toHaveProperty('workflow_id')
 
-    // The send uploaded this tab's canvas, so the minted id binds to it and
-    // its first patch applies IN the active tab (the draft mirrors the tab).
     const graph = { version: 0.4, nodes: [{ id: 9 }] }
     ws.emit('draft_patch', {
       workflow_id: 'wf-fresh',
@@ -1151,7 +1098,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // The bound tab goes to the background before the patch lands.
     const other: FakeTab = {
       path: 'workflows/other.json',
       filename: 'other',
@@ -1167,7 +1113,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // Refocusing the bound tab applies the parked draft exactly once.
     hostStores.workflow.activeWorkflow = tab
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
@@ -1190,7 +1135,6 @@ describe('AgentPanelRoot workflow binding', () => {
     patch(1, graph)
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
 
-    // 'Open in new tab' lives in the dropdown attached to the primary action.
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.moreApplyOptions')
@@ -1218,7 +1162,6 @@ describe('AgentPanelRoot workflow binding', () => {
     tab.isModified = true
     patch(1, { version: 0.4, nodes: [{ id: 2 }] })
     await screen.findByText(i18n.global.t('agent.conflictTitle'))
-    // The X close is a defer, same as Cancel: nothing applies.
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('g.close') })
     )
@@ -1227,8 +1170,6 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
-    // No new patch arrives; the send itself must re-drive the parked draft,
-    // which re-raises the dialog against the still-edited tab.
     await userEvent.type(screen.getByRole('textbox'), 'go ahead')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(
@@ -1253,13 +1194,10 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
 
-    // New chat: the abandoned thread's parked draft must not leak forward.
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
 
-    // A stale patch for the abandoned workflow is rejected by the reset store;
-    // were it adopted, the send below would replay it onto the clean tab.
     patch(2, { version: 0.4, nodes: [{ id: 6 }] })
     await nextTick()
     await nextTick()
@@ -1273,7 +1211,6 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.queryByText(i18n.global.t('agent.conflictTitle'))
     ).not.toBeInTheDocument()
 
-    // The new conversation's own patches flow normally into the still-bound tab.
     const graph = { version: 0.4, nodes: [{ id: 8 }] }
     patch(3, graph)
     await vi.waitFor(() =>
@@ -1295,7 +1232,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
 
-    // Dismiss the first chip; the unchanged canvas selection must not resurrect it.
     await userEvent.click(
       screen.getAllByRole('button', { name: i18n.global.t('agent.remove') })[0]
     )
@@ -1310,7 +1246,6 @@ describe('AgentPanelRoot workflow binding', () => {
       attachment_count: 0,
       node_tag_count: 1
     })
-    // The surviving tag persists on the transcript; the dismissed one is gone.
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
@@ -1325,7 +1260,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // The user edited the tab after the turn started: no silent overwrite.
     tab.isModified = true
     patch(1, { version: 0.4, nodes: [{ id: 1 }] })
     expect(
@@ -1333,7 +1267,6 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // Cancel defers: later patches stay un-applied this turn.
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('g.cancel') })
     )
@@ -1344,8 +1277,6 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.queryByText(i18n.global.t('agent.conflictTitle'))
     ).not.toBeInTheDocument()
 
-    // The next turn re-arms applies; the still-edited tab re-raises the dialog
-    // and 'Accept agent changes' overwrites in place.
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
     await userEvent.type(screen.getByRole('textbox'), 'go on')
@@ -1381,7 +1312,6 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.keepMine') })
     )
 
-    // The decision sticks: the next turn does NOT re-ask about this version...
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
     await userEvent.type(screen.getByRole('textbox'), 'something else')
@@ -1391,7 +1321,6 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.queryByText(i18n.global.t('agent.conflictTitle'))
     ).not.toBeInTheDocument()
 
-    // ...but a NEWER agent edit is a fresh decision.
     patch(2, { version: 0.4, nodes: [{ id: 3 }] })
     expect(
       await screen.findByText(i18n.global.t('agent.conflictTitle'))
@@ -1416,8 +1345,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['5'] } })
-    // Consumed on send: the composer chip clears (no remove button left), but
-    // the tag stays visible on the transcript's user message.
     expect(
       screen.queryByRole('button', { name: i18n.global.t('agent.remove') })
     ).not.toBeInTheDocument()
@@ -1444,8 +1371,6 @@ describe('AgentPanelRoot workflow binding', () => {
     patch(1, g1)
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
 
-    // Two more patches land while the first apply is still settling: they must
-    // queue into ONE trailing re-run, never interleave a second loadGraphData.
     patch(2, { version: 0.4, nodes: [{ id: 2 }] })
     await nextTick()
     patch(3, { version: 0.4, nodes: [{ id: 3 }] })
@@ -1454,7 +1379,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
     releaseApply()
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
-    // The trailing re-run applies the LATEST draft only (v3), skipping v2.
     expect(vi.mocked(app.loadGraphData).mock.calls[1][0]).toEqual({
       version: 0.4,
       nodes: [{ id: 3 }]
@@ -1472,14 +1396,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // The server's freshly minted draft is empty: nothing should apply.
     patch(1, { version: 0.4, nodes: [] })
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // The send uploaded this tab's canvas, so the minted id is bound to it
-    // and the first patch with real nodes applies in place.
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(2, graph)
     await vi.waitFor(() =>
@@ -1499,7 +1420,6 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.mention') })
     )
     await userEvent.click(await screen.findByText('VAE Decode'))
-    // Picked node staged as a removable chip.
     expect(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     ).toBeInTheDocument()
@@ -1514,8 +1434,6 @@ describe('AgentPanelRoot workflow binding', () => {
   it('resolves @ picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')
-    // The canvas is showing an open subgraph whose inner node is absent from
-    // the root graph; the picker must list it.
     appMock.canvas = {
       graph: { nodes: [{ id: 12, title: 'KSampler' }] }
     }
@@ -1545,7 +1463,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // First send carries the serialized canvas; the tab is unsaved, so no id.
     expect(bodies[0]).toMatchObject({
       draft: {
         content: { version: 0.4, nodes: [{ id: 1 }] },
@@ -1557,13 +1474,11 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
-    // Unchanged graph: the second send skips the upload.
     await userEvent.type(screen.getByRole('textbox'), 'and more')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))
     expect(bodies[1]).not.toHaveProperty('draft')
 
-    // The uploaded draft mirrors the tab, so the minted id applies in place.
     const graph = { version: 0.4, nodes: [{ id: 2 }] }
     ws.emit('draft_patch', {
       workflow_id: 'wf-mint',
@@ -1586,8 +1501,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    // The server's initial empty draft must neither blank the bound tab nor
-    // raise the conflict dialog against a user-edited one.
     tab.isModified = true
     patch(1, { version: 0.4, nodes: [] })
     await nextTick()
@@ -1628,8 +1541,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
 
-    // The failed send consumed the guard without reaching the server; the
-    // retry must carry the canvas again.
     await userEvent.type(screen.getByRole('textbox'), 'two')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))

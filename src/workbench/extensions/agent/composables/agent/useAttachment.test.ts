@@ -9,8 +9,6 @@ function fileOfSize(name: string, size: number): File {
   return file
 }
 
-// A live chip registry mirroring what the composer does with the callbacks, so
-// each test asserts the states a user would actually see.
 function chipRegistry() {
   const chips: ComposerAttachment[] = []
   return {
@@ -38,8 +36,6 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    // The full message pins the {name}/{limit} i18n interpolation; the count
-    // pins one error per rejected file.
     expect(onError).toHaveBeenCalledOnce()
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
   })
@@ -57,7 +53,6 @@ describe('useAttachment', () => {
 
     const batch = addFiles([fileOfSize('cat.png', 1024)])
 
-    // Visible before the upload finishes: name + preview, marked uploading.
     expect(registry.chips).toHaveLength(1)
     expect(registry.chips[0]).toMatchObject({
       name: 'cat.png',

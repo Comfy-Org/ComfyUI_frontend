@@ -6,9 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUse from '@vueuse/core'
 
-// Capture the IntersectionObserver callback useIntersectionObserver registers so the test
-// can drive the "at bottom" signal directly — happy-dom has no real observer, and the pill
-// only shows once the sentinel scrolls out of view.
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
@@ -84,7 +81,6 @@ describe('ConversationView', () => {
     store.startTurn(T)
 
     store.ingest(thinking('msg-1', 'pondering'))
-    // The thinking chip shows before any text streams.
     expect(await screen.findByText('Thinking...')).toBeInTheDocument()
 
     store.ingest(delta('msg-1', 'Here is a **cat**'))
@@ -93,7 +89,6 @@ describe('ConversationView', () => {
 
     expect(await screen.findByText('make a cat')).toBeInTheDocument()
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    // The markdown bold survives sanitization as a real <strong> element.
     expect(screen.getByText('cat', { selector: 'strong' })).toBeInTheDocument()
     expect(store.entries.at(-1)).toMatchObject({
       role: 'assistant',
@@ -117,10 +112,8 @@ describe('ConversationView', () => {
       global: { plugins: [i18n] }
     })
 
-    // At bottom initially: no pill.
     expect(screen.queryByText('Latest')).not.toBeInTheDocument()
 
-    // Drive the sentinel out of view -> the pill appears.
     for (const cb of intersectionCallbacks) cb([{ isIntersecting: false }])
     const pill = await screen.findByRole('button', { name: 'Latest' })
 
