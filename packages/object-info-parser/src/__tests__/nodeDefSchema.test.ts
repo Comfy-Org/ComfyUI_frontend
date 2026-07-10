@@ -23,6 +23,23 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 }
 
 describe('validateNodeDef', () => {
+  it('retains interactive display definitions', () => {
+    const interactive_ui = [
+      {
+        id: 'stream',
+        kind: 'video_stream',
+        views: [
+          { id: 'source', role: 'local_source' as const, label: 'Webcam' },
+          { id: 'result', role: 'remote_output' as const, label: 'Inverted' }
+        ]
+      }
+    ]
+    expect(
+      validateComfyNodeDef({ ...EXAMPLE_NODE_DEF, interactive_ui })
+        ?.interactive_ui
+    ).toEqual(interactive_ui)
+  })
+
   it('accepts a valid node definition', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })

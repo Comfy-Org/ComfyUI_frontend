@@ -4,6 +4,16 @@ import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
+import {
+  INTERACTION_MEDIA,
+  decodeInteractionMedia,
+  encodeInteractionMedia,
+  parseInteractionControl
+} from '@/services/interactionProtocol'
+import type {
+  InteractionControl,
+  InteractionMediaMetadata
+} from '@/services/interactionProtocol'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
@@ -159,6 +169,11 @@ export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
+  interaction: InteractionControl
+  interaction_media: {
+    metadata: InteractionMediaMetadata
+    blob: Blob
+  }
   progress: ProgressWsMessage
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
@@ -713,6 +728,7 @@ export class ComfyApi extends EventTarget {
         await this.createSocket(true)
       }, 300)
       if (opened) {
+        this.serverFeatureFlags.value = {}
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
       }
@@ -723,6 +739,15 @@ export class ComfyApi extends EventTarget {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
+
+          if (eventType === INTERACTION_MEDIA) {
+            const { metadata, media } = decodeInteractionMedia(event.data)
+            this.dispatchCustomEvent('interaction_media', {
+              metadata,
+              blob: new Blob([media], { type: metadata.mime })
+            })
+            return
+          }
 
           let imageMime
           switch (eventType) {
@@ -855,6 +880,12 @@ export class ComfyApi extends EventTarget {
               )
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
+            case 'interaction':
+              this.dispatchCustomEvent(
+                'interaction',
+                parseInteractionControl(msg.data)
+              )
+              break
             default:
               if (this._registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
@@ -878,6 +909,41 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.createSocket()
+  }
+
+  sendInteractionControl(
+    data: Omit<InteractionControl, 'op'> & {
+      op: 'ready' | 'stop' | 'cancel'
+      width?: number
+      height?: number
+      fps?: number
+      mime?: 'image/jpeg'
+    }
+  ): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false
+    try {
+      this.socket.send(JSON.stringify({ type: 'interaction', data }))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  sendInteractionMedia(
+    metadata: InteractionMediaMetadata,
+    media: ArrayBuffer
+  ): boolean {
+    if (
+      this.socket?.readyState !== WebSocket.OPEN ||
+      this.socket.bufferedAmount > 2 * 1024 * 1024
+    )
+      return false
+    try {
+      this.socket.send(encodeInteractionMedia(metadata, media))
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**

@@ -6,6 +6,7 @@ import {
   zColorStop,
   zComboInputOptions,
   zFloatInputOptions,
+  zInteractiveUi,
   zIntInputOptions,
   zStringInputOptions
 } from '@/schemas/nodeDefSchema'
@@ -242,7 +243,8 @@ export const zComfyNodeDef = z.object({
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
   dev_only: z.boolean().optional(),
-  api_node: z.boolean().optional()
+  api_node: z.boolean().optional(),
+  interactive_ui: zInteractiveUi.optional()
 })
 
 // Export types

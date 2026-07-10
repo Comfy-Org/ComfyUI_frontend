@@ -43,6 +43,7 @@ import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/wi
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import { addInteractiveViews } from '@/services/interactiveViewService'
 import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type {
@@ -408,6 +409,7 @@ export const useLitegraphService = () => {
         setupStrokeStyles(this)
         addInputs(this, ComfyNode.nodeData.inputs)
         addOutputs(this, ComfyNode.nodeData.outputs)
+        addInteractiveViews(this, ComfyNode.nodeData)
         setInitialSize(this)
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
@@ -522,6 +524,7 @@ export const useLitegraphService = () => {
         setupStrokeStyles(this)
         addInputs(this, ComfyNode.nodeData.inputs)
         addOutputs(this, ComfyNode.nodeData.outputs)
+        addInteractiveViews(this, ComfyNode.nodeData)
         setInitialSize(this)
         this.serialize_widgets = true
 
