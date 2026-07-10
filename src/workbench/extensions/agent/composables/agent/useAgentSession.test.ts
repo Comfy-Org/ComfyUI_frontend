@@ -21,7 +21,6 @@ import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-// A fully typed fake REST client: each method is a vi.fn the test arranges per scenario.
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
     postMessage: vi.fn(
@@ -50,8 +49,6 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   return { ...base, ...overrides }
 }
 
-// A fake event source that captures the session's listeners so the test can push frames
-// and toggle liveness by hand.
 function fakeEvents() {
   let listener: ((raw: unknown) => void) | undefined
   let statusListener: ((live: boolean) => void) | undefined
@@ -168,14 +165,11 @@ describe('useAgentSession (v1 composition root)', () => {
       .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-2' })
     const rest = fakeRest({ postMessage })
 
-    // First mount adopts the thread, then unmounts (the panel closes).
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     await first.sendMessage('first')
     first.stop()
 
-    // A remount is a fresh composable over the same pinia: it must read the persisted thread
-    // and post there, not split the transcript across a second 'new' thread.
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
     await second.sendMessage('second')
@@ -198,10 +192,6 @@ describe('useAgentSession (v1 composition root)', () => {
     const ok = await session.sendMessage('boom')
     expect(ok).toBe(false)
 
-    // A send failure already has an inline conversation row, so it must NOT also raise a
-    // session notice (host toast) — that double-surfaces and, top-right, collides with the
-    // docked panel. The failed send renders as a settled exchange (user + error notice),
-    // not a live turn: no spinner is left running.
     expect(session.notices.value).toHaveLength(0)
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
@@ -227,7 +217,6 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.stopTurn()
     expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
-    // A 409 is benign — no notice, and no local abort (the socket settles the turn).
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
 
@@ -237,9 +226,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(d2) stopTurn rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
-    // Mirrors resyncDraft (n): newChat/onStop void stopTurn(), so a non-AgentApiError
-    // rethrow would escape as an unhandled rejection. The catch must pushError instead;
-    // the notice is the proof the error was surfaced rather than swallowed or escaped.
     const cancelMessage = vi
       .fn<
         (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
@@ -267,12 +253,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const session = useAgentSession({ rest, events: source })
     session.start()
 
-    // The send's ack binds the draft store to the server's workflow (wf-1).
     await session.sendMessage('hi')
     emit(delta('msg-1', 'kept'))
-    // A chat event for a different turn is dropped.
     emit(delta('msg-OTHER', 'DROP'))
-    // A draft_patch arriving during this turn still adopts (draft is not turn-filtered).
     emit(draftPatch('wf-1', 5))
 
     const assistant = session.entries.value.at(-1)
@@ -298,11 +281,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
-    // The server-owned workflow id is adopted from a message ack; simulate that binding.
     const draft = useAgentDraftStore()
     draft.bind('wf-1')
 
-    // Two 'behind' heartbeats before the fetch resolves collapse to ONE getDraft.
     emit(draftVersion('wf-1', 9))
     emit(draftVersion('wf-1', 10))
     expect(getDraft).toHaveBeenCalledTimes(1)
@@ -319,7 +300,6 @@ describe('useAgentSession (v1 composition root)', () => {
     const session = useAgentSession({ rest, events: source })
     session.start()
 
-    // The send's ack binds the draft store; no resync fires until a reconnect.
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
@@ -343,7 +323,6 @@ describe('useAgentSession (v1 composition root)', () => {
       { ref: 'upload_b.png', name: 'b.png' }
     ])
 
-    // Only the server refs ride the wire; name/preview stay on the transcript.
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
       selection: undefined,
@@ -425,7 +404,6 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('bind me')
     expect(useAgentDraftStore().workflowId).toBe('wf-1')
 
-    // A late patch for the abandoned thread must find nothing to land on.
     await session.loadThread('th-2')
     expect(useAgentDraftStore().workflowId).toBeNull()
   })
@@ -443,16 +421,13 @@ describe('useAgentSession (v1 composition root)', () => {
     const session = useAgentSession({ rest, events: source })
     session.start()
 
-    // Bind wf-1 (as a message ack would) and let a reconnect start its resync.
     const draft = useAgentDraftStore()
     draft.bind('wf-1')
     status(true)
     expect(getDraft).toHaveBeenCalledWith('wf-1')
 
-    // The bound workflow changes before the in-flight fetch resolves.
     draft.bind('wf-2')
 
-    // The stale snapshot for wf-1 arrives; it must NOT be adopted onto wf-2.
     resolveDraft?.({ content: { stale: true }, version: 99 })
     await Promise.resolve()
 
@@ -532,10 +507,8 @@ describe('useAgentSession (v1 composition root)', () => {
     const first = session.sendMessage('first')
     const second = await session.sendMessage('second')
     expect(second).toBe(false)
-    // Only the first send reached the wire.
     expect(postMessage).toHaveBeenCalledTimes(1)
 
-    // The dropped second send is recorded as a failed exchange, not swallowed.
     const busyNotice = session.entries.value.find(
       (e) =>
         e.role === 'assistant' &&
@@ -551,10 +524,6 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(n) a getDraft rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
-    // onStatus(true) voids resyncDraft(), so a non-AgentApiError rethrow would escape as an
-    // unhandled rejection. The catch must instead pushError. The notice is the proof:
-    // the old rethrow path pushed NO notice (the error escaped), so its presence pins
-    // both the surfacing and the absence of an escaping rejection.
     const getDraft = vi
       .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
       .mockRejectedValue(new TypeError('fetch failed'))
@@ -585,11 +554,9 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
 
-    // A malformed done for a FOREIGN, readable message_id must not abort our turn.
     emit({ type: 'agent_message_done', data: { message_id: 'msg-OTHER' } })
     expect(session.isStreaming.value).toBe(true)
 
-    // A malformed done for the ACTIVE turn settles it (no hung spinner).
     emit({ type: 'agent_message_done', data: { message_id: 'msg-1' } })
     expect(session.isStreaming.value).toBe(false)
   })
@@ -604,7 +571,6 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'working'))
     expect(session.isStreaming.value).toBe(true)
 
-    // Both ride the shared /ws: a garbage frame and a real host status frame.
     emit('not an object')
     emit({ type: 'status', data: { sid: 1 } })
 
@@ -691,7 +657,6 @@ describe('thread resume (B17)', () => {
     expect(user).toMatchObject({ role: 'user', text: 'build a duck' })
     expect(assistant).toMatchObject({ role: 'assistant', streaming: false })
     expect(session.threadId.value).toBe('th-9')
-    // The resumed transcript is settled: nothing streams.
     expect(session.isStreaming.value).toBe(false)
   })
 
@@ -735,7 +700,6 @@ describe('thread resume (B17)', () => {
     await first.sendMessage('live message')
     first.stop()
 
-    // Reopen within the same page session: the store still holds the live conversation.
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
     expect(getMessages).not.toHaveBeenCalled()

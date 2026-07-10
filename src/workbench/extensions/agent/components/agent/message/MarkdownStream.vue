@@ -23,11 +23,6 @@ interface CodeSegment {
 }
 type Segment = ProseSegment | CodeSegment
 
-// Fenced code blocks are pulled out via marked's lexer (which handles 4+
-// backtick fences and inline backtick spans correctly) so they render as
-// framed CodeBlocks with copy chrome; the prose between them goes through the
-// sanitizing markdown renderer. Indented code stays prose so it keeps its
-// inline rendering rather than being promoted to a framed block.
 const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
   let prose = ''
@@ -52,7 +47,6 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
-// Prose styles read from the deployed prototype's .agent-markdown rules.
 const proseClass = cn(
   'text-agent-fg text-sm/relaxed',
   '[&_a]:text-agent-accent [&_a]:cursor-pointer [&_a]:underline',

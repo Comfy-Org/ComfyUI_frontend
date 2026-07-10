@@ -4,8 +4,6 @@ import { computed } from 'vue'
 import type { PartState } from '../../../services/agent/agentMessageParts'
 import { cn } from '@comfyorg/tailwind-utils'
 
-// One tool row (or a run of identical calls collapsed with a count). `ok` is undefined
-// while the call is still running.
 const {
   name,
   state,

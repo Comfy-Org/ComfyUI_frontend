@@ -12,8 +12,6 @@ import { useAgentDraftStore } from './agentDraftStore'
 const WORKFLOW = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 const OTHER_WORKFLOW = 'b90000a0-0000-0000-0000-000000000000'
 
-// Minimal full-graph content mirroring draft_patch.content in ws-turn-edit.jsonl:
-// a single-node snapshot whose lone widget value carries the version's edit.
 function graphAt(cfg: number): Record<string, unknown> {
   return {
     last_node_id: 1,
@@ -63,8 +61,6 @@ describe('useAgentDraftStore', () => {
       expect(store.applyPatch(patch(25, 24))).toBe(true)
       expect(store.version).toBe(25)
 
-      // base_version 26 would gap the 25 we hold; content is a full snapshot, so the
-      // monotonic jump is still adopted without a refetch.
       expect(store.applyPatch(patch(27, 26))).toBe(true)
       expect(store.version).toBe(27)
       expect(store.content).toEqual(graphAt(27))

@@ -59,8 +59,6 @@ const emit = defineEmits<{
   copyHistory: [id: string]
 }>()
 
-// In-panel Chat History screen (B12): the session bar opens it, the back arrow / picking a
-// chat / starting a new chat closes it. Rendered inline instead of a teleported drawer.
 const showHistory = ref(false)
 
 function onNewChat(): void {
@@ -80,8 +78,6 @@ const composerRef = ref<InstanceType<typeof Composer>>()
 
 const { t } = useI18n()
 
-// Session bar title (B4): the first user prompt titles the session; a fresh session reads
-// "Untitled" (SessionBar's fallback), per the DES-455 chat-history flow.
 const sessionTitle = computed(() => {
   const firstUser = entries.find(
     (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
@@ -90,8 +86,6 @@ const sessionTitle = computed(() => {
   return firstUser?.text.trim().slice(0, 60) || undefined
 })
 
-// The root wires the file picker + upload lifecycle and drives the composer's
-// staged chips through these, without the panel owning the upload path.
 function addAttachment(attachment: ComposerAttachment): void {
   composerRef.value?.addAttachment(attachment)
 }

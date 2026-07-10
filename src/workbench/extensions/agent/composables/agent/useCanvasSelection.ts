@@ -21,8 +21,6 @@ function signature(nodes: SelectedNode[]): string {
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
   const staged = ref<SelectedNode[]>([])
-  // consumedSig: the same selection must not re-tag every message. stagedSig: a watcher
-  // re-fire with no real change must not resurrect tags the user dismissed via remove().
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
 
@@ -55,8 +53,6 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     staged.value = staged.value.filter((node) => node.id !== id)
   }
 
-  // Manual staging from the @ picker; a later canvas-selection change still
-  // replaces the whole set (last gesture wins).
   function add(node: SelectedNode): void {
     if (staged.value.some((tag) => tag.id === node.id)) return
     staged.value = [...staged.value, node]

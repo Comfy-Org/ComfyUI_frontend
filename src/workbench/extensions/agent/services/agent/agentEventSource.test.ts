@@ -5,9 +5,6 @@ import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 import type { AgentEventHost } from './agentEventSource'
 import { createAgentEventSource } from './agentEventSource'
 
-// A minimal stand-in for the api singleton: registered custom types receive the
-// frame's data as a CustomEvent detail (exactly what api.ts dispatches after its
-// single JSON.parse), and reconnect liveness rides 'reconnecting'/'reconnected'.
 function fakeHost(readyState?: number) {
   const target = new EventTarget()
   const registered = new Set<string>()
@@ -41,8 +38,6 @@ describe('createAgentEventSource', () => {
 
     createAgentEventSource(host).subscribe(seen)
 
-    // Registration is what keeps api.ts from throwing 'Unknown message type'
-    // once per agent type; the schema's list is the authoritative set.
     expect(registered).toEqual(new Set(AGENT_WS_EVENT_TYPES))
 
     emit('agent_message_delta', { delta: 'hi' })

@@ -8,7 +8,6 @@ const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
-  // Mirrors the PostHog flag gate (fail-closed): host renders the panel only while on.
   const enabled = ref(false)
   const isOpen = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
@@ -24,8 +23,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
   }
 
-  // Idempotent: the flag gate re-syncs close() on every flag evaluation, and a
-  // no-op close must not emit a phantom closed event or corrupt the duration.
   function close(source: AgentPanelCloseSource): void {
     if (!isOpen.value) return
     isOpen.value = false

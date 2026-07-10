@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-// Session / title bar (Figma B4): the row under the header showing the current chat title
-// (or "Untitled" for a fresh session). The compact pill is a button that opens Chat
-// History; its tooltip reads "Show chat history" to name the action.
 const { title } = defineProps<{ title?: string }>()
 const emit = defineEmits<{ openHistory: [] }>()
 

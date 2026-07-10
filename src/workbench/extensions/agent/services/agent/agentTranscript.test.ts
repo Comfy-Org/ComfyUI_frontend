@@ -27,7 +27,6 @@ describe('buildTranscriptMarkdown', () => {
     const md = buildTranscriptMarkdown(entries)
 
     expect(md).toContain('**You:** make a cat')
-    // Text parts concatenate; the tool part contributes no plain-markdown body.
     expect(md).toContain('**Agent:** Here is a cat.')
   })
 })

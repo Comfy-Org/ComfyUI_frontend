@@ -66,7 +66,6 @@ describe('useComposer', () => {
     composer.removeAttachment('a1')
     expect(revoke).toHaveBeenCalledWith('blob:a')
 
-    // A submitted preview lives on in the transcript; submit must not touch it.
     revoke.mockClear()
     composer.draft.value = 'send it'
     composer.addAttachment({
@@ -110,7 +109,6 @@ describe('useComposer', () => {
 
     expect(onStop).toHaveBeenCalledOnce()
     expect(onSend).not.toHaveBeenCalled()
-    // The draft is preserved on stop (only a real send clears it).
     expect(composer.draft.value).toBe('ignored while streaming')
   })
 
