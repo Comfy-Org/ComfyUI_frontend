@@ -61,6 +61,8 @@
       </div>
     </div>
 
+    <BillingStatusBanner />
+
     <!-- Card: fills height, table scrolls inside -->
     <div
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
@@ -221,6 +223,7 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'

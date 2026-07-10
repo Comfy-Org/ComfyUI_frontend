@@ -59,6 +59,9 @@ const config: KnipConfig = {
     // + split/allowlist (Pagination); each consumer removes its entry
     'src/components/ui/switch/Switch.vue',
     'src/components/ui/pagination/Pagination.vue',
+    // Pending integration: consumed by split/plan-credits-tabs (Overview) and
+    // split/allowlist (Models); each consumer removes this entry
+    'src/platform/workspace/composables/useAutoPageSize.ts',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',

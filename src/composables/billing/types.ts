@@ -107,6 +107,8 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  /** Subscription paused on a failed payment (`subscriptionStatus === 'paused'`). */
+  isPaused: ComputedRef<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
