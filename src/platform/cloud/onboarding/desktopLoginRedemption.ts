@@ -205,6 +205,7 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
+async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this.
   if (draining) {
     retriggerRequested = true
@@ -229,6 +230,7 @@ async function redeemCode(code: string): Promise<void> {
   } finally {
     draining = false
   }
+}
 
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
