@@ -1,127 +1,102 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EventTargetSocket, ReconnectingHost } from './agentEventSource'
-import { createReconnectingEventSource } from './agentEventSource'
+import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 
-type Listener = (event: { data: unknown }) => void
+import type { AgentEventHost } from './agentEventSource'
+import { createAgentEventSource } from './agentEventSource'
 
-function fakeSocket(readyState?: number) {
-  const listeners = new Map<string, Set<Listener | (() => void)>>()
-  const socket: EventTargetSocket = {
-    readyState,
-    addEventListener(type: string, listener: Listener | (() => void)) {
-      const set = listeners.get(type) ?? new Set()
-      set.add(listener)
-      listeners.set(type, set)
+// A minimal stand-in for the api singleton: registered custom types receive the
+// frame's data as a CustomEvent detail (exactly what api.ts dispatches after its
+// single JSON.parse), and reconnect liveness rides 'reconnecting'/'reconnected'.
+function fakeHost(readyState?: number) {
+  const target = new EventTarget()
+  const registered = new Set<string>()
+  const host: AgentEventHost = {
+    socket: readyState === undefined ? null : { readyState },
+    addCustomEventListener(type, listener) {
+      registered.add(type)
+      target.addEventListener(type, listener as EventListener)
     },
-    removeEventListener(type: string, listener: Listener | (() => void)) {
-      listeners.get(type)?.delete(listener)
-    }
-  } as EventTargetSocket
-  const emit = (type: string, event?: { data: unknown }): void => {
-    for (const listener of listeners.get(type) ?? []) {
-      ;(listener as Listener)(event as { data: unknown })
+    removeCustomEventListener(type, listener) {
+      registered.delete(type)
+      target.removeEventListener(type, listener as EventListener)
+    },
+    addEventListener(type, listener) {
+      target.addEventListener(type, listener)
+    },
+    removeEventListener(type, listener) {
+      target.removeEventListener(type, listener)
     }
   }
-  const count = (type: string): number => listeners.get(type)?.size ?? 0
-  return { socket, emit, count }
+  const emit = (type: string, data?: unknown): void => {
+    target.dispatchEvent(new CustomEvent(type, { detail: data }))
+  }
+  return { host, emit, registered }
 }
 
-// A minimal EventTarget host with a swappable current socket, matching how the api nulls
-// and replaces this.socket across reconnects and fires 'reconnected' afterward.
-function fakeHost(initial: ReturnType<typeof fakeSocket> | null) {
-  const reconnectListeners = new Set<() => void>()
-  const host: ReconnectingHost = {
-    socket: (initial?.socket ?? null) as EventTargetSocket | null,
-    addEventListener(_type: 'reconnected', listener: () => void) {
-      reconnectListeners.add(listener)
-    },
-    removeEventListener(_type: 'reconnected', listener: () => void) {
-      reconnectListeners.delete(listener)
-    }
-  }
-  // Swap in a new socket and announce the reconnect, exactly as the api does.
-  const reconnect = (next: ReturnType<typeof fakeSocket>): void => {
-    host.socket = next.socket
-    for (const listener of reconnectListeners) listener()
-  }
-  const reconnectCount = (): number => reconnectListeners.size
-  return { host, reconnect, reconnectCount }
-}
-
-describe('createReconnectingEventSource', () => {
-  it('delivers messages from the initial socket', () => {
-    const initial = fakeSocket()
-    const { host } = fakeHost(initial)
+describe('createAgentEventSource', () => {
+  it('registers every agent event type and delivers frames as {type, data}', () => {
+    const { host, emit, registered } = fakeHost()
     const seen = vi.fn()
 
-    createReconnectingEventSource(host).subscribe(seen)
-    initial.emit('message', { data: 'a' })
+    createAgentEventSource(host).subscribe(seen)
 
-    expect(seen).toHaveBeenCalledWith('a')
+    // Registration is what keeps api.ts from throwing 'Unknown message type'
+    // once per agent type; the schema's list is the authoritative set.
+    expect(registered).toEqual(new Set(AGENT_WS_EVENT_TYPES))
+
+    emit('agent_message_delta', { delta: 'hi' })
+    expect(seen).toHaveBeenCalledWith({
+      type: 'agent_message_delta',
+      data: { delta: 'hi' }
+    })
   })
 
-  it('re-attaches to a new socket on reconnect and drops the old one', () => {
-    const initial = fakeSocket()
-    const { host, reconnect } = fakeHost(initial)
+  it('stops delivering after unsubscribe', () => {
+    const { host, emit, registered } = fakeHost()
     const seen = vi.fn()
 
-    createReconnectingEventSource(host).subscribe(seen)
-    const next = fakeSocket()
-    reconnect(next)
-
-    initial.emit('message', { data: 'old' })
-    next.emit('message', { data: 'new' })
-
-    expect(seen).toHaveBeenCalledTimes(1)
-    expect(seen).toHaveBeenCalledWith('new')
-    expect(initial.count('message')).toBe(0)
-  })
-
-  it('warns once for a null socket and flows after the first reconnect', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { host, reconnect } = fakeHost(null)
-    const seen = vi.fn()
-
-    createReconnectingEventSource(host).subscribe(seen)
-    expect(warn).toHaveBeenCalledTimes(1)
-
-    const live = fakeSocket()
-    reconnect(live)
-    live.emit('message', { data: 'x' })
-
-    expect(seen).toHaveBeenCalledWith('x')
-    warn.mockRestore()
-  })
-
-  it('detaches on unsubscribe, including across a later reconnect', () => {
-    const initial = fakeSocket()
-    const { host, reconnect, reconnectCount } = fakeHost(initial)
-    const seen = vi.fn()
-
-    const unsubscribe = createReconnectingEventSource(host).subscribe(seen)
+    const unsubscribe = createAgentEventSource(host).subscribe(seen)
     unsubscribe()
 
-    initial.emit('message', { data: 'a' })
+    emit('agent_message_delta', { delta: 'late' })
     expect(seen).not.toHaveBeenCalled()
-    expect(reconnectCount()).toBe(0)
-
-    const next = fakeSocket()
-    reconnect(next)
-    next.emit('message', { data: 'b' })
-    expect(seen).not.toHaveBeenCalled()
+    expect(registered.size).toBe(0)
   })
 
-  it('reports live on the new socket open after a reconnect', () => {
-    const initial = fakeSocket()
-    const { host, reconnect } = fakeHost(initial)
+  it('maps reconnecting/reconnected to liveness', () => {
+    const { host, emit } = fakeHost()
     const status = vi.fn()
 
-    createReconnectingEventSource(host).onStatus?.(status)
-    const next = fakeSocket()
-    reconnect(next)
-    next.emit('open')
+    createAgentEventSource(host).onStatus?.(status)
+    expect(status).not.toHaveBeenCalled()
 
+    emit('reconnecting')
+    expect(status).toHaveBeenLastCalledWith(false)
+
+    emit('reconnected')
+    expect(status).toHaveBeenLastCalledWith(true)
+  })
+
+  it('reports live once when the socket is already open at bind time', () => {
+    const { host } = fakeHost(WebSocket.OPEN)
+    const status = vi.fn()
+
+    createAgentEventSource(host).onStatus?.(status)
+
+    expect(status).toHaveBeenCalledTimes(1)
     expect(status).toHaveBeenCalledWith(true)
+  })
+
+  it('stays quiet for a connecting socket and after status unsubscribe', () => {
+    const { host, emit } = fakeHost(WebSocket.CONNECTING)
+    const status = vi.fn()
+
+    const unsubscribe = createAgentEventSource(host).onStatus?.(status)
+    expect(status).not.toHaveBeenCalled()
+
+    unsubscribe?.()
+    emit('reconnected')
+    expect(status).not.toHaveBeenCalled()
   })
 })

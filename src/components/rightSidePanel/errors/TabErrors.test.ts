@@ -147,9 +147,25 @@ describe('TabErrors.vue', () => {
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
       )
     ).toBeInTheDocument()
-    // Raw prompt-error details pass through to the card so "View details"
-    // shows the underlying failure.
-    expect(screen.getByText('Error details')).toBeInTheDocument()
+    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
+  })
+
+  it('passes raw details through to the card for agent prompt errors only', () => {
+    renderComponent({
+      executionError: {
+        lastPromptError: {
+          type: 'agent_api_failed',
+          message: 'Comfy Agent hit a server error.',
+          details: 'HTTP 500 from /api/agent/threads'
+        }
+      }
+    })
+
+    // Agent failures have no catalog remediation copy; the raw details are the
+    // only actionable signal, so they surface on the card.
+    expect(
+      screen.getByText('HTTP 500 from /api/agent/threads')
+    ).toBeInTheDocument()
   })
 
   it('renders node validation errors grouped by catalog copy', async () => {

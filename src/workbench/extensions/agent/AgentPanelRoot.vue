@@ -36,7 +36,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { WorkflowUpload } from './services/agent/agentRestClient'
-import { createReconnectingEventSource } from './services/agent/agentEventSource'
+import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
@@ -53,9 +53,9 @@ const rest = createAgentRestClient({
   getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
 })
 
-// Follows api.socket across reconnects (the api nulls and replaces its socket on
-// close/reopen) so the panel is not left deaf after a reconnect.
-const events = createReconnectingEventSource(api)
+// Rides the api's own typed /ws dispatch (which survives socket reconnects), so the
+// panel is not left deaf after a reconnect and each frame is JSON-parsed only once.
+const events = createAgentEventSource(api)
 
 const workflowStore = useWorkflowStore()
 const bindingStore = useAgentWorkflowTabBindingStore()
