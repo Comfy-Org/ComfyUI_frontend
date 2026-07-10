@@ -77,7 +77,7 @@ export const seedanceModels: readonly SeedanceModel[] = [
     id: 'kling-3',
     name: 'Kling 3.0',
     tier: 'free',
-    note: { en: 'Pay-as-you-go', 'zh-CN': '按量付费' },
+    note: { en: 'Included free', 'zh-CN': '免费包含' },
     description: {
       en: 'Precise camera and motion control.',
       'zh-CN': '精准的镜头与运动控制。'

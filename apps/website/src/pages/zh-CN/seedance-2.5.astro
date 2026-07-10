@@ -28,6 +28,14 @@ const crumbs = [
   { label: t('seedance.breadcrumb.model', locale) },
 ]
 
+// Derive the JSON-LD breadcrumb trail from the visible crumbs so the two
+// cannot drift apart.
+const breadcrumbs = crumbs.map((crumb) =>
+  crumb.href
+    ? { name: crumb.label, url: absoluteUrl(Astro.site, crumb.href) }
+    : { name: crumb.label },
+)
+
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
   '@id': jsonLdId(url, 'faq'),
@@ -42,17 +50,7 @@ const faqPage: JsonLdNode = {
 <BaseLayout
   title={t('seedance.meta.title', locale)}
   description={t('seedance.meta.description', locale)}
-  breadcrumbs={[
-    {
-      name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, routes.home),
-    },
-    {
-      name: t('breadcrumb.models', locale),
-      url: absoluteUrl(Astro.site, routes.models),
-    },
-    { name: t('seedance.breadcrumb.model', locale) },
-  ]}
+  breadcrumbs={breadcrumbs}
   extraJsonLd={[faqPage]}
 >
   <BreadcrumbBar

@@ -17,7 +17,7 @@ const { crumbs, updated } = defineProps<{
     >
       <li
         v-for="(crumb, i) in crumbs"
-        :key="crumb.label"
+        :key="`${i}-${crumb.label}`"
         class="flex items-center gap-2"
       >
         <span v-if="i > 0" aria-hidden="true" class="text-primary-warm-gray/60">

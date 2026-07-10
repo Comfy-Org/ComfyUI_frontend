@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks } from '../src/config/routes'
+import { externalLinks, getRoutes } from '../src/config/routes'
 import { seedanceFaqs } from '../src/data/seedance'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -8,6 +8,7 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/seedance-2.5'
 const HERO_TITLE = t('seedance.hero.title', 'en')
 const MODELS_HEADING = t('seedance.models.heading', 'en')
+const MODELS_ROUTE = getRoutes('en').models
 const CTA_HEADING = t('seedance.cta.heading', 'en')
 const CTA_PRIMARY = t('seedance.cta.primaryCta', 'en')
 const WORKFLOWS_URL = externalLinks.workflows
@@ -27,15 +28,6 @@ test.describe('Seedance 2.5 page — desktop @smoke', () => {
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
-  test('renders the breadcrumb trail to the models catalog', async ({
-    page
-  }) => {
-    const modelsCrumb = page
-      .getByRole('navigation', { name: 'Breadcrumb' })
-      .getByRole('link', { name: t('breadcrumb.models', 'en') })
-    await expect(modelsCrumb).toHaveAttribute('href', '/p/supported-models')
-  })
-
   test('renders the models section heading', async ({ page }) => {
     const heading = page.getByRole('heading', {
       level: 2,
@@ -43,6 +35,19 @@ test.describe('Seedance 2.5 page — desktop @smoke', () => {
     })
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
+  })
+})
+
+test.describe('Seedance 2.5 page — link targets', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(PATH)
+  })
+
+  test('breadcrumb trail links to the models catalog', async ({ page }) => {
+    const modelsCrumb = page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: t('breadcrumb.models', 'en') })
+    await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
   test('closing CTA links to run Wan 2.2 in a new tab', async ({ page }) => {
