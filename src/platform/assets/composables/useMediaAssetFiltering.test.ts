@@ -3,6 +3,14 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { useAssetVisibilityStore } from '@/platform/assets/composables/useAssetVisibilityStore'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -43,6 +51,7 @@ function ids(assets: AssetItem[]): string[] {
 describe('useMediaAssetFiltering', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    distribution.isCloud = false
   })
 
   describe('media-type filter', () => {
@@ -203,6 +212,10 @@ describe('useMediaAssetFiltering', () => {
   })
 
   describe('visibility filter', () => {
+    beforeEach(() => {
+      distribution.isCloud = true
+    })
+
     function twoAssets() {
       return ref<AssetItem[]>([
         makeAsset({ id: 'shared', name: 'a.png' }),

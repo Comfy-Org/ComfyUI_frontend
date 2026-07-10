@@ -1315,6 +1315,7 @@ describe('useMediaAssetActions', () => {
   describe('shareAssets', () => {
     beforeEach(() => {
       mockShowDialog.mockReset()
+      mockIsCloud.value = true
     })
 
     interface ShareDialogCall {
@@ -1365,6 +1366,10 @@ describe('useMediaAssetActions', () => {
   })
 
   describe('unshareAssets', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+    })
+
     it('unshares immediately (no confirmation) and toasts', () => {
       const actions = useMediaAssetActions()
       const visibilityStore = useAssetVisibilityStore()

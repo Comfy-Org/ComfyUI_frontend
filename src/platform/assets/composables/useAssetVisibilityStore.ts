@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import type { AssetId } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 
 /**
  * Per-asset workspace visibility, keyed by {@link AssetId}.
@@ -20,14 +21,16 @@ export const useAssetVisibilityStore = defineStore('assetVisibility', () => {
   const sharedAssetIds = ref<Set<AssetId>>(new Set())
 
   function isShared(assetId: AssetId): boolean {
-    return sharedAssetIds.value.has(assetId)
+    return isCloud && sharedAssetIds.value.has(assetId)
   }
 
   function share(assetIds: AssetId[]) {
+    if (!isCloud) return
     for (const id of assetIds) sharedAssetIds.value.add(id)
   }
 
   function unshare(assetIds: AssetId[]) {
+    if (!isCloud) return
     for (const id of assetIds) sharedAssetIds.value.delete(id)
   }
 
