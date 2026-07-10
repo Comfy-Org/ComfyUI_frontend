@@ -405,7 +405,10 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
-    console.warn('[agent] listThreads failed:', error)
+    surfaceAgentError(
+      'agent_api_failed',
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
