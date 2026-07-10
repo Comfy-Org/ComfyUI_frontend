@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -239,6 +240,17 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
   return path === undefined ? null : workflowStore.getWorkflowByPath(path)
 }
 
+// Agent writes autosave: re-baseline the tracker to the canvas as loaded (a
+// minted tab's stored baseline carries an id the canvas never adopts, so the
+// next capture would flip isModified and every following patch would raise
+// the conflict dialog). A manual edit after this re-arms the dialog as before.
+function autosaveAppliedDraft(tab: ComfyWorkflow): void {
+  const canvasState = app.graph?.serialize()
+  if (canvasState)
+    tab.changeTracker?.reset(canvasState as unknown as ComfyWorkflowJSON)
+  tab.isModified = false
+}
+
 async function loadDraft(
   workflowId: string,
   version: number,
@@ -260,12 +272,13 @@ async function loadDraft(
       const opened = workflowStore.openWorkflows.find(
         (w) => !openBefore.has(w.path)
       )
-      if (opened) bindingStore.bind(workflowId, opened.path)
+      if (opened) {
+        bindingStore.bind(workflowId, opened.path)
+        autosaveAppliedDraft(opened)
+      }
       return
     }
-    // The canvas now equals the agent draft; clear the stale user-edit flag so
-    // the next patch is not misread as a divergence.
-    tab.isModified = false
+    autosaveAppliedDraft(tab)
   } catch (error) {
     surfaceDraftApplyFailure(
       error instanceof Error ? error.message : String(error)
