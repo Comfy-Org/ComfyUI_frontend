@@ -106,16 +106,17 @@ test.describe('Model library sidebar - asset mode', () => {
     await tab.refreshButton.click()
 
     await expect
-      .poll(() =>
-        assetApi
-          .getMutations()
-          .some(
-            (mutation) =>
-              mutation.method === 'POST' &&
-              mutation.endpoint.endsWith('/assets/seed')
-          )
+      .poll(
+        () =>
+          assetApi
+            .getMutations()
+            .find(
+              (mutation) =>
+                mutation.method === 'POST' &&
+                mutation.endpoint.endsWith('/assets/seed')
+            )?.body
       )
-      .toBe(true)
+      .toEqual({ roots: ['models'] })
   })
 
   test('Live-updates the tree when the scan fast-phase completes', async ({
@@ -169,10 +170,13 @@ test.describe('Model library sidebar - asset mode', () => {
     await tab.getFolderRowByLabel('SDXL').click()
     await tab.getLeafByLabel('sd_xl_base_1.0').click()
 
-    // The ghost is armed; nothing is placed until the canvas is clicked.
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
-      .toBe(0)
+    // The visible ghost preview marks arming as complete, so a zero node
+    // count here proves nothing is placed until the canvas is clicked.
+    const ghost = comfyPage.page.locator(
+      '[data-node-id="preview-CheckpointLoaderSimple"]'
+    )
+    await expect(ghost).toBeVisible()
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!
     await comfyPage.canvas.click({
