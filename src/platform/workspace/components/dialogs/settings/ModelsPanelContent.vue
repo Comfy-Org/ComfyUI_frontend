@@ -117,15 +117,9 @@
       </Table>
     </div>
 
-    <div
-      class="flex h-8 scrollbar-gutter-stable items-center justify-end gap-2 overflow-y-auto pr-6 text-sm text-muted-foreground"
-    >
-      <Pagination
-        v-model:page="page"
-        :total="total"
-        :items-per-page="itemsPerPage"
-        class="mr-auto"
-      />
+    <!-- Pagination owns the bottom-right slot on every table (matching
+    Activity); the set-once auto-enable default takes the quieter left. -->
+    <div class="flex h-8 items-center gap-2 text-sm text-muted-foreground">
       <span>{{ $t('workspacePanel.models.autoEnableLabel') }}</span>
       <span class="grid justify-items-end text-base-foreground">
         <span
@@ -142,6 +136,12 @@
       <Switch
         :model-value="autoEnableNew"
         @update:model-value="setAutoEnableNew"
+      />
+      <Pagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="itemsPerPage"
+        class="ml-auto"
       />
     </div>
 
