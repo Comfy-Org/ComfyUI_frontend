@@ -2,12 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 
-// Per-test mock state, hoisted so the vi.mock factories below may close over it.
-// The extension's only job is the fail-closed flag gate: it flips the panel store's
-// `enabled` and closes an open panel when the flag turns off (the tab-bar button and the
-// dock both key off the store). The posthog mock exposes isFeatureEnabled (whose return
-// the gate reads) and onFeatureFlags (which captures the reload listener so the test can
-// drive flag transitions).
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   agentStore: { enabled: false, close: vi.fn() },
@@ -47,9 +41,6 @@ async function loadEntryAndSetup(): Promise<void> {
   )
   expect(ext).toBeDefined()
   ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
-  // setup fires setupFlagGate, which awaits the (mocked) posthog-js dynamic import before
-  // it captures the onFeatureFlags listener and runs the initial sync(). Flush macrotasks
-  // until that listener is registered so tests can drive flag transitions through it.
   for (let i = 0; i < 20 && mocks.flagListener === null; i++) await flush()
   expect(mocks.flagListener).toBeTypeOf('function')
 }

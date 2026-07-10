@@ -14,9 +14,6 @@ import {
 } from './agentApiSchema'
 import type { ZodTypeAny } from 'zod'
 
-// Fixtures are read at test time via Vite's raw glob (the bundler-native equivalent
-// of fs.readFileSync here, since @types/node is not wired into this tsconfig). Each
-// .jsonl file lands as its raw text, split into lines below.
 const fixtureText = import.meta.glob('./__fixtures__/agent/*.jsonl', {
   query: '?raw',
   import: 'default',

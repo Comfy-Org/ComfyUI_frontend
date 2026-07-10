@@ -39,7 +39,6 @@ const emit = defineEmits<{
   mentionPick: [node: SelectedNode]
 }>()
 
-// Snapshotted when the @ menu opens; the graph is not watched.
 const mentionNodes = ref<SelectedNode[]>([])
 function onMentionOpen(open: boolean): void {
   if (open) mentionNodes.value = getMentionNodes()
@@ -53,15 +52,12 @@ const composer = useComposer({
   onStop: () => emit('stop')
 })
 
-// Enter sends; Shift+Enter inserts a newline (default textarea behavior). An Enter that
-// commits an IME composition (CJK input) must NOT send the half-composed text.
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   composer.submit()
 }
 
-// Parent (asset tray / file picker) stages attachments through this.
 defineExpose({
   insert: composer.insert,
   addAttachment: composer.addAttachment,

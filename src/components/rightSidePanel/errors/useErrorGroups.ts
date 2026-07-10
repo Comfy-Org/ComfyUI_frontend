@@ -45,8 +45,6 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 
-// Agent prompt errors carry the actionable failure text in `details`; host
-// prompt errors keep details off the card (their catalog copy is the message).
 const AGENT_PROMPT_ERROR_TYPES = new Set([
   'agent_api_failed',
   'agent_draft_apply_failed'

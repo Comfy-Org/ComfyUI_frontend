@@ -1,15 +1,8 @@
 import { z } from 'zod'
 
-// Wire contract for the In-App Agent REST + WebSocket backend, validated
-// field-by-field against live frames in __fixtures__/agent/.
-
-// Wire fields stay plain z.string(); the session layer brands ids as it adopts them,
-// so a raw frame parses without a branding cast.
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
 
-// workflow_id is optional only because the openapi marks it so; every observed ack
-// carries it.
 export const zAgentTurnAccepted = z
   .object({
     thread_id: z.string(),
@@ -19,7 +12,6 @@ export const zAgentTurnAccepted = z
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
-// content is omitted while a message is still streaming, so it stays optional.
 export const zAgentMessage = z
   .object({
     id: z.string(),
@@ -35,7 +27,6 @@ export const zAgentMessage = z
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-// title is "" until the server names the thread; preview carries the first prompt.
 const zAgentThreadSummary = z
   .object({
     id: z.string(),
@@ -63,8 +54,6 @@ export const zAgentDraftSnapshot = z.object({
 })
 export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
 
-// Plain-string error shape only; ingest-raised errors use a richer {error:{message,type}}
-// shape that callers tolerate but do not model.
 export const zAgentError = z.object({
   error: z.string()
 })
@@ -75,8 +64,6 @@ export const zUploadImageResult = z.object({
   type: z.string()
 })
 export type UploadImageResult = z.infer<typeof zUploadImageResult>
-
-// Each event rides the standard ComfyUI envelope {type, data}.
 
 const zAgentThinkingData = z
   .object({
@@ -96,7 +83,6 @@ const zAgentToolCallData = z
   })
   .passthrough()
 
-// content is the full UI-format graph object (not a diff); base_version anchors it.
 const zDraftPatchData = z
   .object({
     base_version: z.number().int(),
@@ -121,13 +107,10 @@ const zAgentMessageDoneData = z
   .object({
     message_id: z.string(),
     thread_id: z.string(),
-    // The wire carries token usage (null on a cancelled turn) but the panel does not
-    // render it, so its inner shape stays unvalidated.
     usage: z.unknown().nullish()
   })
   .passthrough()
 
-// Heartbeat; carries no message_id/thread_id.
 const zDraftVersionData = z
   .object({
     version: z.number().int(),
@@ -176,8 +159,6 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-// Host frames (e.g. {type:"status"}) ride the same /ws; isAgentEvent sorts agent events
-// from foreign frames on the type string without zod-parsing them.
 export const AGENT_WS_EVENT_TYPES: ReadonlySet<string> = new Set([
   'agent_thinking',
   'agent_tool_call',

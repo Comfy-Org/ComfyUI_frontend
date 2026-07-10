@@ -16,7 +16,6 @@ const { tools } = defineProps<{ tools: ToolPart[] }>()
 
 const { t } = useI18n()
 
-// Consecutive identical tool names collapse into one row with a count (same-tool xN).
 interface Row {
   name: string
   state: ToolPart['state']
@@ -48,10 +47,6 @@ const failed = computed(() =>
   tools.some((tool) => tool.state === 'done' && tool.ok === false)
 )
 
-// Live while running or if anything failed; collapse once every call settled clean. Drive
-// open BOTH ways off the source: a later tool re-entering the group (running again) or a
-// tool failing must re-open it, not just the first clean settle. Manual re-open of a
-// settled clean group still sticks because the source does not change then.
 const open = ref(true)
 watch(
   () => running.value || failed.value,

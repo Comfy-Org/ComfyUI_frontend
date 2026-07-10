@@ -3,7 +3,6 @@ export interface ActiveTab {
   name: string
 }
 
-// Shows which workflow the agent is acting on. Hidden when there is no active tab.
 const { tab } = defineProps<{ tab: ActiveTab | null }>()
 </script>
 

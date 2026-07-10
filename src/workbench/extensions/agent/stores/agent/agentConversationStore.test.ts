@@ -8,9 +8,6 @@ import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
-// Schema-honest event builders (the v1 analog of the old frame() helper): a typo in a
-// test event surfaces as a parse error here, not as a silently-dropped event. Only chat
-// events are built, so each parse result is narrowed to AgentChatEvent.
 const chat = (raw: unknown): AgentChatEvent =>
   zAgentWsEvent.parse(raw) as AgentChatEvent
 const thinking = (id: string, delta: string): AgentChatEvent =>
@@ -54,8 +51,6 @@ describe('useAgentConversationStore', () => {
     store.ingest(delta('t1', 'streaming delta'))
     await nextTick()
 
-    // The fresh-reference-per-emit is what trips the watcher; an in-place mutation of
-    // the same object reference would NOT (Object.is on the slot stays equal).
     expect(spy).toHaveBeenCalled()
     expect(store.messages[0].parts.map((p) => p.type)).toEqual(['text'])
   })
@@ -69,12 +64,8 @@ describe('useAgentConversationStore', () => {
     store.abortActiveTurn()
 
     expect(store.isStreaming).toBe(false)
-    // The settled message itself carries streaming=false (the transport's in-place
-    // abort), not merely the null-active fallback of isStreaming.
     expect(store.messages[0].streaming).toBe(false)
-    // History is preserved (the partial message stays), unlike reset().
     expect(store.messages).toHaveLength(1)
-    // A second abort is a no-op.
     store.abortActiveTurn()
     expect(store.messages).toHaveLength(1)
   })
@@ -104,8 +95,6 @@ describe('useAgentConversationStore', () => {
     store.startTurn(T1)
     store.ingest(delta('t1', 'keep'))
 
-    // An event from a different (stale/foreign) turn must not bleed in. Every v1 chat
-    // event carries data.message_id, so there is no absent-id case to test.
     store.ingest(delta('t2', 'DROP ME'))
 
     const parts = store.messages[0].parts
@@ -121,7 +110,6 @@ describe('useAgentConversationStore', () => {
     store.startTurn(T2)
 
     expect(store.messages).toHaveLength(2)
-    // The prior turn is settled (no lingering spinner), the new one is live.
     expect(store.messages[0].streaming).toBe(false)
     expect(store.messages[1].streaming).toBe(true)
     expect(store.activeTurnId).toBe(T2)
@@ -159,7 +147,6 @@ describe('useAgentConversationStore', () => {
         { type: 'notice', level: 'error', text: 'send failed' }
       ])
     }
-    // No transport opened, no active turn touched.
     expect(store.activeTurnId).toBeNull()
     expect(store.isStreaming).toBe(false)
   })
@@ -171,7 +158,6 @@ describe('useAgentConversationStore', () => {
 
     store.recordFailedSend('local-error-1' as TurnId, 'oops', 'send failed')
 
-    // The live turn is untouched: still active and streaming.
     expect(store.activeTurnId).toBe(T1)
     expect(store.isStreaming).toBe(true)
   })

@@ -161,8 +161,6 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    // Agent failures have no catalog remediation copy; the raw details are the
-    // only actionable signal, so they surface on the card.
     expect(
       screen.getByText('HTTP 500 from /api/agent/threads')
     ).toBeInTheDocument()

@@ -14,7 +14,6 @@ export const useAgentDraftStore = defineStore('agentDraft', () => {
   const content = ref<Record<string, unknown> | null>(null)
   const version = ref<number | null>(null)
 
-  // Switching workflows clears content/version so a prior workflow's draft can't bleed in.
   function bind(id: string): void {
     if (id === workflowId.value) return
     workflowId.value = id
@@ -22,8 +21,6 @@ export const useAgentDraftStore = defineStore('agentDraft', () => {
     version.value = null
   }
 
-  // draft_patch.content is the FULL graph snapshot at that version, NOT a diff, so a
-  // base_version gap does not force a mid-stream refetch; monotonic adoption suffices.
   function applyPatch(data: DraftPatchData): boolean {
     if (data.workflow_id !== workflowId.value) return false
     if (version.value !== null && data.version <= version.value) return false
@@ -38,7 +35,6 @@ export const useAgentDraftStore = defineStore('agentDraft', () => {
     return 'in-sync'
   }
 
-  // Equal-version re-adopt is a harmless idempotent refresh; an older snapshot is ignored.
   function adoptSnapshot(snapshot: AgentDraftSnapshot): void {
     if (version.value !== null && snapshot.version < version.value) return
     content.value = snapshot.content

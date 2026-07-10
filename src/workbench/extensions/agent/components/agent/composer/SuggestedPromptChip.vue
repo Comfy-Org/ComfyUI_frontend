@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-// Click INSERTS the prompt into the composer (never sends) per the locked Figma decision.
-// Per the design reference: a rounded-full pill (leading icon + label) that stacks
-// full-width in narrow panels and wraps centered from 460px container width up.
 const { text, icon } = defineProps<{ text: string; icon: string }>()
 const emit = defineEmits<{ insert: [text: string] }>()
 </script>

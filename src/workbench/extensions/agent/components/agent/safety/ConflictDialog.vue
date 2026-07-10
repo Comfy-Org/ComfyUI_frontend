@@ -17,8 +17,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import type { ConflictChoice } from './safetyTypes'
 
-// DES-502 card: Cancel/✕ defer the decision, "Keep my changes" keeps this draft
-// off the canvas, "Accept agent changes" applies it (dropdown: into a new tab).
 const { open } = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ resolve: [choice: ConflictChoice] }>()
 

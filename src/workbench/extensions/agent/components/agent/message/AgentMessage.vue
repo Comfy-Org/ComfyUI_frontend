@@ -20,8 +20,6 @@ const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
 
-// Adjacent tool parts render as one grouped card; text and notices stay as their
-// own rows, preserving the transport's interleaved order.
 type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }

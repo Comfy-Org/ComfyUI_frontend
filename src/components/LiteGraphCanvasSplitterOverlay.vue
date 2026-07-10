@@ -2,8 +2,6 @@
   <div
     class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-row"
   >
-    <!-- Left column: workflow tabs + canvas/panels. The agent dock is a sibling so it
-         spans the full viewport height beside the tab bar. -->
     <div
       class="pointer-events-none flex min-w-0 flex-1 flex-col overflow-hidden"
     >
@@ -127,9 +125,6 @@
       </div>
     </div>
 
-    <!-- Right column: the agent dock, full viewport height, pixel width with a drag
-         handle on its left edge (420-960px; the panel header icon jumps between the
-         extremes). -->
     <div
       v-if="agentPanelDocked"
       class="pointer-events-auto relative h-full shrink-0 overflow-hidden"
@@ -195,13 +190,10 @@ const {
   enabled: agentPanelEnabled,
   width: agentPanelWidth
 } = storeToRefs(agentPanelStore)
-// The agent dock renders only while its flag gate is on and the user opened it.
 const agentPanelDocked = computed(
   () => agentPanelEnabled.value && agentPanelOpen.value
 )
 
-// Drag-resize for the agent dock: capture the pointer on the handle and track the delta;
-// the store clamps into its [min, max] range.
 const isAgentResizing = ref(false)
 let agentResizeStartX = 0
 let agentResizeStartWidth = 0

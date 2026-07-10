@@ -1,7 +1,5 @@
 import type { TurnId } from '../../schemas/agentApiSchema'
 
-// Part field shapes mirror ai's TextUIPart so a later swap to ai's own message
-// model is mechanical.
 export type PartState = 'streaming' | 'done'
 
 export interface TextPart {
@@ -10,7 +8,6 @@ export interface TextPart {
   state: PartState
 }
 
-// callId is synthesized in arrival order; the wire carries no tool id.
 export interface ToolPart {
   type: 'tool'
   callId: string
@@ -45,8 +42,6 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
   }
 }
 
-// Fresh reference per emit: Vue's set trap skips same-reference (Object.is) and deep
-// in-place mutations, so the shallow clone is what makes streaming deltas propagate.
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
   return { ...message, parts: [...message.parts] }
 }

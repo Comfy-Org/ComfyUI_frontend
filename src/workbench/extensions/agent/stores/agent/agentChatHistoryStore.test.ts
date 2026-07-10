@@ -7,7 +7,6 @@ import {
   useAgentChatHistoryStore
 } from './agentChatHistoryStore'
 
-// A fixed reference moment: 2026-03-15 12:00 local.
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
 
@@ -45,12 +44,6 @@ describe('groupSessionsByRecency', () => {
   })
 
   it('buckets the prior evening as yesterday across a spring-forward midnight', () => {
-    // NOW is 02:30 just after the US spring-forward (2026-03-08 02:00 -> 03:00), so today
-    // is a 23h day. A session at 23:30 the evening before must land in Yesterday. This pins
-    // the startYesterday = startOfLocalDay(startToday - 1) intent: a naive startToday - 24h
-    // drifts the yesterday boundary off local midnight around a DST transition. Constructed
-    // with a local Date; in a non-DST test TZ it degrades to a plain day-boundary check,
-    // which is still the correct bucket.
     const now = new Date(2026, 2, 8, 2, 30).getTime()
     const priorEvening = new Date(2026, 2, 7, 23, 30).getTime()
     const groups = groupSessionsByRecency(

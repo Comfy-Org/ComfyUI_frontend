@@ -8,8 +8,6 @@ import { createAgentEventTransport } from './agentEventTransport'
 import type { AssistantMessage, TextPart, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
-// Fixtures are read at test time via Vite's raw glob (node:fs types are not wired
-// into this tsconfig), mirroring agentApiSchema.test.ts.
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
   { query: '?raw', import: 'default', eager: true }
@@ -25,7 +23,6 @@ interface WsLine {
   frame: unknown
 }
 
-// Parse every line, keep only chat events for the given message_id, in file order.
 function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {
   const events: AgentChatEvent[] = []
   for (const line of fixtureFor(fixture).split('\n')) {
@@ -52,8 +49,6 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
 
 const T = 't1' as TurnId
 
-// The transport emits a fresh snapshot per applied event; the last snapshot is the
-// settled message under test.
 function drive(events: AgentChatEvent[]): AssistantMessage {
   const message = createAssistantMessage(T)
   const emit = vi.fn<(m: AssistantMessage) => void>()
@@ -62,7 +57,6 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   return emit.mock.calls.at(-1)?.[0] ?? message
 }
 
-// Typed builders keep the unit cases free of `as` casts on inline literals.
 function thinking(delta: string): AgentChatEvent {
   return {
     type: 'agent_thinking',
@@ -96,8 +90,6 @@ describe('agentEventTransport fixture replay', () => {
       'ws-turn-edit.jsonl',
       '172a6ede-7ab7-4b01-83b6-5b15f66dee4b'
     )
-    // The captured reply is the single message_delta, asserted against the fixture
-    // rather than hardcoded so a re-capture keeps the test honest.
     const replyText = events
       .filter((e) => e.type === 'agent_message_delta')
       .map((e) => (e.type === 'agent_message_delta' ? e.data.delta : ''))
@@ -120,7 +112,6 @@ describe('agentEventTransport fixture replay', () => {
     const texts = textParts(message)
     expect(texts).toHaveLength(1)
     expect(texts[0]).toMatchObject({ text: replyText, state: 'done' })
-    // Tools come before the text: the last part is the reply.
     expect(parts(message).at(-1)).toBe(texts[0])
     expect(message.streaming).toBe(false)
     expect(message.thinking).toBe(false)

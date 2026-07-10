@@ -20,7 +20,6 @@ import type {
   UploadImageResult
 } from '../../schemas/agentApiSchema'
 
-// body is the parsed error payload, or undefined when empty or not JSON.
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
@@ -33,12 +32,6 @@ export class AgentApiError extends Error {
   }
 }
 
-// The client's canvas, uploaded with a turn so the server seeds the thread's
-// draft from it before the agent runs. content is the SAVE format
-// (app.graph.serialize()), not the API/prompt format. version null
-// force-seeds; a non-null value is the draft version the client last
-// received - the server 409s {error, version} when its draft has moved past
-// it, and the client retries once against the returned version.
 export interface DraftUpload {
   content: unknown
   version: number | null
@@ -84,9 +77,6 @@ export function createAgentRestClient() {
     return new AgentApiError(message, response.status, body)
   }
 
-  // Rides api.fetchApi so agent calls share the host transport: auth headers
-  // (Firebase/workspace), the 401 remint retry, and the Comfy-User header.
-  // A schema violation throws zod's error uncaught here, by design (anti-drift seam).
   async function request<T>(
     route: string,
     init: RequestInit,
@@ -105,7 +95,6 @@ export function createAgentRestClient() {
     }
   }
 
-  // threadId 'new' opens a thread as part of posting the first message.
   async function postMessage(
     threadId: string,
     req: PostMessageInput
@@ -159,7 +148,6 @@ export function createAgentRestClient() {
     )
   }
 
-  // No Content-Type header is set so the browser writes the multipart boundary itself.
   async function uploadImage(
     image: Blob,
     filename: string

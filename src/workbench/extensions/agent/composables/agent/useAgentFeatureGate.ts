@@ -1,7 +1,6 @@
 export const AGENT_PANEL_FLAG = 'agent-in-app-experience'
 
 export interface AgentFlagSource {
-  // Must return false while flags are unknown/not yet loaded (fail closed).
   isEnabled(): boolean
   onChange?(listener: () => void): () => void
 }
@@ -16,7 +15,6 @@ export function createPostHogFlagSource(
   flag: string = AGENT_PANEL_FLAG
 ): AgentFlagSource {
   return {
-    // undefined = flags not loaded -> fail closed.
     isEnabled: () => posthog.isFeatureEnabled(flag) === true,
     onChange: (listener) => {
       const unsubscribe = posthog.onFeatureFlags(listener)

@@ -16,47 +16,11 @@ import {
   mockAgentBoot
 } from '@e2e/tests/agent/agentPanelMocks'
 
-/**
- * In-App Agent panel e2e coverage (FE-1187).
- *
- * The panel is a CLOUD-ONLY workbench extension: `src/extensions/core/index.ts`
- * imports `agentPanel.ts` only under `if (isCloud)`, and `isCloud` is the
- * build-time `__DISTRIBUTION__ === 'cloud'` define. It therefore exists only in
- * the cloud build, which the `cloud` Playwright project runs against
- * (`frontend-dist-cloud` in CI; `playwright.config.ts` gives that project
- * `grep: /@cloud/` while every other project greps it out). These specs are
- * tagged `@cloud` so they run there and nowhere else. The `comfyPageFixture`
- * itself already installs the cloud Firebase-auth mock for any `@cloud` test and
- * boots the app, so tests only arrange agent mocks and act.
- *
- * The panel docks on the right and opens from the top-bar "Ask Comfy Agent"
- * button (not a sidebar tab). It is gated FAIL-CLOSED by the PostHog flag
- * `agent-in-app-experience`: `agentPanel.ts` reads `posthog.isFeatureEnabled`
- * and only exposes that button once it is `true`. PostHog only initializes
- * when `/api/features` supplies a `posthog_project_token`, so the mocks seed both
- * the token and the flag (through PostHog `bootstrap.featureFlags`, which resolves
- * the read synchronously with no `/decide` network call — see `agentPanelMocks.ts`).
- * `agentFlagEnabled` (default true) is a fixture option a test flips off to model
- * the fail-closed default.
- *
- * REST is mocked via `page.route` (POST messages -> 202, GET draft snapshot) and
- * server->client WS frames are injected with the repo's `webSocketFixture`
- * (`context.routeWebSocket(/\/ws/)`): `ws.send(JSON.stringify({type, data}))`
- * pushes a frame onto the app's shared `/ws`, which is exactly where the panel's
- * reconnecting event source listens.
- */
-
 type AgentFixtures = {
   agentFlagEnabled: boolean
   postedMessages: string[]
 }
 
-// Override the `page` fixture to install the agent boot + REST mocks, the same
-// pattern as workspaceSwitcher.spec.ts: `comfyPage` depends on `page`, so the
-// override is guaranteed to finish before `comfyPage` navigates and boots the
-// app. A sibling fixture carries no such ordering, so its mocks can land after
-// boot and the real server answers /api/features (no PostHog token, gate stays
-// closed).
 const agentCloudFixture = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
   postedMessages: async ({}, use) => {
@@ -70,10 +34,8 @@ const agentCloudFixture = comfyPageFixture.extend<AgentFixtures>({
 
 const test = mergeTests(agentCloudFixture, webSocketFixture)
 
-// The panel opens from the top-bar action button, exposed with aria-label = tooltip.
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
-// Push one agent WS event onto the app's /ws in the ComfyUI envelope shape.
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
@@ -88,8 +50,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     }) => {
       expect(postedMessages).toHaveLength(0)
 
-      // Fail-closed: with the PostHog flag false the top-bar button is never
-      // exposed, so the panel cannot be opened.
       await expect(
         comfyPage.page.getByRole('button', { name: OPEN_AGENT_LABEL })
       ).toHaveCount(0)
@@ -101,13 +61,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     postedMessages,
     getWebSocket
   }) => {
-    // Boot + open + full turn can exceed the cloud project's 15s budget on a
-    // loaded CI runner; same widening precedent as versionMismatchWarnings:91.
     test.setTimeout(30_000)
 
     const page = comfyPage.page
 
-    // Flag on: the top-bar button is exposed. Open the panel.
     const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
     await expect(openButton).toBeVisible()
     await openButton.click()
@@ -115,11 +72,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
 
-    // Empty state: greeting + question and the five suggested-prompt chips. The greeting
-    // personalizes to the account's first name, so match the stable prefix, not a fixed name.
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    // Sourced from the bundled locale so the spec cannot drift from the rendered prompts.
     const firstPrompt = enMessages.agent.suggestedPrompts[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
@@ -127,7 +81,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const composer = panel.getByPlaceholder(enMessages.agent.placeholder)
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
-    // Clicking a suggested prompt INSERTS it into the composer, it does not send.
     await expect(composer).toHaveValue('')
     await promptChip.click()
     await expect(composer).toHaveValue(firstPrompt)
@@ -136,33 +89,24 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       'inserting a prompt must not POST a message'
     ).toHaveLength(0)
 
-    // Submitting sends the composed message: POST /api/agent/threads/new/messages.
     const ws = await getWebSocket()
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
-    // The composer clears once the send is accepted.
     await expect(composer).toHaveValue('')
 
-    // agent_thinking -> the "Thinking..." status is visible.
     pushEvent(ws, THINKING_EVENT)
     await expect(panel.getByText('Thinking...')).toBeVisible()
 
-    // agent_tool_call (ok) -> a tool-call group card appears ("Ran 1 tool call").
     pushEvent(ws, TOOL_CALL_EVENT)
     await expect(panel.getByText('Ran 1 tool call')).toBeVisible()
 
-    // agent_message_delta with markdown -> rendered agent message; the **bold**
-    // run renders as <strong>.
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
-    // Text arriving clears the thinking chip.
     await expect(panel.getByText('Thinking...')).toBeHidden()
 
-    // agent_message_done -> the turn settles: the primary button returns to Send
-    // (it is Stop while streaming).
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
@@ -173,8 +117,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     postedMessages,
     getWebSocket
   }) => {
-    // Boot + open + full turn can exceed the cloud project's 15s budget on a
-    // loaded CI runner; same widening precedent as versionMismatchWarnings:91.
     test.setTimeout(30_000)
 
     const page = comfyPage.page
@@ -185,10 +127,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await openButton.click()
     await expect(panel).toBeVisible()
 
-    // The draft store only adopts a draft_patch whose workflow_id matches the
-    // server's workflow. The server returns that id in the message ack, and the
-    // panel binds the draft store to it. So send once to establish the bind before
-    // pushing the patch. A draft_patch is otherwise NEVER turn-filtered.
     await panel.getByPlaceholder(enMessages.agent.placeholder).fill('Build it')
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
@@ -196,8 +134,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const ws = await getWebSocket()
     pushEvent(ws, { type: 'draft_patch', data: DRAFT_PATCH })
 
-    // The two-node draft graph is validated and handed to app.loadGraphData, so
-    // the canvas graph must reflect it.
     await expect
       .poll(() => page.evaluate(() => window.app!.graph!.nodes.length))
       .toBe(2)

@@ -207,8 +207,6 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
-// Async so the flag-gated agent subtree stays out of the GraphCanvas chunk;
-// it loads on first dock (the slot renders only while the panel is open).
 const AgentPanelRoot = defineAsyncComponent(
   () => import('@/workbench/extensions/agent/AgentPanelRoot.vue')
 )

@@ -12,15 +12,11 @@ import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
-// What a sent attachment leaves behind in the transcript: the upload's display
-// name plus a local preview (object URL); the server ref is not re-fetchable yet.
 export interface UserAttachment {
   name: string
   previewUrl?: string
 }
 
-// Recorded at send time because the event stream is assistant-only; paired to its
-// assistant turn by the shared TurnId (the server-minted message_id).
 interface UserEntry {
   id: TurnId
   role: 'user'
@@ -36,17 +32,12 @@ export const useAgentConversationStore = defineStore(
   () => {
     const messages = ref<AssistantMessage[]>([])
     const activeTurnId = ref<TurnId | null>(null)
-    // Held here (not the session composable) so it survives a panel remount: a reopened
-    // panel with a null thread would post to 'new' and split the transcript across two
-    // server threads.
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
 
     let transport: AgentEventTransport | null = null
-    // Reactive so status/isStreaming re-derive the instant a turn opens or settles; a plain
-    // closure int leaves those computeds stale until the next messages mutation.
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -70,8 +61,6 @@ export const useAgentConversationStore = defineStore(
       threadId.value = id
     }
 
-    // Opens no transport and leaves activeTurnId/activeIndex untouched, so any in-flight
-    // turn is unaffected.
     function recordFailedSend(
       turnId: TurnId,
       text: string,
@@ -84,7 +73,6 @@ export const useAgentConversationStore = defineStore(
       messages.value.push(message)
     }
 
-    // Abort any prior in-flight turn first so a dropped reply can't leave two turns live.
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
@@ -93,8 +81,6 @@ export const useAgentConversationStore = defineStore(
       transport = createAgentEventTransport(message, replaceActive)
     }
 
-    // The store owns turn filtering: events for a foreign turn are dropped here. Every v1
-    // chat event carries data.message_id, so there is no absent-id case to guard.
     function ingest(event: AgentChatEvent): void {
       if (!transport) return
       if (event.data.message_id !== activeTurnId.value) return
@@ -106,8 +92,6 @@ export const useAgentConversationStore = defineStore(
       transport.ingest(event)
     }
 
-    // Settle the in-flight turn WITHOUT a done (socket drop mid-turn): close open blocks and
-    // clear transport/activeTurnId so no spinner is stuck forever.
     function abortActiveTurn(): void {
       if (!transport) return
       transport.settle()
@@ -120,8 +104,6 @@ export const useAgentConversationStore = defineStore(
       activeTurnId.value = null
     }
 
-    // Dropped transcript previews are object URLs pinning image buffers;
-    // release them or every sent image outlives its conversation.
     function dropAttachmentPreviews(): void {
       for (const attachments of userAttachments.value.values()) {
         for (const { previewUrl } of attachments) {
@@ -140,9 +122,6 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
-    // Rows pair by turn_id and order by seq. A turn whose assistant row is missing
-    // (interrupted before the reply persisted) still gets a settled placeholder so its user
-    // prompt renders.
     function hydrate(history: AgentMessages): void {
       clearActive()
       const texts = new Map<TurnId, string>()
@@ -172,8 +151,6 @@ export const useAgentConversationStore = defineStore(
         return message
       })
       userTexts.value = texts
-      // The history endpoint does not return attachment refs or tags yet;
-      // hydrated turns render text-only until the BE persists them.
       userTags.value = new Map()
       dropAttachmentPreviews()
     }

@@ -18,8 +18,6 @@ export function useComposer(options: UseComposerOptions) {
   const draft = ref('')
   const attachments = ref<ComposerAttachment[]>([])
 
-  // In-flight uploads block the send: their refs do not exist server-side yet,
-  // so sending now would silently drop what the user can see attached.
   const canSend = computed(
     () =>
       (draft.value.trim().length > 0 || attachments.value.length > 0) &&
@@ -56,8 +54,6 @@ export function useComposer(options: UseComposerOptions) {
 
   function removeAttachment(id: string): void {
     const removed = attachments.value.find((item) => item.id === id)
-    // A dismissed chip's local preview has no other consumer (sent ones live on
-    // in the transcript); release the object URL's image buffer.
     if (removed?.previewUrl?.startsWith('blob:'))
       URL.revokeObjectURL(removed.previewUrl)
     attachments.value = attachments.value.filter((item) => item.id !== id)

@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The client rides the host transport (auth headers, 401 remint, Comfy-User all
-// live in api.fetchApi); tests assert the route + init handed to that seam and
-// drive responses back through it.
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
@@ -146,7 +143,6 @@ describe('success response parsing', () => {
 
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
-    // passthrough keeps the additive workflow_id key
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
   })
 
@@ -206,7 +202,6 @@ describe('error mapping', () => {
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
-    // content + version are required by zAgentDraftSnapshot; a wrong shape must throw.
     respond(jsonResponse(200, { wrong: 'shape' }))
 
     const error = await makeClient()
