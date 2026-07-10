@@ -84,7 +84,7 @@ watch(
       />
     </CollapsibleTrigger>
     <CollapsibleContent
-      class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+      class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
       <div :class="cn('flex flex-col gap-0.5 pt-1 pl-2')">
         <ToolCallCard
