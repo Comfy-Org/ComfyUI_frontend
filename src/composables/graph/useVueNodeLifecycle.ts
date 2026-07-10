@@ -38,9 +38,7 @@ function useVueNodeLifecycleIndividual() {
     // Seed reroutes into the Layout Store so hit-testing uses the new path
     for (const reroute of activeGraph.reroutes.values()) {
       const [x, y] = reroute.pos
-      const parent = reroute.parentId ?? undefined
-      const linkIds = Array.from(reroute.linkIds)
-      layoutMutations.createReroute(reroute.id, { x, y }, parent, linkIds)
+      layoutMutations.createReroute(reroute.id, { x, y })
     }
 
     // Start sync AFTER seeding so bootstrap operations don't trigger

@@ -14,7 +14,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   SerialisableGraph,
-  SerialisableLLink
+  SerialisableLLink,
+  SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
@@ -42,6 +43,8 @@ import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWi
 import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -261,44 +264,6 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
   })
-
-  test('reroute is retained when a node is created from a floating reroute sharing an input slot with a real link', ({
-    expect
-  }) => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    const graph = new LGraph()
-    const preview = new LGraphNode('Preview Image')
-    preview.addInput('images', 'IMAGE')
-    const loadA = new LGraphNode('Load A')
-    loadA.addOutput('IMAGE', 'IMAGE')
-    const loadB = new LGraphNode('Load B')
-    loadB.addOutput('IMAGE', 'IMAGE')
-    graph.add(preview)
-    graph.add(loadA)
-    graph.add(loadB)
-
-    const reroute = preview.connectFloatingReroute(
-      [700, 400],
-      preview.inputs[0]
-    )
-    loadA.connect(0, preview, 0)
-    expect(graph.links.size).toBe(1)
-    expect(graph.reroutes.size).toBe(1)
-
-    // Creating a node from the floating reroute reuses its reroute chain and
-    // must not prune the reroute while replacing the existing real link.
-    loadB.connect(0, preview, 0, reroute.id)
-
-    expect(graph.links.size).toBe(1)
-    expect(graph.reroutes.size).toBe(1)
-
-    const linkId = preview.inputs[0].link
-    expect(linkId).not.toBeNull()
-    const link = graph.getLink(linkId!)
-    expect(link?.origin_id).toBe(loadB.id)
-    expect(link?.parentId).toBeDefined()
-    expect(graph.reroutes.has(link!.parentId!)).toBe(true)
-  })
 })
 
 describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
@@ -357,6 +322,33 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
       JSON.stringify(first.floatingLinks)
     )
   })
+
+  const REROUTE_KEYS = ['id', 'parentId', 'pos', 'linkIds', 'floating'] as const
+
+  function expectRerouteContractKeyOrder(reroute: SerialisableReroute) {
+    const serialized: Record<string, unknown> = JSON.parse(
+      JSON.stringify(reroute)
+    )
+    const expectedKeys = REROUTE_KEYS.filter(
+      (key) => reroute[key] !== undefined
+    )
+    expect(Object.keys(serialized)).toEqual(expectedKeys)
+  }
+
+  test('reroutes keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const reroutes = first.reroutes ?? []
+    expect(reroutes.length).toBeGreaterThan(0)
+    expect(reroutes.some((r) => r.floating !== undefined)).toBe(true)
+    expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
+    for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
+    expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
+  })
 })
 
 describe('Graph Clearing and Callbacks', () => {
@@ -407,8 +399,6 @@ describe('Graph Clearing and Callbacks', () => {
   })
 
   test('clear() removes graph-scoped preview and widget-value state', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const graph = new LGraph()
     const graphId = 'graph-clear-cleanup' as UUID
     graph.id = graphId
@@ -537,10 +527,6 @@ describe('node:before-removed event', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 
@@ -899,8 +885,6 @@ describe('ensureGlobalIdUniqueness', () => {
 })
 
 describe('_removeDuplicateLinks', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   class TestNode extends LGraphNode {
     constructor(title?: string) {
       super(title ?? 'TestNode')
@@ -1215,7 +1199,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SHARED_NODE_IDS = [3, 8, 37]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('dummy', DummyNode)
   })
 

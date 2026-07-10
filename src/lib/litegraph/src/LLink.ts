@@ -4,9 +4,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
@@ -32,8 +30,6 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
-
-const layoutMutations = useLayoutMutations()
 
 export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [
@@ -117,7 +113,11 @@ function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
-  readonly _state: LinkTopology
+  /**
+   * The link's topology state. Once registered with {@link useLinkStore},
+   * this is the store's reactive proxy, so field writes are tracked.
+   */
+  _state: LinkTopology
 
   /** The graph this link is registered with in {@link useLinkStore}, if any. */
   _graphId?: UUID
@@ -537,18 +537,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       network.addFloatingLink(newLink)
     }
 
-    for (const reroute of reroutes) {
-      reroute.linkIds.delete(this.id)
-      if (!keepReroutes && !reroute.totalLinks) {
-        network.reroutes.delete(reroute.id)
-        // Delete reroute from Layout Store
-        layoutMutations.setSource(LayoutSource.Canvas)
-        layoutMutations.deleteReroute(reroute.id)
-      }
-    }
     network.links.delete(this.id)
     unregisterLinkTopology(this)
     layoutStore.deleteLinkLayout(this.id)
+
+    for (const reroute of reroutes) {
+      if (!keepReroutes && !reroute.totalLinks) {
+        network._removeReroute(reroute.id)
+      }
+    }
   }
 
   /**
@@ -581,8 +578,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 }
 
 /**
- * Registers a link's topology into {@link useLinkStore} by reference, so the
- * store and {@link LLink._state} always agree.  Call this at every site that
+ * Registers a link's topology into {@link useLinkStore} and adopts the
+ * store's reactive proxy as {@link LLink._state}, so the store and the link
+ * always agree and field writes are tracked.  Call this at every site that
  * adds a link to a graph's link map (or floating link map).
  *
  * {@link LLink._graphId} is only set when the store keeps this link's state:
@@ -597,7 +595,9 @@ export function registerLinkTopology(
 ): void {
   if (link.id === toLinkId(-1)) return // transient toFloating clone
   const graphId = graph.rootGraph.id
-  if (useLinkStore().registerLink(graphId, link._state)) {
+  const registered = useLinkStore().registerLink(graphId, link._state)
+  if (registered) {
+    link._state = registered
     link._graphId = graphId
   }
 }

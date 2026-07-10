@@ -88,13 +88,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
     renderState: WidgetRenderState = {}
-  ): WidgetState {
+  ): WidgetState<TValue> {
     registerWidgetRenderState(widgetId, renderState)
 
     const existing = getWidget(widgetId)
     if (existing) {
       appendNodeWidgetOrder(widgetId)
-      return existing
+      return existing as WidgetState<TValue>
     }
 
     const { graphId, nodeId, name } = parseWidgetId(widgetId)
@@ -107,7 +107,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)
     appendNodeWidgetOrder(widgetId)
-    return widgetStates.get(widgetId)!
+    return widgetStates.get(widgetId) as WidgetState<TValue>
   }
 
   function registerWidgetRenderState(
@@ -124,7 +124,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const state: WidgetRenderState = { ...init }
     widgetRenderStates.set(widgetId, state)
-    return widgetRenderStates.get(widgetId)!
+    return widgetRenderStates.get(widgetId) as WidgetRenderState
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {

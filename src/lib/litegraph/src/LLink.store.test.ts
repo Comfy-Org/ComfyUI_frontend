@@ -1,12 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
+import { registerLinkTopology } from './LLink'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -32,6 +35,27 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graph.rootGraph.id, b.id, 0)).toBe(false)
   })
 
+  it('link.parentId writes are observable through the store query', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    const store = useLinkStore()
+    const parentId = computed(
+      () => store.getInputSlotLink(graph.rootGraph.id, b.id, 0)?.parentId
+    )
+    expect(parentId.value).toBeUndefined()
+
+    link.parentId = toRerouteId(7)
+
+    expect(parentId.value).toBe(7)
+  })
+
   it('keeps writing to a disconnected link after it leaves the store', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
@@ -49,6 +73,27 @@ describe('LLink ↔ linkStore integration', () => {
       link.target_slot = 3
     }).not.toThrow()
     expect(link.target_slot).toBe(3)
+  })
+
+  it('keeps the winner registered when a colliding loser link disconnects', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const winner = a.connect(0, b, 0)!
+    const loser = new LLink(winner.id, 'INT', a.id, 0, b.id, 0)
+    registerLinkTopology(graph, loser)
+
+    loser.disconnect(graph)
+
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    expect(store.getInputSlotLink(graphId, b.id, 0)?.id).toBe(winner.id)
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 
   it('unregisters a subgraph definition’s links when its last instance is removed', () => {

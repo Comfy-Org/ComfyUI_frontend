@@ -73,8 +73,6 @@ function asRerouteId(id: string | number): RerouteId {
 interface RerouteData {
   id: RerouteId
   position: Point
-  parentId: RerouteId
-  linkIds: LinkId[]
 }
 
 // Generic typed Y.Map interface
@@ -86,9 +84,7 @@ interface TypedYMap<T> {
 class LayoutStoreImpl implements LayoutStore {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
-    position: { x: 0, y: 0 },
-    parentId: toRerouteId(0),
-    linkIds: []
+    position: { x: 0, y: 0 }
   }
 
   // Yjs document and shared data structures
@@ -1118,8 +1114,6 @@ class LayoutStoreImpl implements LayoutStore {
     const rerouteData = new Y.Map<unknown>()
     rerouteData.set('id', operation.rerouteId)
     rerouteData.set('position', operation.position)
-    rerouteData.set('parentId', operation.parentId)
-    rerouteData.set('linkIds', operation.linkIds)
 
     const rerouteKey = String(operation.rerouteId)
     this.yreroutes.set(rerouteKey, rerouteData)

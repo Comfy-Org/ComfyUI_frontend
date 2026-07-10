@@ -67,19 +67,24 @@ export const useLinkStore = defineStore('link', () => {
   /**
    * Places a link under its current endpoints. The first registration for a
    * target slot wins; re-placing the already-registered topology is a no-op.
-   * @returns `true` if `topology` holds a registration afterwards.
+   * @returns The store-held reactive state when `topology` holds a
+   * registration afterwards — callers keep it as their live state object so
+   * later field writes are tracked — otherwise `undefined`.
    */
-  function place(graphId: UUID, topology: LinkTopology): boolean {
+  function place(
+    graphId: UUID,
+    topology: LinkTopology
+  ): LinkTopology | undefined {
     if (!hasUniqueTarget(topology)) {
       graphUnkeyed(graphId).add(topology)
-      return true
+      return reactive(topology)
     }
     const targets = graphTargets(graphId)
     const key = targetKey(topology.targetNodeId, topology.targetSlot)
     const existing = targets.get(key)
-    if (existing && toRaw(existing) !== toRaw(topology)) return false
+    if (existing && toRaw(existing) !== toRaw(topology)) return undefined
     targets.set(key, topology)
-    return true
+    return reactive(topology)
   }
 
   /** Removes a link's placement; only the registered topology may vacate it. */
@@ -94,13 +99,14 @@ export const useLinkStore = defineStore('link', () => {
 
   /**
    * Applies an endpoint patch and re-places the link under its new target.
-   * @returns `true` if the link holds a registration afterwards.
+   * @returns The store-held reactive state when the link holds a
+   * registration afterwards, otherwise `undefined`.
    */
   function updateEndpoint(
     graphId: UUID,
     topology: LinkTopology,
     patch: EndpointPatch
-  ): boolean {
+  ): LinkTopology | undefined {
     displace(graphId, topology)
     const live = reactive(topology)
     if (patch.originNodeId !== undefined) live.originNodeId = patch.originNodeId
@@ -126,6 +132,14 @@ export const useLinkStore = defineStore('link', () => {
     return targetIndex.value.get(graphId)?.get(targetKey(nodeId, slot))
   }
 
+  /** Iterates every registered topology in a graph's bucket. */
+  function* graphTopologies(graphId: UUID): Generator<LinkTopology> {
+    const targets = targetIndex.value.get(graphId)
+    if (targets) yield* targets.values()
+    const unkeyed = unkeyedLinks.value.get(graphId)
+    if (unkeyed) yield* unkeyed.values()
+  }
+
   function clearGraph(graphId: UUID): void {
     targetIndex.value.delete(graphId)
     unkeyedLinks.value.delete(graphId)
@@ -137,6 +151,7 @@ export const useLinkStore = defineStore('link', () => {
     deleteLink: displace,
     isInputSlotConnected,
     getInputSlotLink,
+    graphTopologies,
     clearGraph
   }
 })

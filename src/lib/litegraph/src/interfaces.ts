@@ -183,6 +183,8 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   readonly reroutes: Map<RerouteId, Reroute>
   addFloatingLink(link: LLink): LLink
   removeReroute(id: RerouteId): unknown
+  /** Removes a reroute from the map and its stores, without chain splicing. */
+  _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
 

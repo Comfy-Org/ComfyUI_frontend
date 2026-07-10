@@ -32,6 +32,7 @@ import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
+import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
@@ -2987,24 +2988,7 @@ export class LGraphNode
       })
     }
 
-    // Reroutes
-    const reroutes = LLink.getReroutes(graph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) reroute.floating = undefined
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = graph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          graph.removeFloatingLink(link)
-        }
-      }
-    }
+    anchorRerouteChain(graph, link)
     graph.incrementVersion()
 
     // link has been created now, so its updated
@@ -3079,7 +3063,6 @@ export class LGraphNode
     if (!link)
       throw new Error('[connectFloatingReroute] Floating link not found')
 
-    reroute.floatingLinkIds.add(link.id)
     link.parentId = reroute.id
     parentReroute.floating = undefined
     return reroute

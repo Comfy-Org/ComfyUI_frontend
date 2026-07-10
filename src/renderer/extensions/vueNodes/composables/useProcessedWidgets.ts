@@ -346,24 +346,19 @@ function processWidget(
   if (!widgetState) return null
 
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
+  const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
+  if (options.advanced === undefined) options.advanced = renderState?.advanced
+  if (!shouldRenderAsVue({ type: widgetState.type, options })) return null
+
   const { live, errorTarget, controlWidget } = resolveLiveWidgetContext(
     ctx.rootGraph,
     ctx.hostNode,
     ctx.liveWidgets.get(id)
   )
-  const liveWidget = live?.widget
-  const widgetType = liveWidget?.type ?? widgetState.type
-  const options: IWidgetOptions = {
-    advanced: liveWidget?.advanced ?? renderState?.advanced,
-    ...(widgetState.options ?? {}),
-    ...(liveWidget?.options ?? {})
-  }
-  if (!shouldRenderAsVue({ type: widgetType, options })) return null
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
   const visible = isWidgetVisible(options, ctx.showAdvanced, slotInfo?.linked)
-  const isDisabled =
-    slotInfo?.linked || (liveWidget?.disabled ?? widgetState.disabled)
+  const isDisabled = slotInfo?.linked || widgetState.disabled
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options
   const value = widgetState.value as WidgetValue
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
@@ -385,14 +380,14 @@ function processWidget(
 
   const simplified: SimplifiedWidget = {
     name: widgetState.name,
-    type: widgetType,
+    type: widgetState.type,
     value,
     borderStyle: widgetOptions.advanced
       ? 'ring ring-component-node-widget-advanced'
       : undefined,
     callback: updateHandler,
     controlWidget,
-    label: liveWidget?.label ?? widgetState.label,
+    label: widgetState.label,
     linkedUpstream,
     nodeLocatorId: getWidgetNodeLocatorId(ctx.nodeData, bareWidgetId),
     options: widgetOptions,
@@ -402,14 +397,11 @@ function processWidget(
   }
 
   const valueTooltip =
-    isTooltipValueType(widgetType) && String(value).length > 10
+    isTooltipValueType(widgetState.type) && String(value).length > 10
       ? String(value)
       : undefined
   const tooltipConfig = ctx.ui.getTooltipConfig(
-    {
-      name: widgetState.name,
-      tooltip: liveWidget?.tooltip ?? renderState?.tooltip
-    },
+    { name: widgetState.name, tooltip: renderState?.tooltip },
     valueTooltip
   )
   const handleContextMenu = (e: PointerEvent) => {
@@ -421,9 +413,7 @@ function processWidget(
 
   return {
     handleContextMenu,
-    hasLayoutSize:
-      typeof liveWidget?.computeLayoutSize === 'function' ||
-      (renderState?.hasLayoutSize ?? false),
+    hasLayoutSize: renderState?.hasLayoutSize ?? false,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
@@ -432,9 +422,9 @@ function processWidget(
       ctx.missingModelStore
     ),
     widgetId: id,
-    renderKey: `${id}:${widgetType}`,
+    renderKey: `${id}:${widgetState.type}`,
     vueComponent:
-      getComponent(widgetType) ||
+      getComponent(widgetState.type) ||
       (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
     simplified,
     visible,

@@ -33,7 +33,7 @@ interface TestContext {
   validateIntegrityFloatingRemoved: () => void
   validateLinkIntegrity: () => void
   getNextLinkIds: (
-    linkIds: Set<number>,
+    linkIds: ReadonlySet<number>,
     expectedExtraLinks?: number
   ) => number[]
   readonly floatingReroute: Reroute

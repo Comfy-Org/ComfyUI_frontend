@@ -201,8 +201,6 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
 export interface CreateRerouteOperation extends RerouteOpBase {
   type: 'createReroute'
   position: Point
-  parentId?: RerouteId
-  linkIds: LinkId[]
 }
 
 /**

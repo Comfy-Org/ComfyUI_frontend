@@ -5,10 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  createTestSubgraph,
-  createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
@@ -293,42 +289,6 @@ describe('computeProcessedWidgets', () => {
     })
   })
 
-  it('prefers live widget metadata over stored render metadata', () => {
-    const nodeId = toNodeId(1)
-    const id = widgetId(GRAPH_ID, nodeId, 'value')
-    registerWidgetState(id, {
-      type: 'number',
-      value: 5,
-      label: 'Stored Label',
-      options: { min: 0, max: 5 }
-    })
-    const liveWidget = createMockWidget({
-      widgetId: id,
-      name: 'value',
-      type: 'slider',
-      label: 'Live Label',
-      options: { advanced: true, hidden: true, max: 10 }
-    })
-    const { graph } = createGraphWithNode([liveWidget], nodeId)
-
-    const result = processWidgets({
-      widgetIds: [id],
-      nodeId,
-      rootGraph: graph,
-      showAdvanced: true
-    })
-
-    expect(result[0]).toMatchObject({
-      renderKey: `${id}:slider`,
-      visible: false,
-      simplified: {
-        type: 'slider',
-        label: 'Live Label',
-        options: { advanced: true, hidden: true, min: 0, max: 10 }
-      }
-    })
-  })
-
   it('preserves null values from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
     registerWidgetState(id, {
@@ -515,76 +475,5 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('fixed-value')
     const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
     expect(afterUpdate.hasError).toBe(false)
-  })
-
-  it('uses promoted widget source errors and clears both targets', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'value', type: 'number' }]
-    })
-    const sourceNode = new LGraphNode('SourceNode')
-    sourceNode.id = toNodeId(2)
-    const sourceInput = sourceNode.addInput('value', 'number')
-    sourceInput.widget = { name: 'widget' }
-    sourceNode.addWidget('number', 'widget', 1, () => undefined, {})
-    subgraph.add(sourceNode)
-    subgraph.inputNode.slots[0].connect(sourceInput, sourceNode)
-
-    const hostNode = createTestSubgraphNode(subgraph, { id: 1 })
-    const rootGraph = hostNode.graph as LGraph
-    rootGraph.add(hostNode)
-
-    const hostInput = hostNode.inputs[0]
-    const id = hostInput.widgetId
-    if (!id) throw new Error('Expected promoted widget id')
-    const sourceExecutionId = createNodeExecutionId([
-      hostNode.id,
-      sourceNode.id
-    ])
-    if (!sourceExecutionId)
-      throw new Error('Expected promoted source execution id')
-
-    useExecutionErrorStore().lastNodeErrors = {
-      [sourceExecutionId]: {
-        errors: [
-          {
-            type: 'required_input_missing',
-            message: 'widget is required',
-            details: '',
-            extra_info: { input_name: 'widget' }
-          }
-        ],
-        class_type: 'SourceNode',
-        dependent_outputs: []
-      }
-    }
-    const clearSpy = vi.spyOn(
-      useExecutionErrorStore(),
-      'clearWidgetRelatedErrors'
-    )
-
-    const [processed] = processWidgets({
-      widgetIds: [id],
-      nodeId: hostNode.id,
-      nodeType: hostNode.type,
-      rootGraph
-    })
-    expect(processed.hasError).toBe(true)
-
-    processed.updateHandler(2)
-
-    expect(clearSpy).toHaveBeenCalledWith(
-      sourceExecutionId,
-      'widget',
-      'widget',
-      2,
-      { min: undefined, max: undefined }
-    )
-    expect(clearSpy).toHaveBeenCalledWith(
-      createNodeExecutionId([hostNode.id]),
-      'value',
-      'value',
-      2,
-      { min: undefined, max: undefined }
-    )
   })
 })

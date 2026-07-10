@@ -4294,13 +4294,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    // Remap linkIds
+    // Remove reroutes that no pasted link passes through
     for (const reroute of reroutes.values()) {
-      const ids = [...reroute.linkIds].map((x) => links.get(x)?.id ?? x)
-      reroute.update(reroute.parentId, undefined, ids, reroute.floating)
-
-      // Remove any invalid items
-      if (!reroute.validateLinks(graph.links, graph.floatingLinks)) {
+      if (reroute.totalLinks === 0) {
         graph.removeReroute(reroute.id)
       }
     }

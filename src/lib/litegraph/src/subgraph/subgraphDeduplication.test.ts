@@ -4,9 +4,20 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { describe, expect, it } from 'vitest'
 
-import type { ExportedSubgraph } from '../types/serialisation'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 
-import { topologicalSortSubgraphs } from './subgraphDeduplication'
+import type { LGraphState } from '../LGraph'
+import type {
+  ExportedSubgraph,
+  SerialisableLLink,
+  SerialisableReroute
+} from '../types/serialisation'
+
+import {
+  deduplicateSubgraphRerouteIds,
+  topologicalSortSubgraphs
+} from './subgraphDeduplication'
 
 function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
   return {
@@ -76,5 +87,102 @@ describe('topologicalSortSubgraphs', () => {
 
   it('returns original order for empty array', () => {
     expect(topologicalSortSubgraphs([])).toEqual([])
+  })
+})
+
+function reroute(
+  id: number,
+  parentId?: number,
+  linkIds: number[] = []
+): SerialisableReroute {
+  return { id, parentId, pos: [0, 0], linkIds }
+}
+
+function chainedLink(id: number, parentId?: number): SerialisableLLink {
+  return {
+    id: toLinkId(id),
+    origin_id: 1,
+    origin_slot: 0,
+    target_id: 2,
+    target_slot: 0,
+    type: 'INT',
+    parentId: parentId === undefined ? undefined : toRerouteId(parentId)
+  }
+}
+
+function freshState(lastRerouteId = 0): LGraphState {
+  return {
+    lastGroupId: 0,
+    lastNodeId: 0,
+    lastLinkId: toLinkId(0),
+    lastRerouteId: toRerouteId(lastRerouteId)
+  }
+}
+
+describe('deduplicateSubgraphRerouteIds', () => {
+  it('remaps colliding reroute ids and patches parentId references', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.reroutes = [reroute(1, undefined, [1]), reroute(2, 1, [1])]
+    subgraph.links = [chainedLink(1, 2)]
+    const state = freshState(1)
+
+    deduplicateSubgraphRerouteIds([subgraph], new Set([1]), state)
+
+    const [first, second] = subgraph.reroutes
+    expect(first.id).not.toBe(1)
+    expect(second.parentId).toBe(first.id)
+    expect(subgraph.links[0].parentId).toBe(second.id)
+    expect(Number(state.lastRerouteId)).toBeGreaterThanOrEqual(first.id)
+  })
+
+  it('remaps chained collisions created by the remap itself', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.reroutes = [reroute(1), reroute(2, 1)]
+    subgraph.links = [chainedLink(1, 2)]
+    const state = freshState(1)
+
+    deduplicateSubgraphRerouteIds([subgraph], new Set([1, 2]), state)
+
+    const ids = subgraph.reroutes.map((r) => r.id)
+    expect(new Set(ids).size).toBe(2)
+    expect(ids).not.toContain(1)
+    expect(ids).not.toContain(2)
+    expect(subgraph.reroutes[1].parentId).toBe(subgraph.reroutes[0].id)
+    expect(subgraph.links[0].parentId).toBe(subgraph.reroutes[1].id)
+  })
+
+  it('keeps sibling subgraphs from colliding with each other', () => {
+    const first = makeSubgraph('first')
+    first.reroutes = [reroute(1)]
+    const second = makeSubgraph('second')
+    second.reroutes = [reroute(1)]
+    const state = freshState(0)
+
+    deduplicateSubgraphRerouteIds([first, second], new Set(), state)
+
+    expect(first.reroutes[0].id).toBe(1)
+    expect(second.reroutes[0].id).not.toBe(1)
+  })
+
+  it('patches floating link parentId references', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.reroutes = [reroute(1)]
+    subgraph.floatingLinks = [chainedLink(1, 1)]
+    const state = freshState(1)
+
+    deduplicateSubgraphRerouteIds([subgraph], new Set([1]), state)
+
+    expect(subgraph.floatingLinks[0].parentId).toBe(subgraph.reroutes[0].id)
+  })
+
+  it('reserves non-colliding ids and advances the shared counter', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.reroutes = [reroute(7)]
+    const state = freshState(0)
+
+    deduplicateSubgraphRerouteIds([subgraph], new Set(), state)
+
+    expect(subgraph.reroutes[0].id).toBe(7)
+    expect(Number(state.lastRerouteId)).toBe(7)
   })
 })
