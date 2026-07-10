@@ -1,7 +1,4 @@
 // @vitest-environment jsdom
-// DOMPurify's sanitize walks a real DOM tree; happy-dom drops the sanitized inner
-// tree when re-serializing DOMPurify's <template> round-trip, so this XSS-guard suite
-// runs against jsdom, the reference DOM DOMPurify is tested against upstream.
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -9,8 +6,6 @@ import { i18n } from '@/i18n'
 
 import MarkdownStream from './MarkdownStream.vue'
 
-// Pins the agent-reply rendering contract (markdown in, safe HTML out) as it flows
-// through the shared platform renderer; the renderer itself has its own tests.
 describe('MarkdownStream', () => {
   it('renders markdown prose', () => {
     render(MarkdownStream, { props: { text: '**bold**' } })
@@ -58,7 +53,6 @@ describe('MarkdownStream', () => {
       props: { text: '````md\n```js\ncode\n```\n````' },
       global: { plugins: [i18n] }
     })
-    // The whole inner fence is ONE literal code body, not a nested block.
     expect(screen.getByText(/```js/, { selector: 'code' })).toBeInTheDocument()
     expect(screen.getByText('md')).toBeInTheDocument()
   })
@@ -67,7 +61,6 @@ describe('MarkdownStream', () => {
     render(MarkdownStream, {
       props: { text: 'use ```npm i``` to install' }
     })
-    // Rendered as an inline <code> span inside prose, not a framed block.
     expect(screen.getByText('npm i', { selector: 'code' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
   })

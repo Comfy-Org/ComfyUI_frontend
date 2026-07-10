@@ -4,8 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-// Spec (B10): framed block with a header (type icon + language label + copy
-// button) over a monospace body. Syntax highlighting is intentionally absent.
 const { code, lang = 'text' } = defineProps<{
   code: string
   lang?: string

@@ -54,7 +54,6 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    // Every call settled clean: the rows collapse behind the header.
     expect(screen.queryByText('add_node')).not.toBeInTheDocument()
 
     await rerender({

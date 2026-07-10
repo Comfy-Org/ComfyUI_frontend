@@ -1,54 +1,23 @@
-/* In-App Agent panel (FE-1187) theme, owned by the feature (not the design-system
-   master). The agent components render on agent-* utility classes (bg-agent-surface,
-   text-agent-fg, border-agent-border, ...); this file routes those tokens onto host
-   semantic variables so the panel tracks host theme flips (light mode included)
-   automatically. @theme inline substitutes the var reference into the generated
-   utilities, which is what makes the flip work without touching any component.
-
-   The panel's Figma frames are dark-only; light-mode rendering follows the host theme
-   here, an intentional divergence deferred to the FE-1187 design-alignment pass. */
 @theme inline {
-  /* agent token            ->  host semantic token
-     Aliases tuned to the design prototype's token choices (visual reference). */
-  /* surface                ->  base background (#171718 dark) */
   --color-agent-surface: var(--color-base-background);
-  /* surface-raised         ->  secondary background (composer, chips, bubbles) */
   --color-agent-surface-raised: var(--color-secondary-background);
-  /* surface-hover          ->  secondary background hover */
   --color-agent-surface-hover: var(--color-secondary-background-hover);
-  /* fg                     ->  base foreground       */
   --color-agent-fg: var(--color-base-foreground);
-  /* fg-muted               ->  muted foreground      */
   --color-agent-fg-muted: var(--color-muted-foreground);
-  /* fg-subtle: the reference uses muted-foreground for every secondary text run */
   --color-agent-fg-subtle: var(--color-muted-foreground);
-  /* border                 ->  node component border (header/session dividers) */
   --color-agent-border: var(--color-component-node-border);
-  /* border-strong          ->  default border (composer resting border) */
   --color-agent-border-strong: var(--color-border-default);
-  /* accent                 ->  primary background     */
   --color-agent-accent: var(--color-primary-background);
   /* accent-fg: text on the always-blue accent stays white in both themes; no host
      on-primary token flips correctly here. Design-review item for FE-1187. */
   --color-agent-accent-fg: #ffffff;
-  /* danger                 ->  destructive background */
   --color-agent-danger: var(--color-destructive-background);
-  /* success                ->  success background     */
   --color-agent-success: var(--color-success-background);
-  /* pill: subtle chip surface with no defensible host pairing distinct from
-     surface-raised; kept literal pending the FE-1187 design pass. */
   --color-agent-pill: #303036;
 
-  /* Radius is not theme-flipped and the host exposes no matching --radius-* step, so
-     the agent radius stays a literal here. */
   --radius-agent: 0.75rem;
 }
 
-/* Structural (theme-independent) collapsible animation for the agent tool
-   disclosures, driven by the --reka-collapsible-content-height var Reka sets on
-   the content element. Namespaced agent-* so this globally-imported sheet cannot
-   retarget the host's animate-collapsible-* utilities (undefined on main) in the
-   sharing dialogs. */
 @theme {
   --animate-agent-collapsible-down: agent-collapsible-down 200ms ease-out;
   --animate-agent-collapsible-up: agent-collapsible-up 200ms ease-out;
@@ -72,8 +41,6 @@
   }
 }
 
-/* Shimmering "Thinking…" text (design reference): a light band sweeps across the muted
-   label while the agent reasons. Falls back to the muted color under reduced-motion. */
 @keyframes agent-shimmer {
   from {
     background-position: 150% center;

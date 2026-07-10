@@ -8,9 +8,6 @@ import Button from '@/components/ui/button/Button.vue'
 import type { ActiveTab } from './ActiveTabStrip.vue'
 import ActiveTabStrip from './ActiveTabStrip.vue'
 
-// Header per the design reference: title + neutral ALPHA badge (no logo mark) + the
-// active tab name, then new chat, width toggle (420 <-> 960 dock), close. History is
-// reached from the session bar (B4), not the header.
 const { isMaximized = false, activeTab = null } = defineProps<{
   isMaximized?: boolean
   activeTab?: ActiveTab | null

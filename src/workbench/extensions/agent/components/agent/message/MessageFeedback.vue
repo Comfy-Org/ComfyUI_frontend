@@ -5,8 +5,6 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-// Thumbs are mutually exclusive; clicking the active one clears it. Feedback is emitted
-// so the container can forward it to the real submit_feedback tool.
 const { text } = defineProps<{ text: string }>()
 const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 

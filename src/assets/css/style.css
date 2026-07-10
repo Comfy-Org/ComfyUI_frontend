@@ -1,6 +1,4 @@
 @import '@comfyorg/design-system/css/style.css';
-/* In-App Agent panel (FE-1187) theme: aliases agent-* tokens onto host semantic
-   variables. Imported after the design-system so those host variables exist. */
 @import '../../workbench/extensions/agent/agentTheme.css';
 
 /* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on

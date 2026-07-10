@@ -7,10 +7,6 @@ import type {
   HistoryGroups
 } from '../../stores/agent/agentChatHistoryStore'
 
-// In-panel Chat History screen (Figma B12): replaces the conversation within the panel,
-// with a "<- Chat History" back affordance. Sessions are grouped by recency; a row loads
-// its chat, and a hover reveals copy / delete. Rendered inline (not a teleported drawer)
-// so it never fights the docked panel's stacking context.
 const { groups } = defineProps<{ groups: HistoryGroups }>()
 const emit = defineEmits<{
   back: []

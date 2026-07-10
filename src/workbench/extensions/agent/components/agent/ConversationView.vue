@@ -17,9 +17,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-// Keep the newest turn in view as content streams in, but ONLY when the user is already at
-// the bottom — if they scrolled up to re-read, a streaming delta must not yank them back.
-// The bottom sentinel's visibility is the "at bottom" signal.
 const bottom = ref<HTMLElement>()
 const atBottom = ref(true)
 
@@ -31,8 +28,6 @@ function scrollToLatest(): void {
   bottom.value?.scrollIntoView({ block: 'end' })
 }
 
-// Only the LAST entry can grow while a turn streams (earlier ones are settled), so this
-// signal replaces a deep watch that re-walked every entry per token.
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
   if (!last) return '0'

@@ -11,7 +11,6 @@ const { t, tm } = useI18n()
 
 const prompts = computed(() => tm('agent.suggestedPrompts') as string[])
 
-// Leading icon per suggested prompt (Figma B5), in the same order as agent.suggestedPrompts.
 const promptIcons = [
   'icon-[lucide--lightbulb]',
   'icon-[lucide--list]',

@@ -7,9 +7,6 @@ import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import { useOnboarding } from '../../composables/agent/useOnboarding'
 
-// Host-DOM anchored: the step points at a host selector (e.g. '#graph-canvas'). Where the
-// anchor is absent (the standalone harness) the coach simply shows nothing — it must NOT
-// finish, which would burn the persist-once flag before the user ever saw the step.
 const { step, storageKey } = defineProps<{
   step: CoachStep
   storageKey?: string
@@ -25,10 +22,6 @@ const MARGIN = 8
 
 const cardStyle = ref<Record<string, string> | null>(null)
 
-// flush:'post' so the effect runs AFTER render — a synchronous pre-mount pass would miss
-// every app-rendered anchor. A missing anchor leaves the card hidden without consuming the
-// step. NOTE(follow-up): re-check via MutationObserver to skip a step whose anchor never
-// appears rather than blocking on it.
 watchEffect(
   () => {
     cardStyle.value = null

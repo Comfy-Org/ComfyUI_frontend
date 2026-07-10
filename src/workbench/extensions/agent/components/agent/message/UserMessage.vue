@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 
-// User message per the design reference: a right-aligned pill, no avatar, with
-// sent attachments (B11 thumbnail grid) and @-tags kept visible above the text.
 const {
   text,
   attachments = [],
