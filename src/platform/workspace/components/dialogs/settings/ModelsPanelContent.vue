@@ -137,29 +137,33 @@
 
     <!-- Pagination owns the bottom-right slot on every table (matching
     Activity); the set-once auto-enable default takes the quieter left. -->
-    <div class="flex h-8 items-center gap-3 text-sm text-muted-foreground">
-      <Switch
-        :model-value="autoEnableNew"
-        @update:model-value="setAutoEnableNew"
-      />
-      <!-- The sentence lights up with the toggle: foreground when the default
-      is on, muted when off. -->
-      <span
-        :class="
-          cn(
-            'transition-colors',
-            autoEnableNew ? 'text-base-foreground' : 'text-muted-foreground'
-          )
-        "
-      >
-        {{ $t('workspacePanel.models.autoEnableVerb') }}
-        {{ $t('workspacePanel.models.autoEnableSubject') }}
-      </span>
+    <div
+      class="flex flex-col gap-3 text-sm text-muted-foreground @2xl:h-8 @2xl:flex-row @2xl:items-center"
+    >
+      <div class="flex items-center gap-3">
+        <Switch
+          :model-value="autoEnableNew"
+          @update:model-value="setAutoEnableNew"
+        />
+        <!-- The sentence lights up with the toggle: foreground when the default
+        is on, muted when off. -->
+        <span
+          :class="
+            cn(
+              'transition-colors',
+              autoEnableNew ? 'text-base-foreground' : 'text-muted-foreground'
+            )
+          "
+        >
+          {{ $t('workspacePanel.models.autoEnableVerb') }}
+          {{ $t('workspacePanel.models.autoEnableSubject') }}
+        </span>
+      </div>
       <Pagination
         v-model:page="page"
         :total="total"
         :items-per-page="itemsPerPage"
-        class="ml-auto"
+        class="@2xl:ml-auto"
       />
     </div>
 
