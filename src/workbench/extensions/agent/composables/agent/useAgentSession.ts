@@ -275,17 +275,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onRaw(raw: unknown): void {
-    const value = typeof raw === 'string' ? tryParseJson(raw) : raw
-    if (value === undefined) return
-    if (typeof value !== 'object' || value === null) return
-    const type = (value as { type?: unknown }).type
-    // Host /ws noise rides the same socket; gate on type before paying for a zod parse.
+    if (typeof raw !== 'object' || raw === null) return
+    const type = (raw as { type?: unknown }).type
+    // The event source subscribes by agent type, but gate again before paying for a
+    // zod parse so a mis-wired source cannot feed foreign frames into the turn logic.
     if (typeof type !== 'string' || !isAgentEvent(type)) return
-    const parsed = parseAgentWsEvent(value)
+    const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
       // A malformed done for OUR turn must still settle it (or the spinner hangs);
       // a readable FOREIGN message_id must not abort our turn.
-      const messageId = (value as { data?: { message_id?: unknown } }).data
+      const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
       if (
         type === 'agent_message_done' &&
@@ -332,13 +331,5 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isStreaming: computed(() => conversationStore.isStreaming),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
-  }
-}
-
-function tryParseJson(raw: string): unknown {
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return undefined
   }
 }

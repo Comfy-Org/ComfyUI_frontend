@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { renderMarkdownToHtml } from '../../../utils/agent/renderMarkdownToHtml'
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import CodeBlock from './CodeBlock.vue'
 
