@@ -143,6 +143,55 @@ describe('Reroute ↔ rerouteStore integration', () => {
     expect(reroute.linkIds.size).toBe(0)
   })
 
+  it('parentId setter rejects a mutual-parent cycle', () => {
+    const { graph } = connectedGraph()
+    const first = graph.setReroute({
+      id: toRerouteId(1),
+      parentId: undefined,
+      pos: [10, 10],
+      linkIds: []
+    })
+    const second = graph.setReroute({
+      id: toRerouteId(2),
+      parentId: undefined,
+      pos: [20, 20],
+      linkIds: []
+    })
+
+    first.parentId = second.id
+    second.parentId = first.id
+
+    expect(second.parentId).toBeUndefined()
+    expect(first.getReroutes()).not.toBeNull()
+  })
+
+  it('parentId setter rejects extending a chain back onto its root', () => {
+    const { graph } = connectedGraph()
+    const a = graph.setReroute({
+      id: toRerouteId(1),
+      parentId: undefined,
+      pos: [0, 0],
+      linkIds: []
+    })
+    const b = graph.setReroute({
+      id: toRerouteId(2),
+      parentId: a.id,
+      pos: [0, 0],
+      linkIds: []
+    })
+    const c = graph.setReroute({
+      id: toRerouteId(3),
+      parentId: b.id,
+      pos: [0, 0],
+      linkIds: []
+    })
+
+    a.parentId = c.id
+
+    expect(a.parentId).toBeUndefined()
+    expect(c.getReroutes()).not.toBeNull()
+  })
+
   it('floating marker survives through the store state', () => {
     const { graph, a, link } = connectedGraph()
     const store = useRerouteStore()

@@ -12,7 +12,7 @@ export interface FloatingRerouteSlot {
  * membership is not stored — it is derived from the links' parentId chains.
  */
 export interface RerouteChain {
-  id: RerouteId
+  readonly id: RerouteId
   parentId?: RerouteId
   floating?: FloatingRerouteSlot
 }

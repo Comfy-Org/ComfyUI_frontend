@@ -3,7 +3,10 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  extractVueNodeData,
+  useGraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { widgetId } from '@/types/widgetId'
 import {
@@ -60,6 +63,20 @@ describe('Node Reactivity', () => {
 
     expect(widgetValue.value).toBe(42)
     expect(onValueChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-wrap node.widgets on repeated extraction', () => {
+    const { node } = createTestGraph()
+    const widgetsGetter = () =>
+      Object.getOwnPropertyDescriptor(node, 'widgets')?.get
+
+    extractVueNodeData(node)
+    const firstGetter = widgetsGetter()
+
+    extractVueNodeData(node)
+    extractVueNodeData(node)
+
+    expect(widgetsGetter()).toBe(firstGetter)
   })
 
   it('widget values remain reactive after a connection is made', async () => {
