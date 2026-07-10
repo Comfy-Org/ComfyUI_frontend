@@ -28,7 +28,7 @@ useExtensionService().registerExtension({
         const enabled = forceInDev || source.isEnabled()
         agentPanelStore.enabled = enabled
         // Fail-closed: a flag flip-off also closes an open panel.
-        if (!enabled) agentPanelStore.close()
+        if (!enabled) agentPanelStore.close('flag_disabled')
       }
       source.onChange?.(sync)
       sync()

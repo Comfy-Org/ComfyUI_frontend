@@ -97,7 +97,7 @@
           )
         "
         :aria-label="$t('agent.askComfyAgent')"
-        @click="agentPanelStore.toggle()"
+        @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
@@ -171,6 +171,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -194,6 +195,13 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
+
+function onAgentEntryClick(): void {
+  useTelemetry()?.trackAgentEntryButtonClicked({
+    resulting_state: isAgentPanelOpen.value ? 'closed' : 'opened'
+  })
+  agentPanelStore.toggle()
+}
 const { isLoggedIn } = useCurrentUser()
 // The literal keeps the agent store out of OSS builds entirely.
 const agentPanelStore =

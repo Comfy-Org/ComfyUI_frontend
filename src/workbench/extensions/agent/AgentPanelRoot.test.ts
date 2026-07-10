@@ -137,9 +137,18 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
 }))
 
-const trackAgentMessageFeedback = vi.hoisted(() => vi.fn())
+const telemetry = vi.hoisted(() => ({
+  trackAgentMessageFeedback: vi.fn(),
+  trackAgentWorkflowApplied: vi.fn(),
+  trackAgentMessageSent: vi.fn(),
+  trackAgentNodeTagged: vi.fn(),
+  trackAgentAttachButtonClicked: vi.fn(),
+  trackAgentCloseButtonClicked: vi.fn(),
+  trackAgentPanelOpened: vi.fn(),
+  trackAgentPanelClosed: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAgentMessageFeedback })
+  useTelemetry: () => telemetry
 }))
 
 import type { TurnId } from './schemas/agentApiSchema'
@@ -147,6 +156,7 @@ import { zAgentWsEvent } from './schemas/agentApiSchema'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
@@ -232,6 +242,11 @@ describe('AgentPanelRoot attach flow', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.attach') })
+    )
+    expect(telemetry.trackAgentAttachButtonClicked).toHaveBeenCalled()
+
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
     await userEvent.upload(input, file)
@@ -246,6 +261,10 @@ describe('AgentPanelRoot attach flow', () => {
     expect(messageBodies[0]).toMatchObject({
       content: 'make it pop',
       attachments: ['uploaded_cat.png']
+    })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
+      attachment_count: 1,
+      node_tag_count: 0
     })
 
     // The sent attachment stays visible in the transcript's user message
@@ -742,7 +761,7 @@ describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     socket.clear()
-    trackAgentMessageFeedback.mockClear()
+    telemetry.trackAgentMessageFeedback.mockClear()
   })
 
   afterEach(() => {
@@ -751,6 +770,9 @@ describe('AgentPanelRoot feedback capture', () => {
 
   it('forwards a thumbs vote to telemetry with the message id and vote', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    // The thread's bound draft workflow attributes the vote (PM-98).
+    useAgentDraftStore().workflowId = 'wf-9'
 
     // Seed a settled assistant turn so its feedback control renders.
     const store = useAgentConversationStore()
@@ -779,9 +801,9 @@ describe('AgentPanelRoot feedback capture', () => {
       await screen.findByRole('button', { name: 'Helpful' })
     )
 
-    expect(trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up' }],
-      [{ message_id: 'turn-9', vote: null }]
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-9' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-9' }]
     ])
   })
 })
@@ -795,6 +817,22 @@ describe('AgentPanelRoot lifecycle', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it('reports the header close click and attributes the panel close to it', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    useAgentPanelStore().isOpen = true
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.close') })
+    )
+
+    expect(telemetry.trackAgentCloseButtonClicked).toHaveBeenCalled()
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'close_button',
+      open_duration_ms: null
+    })
+    expect(useAgentPanelStore().isOpen).toBe(false)
   })
 
   it('cancels the in-flight turn when the panel unmounts', async () => {
@@ -848,6 +886,7 @@ describe('AgentPanelRoot workflow binding', () => {
     socket.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
+    telemetry.trackAgentNodeTagged.mockClear()
   })
 
   afterEach(() => {
@@ -946,6 +985,11 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     expect(tab.changeTracker?.reset).toHaveBeenCalled()
+    expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+      workflow_id: 'wf-42',
+      target: 'existing_tab'
+    })
   })
 
   it('autosaves a minted tab so the next patch applies without a conflict', async () => {
@@ -980,6 +1024,10 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     const minted = hostStores.workflow.tabs.get(mintedPath)
     expect(minted?.changeTracker?.reset).toHaveBeenCalled()
+    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+      workflow_id: 'wf-42',
+      target: 'new_tab'
+    })
 
     const graph = { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
     patch(2, graph)
@@ -989,6 +1037,47 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.queryByText(i18n.global.t('agent.conflictTitle'))
     ).not.toBeInTheDocument()
+  })
+
+  it('stages a mention pick once and reports the tag gesture', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
+    )
+    await userEvent.click(await screen.findByText('KSampler'))
+
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+    expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledWith({
+      source: 'mention_picker'
+    })
+  })
+
+  it('does not report a mention pick that stages nothing', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    useAgentPanelStore().isOpen = true
+    hostStores.canvas.selectedItems = [
+      { isNodeFake: true, id: 7, title: 'KSampler' }
+    ]
+    expect(await screen.findByText('KSampler')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.mention') })
+    )
+    const matches = await screen.findAllByText('KSampler')
+    await userEvent.click(matches[matches.length - 1])
+
+    expect(telemetry.trackAgentNodeTagged).not.toHaveBeenCalled()
   })
 
   it('retries once without the speculative id when the server rejects it', async () => {
@@ -1217,6 +1306,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
+      attachment_count: 0,
+      node_tag_count: 1
+    })
     // The surviving tag persists on the transcript; the dismissed one is gone.
     expect(screen.getByText('VAEDecode')).toBeInTheDocument()
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
