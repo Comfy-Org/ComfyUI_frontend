@@ -7,7 +7,22 @@ import type { Ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
+import { useAssetVisibilityStore } from './useAssetVisibilityStore'
+
 type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest' | 'az' | 'za'
+
+/** Single-select workspace-visibility filter. */
+export type VisibilityFilter = 'all' | 'shared' | 'private'
+
+/**
+ * Injected sharing predicates. They default to the local visibility store and a
+ * no-op author match so the composable stays unit-testable without wiring; the
+ * sidebar passes the combined (mock-owner-aware) predicates from useAssetSharing.
+ */
+export interface MediaAssetFilteringOptions {
+  isShared?: (assetId: string) => boolean
+  matchesAuthor?: (assetId: string, author: string) => boolean
+}
 
 /**
  * Get timestamp from asset (either create_time or created_at)
@@ -54,12 +69,21 @@ const datePresetStart = (preset: string): number => {
  * Media Asset Filtering composable
  * Manages search, filter, and sort for media assets
  */
-export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
+export function useMediaAssetFiltering(
+  assets: Ref<AssetItem[]>,
+  options: MediaAssetFilteringOptions = {}
+) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
   const mediaTypeFilters = ref<string[]>([])
+  const visibilityFilter = ref<VisibilityFilter>('all')
+  const authorFilter = ref('')
   const dateFilter = ref('')
+
+  const isShared =
+    options.isShared ?? ((id: string) => useAssetVisibilityStore().isShared(id))
+  const matchesAuthor = options.matchesAuthor ?? (() => true)
 
   const fuseOptions = {
     keys: ['display_name', 'name'],
@@ -92,12 +116,31 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     })
   })
 
-  const dateFiltered = computed(() => {
-    if (!dateFilter.value) {
+  const visibilityFiltered = computed(() => {
+    if (visibilityFilter.value === 'all') {
       return typeFiltered.value
     }
+    const wantShared = visibilityFilter.value === 'shared'
+    return typeFiltered.value.filter(
+      (asset) => isShared(asset.id) === wantShared
+    )
+  })
+
+  const authorFiltered = computed(() => {
+    if (!authorFilter.value) {
+      return visibilityFiltered.value
+    }
+    return visibilityFiltered.value.filter((asset) =>
+      matchesAuthor(asset.id, authorFilter.value)
+    )
+  })
+
+  const dateFiltered = computed(() => {
+    if (!dateFilter.value) {
+      return authorFiltered.value
+    }
     const start = datePresetStart(dateFilter.value)
-    return typeFiltered.value.filter((asset) => getAssetTime(asset) >= start)
+    return authorFiltered.value.filter((asset) => getAssetTime(asset) >= start)
   })
 
   const filteredAssets = computed(() => {
@@ -133,6 +176,8 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     searchQuery,
     sortBy,
     mediaTypeFilters,
+    visibilityFilter,
+    authorFilter,
     dateFilter,
     filteredAssets
   }

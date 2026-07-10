@@ -43,6 +43,7 @@ import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useAssetSharing } from '../composables/useAssetSharing'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
@@ -83,6 +84,7 @@ const contextMenu = ref<ContextMenuHandle | null>(null)
 const contextMenuId = useId()
 const isVisible = ref(false)
 const actions = useMediaAssetActions()
+const sharing = useAssetSharing()
 const { t } = useI18n()
 
 useDismissableOverlay({
@@ -147,6 +149,25 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       disabled: true
     })
 
+    // Bulk Share / Make private — only assets you own (not teammates').
+    const shareable = selectedAssets.filter((a) => sharing.canShare(a.id))
+    if (shareable.length > 0) {
+      const allShared = shareable.every((a) => sharing.isShared(a.id))
+      items.push({
+        label: allShared
+          ? t('mediaAsset.selection.unshareSelectedAll')
+          : t('mediaAsset.selection.shareSelectedAll'),
+        icon: allShared ? 'icon-[lucide--lock]' : 'icon-[lucide--users]',
+        command: () => {
+          if (allShared) {
+            actions.unshareAssets(shareable)
+          } else {
+            void actions.shareAssets(shareable)
+          }
+        }
+      })
+    }
+
     // Bulk Add to Workflow
     items.push({
       label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
@@ -195,6 +216,24 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',
       command: () => emit('zoom')
+    })
+  }
+
+  // Share / Make private — only assets you own (not teammates').
+  if (sharing.canShare(asset.id)) {
+    const shared = sharing.isShared(asset.id)
+    items.push({
+      label: shared
+        ? t('mediaAsset.actions.unshare')
+        : t('mediaAsset.actions.share'),
+      icon: shared ? 'icon-[lucide--lock]' : 'icon-[lucide--users]',
+      command: () => {
+        if (shared) {
+          actions.unshareAssets([asset])
+        } else {
+          void actions.shareAssets([asset])
+        }
+      }
     })
   }
 

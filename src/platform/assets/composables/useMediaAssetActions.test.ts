@@ -7,6 +7,7 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useAssetVisibilityStore } from '@/platform/assets/composables/useAssetVisibilityStore'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -1308,6 +1309,121 @@ describe('useMediaAssetActions', () => {
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('shareAssets', () => {
+    beforeEach(() => {
+      mockShowDialog.mockReset()
+      mockIsCloud.value = true
+    })
+
+    interface ShareDialogCall {
+      props: { onConfirm: () => void }
+      dialogComponentProps: { onClose: () => void }
+    }
+
+    function lastDialogCall(): ShareDialogCall {
+      return mockShowDialog.mock.calls[0][0] as ShareDialogCall
+    }
+
+    it('shares after confirmation and resolves true', async () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+
+      const result = actions.shareAssets(createMockAsset({ id: 'share-1' }))
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      lastDialogCall().props.onConfirm()
+
+      await expect(result).resolves.toBe(true)
+      expect(visibilityStore.isShared('share-1')).toBe(true)
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          detail: 'mediaAsset.assetSharedSuccessfully'
+        })
+      )
+    })
+
+    it('shares multiple assets and uses the plural toast', async () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+
+      const result = actions.shareAssets([
+        createMockAsset({ id: 'share-a' }),
+        createMockAsset({ id: 'share-b' })
+      ])
+      lastDialogCall().props.onConfirm()
+
+      await expect(result).resolves.toBe(true)
+      expect(visibilityStore.isShared('share-a')).toBe(true)
+      expect(visibilityStore.isShared('share-b')).toBe(true)
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'mediaAsset.selection.assetsSharedSuccessfully'
+        })
+      )
+    })
+
+    it('resolves false without sharing when the dialog is dismissed', async () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+
+      const result = actions.shareAssets(createMockAsset({ id: 'share-2' }))
+      lastDialogCall().dialogComponentProps.onClose()
+
+      await expect(result).resolves.toBe(false)
+      expect(visibilityStore.isShared('share-2')).toBe(false)
+      expect(useToast().add).not.toHaveBeenCalled()
+    })
+
+    it('resolves false without a dialog for an empty selection', async () => {
+      const actions = useMediaAssetActions()
+
+      await expect(actions.shareAssets([])).resolves.toBe(false)
+      expect(mockShowDialog).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('unshareAssets', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+    })
+
+    it('unshares immediately (no confirmation) and toasts', () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+      visibilityStore.share(['unshare-1'])
+
+      actions.unshareAssets(createMockAsset({ id: 'unshare-1' }))
+
+      expect(visibilityStore.isShared('unshare-1')).toBe(false)
+      expect(mockShowDialog).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'success',
+          detail: 'mediaAsset.assetUnsharedSuccessfully'
+        })
+      )
+    })
+
+    it('uses the plural toast for multiple assets', () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+      visibilityStore.share(['unshare-a', 'unshare-b'])
+
+      actions.unshareAssets([
+        createMockAsset({ id: 'unshare-a' }),
+        createMockAsset({ id: 'unshare-b' })
+      ])
+
+      expect(visibilityStore.isShared('unshare-a')).toBe(false)
+      expect(visibilityStore.isShared('unshare-b')).toBe(false)
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'mediaAsset.selection.assetsUnsharedSuccessfully'
+        })
+      )
     })
   })
 })

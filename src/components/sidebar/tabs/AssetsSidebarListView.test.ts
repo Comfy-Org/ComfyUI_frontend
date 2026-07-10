@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/vue'
+import { render, fireEvent, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -54,7 +54,7 @@ const AssetsListItemStub = defineComponent({
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
     data-testid="assets-list-item"
-  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /><slot name="secondary" /></div>`
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -86,7 +86,8 @@ function renderListView(
       stubs: {
         VirtualGrid: VirtualGridStub,
         AssetsListItem: AssetsListItemStub
-      }
+      },
+      directives: { tooltip: {} }
     }
   })
 }
@@ -150,6 +151,36 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.click(trigger)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  it('shows the shared owner badge next to the file details', () => {
+    const sharedAsset = {
+      ...buildAsset('shared-asset', 'image.png'),
+      size: 2048,
+      user_metadata: {}
+    } satisfies AssetItem
+
+    renderListView([buildOutputItem(sharedAsset)], {
+      sharedOwner: (assetId: string) =>
+        assetId === 'shared-asset' ? { name: 'Priya Nair' } : undefined
+    })
+
+    expect(screen.getByText('Priya')).toBeInTheDocument()
+    expect(screen.queryByText('Priya Nair')).not.toBeInTheDocument()
+  })
+
+  it('shows no owner badge on private assets', () => {
+    const privateAsset = {
+      ...buildAsset('private-asset', 'image.png'),
+      size: 2048,
+      user_metadata: {}
+    } satisfies AssetItem
+
+    renderListView([buildOutputItem(privateAsset)], {
+      sharedOwner: () => undefined
+    })
+
+    expect(screen.queryByText('Priya')).not.toBeInTheDocument()
   })
 
   it('emits preview-asset when item is double-clicked', async () => {

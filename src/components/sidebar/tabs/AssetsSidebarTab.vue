@@ -39,7 +39,10 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
+        v-model:visibility-filter="visibilityFilter"
+        v-model:author-filter="authorFilter"
         v-model:date-filter="dateFilter"
+        :author-options="sharing.authorOptions.value"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
@@ -94,6 +97,7 @@
           v-if="isListView"
           :asset-items="listViewAssetItems"
           :is-selected="isSelected"
+          :shared-owner="sharing.sharedOwnerFor"
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
@@ -190,6 +194,7 @@ import {
   shouldInterceptSelectAll,
   useAssetSelection
 } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetSharing } from '@/platform/assets/composables/useAssetSharing'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
@@ -283,6 +288,8 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
+const sharing = useAssetSharing()
+
 const {
   downloadAssets,
   deleteAssets,
@@ -329,8 +336,18 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, dateFilter, filteredAssets } =
-  useMediaAssetFiltering(baseAssets)
+const {
+  searchQuery,
+  sortBy,
+  mediaTypeFilters,
+  visibilityFilter,
+  authorFilter,
+  dateFilter,
+  filteredAssets
+} = useMediaAssetFiltering(baseAssets, {
+  isShared: sharing.isShared,
+  matchesAuthor: sharing.matchesAuthor
+})
 
 const displayAssets = computed(() => {
   return filteredAssets.value
@@ -434,6 +451,8 @@ watch(
     // Clear search + filters when switching tabs so no stale filter hides results.
     searchQuery.value = ''
     mediaTypeFilters.value = []
+    visibilityFilter.value = 'all'
+    authorFilter.value = ''
     dateFilter.value = ''
     // Reset pagination state when tab changes
     void refreshAssets()

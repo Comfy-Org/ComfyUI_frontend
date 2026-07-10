@@ -17,6 +17,12 @@ export const MEDIA_TYPE_VALUES: FacetValue[] = [
   { value: 'text', labelKey: 'sideToolbar.mediaAssets.filterText' }
 ]
 
+export const VISIBILITY_VALUES: FacetValue[] = [
+  { value: 'all', labelKey: 'sideToolbar.mediaAssets.visibilityAll' },
+  { value: 'shared', labelKey: 'sideToolbar.mediaAssets.visibilityShared' },
+  { value: 'private', labelKey: 'sideToolbar.mediaAssets.visibilityPrivate' }
+]
+
 export const DATE_VALUES: FacetValue[] = [
   { value: '', labelKey: 'sideToolbar.mediaAssets.dateAll' },
   { value: 'today', labelKey: 'sideToolbar.mediaAssets.dateToday' },
