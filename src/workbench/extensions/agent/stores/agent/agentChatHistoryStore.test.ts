@@ -67,30 +67,9 @@ describe('groupSessionsByRecency', () => {
 describe('useAgentChatHistoryStore', () => {
   beforeEach(() => setActivePinia(createPinia()))
 
-  it('updates a session in place rather than duplicating it', () => {
-    const store = useAgentChatHistoryStore()
-    store.upsert(session('a', 1))
-    store.upsert(session('b', 2))
-    store.upsert({ id: 'a', title: 'renamed', updatedAt: 9 })
-
-    expect(store.sessions).toHaveLength(2)
-    expect(store.sessions.find((s) => s.id === 'a')).toMatchObject({
-      title: 'renamed',
-      updatedAt: 9
-    })
-  })
-
-  it('prepends a new session so the newest sorts first', () => {
-    const store = useAgentChatHistoryStore()
-    store.upsert(session('a', 1))
-    store.upsert(session('b', 2))
-
-    expect(store.sessions.map((s) => s.id)).toEqual(['b', 'a'])
-  })
-
   it('clears the active id when the active session is removed', () => {
     const store = useAgentChatHistoryStore()
-    store.upsert(session('a', 1))
+    store.replaceAll([session('a', 1)])
     store.setActive('a')
     store.remove('a')
 
@@ -100,8 +79,7 @@ describe('useAgentChatHistoryStore', () => {
 
   it('keeps the active id when a different session is removed', () => {
     const store = useAgentChatHistoryStore()
-    store.upsert(session('a', 1))
-    store.upsert(session('b', 2))
+    store.replaceAll([session('a', 1), session('b', 2)])
     store.setActive('a')
     store.remove('b')
 

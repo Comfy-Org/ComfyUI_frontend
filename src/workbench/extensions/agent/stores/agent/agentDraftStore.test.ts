@@ -76,7 +76,7 @@ describe('useAgentDraftStore', () => {
       expect(store.version).toBeNull()
       expect(store.applyPatch(patch(25, 24))).toBe(true)
       expect(store.version).toBe(25)
-      expect(store.hasDraft).toBe(true)
+      expect(store.content).toEqual(graphAt(25))
     })
 
     it('ignores a duplicate version (same version re-sent)', () => {
@@ -109,7 +109,7 @@ describe('useAgentDraftStore', () => {
     it('ignores every patch while unbound', () => {
       const store = useAgentDraftStore()
       expect(store.applyPatch(patch(25, 24))).toBe(false)
-      expect(store.hasDraft).toBe(false)
+      expect(store.content).toBeNull()
       expect(store.version).toBeNull()
     })
   })
@@ -119,13 +119,12 @@ describe('useAgentDraftStore', () => {
       const store = useAgentDraftStore()
       store.bind(WORKFLOW)
       store.applyPatch(patch(25, 24))
-      expect(store.hasDraft).toBe(true)
+      expect(store.content).toEqual(graphAt(25))
 
       store.bind(OTHER_WORKFLOW)
       expect(store.workflowId).toBe(OTHER_WORKFLOW)
       expect(store.content).toBeNull()
       expect(store.version).toBeNull()
-      expect(store.hasDraft).toBe(false)
     })
 
     it('re-binding the same workflow preserves state', () => {
@@ -187,7 +186,6 @@ describe('useAgentDraftStore', () => {
       store.adoptSnapshot(snapshot(24))
       expect(store.version).toBe(24)
       expect(store.content).toEqual(graphAt(24))
-      expect(store.hasDraft).toBe(true)
     })
 
     it('re-adopts at an equal version (idempotent refresh)', () => {
@@ -218,7 +216,6 @@ describe('useAgentDraftStore', () => {
       expect(store.workflowId).toBeNull()
       expect(store.content).toBeNull()
       expect(store.version).toBeNull()
-      expect(store.hasDraft).toBe(false)
     })
   })
 })
