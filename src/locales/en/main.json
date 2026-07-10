@@ -3526,6 +3526,7 @@
   },
   "actionbar": {
     "dockToTop": "Dock to top",
+    "dockToBottom": "Dock to bottom",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
     "share": "Share",

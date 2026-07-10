@@ -114,7 +114,9 @@
         </div>
       </Teleport>
       <QueueInlineProgressSummary
-        v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
+        v-else-if="
+          shouldShowInlineProgressSummary && !isActionbarDetachedFromTop
+        "
         class="pr-1"
         :hidden="shouldHideInlineProgressSummary"
       />
@@ -184,13 +186,21 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarContainerRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const dockState = useLocalStorage<'top' | 'bottom' | 'floating'>(
+  'Comfy.MenuPosition.DockState',
+  () => {
+    const legacy = localStorage.getItem('Comfy.MenuPosition.Docked')
+    if (legacy === 'false') return 'floating'
+    return 'top'
+  }
+)
+const isActionbarDockedAtTop = computed(() => dockState.value === 'top')
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'
 )
-const isActionbarFloating = computed(
-  () => isActionbarEnabled.value && !isActionbarDocked.value
+const isActionbarDetachedFromTop = computed(
+  () => isActionbarEnabled.value && !isActionbarDockedAtTop.value
 )
 /**
  * Whether the actionbar container has any visible docked buttons
@@ -207,7 +217,7 @@ const hasDockedButtons = computed(() => {
   return false
 })
 const isActionbarContainerEmpty = computed(
-  () => isActionbarFloating.value && !hasDockedButtons.value
+  () => isActionbarDetachedFromTop.value && !hasDockedButtons.value
 )
 const actionbarContainerClass = computed(() => {
   const base =
@@ -246,7 +256,10 @@ function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
 }
 const inlineProgressSummaryTarget = computed(() => {
-  if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
+  if (
+    !shouldShowInlineProgressSummary.value ||
+    !isActionbarDetachedFromTop.value
+  ) {
     return null
   }
   return progressTarget.value

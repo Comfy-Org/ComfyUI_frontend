@@ -1,86 +1,101 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div class="flex h-full items-center" :class="cn(!isDockedAtTop && '-ml-2')">
     <div
-      v-if="isDragging && !isDocked"
-      :class="actionbarClass"
-      @mouseenter="onMouseEnterDropZone"
-      @mouseleave="onMouseLeaveDropZone"
+      v-if="isDragging && dockState !== 'top'"
+      :class="topDropZoneClass"
+      @mouseenter="onMouseEnterTopDropZone"
+      @mouseleave="onMouseLeaveTopDropZone"
     >
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
-      ref="panelRef"
-      class="pointer-events-auto"
-      :style="style"
-      :class="panelClass"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
-    >
-      <div class="relative flex items-center gap-2 select-none">
-        <span
-          ref="dragHandleRef"
-          :class="
-            cn(
-              'drag-handle h-max w-3 cursor-grab',
-              isDragging && 'cursor-grabbing'
-            )
-          "
-        />
-        <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton />
-        </Suspense>
-        <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
-          size="icon"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
-        <Button
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="relative px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <StatusBadge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">
-            {{
-              isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+    <Teleport to="body">
+      <div
+        v-if="isDragging && dockState !== 'bottom'"
+        class="pointer-events-auto fixed bottom-4 left-1/2 z-1000 flex h-12 -translate-x-1/2 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg p-1.5 shadow-interface"
+        @mouseenter="onMouseEnterBottomDropZone"
+        @mouseleave="onMouseLeaveBottomDropZone"
+      >
+        <div :class="bottomDropZoneInnerClass">
+          {{ t('actionbar.dockToBottom') }}
+        </div>
       </div>
-    </Panel>
+    </Teleport>
+
+    <Teleport to="body" :disabled="isDockedAtTop">
+      <Panel
+        ref="panelRef"
+        class="pointer-events-auto"
+        :style="panelStyle"
+        :class="panelClass"
+        :pt="{
+          header: { class: 'hidden' },
+          content: { class: isDockedAtTop ? 'p-0' : 'p-1' }
+        }"
+      >
+        <div class="relative flex items-center gap-2 select-none">
+          <span
+            ref="dragHandleRef"
+            :class="
+              cn(
+                'drag-handle h-max w-3 cursor-grab',
+                isDragging && 'cursor-grabbing'
+              )
+            "
+          />
+          <Suspense @resolve="comfyRunButtonResolved">
+            <ComfyRunButton />
+          </Suspense>
+          <Button
+            v-tooltip.bottom="cancelJobTooltipConfig"
+            variant="destructive"
+            size="icon"
+            :disabled="isExecutionIdle"
+            :aria-label="t('menu.interrupt')"
+            @click="cancelCurrentJob"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+          <Button
+            v-tooltip.bottom="queueHistoryTooltipConfig"
+            variant="secondary"
+            size="md"
+            :aria-pressed="
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="relative px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop.prevent="showQueueContextMenu"
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <StatusBadge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">
+              {{
+                isQueuePanelV2Enabled
+                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+              }}
+            </span>
+          </Button>
+          <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        </div>
+      </Panel>
+    </Teleport>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
-        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        :radius-class="cn(isDockedAtTop ? 'rounded-[7px]' : 'rounded-[5px]')"
         data-testid="queue-inline-progress"
       />
     </Teleport>
@@ -149,7 +164,23 @@ const panelElement = computed<HTMLElement | null>(() => {
   return element instanceof HTMLElement ? element : null
 })
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const dockState = useLocalStorage<'top' | 'bottom' | 'floating'>(
+  'Comfy.MenuPosition.DockState',
+  () => {
+    const legacy = localStorage.getItem('Comfy.MenuPosition.Docked')
+    if (legacy === 'false') return 'floating'
+    return 'top'
+  }
+)
+const isDockedAtTop = computed(() => dockState.value === 'top')
+const legacyDockedSetting = useLocalStorage('Comfy.MenuPosition.Docked', true)
+watch(
+  dockState,
+  (newVal) => {
+    legacyDockedSetting.value = newVal !== 'floating'
+  },
+  { immediate: true }
+)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
@@ -170,7 +201,7 @@ watchDebounced(
 )
 
 // Set initial position to bottom center
-const setInitialPosition = () => {
+function setInitialPosition() {
   const panel = panelElement.value
   if (panel) {
     const screenWidth = window.innerWidth
@@ -233,7 +264,7 @@ const lastDragState = ref({
   windowWidth: window.innerWidth,
   windowHeight: window.innerHeight
 })
-const captureLastDragState = () => {
+function captureLastDragState() {
   lastDragState.value = {
     x: x.value,
     y: y.value,
@@ -252,7 +283,7 @@ watch(
   { immediate: true }
 )
 
-const adjustMenuPosition = () => {
+function adjustMenuPosition() {
   const panel = panelElement.value
   if (panel) {
     const screenWidth = window.innerWidth
@@ -310,18 +341,31 @@ const adjustMenuPosition = () => {
 useEventListener(window, 'resize', adjustMenuPosition)
 
 // Drop zone state
-const isMouseOverDropZone = ref(false)
+const isMouseOverTopDropZone = ref(false)
+const isMouseOverBottomDropZone = ref(false)
 
 // Mouse event handlers for self-contained drop zone
-const onMouseEnterDropZone = () => {
+function onMouseEnterTopDropZone() {
   if (isDragging.value) {
-    isMouseOverDropZone.value = true
+    isMouseOverTopDropZone.value = true
   }
 }
 
-const onMouseLeaveDropZone = () => {
+function onMouseLeaveTopDropZone() {
   if (isDragging.value) {
-    isMouseOverDropZone.value = false
+    isMouseOverTopDropZone.value = false
+  }
+}
+
+function onMouseEnterBottomDropZone() {
+  if (isDragging.value) {
+    isMouseOverBottomDropZone.value = true
+  }
+}
+
+function onMouseLeaveBottomDropZone() {
+  if (isDragging.value) {
+    isMouseOverBottomDropZone.value = false
   }
 }
 
@@ -333,7 +377,7 @@ const inlineProgressTarget = computed(() => {
   ) {
     return null
   }
-  if (isDocked.value) return topMenuContainer ?? null
+  if (isDockedAtTop.value) return topMenuContainer ?? null
   return panelElement.value
 })
 const shouldHideInlineProgress = computed(
@@ -351,16 +395,27 @@ watch(
 watch(isDragging, (dragging) => {
   if (dragging) {
     // Starting to drag - undock if docked
-    if (isDocked.value) {
-      isDocked.value = false
+    if (dockState.value !== 'floating') {
+      dockState.value = 'floating'
     }
   } else {
     // Stopped dragging - dock if mouse is over drop zone
-    if (isMouseOverDropZone.value) {
-      isDocked.value = true
+    if (isMouseOverTopDropZone.value) {
+      dockState.value = 'top'
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'actionbar_dock_top',
+        element_group: 'actionbar'
+      })
+    } else if (isMouseOverBottomDropZone.value) {
+      dockState.value = 'bottom'
+      useTelemetry()?.trackUiButtonClicked({
+        button_id: 'actionbar_dock_bottom',
+        element_group: 'actionbar'
+      })
     }
-    // Reset drop zone state
-    isMouseOverDropZone.value = false
+    // Reset drop zone states
+    isMouseOverTopDropZone.value = false
+    isMouseOverBottomDropZone.value = false
   }
 })
 
@@ -420,23 +475,38 @@ const handleClearQueue = async () => {
   executionStore.clearInitializationByJobIds(pendingJobIds)
 }
 
-const actionbarClass = computed(() =>
-  cn(
+function dropZoneInnerClass(isHovered: boolean): string {
+  return cn(
     'w-[200px] border-dashed border-blue-500 opacity-80',
-    'm-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:-ml-50 before:h-full before:w-50',
-    'pointer-events-auto',
-    isMouseOverDropZone.value &&
+    'flex items-center justify-center self-stretch',
+    "pointer-events-auto rounded-md transition-all before:-ml-48 before:h-full before:w-48 before:content-['']",
+    isHovered &&
       'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
   )
+}
+const topDropZoneClass = computed(() =>
+  cn('m-1.5', dropZoneInnerClass(isMouseOverTopDropZone.value))
 )
 const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto z-1300',
     isDragging.value && 'pointer-events-none select-none',
-    isDocked.value
-      ? 'static border-none bg-transparent p-0'
-      : ['fixed shadow-interface', 'border-interface-stroke']
+    dockState.value === 'top' && 'static border-none bg-transparent p-0',
+    dockState.value !== 'top' &&
+      'fixed border-interface-stroke shadow-interface',
+    dockState.value === 'bottom' &&
+      'top-auto right-auto bottom-4 left-1/2 -translate-x-1/2'
   )
+)
+
+const panelStyle = computed(() => {
+  if (dockState.value !== 'floating') {
+    return {}
+  }
+  return style.value
+})
+
+const bottomDropZoneInnerClass = computed(() =>
+  dropZoneInnerClass(isMouseOverBottomDropZone.value)
 )
 </script>
