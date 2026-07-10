@@ -1091,6 +1091,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('retries once without the speculative id when the server rejects it', async () => {
     const tab = makeTab('someone-elses-uuid')
+    appMock.graph.nodes = [{ id: 1 }]
     const bodies: unknown[] = []
     vi.stubGlobal(
       'fetch',
@@ -1462,6 +1463,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
   it('parks an empty minted draft, then applies the first real patch to the uploading tab', async () => {
     const tab = makeTab()
+    appMock.graph.nodes = [{ id: 1 }]
     mockMessagesEndpoint('wf-42')
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1545,9 +1547,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
     // First send carries the serialized canvas; the tab is unsaved, so no id.
     expect(bodies[0]).toMatchObject({
-      workflow: {
-        graph: { version: 0.4, nodes: [{ id: 1 }] },
-        last_seen_version: null
+      draft: {
+        content: { version: 0.4, nodes: [{ id: 1 }] },
+        version: null
       }
     })
     expect(bodies[0]).not.toHaveProperty('workflow_id')
@@ -1559,7 +1561,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(screen.getByRole('textbox'), 'and more')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))
-    expect(bodies[1]).not.toHaveProperty('workflow')
+    expect(bodies[1]).not.toHaveProperty('draft')
 
     // The uploaded draft mirrors the tab, so the minted id applies in place.
     const graph = { version: 0.4, nodes: [{ id: 2 }] }
@@ -1631,7 +1633,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(screen.getByRole('textbox'), 'two')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(2))
-    expect(bodies[0]).toHaveProperty('workflow')
-    expect(bodies[1]).toHaveProperty('workflow')
+    expect(bodies[0]).toHaveProperty('draft')
+    expect(bodies[1]).toHaveProperty('draft')
   })
 })

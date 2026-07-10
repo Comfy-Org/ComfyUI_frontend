@@ -363,7 +363,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
-  it('(h4) attaches the workflow snapshot and reports the upload to adopted', async () => {
+  it('(h4) attaches the draft snapshot and reports the upload to adopted', async () => {
     const rest = fakeRest()
     const adopted = vi.fn()
     const session = useAgentSession({
@@ -373,17 +373,47 @@ describe('useAgentSession (v1 composition root)', () => {
         current: () => undefined,
         adopted,
         snapshot: () => ({
-          graph: { nodes: [{ id: 1 }] },
-          last_seen_version: null
+          content: { nodes: [{ id: 1 }] },
+          version: null
         })
       }
     })
     session.start()
     await session.sendMessage('hi')
     expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toMatchObject({
-      workflow: { graph: { nodes: [{ id: 1 }] }, last_seen_version: null }
+      draft: { content: { nodes: [{ id: 1 }] }, version: null }
     })
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined, true)
+  })
+
+  it('(h5) a 409 draft conflict adopts the server version and retries once', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValueOnce(
+        new AgentApiError('draft moved', 409, { error: 'conflict', version: 7 })
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+    const rest = fakeRest({ postMessage })
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        snapshot: () => ({ content: { nodes: [{ id: 1 }] }, version: 3 })
+      }
+    })
+    session.start()
+    const ok = await session.sendMessage('hi')
+    expect(ok).toBe(true)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(postMessage.mock.calls[0][1].draft).toMatchObject({ version: 3 })
+    expect(postMessage.mock.calls[1][1].draft).toMatchObject({
+      content: { nodes: [{ id: 1 }] },
+      version: 7
+    })
   })
 
   it("(i2) loadThread drops the previous thread's draft binding", async () => {
