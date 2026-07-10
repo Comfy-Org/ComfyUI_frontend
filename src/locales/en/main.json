@@ -2893,7 +2893,8 @@
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes",
       "autoEnableVerb": "auto-enable",
-      "autoEnableSubject": "newly added partner nodes"
+      "autoEnableSubject": "newly added partner nodes",
+      "groupCount": "{enabled}/{total}"
     },
     "allowlist": {
       "tabs": {

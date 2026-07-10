@@ -25,7 +25,6 @@
     <BillingStatusBanner />
 
     <div
-      ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
       <Table class="min-h-0 flex-1 scrollbar-gutter-stable px-4">
@@ -35,21 +34,15 @@
           >
             <TableHead class="w-6">
               <Checkbox
-                :model-value="allPageSelected"
+                :model-value="allFilteredSelected"
                 :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-                @update:model-value="toggleSelectAllPage"
+                @update:model-value="toggleSelectAll"
               />
             </TableHead>
             <TableHead :aria-sort="ariaSort('name')">
               <button :class="sortHeaderClass" @click="toggleSort('name')">
                 {{ $t('workspacePanel.partnerNodes.columns.name') }}
                 <i :class="sortIcon('name')" />
-              </button>
-            </TableHead>
-            <TableHead class="w-40" :aria-sort="ariaSort('partner')">
-              <button :class="sortHeaderClass" @click="toggleSort('partner')">
-                {{ $t('workspacePanel.partnerNodes.columns.partner') }}
-                <i :class="sortIcon('partner')" />
               </button>
             </TableHead>
             <TableHead class="w-40" :aria-sort="ariaSort('lastModified')">
@@ -65,57 +58,95 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow
-            v-for="node in pagedNodes"
-            :key="node.id"
-            :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-            class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
-            @click="toggleSelection(node.id)"
-          >
-            <TableCell>
-              <Checkbox
-                :model-value="selectedIds.has(node.id)"
-                :aria-label="node.name"
-                :class="
-                  cn(
-                    'pointer-events-none',
-                    !hasSelection &&
-                      'opacity-0 transition-opacity group-hover:opacity-100'
-                  )
-                "
-              />
-            </TableCell>
-            <TableCell class="text-muted-foreground">
-              <span :class="cn(!node.enabled && 'opacity-30')">
-                {{ node.name }}
-              </span>
-            </TableCell>
-            <TableCell class="text-muted-foreground">
-              <div
-                :class="
-                  cn('flex items-center gap-2', !node.enabled && 'opacity-30')
-                "
+          <template v-for="group in groups" :key="group.partner">
+            <!-- Provider row: click to expand/collapse its nodes -->
+            <TableRow
+              class="cursor-pointer hover:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors"
+              :aria-expanded="group.expanded"
+              @click="togglePartnerCollapsed(group.partner)"
+            >
+              <TableCell />
+              <TableCell>
+                <div class="flex items-center gap-2">
+                  <i
+                    :class="
+                      cn(
+                        'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                        group.expanded && 'rotate-90'
+                      )
+                    "
+                  />
+                  <PartnerBadge :partner="group.partner" />
+                  <span class="font-medium text-base-foreground">
+                    {{ group.partner }}
+                  </span>
+                  <span class="text-muted-foreground">
+                    {{
+                      $t('workspacePanel.partnerNodes.groupCount', {
+                        enabled: group.enabledCount,
+                        total: group.totalCount
+                      })
+                    }}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell class="text-muted-foreground">
+                {{ formatLastModified(group.lastModified) }}
+              </TableCell>
+              <TableCell />
+            </TableRow>
+
+            <template v-if="group.expanded">
+              <TableRow
+                v-for="node in group.nodes"
+                :key="node.id"
+                :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
+                class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
+                @click="toggleSelection(node.id)"
               >
-                <PartnerBadge :partner="node.partner" />
-                <span>{{ node.partner }}</span>
-              </div>
-            </TableCell>
-            <TableCell class="text-muted-foreground">
-              {{ formatLastModified(node.last_modified) }}
-            </TableCell>
-            <TableCell class="text-right" @click.stop>
-              <Switch
-                :model-value="node.enabled"
-                @update:model-value="(v: boolean) => setEnabled(node, v)"
-              />
-            </TableCell>
-          </TableRow>
-          <TableRow
-            v-if="filteredNodes.length === 0"
-            class="hover:bg-transparent"
-          >
+                <TableCell>
+                  <Checkbox
+                    :model-value="selectedIds.has(node.id)"
+                    :aria-label="node.name"
+                    :class="
+                      cn(
+                        'pointer-events-none',
+                        !hasSelection &&
+                          'opacity-0 transition-opacity group-hover:opacity-100'
+                      )
+                    "
+                  />
+                </TableCell>
+                <TableCell class="text-muted-foreground">
+                  <div
+                    :class="
+                      cn(
+                        'flex items-center gap-2 pl-7',
+                        !node.enabled && 'opacity-30'
+                      )
+                    "
+                  >
+                    <i
+                      class="icon-[lucide--corner-down-right] size-3 shrink-0 text-muted-foreground/50"
+                    />
+                    <span>{{ node.name }}</span>
+                  </div>
+                </TableCell>
+                <TableCell class="text-muted-foreground">
+                  {{ formatLastModified(node.last_modified) }}
+                </TableCell>
+                <TableCell class="text-right" @click.stop>
+                  <Switch
+                    :model-value="node.enabled"
+                    @update:model-value="(v: boolean) => setEnabled(node, v)"
+                  />
+                </TableCell>
+              </TableRow>
+            </template>
+          </template>
+          <TableRow v-if="groups.length === 0" class="hover:bg-transparent">
             <TableCell
-              :colspan="5"
+              :colspan="4"
               class="py-6 text-center text-sm text-muted-foreground"
             >
               {{ $t('workspacePanel.partnerNodes.empty') }}
@@ -126,34 +157,24 @@
     </div>
 
     <!-- Auto-enable default: toggle-first sentence, bottom-left. -->
-    <div
-      class="flex flex-col gap-3 text-sm text-muted-foreground @2xl:h-8 @2xl:flex-row @2xl:items-center"
-    >
-      <div class="flex items-center gap-3">
-        <Switch
-          :model-value="autoEnableNew"
-          @update:model-value="setAutoEnableNew"
-        />
-        <!-- The sentence lights up with the toggle: foreground when the default
-        is on, muted when off. -->
-        <span
-          :class="
-            cn(
-              'transition-colors',
-              autoEnableNew ? 'text-base-foreground' : 'text-muted-foreground'
-            )
-          "
-        >
-          {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
-          {{ $t('workspacePanel.partnerNodes.autoEnableSubject') }}
-        </span>
-      </div>
-      <Pagination
-        v-model:page="page"
-        :total="total"
-        :items-per-page="itemsPerPage"
-        class="@2xl:ml-auto"
+    <div class="flex h-8 items-center gap-3 text-sm text-muted-foreground">
+      <Switch
+        :model-value="autoEnableNew"
+        @update:model-value="setAutoEnableNew"
       />
+      <!-- The sentence lights up with the toggle: foreground when the default
+      is on, muted when off. -->
+      <span
+        :class="
+          cn(
+            'transition-colors',
+            autoEnableNew ? 'text-base-foreground' : 'text-muted-foreground'
+          )
+        "
+      >
+        {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
+        {{ $t('workspacePanel.partnerNodes.autoEnableSubject') }}
+      </span>
     </div>
 
     <!-- Bulk selection toolbar: overlaid so toggling it doesn't reflow the panel -->
@@ -180,13 +201,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -196,16 +216,12 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
-import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { search } = defineProps<{ search: string }>()
 
 const { t } = useI18n()
-
-const tableContainer = ref<HTMLElement | null>(null)
-const { pageSize } = useAutoPageSize(tableContainer, 1)
 
 const {
   autoEnableNew,
@@ -214,12 +230,10 @@ const {
   sortDirection,
   selectedIds,
   selectedCount,
-  allPageSelected,
+  allFilteredSelected,
   filteredNodes,
-  page,
-  total,
-  itemsPerPage,
-  pagedNodes,
+  groups,
+  togglePartnerCollapsed,
   fetch,
   toggleSort,
   setEnabled,
@@ -227,9 +241,9 @@ const {
   setAllFilteredEnabled,
   setAutoEnableNew,
   toggleSelection,
-  toggleSelectAllPage,
+  toggleSelectAll,
   clearSelection
-} = usePartnerNodes(pageSize)
+} = usePartnerNodes()
 
 // Search lives in the Allowlist tab row (shared with the Models tab).
 watch(
@@ -244,7 +258,7 @@ const hasSelection = computed(() => selectedCount.value > 0)
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'
 
-function sortIcon(field: 'name' | 'partner' | 'lastModified') {
+function sortIcon(field: 'name' | 'lastModified') {
   if (sortField.value !== field) return 'icon-[lucide--chevrons-up-down] size-3'
   return sortDirection.value === 'asc'
     ? 'icon-[lucide--chevron-up] size-3'
@@ -252,7 +266,7 @@ function sortIcon(field: 'name' | 'partner' | 'lastModified') {
 }
 
 function ariaSort(
-  field: 'name' | 'partner' | 'lastModified'
+  field: 'name' | 'lastModified'
 ): 'ascending' | 'descending' | 'none' {
   if (sortField.value !== field) return 'none'
   return sortDirection.value === 'asc' ? 'ascending' : 'descending'

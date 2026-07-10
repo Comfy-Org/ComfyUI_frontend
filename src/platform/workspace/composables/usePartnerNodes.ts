@@ -6,6 +6,15 @@ import { useI18n } from 'vue-i18n'
 import type { PartnerNode } from '@/platform/workspace/api/partnerNodesApi'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 
+export interface PartnerGroup {
+  partner: string
+  nodes: PartnerNode[]
+  enabledCount: number
+  totalCount: number
+  lastModified: string | null
+  expanded: boolean
+}
+
 type SortField = 'name' | 'partner' | 'lastModified'
 type SortDirection = 'asc' | 'desc'
 
@@ -69,6 +78,44 @@ export function usePartnerNodes(
   watch(searchQuery, () => {
     page.value = 1
   })
+
+  // Nodes grouped by provider; groups sort alphabetically, children follow the
+  // active column sort. Collapse hides a group's rows; searching overrides
+  // collapse so matches are never hidden.
+  const collapsedPartners = ref<Set<string>>(new Set())
+  const isSearching = computed(() => searchQuery.value.trim().length > 0)
+
+  const groups = computed<PartnerGroup[]>(() => {
+    const byPartner = new Map<string, PartnerNode[]>()
+    for (const node of filteredNodes.value) {
+      const list = byPartner.get(node.partner)
+      if (list) list.push(node)
+      else byPartner.set(node.partner, [node])
+    }
+    return [...byPartner.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([partner, nodes]) => ({
+        partner,
+        nodes,
+        enabledCount: nodes.filter((n) => n.enabled).length,
+        totalCount: nodes.length,
+        lastModified: nodes.reduce<string | null>(
+          (latest, n) =>
+            n.last_modified && (!latest || n.last_modified > latest)
+              ? n.last_modified
+              : latest,
+          null
+        ),
+        expanded: isSearching.value || !collapsedPartners.value.has(partner)
+      }))
+  })
+
+  function togglePartnerCollapsed(partner: string) {
+    const next = new Set(collapsedPartners.value)
+    if (next.has(partner)) next.delete(partner)
+    else next.add(partner)
+    collapsedPartners.value = next
+  }
 
   const selectedCount = computed(() => selectedIds.value.size)
   const allFilteredSelected = computed(
@@ -237,6 +284,8 @@ export function usePartnerNodes(
     allFilteredSelected,
     allPageSelected,
     filteredNodes,
+    groups,
+    togglePartnerCollapsed,
     page,
     total,
     itemsPerPage: perPage,
