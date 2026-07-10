@@ -55,6 +55,14 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm storybook`: Start Storybook development server
 
+> **`vue-tsc` needs a full `node_modules` install.** `vue-tsc --noEmit` (what
+> `pnpm typecheck` runs) resolves types through pnpm's nested `.pnpm/` store
+> paths, so a partial, symlinked, or borrowed `node_modules` makes it report
+> ~1300 phantom errors against every `.vue` file — none from your diff — and the
+> typecheck can't be trusted. For a trustworthy typecheck, run `pnpm install` in
+> the checkout first, then `pnpm typecheck` (or `npx vue-tsc --noEmit`). Vitest
+> is unaffected: it doesn't do the `.pnpm` path resolution vue-tsc does.
+
 ## Development Workflow
 
 1. Make code changes
