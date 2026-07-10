@@ -243,11 +243,13 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
 // Agent writes autosave: re-baseline the tracker to the canvas as loaded (a
 // minted tab's stored baseline carries an id the canvas never adopts, so the
 // next capture would flip isModified and every following patch would raise
-// the conflict dialog). A manual edit after this re-arms the dialog as before.
+// the conflict dialog). The baseline must be the RAW serialization, not the
+// schema-normalized form: captures compare raw serialize() output via strict
+// graphEqual, so a normalized baseline would re-flip isModified unedited.
 function autosaveAppliedDraft(tab: ComfyWorkflow): void {
   const canvasState = app.graph?.serialize()
-  if (canvasState)
-    tab.changeTracker?.reset(canvasState as unknown as ComfyWorkflowJSON)
+  if (!canvasState) return
+  tab.changeTracker?.reset(canvasState as unknown as ComfyWorkflowJSON)
   tab.isModified = false
 }
 
@@ -268,6 +270,10 @@ async function loadDraft(
     await app.loadGraphData(workflow, true, true, tab)
     draftRejectionNotified = false
     lastApplied = { workflowId, version }
+    useTelemetry()?.trackAgentWorkflowApplied({
+      workflow_id: workflowId,
+      target: tab === null ? 'new_tab' : 'existing_tab'
+    })
     if (tab === null) {
       const opened = workflowStore.openWorkflows.find(
         (w) => !openBefore.has(w.path)
@@ -388,7 +394,11 @@ const { copy } = useClipboard({ legacy: true })
 // A null vote is a retraction of a prior thumb and is forwarded so the eval pipeline
 // records it rather than dropping it.
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
-  useTelemetry()?.trackAgentMessageFeedback({ message_id: turnId, vote })
+  useTelemetry()?.trackAgentMessageFeedback({
+    message_id: turnId,
+    vote,
+    workflow_id: draftStore.workflowId
+  })
 }
 
 // title is "" until the server names the thread, so the row falls back to the preview
@@ -441,7 +451,12 @@ function onSend(text: string, attachments: ComposerAttachment[]): void {
   // its version may never advance, so the version watch alone cannot re-drive.
   applySuppressed = false
   void applyDraft()
-  void sendMessage(text, attachments, consumeSelection()).then((ok) => {
+  const nodeTags = consumeSelection()
+  useTelemetry()?.trackAgentMessageSent({
+    attachment_count: attachments.length,
+    node_tag_count: nodeTags.length
+  })
+  void sendMessage(text, attachments, nodeTags).then((ok) => {
     // A failed send consumed the snapshot guard without reaching the
     // server; drop it so the next send re-uploads.
     if (!ok) resetSnapshotGuard()
@@ -473,7 +488,20 @@ const attachment = useAttachment({
 })
 
 function onAttach(): void {
+  useTelemetry()?.trackAgentAttachButtonClicked()
   fileInput.value?.click()
+}
+
+function onMentionPick(node: SelectedNode): void {
+  const stagedBefore = selectionTags.value.length
+  addSelectionTag(node)
+  if (selectionTags.value.length > stagedBefore)
+    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+}
+
+function onClosePanel(): void {
+  useTelemetry()?.trackAgentCloseButtonClicked()
+  agentPanelStore.close('close_button')
 }
 
 async function onFilesPicked(event: Event): Promise<void> {
@@ -513,12 +541,12 @@ async function onFilesPicked(event: Event): Promise<void> {
       @stop="onStop"
       @attach="onAttach"
       @remove-tag="removeSelectionTag"
-      @mention-pick="addSelectionTag"
+      @mention-pick="onMentionPick"
       @resolve-conflict="onResolveConflict"
       @feedback="onFeedback"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
-      @close="agentPanelStore.close()"
+      @close="onClosePanel"
       @open-history="refreshHistory()"
       @select-history="onSelectHistory"
       @delete-history="history.remove($event)"
