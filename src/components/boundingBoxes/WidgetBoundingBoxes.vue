@@ -4,37 +4,67 @@
     data-testid="bounding-boxes"
     @pointerdown.stop
   >
-    <div
-      ref="canvasContainer"
-      class="relative w-full shrink-0 overflow-hidden rounded-sm border border-component-node-border bg-node-component-surface"
-      :style="canvasStyle"
-    >
-      <canvas
-        ref="canvasEl"
-        tabindex="0"
-        class="absolute inset-0 size-full rounded-sm outline-none"
-        :style="{ cursor: canvasCursor }"
-        @pointerdown="onPointerDown"
-        @pointermove="onCanvasPointerMove"
-        @pointerup="onDocPointerUp"
-        @pointercancel="onDocPointerUp"
-        @pointerleave="onPointerLeave"
-        @lostpointercapture="onDocPointerUp"
-        @dblclick="onDoubleClick"
-        @keydown="onCanvasKeyDown"
-        @focus="focused = true"
-        @blur="focused = false"
-      />
-      <textarea
-        v-if="inlineEditor"
-        ref="inlineEditorEl"
-        v-model="inlineEditor.value"
-        class="absolute box-border resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
-        :style="inlineEditor.style"
-        data-capture-wheel="true"
-        @keydown.stop="onInlineKeyDown"
-        @blur="commitInlineEditor"
-      />
+    <div class="flex flex-col">
+      <div
+        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-component-node-border bg-component-node-widget-background px-2"
+      >
+        <Button
+          variant="textonly"
+          size="unset"
+          :aria-pressed="grid"
+          :class="
+            cn(
+              actionBtnClass,
+              grid && 'bg-component-node-widget-background-selected'
+            )
+          "
+          @click="grid = !grid"
+        >
+          <i class="icon-[lucide--grid-3x3] size-4" />
+          <span>{{ $t('boundingBoxes.grid') }}</span>
+        </Button>
+        <Button
+          variant="textonly"
+          size="unset"
+          :class="cn(actionBtnClass, 'ml-auto')"
+          @click="clearAll"
+        >
+          <i class="icon-[lucide--undo-2] size-4" />
+          <span>{{ $t('boundingBoxes.clearAll') }}</span>
+        </Button>
+      </div>
+      <div
+        ref="canvasContainer"
+        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-component-node-border bg-base-background"
+        :style="canvasStyle"
+      >
+        <canvas
+          ref="canvasEl"
+          tabindex="0"
+          class="absolute inset-0 size-full rounded-sm text-node-component-slot-text outline-none"
+          :style="{ cursor: canvasCursor }"
+          @pointerdown="onPointerDown"
+          @pointermove="onCanvasPointerMove"
+          @pointerup="onDocPointerUp"
+          @pointercancel="onDocPointerUp"
+          @pointerleave="onPointerLeave"
+          @lostpointercapture="onDocPointerUp"
+          @dblclick="onDoubleClick"
+          @keydown="onCanvasKeyDown"
+          @focus="focused = true"
+          @blur="focused = false"
+        />
+        <textarea
+          v-if="inlineEditor"
+          ref="inlineEditorEl"
+          v-model="inlineEditor.value"
+          class="absolute box-border resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
+          :style="inlineEditor.style"
+          data-capture-wheel="true"
+          @keydown.stop="onInlineKeyDown"
+          @blur="commitInlineEditor"
+        />
+      </div>
     </div>
 
     <div
@@ -122,16 +152,6 @@
     <div v-else-if="hasRegions" class="text-node-text-muted px-1 text-xs">
       {{ $t('boundingBoxes.clickRegionToEdit') }}
     </div>
-
-    <Button
-      variant="secondary"
-      size="md"
-      class="gap-2 rounded-lg border border-component-node-border bg-component-node-background text-xs text-muted-foreground hover:text-base-foreground"
-      @click="clearAll"
-    >
-      <i class="icon-[lucide--undo-2]" />
-      {{ $t('boundingBoxes.clearAll') }}
-    </Button>
   </div>
 </template>
 
@@ -145,6 +165,9 @@ import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
+
+const actionBtnClass =
+  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-base-foreground outline-none transition-colors hover:bg-component-node-widget-background-hovered'
 
 const { nodeId } = defineProps<{ nodeId: string }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
@@ -171,7 +194,8 @@ const {
   commitInlineEditor,
   setActiveType,
   clearAll,
-  syncState
+  syncState,
+  grid
 } = useBoundingBoxes(nodeId, {
   canvasEl,
   canvasContainer,

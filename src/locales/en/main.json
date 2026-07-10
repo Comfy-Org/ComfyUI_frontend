@@ -2102,7 +2102,8 @@
     "descLabel": "description",
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
-    "colors": "color_palette"
+    "colors": "color_palette",
+    "grid": "Grid"
   },
   "palette": {
     "addColor": "Add a color",

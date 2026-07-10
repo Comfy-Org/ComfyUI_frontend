@@ -31,7 +31,8 @@ function makeNode(connected: boolean, comfyClass = 'CreateBoundingBoxes') {
   const widgets: MockWidget[] = [
     { name: 'width', hidden: false, options: {} },
     { name: 'height', hidden: false, options: {} },
-    { name: 'other', hidden: false, options: {} }
+    { name: 'other', hidden: false, options: {} },
+    { name: 'last_incoming', hidden: false, options: {} }
   ]
   return {
     constructor: { comfyClass },
@@ -72,6 +73,15 @@ describe('Comfy.CreateBoundingBoxes extension', () => {
     state.extension!.nodeCreated(node)
     expect(node.widgets[0].hidden).toBe(false)
     expect(node.widgets[0].options.hidden).toBe(false)
+  })
+
+  it('always hides the internal last_incoming widget', () => {
+    for (const connected of [true, false]) {
+      const node = makeNode(connected)
+      state.extension!.nodeCreated(node)
+      expect(node.widgets[3].hidden).toBe(true)
+      expect(node.widgets[3].options.hidden).toBe(true)
+    }
   })
 
   it('writes visibility through the widget value store when present', () => {
