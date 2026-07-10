@@ -1566,6 +1566,7 @@
     "Workspace": "Workspace",
     "Error System": "Error System",
     "Other": "Other",
+    "PartnerNodes": "Partner Nodes",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
     "PointCloud": "Point Cloud"
@@ -2854,6 +2855,16 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "partnerNodes": {
+      "title": "Partner Nodes",
+      "description": "Control which partner (API) nodes this workspace can discover and run.",
+      "searchPlaceholder": "Search partner nodes",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "enabledCount": "{enabled} of {total} enabled",
+      "empty": "No partner nodes are available on this server.",
+      "autoEnableLabel": "Auto-enable newly added partner nodes"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
@@ -4393,7 +4404,15 @@
     "hideDevOnly": "Hide Dev-Only Nodes",
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
-    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
+    "hideDisabledPartnerNodes": "Hide Disabled Partner Nodes",
+    "hideDisabledPartnerNodesDescription": "Hides partner nodes disabled by workspace policy"
+  },
+  "partnerNodeAccess": {
+    "insertBlockedTitle": "Partner node disabled",
+    "insertBlockedDetail": "{node} is disabled for this workspace. A workspace owner or admin can re-enable it in Settings > Partner Nodes.",
+    "runBlockedTitle": "Workflow uses disabled partner nodes",
+    "runBlockedDetail": "This workflow can't run because it uses partner nodes disabled for this workspace: {nodes}. A workspace owner or admin can re-enable them in Settings > Partner Nodes."
   },
   "secrets": {
     "title": "API Keys & Secrets",

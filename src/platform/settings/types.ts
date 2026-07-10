@@ -87,3 +87,4 @@ export type SettingPanelType =
   | 'subscription'
   | 'user'
   | 'workspace'
+  | 'workspace-partner-nodes'

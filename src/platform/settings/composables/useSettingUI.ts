@@ -28,6 +28,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
   Other: 'icon-[lucide--ellipsis]',
+  PartnerNodes: 'icon-[lucide--shield-check]',
   PlanCredits: 'icon-[lucide--credit-card]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
@@ -192,6 +193,21 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
+  // PROTOTYPE (DES-484): unconditionally registered so the demo works on any
+  // distribution. Production gates on shouldShowWorkspacePanel +
+  // permissions.canManagePartnerNodes (owner/admin only).
+  const partnerNodesPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-partner-nodes',
+      label: 'PartnerNodes',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/PartnerNodesPanelContent.vue')
+    )
+  }
+
   const secretsPanel: SettingPanelItem = {
     node: {
       key: 'secrets',
@@ -245,6 +261,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
+      partnerNodesPanel,
       ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
       keybindingPanel,
       extensionPanel,
@@ -296,6 +313,7 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        partnerNodesPanel.node,
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -342,6 +360,7 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
+        partnerNodesPanel.node,
         ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
           ? [subscriptionPanel.node]
           : []),

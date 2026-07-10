@@ -31,6 +31,7 @@ import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/instal
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { usePartnerNodeAccessStore } from '@/platform/workspace/partnerNodeAccess/partnerNodeAccessStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -1610,11 +1611,43 @@ export class ComfyApp {
     })
   }
 
+  /**
+   * PROTOTYPE (DES-484): display names of workspace-disabled partner nodes
+   * present in the current graph (including subgraphs). Production replaces
+   * this client check with server-side `/prompt` rejection.
+   */
+  collectDisabledPartnerNodes(): string[] {
+    const disabled = usePartnerNodeAccessStore().disabledNodeTypes
+    if (!disabled.size) return []
+    const blocked = new Set<string>()
+    forEachNode(this.rootGraph, (node) => {
+      const nodeData = node.constructor?.nodeData
+      const typeName = nodeData?.name ?? node.type
+      if (typeName && disabled.has(typeName)) {
+        blocked.add(String(nodeData?.display_name ?? typeName))
+      }
+    })
+    return [...blocked]
+  }
+
   async queuePrompt(
     number: number,
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
+    const disabledPartnerNodes = this.collectDisabledPartnerNodes()
+    if (disabledPartnerNodes.length) {
+      useDialogService().showErrorDialog(
+        new Error(
+          t('partnerNodeAccess.runBlockedDetail', {
+            nodes: disabledPartnerNodes.join(', ')
+          })
+        ),
+        { title: t('partnerNodeAccess.runBlockedTitle') }
+      )
+      return false
+    }
+
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
     api.dispatchCustomEvent('promptQueueing', {
