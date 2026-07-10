@@ -128,7 +128,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     const apiKey = window.__CONFIG__?.posthog_project_token
     if (apiKey) {
       try {
+        // A stale deploy can 404 the posthog-js chunk; one retry rides out
+        // the transient, and a second failure disables telemetry below.
         void import('posthog-js')
+          .catch(() =>
+            new Promise((resolve) => setTimeout(resolve, 1000)).then(
+              () => import('posthog-js')
+            )
+          )
           .then((posthogModule) => {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value?.posthog_config ?? {}
@@ -141,8 +148,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig,
+              // A default only: the server's posthog_config owns person_profiles.
+              // Hardcoding it AFTER the spread silently overrode the server's
+              // 'always', making every pre-identify event a person-less anon
+              // event that never attaches to the user in person-scoped views.
               person_profiles: 'identified_only',
+              ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
