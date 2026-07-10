@@ -111,7 +111,16 @@
               <TableCell class="text-muted-foreground">
                 {{ formatLastModified(group.lastModified) }}
               </TableCell>
-              <TableCell />
+              <TableCell class="text-right" @click.stop>
+                <!-- On when any node in the group is enabled; the count column
+                carries the partial state. Off disables the whole group. -->
+                <Switch
+                  :model-value="group.enabledCount > 0"
+                  @update:model-value="
+                    (v: boolean) => setGroupEnabled(group, v)
+                  "
+                />
+              </TableCell>
             </TableRow>
 
             <template v-if="group.expanded">
@@ -250,6 +259,7 @@ const {
   setEnabled,
   setSelectedEnabled,
   setAllFilteredEnabled,
+  setGroupEnabled,
   setAutoEnableNew,
   toggleSelection,
   toggleSelectAll,

@@ -176,9 +176,11 @@ export function usePartnerNodes() {
     }
   }
 
-  async function setSelectedEnabled(enabled: boolean) {
-    const ids = [...selectedIds.value]
-    if (ids.length === 0) return
+  async function setNodesEnabled(
+    ids: string[],
+    enabled: boolean
+  ): Promise<boolean> {
+    if (ids.length === 0) return false
     const previous = new Map(
       nodes.value.map((n) => [
         n.id,
@@ -189,10 +191,7 @@ export function usePartnerNodes() {
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
       void useDisabledPartnerNodesStore().applyGovernanceChange()
-      // Clear on success: a kept selection can hide inside collapsed groups
-      // and silently ride along with the next bulk toggle. On failure the
-      // selection survives for a retry.
-      clearSelection()
+      return true
     } catch {
       nodes.value = nodes.value.map((n) =>
         previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
@@ -201,31 +200,30 @@ export function usePartnerNodes() {
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.updateError')
       })
+      return false
     }
   }
 
+  async function setSelectedEnabled(enabled: boolean) {
+    const ok = await setNodesEnabled([...selectedIds.value], enabled)
+    // Clear on success: a kept selection can hide inside collapsed groups
+    // and silently ride along with the next bulk toggle. On failure the
+    // selection survives for a retry.
+    if (ok) clearSelection()
+  }
+
   async function setAllFilteredEnabled(enabled: boolean) {
-    const ids = filteredNodes.value.map((n) => n.id)
-    if (ids.length === 0) return
-    const previous = new Map(
-      nodes.value.map((n) => [
-        n.id,
-        { enabled: n.enabled, last_modified: n.last_modified }
-      ])
+    await setNodesEnabled(
+      filteredNodes.value.map((n) => n.id),
+      enabled
     )
-    applyEnabled(ids, enabled)
-    try {
-      await partnerNodesApi.setEnabledBulk(ids, enabled)
-      void useDisabledPartnerNodesStore().applyGovernanceChange()
-    } catch {
-      nodes.value = nodes.value.map((n) =>
-        previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
-      )
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.partnerNodes.updateError')
-      })
-    }
+  }
+
+  async function setGroupEnabled(group: PartnerGroup, enabled: boolean) {
+    await setNodesEnabled(
+      group.nodes.map((n) => n.id),
+      enabled
+    )
   }
 
   async function setAutoEnableNew(value: boolean) {
@@ -281,6 +279,7 @@ export function usePartnerNodes() {
     setEnabled,
     setSelectedEnabled,
     setAllFilteredEnabled,
+    setGroupEnabled,
     setAutoEnableNew,
     toggleSelection,
     toggleSelectAll,

@@ -119,6 +119,18 @@ describe('usePartnerNodes', () => {
     expect(pn.selectedCount.value).toBe(0)
   })
 
+  it('group toggle bulk-toggles every node in the group', async () => {
+    const pn = await setupLoaded()
+    const bfl = pn.groups.value.find((g) => g.partner === 'BFL')!
+    await pn.setGroupEnabled(bfl, false)
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+    expect(pn.nodes.value.find((n) => n.id === 'c')!.enabled).toBe(false)
+    const [ids, enabled] = vi.mocked(partnerNodesApi.setEnabledBulk).mock
+      .calls[0]
+    expect([...ids].sort()).toEqual(['a', 'c'])
+    expect(enabled).toBe(false)
+  })
+
   it('select-all reflects the filtered set', async () => {
     const pn = await setupLoaded()
     pn.searchQuery.value = 'BFL'
