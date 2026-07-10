@@ -3070,6 +3070,41 @@
         "invoices": "Invoices",
         "overview": "Credits"
       }
+    },
+    "autoReload": {
+      "badge": {
+        "off": "Off",
+        "paused": "Paused"
+      },
+      "dialog": {
+        "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
+        "amountLabel": "Add this amount of credits:",
+        "budgetPlaceholderCredits": "Enter an amount of credits",
+        "budgetPlaceholderUsd": "Enter an amount of dollars",
+        "budgetToggleHint": "Limit how much is auto-reloaded per month",
+        "budgetToggleLabel": "Monthly budget",
+        "cancel": "Cancel",
+        "minReload": "Minimum amount is {amount}",
+        "thresholdLabel": "When credits drop below:",
+        "title": "Auto-reload credits",
+        "update": "Update"
+      },
+      "disabled": "Disabled",
+      "edit": "Edit",
+      "empty": {
+        "body": "Keep your workflows running with auto-reloaded credits. Set a monthly budget so charges don't surprise you.",
+        "cta": "Set up auto-reload"
+      },
+      "enabled": "Enabled",
+      "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
+      "tile": {
+        "label": "Auto-reload",
+        "monthlyBudget": "Monthly budget",
+        "percentSpent": "{percent}% spent",
+        "spentOfBudget": "{spent} of {budget}",
+        "whenBelow": "when credits drop below"
+      },
+      "title": "Credit auto-reload"
     }
   },
   "teamWorkspacesDialog": {
