@@ -1,5 +1,4 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'

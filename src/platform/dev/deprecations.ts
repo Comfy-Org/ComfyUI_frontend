@@ -98,6 +98,12 @@ export const DEPRECATIONS = {
     suggestion:
       'Remove the listener — there is no programmatic replacement; deprecation warnings now appear in the Dev Mode "Deprecation Warnings" sidebar panel.'
   },
+  'litegraph.onBeforeChange': {
+    source: 'litegraph',
+    message:
+      'LGraph.onBeforeChange is deprecated and will be removed in a future version.',
+    suggestion: 'Assign a listener to LGraphCanvas.onBeforeChange instead.'
+  },
   'litegraph.alwaysRepeatWarnings': {
     source: 'litegraph',
     message:
