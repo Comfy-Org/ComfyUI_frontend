@@ -45,7 +45,7 @@
                 <i :class="sortIcon('name')" />
               </button>
             </TableHead>
-            <TableHead class="w-32">
+            <TableHead class="w-40">
               {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
             </TableHead>
             <TableHead class="w-40" :aria-sort="ariaSort('lastModified')">
