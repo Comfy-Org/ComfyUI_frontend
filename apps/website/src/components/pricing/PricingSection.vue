@@ -30,7 +30,18 @@ const {
   headingLevel?: 'h1' | 'h2'
 }>()
 
-const billingPeriod = ref<BillingCycle>('yearly')
+const selectedBillingPeriod = ref<BillingCycle>('yearly')
+
+// reka-ui's single toggle group emits undefined when the active item is
+// clicked again; exactly one billing cycle must stay selected, so ignore it.
+const billingPeriod = computed({
+  get: () => selectedBillingPeriod.value,
+  set: (value: BillingCycle | undefined) => {
+    if (value) {
+      selectedBillingPeriod.value = value
+    }
+  }
+})
 
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (education) {
