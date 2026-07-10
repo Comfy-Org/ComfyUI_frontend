@@ -1215,18 +1215,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.VueNodes.AutoScaleLayout',
-    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
-    name: 'Auto-scale layout (Nodes 2.0)',
-    tooltip:
-      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
-    type: 'boolean',
-    sortOrder: 50,
-    experimental: true,
-    defaultValue: true,
-    versionAdded: '1.30.3'
-  },
-  {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',

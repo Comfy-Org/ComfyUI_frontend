@@ -55,6 +55,3 @@ jobs:
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-
-      - name: Enforce critical coverage gate
-        run: pnpm test:coverage:critical

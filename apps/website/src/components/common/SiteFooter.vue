@@ -38,7 +38,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
       { label: t('nav.comfyApi', locale), href: routes.api },
       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise },
-      { label: t('nav.mcpServer', locale), href: routes.mcp }
+      { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.supportedModels', locale), href: routes.models }
     ]
   },
   {
@@ -85,6 +86,7 @@ const companyColumn: { title: string; links: FooterLink[] } = {
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
+    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
     { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }
   ]
 }
