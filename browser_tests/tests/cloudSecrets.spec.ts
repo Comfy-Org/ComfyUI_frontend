@@ -88,21 +88,20 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await expect(page.getByText(RUNWAY_KEY_VALUE)).toHaveCount(0)
     // `getByText` only sees text nodes; a value reflected into an `<input>` or
     // masked field would slip past it, so assert no field carries it either.
-    await expect
-      .poll(() =>
-        page
-          .locator('input, textarea')
-          .evaluateAll(
-            (fields, value) =>
-              fields.some(
-                (field) =>
-                  (field as HTMLInputElement | HTMLTextAreaElement).value ===
-                  value
-              ),
-            RUNWAY_KEY_VALUE
-          )
+    // The list has already settled above, so this is a single immediate
+    // assertion — a poll-until-false could mask a value that briefly echoed
+    // into a field and then cleared within the polling window.
+    const secretEchoedInField = await page
+      .locator('input, textarea')
+      .evaluateAll(
+        (fields, value) =>
+          fields.some(
+            (field) =>
+              (field as HTMLInputElement | HTMLTextAreaElement).value === value
+          ),
+        RUNWAY_KEY_VALUE
       )
-      .toBe(false)
+    expect(secretEchoedInField).toBe(false)
 
     // --- DELETE ----------------------------------------------------------
     await settingsDialog

@@ -32,6 +32,9 @@ const Body = defineComponent({
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 const ClosedNonModalDialog = defineComponent({
   name: 'ClosedNonModalDialog',
   setup: () => () =>
@@ -378,6 +381,7 @@ describe('GlobalDialog Reka focus-outside binding', () => {
     const outside = document.createElement('button')
     document.body.appendChild(outside)
     outside.focus()
+    return () => outside.remove()
   }
 
   it('dismisses on focus-outside by default', async () => {
@@ -392,9 +396,14 @@ describe('GlobalDialog Reka focus-outside binding', () => {
     })
 
     await screen.findByRole('dialog')
-    await moveFocusToPlainElementOutside()
-
-    await waitFor(() => expect(store.isDialogOpen('focus-default')).toBe(false))
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      await waitFor(() =>
+        expect(store.isDialogOpen('focus-default')).toBe(false)
+      )
+    } finally {
+      removeOutside()
+    }
   })
 
   it('does not dismiss on focus-outside when dismissOnFocusOutside is false', async () => {
@@ -419,12 +428,15 @@ describe('GlobalDialog Reka focus-outside binding', () => {
     })
 
     await screen.findByRole('dialog')
-    await moveFocusToPlainElementOutside()
-    // Flush the focus-outside handler's own awaits (two nextTicks + the emit
-    // chain) so a wrongful dismiss would have landed before we assert.
-    for (let i = 0; i < 4; i++) await nextTick()
-
-    expect(store.isDialogOpen('focus-opted-out')).toBe(true)
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      // Drain every pending microtask so a wrongful dismiss lands before we
+      // assert, regardless of how many awaits deep the handler chain runs.
+      await flushPromises()
+      expect(store.isDialogOpen('focus-opted-out')).toBe(true)
+    } finally {
+      removeOutside()
+    }
   })
 })
 
