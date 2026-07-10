@@ -2896,6 +2896,31 @@
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes"
     },
+    "allowlist": {
+      "tabs": {
+        "partnerNodes": "Partner nodes",
+        "models": "Models"
+      }
+    },
+    "models": {
+      "descriptionLead": "Choose which models your team can use.",
+      "descriptionImport": "The import model feature will be disabled.",
+      "descriptionWorkflows": "Workflows with disabled models cannot be run.",
+      "searchPlaceholder": "Search models",
+      "selectAll": "Select all models",
+      "columns": {
+        "name": "Model",
+        "type": "Type",
+        "lastModified": "Last modified"
+      },
+      "neverModified": "—",
+      "empty": "No models match your search.",
+      "selectedCount": "{count} model selected | {count} models selected",
+      "clearSelection": "Clear selection",
+      "autoEnableLabel": "When a new model is added, it should be:",
+      "autoEnabled": "auto-enabled",
+      "autoDisabled": "auto-disabled"
+    },
     "members": {
       "header": "Members",
       "membersCount": "{count} of {maxSeats} members",

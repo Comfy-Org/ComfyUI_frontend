@@ -214,7 +214,7 @@ export function useSettingUI(
     },
     component: defineAsyncComponent(
       () =>
-        import('@/platform/workspace/components/dialogs/settings/PartnerNodesPanelContent.vue')
+        import('@/platform/workspace/components/dialogs/settings/AllowlistPanelContent.vue')
     )
   }
 
