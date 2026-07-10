@@ -87,9 +87,10 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
 
 const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 
-const bottomLeftRef = useTemplateRef('bottomLeftRef')
-const bottomRightRef = useTemplateRef('bottomRightRef')
-const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
+const bottomLeftRef = useTemplateRef<HTMLDivElement>('bottomLeftRef')
+const bottomRightRef = useTemplateRef<HTMLDivElement>('bottomRightRef')
+const linearWorkflowRef =
+  useTemplateRef<InstanceType<typeof LinearControls>>('linearWorkflowRef')
 
 function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
