@@ -2883,7 +2883,7 @@
   "workspacePanel": {
     "invite": "Invite",
     "inviteMember": "Invite member",
-    "inviteLimitReached": "You've reached the maximum of {count} members",
+    "inviteLimitReached": "Your workspace is at the member limit",
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2898,12 +2898,17 @@
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
         "active": "Active",
-        "pendingCount": "Pending ({count})"
+        "pendingCount": "Pending ({count})",
+        "membersCount": "Members ({count})",
+        "pending": "Pending"
       },
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "role": "Role"
+        "role": "Role",
+        "creditsUsed": "Credits used this month",
+        "email": "Email",
+        "lastActivity": "Last activity"
       },
       "actions": {
         "resendInvite": "Resend invite",
@@ -2919,14 +2924,22 @@
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "activity": {
+        "daysAgo": "{count} day ago | {count} days ago",
+        "hoursAgo": "{n} hr ago",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago"
+      },
+      "membersUsage": "{count} of {max} total members."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
-      "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
+      "creatorCannotLeave": "The workspace creator can't leave the workspace they created",
+      "renameWorkspace": "Rename Workspace"
     },
     "editWorkspaceDialog": {
       "title": "Edit workspace details",
@@ -3015,6 +3028,18 @@
       "failedToDeleteWorkspace": "Failed to delete workspace",
       "failedToLeaveWorkspace": "Failed to leave workspace",
       "failedToFetchWorkspaces": "Failed to load workspaces"
+    },
+    "charactersLeft": "{count} character left | {count} characters left",
+    "doubleClickToRename": "Double-click to rename",
+    "editWorkspaceImage": "Edit workspace image",
+    "memberLimitDialog": {
+      "message": "All seats are filled. To invite someone new, remove a member, rescind an invite, or request more seats.",
+      "title": "Workspace is at the member limit"
+    },
+    "requestMore": "Request more",
+    "workflowQueuedDialog": {
+      "message": "Max workflow capacity reached. It'll start automatically as capacity opens up. If this happens often, you can also request for more capacity.",
+      "title": "Your workflow is queued"
     }
   },
   "teamWorkspacesDialog": {
@@ -3027,7 +3052,7 @@
     "newWorkspace": "New workspace",
     "namePlaceholder": "e.g. Marketing Team",
     "createWorkspace": "Create workspace",
-    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
+    "nameValidationError": "Name must be 1–30 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
@@ -3037,7 +3062,8 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
-    "failedToSwitch": "Failed to switch workspace"
+    "failedToSwitch": "Failed to switch workspace",
+    "roleAdmin": "Admin"
   },
   "selectionToolbox": {
     "executeButton": {

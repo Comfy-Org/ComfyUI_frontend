@@ -209,7 +209,7 @@ describe('useWorkspaceUI', () => {
       expect(ui.workspaceRole.value).toBe('member')
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
-        canViewPendingInvites: false,
+        canViewPendingInvites: true,
         canInviteMembers: false,
         canManageInvites: false,
         canManageMembers: false,
@@ -220,11 +220,11 @@ describe('useWorkspaceUI', () => {
       })
     })
 
-    it('shows members but hides invite management and uses leave action', async () => {
+    it('shows members and pending but hides invite management and uses leave action', async () => {
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value.showMembersList).toBe(true)
-      expect(ui.uiConfig.value.showPendingTab).toBe(false)
+      expect(ui.uiConfig.value.showPendingTab).toBe(true)
       expect(ui.uiConfig.value.showEditWorkspaceMenuItem).toBe(false)
       expect(ui.uiConfig.value.workspaceMenuAction).toBe('leave')
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBeNull()
