@@ -289,7 +289,7 @@
     }
   },
   "Comfy_NodeBadge_ShowApiPricing": {
-    "name": "Show API node pricing badge"
+    "name": "Show Partner Node pricing badge"
   },
   "Comfy_NodeLibrary_NewDesign": {
     "name": "New Node Library Design",
