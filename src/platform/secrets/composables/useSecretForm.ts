@@ -29,6 +29,7 @@ interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
   existingProviders: MaybeRefOrGetter<SecretProvider[]>
+  availableProviders?: MaybeRefOrGetter<string[] | null>
   visible: { value: boolean }
   onSaved: () => void
 }
@@ -39,6 +40,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     mode,
     secret: secretRef,
     existingProviders,
+    availableProviders = null,
     visible,
     onSaved
   } = options
@@ -59,14 +61,19 @@ export function useSecretForm(options: UseSecretFormOptions) {
     provider: ''
   })
 
-  const providerOptions = computed<ProviderOption[]>(() =>
-    SECRET_PROVIDERS.map((p) => ({
+  const providerOptions = computed<ProviderOption[]>(() => {
+    const available = toValue(availableProviders)
+    const providers =
+      mode === 'edit' || available === null
+        ? SECRET_PROVIDERS
+        : SECRET_PROVIDERS.filter((p) => available.includes(p.value))
+    return providers.map((p) => ({
       label: p.label,
       value: p.value,
       disabled:
         mode === 'edit' ? false : toValue(existingProviders).includes(p.value)
     }))
-  )
+  })
 
   const apiError = computed(() => {
     if (!apiErrorCode.value && !apiErrorMessage.value) return null
@@ -84,7 +91,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
     const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
       form.name = secret.name
-      form.provider = secret.provider ?? null
+      // Stored provider is a free-form string; in edit mode the field is
+      // disabled and only needs to be non-empty for validation (it is never
+      // re-sent), so narrowing to the form's known-provider type is safe here.
+      form.provider = (secret.provider ?? null) as SecretProvider | null
       form.secretValue = ''
     } else {
       form.name = ''
