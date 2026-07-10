@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
@@ -10,6 +10,8 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
+import { toRerouteId } from '@/types'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 
 function createNode(id: string, x: number, y: number, w: number, h: number) {
   return {
@@ -193,8 +195,13 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       workflowRendererVersion: 'Vue'
     })
 
-    const reroute = { id: 1, pos: [200, 200] as Point, linkIds: new Set([1]) }
-    ;(graph.reroutes as unknown as Map<number, typeof reroute>).set(1, reroute)
+    const reroute = fromPartial<Reroute>({
+      id: 1,
+      pos: [200, 200] as Point,
+      linkIds: new Set([1])
+    })
+    if (!graph.reroutes) throw new Error('reroutes is undefined')
+    graph.reroutes.set(toRerouteId(1), reroute)
 
     ensureCorrectLayoutScale(undefined, graph as LGraph)
 
