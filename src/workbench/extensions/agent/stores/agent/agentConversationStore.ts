@@ -99,7 +99,7 @@ export const useAgentConversationStore = defineStore(
       if (!transport) return
       if (event.data.message_id !== activeTurnId.value) return
       if (event.type === 'agent_message_done') {
-        transport.finalize(event.data.usage)
+        transport.settle()
         clearActive()
         return
       }
@@ -110,7 +110,7 @@ export const useAgentConversationStore = defineStore(
     // clear transport/activeTurnId so no spinner is stuck forever.
     function abortActiveTurn(): void {
       if (!transport) return
-      transport.abort()
+      transport.settle()
       clearActive()
     }
 

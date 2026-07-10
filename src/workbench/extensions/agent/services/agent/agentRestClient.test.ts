@@ -43,25 +43,6 @@ beforeEach(() => {
 })
 
 describe('agentRestClient route + method', () => {
-  it('createThread POSTs /agent/threads with an empty body and no workflow_id', async () => {
-    respond(jsonResponse(201, { thread_id: 't9' }))
-
-    const result = await makeClient().createThread()
-
-    const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads')
-    expect(init.method).toBe('POST')
-    expect(init.body).toBe('{}')
-    expect(result.thread_id).toBe('t9')
-  })
-
-  it('createThread includes workflow_id when given', async () => {
-    respond(jsonResponse(201, { thread_id: 't9' }))
-    await makeClient().createThread('wf-42')
-
-    expect(lastCall().init.body).toBe('{"workflow_id":"wf-42"}')
-  })
-
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('new', { content: 'hi' })
@@ -225,11 +206,11 @@ describe('error mapping', () => {
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
-    // thread_id is required by zAgentThreadCreated; a wrong shape must throw.
-    respond(jsonResponse(201, { wrong: 'shape' }))
+    // content + version are required by zAgentDraftSnapshot; a wrong shape must throw.
+    respond(jsonResponse(200, { wrong: 'shape' }))
 
     const error = await makeClient()
-      .createThread()
+      .getDraft('wf-1')
       .catch((e: unknown) => e)
 
     expect(error).toBeInstanceOf(Error)

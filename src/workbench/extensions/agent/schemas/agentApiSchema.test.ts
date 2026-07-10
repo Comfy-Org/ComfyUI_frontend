@@ -108,10 +108,6 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
-  it('rejects agent_message_done with usage omitted', () => {
-    expect(zAgentWsEvent.safeParse(doneBase).success).toBe(false)
-  })
-
   it('rejects draft_patch missing base_version', () => {
     expect(
       zAgentWsEvent.safeParse({

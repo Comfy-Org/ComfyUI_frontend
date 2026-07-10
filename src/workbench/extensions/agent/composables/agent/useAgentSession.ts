@@ -19,8 +19,10 @@ export interface AgentEventSource {
   onStatus?(listener: (live: boolean) => void): () => void
 }
 
+// Only errors surface out of the session today; widen the union when the wire
+// grows a non-error notice.
 export interface SessionNotice {
-  level: 'info' | 'warning' | 'error'
+  level: 'error'
   text: string
 }
 

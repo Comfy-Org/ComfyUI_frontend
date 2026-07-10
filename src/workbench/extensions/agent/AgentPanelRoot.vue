@@ -177,7 +177,7 @@ const {
 })
 
 // Every agent error goes through the ONE existing host error modal — no
-// bespoke toasts. Warnings/info stay transient toasts.
+// bespoke toasts.
 const executionErrorStore = useExecutionErrorStore()
 
 function surfaceAgentError(
@@ -192,20 +192,12 @@ function surfaceAgentError(
   executionErrorStore.showErrorOverlay()
 }
 
-const noticeSeverity = { warning: 'warn', info: 'info' } as const
 let noticesSeen = 0
 watch(
   () => notices.value.length,
   (length) => {
-    for (const notice of notices.value.slice(noticesSeen)) {
-      if (notice.level === 'error')
-        surfaceAgentError('agent_api_failed', notice.text)
-      else
-        toast.add({
-          severity: noticeSeverity[notice.level],
-          summary: notice.text
-        })
-    }
+    for (const notice of notices.value.slice(noticesSeen))
+      surfaceAgentError('agent_api_failed', notice.text)
     noticesSeen = length
   }
 )
@@ -432,13 +424,11 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachSteps: CoachStep[] = [
-  {
-    target: '#agent-panel-root',
-    title: t('agent.coachTitle'),
-    body: t('agent.coachBody')
-  }
-]
+const coachStep: CoachStep = {
+  target: '#agent-panel-root',
+  title: t('agent.coachTitle'),
+  body: t('agent.coachBody')
+}
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
@@ -545,7 +535,7 @@ async function onFilesPicked(event: Event): Promise<void> {
       @copy-history="onCopyMarkdown"
     />
     <OnboardingCoach
-      :steps="coachSteps"
+      :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"
     />
   </div>

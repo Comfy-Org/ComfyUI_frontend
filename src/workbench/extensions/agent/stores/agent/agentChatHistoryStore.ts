@@ -53,12 +53,6 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     groupSessionsByRecency(sessions.value, activeId.value, Date.now())
   )
 
-  function upsert(session: ChatSession): void {
-    const index = sessions.value.findIndex((item) => item.id === session.id)
-    if (index >= 0) sessions.value[index] = session
-    else sessions.value = [session, ...sessions.value]
-  }
-
   function remove(id: string): void {
     sessions.value = sessions.value.filter((item) => item.id !== id)
     if (activeId.value === id) activeId.value = null
@@ -76,7 +70,6 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
-    upsert,
     remove,
     replaceAll,
     setActive

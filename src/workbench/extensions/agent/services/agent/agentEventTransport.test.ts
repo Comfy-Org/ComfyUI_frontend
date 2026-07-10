@@ -91,7 +91,7 @@ const textParts = (m: AssistantMessage): TextPart[] =>
   m.parts.filter((p): p is TextPart => p.type === 'text')
 
 describe('agentEventTransport fixture replay', () => {
-  it('ws-turn-edit: four settled tools then the reply text, tokens 4918', () => {
+  it('ws-turn-edit: four settled tools then the reply text', () => {
     const events = chatEventsFor(
       'ws-turn-edit.jsonl',
       '172a6ede-7ab7-4b01-83b6-5b15f66dee4b'
@@ -122,12 +122,11 @@ describe('agentEventTransport fixture replay', () => {
     expect(texts[0]).toMatchObject({ text: replyText, state: 'done' })
     // Tools come before the text: the last part is the reply.
     expect(parts(message).at(-1)).toBe(texts[0])
-    expect(message.tokens).toBe(4918)
     expect(message.streaming).toBe(false)
     expect(message.thinking).toBe(false)
   })
 
-  it('ws-turn-cancelled: one reply text part, settled, tokens untouched by null usage', () => {
+  it('ws-turn-cancelled: one reply text part, settled', () => {
     const events = chatEventsFor(
       'ws-turn-cancelled.jsonl',
       '5d7c81a9-31f5-42f8-81c0-7525473da046'
@@ -142,8 +141,6 @@ describe('agentEventTransport fixture replay', () => {
     })
     expect(toolParts(message)).toHaveLength(0)
     expect(message.streaming).toBe(false)
-    // usage was null on the cancelled turn; the running counter (0) is left intact.
-    expect(message.tokens).toBe(0)
   })
 })
 
@@ -194,12 +191,12 @@ describe('agentEventTransport text and tool parts', () => {
 })
 
 describe('agentEventTransport settle lifecycle', () => {
-  it('abort mid-stream closes the open text part and clears streaming', () => {
+  it('settle mid-stream closes the open text part and clears streaming', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
     transport.ingest(delta('partial'))
-    transport.abort()
+    transport.settle()
     const final = emit.mock.calls.at(-1)?.[0] ?? message
     expect(textParts(final)[0]).toMatchObject({
       text: 'partial',
@@ -209,23 +206,13 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(final.thinking).toBe(false)
   })
 
-  it('double finalize is a no-op after the first settle', () => {
+  it('a second settle is a no-op after the first', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
-    transport.finalize(null)
+    transport.settle()
     const callsAfterFirst = emit.mock.calls.length
-    transport.finalize(null)
+    transport.settle()
     expect(emit.mock.calls.length).toBe(callsAfterFirst)
-  })
-
-  it('abort after finalize is a no-op', () => {
-    const message = createAssistantMessage(T)
-    const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit)
-    transport.finalize(null)
-    const callsAfterFinalize = emit.mock.calls.length
-    transport.abort()
-    expect(emit.mock.calls.length).toBe(callsAfterFinalize)
   })
 })
