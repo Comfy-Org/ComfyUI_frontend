@@ -1,6 +1,8 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue, watch } from 'vue'
 
+import modelCatalog from '@/platform/workspace/composables/modelAllowlist.data.json' with { type: 'json' }
+
 export interface AllowlistModel {
   id: string
   /** Catalog display_name — format varies by source (see mock rows). */
@@ -10,89 +12,57 @@ export interface AllowlistModel {
   enabled: boolean
 }
 
+// Catalog `type` values → display labels; unknown types fall back to a
+// capitalized, de-underscored form.
+const TYPE_LABELS: Record<string, string> = {
+  checkpoint: 'Checkpoint',
+  lora: 'LoRA',
+  vae: 'VAE',
+  vae_approx: 'VAE approx',
+  controlnet: 'ControlNet',
+  upscaler: 'Upscaler',
+  onnx: 'ONNX',
+  text_encoder: 'Text encoder',
+  diffusion_model: 'Diffusion model',
+  clip: 'CLIP',
+  clip_vision: 'CLIP vision',
+  embedding: 'Embedding',
+  llm: 'LLM',
+  tts: 'TTS',
+  sam: 'SAM',
+  sam3d: 'SAM 3D',
+  sam3dbody: 'SAM 3D body',
+  ip_adapter: 'IP-Adapter',
+  animatediff: 'AnimateDiff',
+  flashvsr: 'FlashVSR',
+  'flashvsr-v1.1': 'FlashVSR v1.1',
+  cogvideo: 'CogVideo',
+  gligen: 'GLIGEN',
+  nlf: 'NLF',
+  '3d': '3D'
+}
+
+function typeLabel(type: string): string {
+  const label = TYPE_LABELS[type]
+  if (label) return label
+  const words = type.replaceAll('_', ' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 type SortField = 'name' | 'type' | 'lastModified'
 type SortDirection = 'asc' | 'desc'
 
-// Prototype mock: there is no model-allowlist endpoint yet. Rows are real
-// entries from the models catalog, deliberately mixed by source so the design
-// confronts the real display_name formats: HuggingFace "owner/repo - file",
-// friendly Civitai titles (including very long and CJK ones), and the
-// filename-derived fallback used when enrichment is missing.
-const MOCK_MODELS: AllowlistModel[] = [
-  ['Comfy-Org/ACE-Step_ComfyUI_repackaged - ace_step_v1_3.5b', 'Checkpoint'],
-  ['512 inpainting ema', 'Checkpoint'],
-  [
-    'Comfy-Org/ace_step_1.5_ComfyUI_files - acestep_v1.5_turbo',
-    'Diffusion model'
-  ],
-  ['circlestone-labs/Anima - anima-preview', 'Diffusion model'],
-  ['Comfy-Org/HunyuanVideo_1.5_repackaged - capybara_v0.1', 'Diffusion model'],
-  ['lilylilith/AnyPose - 2511-AnyPose-base-000006250', 'LoRA'],
-  ['lilylilith/AnyPose - 2511-AnyPose-helper-00006000', 'LoRA'],
-  ['Kim2091/UltraSharp - 4x-UltraSharp', 'Upscaler'],
-  ['Kim2091/ClearRealityV1 - 4x-ClearRealityV1', 'Upscaler'],
-  ['8x_NMKD-Faces_160000_G Upscaler', 'Upscaler'],
-  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-AnimeSharp', 'ONNX'],
-  ['Comfy-Org/HiDream-I1_ComfyUI - ae', 'VAE'],
-  ['Kijai/CogVideoX-Fun-pruned - cogvideox_vae', 'VAE'],
-  ['Lightricks/LTX-2.3-fp8 - ltx-2.3-22b-dev-fp8', 'Checkpoint'],
-  ['Comfy-Org/Qwen-Image_ComfyUI - qwen_2.5_vl_7b_fp8_scaled', 'Text encoder'],
-  ['qwen 3 8b', 'Text encoder'],
-  ['DreamShaper', 'Checkpoint'],
-  ['Western Toon Style', 'LoRA'],
-  [
-    'Dream Creation Virtual 3D | E-commerce Scene Key Visual Poster | Blind Box IP Display C4D Super Visual',
-    'Checkpoint'
-  ],
-  ['blindbox/大概是盲盒', 'LoRA'],
-  ['ControlNet T2I-Adapter Models', 'ControlNet'],
-  ['Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_0.6b_ace15', 'Text encoder'],
-  ['Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_1.7b_ace15', 'Text encoder'],
-  ['Comfy-Org/HunyuanVideo_1.5_repackaged - qwen_2.5_vl_7b', 'Text encoder'],
-  ['Comfy-Org/Omnigen2_ComfyUI_repackaged - qwen_2.5_vl_fp16', 'Text encoder'],
-  ['circlestone-labs/Anima - qwen_3_06b_base', 'Text encoder'],
-  ['Comfy-Org/z_image_turbo - qwen_3_4b', 'Text encoder'],
-  ['qwen 3 4b fp4 flux2', 'Text encoder'],
-  [
-    'Comfy-Org/vae-text-encorder-for-flux-klein-9b - qwen_3_8b_fp4mixed',
-    'Text encoder'
-  ],
-  ['Comfy-Org/ace_step_1.5_ComfyUI_files - ace_1.5_vae', 'VAE'],
-  [
-    'TheDenk/cogvideox-2b-controlnet-canny-v1 - diffusion_pytorch_model',
-    'ControlNet'
-  ],
-  ['TheDenk/cogvideox-2b-controlnet-hed-v1 - config', 'ControlNet'],
-  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-ClearRealityV1', 'ONNX'],
-  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharp', 'ONNX'],
-  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharpV2_Lite', 'ONNX'],
-  ['2000s Analog Core', 'LoRA'],
-  ['80s Fantasy Movie', 'LoRA'],
-  ["zyd232's Ink Style", 'LoRA'],
-  ['YFG ChatGPT 4o Style [Flux | ZIT]', 'LoRA'],
-  [
-    'Z Image Turbo / Flux - Realistic Water Droplets (Wet Effect) - By Devildonia',
-    'LoRA'
-  ],
-  ['ArchitectureRealMix', 'Checkpoint'],
-  ['AWPainting', 'Checkpoint'],
-  ['CarDos Anime', 'Checkpoint'],
-  [
-    'FireRedTeam/FireRed-Image-Edit-1.1-ComfyUI - FireRed-Image-Edit-1.1-transformer',
-    'Diffusion model'
-  ],
-  [
-    'FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI - FireRed-Image-Edit-1.0-Lightning-8steps-v1.0',
-    'LoRA'
-  ],
-  ['Comfy-Org/ltx-2 - gemma-3-12b-it-abliterated_lora_rank64_bf16', 'LoRA'],
-  ['dx8152/Flux2-Klein-9B-Consistency - Klein-consistency', 'LoRA'],
-  ['fal/virtual-tryoff-lora - virtual-tryoff-lora_comfy', 'LoRA'],
-  ['TheDenk/cogvideox-2b-controlnet-canny-v1 - config', 'ControlNet']
-].map(([displayName, type], i) => ({
+// Prototype mock: there is no model-allowlist endpoint yet. The rows are the
+// FULL models catalog (harvested 2026-07-09 via the catalog API, ~1,382
+// entries) so the tab exercises real scale and the real display_name formats:
+// HuggingFace "owner/repo - file", friendly Civitai titles (including very
+// long and CJK ones), and filename-derived fallbacks.
+const MOCK_MODELS: AllowlistModel[] = (
+  modelCatalog as { name: string; type: string }[]
+).map(({ name, type }, i) => ({
   id: `model-${i}`,
-  displayName,
-  type,
+  displayName: name,
+  type: typeLabel(type),
   lastModified: null,
   enabled: true
 }))
