@@ -168,6 +168,7 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
 
   function setSelectedEnabled(enabled: boolean) {
     applyEnabled([...selectedIds.value], enabled)
+    clearSelection()
   }
 
   // Acts on the filtered set, so a search narrows the blast radius (e.g.

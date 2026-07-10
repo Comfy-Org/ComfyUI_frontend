@@ -213,8 +213,11 @@ export function usePartnerNodes(
     )
     applyEnabled(ids, enabled)
     try {
-      // Keep the selection after a bulk toggle so the user can flip it again.
       await partnerNodesApi.setEnabledBulk(ids, enabled)
+      // Clear on success: a kept selection can hide inside collapsed groups
+      // and silently ride along with the next bulk toggle. On failure the
+      // selection survives for a retry.
+      clearSelection()
     } catch {
       nodes.value = nodes.value.map((n) =>
         previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
