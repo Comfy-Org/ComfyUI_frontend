@@ -3059,6 +3059,32 @@
         "topSpenders": "Top spenders",
         "user": "User"
       }
+    },
+    "allowlist": {
+      "disableAll": "Disable all",
+      "enableAll": "Enable all",
+      "tabs": {
+        "partnerNodes": "Partner nodes"
+      }
+    },
+    "partnerNodes": {
+      "autoEnableSubject": "newly added partner nodes",
+      "autoEnableVerb": "auto-enable",
+      "clearSelection": "Clear selection",
+      "columns": {
+        "lastModified": "Last modified",
+        "name": "Partner Node",
+        "nodes": "Nodes"
+      },
+      "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
+      "empty": "No partner nodes match your search.",
+      "groupCount": "{enabled}/{total} enabled",
+      "loadError": "Failed to load partner nodes",
+      "neverModified": "—",
+      "searchPlaceholder": "Search partner nodes",
+      "selectAll": "Select all partner nodes",
+      "selectedCount": "{count} node selected | {count} nodes selected",
+      "updateError": "Failed to update partner nodes"
     }
   },
   "teamWorkspacesDialog": {

@@ -54,13 +54,11 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
-    // Pending integration in the workspace-settings stacked PRs: consumed by
-    // split/auto-reload + split/allowlist (Switch) and split/member-auditing
-    // + split/allowlist (Pagination); each consumer removes its entry
-    'src/components/ui/switch/Switch.vue',
+    // Pending integration: consumed by split/member-auditing (Activity pager);
+    // models governance (DES-503) reuses it later
     'src/components/ui/pagination/Pagination.vue',
-    // Pending integration: consumed by split/plan-credits-tabs (Overview) and
-    // split/allowlist (Models); each consumer removes this entry
+    // Pending integration: consumed by split/plan-credits-tabs (Overview);
+    // models governance (DES-503) reuses it later
     'src/platform/workspace/composables/useAutoPageSize.ts',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
