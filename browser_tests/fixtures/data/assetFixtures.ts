@@ -1,4 +1,13 @@
 import type { Asset } from '@comfyorg/ingest-types'
+
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+/**
+ * Core-native asset shape: the ingest Asset plus the `loader_path` contract
+ * field that `supports_model_type_tags` backends emit (see
+ * `src/platform/assets/schemas/assetSchema.ts`).
+ */
+export type CoreModelAsset = Asset & Pick<AssetItem, 'loader_path'>
 function createModelAsset(
   overrides: Partial<Asset> = {}
 ): Asset & { hash?: string } {
@@ -85,6 +94,70 @@ export const STABLE_LORA: Asset = createModelAsset({
     base_model: 'sdxl',
     description: 'Detail Enhancement LoRA'
   },
+  created_at: '2025-02-20T14:00:00Z',
+  updated_at: '2025-02-20T14:00:00Z'
+})
+
+function createCoreModelAsset(
+  overrides: Partial<CoreModelAsset>
+): CoreModelAsset {
+  return { ...createModelAsset(), ...overrides }
+}
+
+export const MODEL_TYPE_CHECKPOINT_NESTED: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-001',
+    name: 'sd_xl_base_1.0.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: 'SDXL/sd_xl_base_1.0.safetensors',
+    created_at: '2025-01-15T10:30:00Z',
+    updated_at: '2025-01-15T10:30:00Z'
+  })
+
+export const MODEL_TYPE_CHECKPOINT_ROOT: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-checkpoint-002',
+  name: 'v1-5-pruned-emaonly.safetensors',
+  tags: ['models', 'model_type:checkpoints'],
+  loader_path: 'v1-5-pruned-emaonly.safetensors',
+  created_at: '2025-01-20T08:00:00Z',
+  updated_at: '2025-01-20T08:00:00Z'
+})
+
+export const MODEL_TYPE_CHECKPOINT_GGUF: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-checkpoint-003',
+  name: 'flux_quantized.gguf',
+  tags: ['models', 'model_type:checkpoints'],
+  loader_path: 'flux_quantized.gguf',
+  created_at: '2025-02-01T09:00:00Z',
+  updated_at: '2025-02-01T09:00:00Z'
+})
+
+export const MODEL_TYPE_CHECKPOINT_SCANNED: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-004',
+    name: 'freshly_scanned.safetensors',
+    tags: ['models', 'model_type:checkpoints'],
+    loader_path: 'freshly_scanned.safetensors',
+    created_at: '2025-02-10T09:00:00Z',
+    updated_at: '2025-02-10T09:00:00Z'
+  })
+
+export const MODEL_TYPE_LORA: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-lora-001',
+  name: 'detail_enhancer_v1.2.safetensors',
+  tags: ['models', 'model_type:loras'],
+  loader_path: 'detail_enhancer_v1.2.safetensors',
+  created_at: '2025-02-20T14:00:00Z',
+  updated_at: '2025-02-20T14:00:00Z'
+})
+
+export const MODEL_TYPE_LORA_README: CoreModelAsset = createCoreModelAsset({
+  id: 'mt-lora-002',
+  name: 'README.txt',
+  mime_type: 'text/plain',
+  size: 2_048,
+  tags: ['models', 'model_type:loras'],
+  loader_path: 'README.txt',
   created_at: '2025-02-20T14:00:00Z',
   updated_at: '2025-02-20T14:00:00Z'
 })

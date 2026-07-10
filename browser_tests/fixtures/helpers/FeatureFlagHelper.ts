@@ -52,6 +52,22 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Force server feature flags (the WS `feature_flags` handshake payload) on
+   * the running app by merging into `api.serverFeatureFlags`. The `ff:`
+   * localStorage override is dev-only (tree-shaken from production builds),
+   * so this is the way to control `api.serverSupportsFeature()` in e2e.
+   * Call after `comfyPage.setup()` so the real handshake cannot clobber it.
+   */
+  async setServerFlags(flags: Record<string, unknown>): Promise<void> {
+    await this.page.evaluate((flagMap: Record<string, unknown>) => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        ...flagMap
+      }
+    }, flags)
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

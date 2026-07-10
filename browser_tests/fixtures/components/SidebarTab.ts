@@ -254,6 +254,18 @@ export class ModelLibrarySidebarTab extends SidebarTab {
       .filter({ hasText: label })
       .first()
   }
+
+  /**
+   * A folder's own row (not the whole subtree). Required for nested folders:
+   * an ancestor `.p-tree-node`'s text contains its descendants' labels, so
+   * `getFolderByLabel` would match — and click — the ancestor instead.
+   */
+  getFolderRowByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node:not(.p-tree-node-leaf) > .p-tree-node-content')
+      .filter({ hasText: label })
+      .first()
+  }
 }
 
 type MediaFilterKind = 'image' | 'video' | 'audio' | '3d'
