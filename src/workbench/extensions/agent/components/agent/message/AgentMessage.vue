@@ -69,7 +69,7 @@ const raw = ref(false)
 </script>
 
 <template>
-  <div class="group space-y-1.5">
+  <div class="space-y-1.5">
     <ThinkingStatus
       v-if="message.thinking || (message.streaming && !message.parts.length)"
       :tokens="message.tokens"
@@ -104,10 +104,7 @@ const raw = ref(false)
       </div>
     </template>
 
-    <div
-      v-if="showActions"
-      class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-    >
+    <div v-if="showActions" class="flex items-center gap-1">
       <MessageFeedback :text="plainText" @feedback="emit('feedback', $event)" />
       <button
         type="button"
