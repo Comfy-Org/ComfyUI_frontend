@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -141,6 +141,114 @@ describe('dialogStore', () => {
   })
 
   describe('basic dialog operations', () => {
+    it('generates a key when none is provided', () => {
+      const store = useDialogStore()
+
+      const dialog = store.showDialog({ component: MockComponent })
+
+      expect(dialog.key).toMatch(/^dialog-/)
+      expect(store.isDialogOpen(dialog.key)).toBe(true)
+    })
+
+    it('evicts the first stack entry when the stack is full', () => {
+      const store = useDialogStore()
+
+      for (let i = 0; i < 11; i++) {
+        store.showDialog({
+          key: `dialog-${i}`,
+          component: MockComponent,
+          priority: i
+        })
+      }
+
+      expect(store.dialogStack).toHaveLength(10)
+      expect(store.isDialogOpen('dialog-9')).toBe(false)
+    })
+
+    it('stores optional header and footer components and props', () => {
+      const store = useDialogStore()
+
+      const dialog = store.showDialog({
+        key: 'with-slots',
+        component: MockComponent,
+        headerComponent: MockComponent,
+        footerComponent: MockComponent,
+        headerProps: { title: 'Header' },
+        footerProps: { action: 'Save' }
+      })
+
+      expect(dialog.headerComponent).toBeDefined()
+      expect(dialog.footerComponent).toBeDefined()
+      expect(dialog.headerProps).toEqual({ title: 'Header' })
+      expect(dialog.footerProps).toEqual({ action: 'Save' })
+    })
+
+    it('runs dialog lifecycle handlers', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+      const dialog = store.showDialog({
+        key: 'lifecycle',
+        component: MockComponent,
+        dialogComponentProps: { onClose }
+      })
+      // A second dialog steals focus so the mousedown below actually
+      // exercises riseDialog's promote-to-front behavior.
+      store.showDialog({ key: 'other', component: MockComponent })
+      const props =
+        dialog.dialogComponentProps as typeof dialog.dialogComponentProps & {
+          onAfterHide: () => void
+          onMaximize: () => void
+          onUnmaximize: () => void
+          pt: { root: { onMousedown: () => void } }
+        }
+
+      props.onMaximize()
+      expect(dialog.dialogComponentProps.maximized).toBe(true)
+
+      props.onUnmaximize()
+      expect(dialog.dialogComponentProps.maximized).toBe(false)
+
+      expect(store.activeKey).toBe('other')
+      props.pt.root.onMousedown()
+      expect(store.activeKey).toBe('lifecycle')
+
+      props.onAfterHide()
+      expect(onClose).toHaveBeenCalledOnce()
+      expect(store.isDialogOpen('lifecycle')).toBe(false)
+    })
+
+    it('does nothing when rising or closing a missing dialog', () => {
+      const store = useDialogStore()
+
+      store.riseDialog({ key: 'missing' })
+      store.closeDialog({ key: 'missing' })
+
+      expect(store.dialogStack).toEqual([])
+      expect(store.activeKey).toBeNull()
+    })
+
+    it('closes the active dialog when no key is provided', () => {
+      const store = useDialogStore()
+
+      store.showDialog({ key: 'active', component: MockComponent })
+      store.closeDialog()
+
+      expect(store.isDialogOpen('active')).toBe(false)
+      expect(store.activeKey).toBeNull()
+    })
+
+    it('disables escape closing for a non-closable active dialog', () => {
+      const store = useDialogStore()
+
+      const dialog = store.showDialog({
+        key: 'locked',
+        component: MockComponent,
+        dialogComponentProps: { closable: false }
+      })
+
+      expect(dialog.dialogComponentProps.closeOnEscape).toBe(false)
+    })
+
     it('should show and close dialogs', () => {
       const store = useDialogStore()
 
@@ -207,6 +315,86 @@ describe('dialogStore', () => {
       expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
         false
       )
+    })
+
+    it('updates only content props when dialog component props are omitted', () => {
+      const store = useDialogStore()
+
+      store.showDialog({
+        key: 'content-only',
+        component: MockContentPropsComponent,
+        props: { openingAction: null }
+      })
+
+      expect(
+        store.updateDialog({
+          key: 'content-only',
+          contentProps: { openingAction: 'open' }
+        })
+      ).toBe(true)
+      expect(store.dialogStack[0].contentProps.openingAction).toBe('open')
+    })
+
+    it('updates only dialog component props when content props are omitted', () => {
+      const store = useDialogStore()
+
+      store.showDialog({
+        key: 'dialog-props-only',
+        component: MockContentPropsComponent,
+        dialogComponentProps: { dismissableMask: true }
+      })
+
+      expect(
+        store.updateDialog({
+          key: 'dialog-props-only',
+          dialogComponentProps: { dismissableMask: false }
+        })
+      ).toBe(true)
+      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
+        false
+      )
+    })
+
+    it('returns false when updating a missing dialog', () => {
+      const store = useDialogStore()
+
+      expect(
+        store.updateDialog({
+          key: 'missing',
+          contentProps: { openingAction: 'open' }
+        })
+      ).toBe(false)
+    })
+
+    it('creates and reuses extension dialogs with extension-prefixed keys', () => {
+      const store = useDialogStore()
+
+      const first = store.showExtensionDialog({
+        key: 'external',
+        component: MockComponent
+      })
+      const second = store.showExtensionDialog({
+        key: 'extension-external',
+        component: MockComponent
+      })
+
+      expect(first?.key).toBe('extension-external')
+      expect(second?.key).toBe(first?.key)
+      expect(store.dialogStack).toHaveLength(1)
+    })
+
+    it('rejects extension dialogs without keys', () => {
+      const store = useDialogStore()
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const dialog = store.showExtensionDialog({
+        key: '',
+        component: MockComponent
+      })
+
+      expect(dialog).toBeUndefined()
+      expect(error).toHaveBeenCalledWith('Extension dialog key is required')
+      error.mockRestore()
     })
   })
 

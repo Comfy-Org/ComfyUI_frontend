@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useBootstrapStore } from './bootstrapStore'
 
@@ -21,25 +22,28 @@ vi.mock('@/i18n', () => ({
 }))
 
 const mockIsSettingsReady = ref(false)
+const mockSettingStore = {
+  load: vi.fn(() => {
+    mockIsSettingsReady.value = true
+  }),
+  get isReady() {
+    return mockIsSettingsReady.value
+  },
+  isLoading: ref(false),
+  error: ref(undefined)
+}
 
 vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    load: vi.fn(() => {
-      mockIsSettingsReady.value = true
-    }),
-    get isReady() {
-      return mockIsSettingsReady.value
-    },
-    isLoading: ref(false),
-    error: ref(undefined)
-  }))
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
+const mockWorkflowStore = {
+  loadWorkflows: vi.fn(),
+  syncWorkflows: vi.fn().mockResolvedValue(undefined)
+}
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: vi.fn(),
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
-  }))
+  useWorkflowStore: vi.fn(() => mockWorkflowStore)
 }))
 
 const mockNeedsLogin = ref(false)
@@ -91,6 +95,21 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
+  })
+
+  it('does not reload authenticated stores after bootstrap already ran', async () => {
+    const store = useBootstrapStore()
+    const settingStore = useSettingStore()
+    const workflowStore = useWorkflowStore()
+
+    await store.startStoreBootstrap()
+    await store.startStoreBootstrap()
+
+    await vi.waitFor(() => {
+      expect(store.isI18nReady).toBe(true)
+    })
+    expect(settingStore.load).toHaveBeenCalledOnce()
+    expect(workflowStore.loadWorkflows).toHaveBeenCalledOnce()
   })
 
   describe('cloud mode', () => {
