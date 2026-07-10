@@ -180,11 +180,24 @@ describe('AgentPanelRoot session notices', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
     executionErrors.lastPromptError = null
     executionErrors.showErrorOverlay.mockClear()
+    // The mount-time history prefetch must resolve, or its failure would also
+    // raise the error modal and double-count the overlay call below.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+      )
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const toast = useToastStore()
 
@@ -523,7 +536,10 @@ describe('AgentPanelRoot draft binding', () => {
           { status: 202, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      return new Response('{}', { status: 200 })
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
     })
     vi.stubGlobal('fetch', fetchMock)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -605,7 +621,10 @@ describe('AgentPanelRoot draft binding', () => {
               }),
               { status: 202, headers: { 'Content-Type': 'application/json' } }
             )
-          : new Response('{}', { status: 200 })
+          : new Response('{"threads":[]}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
       )
     )
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -695,6 +714,25 @@ describe('AgentPanelRoot history', () => {
       id: 'th-10',
       title: 'make a duck'
     })
+  })
+
+  it('surfaces a thread-list failure via the host error modal', async () => {
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 500 }))
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    )
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_api_failed'
+    })
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
   it('marks the adopted thread as the current session', async () => {
