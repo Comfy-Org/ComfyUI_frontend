@@ -16,7 +16,6 @@ describe('buildTranscriptMarkdown', () => {
         { type: 'tool', callId: 'tool_0', name: 'add_node', state: 'done' },
         { type: 'text', text: 'a cat.', state: 'done' }
       ],
-      tokens: 0,
       streaming: false,
       thinking: false
     }

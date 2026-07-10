@@ -8,11 +8,6 @@ import { z } from 'zod'
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
 
-export const zAgentThreadCreated = z.object({
-  thread_id: z.string()
-})
-export type AgentThreadCreated = z.infer<typeof zAgentThreadCreated>
-
 // workflow_id is optional only because the openapi marks it so; every observed ack
 // carries it.
 export const zAgentTurnAccepted = z
@@ -122,23 +117,13 @@ const zAgentMessageDeltaData = z
   })
   .passthrough()
 
-// usage is null on a cancelled turn (no token accounting).
-const zTokenUsage = z
-  .object({
-    input_tokens: z.number(),
-    output_tokens: z.number(),
-    total_tokens: z.number(),
-    cache_read_input_tokens: z.number(),
-    cache_creation_input_tokens: z.number()
-  })
-  .passthrough()
-export type TokenUsage = z.infer<typeof zTokenUsage>
-
 const zAgentMessageDoneData = z
   .object({
     message_id: z.string(),
     thread_id: z.string(),
-    usage: zTokenUsage.nullable()
+    // The wire carries token usage (null on a cancelled turn) but the panel does not
+    // render it, so its inner shape stays unvalidated.
+    usage: z.unknown().nullish()
   })
   .passthrough()
 

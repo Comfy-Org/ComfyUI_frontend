@@ -5,10 +5,8 @@ import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
   AgentMessages,
-  AgentThreadCreated,
   AgentThreadSummary,
   AgentTurnAccepted,
-  TokenUsage,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -23,20 +21,9 @@ import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 import type { AgentEventSource } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-const USAGE: TokenUsage = {
-  input_tokens: 10,
-  output_tokens: 5,
-  total_tokens: 42,
-  cache_read_input_tokens: 0,
-  cache_creation_input_tokens: 0
-}
-
 // A fully typed fake REST client: each method is a vi.fn the test arranges per scenario.
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
-    createThread: vi.fn(
-      async (): Promise<AgentThreadCreated> => ({ thread_id: 'th-1' })
-    ),
     postMessage: vi.fn(
       async (): Promise<AgentTurnAccepted> => ({
         thread_id: 'th-1',
@@ -100,10 +87,10 @@ const delta = (id: string, text: string) =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th-1' }
   })
-const done = (id: string, usage: TokenUsage | null) =>
+const done = (id: string) =>
   wire({
     type: 'agent_message_done',
-    data: { message_id: id, thread_id: 'th-1', usage }
+    data: { message_id: id, thread_id: 'th-1', usage: null }
   })
 const draftPatch = (workflowId: string, version: number) =>
   wire({
@@ -141,15 +128,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     emit(thinking('msg-1', 'planning'))
     emit(delta('msg-1', 'A cat.'))
-    emit(done('msg-1', USAGE))
+    emit(done('msg-1'))
 
     const roles = session.entries.value.map((e) => e.role)
     expect(roles).toEqual(['user', 'assistant'])
     const assistant = session.entries.value[1]
     expect(assistant).toMatchObject({
       role: 'assistant',
-      streaming: false,
-      tokens: 42
+      streaming: false
     })
     expect(session.isStreaming.value).toBe(false)
   })
@@ -246,7 +232,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(true)
 
     emit(delta('msg-1', ' Stopped at your request.'))
-    emit(done('msg-1', null))
+    emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
   })
 

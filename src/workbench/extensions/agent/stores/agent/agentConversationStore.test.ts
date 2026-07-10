@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import type { TurnId, TokenUsage } from '../../schemas/agentApiSchema'
+import type { TurnId } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
@@ -28,19 +28,11 @@ const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
     type: 'agent_tool_call',
     data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
   })
-const done = (id: string, usage: TokenUsage | null): AgentChatEvent =>
+const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
-    data: { message_id: id, thread_id: 'th', usage }
+    data: { message_id: id, thread_id: 'th', usage: null }
   })
-
-const USAGE: TokenUsage = {
-  input_tokens: 10,
-  output_tokens: 5,
-  total_tokens: 15,
-  cache_read_input_tokens: 0,
-  cache_creation_input_tokens: 0
-}
 
 const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
@@ -87,16 +79,15 @@ describe('useAgentConversationStore', () => {
     expect(store.messages).toHaveLength(1)
   })
 
-  it('settles the turn on done and reports idle, adopting usage tokens', () => {
+  it('settles the turn on done and reports idle', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
     store.ingest(delta('t1', 'answer'))
-    store.ingest(done('t1', USAGE))
+    store.ingest(done('t1'))
 
     expect(store.isStreaming).toBe(false)
     expect(store.status).toBe('idle')
     expect(store.activeTurnId).toBeNull()
-    expect(store.messages[0].tokens).toBe(15)
   })
 
   it('reports thinking vs streaming status', () => {
