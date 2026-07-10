@@ -468,19 +468,21 @@ function createAssetService() {
     if (pendingModelBuckets) return pendingModelBuckets
 
     const requestId = ++modelBucketsRequestId
-    pendingModelBuckets = buildModelBuckets()
-      .then((buckets) => {
+    const walk = async () => {
+      try {
+        const buckets = await buildModelBuckets()
         if (requestId === modelBucketsRequestId) {
           modelBuckets = buckets
         }
         return buckets
-      })
-      .finally(() => {
+      } finally {
         if (requestId === modelBucketsRequestId) {
           pendingModelBuckets = null
         }
-      })
+      }
+    }
 
+    pendingModelBuckets = walk()
     return pendingModelBuckets
   }
 
@@ -519,6 +521,22 @@ function createAssetService() {
       throw new Error(
         `Unable to start asset scan: Server returned ${res.status}`
       )
+    }
+  }
+
+  /**
+   * Subscribes to the backend's scan fast-phase completion broadcast — the
+   * moment newly scanned files' tags and loader paths become queryable. The
+   * wire-level event (`assets.seed.fast_complete`) is owned here; consumers
+   * receive a callback and an unsubscribe function.
+   */
+  function onModelsScanned(callback: () => void | Promise<void>): () => void {
+    const handler = () => {
+      void callback()
+    }
+    api.addCustomEventListener('assets.seed.fast_complete', handler)
+    return () => {
+      api.removeCustomEventListener('assets.seed.fast_complete', handler)
     }
   }
 
@@ -1148,6 +1166,7 @@ function createAssetService() {
   return {
     getAssetModels,
     invalidateModelBuckets,
+    onModelsScanned,
     seedModelAssets,
     isAssetAPIEnabled,
     isAssetBrowserEligible,

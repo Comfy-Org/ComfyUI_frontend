@@ -57,7 +57,9 @@ vi.mock('@/stores/modelToNodeStore', () => {
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    addCustomEventListener: vi.fn(),
+    removeCustomEventListener: vi.fn()
   }
 }))
 
@@ -696,6 +698,31 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe(assetService.onModelsScanned, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
+    const callback = vi.fn()
+
+    const unsubscribe = assetService.onModelsScanned(callback)
+
+    const [eventType, handler] = vi.mocked(api.addCustomEventListener).mock
+      .calls[0]!
+    expect(eventType).toBe('assets.seed.fast_complete')
+
+    handler!(new CustomEvent(eventType))
+    expect(callback).toHaveBeenCalledOnce()
+
+    unsubscribe()
+    expect(api.removeCustomEventListener).toHaveBeenCalledWith(
+      eventType,
+      handler
+    )
   })
 })
 
