@@ -1,4 +1,5 @@
-import { computed, ref } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 
 export interface AllowlistModel {
   id: string
@@ -44,7 +45,50 @@ const MOCK_MODELS: AllowlistModel[] = [
     'Checkpoint'
   ],
   ['blindbox/大概是盲盒', 'LoRA'],
-  ['ControlNet T2I-Adapter Models', 'ControlNet']
+  ['ControlNet T2I-Adapter Models', 'ControlNet'],
+  ['Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_0.6b_ace15', 'Text encoder'],
+  ['Comfy-Org/ace_step_1.5_ComfyUI_files - qwen_1.7b_ace15', 'Text encoder'],
+  ['Comfy-Org/HunyuanVideo_1.5_repackaged - qwen_2.5_vl_7b', 'Text encoder'],
+  ['Comfy-Org/Omnigen2_ComfyUI_repackaged - qwen_2.5_vl_fp16', 'Text encoder'],
+  ['circlestone-labs/Anima - qwen_3_06b_base', 'Text encoder'],
+  ['Comfy-Org/z_image_turbo - qwen_3_4b', 'Text encoder'],
+  ['qwen 3 4b fp4 flux2', 'Text encoder'],
+  [
+    'Comfy-Org/vae-text-encorder-for-flux-klein-9b - qwen_3_8b_fp4mixed',
+    'Text encoder'
+  ],
+  ['Comfy-Org/ace_step_1.5_ComfyUI_files - ace_1.5_vae', 'VAE'],
+  [
+    'TheDenk/cogvideox-2b-controlnet-canny-v1 - diffusion_pytorch_model',
+    'ControlNet'
+  ],
+  ['TheDenk/cogvideox-2b-controlnet-hed-v1 - config', 'ControlNet'],
+  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-ClearRealityV1', 'ONNX'],
+  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharp', 'ONNX'],
+  ['yuvraj108c/ComfyUI-Upscaler-Onnx - 4x-UltraSharpV2_Lite', 'ONNX'],
+  ['2000s Analog Core', 'LoRA'],
+  ['80s Fantasy Movie', 'LoRA'],
+  ["zyd232's Ink Style", 'LoRA'],
+  ['YFG ChatGPT 4o Style [Flux | ZIT]', 'LoRA'],
+  [
+    'Z Image Turbo / Flux - Realistic Water Droplets (Wet Effect) - By Devildonia',
+    'LoRA'
+  ],
+  ['ArchitectureRealMix', 'Checkpoint'],
+  ['AWPainting', 'Checkpoint'],
+  ['CarDos Anime', 'Checkpoint'],
+  [
+    'FireRedTeam/FireRed-Image-Edit-1.1-ComfyUI - FireRed-Image-Edit-1.1-transformer',
+    'Diffusion model'
+  ],
+  [
+    'FireRedTeam/FireRed-Image-Edit-1.0-ComfyUI - FireRed-Image-Edit-1.0-Lightning-8steps-v1.0',
+    'LoRA'
+  ],
+  ['Comfy-Org/ltx-2 - gemma-3-12b-it-abliterated_lora_rank64_bf16', 'LoRA'],
+  ['dx8152/Flux2-Klein-9B-Consistency - Klein-consistency', 'LoRA'],
+  ['fal/virtual-tryoff-lora - virtual-tryoff-lora_comfy', 'LoRA'],
+  ['TheDenk/cogvideox-2b-controlnet-canny-v1 - config', 'ControlNet']
 ].map(([displayName, type], i) => ({
   id: `model-${i}`,
   displayName,
@@ -79,7 +123,7 @@ function compareModels(
   return a[key].localeCompare(b[key]) * dir
 }
 
-export function useModelAllowlist() {
+export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
   const models = ref<AllowlistModel[]>(MOCK_MODELS.map((m) => ({ ...m })))
   const autoEnableNew = ref(true)
 
@@ -99,6 +143,21 @@ export function useModelAllowlist() {
     return filtered.sort((a, b) =>
       compareModels(a, b, sortField.value, sortDirection.value)
     )
+  })
+
+  // The real catalog is ~1,400 models behind a limit/offset endpoint, so the
+  // list is paginated rather than scrolled; page size tracks the dialog height.
+  const page = ref(1)
+  const perPage = computed(() => Math.max(1, toValue(pageSize)))
+  const total = computed(() => filteredModels.value.length)
+  const pagedModels = computed(() => {
+    const start = (page.value - 1) * perPage.value
+    return filteredModels.value.slice(start, start + perPage.value)
+  })
+
+  watch([total, perPage], ([count]) => {
+    const lastPage = Math.max(1, Math.ceil(count / perPage.value))
+    if (page.value > lastPage) page.value = lastPage
   })
 
   const selectedCount = computed(() => selectedIds.value.size)
@@ -165,6 +224,10 @@ export function useModelAllowlist() {
     selectedCount,
     allFilteredSelected,
     filteredModels,
+    page,
+    total,
+    itemsPerPage: perPage,
+    pagedModels,
     toggleSort,
     setEnabled,
     setSelectedEnabled,

@@ -21,6 +21,7 @@
     <BillingStatusBanner />
 
     <div
+      ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
       <Table class="min-h-0 flex-1 scrollbar-gutter-stable px-4">
@@ -61,7 +62,7 @@
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="model in filteredModels"
+            v-for="model in pagedModels"
             :key="model.id"
             :data-state="selectedIds.has(model.id) ? 'selected' : undefined"
             class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
@@ -80,14 +81,20 @@
                 "
               />
             </TableCell>
+            <!-- Middle truncation: the distinctive parts of a display_name sit
+            at both ends (owner at the start, file at the end), so the head
+            truncates and the tail stays pinned. -->
             <TableCell class="text-muted-foreground">
               <span
-                :class="
-                  cn('block max-w-lg truncate', !model.enabled && 'opacity-30')
-                "
+                :class="cn('flex max-w-lg', !model.enabled && 'opacity-30')"
                 :title="model.displayName"
               >
-                {{ model.displayName }}
+                <span class="min-w-0 truncate whitespace-pre">
+                  {{ splitName(model.displayName).head }}
+                </span>
+                <span class="shrink-0 whitespace-pre">
+                  {{ splitName(model.displayName).tail }}
+                </span>
               </span>
             </TableCell>
             <TableCell class="text-muted-foreground">
@@ -123,6 +130,12 @@
     <div
       class="flex h-8 scrollbar-gutter-stable items-center justify-end gap-2 overflow-y-auto pr-6 text-sm text-muted-foreground"
     >
+      <Pagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="itemsPerPage"
+        class="mr-auto"
+      />
       <span>{{ $t('workspacePanel.models.autoEnableLabel') }}</span>
       <span class="grid justify-items-end text-base-foreground">
         <span
@@ -163,11 +176,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import Pagination from '@/components/ui/pagination/Pagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
@@ -177,10 +191,15 @@ import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useModelAllowlist } from '@/platform/workspace/composables/useModelAllowlist'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
+
+const tableContainer = ref<HTMLElement | null>(null)
+const { pageSize } = useAutoPageSize(tableContainer, 1)
+
 const {
   autoEnableNew,
   searchQuery,
@@ -190,6 +209,10 @@ const {
   selectedCount,
   allFilteredSelected,
   filteredModels,
+  page,
+  total,
+  itemsPerPage,
+  pagedModels,
   toggleSort,
   setEnabled,
   setSelectedEnabled,
@@ -197,7 +220,21 @@ const {
   toggleSelection,
   toggleSelectAll,
   clearSelection
-} = useModelAllowlist()
+} = useModelAllowlist(pageSize)
+
+// Head truncates, tail stays whole. HF-style names split at their " - "
+// separator so the filename survives; other long names keep their final
+// characters (version, author) instead of losing them to an end ellipsis.
+function splitName(displayName: string): { head: string; tail: string } {
+  const sep = displayName.lastIndexOf(' - ')
+  if (sep > 0) {
+    return { head: displayName.slice(0, sep), tail: displayName.slice(sep) }
+  }
+  if (displayName.length > 48) {
+    return { head: displayName.slice(0, -16), tail: displayName.slice(-16) }
+  }
+  return { head: displayName, tail: '' }
+}
 
 const hasSelection = computed(() => selectedCount.value > 0)
 
