@@ -2950,7 +2950,7 @@ export class LGraphNode
     // if there is something already plugged there, disconnect
     if (inputNode.inputs[inputIndex]?.link != null) {
       graph.beforeChange()
-      inputNode.disconnectInput(inputIndex, true)
+      inputNode.disconnectInput(inputIndex, true, afterRerouteId)
     }
 
     const maybeCommonType =
@@ -3222,9 +3222,15 @@ export class LGraphNode
    * Disconnect one input
    * @param slot Input slot index, or the name of the slot
    * @param keepReroutes If `true`, reroutes will not be garbage collected.
+   * @param keepFloatingReroute Floating link(s) parented to this reroute are left
+   * intact, so a chain being reconnected is not pruned before its new link exists.
    * @returns true if disconnected successfully or already disconnected, otherwise false
    */
-  disconnectInput(slot: number | string, keepReroutes?: boolean): boolean {
+  disconnectInput(
+    slot: number | string,
+    keepReroutes?: boolean,
+    keepFloatingReroute?: RerouteId
+  ): boolean {
     // Allow search by string
     if (typeof slot === 'string') {
       slot = this.findInputSlot(slot)
@@ -3249,9 +3255,11 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    // Break floating links
+    // Break floating links, except the one whose reroute chain is being
+    // reconnected (its reroute would be pruned before the new link is added).
     if (input._floatingLinks?.size) {
       for (const link of input._floatingLinks) {
+        if (link.parentId === keepFloatingReroute) continue
         graph.removeFloatingLink(link)
       }
     }
