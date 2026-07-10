@@ -130,10 +130,17 @@
         :model-value="autoEnableNew"
         @update:model-value="setAutoEnableNew"
       />
-      <span>
-        <span class="text-base-foreground">
-          {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
-        </span>
+      <!-- The sentence lights up with the toggle: foreground when the default
+      is on, muted when off. -->
+      <span
+        :class="
+          cn(
+            'transition-colors',
+            autoEnableNew ? 'text-base-foreground' : 'text-muted-foreground'
+          )
+        "
+      >
+        {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
         {{ $t('workspacePanel.partnerNodes.autoEnableSubject') }}
       </span>
     </div>
