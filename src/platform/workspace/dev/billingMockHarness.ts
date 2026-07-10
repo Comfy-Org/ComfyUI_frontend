@@ -468,7 +468,18 @@ function pendingInvites(): unknown {
 
 // Partner node governance (V1). Canned list; toggles are optimistic client-side
 // so they hold within a session but reset on reload.
-function partnerNodes(): unknown {
+// Session-stateful: allowlist toggles mutate this so the enforcement scan
+// (disabledPartnerNodesStore) sees governance changes within the session.
+function buildPartnerNodesState(): {
+  auto_enable_new: boolean
+  partner_nodes: Array<{
+    id: string
+    name: string
+    partner: string
+    enabled: boolean
+    last_modified: string | null
+  }>
+} {
   return {
     auto_enable_new: true,
     partner_nodes: [
@@ -1932,8 +1943,61 @@ function partnerNodes(): unknown {
   }
 }
 
+const partnerNodesState = buildPartnerNodesState()
+
+function partnerNodes(): unknown {
+  return partnerNodesState
+}
+
+function patchPartnerNode(body?: string, url?: string): unknown {
+  const id = url?.match(/partner-nodes\/([^/?]+)/)?.[1]
+  const enabled = body
+    ? (JSON.parse(body) as { enabled?: boolean }).enabled
+    : undefined
+  const node = partnerNodesState.partner_nodes.find((n) => n.id === id)
+  if (node && typeof enabled === 'boolean') {
+    node.enabled = enabled
+    node.last_modified = new Date().toISOString()
+  }
+  return {}
+}
+
+function patchPartnerNodesBulk(body?: string): unknown {
+  if (!body) return {}
+  const { node_ids, enabled } = JSON.parse(body) as {
+    node_ids?: string[]
+    enabled?: boolean
+  }
+  if (!node_ids || typeof enabled !== 'boolean') return {}
+  const ids = new Set(node_ids)
+  const now = new Date().toISOString()
+  for (const n of partnerNodesState.partner_nodes) {
+    if (ids.has(n.id)) {
+      n.enabled = enabled
+      n.last_modified = now
+    }
+  }
+  return {}
+}
+
+function putPartnerNodeSettings(body?: string): unknown {
+  if (!body) return {}
+  const { auto_enable_new } = JSON.parse(body) as {
+    auto_enable_new?: boolean
+  }
+  if (typeof auto_enable_new === 'boolean') {
+    partnerNodesState.auto_enable_new = auto_enable_new
+  }
+  return {}
+}
+
 // ---- route table -----------------------------------------------------------
-type Route = [string, RegExp, (body?: string) => unknown, (() => number)?]
+type Route = [
+  string,
+  RegExp,
+  (body?: string, url?: string) => unknown,
+  (() => number)?
+]
 
 function renamedWorkspace(body?: string): unknown {
   const active = (
@@ -1996,9 +2060,9 @@ const ROUTES: Route[] = [
   ['DELETE', /\/api\/workspace\/invites\//, () => ({}), () => 204],
   // Partner node governance (V1)
   ['GET', /\/api\/workspace\/partner-nodes(\?|$)/, partnerNodes],
-  ['PUT', /\/api\/workspace\/partner-nodes\/settings/, () => ({})],
-  ['PATCH', /\/api\/workspace\/partner-nodes\/[^/]+$/, () => ({})],
-  ['PATCH', /\/api\/workspace\/partner-nodes(\?|$)/, () => ({})],
+  ['PUT', /\/api\/workspace\/partner-nodes\/settings/, putPartnerNodeSettings],
+  ['PATCH', /\/api\/workspace\/partner-nodes\/[^/]+$/, patchPartnerNode],
+  ['PATCH', /\/api\/workspace\/partner-nodes(\?|$)/, patchPartnerNodesBulk],
   // PERSONAL legacy
   ['GET', /\/customers\/cloud-subscription-status/, legacyStatus],
   ['GET', /\/customers\/balance/, balance]
@@ -2012,7 +2076,7 @@ interface Hit {
 function lookup(method: string, url: string, body?: string): Hit | null {
   for (const r of ROUTES) {
     if (r[0] === method && r[1].test(url)) {
-      return { body: r[2](body), status: r[3] ? r[3]() : 200 }
+      return { body: r[2](body, url), status: r[3] ? r[3]() : 200 }
     }
   }
   return null
