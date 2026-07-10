@@ -128,14 +128,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     const apiKey = window.__CONFIG__?.posthog_project_token
     if (apiKey) {
       try {
-        // A stale deploy can 404 the posthog-js chunk; one retry rides out
-        // the transient, and a second failure disables telemetry below.
         void import('posthog-js')
-          .catch(() =>
-            new Promise((resolve) => setTimeout(resolve, 1000)).then(
-              () => import('posthog-js')
-            )
-          )
           .then((posthogModule) => {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value?.posthog_config ?? {}
