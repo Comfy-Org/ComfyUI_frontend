@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -127,5 +128,28 @@ describe('SecretFormDialog', () => {
     expect(
       screen.getByPlaceholderText('secrets.jsonFilePlaceholder')
     ).toBeTruthy()
+  })
+
+  it('opens the file dialog when the JSON upload button is activated by keyboard', async () => {
+    mockState.inputType = 'json_file'
+
+    const fileClickSpy = vi
+      .spyOn(HTMLInputElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    const uploadButton = screen.getByRole('button', {
+      name: 'secrets.uploadJsonFile'
+    })
+    expect(uploadButton.tabIndex).not.toBe(-1)
+
+    uploadButton.focus()
+    await userEvent.keyboard('{Enter}')
+
+    expect(fileClickSpy).toHaveBeenCalledOnce()
   })
 })

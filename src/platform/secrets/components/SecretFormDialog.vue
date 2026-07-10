@@ -77,18 +77,23 @@
               {{ $t('secrets.secretValue') }}
             </label>
             <template v-if="selectedInputType === 'json_file'">
-              <label
-                class="flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-secondary-background px-3 py-2 text-sm"
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                class="w-fit"
+                @click="fileInput?.click()"
               >
                 <i class="pi pi-upload" />
                 {{ $t('secrets.uploadJsonFile') }}
-                <input
-                  type="file"
-                  accept="application/json,.json"
-                  class="hidden"
-                  @change="onFileChange"
-                />
-              </label>
+              </Button>
+              <input
+                ref="fileInput"
+                type="file"
+                accept="application/json,.json"
+                class="hidden"
+                @change="onFileChange"
+              />
               <span v-if="fileName" class="text-sm text-muted">
                 {{ fileName }}
               </span>
@@ -148,7 +153,7 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import { computed, useId } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -190,6 +195,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const titleId = useId()
+const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 
 const {
   form,
