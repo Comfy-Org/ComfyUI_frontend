@@ -515,57 +515,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Veuillez limiter votre réponse à {max} caractères.",
         "chooseAnOption": "Veuillez choisir une option.",
         "describeAnswer": "Veuillez décrire votre réponse.",
         "selectAtLeastOne": "Veuillez sélectionner au moins une option."
       },
       "intro": "Aidez-nous à personnaliser votre expérience ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Utilisateur avancé (workflows personnalisés)",
-          "basics": "À l'aise avec les bases",
-          "expert": "Expert (j'aide les autres)",
-          "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
-          "starting": "Je débute (je suis des tutoriels)"
+        "experience": {
+          "new": "Nouveau sur ComfyUI",
+          "pro": "Utilisateur avancé",
+          "some": "Je me débrouille"
+        },
+        "focus": {
+          "custom_nodes": "Nœuds personnalisés",
+          "pipelines": "Pipelines automatisés",
+          "products": "Produits pour les autres"
         },
         "intent": {
-          "3d_game": "Assets 3D / assets de jeu",
-          "api": "Points de terminaison API pour exécuter des workflows",
-          "apps": "Applications simplifiées à partir de workflows",
-          "audio": "Audio / musique",
-          "custom_nodes": "Nœuds personnalisés",
+          "apps_api": "Applications et API",
+          "exploring": "Je découvre simplement",
           "images": "Images",
-          "not_sure": "Pas sûr",
-          "videos": "Vidéos",
+          "other": "Autre chose",
+          "otherPlaceholder": "Qu'aimeriez-vous créer ?",
+          "video": "Vidéo",
           "workflows": "Workflows ou pipelines personnalisés"
         },
         "source": {
-          "conference": "Conférence ou événement",
-          "discord": "Discord / communauté",
+          "community": "Une communauté ou un forum",
           "friend": "Ami ou collègue",
-          "github": "GitHub",
+          "other": "Autre",
+          "otherPlaceholder": "Où nous avez-vous trouvés ?",
+          "search": "Google / recherche",
+          "social": "Réseaux sociaux"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Newsletter ou blog",
-          "other": "Autre",
           "reddit": "Reddit",
-          "search": "Google / recherche",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Éducation (étudiant ou enseignant)",
-          "personal": "Usage personnel",
-          "work": "Travail"
         }
       },
+      "otherPlaceholder": "Dites-nous en plus",
       "placeholder": "Texte indicatif des questions de l'enquête",
-      "steps": {
-        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "intent": "Que souhaitez-vous créer avec ComfyUI ?",
-        "source": "Où avez-vous entendu parler de ComfyUI ?",
-        "usage": "Comment prévoyez-vous d'utiliser ComfyUI ?"
-      },
       "title": "Enquête Cloud"
     }
   },
@@ -578,10 +573,11 @@
   "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
   "cloudStart_title": "créez en quelques secondes",
   "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
-  "cloudSurvey_steps_familiarity": "Quelle est votre familiarité avec ComfyUI ?",
+  "cloudSurvey_steps_experience": "Quel est votre niveau de connaissance de ComfyUI ?",
+  "cloudSurvey_steps_focus": "Qu'êtes-vous en train de créer ?",
   "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
   "cloudSurvey_steps_source": "Où avez-vous entendu parler de ComfyUI ?",
-  "cloudSurvey_steps_usage": "Comment prévoyez-vous d'utiliser ComfyUI ?",
+  "cloudSurvey_steps_source_social": "Quelle plateforme ?",
   "cloudWaitlist_contactLink": "ici",
   "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
   "color": {

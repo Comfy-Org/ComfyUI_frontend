@@ -515,57 +515,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Lütfen cevabınızı {max} karakterin altında tutun.",
         "chooseAnOption": "Lütfen bir seçenek seçin.",
         "describeAnswer": "Lütfen cevabınızı açıklayın.",
         "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
       },
       "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
       "options": {
-        "familiarity": {
-          "advanced": "İleri seviye kullanıcı (özel iş akışları)",
-          "basics": "Temel bilgilerde rahatım",
-          "expert": "Uzman (başkalarına yardım ediyorum)",
-          "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
-          "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)"
+        "experience": {
+          "new": "ComfyUI'ye yeni",
+          "pro": "Güçlü bir kullanıcıyım",
+          "some": "Biraz biliyorum"
+        },
+        "focus": {
+          "custom_nodes": "Özel node'lar",
+          "pipelines": "Otomatikleştirilmiş pipeline'lar",
+          "products": "Başkaları için ürünler"
         },
         "intent": {
-          "3d_game": "3D varlıklar / oyun varlıkları",
-          "api": "İş akışlarını çalıştırmak için API uç noktaları",
-          "apps": "İş akışlarından basitleştirilmiş uygulamalar",
-          "audio": "Ses / müzik",
-          "custom_nodes": "Özel node'lar",
+          "apps_api": "Uygulamalar ve API'ler",
+          "exploring": "Sadece keşfediyorum",
           "images": "Görseller",
-          "not_sure": "Emin değilim",
-          "videos": "Videolar",
+          "other": "Başka bir şey",
+          "otherPlaceholder": "Ne yapmak istiyorsunuz?",
+          "video": "Video",
           "workflows": "Özel iş akışları veya boru hatları"
         },
         "source": {
-          "conference": "Konferans veya etkinlik",
-          "discord": "Discord / topluluk",
+          "community": "Bir topluluk veya forum",
           "friend": "Arkadaş veya iş arkadaşı",
-          "github": "GitHub",
+          "other": "Diğer",
+          "otherPlaceholder": "Bizi nereden buldunuz?",
+          "search": "Google / arama",
+          "social": "Sosyal medya"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Bülten veya blog",
-          "other": "Diğer",
           "reddit": "Reddit",
-          "search": "Google / arama",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Eğitim (öğrenci veya eğitmen)",
-          "personal": "Kişisel kullanım",
-          "work": "İş"
         }
       },
+      "otherPlaceholder": "Daha fazla bilgi verin",
       "placeholder": "Anket soruları yer tutucusu",
-      "steps": {
-        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
-        "source": "ComfyUI'yi nereden duydunuz?",
-        "usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?"
-      },
       "title": "Bulut Anketi"
     }
   },
@@ -578,10 +573,11 @@
   "cloudStart_learnAboutButton": "Cloud hakkında bilgi edinin",
   "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
   "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
-  "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
+  "cloudSurvey_steps_experience": "ComfyUI'yi ne kadar iyi biliyorsunuz?",
+  "cloudSurvey_steps_focus": "Ne inşa ediyorsunuz?",
   "cloudSurvey_steps_intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
   "cloudSurvey_steps_source": "ComfyUI'yi nereden duydunuz?",
-  "cloudSurvey_steps_usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?",
+  "cloudSurvey_steps_source_social": "Hangi platform?",
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {

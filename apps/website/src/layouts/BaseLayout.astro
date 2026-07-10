@@ -14,8 +14,10 @@ import {
   createBannerVersion,
   evaluateBannerVisibility
 } from '../utils/banner'
-import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
@@ -23,6 +25,10 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
 }
 
 const {
@@ -31,15 +37,21 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
-const siteBase = Astro.site ?? 'https://comfy.org'
-const canonicalURL = new URL(Astro.url.pathname, siteBase)
-const ogImageURL = new URL(ogImage, siteBase)
-const rawLocale = Astro.currentLocale ?? 'en'
-const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const canonicalURL = new URL(url)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
@@ -58,28 +70,21 @@ const bannerVersion = createBannerVersion(bannerData, locale)
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Comfy Org',
-  url: 'https://comfy.org',
-  logo: 'https://comfy.org/icons/logomark.svg',
-  sameAs: [
-    'https://github.com/comfyanonymous/ComfyUI',
-    'https://discord.gg/comfyorg',
-    'https://x.com/comaboratory',
-    'https://reddit.com/r/comfyui',
-    'https://linkedin.com/company/comfyorg',
-    'https://instagram.com/comfyorg',
-  ],
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Comfy',
-  url: 'https://comfy.org',
-}
+const structuredData = noindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId,
+      },
+      ...(extraJsonLd ?? []),
+    )
 ---
 
 <!doctype html>
@@ -121,10 +126,7 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
-    <slot name="head" />
-
+    {structuredData && <JsonLdGraph graph={structuredData} />}
     <slot name="head" />
 
     <!-- Google Tag Manager -->
@@ -144,7 +146,6 @@ const websiteJsonLd = {
     )}
 
     <ClientRouter />
-    <slot name="head" />
 
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
     {bannerVisible && (
