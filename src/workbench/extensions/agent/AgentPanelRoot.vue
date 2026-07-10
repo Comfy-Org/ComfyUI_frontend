@@ -15,7 +15,6 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -42,16 +41,13 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 const { t } = useI18n()
 const toast = useToastStore()
-const workspaceAuthStore = useWorkspaceAuthStore()
 
 const { userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-const rest = createAgentRestClient({
-  getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
-})
+const rest = createAgentRestClient()
 
 // Rides the api's own typed /ws dispatch (which survives socket reconnects), so the
 // panel is not left deaf after a reconnect and each frame is JSON-parsed only once.

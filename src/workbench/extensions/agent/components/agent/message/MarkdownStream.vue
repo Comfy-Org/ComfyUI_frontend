@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { marked } from 'marked'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -22,34 +23,32 @@ interface CodeSegment {
 }
 type Segment = ProseSegment | CodeSegment
 
-// Fenced code blocks are pulled out so they render as shiki-highlighted CodeBlocks with
-// copy chrome; the prose between them goes through the sanitizing markdown renderer. The
-// opening fence must start a line (lookbehind for start-or-newline) so an inline
-// triple-backtick span mid-sentence is left to the markdown renderer, not misparsed as a
-// block. NOTE(migration): 4+ backtick fences still need a marked.lexer-based split.
-const FENCE = /(?<=^|\n)```([\w-]*)\n([\s\S]*?)```/g
-
+// Fenced code blocks are pulled out via marked's lexer (which handles 4+
+// backtick fences and inline backtick spans correctly) so they render as
+// framed CodeBlocks with copy chrome; the prose between them goes through the
+// sanitizing markdown renderer. Indented code stays prose so it keeps its
+// inline rendering rather than being promoted to a framed block.
 const segments = computed<Segment[]>(() => {
   const out: Segment[] = []
-  let last = 0
-  for (const match of text.matchAll(FENCE)) {
-    const idx = match.index ?? 0
-    if (idx > last) {
+  let prose = ''
+  const flushProse = () => {
+    if (!prose) return
+    out.push({ type: 'prose', html: renderMarkdownToHtml(prose) })
+    prose = ''
+  }
+  for (const token of marked.lexer(text)) {
+    if (token.type === 'code' && token.codeBlockStyle !== 'indented') {
+      flushProse()
       out.push({
-        type: 'prose',
-        html: renderMarkdownToHtml(text.slice(last, idx))
+        type: 'code',
+        code: token.text,
+        lang: token.lang?.split(/\s+/)[0] || 'text'
       })
+    } else {
+      prose += token.raw
     }
-    out.push({
-      type: 'code',
-      code: match[2].replace(/\n$/, ''),
-      lang: match[1] || 'text'
-    })
-    last = idx + match[0].length
   }
-  if (last < text.length) {
-    out.push({ type: 'prose', html: renderMarkdownToHtml(text.slice(last)) })
-  }
+  flushProse()
   return out
 })
 

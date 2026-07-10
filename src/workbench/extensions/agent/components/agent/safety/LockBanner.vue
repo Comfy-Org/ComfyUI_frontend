@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '../../ui/Button.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { LockState } from './safetyTypes'
 
 // Shows while the agent holds (or is claiming) the canvas lock. Take control is always
@@ -23,7 +23,12 @@ const show = computed(() => state === 'LOCKED' || state === 'LOCK_PENDING')
     <span class="text-agent-fg-muted flex-1">{{
       t('agent.agentEditing')
     }}</span>
-    <Button size="sm" variant="outline" @click="emit('takeControl')">
+    <Button
+      size="md"
+      variant="textonly"
+      class="border-agent-border focus-visible:ring-agent-accent rounded-xl border border-solid px-3 text-sm focus-visible:ring-2"
+      @click="emit('takeControl')"
+    >
       {{ t('agent.takeControl') }}
     </Button>
   </div>

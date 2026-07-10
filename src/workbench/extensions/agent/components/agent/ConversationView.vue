@@ -3,7 +3,6 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ScrollArea from '../ui/ScrollArea.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 
 import AgentMessage from './message/AgentMessage.vue'
@@ -54,24 +53,26 @@ watch(
 
 <template>
   <div class="relative h-full">
-    <ScrollArea class="h-full" viewport-class="mx-auto max-w-[640px] p-4">
-      <div class="flex flex-col gap-4">
-        <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
-          <UserMessage
-            v-if="entry.role === 'user'"
-            :text="entry.text"
-            :attachments="entry.attachments"
-            :tags="entry.tags"
-          />
-          <AgentMessage
-            v-else
-            :message="entry"
-            @feedback="emit('feedback', entry.id, $event)"
-          />
-        </template>
-        <div ref="bottom" />
+    <div class="h-full overflow-y-auto">
+      <div class="mx-auto max-w-[640px] p-4">
+        <div class="flex flex-col gap-4">
+          <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
+            <UserMessage
+              v-if="entry.role === 'user'"
+              :text="entry.text"
+              :attachments="entry.attachments"
+              :tags="entry.tags"
+            />
+            <AgentMessage
+              v-else
+              :message="entry"
+              @feedback="emit('feedback', entry.id, $event)"
+            />
+          </template>
+          <div ref="bottom" />
+        </div>
       </div>
-    </ScrollArea>
+    </div>
 
     <button
       v-if="!atBottom"

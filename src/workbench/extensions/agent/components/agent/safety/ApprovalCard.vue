@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '../../ui/Button.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ApprovalCard } from './safetyTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -39,12 +39,19 @@ function answer(approved: boolean): void {
     <p class="text-agent-fg-subtle font-mono text-xs">{{ card.tool }}</p>
 
     <div v-if="card.status === 'open'" class="flex gap-2">
-      <Button size="sm" :disabled="answered" @click="answer(true)">
+      <Button
+        variant="primary"
+        size="md"
+        class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
+        :disabled="answered"
+        @click="answer(true)"
+      >
         {{ t('agent.approve') }}
       </Button>
       <Button
-        size="sm"
-        variant="outline"
+        size="md"
+        variant="textonly"
+        class="border-agent-border focus-visible:ring-agent-accent rounded-xl border border-solid px-3 text-sm focus-visible:ring-2"
         :disabled="answered"
         @click="answer(false)"
       >

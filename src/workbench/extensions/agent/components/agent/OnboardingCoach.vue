@@ -3,7 +3,7 @@ import { useWindowSize } from '@vueuse/core'
 import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '../ui/Button.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import { useOnboarding } from '../../composables/agent/useOnboarding'
 
@@ -63,10 +63,19 @@ watchEffect(
       <p class="text-sm font-semibold">{{ currentStep.title }}</p>
       <p class="text-agent-fg-muted mt-1 text-xs">{{ currentStep.body }}</p>
       <div class="mt-3 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" @click="skip">{{
-          t('agent.skip')
-        }}</Button>
-        <Button size="sm" @click="next">
+        <Button
+          variant="muted-textonly"
+          size="md"
+          class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
+          @click="skip"
+          >{{ t('agent.skip') }}</Button
+        >
+        <Button
+          variant="primary"
+          size="md"
+          class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
+          @click="next"
+        >
           {{ isLast ? t('agent.gotIt') : t('agent.next') }}
         </Button>
       </div>
