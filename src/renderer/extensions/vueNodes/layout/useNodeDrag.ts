@@ -33,6 +33,7 @@ function useNodeDragIndividual() {
   const canvasStore = useCanvasStore()
 
   // Drag state
+  let activeDragNodeId: NodeId | null = null
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
@@ -49,6 +50,7 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
+    activeDragNodeId = nodeId
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }
@@ -193,6 +195,7 @@ function useNodeDragIndividual() {
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
+    const activeNodeId = activeDragNodeId ?? nodeId
     if (!dragStartPos || !dragStartMouse) {
       return
     }
@@ -208,21 +211,22 @@ function useNodeDragIndividual() {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    startAutoPan(event, nodeId)
+    startAutoPan(event, activeNodeId)
 
     rafId = requestAnimationFrame(() => {
       rafId = null
-      updateNodePositions(nodeId)
+      updateNodePositions(activeNodeId)
     })
   }
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
+    const activeNodeId = activeDragNodeId ?? nodeId
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    if (shouldSnap(event) && activeNodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+      const currentLayout = toValue(layoutStore.getNodeLayoutRef(activeNodeId))
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
@@ -230,7 +234,7 @@ function useNodeDragIndividual() {
         // Only add update if position actually changed
         if (snappedPos.x !== currentPos.x || snappedPos.y !== currentPos.y) {
           boundsUpdates.push({
-            nodeId,
+            nodeId: activeNodeId,
             bounds: {
               x: snappedPos.x,
               y: snappedPos.y,
@@ -282,6 +286,7 @@ function useNodeDragIndividual() {
   }
 
   function resetDragState() {
+    activeDragNodeId = null
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null

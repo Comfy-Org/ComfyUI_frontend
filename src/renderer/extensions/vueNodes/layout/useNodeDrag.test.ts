@@ -237,6 +237,26 @@ describe('useNodeDrag', () => {
       }
     ])
   })
+
+  it('moves active node even when drag event targets a different node', () => {
+    const node2 = toNodeId('2')
+    testState.selectedNodeIds.value = new Set([node2])
+    testState.nodeLayouts.set('2', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag(pointerEvent(5, 10), node2)
+    handleDrag(pointerEvent(25, 30), node1)
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
+    expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
+      { nodeId: '2', position: { x: 70, y: 100 } }
+    ])
+  })
 })
 
 describe('useNodeDrag auto-pan', () => {
