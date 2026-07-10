@@ -12,7 +12,7 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // dismiss itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"], [aria-haspopup="menu"], [aria-haspopup="dialog"], [aria-haspopup="listbox"]'
 
 const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
 
