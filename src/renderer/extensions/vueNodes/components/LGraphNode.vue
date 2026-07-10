@@ -240,7 +240,6 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -294,7 +293,6 @@ import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeData
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -519,7 +517,7 @@ const baseResizeHandleClasses =
 
 const mutations = useLayoutMutations()
 
-const { isResizing, startResize } = useNodeResize((result, element) => {
+const { startResize } = useNodeResize((result, element) => {
   if (isCollapsed.value) return
 
   // Clamp width to minimum to avoid conflicts with CSS min-width
@@ -535,10 +533,6 @@ const { isResizing, startResize } = useNodeResize((result, element) => {
     mutations.moveNode(nodeData.id, result.position)
   }
 })
-whenever(
-  () => !isResizing.value,
-  () => useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
-)
 
 const handleResizePointerDown = (
   event: PointerEvent,
