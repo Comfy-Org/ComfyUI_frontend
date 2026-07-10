@@ -20,7 +20,7 @@
           </span>
         </div>
         <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
-          <Button variant="secondary" size="lg">
+          <Button variant="secondary" size="lg" @click="manageSubscription">
             {{ $t('workspacePanel.overview.managePayment') }}
           </Button>
           <Button
@@ -61,10 +61,15 @@
           </span>
         </div>
         <div v-if="canManageBilling" class="flex shrink-0 items-center gap-2">
-          <Button variant="secondary" size="lg">
+          <Button variant="secondary" size="lg" @click="manageSubscription">
             {{ $t('workspacePanel.overview.managePayment') }}
           </Button>
-          <Button v-if="isOriginalOwner" variant="secondary" size="lg">
+          <Button
+            v-if="isOriginalOwner"
+            variant="secondary"
+            size="lg"
+            @click="handleChangePlan"
+          >
             {{ $t('workspacePanel.overview.changePlan') }}
           </Button>
           <DropdownMenu
@@ -248,6 +253,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { buildSupportUrl } from '@/platform/support/config'
@@ -275,8 +281,21 @@ const {
 // Members can't manage or view billing details — only the credit balance. Gates
 // the plan price, payment/plan actions, snapshot, next invoice, and auto-reload.
 const canManageBilling = computed(() => permissions.value.canManageSubscription)
-const { isFreeTier, isPaused, subscription } = useBillingContext()
+const {
+  isFreeTier,
+  isPaused,
+  subscription,
+  manageSubscription,
+  showSubscriptionDialog
+} = useBillingContext()
 const { showCancelSubscriptionDialog } = useDialogService()
+
+const { showPricingTable } = useSubscriptionDialog()
+
+function handleChangePlan() {
+  if (isFreeTier.value) showPricingTable({ reason: 'settings_billing_panel' })
+  else showSubscriptionDialog({ reason: 'settings_billing_panel' })
+}
 
 // A team (or enterprise) workspace whose plan has lapsed shows the reactivation
 // state in place of the live plan header, snapshot, and auto-reload.
