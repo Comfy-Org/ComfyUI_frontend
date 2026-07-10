@@ -25,6 +25,7 @@
     <BillingStatusBanner />
 
     <div
+      ref="tableContainer"
       class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
     >
       <Table class="min-h-0 flex-1 scrollbar-gutter-stable px-4">
@@ -34,9 +35,9 @@
           >
             <TableHead class="w-6">
               <Checkbox
-                :model-value="allFilteredSelected"
+                :model-value="allPageSelected"
                 :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-                @update:model-value="toggleSelectAll"
+                @update:model-value="toggleSelectAllPage"
               />
             </TableHead>
             <TableHead :aria-sort="ariaSort('name')">
@@ -65,7 +66,7 @@
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="node in filteredNodes"
+            v-for="node in pagedNodes"
             :key="node.id"
             :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
             class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
@@ -143,6 +144,12 @@
         {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
         {{ $t('workspacePanel.partnerNodes.autoEnableSubject') }}
       </span>
+      <Pagination
+        v-model:page="page"
+        :total="total"
+        :items-per-page="itemsPerPage"
+        class="ml-auto"
+      />
     </div>
 
     <!-- Bulk selection toolbar: overlaid so toggling it doesn't reflow the panel -->
@@ -169,12 +176,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -184,12 +192,17 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
+import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { search } = defineProps<{ search: string }>()
 
 const { t } = useI18n()
+
+const tableContainer = ref<HTMLElement | null>(null)
+const { pageSize } = useAutoPageSize(tableContainer, 1)
+
 const {
   autoEnableNew,
   searchQuery,
@@ -197,8 +210,12 @@ const {
   sortDirection,
   selectedIds,
   selectedCount,
-  allFilteredSelected,
+  allPageSelected,
   filteredNodes,
+  page,
+  total,
+  itemsPerPage,
+  pagedNodes,
   fetch,
   toggleSort,
   setEnabled,
@@ -206,9 +223,9 @@ const {
   setAllFilteredEnabled,
   setAutoEnableNew,
   toggleSelection,
-  toggleSelectAll,
+  toggleSelectAllPage,
   clearSelection
-} = usePartnerNodes()
+} = usePartnerNodes(pageSize)
 
 // Search lives in the Allowlist tab row (shared with the Models tab).
 watch(
