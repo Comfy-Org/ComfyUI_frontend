@@ -98,16 +98,13 @@ export const formatClockTime = (
   clockPreferenceLocale?: string
 ): string => {
   const d = new Date(ts)
-  const hourCycle = new Intl.DateTimeFormat(clockPreferenceLocale, {
+  const { hourCycle } = new Intl.DateTimeFormat(clockPreferenceLocale, {
     hour: 'numeric'
-  }).resolvedOptions().hourCycle
-  const options: Intl.DateTimeFormatOptions = {
+  }).resolvedOptions()
+  return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit'
-  }
-  if (hourCycle !== undefined) {
-    options.hourCycle = hourCycle
-  }
-  return new Intl.DateTimeFormat(locale, options).format(d)
+    second: '2-digit',
+    hourCycle
+  }).format(d)
 }

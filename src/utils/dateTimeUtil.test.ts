@@ -212,19 +212,13 @@ describe('formatShortMonthDay', () => {
 describe('formatClockTime', () => {
   it('formats time with hours, minutes, and seconds', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
-    const hourCycle = new Intl.DateTimeFormat(undefined, {
+    const { hourCycle } = new Intl.DateTimeFormat(undefined, {
       hour: 'numeric'
-    }).resolvedOptions().hourCycle
-    const options = {
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle
-    } satisfies Intl.DateTimeFormatOptions
-    const expected = new Intl.DateTimeFormat('en-GB', options).format(ts)
-    const result = formatClockTime(ts, 'en-GB')
+    }).resolvedOptions()
+    const expected =
+      hourCycle === 'h11' || hourCycle === 'h12' ? '2:05:06 pm' : '14:05:06'
 
-    expect(result).toBe(expected)
+    expect(formatClockTime(ts, 'en-GB')).toBe(expected)
   })
 
   it('uses app locale with explicit 12-hour preference', () => {
