@@ -1089,6 +1089,7 @@
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
+    "runWorkflowDisabledNodes": "Workflows with disabled nodes cannot be run. Check the Errors tab for details.",
     "run": "Run",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
@@ -4074,6 +4075,12 @@
     "noErrors": "No errors",
     "errorsDetected": "Error detected | Errors detected",
     "resolveBeforeRun": "Resolve before running the workflow",
+    "disabledNodes": {
+      "title": "Disabled node | Disabled nodes",
+      "message": "This node has been disabled by your team admin. Use a different node. | These nodes have been disabled by your team admin. Use different nodes.",
+      "toastDetail": "This node has been disabled by your team admin. | These nodes have been disabled by your team admin.",
+      "viewDetails": "View details"
+    },
     "expand": "Expand",
     "collapse": "Collapse",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",

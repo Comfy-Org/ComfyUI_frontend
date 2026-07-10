@@ -266,6 +266,13 @@
               :missing-media-groups="missingMediaGroups"
               @locate-node="handleLocateAssetNode"
             />
+
+            <!-- Admin-disabled partner nodes -->
+            <DisabledNodesCard
+              v-if="group.type === 'disabled_node'"
+              :offenders="filteredDisabledNodes"
+              @locate-node="handleLocateAssetNode"
+            />
           </ErrorCardSection>
         </TransitionGroup>
       </div>
@@ -327,6 +334,7 @@ import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import DisabledNodesCard from '@/platform/workspace/components/errors/DisabledNodesCard.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -431,6 +439,7 @@ const {
   missingPackGroups,
   filteredMissingModelGroups: missingModelGroups,
   filteredMissingMediaGroups: missingMediaGroups,
+  filteredDisabledNodes,
   swapNodeGroups
 } = useErrorGroups(searchQuery)
 

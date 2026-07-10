@@ -22,6 +22,13 @@ vi.mock('@/platform/workspace/api/partnerNodesApi', () => ({
   }
 }))
 
+const mockApplyGovernanceChange = vi.fn()
+vi.mock('@/platform/workspace/stores/disabledPartnerNodesStore', () => ({
+  useDisabledPartnerNodesStore: () => ({
+    applyGovernanceChange: mockApplyGovernanceChange
+  })
+}))
+
 function node(overrides: Partial<PartnerNode> = {}): PartnerNode {
   return {
     id: 'pn-1',

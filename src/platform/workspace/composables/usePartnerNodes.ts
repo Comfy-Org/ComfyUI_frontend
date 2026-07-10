@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PartnerNode } from '@/platform/workspace/api/partnerNodesApi'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 
 export interface PartnerGroup {
@@ -161,6 +162,7 @@ export function usePartnerNodes() {
     applyEnabled([node.id], enabled)
     try {
       await partnerNodesApi.setEnabled(node.id, enabled)
+      void useDisabledPartnerNodesStore().applyGovernanceChange()
     } catch {
       nodes.value = nodes.value.map((n) =>
         n.id === node.id
@@ -186,6 +188,7 @@ export function usePartnerNodes() {
     applyEnabled(ids, enabled)
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
+      void useDisabledPartnerNodesStore().applyGovernanceChange()
       // Clear on success: a kept selection can hide inside collapsed groups
       // and silently ride along with the next bulk toggle. On failure the
       // selection survives for a retry.
@@ -213,6 +216,7 @@ export function usePartnerNodes() {
     applyEnabled(ids, enabled)
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
+      void useDisabledPartnerNodesStore().applyGovernanceChange()
     } catch {
       nodes.value = nodes.value.map((n) =>
         previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n

@@ -45,3 +45,6 @@ export type ErrorGroup =
   | (ErrorGroupBase & {
       type: 'missing_media'
     })
+  | (ErrorGroupBase & {
+      type: 'disabled_node'
+    })
