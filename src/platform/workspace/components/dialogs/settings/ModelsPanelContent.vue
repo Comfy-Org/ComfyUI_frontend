@@ -1,22 +1,12 @@
 <template>
   <div class="@container relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
-    <div
-      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
-    >
-      <span class="min-w-0 flex-1 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.models.descriptionLead') }}
-        <span class="font-semibold text-base-foreground">
-          {{ $t('workspacePanel.models.descriptionImport') }}
-        </span>
-        {{ $t('workspacePanel.models.descriptionWorkflows') }}
+    <span class="text-sm text-muted-foreground">
+      {{ $t('workspacePanel.models.descriptionLead') }}
+      <span class="font-semibold text-base-foreground">
+        {{ $t('workspacePanel.models.descriptionImport') }}
       </span>
-      <SearchInput
-        v-model="searchQuery"
-        :placeholder="$t('workspacePanel.models.searchPlaceholder')"
-        size="lg"
-        class="w-full @2xl:w-64"
-      />
-    </div>
+      {{ $t('workspacePanel.models.descriptionWorkflows') }}
+    </span>
 
     <BillingStatusBanner />
 
@@ -176,13 +166,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Pagination from '@/components/ui/pagination/Pagination.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -194,6 +183,8 @@ import BillingStatusBanner from '@/platform/workspace/components/dialogs/setting
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { useModelAllowlist } from '@/platform/workspace/composables/useModelAllowlist'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { search } = defineProps<{ search: string }>()
 
 const { t } = useI18n()
 
@@ -221,6 +212,14 @@ const {
   toggleSelectAll,
   clearSelection
 } = useModelAllowlist(pageSize)
+
+// Search lives in the Allowlist tab row (shared with Partner nodes).
+watch(
+  () => search,
+  (value) => {
+    searchQuery.value = value
+  }
+)
 
 // Head truncates, tail stays whole. HF-style names split at their " - "
 // separator so the filename survives; other long names keep their final

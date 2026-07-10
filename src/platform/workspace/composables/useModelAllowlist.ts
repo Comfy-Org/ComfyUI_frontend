@@ -160,6 +160,12 @@ export function useModelAllowlist(pageSize: MaybeRefOrGetter<number>) {
     if (page.value > lastPage) page.value = lastPage
   })
 
+  // A new query re-queries from the start — matching the eventual offset-0
+  // server request — rather than stranding the user mid-way into new results.
+  watch(searchQuery, () => {
+    page.value = 1
+  })
+
   const selectedCount = computed(() => selectedIds.value.size)
   const allFilteredSelected = computed(
     () =>

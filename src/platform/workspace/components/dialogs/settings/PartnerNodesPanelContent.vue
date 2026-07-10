@@ -1,18 +1,8 @@
 <template>
   <div class="@container relative flex min-h-0 flex-1 flex-col gap-4 pb-6">
-    <div
-      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
-    >
-      <span class="min-w-0 flex-1 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.partnerNodes.description') }}
-      </span>
-      <SearchInput
-        v-model="searchQuery"
-        :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-        size="lg"
-        class="w-full @2xl:w-64"
-      />
-    </div>
+    <span class="text-sm text-muted-foreground">
+      {{ $t('workspacePanel.partnerNodes.description') }}
+    </span>
 
     <BillingStatusBanner />
 
@@ -168,12 +158,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SelectionBar from '@/components/common/SelectionBar.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -185,6 +174,8 @@ import BillingStatusBanner from '@/platform/workspace/components/dialogs/setting
 import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { search } = defineProps<{ search: string }>()
 
 const { t } = useI18n()
 const {
@@ -205,6 +196,14 @@ const {
   toggleSelectAll,
   clearSelection
 } = usePartnerNodes()
+
+// Search lives in the Allowlist tab row (shared with the Models tab).
+watch(
+  () => search,
+  (value) => {
+    searchQuery.value = value
+  }
+)
 
 const hasSelection = computed(() => selectedCount.value > 0)
 
