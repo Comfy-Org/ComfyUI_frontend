@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -242,12 +243,13 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
 // Agent writes autosave: re-baseline the tracker to the canvas as loaded (a
 // minted tab's stored baseline carries an id the canvas never adopts, so the
 // next capture would flip isModified and every following patch would raise
-// the conflict dialog). A manual edit after this re-arms the dialog as before.
-// The serialized canvas re-enters through the schema to type it honestly.
-async function autosaveAppliedDraft(tab: ComfyWorkflow): Promise<void> {
+// the conflict dialog). The baseline must be the RAW serialization, not the
+// schema-normalized form: captures compare raw serialize() output via strict
+// graphEqual, so a normalized baseline would re-flip isModified unedited.
+function autosaveAppliedDraft(tab: ComfyWorkflow): void {
   const canvasState = app.graph?.serialize()
-  const baseline = canvasState ? await validateComfyWorkflow(canvasState) : null
-  if (baseline) tab.changeTracker?.reset(baseline)
+  if (!canvasState) return
+  tab.changeTracker?.reset(canvasState as unknown as ComfyWorkflowJSON)
   tab.isModified = false
 }
 
@@ -278,11 +280,11 @@ async function loadDraft(
       )
       if (opened) {
         bindingStore.bind(workflowId, opened.path)
-        await autosaveAppliedDraft(opened)
+        autosaveAppliedDraft(opened)
       }
       return
     }
-    await autosaveAppliedDraft(tab)
+    autosaveAppliedDraft(tab)
   } catch (error) {
     surfaceDraftApplyFailure(
       error instanceof Error ? error.message : String(error)
@@ -491,8 +493,10 @@ function onAttach(): void {
 }
 
 function onMentionPick(node: SelectedNode): void {
-  useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+  const stagedBefore = selectionTags.value.length
   addSelectionTag(node)
+  if (selectionTags.value.length > stagedBefore)
+    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
 
 function onClosePanel(): void {

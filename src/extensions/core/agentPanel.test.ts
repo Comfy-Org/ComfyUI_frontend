@@ -84,6 +84,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener!()
 
     expect(mocks.agentStore.enabled).toBe(false)
-    expect(mocks.agentStore.close).toHaveBeenCalled()
+    expect(mocks.agentStore.close).toHaveBeenCalledWith('flag_disabled')
   })
 })

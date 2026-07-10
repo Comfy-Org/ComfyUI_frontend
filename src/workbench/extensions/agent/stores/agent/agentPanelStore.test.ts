@@ -52,6 +52,17 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('reports a null duration when the panel was opened by a direct state write', () => {
+    const store = useAgentPanelStore()
+
+    store.isOpen = true
+    store.close('close_button')
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'close_button',
+      open_duration_ms: null
+    })
+  })
+
   it('ignores a close while already closed so flag re-syncs emit nothing', () => {
     const store = useAgentPanelStore()
 
