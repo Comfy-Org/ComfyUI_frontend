@@ -3,22 +3,33 @@
     :class="
       cn(
         '@container flex min-h-0 flex-1 flex-col gap-4',
-        // The panel runs flush to the bottom edge (BaseModalLayout 'flush');
-        // Invoices keeps its prior bottom gap, Overview doesn't.
+        // The panel runs flush to the bottom edge (BaseModalLayout 'flush'); the
+        // Activity/Invoices tables keep their prior bottom gap, Overview doesn't.
         activeView !== 'overview' && 'pb-6'
       )
     "
   >
-    <div class="flex w-full items-center gap-2">
-      <Button
-        v-for="tab in tabs"
-        :key="tab.key"
-        :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
+    <div
+      class="flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <Button
+          v-for="tab in tabs"
+          :key="tab.key"
+          :variant="activeView === tab.key ? 'secondary' : 'muted-textonly'"
+          size="lg"
+          @click="setView(tab.key)"
+        >
+          {{ tab.label }}
+        </Button>
+      </div>
+      <SearchInput
+        v-if="activeView === 'activity'"
+        v-model="searchQuery"
+        :placeholder="$t('g.search')"
         size="lg"
-        @click="setView(tab.key)"
-      >
-        {{ tab.label }}
-      </Button>
+        class="w-full @2xl:w-64"
+      />
     </div>
 
     <BillingStatusBanner>
@@ -35,7 +46,14 @@
       </template>
     </BillingStatusBanner>
 
-    <WorkspaceOverviewContent v-if="activeView === 'overview'" />
+    <WorkspaceOverviewContent
+      v-if="activeView === 'overview'"
+      @navigate="setView"
+    />
+    <WorkspaceActivityContent
+      v-else-if="activeView === 'activity'"
+      :search="searchQuery"
+    />
     <WorkspaceInvoicesContent v-else />
   </div>
 </template>
@@ -44,15 +62,17 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
 import WorkspaceOverviewContent from '@/platform/workspace/components/dialogs/settings/WorkspaceOverviewContent.vue'
 import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { cn } from '@comfyorg/tailwind-utils'
 
-type View = 'overview' | 'invoices'
+type View = 'overview' | 'activity' | 'invoices'
 
 const { t } = useI18n()
 
@@ -65,7 +85,8 @@ function openInvoiceHistory() {
 
 const tabs = computed(() => {
   const base: { key: View; label: string }[] = [
-    { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') }
+    { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
+    { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
   ]
   // Invoices are billing details — owners/admins only.
   if (permissions.value.canManageSubscription) {
@@ -77,8 +98,10 @@ const tabs = computed(() => {
   return base
 })
 const activeView = ref<View>('overview')
+const searchQuery = ref('')
 
 function setView(view: View) {
   activeView.value = view
+  searchQuery.value = ''
 }
 </script>

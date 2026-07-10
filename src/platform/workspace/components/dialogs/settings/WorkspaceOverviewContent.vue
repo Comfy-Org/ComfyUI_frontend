@@ -265,6 +265,8 @@ import { useWorkspaceOverview } from '@/platform/workspace/composables/useWorksp
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
+const emit = defineEmits<{ navigate: [view: 'activity'] }>()
+
 const { t } = useI18n()
 
 // Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
@@ -382,12 +384,14 @@ const snapshotEmptyMessage = computed(() => {
     : null
 })
 
-// Both snapshot tabs deep-link to the Members panel (sorted by spend or
-// recency) until the Activity tab exists.
+// Top spenders → the Members panel pre-sorted by credit usage; Recent activity
+// → the Activity tab.
 function handleSeeMore() {
-  requestMembersSort(
-    snapshotView.value === 'recent' ? 'lastActivity' : 'credits'
-  )
+  if (snapshotView.value === 'recent') {
+    emit('navigate', 'activity')
+    return
+  }
+  requestMembersSort('credits')
   navigateToPanel('workspace-members')
 }
 </script>
