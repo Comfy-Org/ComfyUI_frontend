@@ -40,6 +40,12 @@ export function useAutoPageSize(
       if (!el) return
       observer = new ResizeObserver(() => measure())
       observer.observe(el)
+      // Also observe the table itself: async-loaded rows change the table's
+      // height without resizing the container, so the initial measure (taken
+      // against an empty state or fallback row height) would otherwise stick.
+      // Re-measuring converges — pageSize stabilizes once real rows exist.
+      const table = el.querySelector('table')
+      if (table) observer.observe(table)
     },
     { immediate: true }
   )
