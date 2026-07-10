@@ -11,13 +11,14 @@
     "./piiUtil": "./src/piiUtil.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ./node_modules/typescript-7/bin/tsc --noEmit"
   },
   "dependencies": {
     "axios": "catalog:",
     "dompurify": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "typescript-7": "catalog:"
   }
 }

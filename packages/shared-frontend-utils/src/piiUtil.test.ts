@@ -4,13 +4,14 @@ import { createPostHogBeforeSend } from './piiUtil'
 
 describe('createPostHogBeforeSend', () => {
   const beforeSend = createPostHogBeforeSend()
+  type BeforeSendEvent = NonNullable<Parameters<typeof beforeSend>[0]>
 
   it('returns null for null input', () => {
     expect(beforeSend(null)).toBeNull()
   })
 
   it('strips all PII keys from properties, $set, and $set_once', () => {
-    const event = {
+    const event: BeforeSendEvent = {
       properties: {
         email: 'a@example.com',
         prompt: 'hello',
@@ -48,7 +49,9 @@ describe('createPostHogBeforeSend', () => {
   })
 
   it('handles missing property bags gracefully', () => {
-    const event = { properties: { email: 'a@example.com', safe: true } }
+    const event: BeforeSendEvent = {
+      properties: { email: 'a@example.com', safe: true }
+    }
     const result = beforeSend(event)!
     expect(result.properties).not.toHaveProperty('email')
     expect(result.properties).toHaveProperty('safe', true)

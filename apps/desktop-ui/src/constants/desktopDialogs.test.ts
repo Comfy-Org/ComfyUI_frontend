@@ -27,10 +27,14 @@ describe('getDialog', () => {
 
   it('returns a deep clone — mutations do not affect the original', () => {
     const result = getDialog('reinstallVenv')
-    const originalFirstLabel = DESKTOP_DIALOGS.reinstallVenv.buttons[0].label
-    result.buttons[0].label = 'Mutated'
-    expect(DESKTOP_DIALOGS.reinstallVenv.buttons[0].label).toBe(
-      originalFirstLabel
+    const originalButtonCount = DESKTOP_DIALOGS.reinstallVenv.buttons.length
+    result.buttons.push({
+      label: 'Mutated',
+      action: 'cancel',
+      returnValue: 'mutated'
+    })
+    expect(DESKTOP_DIALOGS.reinstallVenv.buttons).toHaveLength(
+      originalButtonCount
     )
   })
 

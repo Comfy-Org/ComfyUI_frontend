@@ -2,10 +2,37 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 import { nextTick, provide } from 'vue'
-import type { ElectronWindow } from '@/utils/envUtil'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import InstallView from './InstallView.vue'
+
+type InstallViewElectronAPI = {
+  getPlatform: ElectronAPI['getPlatform']
+  Config: {
+    getDetectedGpu: ElectronAPI['Config']['getDetectedGpu']
+  }
+  Events: {
+    trackEvent: ElectronAPI['Events']['trackEvent']
+  }
+  installComfyUI: ElectronAPI['installComfyUI']
+  changeTheme: ElectronAPI['changeTheme']
+  getSystemPaths: ElectronAPI['getSystemPaths']
+  validateInstallPath: ElectronAPI['validateInstallPath']
+  validateComfyUISource: ElectronAPI['validateComfyUISource']
+  showDirectoryPicker: ElectronAPI['showDirectoryPicker']
+}
+
+type InstallViewElectronWindow = Window & {
+  electronAPI?: InstallViewElectronAPI
+}
+
+const installViewElectronAPI = () => {
+  const api = (window as InstallViewElectronWindow).electronAPI
+  if (!api) {
+    throw new Error('InstallView story electronAPI was not initialized')
+  }
+  return api
+}
 
 // Create a mock router for stories
 const createMockRouter = () =>
@@ -44,7 +71,7 @@ const meta: Meta<typeof InstallView> = {
       const router = createMockRouter()
 
       // Mock electron API
-      ;(window as ElectronWindow).electronAPI = {
+      ;(window as InstallViewElectronWindow).electronAPI = {
         getPlatform: () => 'darwin',
         Config: {
           getDetectedGpu: () => Promise.resolve('mps')
@@ -61,6 +88,8 @@ const meta: Meta<typeof InstallView> = {
         changeTheme: (_theme: Parameters<ElectronAPI['changeTheme']>[0]) => {},
         getSystemPaths: () =>
           Promise.resolve({
+            appData: '/Users/username/Library/Application Support/ComfyUI',
+            appPath: '/Applications/ComfyUI.app',
             defaultInstallPath: '/Users/username/ComfyUI'
           }),
         validateInstallPath: () =>
@@ -247,8 +276,8 @@ export const DesktopSettings: Story = {
 export const WindowsPlatform: Story = {
   render: () => {
     // Override the platform to Windows
-    ;(window as ElectronWindow).electronAPI.getPlatform = () => 'win32'
-    ;(window as ElectronWindow).electronAPI.Config.getDetectedGpu = () =>
+    installViewElectronAPI().getPlatform = () => 'win32'
+    installViewElectronAPI().Config.getDetectedGpu = () =>
       Promise.resolve('nvidia')
 
     return {
@@ -266,8 +295,8 @@ export const MacOSPlatform: Story = {
   name: 'macOS Platform',
   render: () => {
     // Override the platform to macOS
-    ;(window as ElectronWindow).electronAPI.getPlatform = () => 'darwin'
-    ;(window as ElectronWindow).electronAPI.Config.getDetectedGpu = () =>
+    installViewElectronAPI().getPlatform = () => 'darwin'
+    installViewElectronAPI().Config.getDetectedGpu = () =>
       Promise.resolve('mps')
 
     return {
@@ -334,7 +363,7 @@ export const ManualInstall: Story = {
 export const ErrorState: Story = {
   render: () => {
     // Override validation to return an error
-    ;(window as ElectronWindow).electronAPI.validateInstallPath = () =>
+    installViewElectronAPI().validateInstallPath = () =>
       Promise.resolve({
         isValid: false,
         exists: false,
@@ -382,7 +411,7 @@ export const ErrorState: Story = {
 export const WarningState: Story = {
   render: () => {
     // Override validation to return a warning about non-default drive
-    ;(window as ElectronWindow).electronAPI.validateInstallPath = () =>
+    installViewElectronAPI().validateInstallPath = () =>
       Promise.resolve({
         isValid: true,
         exists: false,

@@ -1,32 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-const { mockTerminal, MockTerminal, mockFitAddon, MockFitAddon } = vi.hoisted(
-  () => {
-    const mockTerminal = {
-      loadAddon: vi.fn(),
-      attachCustomKeyEventHandler: vi.fn(),
-      open: vi.fn(),
-      dispose: vi.fn(),
-      hasSelection: vi.fn<[], boolean>(),
-      resize: vi.fn(),
-      cols: 80,
-      rows: 24
-    }
-    const MockTerminal = vi.fn(function () {
-      return mockTerminal
-    })
-
-    const mockFitAddon = {
-      proposeDimensions: vi.fn().mockReturnValue({ cols: 80, rows: 24 })
-    }
-    const MockFitAddon = vi.fn(function () {
-      return mockFitAddon
-    })
-
-    return { mockTerminal, MockTerminal, mockFitAddon, MockFitAddon }
+const { mockTerminal, MockTerminal, MockFitAddon } = vi.hoisted(() => {
+  const mockTerminal = {
+    loadAddon: vi.fn(),
+    attachCustomKeyEventHandler: vi.fn(),
+    open: vi.fn(),
+    dispose: vi.fn(),
+    hasSelection: vi.fn<() => boolean>(),
+    resize: vi.fn(),
+    cols: 80,
+    rows: 24
   }
-)
+  const MockTerminal = vi.fn(function () {
+    return mockTerminal
+  })
+
+  const mockFitAddon = {
+    proposeDimensions: vi.fn().mockReturnValue({ cols: 80, rows: 24 })
+  }
+  const MockFitAddon = vi.fn(function () {
+    return mockFitAddon
+  })
+
+  return { mockTerminal, MockTerminal, MockFitAddon }
+})
 
 vi.mock('@xterm/xterm', () => ({ Terminal: MockTerminal }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: MockFitAddon }))

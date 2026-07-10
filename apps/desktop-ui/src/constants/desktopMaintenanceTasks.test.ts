@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { mockElectron } = vi.hoisted(() => ({
   mockElectron: {
     setBasePath: vi.fn(),
-    reinstall: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+    reinstall: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     uv: {
-      installRequirements: vi.fn<[], Promise<void>>(),
-      clearCache: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-      resetVenv: vi.fn<[], Promise<void>>().mockResolvedValue(undefined)
+      installRequirements: vi.fn<() => Promise<void>>(),
+      clearCache: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      resetVenv: vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     }
   }
 }))
@@ -48,24 +48,24 @@ describe('desktopMaintenanceTasks', () => {
   })
 
   describe('URL-opening tasks', () => {
-    it('git execute opens the git download page', () => {
-      findTask('git').execute()
+    it('git execute opens the git download page', async () => {
+      expect(await findTask('git').execute()).toBe(true)
       expect(window.open).toHaveBeenCalledWith(
         'https://git-scm.com/downloads/',
         '_blank'
       )
     })
 
-    it('uv execute opens the uv installation page', () => {
-      findTask('uv').execute()
+    it('uv execute opens the uv installation page', async () => {
+      expect(await findTask('uv').execute()).toBe(true)
       expect(window.open).toHaveBeenCalledWith(
         'https://docs.astral.sh/uv/getting-started/installation/',
         '_blank'
       )
     })
 
-    it('vcRedist execute opens the VC++ redistributable download', () => {
-      findTask('vcRedist').execute()
+    it('vcRedist execute opens the VC++ redistributable download', async () => {
+      expect(await findTask('vcRedist').execute()).toBe(true)
       expect(window.open).toHaveBeenCalledWith(
         'https://aka.ms/vs/17/release/vc_redist.x64.exe',
         '_blank'

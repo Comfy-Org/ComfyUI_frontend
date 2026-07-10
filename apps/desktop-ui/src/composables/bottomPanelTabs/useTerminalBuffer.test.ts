@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockSerialize, MockSerializeAddon } = vi.hoisted(() => {
-  const mockSerialize = vi.fn<[], string>()
+  const mockSerialize = vi.fn<() => string>()
   const MockSerializeAddon = vi.fn(function () {
     return { serialize: mockSerialize }
   })
@@ -18,7 +18,6 @@ vi.mock('@xterm/addon-serialize', () => ({
   SerializeAddon: MockSerializeAddon
 }))
 
-import type { Terminal } from '@xterm/xterm'
 import { withSetup } from '@/test/withSetup'
 import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuffer'
 
@@ -33,7 +32,7 @@ describe('useTerminalBuffer', () => {
       mockSerialize.mockReturnValue('hello world')
       const { copyTo } = withSetup(() => useTerminalBuffer())
       const mockWrite = vi.fn()
-      copyTo({ write: mockWrite } as Pick<Terminal, 'write'>)
+      copyTo({ write: mockWrite })
       expect(mockWrite).toHaveBeenCalledWith('hello world')
     })
 
@@ -41,7 +40,7 @@ describe('useTerminalBuffer', () => {
       mockSerialize.mockReturnValue('')
       const { copyTo } = withSetup(() => useTerminalBuffer())
       const mockWrite = vi.fn()
-      copyTo({ write: mockWrite } as Pick<Terminal, 'write'>)
+      copyTo({ write: mockWrite })
       expect(mockWrite).toHaveBeenCalledWith('')
     })
   })
