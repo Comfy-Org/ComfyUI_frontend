@@ -38,7 +38,9 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    // The full message pins the {name}/{limit} i18n interpolation.
+    // The full message pins the {name}/{limit} i18n interpolation; the count
+    // pins one error per rejected file.
+    expect(onError).toHaveBeenCalledOnce()
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
   })
 
