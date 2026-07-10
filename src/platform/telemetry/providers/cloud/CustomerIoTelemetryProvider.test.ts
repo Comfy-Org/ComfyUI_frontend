@@ -98,6 +98,27 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.page).toHaveBeenCalledWith()
   })
 
+  it('continues tracking when the in-app plugin fails to register', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    hoisted.analytics.register.mockRejectedValue(
+      new Error('in-app setup failed')
+    )
+    const provider = createProvider()
+    provider.trackWorkflowExecution()
+
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.track).toHaveBeenCalledWith(
+      'execution_start',
+      SOURCE
+    )
+    provider.trackAddApiCreditButtonClicked()
+    expect(hoisted.analytics.track).toHaveBeenCalledWith(
+      'app:add_api_credit_button_clicked',
+      SOURCE
+    )
+  })
+
   it('does not initialize without a write key', async () => {
     const provider = createProvider({ customer_io: { site_id: SITE_ID } })
     await vi.dynamicImportSettled()

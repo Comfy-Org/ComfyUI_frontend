@@ -47,9 +47,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     }
 
     void import('@customerio/cdp-analytics-browser')
-      .then(async ({ AnalyticsBrowser, InAppPlugin }) => {
+      .then(({ AnalyticsBrowser, InAppPlugin }) => {
         const analytics = AnalyticsBrowser.load({ writeKey })
-        await analytics.register(
+        const inAppRegistration = analytics.register(
           InAppPlugin({
             siteId,
             events: null,
@@ -70,7 +70,14 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         currentUser.onUserLogout(() => void analytics.reset())
 
         this.flushQueue()
-        this.flushPageView()
+        void inAppRegistration
+          .then(() => this.flushPageView())
+          .catch((error) => {
+            console.error(
+              'Failed to initialize Customer.io in-app plugin:',
+              error
+            )
+          })
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
