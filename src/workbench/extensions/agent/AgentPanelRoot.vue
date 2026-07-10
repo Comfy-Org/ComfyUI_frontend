@@ -35,7 +35,7 @@ import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { WorkflowUpload } from './services/agent/agentRestClient'
+import type { DraftUpload } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -113,21 +113,22 @@ const activeTab = computed<ActiveTab | null>(() => {
 })
 
 // The turn runs against the canvas as of the send: upload the serialized
-// graph when it changed since the last upload so the server can seed the
-// thread's draft from it (cloud postMessage.workflow contract; servers
-// without the field ignore it). No client-side size cap: the server owns
-// its own limits.
+// graph (save format) so the server seeds the thread's draft from it. Gate
+// on canvas-non-empty, not workflow_id - that is what makes templates,
+// unsaved tabs, and new tabs work. Skipping an unchanged canvas is the
+// server-blessed optimization (identical content no-ops server-side). No
+// client-side size cap: the server owns its own limits.
 let lastSentGraph: string | null = null
 let snapshotTabPath: string | null = null
 
-function takeWorkflowSnapshot(): WorkflowUpload | undefined {
+function takeWorkflowSnapshot(): DraftUpload | undefined {
   const graph = app.graph?.serialize()
-  if (!graph) return undefined
+  if (!graph?.nodes?.length) return undefined
   const serialized = JSON.stringify(graph)
   if (serialized === lastSentGraph) return undefined
   lastSentGraph = serialized
   snapshotTabPath = workflowStore.activeWorkflow?.path ?? null
-  return { graph, last_seen_version: draftStore.version }
+  return { content: graph, version: draftStore.version }
 }
 
 // A fresh thread gets a fresh draft on the server: re-upload on next send.

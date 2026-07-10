@@ -6,7 +6,7 @@ import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  WorkflowUpload
+  DraftUpload
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
@@ -61,8 +61,8 @@ export interface AgentSessionDeps {
       uploaded: boolean
     ): void
     // The canvas snapshot to seed the server draft with, or undefined when
-    // unchanged since the last upload.
-    snapshot?(): WorkflowUpload | undefined
+    // empty or unchanged since the last upload.
+    snapshot?(): DraftUpload | undefined
   }
 }
 
@@ -174,28 +174,46 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     const wfContext = workflow?.current()
     const upload = workflow?.snapshot?.()
-    const input = {
-      content: text,
-      selection:
-        tags !== undefined && tags.length > 0
-          ? { node_ids: tags.map((tag) => tag.id) }
-          : undefined,
-      attachments: attachments?.map((attachment) => attachment.ref),
-      workflow: upload
+    function buildInput(draft: DraftUpload | undefined) {
+      return {
+        content: text,
+        selection:
+          tags !== undefined && tags.length > 0
+            ? { node_ids: tags.map((tag) => tag.id) }
+            : undefined,
+        attachments: attachments?.map((attachment) => attachment.ref),
+        draft
+      }
+    }
+    async function post(threadId: string, draft: DraftUpload | undefined) {
+      const input = buildInput(draft)
+      return rest.postMessage(
+        threadId,
+        wfContext ? { ...input, workflowId: wfContext.id } : input
+      )
     }
     async function postTurn(threadId: string) {
       try {
-        return await rest.postMessage(
-          threadId,
-          wfContext ? { ...input, workflowId: wfContext.id } : input
-        )
+        return await post(threadId, upload)
       } catch (error) {
-        const speculativeDenied =
-          wfContext?.speculative === true &&
-          error instanceof AgentApiError &&
-          error.status === 403
-        if (!speculativeDenied) throw error
-        return await rest.postMessage(threadId, input)
+        if (!(error instanceof AgentApiError)) throw error
+        // A speculative id the server does not own: retry once without it.
+        if (wfContext?.speculative === true && error.status === 403) {
+          const input = buildInput(upload)
+          return await rest.postMessage(threadId, input)
+        }
+        // The agent's draft advanced past the version we based this upload
+        // on: adopt the server's version and retry once.
+        const serverVersion = (error.body as { version?: unknown } | null)
+          ?.version
+        if (
+          error.status === 409 &&
+          upload !== undefined &&
+          typeof serverVersion === 'number'
+        ) {
+          return await post(threadId, { ...upload, version: serverVersion })
+        }
+        throw error
       }
     }
     try {

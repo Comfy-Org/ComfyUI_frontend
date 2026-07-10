@@ -34,12 +34,14 @@ export class AgentApiError extends Error {
 }
 
 // The client's canvas, uploaded with a turn so the server seeds the thread's
-// draft from it before the agent runs. last_seen_version null force-seeds; a
-// non-null value is the draft version the client last received, so the server
-// can reject an upload built on a draft the agent has since moved past.
-export interface WorkflowUpload {
-  graph: unknown
-  last_seen_version: number | null
+// draft from it before the agent runs. content is the SAVE format
+// (app.graph.serialize()), not the API/prompt format. version null
+// force-seeds; a non-null value is the draft version the client last
+// received - the server 409s {error, version} when its draft has moved past
+// it, and the client retries once against the returned version.
+export interface DraftUpload {
+  content: unknown
+  version: number | null
 }
 
 export interface PostMessageInput {
@@ -47,7 +49,7 @@ export interface PostMessageInput {
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
-  workflow?: WorkflowUpload
+  draft?: DraftUpload
 }
 
 interface IngestErrorBody {
@@ -112,7 +114,7 @@ export function createAgentRestClient() {
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.workflow !== undefined) body.workflow = req.workflow
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
       `/agent/threads/${threadId}/messages`,
       jsonInit('POST', body),
