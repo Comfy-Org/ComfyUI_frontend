@@ -13,6 +13,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -28,6 +29,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
   Other: 'icon-[lucide--ellipsis]',
+  PartnerNodes: 'icon-[lucide--shield-check]',
   PlanCredits: 'icon-[lucide--credit-card]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
@@ -54,6 +56,7 @@ export function useSettingUI(
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription, type: billingType } = useBillingContext()
+  const { permissions } = useWorkspaceUI()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -200,8 +203,26 @@ export function useSettingUI(
     )
   }
 
+  const partnerNodesPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace-partner-nodes',
+      label: 'PartnerNodes',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/AllowlistPanelContent.vue')
+    )
+  }
+
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
+  )
+
+  // Partner-node governance is Owner/Admin-only; Members never see the tab.
+  const shouldShowPartnerNodesPanel = computed(
+    () =>
+      shouldShowWorkspacePanel.value && permissions.value.canManagePartnerNodes
   )
 
   const secretsPanel: SettingPanelItem = {
@@ -258,6 +279,7 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       ...(shouldShowWorkspacePanel.value ? [workspacePanel, membersPanel] : []),
+      ...(shouldShowPartnerNodesPanel.value ? [partnerNodesPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -310,6 +332,7 @@ export function useSettingUI(
         ...(shouldShowWorkspacePanel.value
           ? [workspacePanel.node, membersPanel.node]
           : []),
+        ...(shouldShowPartnerNodesPanel.value ? [partnerNodesPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
