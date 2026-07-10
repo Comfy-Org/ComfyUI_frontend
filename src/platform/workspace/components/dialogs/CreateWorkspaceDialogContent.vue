@@ -64,6 +64,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_NAME_MAX_LENGTH } from '@/platform/workspace/workspaceConstants'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
@@ -80,7 +81,11 @@ const workspaceName = ref('')
 const isValidName = computed(() => {
   const name = workspaceName.value.trim()
   const safeNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_'.,()&+]*$/
-  return name.length >= 1 && name.length <= 50 && safeNameRegex.test(name)
+  return (
+    name.length >= 1 &&
+    name.length <= WORKSPACE_NAME_MAX_LENGTH &&
+    safeNameRegex.test(name)
+  )
 })
 
 function onCancel() {

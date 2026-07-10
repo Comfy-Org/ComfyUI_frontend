@@ -11,7 +11,7 @@ import { useDialogService } from '@/services/dialogService'
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
  * panel. Visibility and the Delete enable/disable policy are derived from the
  * shared useWorkspaceUI state so this menu can't desync with the sibling
- * WorkspacePanelContent menu.
+ * Plan & Credits panel menu.
  */
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()

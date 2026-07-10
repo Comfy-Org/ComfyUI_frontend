@@ -37,6 +37,11 @@ export interface Member {
   // billing lifecycle actions (cancel / reactivate / downgrade).
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
+  // Last time the member ran or interacted with the workspace, and the credits
+  // they've consumed in the current billing cycle. Optional: the cloud OpenAPI
+  // does not carry these fields yet.
+  last_active_at?: string | null
+  credits_used_this_month?: number
 }
 
 interface PaginationInfo {
