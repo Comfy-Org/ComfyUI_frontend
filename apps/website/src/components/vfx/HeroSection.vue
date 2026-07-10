@@ -1,23 +1,43 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 
+import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import HeroBackdrop01 from '../blocks/HeroBackdrop01.vue'
+import Button from '../ui/button/Button.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const routes = computed(() => getRoutes(locale))
+
+const backdrop = {
+  type: 'video',
+  src: 'https://media.comfy.org/website/vfx/vfx_hero.mp4'
+} as const
+
+const mobileBackdrop = {
+  type: 'video',
+  src: 'https://media.comfy.org/website/vfx/vfx_hero-mobile.mp4'
+} as const
 </script>
 
 <template>
-  <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-24 pb-12 text-center"
+  <HeroBackdrop01
+    tone="dark"
+    :backdrop="backdrop"
+    :mobile-backdrop="mobileBackdrop"
+    :title="t('vfx.hero.title', locale)"
+    :subtitle="t('vfx.hero.subtitle', locale)"
   >
-    <h1
-      class="max-w-4xl text-3xl leading-[110%] font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
-    >
-      {{ t('vfx.heroTitle.before', locale) }}
-      <span class="text-primary-comfy-yellow">ComfyUI</span
-      >{{ t('vfx.heroTitle.after', locale) }}
-      <br />
-      {{ t('vfx.heroTitle.line2', locale) }}
-    </h1>
-  </section>
+    <div class="mt-10 flex flex-wrap gap-4">
+      <Button as="a" :href="routes.contact">
+        {{ t('vfx.cta.contactSales', locale) }}
+      </Button>
+      <Button as="a" :href="externalLinks.cloud" variant="outline">
+        {{ t('vfx.hero.tryNow', locale) }}
+      </Button>
+    </div>
+  </HeroBackdrop01>
 </template>

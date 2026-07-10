@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, useTemplateRef } from 'vue'
 
-import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
+import type { Tutorial } from './TutorialCard.vue'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { t } from '../../i18n/translations'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import VideoPlayer from './VideoPlayer.vue'
 
-const { tutorial, locale = 'en' } = defineProps<{
-  tutorial: LearningTutorial
+const {
+  tutorial,
+  locale = 'en',
+  titlePrefixKey
+} = defineProps<{
+  tutorial: Tutorial
   locale?: Locale
+  titlePrefixKey: TranslationKey
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -73,7 +78,7 @@ onUnmounted(() => {
       <h2
         class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
       >
-        {{ t('learning.tutorials.titlePrefix', locale) }}
+        {{ t(titlePrefixKey, locale) }}
         {{ tutorial.title[locale] }}
       </h2>
     </dialog>

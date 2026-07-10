@@ -20,6 +20,7 @@ const {
   title,
   subtitle,
   footnote,
+  tone = 'light',
   class: className
 } = defineProps<{
   backdrop?: Backdrop
@@ -30,8 +31,18 @@ const {
   title: string
   subtitle?: string
   footnote?: string
+  tone?: 'light' | 'dark'
   class?: HTMLAttributes['class']
 }>()
+
+// Light tone assumes a light backdrop: dark ink text on desktop plus a
+// warm-white radial scrim for contrast. Dark tone assumes a dark backdrop
+// and uses white text at all breakpoints, with no scrim.
+const toneTextClass = computed(() =>
+  tone === 'light'
+    ? 'text-primary-comfy-canvas lg:text-primary-comfy-ink'
+    : 'text-white'
+)
 
 // Respect prefers-reduced-motion: don't autoplay the looping backdrop video
 // (WCAG 2.2.2). The paused video falls back to its poster/first frame.
@@ -151,6 +162,7 @@ const scrimStyle = {
       >
         <div class="relative w-full max-w-xl">
           <div
+            v-if="tone === 'light'"
             aria-hidden="true"
             class="pointer-events-none absolute -inset-12 hidden backdrop-blur-md lg:-inset-16 lg:block"
             :style="scrimStyle"
@@ -165,22 +177,24 @@ const scrimStyle = {
             />
 
             <h1
-              class="mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight lg:text-primary-comfy-ink"
+              :class="
+                cn(
+                  'mt-10 text-4xl/tight font-light tracking-tight whitespace-pre-line lg:text-6xl/tight',
+                  toneTextClass
+                )
+              "
             >
               {{ title }}
             </h1>
 
             <p
               v-if="subtitle"
-              class="mt-8 max-w-md text-base text-primary-comfy-canvas lg:text-lg lg:text-primary-comfy-ink"
+              :class="cn('mt-8 max-w-md text-base lg:text-lg', toneTextClass)"
             >
               {{ subtitle }}
             </p>
 
-            <p
-              v-if="footnote"
-              class="mt-10 text-sm text-primary-comfy-canvas lg:text-primary-comfy-ink"
-            >
+            <p v-if="footnote" :class="cn('mt-10 text-sm', toneTextClass)">
               {{ footnote }}
             </p>
 

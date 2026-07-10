@@ -39,3 +39,9 @@ export const NoBackdrop: Story = {
     backdrop: undefined
   }
 }
+
+export const DarkTone: Story = {
+  args: {
+    tone: 'dark'
+  }
+}

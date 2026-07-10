@@ -1547,36 +1547,29 @@ const translations = {
   'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
   // VfxHeroSection
-  'vfx.heroTitle.before': { en: 'Create VFX', 'zh-CN': '创作视效' },
-  'vfx.heroTitle.after': { en: '.', 'zh-CN': '。' },
-  'vfx.heroTitle.line2': {
-    en: 'Build what doesn’t exist yet.',
-    'zh-CN': '构建尚未存在之物。'
+  'vfx.hero.title': {
+    en: 'ComfyUI for\nVisual Effects',
+    'zh-CN': '面向视觉特效的\nComfyUI'
   },
-
-  // VfxFeaturedWorkflowSection
-  'vfx.featured.title': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
-  },
-  'vfx.featured.author': {
-    en: 'by Doug Hogan',
-    'zh-CN': '作者：Doug Hogan'
-  },
-  'vfx.featured.description': {
-    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+  'vfx.hero.subtitle': {
+    en: 'From ideation to production, ComfyUI gives VFX teams faster workflows and more controlled output — so what ships looks exactly like what you envisioned.',
     'zh-CN':
-      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+      '从创意到成片，ComfyUI 为视觉特效团队带来更快的工作流与更可控的产出——让最终交付与你的构想分毫不差。'
   },
-  'vfx.featured.watchDemo': {
-    en: 'Watch Demo',
-    'zh-CN': '观看演示'
+  'vfx.hero.tryNow': {
+    en: 'Try Now',
+    'zh-CN': '立即体验'
   },
 
   // VfxTutorialsSection
   'vfx.tutorials.heading': {
-    en: 'Featured Demos',
-    'zh-CN': '精选演示'
+    en: 'See What’s Possible',
+    'zh-CN': '见证无限可能'
+  },
+  'vfx.tutorials.description': {
+    en: 'From concept, storyboarding to texture generation and compositing references — discover workflows built for every stage of VFX production. New workflows added regularly.',
+    'zh-CN':
+      '从概念设计、分镜脚本到纹理生成与合成参考——探索覆盖视觉特效制作各个环节的工作流。新工作流持续上新。'
   },
   'vfx.tutorials.titlePrefix': {
     en: 'Learn how to:',
@@ -1585,8 +1578,8 @@ const translations = {
 
   // VfxCallToActionSection
   'vfx.cta.heading': {
-    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
-    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+    en: 'Bring your ideas to life with ComfyUI, exactly as intended.',
+    'zh-CN': '用 ComfyUI 将创意变为现实，一切尽如所想。'
   },
   'vfx.cta.contactSales': {
     en: 'Contact Sales',
