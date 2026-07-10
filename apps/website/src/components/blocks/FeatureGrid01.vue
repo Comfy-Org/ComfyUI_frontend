@@ -56,7 +56,7 @@ const columnClass: Record<ColumnCount, string> = {
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
-    <SectionHeader :label="eyebrow" align="start">
+    <SectionHeader max-width="xl" :label="eyebrow" align="start">
       {{ heading }}
       <template v-if="subtitle" #subtitle>
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
