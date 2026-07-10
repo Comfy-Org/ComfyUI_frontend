@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata, SecretProvider } from '../types'
@@ -184,6 +184,199 @@ describe('useSecretForm', () => {
       expect(civitai?.disabled).toBe(false)
     })
 
+    it('falls back to all base providers when availableProviders is not loaded', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => null,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
+    it('shows no options when the server returns an empty allowlist', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([])
+    })
+
+    it('restricts options to the providers returned by the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['civitai'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
+    })
+
+    it('dedupes repeated provider ids from the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['civitai', 'civitai', 'huggingface'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'civitai',
+        'huggingface'
+      ])
+    })
+
+    it('renders server-listed BYOK providers with labels and logos', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['runway', 'gemini'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'runway',
+          label: 'Runway',
+          logo: '/assets/images/runway.svg',
+          disabled: false
+        },
+        {
+          value: 'gemini',
+          label: 'Google Gemini',
+          logo: '/assets/images/gemini.svg',
+          disabled: false
+        }
+      ])
+    })
+
+    it('passes a server-listed provider absent from the local registry through with its raw id as label and no logo', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['brand-new-provider'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'brand-new-provider',
+          label: 'brand-new-provider',
+          logo: undefined,
+          disabled: false
+        }
+      ])
+      expect(providerOptions.value[0]?.logo).toBeUndefined()
+    })
+
+    it('omits BYOK providers the server does not list', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['huggingface'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const values = providerOptions.value.map((o) => o.value)
+      expect(values).toEqual(['huggingface'])
+      expect(values).not.toContain('runway')
+      expect(values).not.toContain('gemini')
+    })
+
+    it('reacts to availableProviders changing', () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[] | null>(null)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toHaveLength(2)
+
+      availableProviders.value = ['huggingface']
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+    })
+
+    it('clears a selection the resolved allowlist no longer offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[] | null>(null)
+      const { form, providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'civitai'
+      availableProviders.value = ['huggingface']
+      await nextTick()
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+      expect(form.provider).toBeNull()
+    })
+
+    it('keeps a selection the resolved allowlist still offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<string[] | null>(null)
+      const { form } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      availableProviders.value = ['huggingface', 'civitai']
+      await nextTick()
+
+      expect(form.provider).toBe('huggingface')
+    })
+
+    it('ignores the availableProviders filter in edit mode', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'edit',
+        secret: () => createMockSecret({ provider: 'huggingface' }),
+        existingProviders: () => [],
+        availableProviders: () => ['civitai'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
     it('updates disabled state when existingProviders changes', () => {
       const visible = ref(true)
       const existingProviders = ref<SecretProvider[]>(['huggingface'])
@@ -203,6 +396,51 @@ describe('useSecretForm', () => {
       expect(
         providerOptions.value.find((o) => o.value === 'huggingface')?.disabled
       ).toBe(false)
+    })
+  })
+
+  describe('providerHelp', () => {
+    it('uses the generic hint when no provider is selected', () => {
+      const visible = ref(true)
+      const { providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      // t() is mocked to echo the key.
+      expect(providerHelp.value).toBe('secrets.providerHint')
+    })
+
+    it('uses provider-specific help when a BYOK provider is selected', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => ['runway', 'gemini'],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'runway'
+      expect(providerHelp.value).toBe('secrets.providerHelp.runway')
+
+      form.provider = 'gemini'
+      expect(providerHelp.value).toBe('secrets.providerHelp.gemini')
+    })
+
+    it('falls back to the generic hint for a provider without a help key', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      expect(providerHelp.value).toBe('secrets.providerHint')
     })
   })
 

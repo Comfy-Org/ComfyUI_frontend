@@ -34,7 +34,7 @@ function getUploadMock() {
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { import: 'Import' } } }
+  messages: { en: { g: { import: 'Import', upload: 'Upload' } } }
 })
 
 const ButtonStub = {
@@ -52,14 +52,16 @@ const singleOption: FilterOption[] = [{ value: 'all', name: 'All' }]
 
 function renderMenu(
   filterOptions: FilterOption[] = options,
-  modelValue: string | undefined = 'all'
+  modelValue: string | undefined = 'all',
+  extraProps: { uploadable?: boolean } = {}
 ) {
   const value = ref<string | undefined>(modelValue)
+  const onShowPicker = vi.fn()
   const Harness = defineComponent({
     components: { FormDropdownMenuFilter },
-    setup: () => ({ value, filterOptions }),
+    setup: () => ({ value, filterOptions, extraProps, onShowPicker }),
     template:
-      '<FormDropdownMenuFilter v-model:filter-selected="value" :filter-options="filterOptions" />'
+      '<FormDropdownMenuFilter v-model:filter-selected="value" :filter-options="filterOptions" :uploadable="extraProps.uploadable ?? false" @show-picker="onShowPicker" />'
   })
   const utils = render(Harness, {
     global: {
@@ -67,7 +69,7 @@ function renderMenu(
       stubs: { Button: ButtonStub }
     }
   })
-  return { ...utils, value }
+  return { ...utils, value, onShowPicker }
 }
 
 describe('FormDropdownMenuFilter', () => {
@@ -132,6 +134,41 @@ describe('FormDropdownMenuFilter', () => {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: /Import/i }))
       expect(upload.showUploadDialog).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Local-upload button (uploadable branch)', () => {
+    it('renders when uploadable is true and the Import button is disabled', () => {
+      getUploadMock().isUploadButtonEnabled.value = false
+      renderMenu(singleOption, 'all', { uploadable: true })
+      expect(
+        screen.getByRole('button', { name: /Upload/i })
+      ).toBeInTheDocument()
+    })
+
+    it('does not render when uploadable is false', () => {
+      getUploadMock().isUploadButtonEnabled.value = false
+      renderMenu(singleOption, 'all', { uploadable: false })
+      expect(screen.queryByRole('button', { name: /Upload/i })).toBeNull()
+    })
+
+    it('prefers the Import button over Upload when both gates allow it', () => {
+      getUploadMock().isUploadButtonEnabled.value = true
+      renderMenu(singleOption, 'all', { uploadable: true })
+      expect(
+        screen.getByRole('button', { name: /Import/i })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Upload/i })).toBeNull()
+    })
+
+    it('emits show-picker when the upload button is clicked', async () => {
+      getUploadMock().isUploadButtonEnabled.value = false
+      const { onShowPicker } = renderMenu(singleOption, 'all', {
+        uploadable: true
+      })
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /Upload/i }))
+      expect(onShowPicker).toHaveBeenCalledTimes(1)
     })
   })
 })

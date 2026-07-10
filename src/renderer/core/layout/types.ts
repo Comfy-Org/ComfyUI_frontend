@@ -6,7 +6,10 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { LinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
+import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -39,9 +42,10 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type NodeId = WorkflowNodeId
-export type LinkId = number
-export type RerouteId = number
+export type { LinkId }
+export type { NodeId }
+export type { RerouteId }
+export type { SlotId }
 
 // Layout data structures
 export interface NodeLayout {
@@ -56,8 +60,8 @@ export interface NodeLayout {
 
 export interface SlotLayout {
   nodeId: NodeId
-  index: number
-  type: 'input' | 'output'
+  index: SlotIndex
+  type: SlotDirection
   position: Point
   bounds: Bounds
 }
@@ -286,7 +290,7 @@ export interface LayoutStore {
   queryItemsInBounds(bounds: Bounds): {
     nodes: NodeId[]
     links: LinkId[]
-    slots: string[]
+    slots: SlotId[]
     reroutes: RerouteId[]
   }
 
@@ -297,23 +301,23 @@ export interface LayoutStore {
     rerouteId: RerouteId | null,
     layout: Omit<LinkSegmentLayout, 'linkId' | 'rerouteId'>
   ): void
-  updateSlotLayout(key: string, layout: SlotLayout): void
+  updateSlotLayout(key: SlotId, layout: SlotLayout): void
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void
 
   // Delete methods for cleanup
   deleteLinkLayout(linkId: LinkId): void
   deleteLinkSegmentLayout(linkId: LinkId, rerouteId: RerouteId | null): void
-  deleteSlotLayout(key: string): void
+  deleteSlotLayout(key: SlotId): void
   deleteRerouteLayout(rerouteId: RerouteId): void
   clearAllSlotLayouts(): void
 
   // Get layout data
   getLinkLayout(linkId: LinkId): LinkLayout | null
-  getSlotLayout(key: string): SlotLayout | null
+  getSlotLayout(key: SlotId): SlotLayout | null
   getRerouteLayout(rerouteId: RerouteId): RerouteLayout | null
 
   // Returns all slot layout keys currently tracked by the store
-  getAllSlotKeys(): string[]
+  getAllSlotKeys(): SlotId[]
 
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
@@ -327,7 +331,11 @@ export interface LayoutStore {
 
   // Initialization
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: NodeId
+      pos: [number, number]
+      size: [number, number]
+    }>
   ): void
 
   // Source and actor management
@@ -337,11 +345,9 @@ export interface LayoutStore {
   getCurrentActor(): string
 
   // Batch updates
-  batchUpdateNodeBounds(
-    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
-  ): void
+  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void
 
   batchUpdateSlotLayouts(
-    updates: Array<{ key: string; layout: SlotLayout }>
+    updates: Array<{ key: SlotId; layout: SlotLayout }>
   ): void
 }

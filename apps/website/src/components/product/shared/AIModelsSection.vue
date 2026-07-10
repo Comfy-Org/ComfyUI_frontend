@@ -6,6 +6,7 @@ import type { Locale } from '../../../i18n/translations'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
+import CardArrow from '../../common/CardArrow.vue'
 
 type ModelCard = {
   titleKey:
@@ -14,11 +15,10 @@ type ModelCard = {
     | 'cloud.aiModels.card.seedance20'
     | 'cloud.aiModels.card.qwenImageEdit'
     | 'cloud.aiModels.card.wan22TextToVideo'
+    | 'cloud.aiModels.card.gptImage2'
   imageSrc: string
   badgeIcon: string
   badgeClass: string
-  layoutClass: string
-  objectPosition?: string
 }
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -32,48 +32,45 @@ const modelCards: ModelCard[] = [
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]',
-    objectPosition: 'center 20%'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
     badgeIcon: '/icons/ai-models/grok.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
     imageSrc:
       'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    badgeClass: `${badgeBase} rounded-2xl`
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
     imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
-    badgeClass: `${badgeBase} rounded-2xl`,
-    layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
+    badgeClass: `${badgeBase} rounded-2xl`
+  },
+  {
+    titleKey: 'cloud.aiModels.card.gptImage2',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/gpt-image-2.webm',
+    badgeIcon: '/icons/ai-models/openai.svg',
+    badgeClass: `${badgeBase} rounded-2xl`
   }
 ]
 
-function getCardClass(layoutClass: string): string {
-  return cn(
-    layoutClass,
-    'group relative h-72 cursor-pointer overflow-hidden rounded-4xl bg-black/40 lg:h-auto'
-  )
-}
+const cardClass =
+  'group relative h-72 cursor-pointer overflow-hidden rounded-3xl bg-black/40 lg:col-span-4 lg:aspect-square lg:h-auto'
 </script>
 
 <template>
@@ -100,23 +97,18 @@ function getCardClass(layoutClass: string): string {
       </p>
 
       <div class="mt-16 w-full lg:mt-24">
-        <div class="rounded-4xl border border-white/12 p-2 lg:p-1.5">
+        <div class="rounded-4xl bg-white/8 p-2 lg:p-1.5">
           <div class="grid grid-cols-1 gap-2 lg:grid-cols-12">
             <a
               v-for="card in modelCards"
               :key="card.titleKey"
               :href="externalLinks.workflows"
-              :class="getCardClass(card.layoutClass)"
+              :class="cardClass"
             >
               <video
                 v-if="card.imageSrc.endsWith('.webm')"
                 :src="card.imageSrc"
                 :aria-label="t(card.titleKey, locale)"
-                :style="
-                  card.objectPosition
-                    ? { objectPosition: card.objectPosition }
-                    : undefined
-                "
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 autoplay
                 loop
@@ -134,11 +126,6 @@ function getCardClass(layoutClass: string): string {
                 v-else
                 :src="card.imageSrc"
                 :alt="t(card.titleKey, locale)"
-                :style="
-                  card.objectPosition
-                    ? { objectPosition: card.objectPosition }
-                    : undefined
-                "
                 class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
@@ -168,10 +155,14 @@ function getCardClass(layoutClass: string): string {
               </div>
 
               <p
-                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
+                class="text-primary-warm-white absolute right-20 bottom-6 left-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>
+
+              <CardArrow
+                class="absolute right-5 bottom-5 lg:right-6 lg:bottom-6"
+              />
             </a>
           </div>
         </div>

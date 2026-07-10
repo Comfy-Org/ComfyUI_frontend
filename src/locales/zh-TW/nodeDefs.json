@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "為 Ideogram 4 模型建立 JSON 格式的提示詞。",
+    "display_name": "建立 JSON 提示（Ideogram）",
+    "inputs": {
+      "aesthetics": {
+        "name": "美學",
+        "tooltip": "必填，美學關鍵詞（例如：情緒化、電影感、去飽和）。"
+      },
+      "background": {
+        "name": "背景",
+        "tooltip": "必填，圖像背景或環境的描述。"
+      },
+      "color_palette": {
+        "name": "色板",
+        "tooltip": "主導圖像色彩的十六進位色碼，最多 16 組。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "來自節點 Create Bounding Boxes 的提示元素。"
+      },
+      "high_level_description": {
+        "name": "高階描述",
+        "tooltip": "可選的圖像描述，一至兩句話。強烈建議填寫。"
+      },
+      "lighting": {
+        "name": "光線",
+        "tooltip": "必填，光線描述（例如：黃金時刻、邊緣光、戲劇性陰影）。"
+      },
+      "medium": {
+        "name": "媒材",
+        "tooltip": "必填，媒材類型（例如：攝影、插畫、3d_render、繪畫、平面設計）。當 style = photo 時，請設為攝影。"
+      },
+      "style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1123,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "使用 ByteDance Seed Audio 1.0，從單一提示生成語音、音樂、音效及多角色對話。在提示中描述聲音、情感、氛圍、背景音樂與音效，並包含要說的台詞。可選擇內建預設聲音、從最多 3 個參考 clip（在提示中標記為 @Audio1-3）進行聲音克隆，或從角色圖像推導聲音。每次最多可生成 2 分鐘音訊。",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "音量。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "音高變化（半音，-12 至 12）。"
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "聲音條件設定方式：「僅文字」（所有內容皆於提示中描述）、 「音訊參考」（最多克隆 3 種聲音，標記為 @Audio1-3）、 「圖像參考」（從單一角色圖像推導聲音）、或「預設聲音」（選擇內建命名聲音朗讀提示）。"
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "輸出取樣率（Hz）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "語速。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "描述聲音、情感、語速、氛圍、背景音樂與音效，並包含要說的台詞（對話時請直接標註角色名稱）。在「音訊參考」模式下，依順序引用連接的 clip，如 @Audio1、@Audio2、@Audio3。最多 3000 字元。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "使用 ByteDance 的 Seed 2.0 模型生成文字回應。請提供文字提示，並可選擇性地加入一張或多張圖片或影片作為多模態上下文。",
     "display_name": "ByteDance Seed",
@@ -1223,14 +1308,8 @@
       "model": {
         "name": "模型"
       },
-      "model_fail_on_partial": {
-        "name": "部分失敗時終止"
-      },
       "model_height": {
         "name": "高度"
-      },
-      "model_max_images": {
-        "name": "最大圖像數"
       },
       "model_size_preset": {
         "name": "尺寸預設"
@@ -1966,6 +2045,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2190,6 +2273,17 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "條件（乘法）",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2633,6 +2727,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "陣列轉字串",
+    "inputs": {
+      "array": {
+        "name": "陣列"
+      },
+      "indent": {
+        "name": "縮排",
+        "tooltip": "每層縮排的空格數。0 會產生單行緊湊字串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "字典轉字串",
+    "inputs": {
+      "dictionary": {
+        "name": "字典"
+      },
+      "indent": {
+        "name": "縮排",
+        "tooltip": "每層縮排的空格數。0 會產生單行緊湊字串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "Cosmos 圖片轉影片潛在編碼",
     "inputs": {
@@ -2691,6 +2819,42 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "在畫布上繪製邊界框。輸出 Ideogram 提示元素、像素空間邊界框，以及預覽圖像。",
+    "display_name": "建立邊界框",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "可選，作為畫布及預覽背景的圖像。"
+      },
+      "editor_state": {
+        "name": "編輯器狀態",
+        "tooltip": "繪製邊界框並設定每個框的類型、文字、描述、色板。請先設定背景元素，最後設定前景元素。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "畫布及邊界框像素網格的高度。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "畫布及邊界框像素網格的寬度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "預覽",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "元素",
         "tooltip": null
       }
     }
@@ -5083,6 +5247,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，從文字提示生成帶音訊的影片。可選擇提供參考圖像及／或影片以引導或編輯結果。請直接在提示中描述所需長度（3-10 秒）及長寬比（16:9 或 9:16）。",
+    "display_name": "Google Gemini Omni（影片）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成影片的 Gemini 影片模型。"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6049,94 +6247,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "使用 Ideogram V1 模型同步產生影像。\n\n影像連結僅限時有效；如需保留影像，請務必下載。",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述要從影像中排除的內容"
-      },
-      "num_images": {
-        "name": "影像數量"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值"
-      },
-      "turbo": {
-        "name": "加速模式",
-        "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "使用 Ideogram V2 模型同步產生影像。\n\n影像連結僅限時有效；若您想保留影像，請務必下載。",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。若解析度未設為自動，則此設定會被忽略。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述影像中要排除的內容"
-      },
-      "num_images": {
-        "name": "影像數量"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "影像生成的解析度。若未設為自動，將覆蓋長寬比設定。"
-      },
-      "seed": {
-        "name": "種子值"
-      },
-      "style_type": {
-        "name": "風格類型",
-        "tooltip": "生成時的風格類型（僅限 V2）"
-      },
-      "turbo": {
-        "name": "加速模式",
-        "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
       }
     },
     "outputs": {
@@ -12025,6 +12135,131 @@
       }
     }
   },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
+      }
+    }
+  },
   "ModelMergeLTXV": {
     "display_name": "模型合併 (LTXV)",
     "inputs": {
@@ -14404,13 +14639,8 @@
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "預覽"
-      },
-      "preview_text": {
-        "name": "預覽"
-      },
+      "preview_mode": "預覽模式",
+      "preview_text": {},
       "source": {
         "name": "來源"
       }
@@ -17698,6 +17928,23 @@
       }
     }
   },
+  "SeedNode": {
+    "display_name": "種子",
+    "inputs": {
+      "fixed": {
+        "name": "生成後鎖定"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "種子",
+        "tooltip": null
+      }
+    }
+  },
   "SelectCLIPDevice": {
     "description": "將 CLIP 文字編碼器放置於指定裝置（default / cpu / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置。\n- 「cpu」會將載入與卸載裝置都固定於 CPU。\n- 「gpu:N」會將載入裝置固定於第 N 張可用 GPU。\n\n當所選裝置在目前機器上不存在時\n（例如在 2-GPU 機器建立的工作流程於 1-GPU 機器開啟），\n此節點會直接傳遞 CLIP 並記錄訊息，而不會導致失敗。",
     "display_name": "選擇 CLIP 裝置",
@@ -18206,293 +18453,6 @@
       },
       "1": {
         "name": "低 sigma",
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioInpaint": {
-    "description": "使用文字指令轉換現有音訊樣本的部分內容。",
-    "display_name": "Stability AI 音訊修補",
-    "inputs": {
-      "audio": {
-        "name": "音訊",
-        "tooltip": "音訊長度必須介於 6 到 190 秒之間。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（秒）。"
-      },
-      "mask_end": {
-        "name": "遮罩結束"
-      },
-      "mask_start": {
-        "name": "遮罩開始"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "控制取樣步數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "使用文字指令將現有音訊樣本轉換為新的高品質作品。",
-    "display_name": "Stability AI 音訊轉音訊",
-    "inputs": {
-      "audio": {
-        "name": "音訊",
-        "tooltip": "音訊長度必須介於 6 到 190 秒之間。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（單位：秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "採樣步數",
-        "tooltip": "控制採樣步驟的數量。"
-      },
-      "strength": {
-        "name": "強度",
-        "tooltip": "參數控制音訊參數對生成音訊的影響程度。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "根據提示詞與解析度同步生成圖像。",
-    "display_name": "Stability AI Stable Diffusion 3.5 圖像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "生成圖像的長寬比。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "擴散過程對提示詞文本的遵循程度（數值越高，圖像越貼近您的提示詞）"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入圖像的去噪程度；0.0 代表與輸入圖像完全相同，1.0 則如同未提供任何圖像。"
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出圖像中出現的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "您希望在輸出圖像中看到的內容。明確且具體描述元素、顏色與主題的強力提示詞，將帶來更佳的結果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "可選的圖像風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "根據提示詞與解析度同步生成影像。",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "生成影像的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入影像的去噪程度；0.0 代表與輸入影像完全相同，1.0 則如同未提供任何影像。"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "描述您不希望在輸出影像中出現內容的文字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "您希望在輸出影像中看到的內容。強而有力且具體的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。若要控制特定詞語的權重，請使用格式 `(word:weight)`，其中 `word` 是您想控制權重的詞語，`weight` 是介於 0 到 1 之間的數值。例如：`The sky was a crisp (blue:0.3) and (green:0.8)` 代表天空同時有藍色與綠色，但綠色比例高於藍色。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "（選填）希望生成影像的風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "從文字描述生成高品質音樂和音效。",
-    "display_name": "Stability AI 文字轉音訊",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（單位：秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "採樣步數",
-        "tooltip": "控制採樣步驟的數量。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "將影像以最小變動放大至 4K 解析度。",
-    "display_name": "Stability AI 保守放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "creativity": {
-        "name": "創意度",
-        "tooltip": "控制產生未受初始影像強烈影響的額外細節的可能性。"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出影像中看到的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "您希望在輸出影像中看到什麼。明確且具描述性的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "將影像以最小變動放大至 4K 解析度。",
-    "display_name": "Stability AI 創意放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "creativity": {
-        "name": "創意度",
-        "tooltip": "控制產生未受初始影像強烈限制的額外細節的可能性。"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出影像中出現的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "您希望在輸出影像中看到什麼。明確描述元素、顏色與主題的強烈提示詞將帶來更佳效果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "風格預設",
-        "tooltip": "可選擇產生影像的期望風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "透過 Stability API 快速將影像放大至原始尺寸的 4 倍；適用於提升低品質或壓縮影像的解析度。",
-    "display_name": "Stability AI 快速放大",
-    "inputs": {
-      "image": {
-        "name": "影像"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19500,6 +19460,42 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "在單張或多張圖片上繪製文字覆蓋。",
+    "display_name": "繪製文字覆蓋",
+    "inputs": {
+      "align": {
+        "name": "對齊"
+      },
+      "color": {
+        "name": "顏色",
+        "tooltip": "文字的顏色。"
+      },
+      "font_size": {
+        "name": "字型大小",
+        "tooltip": "字型大小為圖片高度的百分比。"
+      },
+      "images": {
+        "name": "圖片"
+      },
+      "outline": {
+        "name": "外框",
+        "tooltip": "在文字周圍繪製黑色外框。"
+      },
+      "position": {
+        "name": "位置"
+      },
+      "text": {
+        "name": "文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "圖片",
         "tooltip": null
       }
     }
