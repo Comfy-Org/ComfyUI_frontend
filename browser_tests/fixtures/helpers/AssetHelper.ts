@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   Asset,
   ListAssetsResponse,
+  SeedAssetsResponse,
   UpdateAssetData
 } from '@comfyorg/ingest-types'
 import {
@@ -286,7 +287,8 @@ export class AssetHelper {
   }
 
   private handleSeedScan(route: Route) {
-    return route.fulfill({ status: 200, json: {} })
+    const response: SeedAssetsResponse = { status: 'started' }
+    return route.fulfill({ status: 200, json: response })
   }
 
   private handleDownloadAsset(route: Route) {

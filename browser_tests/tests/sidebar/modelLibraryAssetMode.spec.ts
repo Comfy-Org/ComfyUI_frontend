@@ -142,6 +142,12 @@ test.describe('Model library sidebar - asset mode', () => {
   }) => {
     const tab = comfyPage.menu.modelLibraryTab
 
+    // Search an existing model first: its result proves the eager load and
+    // the debounced search pipeline have settled, so the later update can
+    // only come from the scan event, not from a still-pending load.
+    await tab.searchInput.fill('detail_enhancer')
+    await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
+
     await tab.searchInput.fill('freshly')
     await expect(tab.leafNodes).toHaveCount(0)
 
@@ -195,9 +201,14 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
         extensions: ['.safetensors']
       }
     ])
-    // No supports_model_type_tags flag: the backend buckets by bare tags and
-    // assets carry no loader_path, so names fall back to the filename.
     await comfyPage.setup()
+    // Force the capability off rather than omitting it: the real backend's
+    // feature_flags handshake would otherwise decide which mode this tests.
+    // Bare-tag backends bucket by bare tags and emit no loader_path, so
+    // names fall back to the filename.
+    await comfyPage.featureFlags.setServerFlags({
+      supports_model_type_tags: false
+    })
     await comfyPage.menu.modelLibraryTab.open()
   })
 
