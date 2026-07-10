@@ -2890,11 +2890,10 @@
       "empty": "No partner nodes match your search.",
       "selectedCount": "{count} node selected | {count} nodes selected",
       "clearSelection": "Clear selection",
-      "autoEnableLabel": "Newly added partner nodes should be:",
-      "autoEnabled": "auto-enabled",
-      "autoDisabled": "auto-disabled",
       "loadError": "Failed to load partner nodes",
-      "updateError": "Failed to update partner nodes"
+      "updateError": "Failed to update partner nodes",
+      "autoEnableVerb": "auto-enable",
+      "autoEnableSubject": "newly added partner nodes"
     },
     "allowlist": {
       "tabs": {
@@ -2919,9 +2918,8 @@
       "empty": "No models match your search.",
       "selectedCount": "{count} model selected | {count} models selected",
       "clearSelection": "Clear selection",
-      "autoEnableLabel": "Newly added models should be:",
-      "autoEnabled": "auto-enabled",
-      "autoDisabled": "auto-disabled"
+      "autoEnableVerb": "auto-enable",
+      "autoEnableSubject": "newly added models"
     },
     "members": {
       "header": "Members",

@@ -137,24 +137,17 @@
 
     <!-- Pagination owns the bottom-right slot on every table (matching
     Activity); the set-once auto-enable default takes the quieter left. -->
-    <div class="flex h-8 items-center gap-2 text-sm text-muted-foreground">
-      <span>{{ $t('workspacePanel.models.autoEnableLabel') }}</span>
-      <span class="grid justify-items-end text-base-foreground">
-        <span
-          :class="cn('col-start-1 row-start-1', !autoEnableNew && 'invisible')"
-        >
-          {{ $t('workspacePanel.models.autoEnabled') }}
-        </span>
-        <span
-          :class="cn('col-start-1 row-start-1', autoEnableNew && 'invisible')"
-        >
-          {{ $t('workspacePanel.models.autoDisabled') }}
-        </span>
-      </span>
+    <div class="flex h-8 items-center gap-3 text-sm text-muted-foreground">
       <Switch
         :model-value="autoEnableNew"
         @update:model-value="setAutoEnableNew"
       />
+      <span>
+        <span class="text-base-foreground">
+          {{ $t('workspacePanel.models.autoEnableVerb') }}
+        </span>
+        {{ $t('workspacePanel.models.autoEnableSubject') }}
+      </span>
       <Pagination
         v-model:page="page"
         :total="total"

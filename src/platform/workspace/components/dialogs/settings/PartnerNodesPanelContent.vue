@@ -124,32 +124,18 @@
       </Table>
     </div>
 
-    <!-- Auto-enable default: outside the card, pinned to the panel bottom. pr-6
-    lines the toggle up with the in-table row toggles (table px-4 + cell px-2);
-    the reserved scrollbar gutter mirrors the table's so the two stay aligned
-    whether or not the list is scrolling. -->
-    <div
-      class="flex h-8 scrollbar-gutter-stable items-center justify-end gap-2 overflow-y-auto pr-6 text-sm text-muted-foreground"
-    >
-      <span>{{ $t('workspacePanel.partnerNodes.autoEnableLabel') }}</span>
-      <!-- Both strings occupy the same grid cell so its width is fixed to the
-      longer one; only the active label is visible, so the row never reflows. -->
-      <span class="grid justify-items-end text-base-foreground">
-        <span
-          :class="cn('col-start-1 row-start-1', !autoEnableNew && 'invisible')"
-        >
-          {{ $t('workspacePanel.partnerNodes.autoEnabled') }}
-        </span>
-        <span
-          :class="cn('col-start-1 row-start-1', autoEnableNew && 'invisible')"
-        >
-          {{ $t('workspacePanel.partnerNodes.autoDisabled') }}
-        </span>
-      </span>
+    <!-- Auto-enable default: toggle-first sentence, bottom-left. -->
+    <div class="flex h-8 items-center gap-3 text-sm text-muted-foreground">
       <Switch
         :model-value="autoEnableNew"
         @update:model-value="setAutoEnableNew"
       />
+      <span>
+        <span class="text-base-foreground">
+          {{ $t('workspacePanel.partnerNodes.autoEnableVerb') }}
+        </span>
+        {{ $t('workspacePanel.partnerNodes.autoEnableSubject') }}
+      </span>
     </div>
 
     <!-- Bulk selection toolbar: overlaid so toggling it doesn't reflow the panel -->
