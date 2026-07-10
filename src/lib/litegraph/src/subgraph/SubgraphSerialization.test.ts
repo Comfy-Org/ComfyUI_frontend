@@ -500,6 +500,36 @@ describe('SubgraphSerialization - Data Integrity', () => {
     }
   })
 
+  it('serializes interior links with contract key order and round-trips byte-identically', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+
+    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
+    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+
+    nodeA.connect(0, nodeB, 0)
+    nodeB.connect(0, nodeC, 0)
+
+    const first = subgraph.asSerialisable()
+    expect(first.links?.length).toBe(2)
+    for (const link of first.links ?? []) {
+      expect(Object.keys(link)).toEqual([
+        'id',
+        'origin_id',
+        'origin_slot',
+        'target_id',
+        'target_slot',
+        'type'
+      ])
+    }
+
+    const restored = new Subgraph(new LGraph(), first)
+    restored.configure(first)
+    const second = restored.asSerialisable()
+
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
     graph.configure(structuredClone(duplicateSubgraphNodeIds))

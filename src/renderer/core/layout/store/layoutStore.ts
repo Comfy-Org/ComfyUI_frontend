@@ -10,7 +10,6 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -19,10 +18,8 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   BatchUpdateBoundsOperation,
   Bounds,
-  CreateLinkOperation,
   CreateNodeOperation,
   CreateRerouteOperation,
-  DeleteLinkOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
   LayoutChange,
@@ -73,18 +70,6 @@ function asRerouteId(id: string | number): RerouteId {
   return toRerouteId(Number(id))
 }
 
-function asLinkId(id: string | number): LinkId {
-  return toLinkId(Number(id))
-}
-
-interface LinkData {
-  id: LinkId
-  sourceNodeId: NodeId
-  targetNodeId: NodeId
-  sourceSlot: number
-  targetSlot: number
-}
-
 interface RerouteData {
   id: RerouteId
   position: Point
@@ -109,7 +94,6 @@ class LayoutStoreImpl implements LayoutStore {
   // Yjs document and shared data structures
   private ydoc = new Y.Doc()
   private ynodes: Y.Map<NodeLayoutMap> // Maps nodeId -> NodeLayoutMap containing NodeLayout data
-  private ylinks: Y.Map<Y.Map<unknown>> // Maps linkId -> Y.Map containing link data
   private yreroutes: Y.Map<Y.Map<unknown>> // Maps rerouteId -> Y.Map containing reroute data
   private yoperations: Y.Array<LayoutOperation> // Operation log
 
@@ -172,7 +156,6 @@ class LayoutStoreImpl implements LayoutStore {
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
-    this.ylinks = this.ydoc.getMap('links')
     this.yreroutes = this.ydoc.getMap('reroutes')
     this.yoperations = this.ydoc.getArray('operations')
 
@@ -195,14 +178,6 @@ class LayoutStoreImpl implements LayoutStore {
       })
     })
 
-    // Listen for link changes and update spatial indexes
-    this.ylinks.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
-      this.version++
-      event.changes.keys.forEach((change, linkIdStr) => {
-        this.handleLinkChange(change, linkIdStr)
-      })
-    })
-
     // Listen for reroute changes and update spatial indexes
     this.yreroutes.observe((event: Y.YMapEvent<Y.Map<unknown>>) => {
       this.version++
@@ -210,14 +185,6 @@ class LayoutStoreImpl implements LayoutStore {
         this.handleRerouteChange(change, rerouteIdStr)
       })
     })
-  }
-
-  private getLinkField<K extends keyof LinkData>(
-    ylink: Y.Map<unknown>,
-    field: K
-  ): LinkData[K] | undefined {
-    const typedLink = ylink as TypedYMap<LinkData>
-    return typedLink.get(field)
   }
 
   private getRerouteField<K extends keyof RerouteData>(
@@ -249,80 +216,68 @@ class LayoutStoreImpl implements LayoutStore {
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
-            if (newLayout === null) {
-              // Delete operation
-              const existing = this.ynodes.get(nodeKey)
-              if (existing) {
-                this.applyOperation({
-                  type: 'deleteNode',
-                  entity: 'node',
-                  nodeId,
-                  timestamp: Date.now(),
-                  source: this.currentSource,
-                  actor: this.currentActor,
-                  previousLayout: yNodeToLayout(existing)
-                })
-              }
+            // No caller assigns null through this ref; deletion goes through
+            // layoutMutations.deleteNode, which carries a graphId.
+            if (newLayout === null) return
+
+            // Update operation - detect what changed
+            const existing = this.ynodes.get(nodeKey)
+            if (!existing) {
+              // Create operation
+              this.applyOperation({
+                type: 'createNode',
+                entity: 'node',
+                nodeId,
+                layout: newLayout,
+                timestamp: Date.now(),
+                source: this.currentSource,
+                actor: this.currentActor
+              })
             } else {
-              // Update operation - detect what changed
-              const existing = this.ynodes.get(nodeKey)
-              if (!existing) {
-                // Create operation
+              const existingLayout = yNodeToLayout(existing)
+
+              // Check what properties changed
+              if (
+                existingLayout.position.x !== newLayout.position.x ||
+                existingLayout.position.y !== newLayout.position.y
+              ) {
                 this.applyOperation({
-                  type: 'createNode',
+                  type: 'moveNode',
                   entity: 'node',
                   nodeId,
-                  layout: newLayout,
+                  position: newLayout.position,
+                  previousPosition: existingLayout.position,
                   timestamp: Date.now(),
                   source: this.currentSource,
                   actor: this.currentActor
                 })
-              } else {
-                const existingLayout = yNodeToLayout(existing)
-
-                // Check what properties changed
-                if (
-                  existingLayout.position.x !== newLayout.position.x ||
-                  existingLayout.position.y !== newLayout.position.y
-                ) {
-                  this.applyOperation({
-                    type: 'moveNode',
-                    entity: 'node',
-                    nodeId,
-                    position: newLayout.position,
-                    previousPosition: existingLayout.position,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
-                if (
-                  existingLayout.size.width !== newLayout.size.width ||
-                  existingLayout.size.height !== newLayout.size.height
-                ) {
-                  this.applyOperation({
-                    type: 'resizeNode',
-                    entity: 'node',
-                    nodeId,
-                    size: newLayout.size,
-                    previousSize: existingLayout.size,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
-                if (existingLayout.zIndex !== newLayout.zIndex) {
-                  this.applyOperation({
-                    type: 'setNodeZIndex',
-                    entity: 'node',
-                    nodeId,
-                    zIndex: newLayout.zIndex,
-                    previousZIndex: existingLayout.zIndex,
-                    timestamp: Date.now(),
-                    source: this.currentSource,
-                    actor: this.currentActor
-                  })
-                }
+              }
+              if (
+                existingLayout.size.width !== newLayout.size.width ||
+                existingLayout.size.height !== newLayout.size.height
+              ) {
+                this.applyOperation({
+                  type: 'resizeNode',
+                  entity: 'node',
+                  nodeId,
+                  size: newLayout.size,
+                  previousSize: existingLayout.size,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor
+                })
+              }
+              if (existingLayout.zIndex !== newLayout.zIndex) {
+                this.applyOperation({
+                  type: 'setNodeZIndex',
+                  entity: 'node',
+                  nodeId,
+                  zIndex: newLayout.zIndex,
+                  previousZIndex: existingLayout.zIndex,
+                  timestamp: Date.now(),
+                  source: this.currentSource,
+                  actor: this.currentActor
+                })
               }
             }
             trigger()
@@ -862,12 +817,6 @@ class LayoutStoreImpl implements LayoutStore {
       case 'batchUpdateBounds':
         this.handleBatchUpdateBounds(operation, change)
         break
-      case 'createLink':
-        this.handleCreateLink(operation, change)
-        break
-      case 'deleteLink':
-        this.handleDeleteLink(operation, change)
-        break
       case 'createReroute':
         this.handleCreateReroute(operation, change)
         break
@@ -1123,18 +1072,8 @@ class LayoutStoreImpl implements LayoutStore {
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
     this.spatialIndex.remove(nodeId)
-    // Clean up associated links
-    const linksToDelete = this.findLinksConnectedToNode(nodeId)
-
-    // Delete the associated links
-    for (const linkId of linksToDelete) {
-      const linkKey = String(linkId)
-      this.ylinks.delete(linkKey)
-      this.linkLayouts.delete(linkId)
-
-      // Clean up link segment layouts
-      this.cleanupLinkSegments(linkId)
-    }
+    // Link geometry is cleaned up per-link by LLink.disconnect as the node's
+    // connections are severed, so nothing to do here.
 
     change.type = 'delete'
     change.nodeIds.push(nodeId)
@@ -1170,40 +1109,6 @@ class LayoutStoreImpl implements LayoutStore {
     if (change.nodeIds.length) {
       change.type = 'update'
     }
-  }
-
-  private handleCreateLink(
-    operation: CreateLinkOperation,
-    change: LayoutChange
-  ): void {
-    const linkData = new Y.Map<unknown>()
-    linkData.set('id', operation.linkId)
-    linkData.set('sourceNodeId', operation.sourceNodeId)
-    linkData.set('sourceSlot', operation.sourceSlot)
-    linkData.set('targetNodeId', operation.targetNodeId)
-    linkData.set('targetSlot', operation.targetSlot)
-
-    const linkKey = String(operation.linkId)
-    this.ylinks.set(linkKey, linkData)
-
-    // Link geometry will be computed separately when nodes move
-    // This just tracks that the link exists
-    change.type = 'create'
-  }
-
-  private handleDeleteLink(
-    operation: DeleteLinkOperation,
-    change: LayoutChange
-  ): void {
-    const linkKey = String(operation.linkId)
-    if (!this.ylinks.has(linkKey)) return
-
-    this.ylinks.delete(linkKey)
-    this.linkLayouts.delete(operation.linkId)
-    // Clean up any segment layouts for this link
-    this.cleanupLinkSegments(operation.linkId)
-
-    change.type = 'delete'
   }
 
   private handleCreateReroute(
@@ -1279,43 +1184,6 @@ class LayoutStoreImpl implements LayoutStore {
       width: size.width,
       height: size.height
     })
-  }
-
-  /**
-   * Find all links connected to a specific node
-   */
-  private findLinksConnectedToNode(nodeId: NodeId): LinkId[] {
-    const connectedLinks: LinkId[] = []
-    this.ylinks.forEach((linkData: Y.Map<unknown>, linkIdStr: string) => {
-      const linkId = asLinkId(linkIdStr)
-      const sourceNodeId = this.getLinkField(linkData, 'sourceNodeId')
-      const targetNodeId = this.getLinkField(linkData, 'targetNodeId')
-
-      if (sourceNodeId === nodeId || targetNodeId === nodeId) {
-        connectedLinks.push(linkId)
-      }
-    })
-    return connectedLinks
-  }
-
-  /**
-   * Handle link change events
-   */
-  private handleLinkChange(change: YEventChange, linkIdStr: string): void {
-    if (change.action === 'delete') {
-      const linkId = asLinkId(linkIdStr)
-      this.cleanupLinkData(linkId)
-    }
-    // Link was added or updated - geometry will be computed separately
-    // This just tracks that the link exists in CRDT
-  }
-
-  /**
-   * Clean up all data associated with a link
-   */
-  private cleanupLinkData(linkId: LinkId): void {
-    this.linkLayouts.delete(linkId)
-    this.cleanupLinkSegments(linkId)
   }
 
   /**

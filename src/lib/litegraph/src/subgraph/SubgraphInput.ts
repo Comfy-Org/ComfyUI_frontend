@@ -114,7 +114,7 @@ export class SubgraphInput extends SubgraphSlot {
     )
 
     // Add to graph links list
-    subgraph._links.set(link.id, link)
+    subgraph._addLink(link)
 
     // Set link ID in each slot
     this.linkIds.push(link.id)

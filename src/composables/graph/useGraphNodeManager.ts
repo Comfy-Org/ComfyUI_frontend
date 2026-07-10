@@ -255,7 +255,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const id = node.id
 
     setSource(LayoutSource.Canvas)
-    void deleteNode(id)
+    deleteNode(id)
     dropNodeReferences(id)
     for (const nodeId of nodeRefs.keys()) refreshNodeInputs(nodeId)
     originalCallback?.(node)
@@ -407,6 +407,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       'node:slot-errors:changed': (slotErrorsEvent) => {
         refreshNodeInputs(toNodeId(slotErrorsEvent.nodeId))
       },
+      // NodeSlots.linkedWidgetedInputs and usePartitionedBadges read vueNodeData.inputs[].link and need reprojection on link change; remove once those migrate to useLinkStore
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
           refreshNodeInputs(toNodeId(slotLinksEvent.nodeId))

@@ -1,7 +1,10 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
@@ -279,6 +282,7 @@ describe('fixBadLinks', () => {
     const links = new Map([[linkId, link]])
     const graph = fromAny<LGraph, unknown>({
       links,
+      _removeLink: vi.fn((id) => links.delete(id)),
       getNodeById: vi.fn((nodeId) =>
         nodeId === originNode.id ? originNode : null
       )
@@ -316,5 +320,32 @@ describe('fixBadLinks', () => {
     })
     expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([1])
     expect(logger.log).not.toHaveBeenCalled()
+  })
+})
+
+describe('fixBadLinks ↔ linkStore integration', () => {
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('removes deleted zombie links from the link store', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', '*')
+    b.addInput('in', '*')
+    graph.add(a)
+    graph.add(b)
+
+    const zombie = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
+    graph._addLink(zombie)
+
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+
+    const result = fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(result).toMatchObject({ fixed: true, deleted: 1 })
+    expect(graph._links.has(zombie.id)).toBe(false)
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(false)
   })
 })

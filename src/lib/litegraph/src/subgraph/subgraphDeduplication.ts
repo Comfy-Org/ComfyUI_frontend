@@ -8,7 +8,7 @@ import type {
   SerialisableLLink
 } from '../types/serialisation'
 
-const MAX_NODE_ID = 100_000_000
+const MAX_ID = 100_000_000
 
 interface DeduplicationResult {
   subgraphs: ExportedSubgraph[]
@@ -81,7 +81,7 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, state)
+      const newId = findNextAvailableId(usedNodeIds, () => ++state.lastNodeId)
       remappedIds.set(key, newId)
       node.id = newId
       usedNodeIds.add(newId)
@@ -101,10 +101,7 @@ function remapNodeIds(
   return remappedIds
 }
 
-/**
- * Finds the next unused node ID by incrementing `state.lastNodeId`.
- * Throws if the ID space is exhausted.
- */
+/** Parses a serialized node ID as an integer, or `null` when non-numeric. */
 function numericSerializedNodeId(id: SerializedNodeId): number | null {
   const key = toNodeId(id)
   const numericId = Number(key)
@@ -113,17 +110,20 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
     : null
 }
 
+/**
+ * Finds the next unused ID by repeatedly calling `advance`.
+ * Throws if the ID space is exhausted.
+ */
 function findNextAvailableId(
-  usedNodeIds: Set<number>,
-  state: LGraphState
+  usedIds: Set<number>,
+  advance: () => number
 ): number {
   while (true) {
-    const nextId = state.lastNodeId + 1
-    if (nextId > MAX_NODE_ID) {
+    const nextId = advance()
+    if (nextId > MAX_ID) {
       throw new Error('Node ID space exhausted')
     }
-    state.lastNodeId = nextId
-    if (!usedNodeIds.has(nextId)) return nextId
+    if (!usedIds.has(nextId)) return nextId
   }
 }
 

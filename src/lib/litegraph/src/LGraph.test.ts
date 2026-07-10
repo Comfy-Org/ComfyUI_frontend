@@ -12,9 +12,13 @@ import {
   Reroute,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  SerialisableGraph,
+  SerialisableLLink
+} from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
@@ -256,6 +260,102 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(0)
     expect(graph.reroutes.size).toBe(0)
+  })
+
+  test('reroute is retained when a node is created from a floating reroute sharing an input slot with a real link', ({
+    expect
+  }) => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const preview = new LGraphNode('Preview Image')
+    preview.addInput('images', 'IMAGE')
+    const loadA = new LGraphNode('Load A')
+    loadA.addOutput('IMAGE', 'IMAGE')
+    const loadB = new LGraphNode('Load B')
+    loadB.addOutput('IMAGE', 'IMAGE')
+    graph.add(preview)
+    graph.add(loadA)
+    graph.add(loadB)
+
+    const reroute = preview.connectFloatingReroute(
+      [700, 400],
+      preview.inputs[0]
+    )
+    loadA.connect(0, preview, 0)
+    expect(graph.links.size).toBe(1)
+    expect(graph.reroutes.size).toBe(1)
+
+    // Creating a node from the floating reroute reuses its reroute chain and
+    // must not prune the reroute while replacing the existing real link.
+    loadB.connect(0, preview, 0, reroute.id)
+
+    expect(graph.links.size).toBe(1)
+    expect(graph.reroutes.size).toBe(1)
+
+    const linkId = preview.inputs[0].link
+    expect(linkId).not.toBeNull()
+    const link = graph.getLink(linkId!)
+    expect(link?.origin_id).toBe(loadB.id)
+    expect(link?.parentId).toBeDefined()
+    expect(graph.reroutes.has(link!.parentId!)).toBe(true)
+  })
+})
+
+describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+  const LINK_KEYS = [
+    'id',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'type'
+  ]
+
+  function expectContractKeyOrder(link: SerialisableLLink) {
+    const expectedKeys =
+      link.parentId === undefined ? LINK_KEYS : [...LINK_KEYS, 'parentId']
+    expect(Object.keys(link)).toEqual(expectedKeys)
+  }
+
+  test('plain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const first = new LGraph(linkedNodesGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.links?.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('reroute-chain links keep contract key order and round-trip byte-identically', ({
+    expect,
+    reroutesComplexGraph
+  }) => {
+    const first = reroutesComplexGraph.asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    const chainedLinks = (first.links ?? []).filter(
+      (link) => link.parentId !== undefined
+    )
+    expect(chainedLinks.length).toBeGreaterThan(0)
+    for (const link of first.links ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  test('floating links keep contract key order and round-trip byte-identically', ({
+    expect,
+    floatingLinkGraph
+  }) => {
+    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const second = new LGraph(first).asSerialisable()
+
+    expect(first.floatingLinks?.length).toBeGreaterThan(0)
+    for (const link of first.floatingLinks ?? []) expectContractKeyOrder(link)
+    expect(JSON.stringify(second.floatingLinks)).toBe(
+      JSON.stringify(first.floatingLinks)
+    )
   })
 })
 
@@ -799,6 +899,8 @@ describe('ensureGlobalIdUniqueness', () => {
 })
 
 describe('_removeDuplicateLinks', () => {
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
   class TestNode extends LGraphNode {
     constructor(title?: string) {
       super(title ?? 'TestNode')
@@ -830,7 +932,7 @@ describe('_removeDuplicateLinks', () => {
     const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
     graph.state.lastLinkId = linkId
     const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
-    graph._links.set(dup.id, dup)
+    graph._addLink(dup)
     source.outputs[0].links!.push(dup.id)
     return dup
   }
@@ -862,6 +964,20 @@ describe('_removeDuplicateLinks', () => {
     expect(target.inputs[0].link).toBe(keptLinkId)
     expect(graph._links.has(keptLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
+  })
+
+  it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
+    const { graph, source, target } = createConnectedGraph()
+    const keptLinkId = target.inputs[0].link!
+
+    const dup = injectDuplicateLink(graph, source, target)
+
+    graph._removeDuplicateLinks()
+
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    expect(dup._graphId).toBeUndefined()
+    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
   })
 
   it('keeps the valid link when input.link is at a shifted slot index', () => {

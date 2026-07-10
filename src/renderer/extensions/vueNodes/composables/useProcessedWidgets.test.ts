@@ -15,6 +15,7 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
@@ -160,7 +161,8 @@ describe('widget visibility', () => {
     options: IBaseWidget['options'],
     { showAdvanced = false, linked = false } = {}
   ): boolean | undefined {
-    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'w')
     registerWidgetState(id, { type: 'text', options })
     const inputs: INodeInputSlot[] = linked
       ? [
@@ -172,6 +174,16 @@ describe('widget visibility', () => {
           }
         ]
       : []
+    if (linked) {
+      useLinkStore().registerLink(GRAPH_ID, {
+        id: toLinkId(1),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: nodeId,
+        targetSlot: 0,
+        type: 'STRING'
+      })
+    }
     return processWidgets({ widgetIds: [id], showAdvanced, inputs })[0]?.visible
   }
 

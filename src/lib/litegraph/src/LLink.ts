@@ -5,13 +5,19 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
+import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
+import type { UUID } from '@/utils/uuid'
+import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { Reroute } from './Reroute'
@@ -93,22 +99,89 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
+/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
+function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
+  if (link._graphId) {
+    const registered = useLinkStore().updateEndpoint(
+      link._graphId,
+      link._state,
+      patch
+    )
+    if (!registered) link._graphId = undefined
+  } else {
+    Object.assign(link._state, patch)
+  }
+}
+
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
 
+  readonly _state: LinkTopology
+
+  /** The graph this link is registered with in {@link useLinkStore}, if any. */
+  _graphId?: UUID
+
   /** Link ID */
-  id: LinkId
-  parentId?: RerouteId
-  type: ISlotType
+  get id() {
+    return this._state.id
+  }
+
+  set id(value: LinkId) {
+    this._state.id = value
+  }
+
+  get type() {
+    return this._state.type
+  }
+
+  set type(value: ISlotType) {
+    this._state.type = value
+  }
+
   /** Output node ID */
-  origin_id: NodeId
+  get origin_id() {
+    return this._state.originNodeId
+  }
+
+  set origin_id(value: NodeId) {
+    applyEndpointPatch(this, { originNodeId: value })
+  }
+
   /** Output slot index */
-  origin_slot: number
+  get origin_slot() {
+    return this._state.originSlot
+  }
+
+  set origin_slot(value: number) {
+    applyEndpointPatch(this, { originSlot: value })
+  }
+
   /** Input node ID */
-  target_id: NodeId
+  get target_id() {
+    return this._state.targetNodeId
+  }
+
+  set target_id(value: NodeId) {
+    applyEndpointPatch(this, { targetNodeId: value })
+  }
+
   /** Input slot index */
-  target_slot: number
+  get target_slot() {
+    return this._state.targetSlot
+  }
+
+  set target_slot(value: number) {
+    applyEndpointPatch(this, { targetSlot: value })
+  }
+
+  get parentId() {
+    return this._state.parentId
+  }
+
+  set parentId(value: RerouteId | undefined) {
+    this._state.parentId = value
+  }
 
   data?: number | string | boolean | { toToolTip?(): string }
   _data?: unknown
@@ -165,13 +238,15 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     target_slot: number,
     parentId?: RerouteId
   ) {
-    this.id = id
-    this.type = type
-    this.origin_id = toNodeId(origin_id)
-    this.origin_slot = origin_slot
-    this.target_id = toNodeId(target_id)
-    this.target_slot = target_slot
-    this.parentId = parentId
+    this._state = {
+      id,
+      type,
+      originNodeId: toNodeId(origin_id),
+      originSlot: origin_slot,
+      targetNodeId: toNodeId(target_id),
+      targetSlot: target_slot,
+      parentId
+    }
 
     this._data = null
     // center
@@ -472,9 +547,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       }
     }
     network.links.delete(this.id)
-    // Delete link from Layout Store
-    layoutMutations.setSource(LayoutSource.Canvas)
-    layoutMutations.deleteLink(this.id)
+    unregisterLinkTopology(this)
+    layoutStore.deleteLinkLayout(this.id)
   }
 
   /**
@@ -504,4 +578,51 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy
   }
+}
+
+/**
+ * Registers a link's topology into {@link useLinkStore} by reference, so the
+ * store and {@link LLink._state} always agree.  Call this at every site that
+ * adds a link to a graph's link map (or floating link map).
+ *
+ * {@link LLink._graphId} is only set when the store keeps this link's state:
+ * a link that loses a first-wins id collision stays detached, so its writes
+ * and removal cannot corrupt the winner's registration.
+ * @param graph The graph (or subgraph) the link belongs to
+ * @param link The link to register
+ */
+export function registerLinkTopology(
+  graph: Pick<LGraph, 'rootGraph'>,
+  link: LLink
+): void {
+  if (link.id === toLinkId(-1)) return // transient toFloating clone
+  const graphId = graph.rootGraph.id
+  if (useLinkStore().registerLink(graphId, link._state)) {
+    link._graphId = graphId
+  }
+}
+
+/**
+ * Removes a link's topology from {@link useLinkStore} and detaches the link.
+ * No-op for links that never won registration ({@link LLink._graphId} unset),
+ * so a first-wins collision loser cannot remove the winner's entry.
+ * @param link The link to unregister
+ */
+export function unregisterLinkTopology(link: LLink): void {
+  if (!link._graphId) return
+  useLinkStore().deleteLink(link._graphId, link._state)
+  link._graphId = undefined
+}
+
+/**
+ * Unregisters every link and floating link a graph owns. Used when a graph's
+ * links leave the store without a whole-bucket wipe: subgraph-definition
+ * removal, and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose links should be unregistered
+ */
+export function unregisterAllLinkTopologies(
+  graph: Pick<LGraph, 'links' | 'floatingLinks'>
+): void {
+  for (const link of graph.links.values()) unregisterLinkTopology(link)
+  for (const link of graph.floatingLinks.values()) unregisterLinkTopology(link)
 }

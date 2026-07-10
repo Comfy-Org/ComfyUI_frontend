@@ -113,7 +113,6 @@ interface OperationMeta {
  * Entity-specific base types for proper type discrimination
  */
 type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
   rerouteId: RerouteId
@@ -130,8 +129,6 @@ type OperationType =
   | 'deleteNode'
   | 'setNodeVisibility'
   | 'batchUpdateBounds'
-  | 'createLink'
-  | 'deleteLink'
   | 'createReroute'
   | 'deleteReroute'
   | 'moveReroute'
@@ -199,24 +196,6 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
 }
 
 /**
- * Create link operation
- */
-export interface CreateLinkOperation extends LinkOpBase {
-  type: 'createLink'
-  sourceNodeId: NodeId
-  sourceSlot: number
-  targetNodeId: NodeId
-  targetSlot: number
-}
-
-/**
- * Delete link operation
- */
-export interface DeleteLinkOperation extends LinkOpBase {
-  type: 'deleteLink'
-}
-
-/**
  * Create reroute operation
  */
 export interface CreateRerouteOperation extends RerouteOpBase {
@@ -253,8 +232,6 @@ export type LayoutOperation =
   | DeleteNodeOperation
   | SetNodeVisibilityOperation
   | BatchUpdateBoundsOperation
-  | CreateLinkOperation
-  | DeleteLinkOperation
   | CreateRerouteOperation
   | DeleteRerouteOperation
   | MoveRerouteOperation

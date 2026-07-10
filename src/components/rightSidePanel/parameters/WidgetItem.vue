@@ -3,7 +3,6 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -14,6 +13,7 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -64,7 +64,7 @@ const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const { nodeManager } = useVueNodeLifecycle()
+const linkStore = useLinkStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -72,21 +72,15 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
-// Read inputs from the manager's reactive projection: link mutations happen in
-// place on node.inputs (no reactive signal), whereas vueNodeData is re-set on
-// slot-link changes. Falls back to node.inputs for unmanaged nodes.
 const isLinked = computed(() => {
-  const inputs =
-    nodeManager.value?.vueNodeData.get(node.id)?.inputs ?? node.inputs
-  return Boolean(
-    inputs?.some(
-      (input) => input.widget?.name === widget.name && input.link != null
-    )
-  )
+  const graphId = node.graph?.rootGraph.id
+  const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
+  if (!graphId || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphId, node.id, slot)
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)

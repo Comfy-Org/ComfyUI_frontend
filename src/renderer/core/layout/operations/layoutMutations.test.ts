@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -11,6 +13,7 @@ const MISSING_NODE = toNodeId('999')
 const NEW_NODE = toNodeId('99')
 
 beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.initializeFromLiteGraph([
     { id: NODE_1, pos: [10, 20], size: [200, 100] },
     { id: NODE_2, pos: [300, 400], size: [150, 80] }

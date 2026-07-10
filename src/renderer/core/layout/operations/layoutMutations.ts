@@ -26,14 +26,6 @@ interface LayoutMutations {
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
   createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
   deleteNode(nodeId: NodeId): void
-  createLink(
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void
-  deleteLink(linkId: LinkId): void
 
   // Reroute operations
   createReroute(
@@ -218,50 +210,6 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   /**
-   * Create a new link
-   */
-  const createLink = (
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void => {
-    logger.debug('Creating link:', {
-      linkId,
-      from: `${sourceNodeId}[${sourceSlot}]`,
-      to: `${targetNodeId}[${targetSlot}]`
-    })
-    layoutStore.applyOperation({
-      type: 'createLink',
-      entity: 'link',
-      linkId,
-      sourceNodeId,
-      sourceSlot,
-      targetNodeId,
-      targetSlot,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a link
-   */
-  const deleteLink = (linkId: LinkId): void => {
-    logger.debug('Deleting link:', linkId)
-    layoutStore.applyOperation({
-      type: 'deleteLink',
-      entity: 'link',
-      linkId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
    * Create a new reroute
    */
   const createReroute = (
@@ -339,8 +287,6 @@ export function useLayoutMutations(): LayoutMutations {
     createNode,
     deleteNode,
     bringNodeToFront,
-    createLink,
-    deleteLink,
     createReroute,
     deleteReroute,
     moveReroute
