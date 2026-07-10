@@ -65,7 +65,13 @@
               :aria-expanded="group.expanded"
               @click="togglePartnerCollapsed(group.partner)"
             >
-              <TableCell />
+              <TableCell @click.stop>
+                <Checkbox
+                  :model-value="groupSelectionState(group)"
+                  :aria-label="group.partner"
+                  @update:model-value="toggleGroupSelection(group)"
+                />
+              </TableCell>
               <TableCell>
                 <div class="flex items-center gap-2">
                   <i
@@ -234,6 +240,8 @@ const {
   filteredNodes,
   groups,
   togglePartnerCollapsed,
+  groupSelectionState,
+  toggleGroupSelection,
   fetch,
   toggleSort,
   setEnabled,

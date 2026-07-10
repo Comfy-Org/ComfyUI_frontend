@@ -80,9 +80,9 @@ export function usePartnerNodes(
   })
 
   // Nodes grouped by provider; groups sort alphabetically, children follow the
-  // active column sort. Collapse hides a group's rows; searching overrides
-  // collapse so matches are never hidden.
-  const collapsedPartners = ref<Set<string>>(new Set())
+  // active column sort. Groups start collapsed; searching overrides collapse
+  // so matches are never hidden.
+  const expandedPartners = ref<Set<string>>(new Set())
   const isSearching = computed(() => searchQuery.value.trim().length > 0)
 
   const groups = computed<PartnerGroup[]>(() => {
@@ -106,15 +106,35 @@ export function usePartnerNodes(
               : latest,
           null
         ),
-        expanded: isSearching.value || !collapsedPartners.value.has(partner)
+        expanded: isSearching.value || expandedPartners.value.has(partner)
       }))
   })
 
   function togglePartnerCollapsed(partner: string) {
-    const next = new Set(collapsedPartners.value)
+    const next = new Set(expandedPartners.value)
     if (next.has(partner)) next.delete(partner)
     else next.add(partner)
-    collapsedPartners.value = next
+    expandedPartners.value = next
+  }
+
+  // Tri-state group selection: unchecked/indeterminate -> select the whole
+  // group, checked -> clear it. Selecting never expands — the group checkbox
+  // and the selection bar carry the feedback.
+  function groupSelectionState(group: PartnerGroup): boolean | 'indeterminate' {
+    const selected = group.nodes.filter((n) => selectedIds.value.has(n.id))
+    if (selected.length === 0) return false
+    if (selected.length === group.nodes.length) return true
+    return 'indeterminate'
+  }
+
+  function toggleGroupSelection(group: PartnerGroup) {
+    const next = new Set(selectedIds.value)
+    if (groupSelectionState(group) === true) {
+      for (const n of group.nodes) next.delete(n.id)
+    } else {
+      for (const n of group.nodes) next.add(n.id)
+    }
+    selectedIds.value = next
   }
 
   const selectedCount = computed(() => selectedIds.value.size)
@@ -286,6 +306,8 @@ export function usePartnerNodes(
     filteredNodes,
     groups,
     togglePartnerCollapsed,
+    groupSelectionState,
+    toggleGroupSelection,
     page,
     total,
     itemsPerPage: perPage,
