@@ -44,6 +44,7 @@ export type OnboardingSurveyOption = {
   value: string
   label?: LocalizedString
   labelKey?: string
+  icon?: string
 }
 
 export type OnboardingSurveyFieldCondition = {
