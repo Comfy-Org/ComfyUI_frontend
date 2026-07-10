@@ -205,23 +205,6 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-// Re-reads the stash after each redemption (a newer code can replace the
-// stashed one mid-flight); a pass that leaves its own code stashed ends.
-async function drainStash(): Promise<void> {
-  let processedCode: string | undefined
-  for (;;) {
-    const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
-    if (!code || code === processedCode) return
-    if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
-      clearPreservedQuery(NAMESPACE)
-      return
-    }
-    processedCode = code
-    await redeemCode(code)
-  }
-}
-
-async function redeemPendingDesktopLoginCode(): Promise<void> {
   // Never rejects: the triggers fire-and-forget this.
   if (draining) {
     retriggerRequested = true
@@ -231,14 +214,21 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
   try {
     do {
       retriggerRequested = false
-      await drainStash()
+      const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
+      if (!code) continue
+      if (!DESKTOP_LOGIN_CODE_PATTERN.test(code)) {
+        clearPreservedQuery(NAMESPACE)
+        continue
+      }
+      await redeemCode(code)
+      if (code !== getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY))
+        retriggerRequested = true
     } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
   } finally {
     draining = false
   }
-}
 
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
