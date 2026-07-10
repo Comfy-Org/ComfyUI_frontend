@@ -15,10 +15,10 @@ export interface RerouteMembership {
   floatingLinkIds: ReadonlySet<LinkId>
 }
 
-export const EMPTY_MEMBERSHIP: RerouteMembership = {
+export const EMPTY_MEMBERSHIP: Readonly<RerouteMembership> = {
   linkIds: new Set(),
   floatingLinkIds: new Set()
-}
+} as const
 
 /**
  * Reroute chain store, holding each reroute's chain state (parent pointer
