@@ -3068,7 +3068,8 @@
     "planCredits": {
       "tabs": {
         "invoices": "Invoices",
-        "overview": "Credits"
+        "overview": "Credits",
+        "activity": "Activity"
       }
     },
     "autoReload": {
@@ -3105,6 +3106,24 @@
         "whenBelow": "when credits drop below"
       },
       "title": "Credit auto-reload"
+    },
+    "activity": {
+      "columns": {
+        "creditsUsed": "Credits",
+        "date": "Date",
+        "eventDetails": "Event details",
+        "eventType": "Event type",
+        "user": "User"
+      },
+      "fullActivity": "Full activity",
+      "hoverCard": {
+        "lastActivity": "Last activity",
+        "partnerNodeUsed": "Partner node used",
+        "totalCreditsUsed": "Total credits used"
+      },
+      "perUserHint": "Looking for total usage per user?",
+      "seeMembers": "See Members",
+      "empty": "No activity yet."
     }
   },
   "teamWorkspacesDialog": {
