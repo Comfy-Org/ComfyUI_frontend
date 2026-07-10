@@ -12,7 +12,13 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
@@ -658,6 +664,40 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED)
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
