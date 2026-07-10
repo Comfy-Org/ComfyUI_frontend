@@ -139,7 +139,7 @@
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/common/Badge.vue'
@@ -175,6 +175,15 @@ const extensionOptions = computed<SelectOption[]>(() => {
     })
   }
   return options
+})
+
+// Prune selections whose option disappeared (e.g. its warnings were removed),
+// otherwise a stale filter keeps hiding warnings once the control is hidden.
+watch(extensionOptions, (options) => {
+  const valid = new Set(options.map((option) => option.value))
+  selectedExtensions.value = selectedExtensions.value.filter((option) =>
+    valid.has(option.value)
+  )
 })
 
 const filteredWarnings = computed(() => {

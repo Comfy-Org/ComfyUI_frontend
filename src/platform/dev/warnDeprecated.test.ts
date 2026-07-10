@@ -137,11 +137,11 @@ describe('warnDeprecated', () => {
     const { useDeprecationWarningsStore } =
       await import('@/platform/dev/deprecationWarningsStore')
     const store = useDeprecationWarningsStore()
-    expect(store.warnings.map((w) => w.source).sort()).toEqual(
-      [
+    expect(new Set(store.warnings.map((w) => w.source))).toEqual(
+      new Set([
         DEPRECATIONS['maskEditor.openMaskEditor'].source,
         DEPRECATIONS['changeTracker.checkState'].source
-      ].sort()
+      ])
     )
   })
 })

@@ -185,6 +185,39 @@ describe('DeprecationWarningsTab', () => {
     expect(screen.queryByText('deprecationWarnings.noMatches')).toBeNull()
   })
 
+  it('drops a stale extension filter when its warnings are removed', async () => {
+    const store = useDeprecationWarningsStore()
+    store.report({
+      message: 'from alpha',
+      source: 'nodeDef',
+      extension: 'ext.alpha'
+    })
+    store.report({
+      message: 'from bravo',
+      source: 'nodeDef',
+      extension: 'ext.bravo'
+    })
+
+    const { user } = renderTab()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'deprecationWarnings.filterByExtension'
+      })
+    )
+    await user.click(await screen.findByRole('option', { name: 'ext.bravo' }))
+    expect(screen.queryByText('from alpha')).toBeNull()
+
+    for (const warning of store.warnings.filter(
+      (w) => w.extension === 'ext.bravo'
+    )) {
+      store.remove(warning.key)
+    }
+
+    await screen.findByText('from alpha')
+    expect(screen.queryByText('deprecationWarnings.noMatches')).toBeNull()
+  })
+
   it('renders a migration-guide link only when the warning has a docsUrl', () => {
     const store = useDeprecationWarningsStore()
     store.report({ message: 'no link here.' })
