@@ -44,6 +44,7 @@ export type OnboardingSurveyOption = {
   value: string
   label?: LocalizedString
   labelKey?: string
+  icon?: string
 }
 
 export type OnboardingSurveyFieldCondition = {
@@ -82,6 +83,7 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  syftdata_source_id?: string
   customer_io?: {
     write_key?: string
     site_id?: string
@@ -93,6 +95,7 @@ export type RemoteConfig = {
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  firebase_env?: 'dev'
   telemetry_disabled_events?: TelemetryEventName[]
   enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
@@ -100,6 +103,8 @@ export type RemoteConfig = {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
+  manager_survey_url?: string
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean
@@ -110,6 +115,7 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
+  consolidated_billing_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).

@@ -110,7 +110,8 @@ export const TestIds = {
   },
   propertiesPanel: {
     root: 'properties-panel',
-    errorsTab: 'panel-tab-errors'
+    errorsTab: 'panel-tab-errors',
+    selectionContextStrip: 'selection-context-strip'
   },
   assets: {
     browserModal: 'asset-browser-modal',
@@ -172,6 +173,9 @@ export const TestIds = {
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
+    runButton: 'linear-run-button',
+    validationWarning: 'linear-validation-warning',
+    viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },
   builder: {

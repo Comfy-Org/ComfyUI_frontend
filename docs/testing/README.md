@@ -4,11 +4,12 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
-Documentation for unit tests is organized into three guides:
+Documentation for unit tests is organized into four guides:
 
 - [Component Testing](./component-testing.md) - How to test Vue components
 - [Unit Testing](./unit-testing.md) - How to test utility functions, composables, and other non-component code
 - [Store Testing](./store-testing.md) - How to test Pinia stores specifically
+- [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
 
 ## Testing Structure
 

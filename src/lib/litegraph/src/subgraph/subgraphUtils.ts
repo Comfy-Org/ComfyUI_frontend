@@ -6,6 +6,8 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -117,7 +119,7 @@ export function getBoundaryLinks(
 
           if (input.link == null) continue
 
-          const resolved = LLink.resolve(input.link, graph)
+          const resolved = LLink.resolve(toLinkId(input.link), graph)
           if (!resolved) {
             console.warn(`Failed to resolve link ID [${input.link}]`)
             continue
@@ -145,7 +147,7 @@ export function getBoundaryLinks(
 
           if (!output.links) continue
 
-          const many = LLink.resolveMany(output.links, graph)
+          const many = LLink.resolveMany(output.links.map(toLinkId), graph)
           for (const { link, inputNode } of many) {
             if (
               // Subgraph output node
@@ -267,12 +269,16 @@ function mapReroutes(
 ) {
   let child: SerialisableLLink | Reroute = link
   let nextReroute =
-    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
 
   while (child.parentId !== undefined && nextReroute) {
     child = nextReroute
     nextReroute =
-      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
   }
 
   const lastId = child.parentId
@@ -300,7 +306,8 @@ export function mapSubgraphInputsAndLinks(
       if (!input) continue
 
       const linkData = link.asSerialisable()
-      link.parentId = mapReroutes(link, reroutes)
+      const parentId = mapReroutes(link, reroutes)
+      link.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
 
