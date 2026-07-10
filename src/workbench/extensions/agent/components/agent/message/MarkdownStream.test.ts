@@ -83,6 +83,15 @@ describe('MarkdownStream', () => {
     expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
   })
 
+  it('labels a fence by the first word of its info string', () => {
+    render(MarkdownStream, {
+      props: { text: '```python title=x\nprint("hi")\n```' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('python')).toBeInTheDocument()
+    expect(screen.queryByText(/title=x/)).not.toBeInTheDocument()
+  })
+
   it('labels a bare fence with no language as text', () => {
     render(MarkdownStream, {
       props: { text: '```\nplain body\n```' },

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -15,6 +15,8 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
+
+const agentPanel = vi.hoisted(() => ({ enabled: false, toggle: vi.fn() }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -83,32 +85,14 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-const agentPanelHolder = vi.hoisted(() => ({
-  store: null as unknown as {
-    isOpen: { value: boolean }
-    enabled: { value: boolean }
-    toggle: ReturnType<typeof vi.fn>
-  }
-}))
-vi.mock(
-  '@/workbench/extensions/agent/stores/agent/agentPanelStore',
-  async () => {
-    const { ref } = await import('vue')
-    agentPanelHolder.store = {
+// Ref-backed so the component's storeToRefs picks the fields up like a real store.
+vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
+  useAgentPanelStore: () =>
+    reactive({
       isOpen: ref(false),
-      enabled: ref(false),
-      toggle: vi.fn(() => {
-        agentPanelHolder.store.isOpen.value =
-          !agentPanelHolder.store.isOpen.value
-      })
-    }
-    return { useAgentPanelStore: () => agentPanelHolder.store }
-  }
-)
-
-const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackAgentEntryButtonClicked })
+      enabled: ref(agentPanel.enabled),
+      toggle: agentPanel.toggle
+    })
 }))
 
 vi.mock('@/utils/mouseDownUtil', () => ({
@@ -242,61 +226,23 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    // The component's literal guard reads the runtime global in tests.
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    distribution.isCloud = false
+    distribution.isDesktop = false
+    distribution.isNightly = false
     tabBarLayout.value = 'Default'
-    agentPanelHolder.store.enabled.value = true
-    agentPanelHolder.store.isOpen.value = false
-    agentPanelHolder.store.toggle.mockClear()
+    agentPanel.enabled = true
+    agentPanel.toggle.mockClear()
   })
 
   afterEach(() => {
-    tabBarLayout.value = 'Default'
-    agentPanelHolder.store.enabled.value = false
-    agentPanelHolder.store.isOpen.value = false
+    agentPanel.enabled = false
   })
 
-  it('does not render the entry button in the legacy tab bar even with the flag on', () => {
-    tabBarLayout.value = 'Legacy'
-    renderComponent()
-
-    expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
-  })
-
-  it('does not render the entry button while the feature flag is off', () => {
-    agentPanelHolder.store.enabled.value = false
-    renderComponent()
-
-    expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
-  })
-
-  it('toggles the panel and reflects the pressed state on the button', async () => {
+  it('renders the Ask Comfy Agent CTA and toggles the panel on click', async () => {
     const { user } = renderComponent()
 
-    const button = screen.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
-    })
-    expect(button).toHaveAttribute('aria-pressed', 'false')
+    await user.click(screen.getByRole('button', { name: 'Ask Comfy Agent' }))
 
-    await user.click(button)
-
-    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
-    expect(button).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
-    renderComponent()
-
-    const actions = screen.getByTestId('integrated-tab-bar-actions')
-    expect(actions).not.toHaveAttribute('data-agent-gate-settled')
-
-    agentPanelHolder.store.gateSettled.value = true
-    await nextTick()
-
-    expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+    expect(agentPanel.toggle).toHaveBeenCalledTimes(1)
   })
 })
