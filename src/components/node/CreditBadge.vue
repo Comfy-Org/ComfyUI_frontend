@@ -7,7 +7,7 @@
       )
     "
   >
-    <i class="icon-[lucide--component] h-full bg-amber-400" />
+    <i class="icon-[lucide--coins] h-full bg-amber-400" />
     <span class="truncate" v-text="text" />
   </span>
   <span

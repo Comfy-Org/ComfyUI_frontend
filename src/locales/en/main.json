@@ -2630,7 +2630,7 @@
     "additionalCreditsInfo": "About additional credits",
     "additionalCredits": "Additional credits",
     "additionalCreditsInUse": "In use",
-    "usedAfterMonthly": "Used after monthly runs out",
+    "usedAfterMonthly": "Used after plan credits run out",
     "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
     "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
     "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
@@ -2868,7 +2868,10 @@
       "planUpdated": "Your plan has been successfully updated.",
       "receiptEmailed": "A receipt has been emailed to you.",
       "sendInvites": "Send invites"
-    }
+    },
+    "enterprisePlanName": "Enterprise",
+    "percentUsed": "{percent}% used",
+    "usageProgress": "{used} of {total} credits used"
   },
   "userSettings": {
     "title": "My Account Settings",
@@ -3040,6 +3043,59 @@
     "workflowQueuedDialog": {
       "message": "Max workflow capacity reached. It'll start automatically as capacity opens up. If this happens often, you can also request for more capacity.",
       "title": "Your workflow is queued"
+    },
+    "billingStatus": {
+      "ending": {
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan",
+        "title": "Your team plan ends on {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Add credits",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "dismiss": "Dismiss",
+        "title": "Out of credits"
+      },
+      "paused": {
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method.",
+        "title": "Subscription paused"
+      },
+      "updatePayment": "Update payment",
+      "warning": {
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+        "title": "Payment declined"
+      }
+    },
+    "overview": {
+      "changePlan": "Change plan",
+      "inactive": {
+        "reactivate": "Reactivate plan",
+        "subtitle": "Reactivate your team plan to add more members and run workflows",
+        "subtitleEnterprise": "Reactivate your enterprise plan to add more members and run workflows",
+        "title": "Inactive team subscription",
+        "titleEnterprise": "Inactive enterprise subscription"
+      },
+      "learnMore": "Learn more",
+      "managePayment": "Manage payment",
+      "messageSupport": "Message support",
+      "paused": "Paused",
+      "perMonth": "mo",
+      "pricingTable": "Partner Nodes pricing table",
+      "renewsOn": "Renews on {date}",
+      "seeMore": "See more",
+      "snapshot": {
+        "creditsUsed": "Credits used",
+        "empty": {
+          "recentActivity": "No activity yet",
+          "topSpenders": "No credits used yet this month"
+        },
+        "lastActivity": "Last activity",
+        "recentActivity": "Recent activity",
+        "topSpenders": "Top spenders",
+        "user": "User"
+      }
     }
   },
   "teamWorkspacesDialog": {

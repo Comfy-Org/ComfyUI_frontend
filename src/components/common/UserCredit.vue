@@ -14,7 +14,7 @@
       class="p-1 text-amber-400"
     >
       <template #icon>
-        <i class="icon-[lucide--component]" />
+        <i class="icon-[lucide--coins]" />
       </template>
     </Tag>
     <div :class="textClass">
