@@ -7,7 +7,6 @@ import {
   zAgentDraftSnapshot,
   zAgentError,
   zAgentMessages,
-  zAgentThreadCreated,
   zAgentThreads,
   zAgentTurnAccepted,
   zUploadImageResult
@@ -16,7 +15,6 @@ import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
   AgentMessages,
-  AgentThreadCreated,
   AgentThreadSummary,
   AgentTurnAccepted,
   UploadImageResult
@@ -105,17 +103,6 @@ export function createAgentRestClient() {
     }
   }
 
-  async function createThread(
-    workflowId?: string
-  ): Promise<AgentThreadCreated> {
-    const body = workflowId ? { workflow_id: workflowId } : {}
-    return request(
-      '/agent/threads',
-      jsonInit('POST', body),
-      zAgentThreadCreated
-    )
-  }
-
   // threadId 'new' opens a thread as part of posting the first message.
   async function postMessage(
     threadId: string,
@@ -185,7 +172,6 @@ export function createAgentRestClient() {
   }
 
   return {
-    createThread,
     postMessage,
     getMessages,
     listThreads,

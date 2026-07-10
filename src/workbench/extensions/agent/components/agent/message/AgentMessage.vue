@@ -4,18 +4,14 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   AssistantMessage,
-  FilePart,
   NoticePart,
-  ReasoningPart,
   TextPart,
   ToolPart
 } from '../../../services/agent/agentMessageParts'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AssetGrid from './AssetGrid.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
-import ReasoningDisclosure from './ReasoningDisclosure.vue'
 import ThinkingStatus from './ThinkingStatus.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
@@ -24,14 +20,12 @@ const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
 
-// Adjacent tool / asset parts render as one grouped card; text, reasoning and notices
-// stay as their own rows, preserving the transport's interleaved order.
+// Adjacent tool parts render as one grouped card; text and notices stay as their
+// own rows, preserving the transport's interleaved order.
 type Group =
   | { kind: 'text'; part: TextPart }
-  | { kind: 'reasoning'; part: ReasoningPart }
   | { kind: 'notice'; part: NoticePart }
   | { kind: 'tools'; parts: ToolPart[] }
-  | { kind: 'assets'; parts: FilePart[] }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
@@ -40,13 +34,8 @@ const groups = computed<Group[]>(() => {
     if (part.type === 'tool') {
       if (prev?.kind === 'tools') prev.parts.push(part)
       else out.push({ kind: 'tools', parts: [part] })
-    } else if (part.type === 'file') {
-      if (prev?.kind === 'assets') prev.parts.push(part)
-      else out.push({ kind: 'assets', parts: [part] })
     } else if (part.type === 'text') {
       out.push({ kind: 'text', part })
-    } else if (part.type === 'reasoning') {
-      out.push({ kind: 'reasoning', part })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -72,7 +61,6 @@ const raw = ref(false)
   <div class="space-y-1.5">
     <ThinkingStatus
       v-if="message.thinking || (message.streaming && !message.parts.length)"
-      :tokens="message.tokens"
     />
 
     <template v-for="(group, index) in groups" :key="index">
@@ -81,13 +69,7 @@ const raw = ref(false)
         :text="group.part.text"
         :raw="raw"
       />
-      <ReasoningDisclosure
-        v-else-if="group.kind === 'reasoning'"
-        :text="group.part.text"
-        :streaming="group.part.state === 'streaming'"
-      />
       <ToolCallGroup v-else-if="group.kind === 'tools'" :tools="group.parts" />
-      <AssetGrid v-else-if="group.kind === 'assets'" :assets="group.parts" />
       <div
         v-else
         :class="
