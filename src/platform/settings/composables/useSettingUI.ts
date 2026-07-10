@@ -27,13 +27,14 @@ const CATEGORY_ICONS: Record<string, string> = {
   keybinding: 'icon-[lucide--keyboard]',
   LiteGraph: 'icon-[lucide--workflow]',
   'Mask Editor': 'icon-[lucide--pen-tool]',
+  Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
-  PlanCredits: 'icon-[lucide--credit-card]',
+  PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--building-2]'
+  workspace: 'icon-[lucide--receipt-text]'
 }
 
 interface SettingPanelItem {
@@ -175,16 +176,18 @@ export function useSettingUI(
     )
   }
 
-  // Workspace panel: only available on cloud with team workspaces enabled
-  const workspacePanel: SettingPanelItem = {
+  // Workspace panels: only available on cloud with team workspaces enabled.
+  // The old single "Workspace" panel is split into three sidebar entries; the
+  // Plan & Credits entry keeps the 'workspace' key so existing deep links land.
+  const planCreditsPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
-      label: 'Workspace',
+      label: 'PlanCredits',
       children: []
     },
     component: defineAsyncComponent(
       () =>
-        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
+        import('@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue')
     )
   }
 
@@ -257,7 +260,9 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel, membersPanel] : []),
+      ...(shouldShowWorkspacePanel.value
+        ? [planCreditsPanel, membersPanel]
+        : []),
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -308,9 +313,12 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         ...(shouldShowWorkspacePanel.value
-          ? [workspacePanel.node, membersPanel.node]
+          ? [planCreditsPanel.node, membersPanel.node]
           : []),
-        ...(isLoggedIn.value &&
+        // The legacy per-account Credits panel is redundant once the workspace
+        // Plan & Credits panel is present, which now owns the credit balance.
+        ...(!shouldShowWorkspacePanel.value &&
+        isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])

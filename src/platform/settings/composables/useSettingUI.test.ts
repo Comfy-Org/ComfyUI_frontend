@@ -233,5 +233,12 @@ describe('useSettingUI', () => {
         }
       }
     })
+
+    it('splits the workspace panel into plan and members sidebar entries', () => {
+      const { navGroups } = useSettingUI()
+      const keys = navKeys(navGroups.value)
+      expect(keys).toContain('workspace')
+      expect(keys).toContain('workspace-members')
+    })
   })
 })

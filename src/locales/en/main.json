@@ -3058,6 +3058,17 @@
         "recentActivity": "Recent activity",
         "topSpenders": "Top spenders",
         "user": "User"
+      },
+      "nextInvoice": "Next month invoice",
+      "usd": "USD"
+    },
+    "invoices": {
+      "fullHistory": "Full invoice history"
+    },
+    "planCredits": {
+      "tabs": {
+        "invoices": "Invoices",
+        "overview": "Credits"
       }
     }
   },
