@@ -249,6 +249,7 @@ export type BillingSubscriptionStatus =
   | 'scheduled'
   | 'ended'
   | 'canceled'
+  | 'paused'
 
 export type BillingStatus =
   | 'awaiting_payment_method'
