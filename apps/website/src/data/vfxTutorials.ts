@@ -6,6 +6,24 @@ const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 
 export const vfxTutorials: readonly Tutorial[] = [
   {
+    id: 'skyreplacement_smaller_v06',
+    title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
+    videoSrc:
+      'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06.mp4',
+    poster:
+      'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06_thumbnail.jpg',
+    href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/',
+    caption: [
+      {
+        src: 'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06_vtt.en.vtt',
+        kind: 'captions',
+        srclang: 'en',
+        label: 'English'
+      }
+    ],
+    tags: [partnerNodesTag, imageToVideoTag]
+  },
+  {
     id: 'cleanplate_walkthrough_v03',
     title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
     videoSrc:
@@ -78,7 +96,10 @@ export const vfxTutorials: readonly Tutorial[] = [
   },
   {
     id: 'seedance_demo_comfyui_v03',
-    title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
+    title: {
+      en: 'Seedance Demo (ComfyUI)',
+      'zh-CN': 'Seedance 演示（ComfyUI）'
+    },
     videoSrc:
       'https://media.comfy.org/website/vfx/seedance_demo_comfyui_v03.mp4',
     poster:
@@ -87,24 +108,6 @@ export const vfxTutorials: readonly Tutorial[] = [
     caption: [
       {
         src: 'https://media.comfy.org/website/vfx/seedance_demo_comfyui_v03_vtt.en.vtt',
-        kind: 'captions',
-        srclang: 'en',
-        label: 'English'
-      }
-    ],
-    tags: [partnerNodesTag, imageToVideoTag]
-  },
-  {
-    id: 'skyreplacement_smaller_v06',
-    title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
-    videoSrc:
-      'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06.mp4',
-    poster:
-      'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06_thumbnail.jpg',
-    href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/',
-    caption: [
-      {
-        src: 'https://media.comfy.org/website/vfx/skyreplacement_smaller_v06_vtt.en.vtt',
         kind: 'captions',
         srclang: 'en',
         label: 'English'
