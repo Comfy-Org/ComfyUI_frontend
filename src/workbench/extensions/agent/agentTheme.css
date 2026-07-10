@@ -44,32 +44,6 @@
   --radius-agent: 0.75rem;
 }
 
-/* Structural (theme-independent) collapsible animation tokens + their keyframes,
-   driven by the --reka-collapsible-content-height var Reka sets on the content
-   element. Used by the agent CollapsibleContent for reasoning/tool disclosures. */
-@theme {
-  --animate-collapsible-down: collapsible-down 200ms ease-out;
-  --animate-collapsible-up: collapsible-up 200ms ease-out;
-}
-
-@keyframes collapsible-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(--reka-collapsible-content-height);
-  }
-}
-
-@keyframes collapsible-up {
-  from {
-    height: var(--reka-collapsible-content-height);
-  }
-  to {
-    height: 0;
-  }
-}
-
 /* Shimmering "Thinking…" text (design reference): a light band sweeps across the muted
    label while the agent reasons. Falls back to the muted color under reduced-motion. */
 @keyframes agent-shimmer {
