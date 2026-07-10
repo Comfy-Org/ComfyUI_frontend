@@ -38,7 +38,8 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledOnce()
+    // The full message pins the {name}/{limit} i18n interpolation.
+    expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
