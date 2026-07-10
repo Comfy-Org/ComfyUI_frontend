@@ -201,5 +201,25 @@ describe('MediaAssetFilterMenu', () => {
       expect(screen.queryAllByRole('menuitemcheckbox')).toHaveLength(0)
       expect(screen.getByText('No matches')).toBeInTheDocument()
     })
+
+    it('resets the people search when the submenu reopens', async () => {
+      const { user } = renderMenu({ authorOptions: TEAM })
+      const search = await openAuthorSubmenu(user)
+
+      search.focus()
+      await user.keyboard('zzz')
+      expect(screen.getByText('No matches')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      const reopenedSearch = await openAuthorSubmenu(user)
+
+      expect(reopenedSearch).toHaveValue('')
+      for (const name of TEAM) {
+        expect(
+          screen.getByRole('menuitemcheckbox', { name })
+        ).toBeInTheDocument()
+      }
+      expect(screen.queryByText('No matches')).not.toBeInTheDocument()
+    })
   })
 })
