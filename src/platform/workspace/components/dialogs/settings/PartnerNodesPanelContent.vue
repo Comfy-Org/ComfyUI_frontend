@@ -45,6 +45,9 @@
                 <i :class="sortIcon('name')" />
               </button>
             </TableHead>
+            <TableHead class="w-32">
+              {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
+            </TableHead>
             <TableHead class="w-40" :aria-sort="ariaSort('lastModified')">
               <button
                 :class="sortHeaderClass"
@@ -82,19 +85,28 @@
                       )
                     "
                   />
-                  <PartnerBadge :partner="group.partner" />
-                  <span class="font-medium text-base-foreground">
-                    {{ group.partner }}
-                  </span>
-                  <span class="text-muted-foreground">
-                    {{
-                      $t('workspacePanel.partnerNodes.groupCount', {
-                        enabled: group.enabledCount,
-                        total: group.totalCount
-                      })
-                    }}
-                  </span>
+                  <div
+                    :class="
+                      cn(
+                        'flex items-center gap-2',
+                        group.enabledCount === 0 && 'opacity-30'
+                      )
+                    "
+                  >
+                    <PartnerBadge :partner="group.partner" />
+                    <span class="font-medium text-base-foreground">
+                      {{ group.partner }}
+                    </span>
+                  </div>
                 </div>
+              </TableCell>
+              <TableCell class="text-muted-foreground tabular-nums">
+                {{
+                  $t('workspacePanel.partnerNodes.groupCount', {
+                    enabled: group.enabledCount,
+                    total: group.totalCount
+                  })
+                }}
               </TableCell>
               <TableCell class="text-muted-foreground">
                 {{ formatLastModified(group.lastModified) }}
@@ -124,20 +136,11 @@
                   />
                 </TableCell>
                 <TableCell class="text-muted-foreground">
-                  <div
-                    :class="
-                      cn(
-                        'flex items-center gap-2 pl-7',
-                        !node.enabled && 'opacity-30'
-                      )
-                    "
-                  >
-                    <i
-                      class="icon-[lucide--corner-down-right] size-3 shrink-0 text-muted-foreground/50"
-                    />
-                    <span>{{ node.name }}</span>
+                  <div :class="cn('pl-7', !node.enabled && 'opacity-30')">
+                    {{ node.name }}
                   </div>
                 </TableCell>
+                <TableCell />
                 <TableCell class="text-muted-foreground">
                   {{ formatLastModified(node.last_modified) }}
                 </TableCell>
@@ -152,7 +155,7 @@
           </template>
           <TableRow v-if="groups.length === 0" class="hover:bg-transparent">
             <TableCell
-              :colspan="4"
+              :colspan="5"
               class="py-6 text-center text-sm text-muted-foreground"
             >
               {{ $t('workspacePanel.partnerNodes.empty') }}

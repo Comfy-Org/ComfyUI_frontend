@@ -2884,6 +2884,7 @@
       "columns": {
         "name": "Partner Node",
         "partner": "Partner",
+        "nodes": "Nodes",
         "lastModified": "Last modified"
       },
       "neverModified": "—",
@@ -2894,7 +2895,7 @@
       "updateError": "Failed to update partner nodes",
       "autoEnableVerb": "auto-enable",
       "autoEnableSubject": "newly added partner nodes",
-      "groupCount": "{enabled}/{total}"
+      "groupCount": "{enabled}/{total} enabled"
     },
     "allowlist": {
       "tabs": {
