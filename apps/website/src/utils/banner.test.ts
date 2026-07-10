@@ -21,31 +21,25 @@ describe('evaluateBannerVisibility', () => {
     expect(evaluateBannerVisibility(base, ctx)).toBe(true)
   })
 
-  it("hides on an excluded path (the banner's own CTA destination)", () => {
+  it.for([
+    {
+      name: "hides on the banner's own CTA destination",
+      path: '/mcp',
+      visible: false
+    },
+    { name: 'shows on non-excluded paths', path: '/', visible: true },
+    {
+      name: 'matches an excluded path despite a trailing slash',
+      path: '/mcp/',
+      visible: false
+    }
+  ])('excludePaths: $name', ({ path, visible }, { expect }) => {
     expect(
       evaluateBannerVisibility(
         { ...base, excludePaths: ['/mcp'] },
-        { ...ctx, currentPath: '/mcp' }
+        { ...ctx, currentPath: path }
       )
-    ).toBe(false)
-  })
-
-  it('still shows on other paths when excludePaths is set', () => {
-    expect(
-      evaluateBannerVisibility(
-        { ...base, excludePaths: ['/mcp'] },
-        { ...ctx, currentPath: '/' }
-      )
-    ).toBe(true)
-  })
-
-  it('matches excluded paths regardless of a trailing slash', () => {
-    expect(
-      evaluateBannerVisibility(
-        { ...base, excludePaths: ['/mcp'] },
-        { ...ctx, currentPath: '/mcp/' }
-      )
-    ).toBe(false)
+    ).toBe(visible)
   })
 
   it('hides when inactive', () => {

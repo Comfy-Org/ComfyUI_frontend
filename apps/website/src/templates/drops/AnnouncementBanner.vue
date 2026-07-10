@@ -76,7 +76,6 @@ function onCtaClick(): void {
           <div class="flex flex-1 justify-end">
             <IconButton
               type="button"
-              class="text-primary-warm-white/70 hover:text-primary-warm-white"
               :aria-label="t('nav.close', locale)"
               @click="close"
             >
