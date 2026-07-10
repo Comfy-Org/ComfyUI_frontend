@@ -390,12 +390,7 @@ export const useModelStore = defineStore('models', () => {
     await reloadModels()
   }
 
-  api.addCustomEventListener('assets.seed.fast_complete', async (event) => {
-    const created = (event?.detail as { created?: unknown } | null)?.created
-    if (typeof created === 'number' && created > 0) {
-      // oxlint-disable-next-line no-console
-      console.log(`Model scan discovered ${created} new model file(s).`)
-    }
+  api.addCustomEventListener('assets.seed.fast_complete', async () => {
     try {
       await reloadModels()
     } catch (error) {

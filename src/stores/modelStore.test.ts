@@ -303,30 +303,6 @@ describe('useModelStore', () => {
       })
       error.mockRestore()
     })
-
-    it('logs when the scan discovered new files, stays quiet otherwise', async () => {
-      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
-      enableMocks(true)
-      store = useModelStore()
-      const fastCompleteHandler = vi
-        .mocked(api.addCustomEventListener)
-        .mock.calls.find(([type]) => type === 'assets.seed.fast_complete')?.[1]
-
-      await fastCompleteHandler!(
-        new CustomEvent('assets.seed.fast_complete', {
-          detail: { created: 0, skipped: 130, total: 130 }
-        })
-      )
-      expect(log).not.toHaveBeenCalled()
-
-      await fastCompleteHandler!(
-        new CustomEvent('assets.seed.fast_complete', {
-          detail: { created: 3, skipped: 130, total: 133 }
-        })
-      )
-      expect(log).toHaveBeenCalledWith(expect.stringContaining('3'))
-      log.mockRestore()
-    })
   })
 
   describe('API switching functionality', () => {
