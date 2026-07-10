@@ -5,6 +5,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { i18n } from '@/i18n'
+
 import MarkdownStream from './MarkdownStream.vue'
 
 // Pins the agent-reply rendering contract (markdown in, safe HTML out) as it flows
@@ -35,5 +37,38 @@ describe('MarkdownStream', () => {
       props: { text: '[x](javascript:alert(1))' }
     })
     expect(html()).not.toContain('javascript:')
+  })
+
+  it('renders a fenced block as a framed code block with its language and a copy button', () => {
+    render(MarkdownStream, {
+      props: { text: 'before\n```python\nprint("hi")\n```\nafter' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('python')).toBeInTheDocument()
+    expect(
+      screen.getByText('print("hi")', { selector: 'code' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument()
+    expect(screen.getByText('before')).toBeInTheDocument()
+    expect(screen.getByText('after')).toBeInTheDocument()
+  })
+
+  it('handles a 4-backtick fence containing a 3-backtick fence', () => {
+    render(MarkdownStream, {
+      props: { text: '````md\n```js\ncode\n```\n````' },
+      global: { plugins: [i18n] }
+    })
+    // The whole inner fence is ONE literal code body, not a nested block.
+    expect(screen.getByText(/```js/, { selector: 'code' })).toBeInTheDocument()
+    expect(screen.getByText('md')).toBeInTheDocument()
+  })
+
+  it('leaves an inline triple-backtick span mid-sentence as prose', () => {
+    render(MarkdownStream, {
+      props: { text: 'use ```npm i``` to install' }
+    })
+    // Rendered as an inline <code> span inside prose, not a framed block.
+    expect(screen.getByText('npm i', { selector: 'code' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /copy/i })).toBeNull()
   })
 })

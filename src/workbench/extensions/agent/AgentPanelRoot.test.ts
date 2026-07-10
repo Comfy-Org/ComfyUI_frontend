@@ -36,6 +36,10 @@ const ws = vi.hoisted(() => {
 
 vi.mock('@/scripts/api', () => ({
   api: {
+    // Same route mapping as the real fetchApi, delegating to global fetch so the
+    // per-test fetch stubs below keep shaping bodies and statuses.
+    fetchApi: (route: string, options?: RequestInit) =>
+      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     socket: { readyState: 1 },
     addEventListener: ws.add,
     removeEventListener: ws.remove,
@@ -125,10 +129,6 @@ const executionErrors = vi.hoisted(() => ({
 
 vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
-}))
-
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ workspaceToken: undefined })
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({

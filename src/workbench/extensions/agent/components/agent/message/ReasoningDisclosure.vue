@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
+import {
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger
+} from 'reka-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import CollapsibleContent from '../../ui/CollapsibleContent.vue'
 
 // Open while the reasoning is still streaming so the user sees it live; collapses to a
 // one-line summary once the turn moves on. Controlled (not defaultOpen, which reka reads
@@ -37,7 +39,9 @@ watch(
       />
       {{ t('agent.reasoning') }}
     </CollapsibleTrigger>
-    <CollapsibleContent>
+    <CollapsibleContent
+      class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+    >
       <div
         class="text-agent-fg-muted px-3 pb-2 text-xs/relaxed whitespace-pre-wrap"
       >

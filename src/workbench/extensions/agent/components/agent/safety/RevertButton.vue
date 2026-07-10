@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '../../ui/Button.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { canRevert } = defineProps<{ canRevert: boolean }>()
 const emit = defineEmits<{ revert: [] }>()
@@ -11,8 +11,9 @@ const { t } = useI18n()
 
 <template>
   <Button
-    size="sm"
-    variant="outline"
+    size="md"
+    variant="textonly"
+    class="border-agent-border focus-visible:ring-agent-accent rounded-xl border border-solid px-3 text-sm focus-visible:ring-2"
     :disabled="!canRevert"
     @click="emit('revert')"
   >
