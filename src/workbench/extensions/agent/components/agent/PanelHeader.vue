@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '../ui/Button.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { ActiveTab } from './ActiveTabStrip.vue'
 import ActiveTabStrip from './ActiveTabStrip.vue'
 
@@ -50,8 +50,9 @@ const sizeToggleLabel = computed(() =>
     <div class="ml-auto flex items-center gap-1">
       <Button
         v-tooltip.bottom="{ value: t('agent.newChat'), showDelay: 300 }"
-        variant="ghost"
+        variant="muted-textonly"
         size="icon"
+        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
@@ -59,8 +60,9 @@ const sizeToggleLabel = computed(() =>
       </Button>
       <Button
         v-tooltip.bottom="{ value: sizeToggleLabel, showDelay: 300 }"
-        variant="ghost"
+        variant="muted-textonly"
         size="icon"
+        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
@@ -68,8 +70,9 @@ const sizeToggleLabel = computed(() =>
       </Button>
       <Button
         v-tooltip.bottom="{ value: t('agent.close'), showDelay: 300 }"
-        variant="ghost"
+        variant="muted-textonly"
         size="icon"
+        class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >
