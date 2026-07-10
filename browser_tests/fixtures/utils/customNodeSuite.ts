@@ -17,13 +17,22 @@ export const customNodeSuiteSettings = {
   'Comfy.RightSidePanel.ShowErrorsTab': true
 }
 
-// The tutorial path auto-opens the templates browser over the blank graph.
-// Dismiss it deterministically so no window ever shows unexpected UI.
+// The tutorial path (Comfy.TutorialCompleted:false) auto-opens the templates
+// browser over the blank graph on some ComfyUI backends, but WHETHER it opens
+// has drifted across backend versions - newer ComfyUI no longer auto-opens it.
+// Dismiss it if it appears; if it never shows within a short window there is
+// nothing to dismiss and the blank graph is already ready. Hard-waiting for
+// 'visible' (no timeout) hung every beforeEach for the full 15s test budget on
+// backends where it stopped auto-opening, failing the whole suite.
 export async function dismissTemplatesDialog(
   comfyPage: ComfyPage
 ): Promise<void> {
   const templates = comfyPage.page.getByTestId(TestIds.templates.content)
-  await templates.waitFor({ state: 'visible' })
+  try {
+    await templates.waitFor({ state: 'visible', timeout: 5000 })
+  } catch {
+    return
+  }
   await comfyPage.page.keyboard.press('Escape')
   await templates.waitFor({ state: 'hidden' })
 }

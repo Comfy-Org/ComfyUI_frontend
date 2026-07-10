@@ -167,7 +167,17 @@ const tm = i18n.global.tm
  */
 export function st(key: string, fallbackMessage: string) {
   // The normal defaultMsg overload fails in some cases for custom nodes
-  return te(key) ? t(key) : fallbackMessage
+  if (!te(key)) return fallbackMessage
+  try {
+    return t(key)
+  } catch (error) {
+    // A custom-node-provided message value can contain vue-i18n linked-message
+    // syntax (a literal "@", "{", "|"), which throws at compile time. One bad
+    // key must never abort app boot (this runs on getNodeDefs -> registerNodes
+    // -> comfyApp.setup(), before window.app is assigned).
+    console.warn(`Failed to translate "${key}"; using fallback`, error)
+    return fallbackMessage
+  }
 }
 
 /**
