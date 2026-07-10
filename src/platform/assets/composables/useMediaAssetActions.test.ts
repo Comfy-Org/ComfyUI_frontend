@@ -1345,6 +1345,26 @@ describe('useMediaAssetActions', () => {
       )
     })
 
+    it('shares multiple assets and uses the plural toast', async () => {
+      const actions = useMediaAssetActions()
+      const visibilityStore = useAssetVisibilityStore()
+
+      const result = actions.shareAssets([
+        createMockAsset({ id: 'share-a' }),
+        createMockAsset({ id: 'share-b' })
+      ])
+      lastDialogCall().props.onConfirm()
+
+      await expect(result).resolves.toBe(true)
+      expect(visibilityStore.isShared('share-a')).toBe(true)
+      expect(visibilityStore.isShared('share-b')).toBe(true)
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'mediaAsset.selection.assetsSharedSuccessfully'
+        })
+      )
+    })
+
     it('resolves false without sharing when the dialog is dismissed', async () => {
       const actions = useMediaAssetActions()
       const visibilityStore = useAssetVisibilityStore()
