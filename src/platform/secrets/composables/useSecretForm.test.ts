@@ -541,6 +541,122 @@ describe('useSecretForm', () => {
       expect(errors.secretValue).toBe('secrets.errors.invalidJson')
     })
 
+    it('rejects JSON that is not an object for a json_file provider', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      form.secretValue = '["not", "an", "object"]'
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+    })
+
+    it('rejects a file larger than the size cap', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const oversized = new File(['x'.repeat(1024 * 1024 + 1)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('reports an error when the file read fails', async () => {
+      const visible = ref(true)
+      const { errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const unreadable = {
+        name: 'sa.json',
+        size: 20,
+        text: () => Promise.reject(new Error('read failed'))
+      } as unknown as File
+      await loadSecretFromFile(unreadable)
+
+      expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
+    })
+
+    it('clears an uploaded credential when the provider changes', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      const file = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(file)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      form.provider = 'huggingface'
+      await nextTick()
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('discards a file read superseded by a provider change', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+      form.provider = 'huggingface'
+      await nextTick()
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
     it('submits valid JSON for a json_file provider', async () => {
       const visible = ref(true)
       mockCreate.mockResolvedValue({})

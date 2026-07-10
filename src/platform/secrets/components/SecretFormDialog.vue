@@ -212,7 +212,11 @@ const {
 })
 
 const secretValueHint = computed(() => {
-  if (selectedInputType.value === 'json_file') return t('secrets.jsonFileHint')
+  if (selectedInputType.value === 'json_file') {
+    return mode === 'edit'
+      ? t('secrets.jsonFileHintEdit')
+      : t('secrets.jsonFileHint')
+  }
   return mode === 'edit'
     ? t('secrets.secretValueHintEdit')
     : t('secrets.secretValueHint')

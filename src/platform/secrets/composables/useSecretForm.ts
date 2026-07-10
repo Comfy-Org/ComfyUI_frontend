@@ -37,14 +37,22 @@ interface ProviderOption {
   disabled: boolean
 }
 
-function isValidJson(value: string): boolean {
+// A json_file credential (e.g. a Vertex service-account key) must be a JSON
+// object, so scalars and arrays are rejected even though they parse.
+function isJsonObject(value: string): boolean {
   try {
-    JSON.parse(value)
-    return true
+    const parsed: unknown = JSON.parse(value)
+    return (
+      typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+    )
   } catch {
     return false
   }
 }
+
+// Service-account keys are only a few KB; cap uploads well above that so a huge
+// file can't be read into memory or block the main thread on JSON.parse.
+const MAX_JSON_FILE_BYTES = 1024 * 1024
 
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
@@ -180,12 +188,41 @@ export function useSecretForm(options: UseSecretFormOptions) {
     apiErrorMessage.value = null
   }
 
+  // Bumped whenever a read is started or invalidated (by a provider change), so
+  // a slow read that resolves after the user has moved on is discarded instead
+  // of overwriting the current field.
+  let latestFileReadId = 0
+
   async function loadSecretFromFile(file: File | null) {
     if (!file) return
     errors.secretValue = ''
-    form.secretValue = await file.text()
-    fileName.value = file.name
+    if (file.size > MAX_JSON_FILE_BYTES) {
+      errors.secretValue = t('secrets.errors.fileTooLarge')
+      return
+    }
+    const readId = ++latestFileReadId
+    try {
+      const text = await file.text()
+      if (readId !== latestFileReadId) return
+      form.secretValue = text
+      fileName.value = file.name
+    } catch {
+      if (readId !== latestFileReadId) return
+      errors.secretValue = t('secrets.errors.fileReadFailed')
+    }
   }
+
+  // Switching providers discards any entered or uploaded credential so a value
+  // captured for one provider (e.g. an uploaded JSON key) can't be submitted
+  // under another, and invalidates any in-flight file read.
+  watch(
+    () => form.provider,
+    () => {
+      latestFileReadId++
+      form.secretValue = ''
+      fileName.value = ''
+    }
+  )
 
   whenever(() => visible.value, resetForm)
 
@@ -213,7 +250,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     if (
       selectedInputType.value === 'json_file' &&
       form.secretValue &&
-      !isValidJson(form.secretValue)
+      !isJsonObject(form.secretValue)
     ) {
       errors.secretValue = t('secrets.errors.invalidJson')
       return false
