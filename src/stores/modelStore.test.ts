@@ -29,6 +29,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
+    onModelsScanned: vi.fn(),
     seedModelAssets: vi.fn()
   }
 }))
@@ -71,6 +72,7 @@ function enableMocks(useAssetAPI = false) {
     { name: 'noinfo.safetensors', pathIndex: 0 }
   ])
   vi.mocked(assetService.seedModelAssets).mockResolvedValue(undefined)
+  vi.mocked(assetService.onModelsScanned).mockReturnValue(() => {})
 
   vi.mocked(api.viewMetadata).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
@@ -262,6 +264,47 @@ describe('useModelStore', () => {
     })
   })
 
+  it('eager-loading before boot loads the folder structure first', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    await store.loadModels()
+
+    expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+    expect(api.getModels).toHaveBeenCalledWith('checkpoints')
+    expect(api.getModels).toHaveBeenCalledWith('vae')
+  })
+
+  describe('refreshModelFolder races', () => {
+    it('does not resurrect a stale folder over a fresher structure', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+
+      let resolveStaleContents!: (
+        value: { name: string; pathIndex: number }[]
+      ) => void
+      vi.mocked(api.getModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStaleContents = resolve
+        })
+      )
+      const staleRefresh = store.refreshModelFolder('checkpoints')
+
+      // A full reload rebuilds the folder structure mid-refresh.
+      await store.loadModelFolders()
+      const freshFolder = await store.getLoadedModelFolder('checkpoints')
+
+      resolveStaleContents([{ name: 'stale.safetensors', pathIndex: 0 }])
+      await staleRefresh
+
+      const current = await store.getLoadedModelFolder('checkpoints')
+      expect(current).toBe(freshFolder)
+      expect(current!.models['0/stale.safetensors']).toBeUndefined()
+    })
+  })
+
   describe('scan fast-phase completion', () => {
     it('re-loads previously loaded folders when the event fires', async () => {
       enableMocks(true)
@@ -270,11 +313,10 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(1)
 
-      const fastCompleteHandler = vi
-        .mocked(api.addCustomEventListener)
-        .mock.calls.find(([type]) => type === 'assets.seed.fast_complete')?.[1]
-      expect(fastCompleteHandler).toBeDefined()
-      await fastCompleteHandler!(new CustomEvent('assets.seed.fast_complete'))
+      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
+        .calls[0]?.[0]
+      expect(scanCallback).toBeDefined()
+      await scanCallback!()
       await vi.waitFor(() => {
         expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
       })
@@ -290,11 +332,10 @@ describe('useModelStore', () => {
         new Error('transient network failure')
       )
       store = useModelStore()
-      const fastCompleteHandler = vi
-        .mocked(api.addCustomEventListener)
-        .mock.calls.find(([type]) => type === 'assets.seed.fast_complete')?.[1]
+      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
+        .calls[0]?.[0]
 
-      await fastCompleteHandler!(new CustomEvent('assets.seed.fast_complete'))
+      await scanCallback!()
       await vi.waitFor(() => {
         expect(error).toHaveBeenCalledWith(
           expect.stringContaining('reload'),

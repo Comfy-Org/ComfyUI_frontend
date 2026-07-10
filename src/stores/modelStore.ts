@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -319,9 +319,15 @@ export const useModelStore = defineStore('models', () => {
   }
 
   /**
-   * Loads all model folders' contents from the server
+   * Loads all model folders' contents from the server. Loads the folder
+   * structure first when it has not arrived yet — eager loading can run
+   * before app boot's own loadModelFolders call resolves, and iterating an
+   * empty folder list would silently load nothing.
    */
   async function loadModels() {
+    if (modelFolderNames.value.length === 0) {
+      await loadModelFolders()
+    }
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
 
@@ -338,12 +344,16 @@ export const useModelStore = defineStore('models', () => {
       await refresh()
       return
     }
+    const requestId = modelFoldersRequestId
     const folder = new ModelFolder(
       folderName,
       createGetModelsFunc(),
       modelFolderByName.value[folderName].extensions
     )
     await folder.load()
+    // A full reload may have rebuilt the folder structure while this folder
+    // refreshed; committing then would resurrect a stale folder object.
+    if (requestId !== modelFoldersRequestId) return
     modelFolderByName.value[folderName] = folder
   }
 
@@ -371,32 +381,36 @@ export const useModelStore = defineStore('models', () => {
    * not scanned from disk) and on the legacy listing path (which reads the
    * filesystem live on every request).
    */
-  function requestModelScan() {
+  async function requestModelScan() {
     if (isCloud) return
     if (!settingStore.get('Comfy.Assets.UseAssetAPI')) return
-    void assetService.seedModelAssets().catch((error) => {
+    try {
+      await assetService.seedModelAssets()
+    } catch (error) {
       console.warn('Unable to start model asset scan', error)
-    })
+    }
   }
 
   /**
    * Manual refresh ("r" key, sidebar refresh button): kicks off a backend
-   * rescan and immediately re-loads the currently known server state. When
-   * the scan's fast phase completes, `assets.seed.fast_complete` re-loads
-   * again with whatever the scan discovered.
+   * rescan and immediately re-loads the currently known server state; the
+   * scan completion subscription below re-loads again with whatever the
+   * scan discovered. The scan is deliberately not awaited so it runs
+   * concurrently with the reload.
    */
   async function refresh() {
-    requestModelScan()
+    void requestModelScan()
     await reloadModels()
   }
 
-  api.addCustomEventListener('assets.seed.fast_complete', async () => {
+  const unsubscribeModelsScanned = assetService.onModelsScanned(async () => {
     try {
       await reloadModels()
     } catch (error) {
       console.error('Failed to reload the model library after a scan', error)
     }
   })
+  onScopeDispose(unsubscribeModelsScanned)
 
   return {
     models,
