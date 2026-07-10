@@ -37,20 +37,25 @@ function deprecationKey(input: ReportDeprecationInput): string {
   ])
 }
 
-const pendingBuffer: ReportDeprecationInput[] = []
-const pendingConsoledKeys = new Set<string>()
+const pendingBuffer = new Map<
+  string,
+  { input: ReportDeprecationInput; count: number }
+>()
 
 /**
- * Buffers a deprecation reported before Pinia is active. Returns whether this
- * is the first time the key has been buffered, so callers log to the console
- * once per unique deprecation — mirroring the store's dedup, which is otherwise
- * unavailable until the store exists.
+ * Buffers a deprecation reported before Pinia is active, deduped by key and
+ * capped. Returns true the first time a key is buffered, so callers log to
+ * the console once per unique deprecation.
  */
 export function bufferDeprecation(input: ReportDeprecationInput): boolean {
-  pendingBuffer.push(input)
   const key = deprecationKey(input)
-  if (pendingConsoledKeys.has(key)) return false
-  pendingConsoledKeys.add(key)
+  const buffered = pendingBuffer.get(key)
+  if (buffered) {
+    buffered.count += 1
+    return false
+  }
+  if (pendingBuffer.size >= MAX_TRACKED_DEPRECATIONS) return false
+  pendingBuffer.set(key, { input, count: 1 })
   return true
 }
 
@@ -65,13 +70,16 @@ export const useDeprecationWarningsStore = defineStore(
     )
     const unseenCount = computed(() => unseenKeys.size)
 
-    function report(input: ReportDeprecationInput): boolean {
+    function report(
+      input: ReportDeprecationInput,
+      occurrences: number = 1
+    ): boolean {
       const key = deprecationKey(input)
       const now = Date.now()
       const existing = warningsByKey.get(key)
 
       if (existing) {
-        existing.count += 1
+        existing.count += occurrences
         existing.lastSeenAt = now
         warningsByKey.delete(key)
         warningsByKey.set(key, existing)
@@ -88,7 +96,7 @@ export const useDeprecationWarningsStore = defineStore(
         extension: input.extension,
         detail: input.detail,
         docsUrl: input.docsUrl,
-        count: 1,
+        count: occurrences,
         lastSeenAt: now
       })
       unseenKeys.add(key)
@@ -109,8 +117,8 @@ export const useDeprecationWarningsStore = defineStore(
       unseenKeys.delete(key)
     }
 
-    for (const input of pendingBuffer.splice(0)) report(input)
-    pendingConsoledKeys.clear()
+    for (const { input, count } of pendingBuffer.values()) report(input, count)
+    pendingBuffer.clear()
 
     return {
       warnings,

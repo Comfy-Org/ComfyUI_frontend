@@ -110,6 +110,22 @@ describe('warnDeprecated', () => {
     expect(checkState?.count).toBe(2)
   })
 
+  it('caps the pre-pinia buffer so a hot loop cannot grow it unboundedly', async () => {
+    expect(getActivePinia()).toBeUndefined()
+
+    const { warnDeprecated } = await import('@/platform/dev/warnDeprecated')
+
+    for (let i = 0; i < 10_001; i++) {
+      warnDeprecated('changeTracker.checkState', { detail: `call-${i}` })
+    }
+
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const { useDeprecationWarningsStore } =
+      await import('@/platform/dev/deprecationWarningsStore')
+
+    expect(useDeprecationWarningsStore().warnings).toHaveLength(10_000)
+  })
+
   it('drains the pre-pinia buffer when the next warnDeprecated lands post-pinia', async () => {
     const { warnDeprecated } = await import('@/platform/dev/warnDeprecated')
 

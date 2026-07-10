@@ -139,7 +139,7 @@
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/common/Badge.vue'
@@ -222,7 +222,7 @@ function warningMenuItems(warning: { key: string }): MenuItem[] {
   ]
 }
 
-onMounted(() => {
-  store.markAllSeen()
+watchEffect(() => {
+  if (store.unseenCount > 0) store.markAllSeen()
 })
 </script>

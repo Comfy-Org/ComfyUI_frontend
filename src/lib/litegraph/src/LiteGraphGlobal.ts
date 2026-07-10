@@ -31,6 +31,12 @@ import {
 import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { createUuidv4 } from '@/utils/uuid'
 
+/** Never read; unfrozen so legacy `.push()` callers do not throw. */
+const inertDeprecationListeners: ((
+  message: string,
+  source?: object
+) => void)[] = []
+
 /**
  * The Global Scope. It contains all the registered node classes.
  */
@@ -281,13 +287,23 @@ export class LiteGraphGlobal {
    */
   get onDeprecationWarning(): ((message: string, source?: object) => void)[] {
     warnDeprecated('litegraph.onDeprecationWarning')
-    return []
+    return inertDeprecationListeners
   }
 
   set onDeprecationWarning(
     _value: ((message: string, source?: object) => void)[]
   ) {
     warnDeprecated('litegraph.onDeprecationWarning')
+  }
+
+  /** @deprecated Removed; has no effect. */
+  get alwaysRepeatWarnings(): boolean {
+    warnDeprecated('litegraph.alwaysRepeatWarnings')
+    return false
+  }
+
+  set alwaysRepeatWarnings(_value: boolean) {
+    warnDeprecated('litegraph.alwaysRepeatWarnings')
   }
 
   /**

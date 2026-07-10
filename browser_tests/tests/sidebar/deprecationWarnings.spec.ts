@@ -11,6 +11,9 @@ test.describe('Deprecation warnings sidebar', { tag: '@ui' }, () => {
     test('does not render the sidebar icon', async ({ comfyPage }) => {
       const tab = new DeprecationWarningsSidebarTab(comfyPage.page)
       await expect(tab.tabButton).toHaveCount(0)
+      expect(
+        await comfyPage.page.evaluate(() => !!window.__reportDeprecation)
+      ).toBe(false)
     })
   })
 
@@ -53,6 +56,15 @@ test.describe('Deprecation warnings sidebar', { tag: '@ui' }, () => {
       await expect(tab.badge).toHaveText('1')
 
       await tab.open()
+      await expect(tab.badge).toHaveCount(0)
+
+      // Warnings arriving while the panel is open must not resurface the badge.
+      const liveMessage = `e2e-badge-live-${Date.now()} is deprecated.`
+      await tab.emitDeprecation(liveMessage)
+      await expect(tab.rowFor(liveMessage)).toBeVisible()
+
+      await tab.close()
+      await expect(tab.panel).toBeHidden()
       await expect(tab.badge).toHaveCount(0)
     })
 

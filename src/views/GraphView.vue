@@ -66,6 +66,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { backfillServerDeprecations } from '@/platform/dev/backfillServerDeprecations'
+import { useDeprecationWarningsStore } from '@/platform/dev/deprecationWarningsStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -231,9 +232,17 @@ void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
 
-// Seed the deprecation-warnings store from the backend log buffer at boot,
-// independent of DevMode, so toggling the dev panel on later shows history.
-void backfillServerDeprecations()
+// The server retains its log buffer, so enabling DevMode later still backfills.
+watchEffect(() => {
+  if (settingStore.get('Comfy.DevMode')) {
+    void backfillServerDeprecations()
+    window.__reportDeprecation = (message) => {
+      useDeprecationWarningsStore().report({ message })
+    }
+  } else {
+    delete window.__reportDeprecation
+  }
+})
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()

@@ -231,6 +231,16 @@ describe('DeprecationWarningsTab', () => {
     expect(store.unseenCount).toBe(0)
   })
 
+  it('marks warnings seen as they arrive while the panel is open', async () => {
+    const store = useDeprecationWarningsStore()
+    renderTab()
+
+    store.report({ message: 'arrived while open' })
+    await screen.findByText('arrived while open')
+
+    expect(store.unseenCount).toBe(0)
+  })
+
   it('re-renders relative timestamps as time advances', async () => {
     vi.useFakeTimers()
     try {

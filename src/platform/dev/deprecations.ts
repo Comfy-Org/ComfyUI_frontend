@@ -97,6 +97,13 @@ export const DEPRECATIONS = {
       'LiteGraph.onDeprecationWarning is no longer used and has no effect.',
     suggestion:
       'Remove the listener — there is no programmatic replacement; deprecation warnings now appear in the Dev Mode "Deprecation Warnings" sidebar panel.'
+  },
+  'litegraph.alwaysRepeatWarnings': {
+    source: 'litegraph',
+    message:
+      'LiteGraph.alwaysRepeatWarnings is no longer used and has no effect.',
+    suggestion:
+      'Remove the assignment — deprecation warnings are always deduplicated and tracked with occurrence counts in the Dev Mode "Deprecation Warnings" sidebar panel.'
   }
 } satisfies Record<string, DeprecationEntry>
 

@@ -15,7 +15,6 @@ import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useDeprecationWarningsStore } from '@/platform/dev/deprecationWarningsStore'
 import {
   configValueOrDefault,
   remoteConfig
@@ -153,10 +152,5 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
-
-// Internal seam for e2e to inject a synthetic deprecation warning, kept
-// independent of which real deprecations currently exist.
-window.__reportDeprecation = (message) =>
-  void useDeprecationWarningsStore(pinia).report({ message })
 
 app.mount('#vue-app')

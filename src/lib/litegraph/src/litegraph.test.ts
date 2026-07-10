@@ -1,5 +1,5 @@
 import { clamp } from 'es-toolkit/compat'
-import { describe, expect } from 'vitest'
+import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import {
   LiteGraphGlobal,
@@ -28,12 +28,33 @@ describe('Litegraph module', () => {
     expect(clamp(Infinity, 18, 29)).toStrictEqual(29)
   })
 
-  test('onDeprecationWarning remains a usable no-op for old extensions', () => {
-    expect(() => LiteGraph.onDeprecationWarning.push(() => {})).not.toThrow()
-    expect(LiteGraph.onDeprecationWarning).toEqual([])
-    expect(() => {
-      LiteGraph.onDeprecationWarning = [() => {}]
-    }).not.toThrow()
+  describe('removed-API compatibility shims', () => {
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
+    test('onDeprecationWarning remains a usable no-op for old extensions', () => {
+      expect(() => LiteGraph.onDeprecationWarning.push(() => {})).not.toThrow()
+      expect(LiteGraph.onDeprecationWarning).toBe(
+        LiteGraph.onDeprecationWarning
+      )
+      expect(() => {
+        LiteGraph.onDeprecationWarning = [() => {}]
+      }).not.toThrow()
+    })
+
+    test('alwaysRepeatWarnings remains a usable no-op for old extensions', () => {
+      expect(() => {
+        LiteGraph.alwaysRepeatWarnings = true
+      }).not.toThrow()
+      expect(LiteGraph.alwaysRepeatWarnings).toBe(false)
+    })
   })
 })
 

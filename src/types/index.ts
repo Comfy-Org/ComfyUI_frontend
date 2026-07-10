@@ -101,7 +101,7 @@ declare global {
 
     __comfyDesktop2?: ComfyDesktop2Bridge
 
-    /** For use in tests to inject a synthetic deprecation warning. */
+    /** Injects a synthetic deprecation warning; only installed in dev mode. */
     __reportDeprecation?: (message: string) => void
   }
 }
