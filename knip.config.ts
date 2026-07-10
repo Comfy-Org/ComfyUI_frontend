@@ -55,9 +55,7 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Pending integration in the workspace-settings stacked PRs: consumed by
-    // split/auto-reload + split/allowlist (Switch) and split/member-auditing
-    // + split/allowlist (Pagination); each consumer removes its entry
-    'src/components/ui/switch/Switch.vue',
+    // split/member-auditing + split/allowlist; each consumer removes its entry
     'src/components/ui/pagination/Pagination.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',

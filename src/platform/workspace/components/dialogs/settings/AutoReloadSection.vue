@@ -1,0 +1,205 @@
+<template>
+  <div
+    :class="
+      cn(
+        'flex flex-col gap-4 rounded-2xl border border-interface-stroke/60 p-6 transition-opacity',
+        // A lapsed plan can't auto-reload, so freeze the whole section: dim it,
+        // block interaction, and force the toggle to read Disabled.
+        frozen && 'pointer-events-none opacity-50'
+      )
+    "
+  >
+    <div
+      class="flex flex-col gap-4 @4xl:flex-row @4xl:items-start @4xl:justify-between"
+    >
+      <div class="flex flex-col gap-1">
+        <span class="text-sm font-medium text-base-foreground">
+          {{ $t('workspacePanel.autoReload.title') }}
+        </span>
+        <span class="max-w-md text-sm text-muted-foreground">
+          {{ $t('workspacePanel.autoReload.subtitle') }}
+        </span>
+      </div>
+      <div v-if="isConfigured" class="flex shrink-0 items-center gap-3">
+        <span class="flex items-center gap-2 text-sm text-muted-foreground">
+          {{ enabledLabel }}
+          <Switch
+            :model-value="displayEnabled"
+            @update:model-value="setEnabled"
+          />
+        </span>
+        <Button variant="secondary" size="lg" @click="openConfig">
+          {{ $t('workspacePanel.autoReload.edit') }}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Empty / not-set-up state — same one-column grid as the configured tile
+         so both sit at the top tiles' width. -->
+    <div v-if="!isConfigured" class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+      <div
+        class="flex flex-col gap-3 rounded-xl bg-modal-panel-background px-6 py-5"
+      >
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('workspacePanel.autoReload.empty.body') }}
+        </p>
+        <Button variant="tertiary" size="lg" class="w-full" @click="openConfig">
+          {{ $t('workspacePanel.autoReload.empty.cta') }}
+        </Button>
+      </div>
+    </div>
+
+    <!-- Configured tile — constrained to one column of the same grid the top
+         tiles use, so it matches their width (empty second column left open). -->
+    <div v-else class="grid grid-cols-1 gap-4 @4xl:grid-cols-2">
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-4 rounded-xl bg-modal-panel-background px-6 py-5 transition-opacity',
+            // Skip this dim when frozen — the section root already dims uniformly.
+            !frozen && !isEnabled && 'opacity-50'
+          )
+        "
+      >
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-muted-foreground">
+            {{ $t('workspacePanel.autoReload.tile.label') }}
+          </span>
+          <StatusBadge v-if="badge" :label="badge" :severity="badgeSeverity" />
+        </div>
+
+        <p
+          :class="
+            cn(
+              'm-0 flex items-center gap-1.5 text-sm text-muted-foreground',
+              isPaused && 'opacity-50'
+            )
+          "
+        >
+          <i class="icon-[lucide--coins] size-4 text-credit" />
+          <span
+            class="text-2xl leading-none font-semibold text-base-foreground tabular-nums"
+          >
+            {{ reloadCreditsLabel }}
+          </span>
+          {{ $t('workspacePanel.autoReload.tile.whenBelow') }}
+          <span class="font-semibold text-base-foreground tabular-nums">
+            {{ thresholdLabel }}
+          </span>
+        </p>
+
+        <template v-if="hasBudget">
+          <div class="h-px w-full bg-interface-stroke" />
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">
+                {{ $t('workspacePanel.autoReload.tile.monthlyBudget') }}
+              </span>
+              <span :class="cn('tabular-nums', percentSpentClass)">
+                {{ percentSpentLabel }}
+              </span>
+            </div>
+            <ProgressBar :value="budgetUsedFraction" />
+            <div class="flex justify-end text-sm">
+              <span class="text-muted-foreground tabular-nums">
+                {{ budgetSpentLabel }}
+              </span>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import StatusBadge from '@/components/common/StatusBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
+import ProgressBar from '@/platform/workspace/components/dialogs/settings/ProgressBar.vue'
+import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
+import { useDialogService } from '@/services/dialogService'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { frozen = false } = defineProps<{
+  /**
+   * The plan can't spend (lapsed or paused): render the whole section dimmed,
+   * off, and non-interactive.
+   */
+  frozen?: boolean
+}>()
+
+const { t, n: fmtNumber } = useI18n()
+
+const {
+  config,
+  isConfigured,
+  isEnabled,
+  hasBudget,
+  budgetUsedFraction,
+  isPaused,
+  isWarning,
+  setEnabled
+} = useAutoReload()
+
+const displayEnabled = computed(() => !frozen && isEnabled.value)
+
+const { showAutoReloadDialog } = useDialogService()
+
+function openConfig() {
+  void showAutoReloadDialog()
+}
+
+const fmtCredits = (value: number) =>
+  fmtNumber(value, { maximumFractionDigits: 0 })
+const fmtUsd = (cents: number) =>
+  fmtNumber(cents / 100, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0
+  })
+
+const enabledLabel = computed(() =>
+  displayEnabled.value
+    ? t('workspacePanel.autoReload.enabled')
+    : t('workspacePanel.autoReload.disabled')
+)
+
+const badge = computed(() => {
+  if (frozen) return t('workspacePanel.autoReload.badge.off')
+  if (isPaused.value) return t('workspacePanel.autoReload.badge.paused')
+  if (!isEnabled.value) return t('workspacePanel.autoReload.badge.off')
+  return ''
+})
+
+// Paused is an alert state, so give it the high-contrast (inverted) pill; the
+// quieter "off" state keeps the secondary treatment.
+const badgeSeverity = computed(() =>
+  isPaused.value ? 'contrast' : 'secondary'
+)
+
+const reloadCreditsLabel = computed(() => fmtCredits(config.reloadCredits))
+const thresholdLabel = computed(() => fmtCredits(config.thresholdCredits))
+
+const percentSpentLabel = computed(() =>
+  t('workspacePanel.autoReload.tile.percentSpent', {
+    percent: Math.round(budgetUsedFraction.value * 100)
+  })
+)
+const percentSpentClass = computed(() =>
+  isPaused.value
+    ? 'text-danger'
+    : isWarning.value
+      ? 'text-credit'
+      : 'text-muted-foreground'
+)
+const budgetSpentLabel = computed(() =>
+  t('workspacePanel.autoReload.tile.spentOfBudget', {
+    spent: fmtUsd(config.spentThisCycleCents),
+    budget: fmtUsd(config.monthlyBudgetCents ?? 0)
+  })
+)
+</script>

@@ -191,6 +191,13 @@
       </div>
     </div>
 
+    <!-- Credit auto-reload; frozen alongside the tile whenever the plan can't
+    spend — lapsed or paused. -->
+    <AutoReloadSection
+      v-if="canManageBilling"
+      :frozen="isInactive || isPaused"
+    />
+
     <!-- mt-auto floats the footer to the panel's bottom edge; pb-6 (matching
     the other tabs) keeps it level with their footers. -->
     <div
@@ -248,6 +255,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
 import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
