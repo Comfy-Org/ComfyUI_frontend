@@ -266,6 +266,7 @@ describe('DeprecationWarningsTab', () => {
 
   it('marks warnings seen as they arrive while the panel is open', async () => {
     const store = useDeprecationWarningsStore()
+    store.report({ message: 'before mount' })
     renderTab()
 
     store.report({ message: 'arrived while open' })

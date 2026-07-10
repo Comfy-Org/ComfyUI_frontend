@@ -139,7 +139,7 @@
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/common/Badge.vue'
@@ -231,7 +231,14 @@ function warningMenuItems(warning: { key: string }): MenuItem[] {
   ]
 }
 
-watchEffect(() => {
-  if (store.unseenCount > 0) store.markAllSeen()
-})
+// watch, not watchEffect: markAllSeen mutates the watched source, and a
+// watchEffect's recursion guard drops the subscription after a mount-time
+// clear, leaving warnings that arrive while the panel is open unseen forever.
+watch(
+  () => store.unseenCount,
+  (count) => {
+    if (count > 0) store.markAllSeen()
+  },
+  { immediate: true }
+)
 </script>
