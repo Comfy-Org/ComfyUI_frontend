@@ -1218,11 +1218,9 @@ const translations = {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
-  // Education-only pricing subtitle; zh-CN drafted, pending native review.
   'pricing.subtitle.edu': {
-    en: 'Partner with us on custom features, dedicated support, course accreditation, and a deeper campus partnership.',
-    'zh-CN':
-      '与我们合作，共同打造定制功能、专属支持、课程认证以及更深入的校园合作。'
+    en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
+    'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
   'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
@@ -2312,6 +2310,7 @@ const translations = {
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
+  'nav.edu': { en: 'Edu', 'zh-CN': '教育' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
@@ -4507,9 +4506,9 @@ const translations = {
     'zh-CN': '所有学生和教育工作者\n均可享受最高 25% 折扣*'
   },
   'education.hero.subtitle': {
-    en: 'Bring Comfy into your classroom — sign up with your academic email for discounted access. Scroll down to see how others use it.',
+    en: 'Bring ComfyUI into your classroom — sign up with your academic email for discounted access. Scroll down to see how others use it.',
     'zh-CN':
-      '将 Comfy 带入您的课堂 — 使用您的学术邮箱注册即可享受优惠。向下滚动，了解其他人如何使用它。'
+      '将 ComfyUI 带入您的课堂 — 使用您的学术邮箱注册即可享受优惠。向下滚动，了解其他人如何使用它。'
   },
   'education.hero.footnote': {
     en: '*Up to 25% off on annual team plans',
