@@ -75,6 +75,7 @@ type FakeTab = {
   filename: string
   isModified: boolean
   activeState: { id?: string } | null
+  changeTracker?: { reset: (state?: unknown) => void }
 }
 const hostStores = vi.hoisted(() => ({
   workflow: null as unknown as {
@@ -859,7 +860,8 @@ describe('AgentPanelRoot workflow binding', () => {
       path: 'workflows/current.json',
       filename: 'current',
       isModified: false,
-      activeState: id === undefined ? null : { id }
+      activeState: id === undefined ? null : { id },
+      changeTracker: { reset: vi.fn() }
     }
     hostStores.workflow.tabs.set(tab.path, tab)
     hostStores.workflow.activeWorkflow = tab
@@ -943,6 +945,50 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    expect(tab.changeTracker?.reset).toHaveBeenCalled()
+  })
+
+  it('autosaves a minted tab so the next patch applies without a conflict', async () => {
+    mockMessagesEndpoint('wf-42')
+    const mintedPath = 'workflows/Unsaved Workflow.json'
+    // The host mints the temporary tab focused and born modified: its stored
+    // baseline diverges from what the canvas serializes after the load.
+    vi.mocked(app.loadGraphData).mockImplementation(
+      async (_graph, _clean, _restore, workflowTab) => {
+        if (workflowTab !== null) return
+        const minted: FakeTab = {
+          path: mintedPath,
+          filename: 'Unsaved Workflow',
+          isModified: true,
+          activeState: null,
+          changeTracker: { reset: vi.fn() }
+        }
+        hostStores.workflow.tabs.set(minted.path, minted)
+        hostStores.workflow.activeWorkflow = minted
+      }
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    await vi.waitFor(() => {
+      expect(hostStores.workflow.tabs.get(mintedPath)?.isModified).toBe(false)
+    })
+    const minted = hostStores.workflow.tabs.get(mintedPath)
+    expect(minted?.changeTracker?.reset).toHaveBeenCalled()
+
+    const graph = { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
+    patch(2, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, minted)
+    )
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
   })
 
   it('retries once without the speculative id when the server rejects it', async () => {
