@@ -11,7 +11,8 @@ import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
   createBannerVersion,
-  evaluateBannerVisibility
+  evaluateBannerVisibility,
+  normalizeBannerPath
 } from '../utils/banner'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
@@ -44,19 +45,18 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 // Announcement banner — build-time visibility gate + content-hash version key.
 const bannerData = getBannerData(bannerConfig, locale)
-const bannerCurrentPath = Astro.url.pathname.replace(/^\/zh-CN/, '') || '/'
-const bannerExcludePaths = bannerConfig.link?.href.startsWith('/')
-  ? [bannerConfig.link.href]
-  : undefined
-const bannerVisible = evaluateBannerVisibility(
-  { ...bannerConfig, excludePaths: bannerExcludePaths },
-  {
+// Don't show the banner on its own CTA destination (e.g. the /mcp page).
+const onBannerDestination =
+  !!bannerConfig.link &&
+  normalizeBannerPath(Astro.url.pathname) ===
+    normalizeBannerPath(bannerConfig.link.href)
+const bannerVisible =
+  !onBannerDestination &&
+  evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
     currentSection: 'sitewide',
-    currentPath: bannerCurrentPath,
     now: new Date(),
-  }
-)
+  })
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const gtmId = 'GTM-NP9JM6K7'

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { EvaluableBanner } from './banner'
 
-import { createBannerVersion, evaluateBannerVisibility } from './banner'
+import {
+  createBannerVersion,
+  evaluateBannerVisibility,
+  normalizeBannerPath
+} from './banner'
 
 const base: EvaluableBanner = {
   isActive: true,
@@ -12,34 +16,12 @@ const base: EvaluableBanner = {
 const ctx = {
   currentLocale: 'en',
   currentSection: 'sitewide',
-  currentPath: '/',
   now: new Date('2026-07-06T00:00:00Z')
 }
 
 describe('evaluateBannerVisibility', () => {
   it('shows an active, untargeted, sitewide banner', () => {
     expect(evaluateBannerVisibility(base, ctx)).toBe(true)
-  })
-
-  it.for([
-    {
-      name: "hides on the banner's own CTA destination",
-      path: '/mcp',
-      visible: false
-    },
-    { name: 'shows on non-excluded paths', path: '/', visible: true },
-    {
-      name: 'matches an excluded path despite a trailing slash',
-      path: '/mcp/',
-      visible: false
-    }
-  ])('excludePaths: $name', ({ path, visible }, { expect }) => {
-    expect(
-      evaluateBannerVisibility(
-        { ...base, excludePaths: ['/mcp'] },
-        { ...ctx, currentPath: path }
-      )
-    ).toBe(visible)
   })
 
   it('hides when inactive', () => {
@@ -95,6 +77,20 @@ describe('evaluateBannerVisibility', () => {
 
   it('hides when targetSections is absent (nothing to match)', () => {
     expect(evaluateBannerVisibility({ isActive: true }, ctx)).toBe(false)
+  })
+})
+
+describe('normalizeBannerPath', () => {
+  it.for([
+    { path: '/mcp', normalized: '/mcp' },
+    { path: '/mcp/', normalized: '/mcp' },
+    { path: '/zh-CN/mcp', normalized: '/mcp' },
+    { path: '/zh-CN/mcp/', normalized: '/mcp' },
+    { path: '/', normalized: '/' },
+    { path: '/zh-CN', normalized: '/' },
+    { path: '/pricing', normalized: '/pricing' }
+  ])('$path normalizes to $normalized', ({ path, normalized }, { expect }) => {
+    expect(normalizeBannerPath(path)).toBe(normalized)
   })
 })
 

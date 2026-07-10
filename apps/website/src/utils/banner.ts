@@ -10,7 +10,6 @@ export const BANNER_DISMISS_ATTR = 'data-banner-dismissed'
 export interface BannerVisibilityContext {
   currentLocale: string
   currentSection: string
-  currentPath: string
   now: Date
 }
 
@@ -20,20 +19,20 @@ export interface EvaluableBanner {
   endsAt?: string
   targetLocales?: readonly string[]
   targetSections?: readonly string[]
-  /** Paths the banner must not render on (e.g. its own CTA destination). */
-  excludePaths?: readonly string[]
 }
 
-function normalizePath(path: string): string {
-  const withLead = path.startsWith('/') ? path : `/${path}`
-  return withLead.length > 1 ? withLead.replace(/\/+$/, '') : withLead
+/**
+ * Normalize a path for banner-destination comparison: drop the zh-CN locale
+ * prefix and any trailing slash, so /zh-CN/mcp, /mcp and /mcp/ compare equal.
+ */
+export function normalizeBannerPath(path: string): string {
+  return path.replace(/^\/zh-CN/, '').replace(/\/+$/, '') || '/'
 }
 
 /**
  * Server/build-time visibility gate. Returns false on the FIRST failing check,
  * in order: active flag → start window → end window → locale targeting →
- * section targeting → path exclusion. An empty/absent `targetLocales` means
- * "all locales".
+ * section targeting. An empty/absent `targetLocales` means "all locales".
  */
 export function evaluateBannerVisibility(
   banner: EvaluableBanner,
@@ -54,14 +53,6 @@ export function evaluateBannerVisibility(
 
   const targetSections = banner.targetSections ?? []
   if (!targetSections.includes(ctx.currentSection)) return false
-
-  const excludePaths = banner.excludePaths ?? []
-  if (
-    excludePaths.some(
-      (p) => normalizePath(p) === normalizePath(ctx.currentPath)
-    )
-  )
-    return false
 
   return true
 }

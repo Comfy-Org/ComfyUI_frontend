@@ -21,7 +21,8 @@ const {
 
 const { isVisible, close, persistHidden } = useBannerDismissal(version)
 
-// Engaging with the CTA dismisses the banner too.
+// Engaging with the CTA dismisses the banner too. (An inline handler here gets
+// reflowed by oxfmt into a multi-line form vue-tsc rejects.)
 function onCtaClick(): void {
   close()
   persistHidden()
@@ -34,14 +35,8 @@ function onCtaClick(): void {
       <div class="min-h-0 overflow-hidden">
         <div
           data-slot="announcement-banner"
-          class="bg-primary-comfy-ink-light relative flex items-center gap-x-4 px-4 py-2.5 sm:before:flex-1"
+          class="bg-primary-comfy-ink-light after:bg-primary-comfy-yellow/40 relative flex items-center gap-x-4 px-4 py-2.5 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px sm:before:flex-1"
         >
-          <!-- Acid-yellow hairline separating the bar from the navbar. -->
-          <div
-            class="bg-primary-comfy-yellow/40 pointer-events-none absolute inset-x-0 bottom-0 h-px"
-            aria-hidden="true"
-          />
-
           <div
             class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5"
           >
@@ -59,7 +54,7 @@ function onCtaClick(): void {
               :href="data.link.href"
               :target="data.link.target"
               :rel="data.link.rel"
-              :variant="data.link.buttonVariant ?? 'default'"
+              :variant="data.link.buttonVariant ?? 'underlineLink'"
               size="sm"
               class="group/cta shrink-0"
               @click="onCtaClick"
