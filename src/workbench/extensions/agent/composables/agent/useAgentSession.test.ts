@@ -564,6 +564,28 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it('(p) non-object and foreign host frames are dropped silently mid-turn', async () => {
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'working'))
+    expect(session.isStreaming.value).toBe(true)
+
+    // Both ride the shared /ws: a garbage frame and a real host status frame.
+    emit('not an object')
+    emit({ type: 'status', data: { sid: 1 } })
+
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.notices.value).toHaveLength(0)
+  })
+
   it('(i) a 404 draft resync is benign; a 403 pushes an error notice', async () => {
     const draft = useAgentDraftStore()
 
