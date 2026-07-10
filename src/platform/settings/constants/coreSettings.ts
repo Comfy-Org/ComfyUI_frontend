@@ -1220,7 +1220,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use the asset browser for the model library',
     type: 'hidden',
     tooltip:
-      'When enabled, the model library opens the asset browser. When disabled, it opens the sidebar tree.',
+      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },

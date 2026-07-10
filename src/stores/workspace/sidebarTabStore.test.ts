@@ -202,9 +202,12 @@ describe('useSidebarTabStore', () => {
       expect(mockBrowseModelAssets).not.toHaveBeenCalled()
     })
 
-    it('opens the asset browser when the asset view is enabled', async () => {
+    it('opens the asset browser when the browser and asset API are enabled', async () => {
       mockGetSetting.mockImplementation((key: string) =>
-        key === 'Comfy.ModelLibrary.UseAssetBrowser' ? true : undefined
+        key === 'Comfy.ModelLibrary.UseAssetBrowser' ||
+        key === 'Comfy.Assets.UseAssetAPI'
+          ? true
+          : undefined
       )
       commandStoreCommands.push({
         id: 'Comfy.BrowseModelAssets',
@@ -218,6 +221,24 @@ describe('useSidebarTabStore', () => {
 
       expect(mockBrowseModelAssets).toHaveBeenCalledOnce()
       expect(store.activeSidebarTabId).toBeNull()
+    })
+
+    it('falls back to the sidebar tree when the asset API is disabled', async () => {
+      mockGetSetting.mockImplementation((key: string) =>
+        key === 'Comfy.ModelLibrary.UseAssetBrowser' ? true : false
+      )
+      commandStoreCommands.push({
+        id: 'Comfy.BrowseModelAssets',
+        function: mockBrowseModelAssets
+      })
+
+      const store = useSidebarTabStore()
+      store.registerCoreSidebarTabs()
+
+      await toggleModelLibrary()
+
+      expect(store.activeSidebarTabId).toBe('model-library')
+      expect(mockBrowseModelAssets).not.toHaveBeenCalled()
     })
   })
 })

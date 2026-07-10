@@ -76,9 +76,14 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         const settingStore = useSettingStore()
         const commandStore = useCommandStore()
 
+        // The asset browser cannot function without the asset API, so the
+        // browser routing derives from both settings: with the API disabled
+        // the tab always opens the sidebar tree, making the invalid
+        // combination unrepresentable rather than prompt-corrected.
         if (
           tab.id === 'model-library' &&
-          settingStore.get('Comfy.ModelLibrary.UseAssetBrowser')
+          settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
+          settingStore.get('Comfy.Assets.UseAssetAPI')
         ) {
           await commandStore.commands
             .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
