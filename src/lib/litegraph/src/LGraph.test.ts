@@ -13,6 +13,8 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { DEPRECATIONS } from '@/platform/dev/deprecations'
+import { useDeprecationWarningsStore } from '@/platform/dev/deprecationWarningsStore'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -552,13 +554,16 @@ describe('Subgraph Definition Garbage Collection', () => {
 })
 
 describe('beforeChange deprecated onBeforeChange shim', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
-    LiteGraph.onDeprecationWarning = []
-    LiteGraph.alwaysRepeatWarnings = true
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    useDeprecationWarningsStore().clear()
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
-    LiteGraph.alwaysRepeatWarnings = false
+    warnSpy.mockRestore()
   })
 
   it('still invokes a listener assigned to onBeforeChange', () => {
@@ -572,28 +577,25 @@ describe('beforeChange deprecated onBeforeChange shim', () => {
     expect(onBeforeChange).toHaveBeenCalledWith(graph, node)
   })
 
-  it('warns that onBeforeChange is deprecated when used', () => {
+  it('reports the onBeforeChange deprecation when used', () => {
     const graph = new LGraph()
-    const deprecationCallback = vi.fn()
-    LiteGraph.onDeprecationWarning = [deprecationCallback]
     graph.onBeforeChange = vi.fn()
 
     graph.beforeChange()
 
-    expect(deprecationCallback).toHaveBeenCalledWith(
-      expect.stringContaining('LGraph.onBeforeChange is deprecated'),
-      undefined
+    expect(useDeprecationWarningsStore().warnings).toContainEqual(
+      expect.objectContaining({
+        message: DEPRECATIONS['litegraph.onBeforeChange'].message
+      })
     )
   })
 
-  it('does not warn when no listener is assigned', () => {
+  it('does not report when no listener is assigned', () => {
     const graph = new LGraph()
-    const deprecationCallback = vi.fn()
-    LiteGraph.onDeprecationWarning = [deprecationCallback]
 
     graph.beforeChange()
 
-    expect(deprecationCallback).not.toHaveBeenCalled()
+    expect(useDeprecationWarningsStore().warnings).toHaveLength(0)
   })
 })
 
