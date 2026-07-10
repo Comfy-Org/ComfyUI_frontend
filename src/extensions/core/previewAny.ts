@@ -9,7 +9,9 @@ import {
   updateTextPreviewWidgets
 } from '@/extensions/core/textPreviewWidgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 useExtensionService().registerExtension({
   name: 'Comfy.PreviewAny',
@@ -29,6 +31,12 @@ useExtensionService().registerExtension({
     nodeType.prototype.onExecuted = function (message) {
       onExecuted?.apply(this, [message])
       updateTextPreviewWidgets(this, message)
+    }
+  },
+  onNodeOutputsUpdated(nodeOutputs) {
+    for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
+      const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
+      if (node?.type === 'PreviewAny') updateTextPreviewWidgets(node, output)
     }
   }
 })
