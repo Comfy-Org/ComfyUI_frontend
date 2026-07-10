@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, reactive } from 'vue'
+import { defineComponent, h, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -15,6 +15,8 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
+
+const agentPanel = vi.hoisted(() => ({ enabled: false, toggle: vi.fn() }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -79,9 +81,14 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
+// Ref-backed so the component's storeToRefs picks the fields up like a real store.
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () =>
-    reactive({ isOpen: false, enabled: false, toggle: vi.fn() })
+    reactive({
+      isOpen: ref(false),
+      enabled: ref(agentPanel.enabled),
+      toggle: agentPanel.toggle
+    })
 }))
 
 vi.mock('@/utils/mouseDownUtil', () => ({
@@ -191,5 +198,28 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs agent entry button', () => {
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isDesktop = false
+    distribution.isNightly = false
+    tabBarLayout.value = 'Default'
+    agentPanel.enabled = true
+    agentPanel.toggle.mockClear()
+  })
+
+  afterEach(() => {
+    agentPanel.enabled = false
+  })
+
+  it('renders the Ask Comfy Agent CTA and toggles the panel on click', async () => {
+    const { user } = renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Ask Comfy Agent' }))
+
+    expect(agentPanel.toggle).toHaveBeenCalledTimes(1)
   })
 })
