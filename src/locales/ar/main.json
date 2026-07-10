@@ -515,57 +515,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "يرجى إبقاء إجابتك أقل من {max} حرفًا.",
         "chooseAnOption": "يرجى اختيار خيار.",
         "describeAnswer": "يرجى وصف إجابتك.",
         "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
       },
       "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "مستخدم متقدم (سير عمل مخصصة)",
-          "basics": "مرتاح مع الأساسيات",
-          "expert": "خبير (أساعد الآخرين)",
-          "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
-          "starting": "في البداية فقط (أتابع الدروس التعليمية)"
+        "experience": {
+          "new": "جديد على ComfyUI",
+          "pro": "أنا مستخدم محترف",
+          "some": "لدي معرفة جيدة"
+        },
+        "focus": {
+          "custom_nodes": "عُقد مخصصة",
+          "pipelines": "مسارات مؤتمتة",
+          "products": "منتجات للآخرين"
         },
         "intent": {
-          "3d_game": "أصول ثلاثية الأبعاد / أصول ألعاب",
-          "api": "نقاط نهاية API لتشغيل مسارات العمل",
-          "apps": "تطبيقات مبسطة من مسارات العمل",
-          "audio": "صوت / موسيقى",
-          "custom_nodes": "عُقد مخصصة",
+          "apps_api": "تطبيقات وواجهات برمجة التطبيقات",
+          "exploring": "أستكشف فقط",
           "images": "صور",
-          "not_sure": "لست متأكداً",
-          "videos": "فيديوهات",
+          "other": "شيء آخر",
+          "otherPlaceholder": "ماذا تريد أن تصنع؟",
+          "video": "فيديو",
           "workflows": "مسارات عمل أو خطوط معالجة مخصصة"
         },
         "source": {
-          "conference": "مؤتمر أو فعالية",
-          "discord": "ديسكورد / مجتمع",
+          "community": "مجتمع أو منتدى",
           "friend": "صديق أو زميل",
-          "github": "GitHub",
+          "other": "أخرى",
+          "otherPlaceholder": "من أين وجدتنا؟",
+          "search": "جوجل / بحث",
+          "social": "وسائل التواصل الاجتماعي"
+        },
+        "source_social": {
+          "discord": "ديسكورد",
           "instagram": "إنستغرام",
           "linkedin": "لينكدإن",
-          "newsletter": "النشرة البريدية أو مدونة",
-          "other": "أخرى",
           "reddit": "ريديت",
-          "search": "جوجل / بحث",
-          "twitter": "تويتر / X",
+          "tiktok": "تيك توك",
+          "twitter": "X (تويتر)",
           "youtube": "يوتيوب"
-        },
-        "usage": {
-          "education": "تعليمي (طالب أو معلم)",
-          "personal": "استخدام شخصي",
-          "work": "عمل"
         }
       },
+      "otherPlaceholder": "أخبرنا المزيد",
       "placeholder": "نص بديل لأسئلة الاستبيان",
-      "steps": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
-        "source": "من أين سمعت عن ComfyUI؟",
-        "usage": "كيف تخطط لاستخدام ComfyUI؟"
-      },
       "title": "استبيان السحابة"
     }
   },
@@ -578,10 +573,11 @@
   "cloudStart_learnAboutButton": "تعرف على السحابة",
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
   "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
-  "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_experience": "ما مدى معرفتك بـ ComfyUI؟",
+  "cloudSurvey_steps_focus": "ماذا تبني؟",
   "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
   "cloudSurvey_steps_source": "من أين سمعت عن ComfyUI؟",
-  "cloudSurvey_steps_usage": "كيف تخطط لاستخدام ComfyUI؟",
+  "cloudSurvey_steps_source_social": "أي منصة؟",
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
