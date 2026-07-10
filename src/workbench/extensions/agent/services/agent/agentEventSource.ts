@@ -1,88 +1,57 @@
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
+import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 
-export interface EventTargetSocket {
+// The surface of the host api singleton this adapter binds to. The api JSON-parses
+// every /ws frame ONCE and dispatches frames whose type was registered (via
+// addCustomEventListener) as CustomEvents on itself — listeners survive socket
+// reconnects because they bind to the api EventTarget, not the socket. Registering
+// the agent types also stops the api's once-per-type "Unknown message type" throw.
+export interface AgentEventHost {
+  socket: { readyState: number } | null
+  addCustomEventListener(
+    type: string,
+    listener: (event: CustomEvent<unknown>) => void
+  ): void
+  removeCustomEventListener(
+    type: string,
+    listener: (event: CustomEvent<unknown>) => void
+  ): void
   addEventListener(
-    type: 'message',
-    listener: (event: { data: unknown }) => void
+    type: 'reconnecting' | 'reconnected',
+    listener: () => void
   ): void
-  addEventListener(type: 'open' | 'close', listener: () => void): void
   removeEventListener(
-    type: 'message',
-    listener: (event: { data: unknown }) => void
+    type: 'reconnecting' | 'reconnected',
+    listener: () => void
   ): void
-  removeEventListener(type: 'open' | 'close', listener: () => void): void
-  readyState?: number
 }
 
-const OPEN = 1
+const OPEN = 1 // WebSocket.OPEN
 
-// The host nulls its socket on close and creates a NEW one on reconnect; this adapter
-// re-binds on the 'reconnected' signal so the panel is not left deaf after a reconnect.
-export interface ReconnectingHost {
-  socket: EventTargetSocket | null
-  addEventListener(type: 'reconnected', listener: () => void): void
-  removeEventListener(type: 'reconnected', listener: () => void): void
-}
-
-export function createReconnectingEventSource(
-  host: ReconnectingHost
-): AgentEventSource {
+export function createAgentEventSource(host: AgentEventHost): AgentEventSource {
   return {
     subscribe(listener) {
-      const onMessage = (event: { data: unknown }): void => listener(event.data)
-      let attached: EventTargetSocket | null = null
-
-      const attach = (socket: EventTargetSocket): void => {
-        socket.addEventListener('message', onMessage)
-        attached = socket
-      }
-      const detach = (): void => {
-        attached?.removeEventListener('message', onMessage)
-        attached = null
-      }
-      const onReconnected = (): void => {
-        detach()
-        if (host.socket) attach(host.socket)
-      }
-
-      if (host.socket) attach(host.socket)
-      else console.warn('[agent-panel] host /ws socket not connected yet')
-      host.addEventListener('reconnected', onReconnected)
-
-      return () => {
-        detach()
-        host.removeEventListener('reconnected', onReconnected)
-      }
+      // The api dispatches only the frame's data as the event detail; rebuild the
+      // {type, data} envelope the zod event schema validates.
+      const unbinders = [...AGENT_WS_EVENT_TYPES].map((type) => {
+        const onEvent = (event: CustomEvent<unknown>): void =>
+          listener({ type, data: event.detail })
+        host.addCustomEventListener(type, onEvent)
+        return () => host.removeCustomEventListener(type, onEvent)
+      })
+      return () => unbinders.forEach((unbind) => unbind())
     },
     onStatus(listener) {
-      const onOpen = (): void => listener(true)
-      const onClose = (): void => listener(false)
-      let attached: EventTargetSocket | null = null
-
-      const attach = (socket: EventTargetSocket): void => {
-        socket.addEventListener('open', onOpen)
-        socket.addEventListener('close', onClose)
-        attached = socket
-        // A socket already open before (re)binding must report live once, else the
-        // session's open-triggered draft resync never fires for it.
-        if (socket.readyState === OPEN) listener(true)
-      }
-      const detach = (): void => {
-        attached?.removeEventListener('open', onOpen)
-        attached?.removeEventListener('close', onClose)
-        attached = null
-      }
-      const onReconnected = (): void => {
-        detach()
-        if (host.socket) attach(host.socket)
-      }
-
-      if (host.socket) attach(host.socket)
-      host.addEventListener('reconnected', onReconnected)
-
+      const onDown = (): void => listener(false)
+      const onUp = (): void => listener(true)
+      host.addEventListener('reconnecting', onDown)
+      host.addEventListener('reconnected', onUp)
+      // A socket already open before (re)binding must report live once, else the
+      // session's open-triggered draft resync never fires for it.
+      if (host.socket?.readyState === OPEN) listener(true)
       return () => {
-        detach()
-        host.removeEventListener('reconnected', onReconnected)
+        host.removeEventListener('reconnecting', onDown)
+        host.removeEventListener('reconnected', onUp)
       }
     }
   }
