@@ -11,14 +11,14 @@
       <div class="flex shrink-0 items-center gap-2">
         <Button
           variant="textonly"
-          size="md"
+          size="lg"
           @click="setAllFilteredEnabled(true)"
         >
           {{ $t('workspacePanel.allowlist.enableAll') }}
         </Button>
         <Button
           variant="textonly"
-          size="md"
+          size="lg"
           @click="setAllFilteredEnabled(false)"
         >
           {{ $t('workspacePanel.allowlist.disableAll') }}
