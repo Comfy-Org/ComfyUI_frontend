@@ -4416,6 +4416,9 @@
     "secretValuePlaceholderEdit": "Enter new value to change",
     "secretValueHint": "This value will be encrypted and cannot be viewed again.",
     "secretValueHintEdit": "Leave blank to keep the current value.",
+    "uploadJsonFile": "Upload JSON file",
+    "jsonFilePlaceholder": "Upload or paste the provider JSON credential",
+    "jsonFileHint": "Paste the JSON or upload a file. It will be encrypted and cannot be viewed again.",
     "createdAt": "Created {date}",
     "lastUsed": "Last used {date}",
     "deleteConfirmTitle": "Delete Secret",
@@ -4425,6 +4428,7 @@
       "nameTooLong": "Name must be 255 characters or less",
       "providerRequired": "Provider is required",
       "secretValueRequired": "Secret value is required",
+      "invalidJson": "File must contain valid JSON",
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }

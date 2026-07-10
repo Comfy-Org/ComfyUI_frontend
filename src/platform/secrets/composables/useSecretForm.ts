@@ -10,7 +10,12 @@ import {
   getProviderLabel,
   getProviderLogo
 } from '../providers'
-import type { SecretErrorCode, SecretMetadata } from '../types'
+import type {
+  SecretErrorCode,
+  SecretInputType,
+  SecretMetadata,
+  SecretProviderInfo
+} from '../types'
 
 interface SecretFormState {
   name: string
@@ -32,11 +37,20 @@ interface ProviderOption {
   disabled: boolean
 }
 
+function isValidJson(value: string): boolean {
+  try {
+    JSON.parse(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
   existingProviders: MaybeRefOrGetter<string[]>
-  availableProviders?: MaybeRefOrGetter<string[] | null>
+  availableProviders?: MaybeRefOrGetter<SecretProviderInfo[] | null>
   visible: { value: boolean }
   onSaved: () => void
 }
@@ -55,6 +69,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const loading = ref(false)
   const apiErrorCode = ref<SecretErrorCode | null>(null)
   const apiErrorMessage = ref<string | null>(null)
+  // Name of the uploaded credential file (json_file providers), for display.
+  const fileName = ref('')
 
   const form = reactive<SecretFormState>({
     name: '',
@@ -66,6 +82,14 @@ export function useSecretForm(options: UseSecretFormOptions) {
     name: '',
     secretValue: '',
     provider: ''
+  })
+
+  // The server-returned provider metadata keyed by id, so option rendering and
+  // the selected provider's input type can look up their `label`/`input_type`.
+  const providerInfoById = computed(() => {
+    const map = new Map<string, SecretProviderInfo>()
+    for (const info of toValue(availableProviders) ?? []) map.set(info.id, info)
+    return map
   })
 
   const providerOptions = computed<ProviderOption[]>(() => {
@@ -87,16 +111,25 @@ export function useSecretForm(options: UseSecretFormOptions) {
           : [...DEFAULT_PROVIDER_IDS]
     } else {
       ids =
-        available === null ? [...DEFAULT_PROVIDER_IDS] : [...new Set(available)]
+        available === null
+          ? [...DEFAULT_PROVIDER_IDS]
+          : [...new Set(available.map((p) => p.id))]
     }
 
     const existing = toValue(existingProviders)
     return ids.map((id) => ({
       value: id,
-      label: getProviderLabel(id),
+      label: providerInfoById.value.get(id)?.label ?? getProviderLabel(id),
       logo: getProviderLogo(id),
       disabled: mode === 'edit' ? false : existing.includes(id)
     }))
+  })
+
+  // How the selected provider's credential is entered. Providers omitting
+  // `input_type` (and any unlisted selection) default to a single-line secret.
+  const selectedInputType = computed<SecretInputType>(() => {
+    if (!form.provider) return 'text'
+    return providerInfoById.value.get(form.provider)?.input_type ?? 'text'
   })
 
   // Once the server allowlist resolves, drop a selection the resolved list no
@@ -139,11 +172,19 @@ export function useSecretForm(options: UseSecretFormOptions) {
       form.secretValue = ''
       form.provider = null
     }
+    fileName.value = ''
     errors.name = ''
     errors.secretValue = ''
     errors.provider = ''
     apiErrorCode.value = null
     apiErrorMessage.value = null
+  }
+
+  async function loadSecretFromFile(file: File | null) {
+    if (!file) return
+    errors.secretValue = ''
+    form.secretValue = await file.text()
+    fileName.value = file.name
   }
 
   whenever(() => visible.value, resetForm)
@@ -167,6 +208,14 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }
     if (mode === 'create' && !form.secretValue) {
       errors.secretValue = t('secrets.errors.secretValueRequired')
+      return false
+    }
+    if (
+      selectedInputType.value === 'json_file' &&
+      form.secretValue &&
+      !isValidJson(form.secretValue)
+    ) {
+      errors.secretValue = t('secrets.errors.invalidJson')
       return false
     }
     return true
@@ -215,6 +264,9 @@ export function useSecretForm(options: UseSecretFormOptions) {
     apiError,
     providerOptions,
     providerHelp,
+    selectedInputType,
+    fileName,
+    loadSecretFromFile,
     handleSubmit
   }
 }
