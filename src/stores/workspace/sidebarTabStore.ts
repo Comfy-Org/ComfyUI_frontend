@@ -78,8 +78,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
         // The asset browser cannot function without the asset API, so the
         // browser routing derives from both settings: with the API disabled
-        // the tab always opens the sidebar tree, making the invalid
-        // combination unrepresentable rather than prompt-corrected.
+        // the browser setting is inert and the tab always opens the sidebar
+        // tree, rather than prompt-correcting the combination.
         if (
           tab.id === 'model-library' &&
           settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
