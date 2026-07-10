@@ -189,6 +189,39 @@ Before implementing any user-facing feature, consult the [Comfy Design Standards
 
 See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
+## Review Workflow
+
+For every code-review task:
+
+1. Read the PR intent, base-to-head diff, root instructions, and the nearest
+   applicable `AGENTS.md` for each changed path.
+2. Read each `docs/guidance/` document whose frontmatter glob matches a changed
+   file. Read domain documentation when its system changes: `docs/adr/` for
+   architecture, `docs/FEATURE_FLAGS.md` and `docs/SETTINGS.md` for settings,
+   `docs/WIDGET_SERIALIZATION.md` for widgets, `docs/extensions/` for
+   extension-facing behavior, and the relevant document for templates or
+   releases.
+3. Apply the relevant review lenses in `.agents/checks/`. For production code,
+   always assess bugs, error handling, repository-pattern compliance,
+   documentation freshness, regression risk, and whether new behavior has
+   appropriate test coverage. Add architecture, API/ecosystem compatibility,
+   security, performance, memory-leak, import-graph, accessibility, Vue, and
+   Playwright checks when the changed code makes them applicable.
+4. For changed or newly added test files, also apply the matching review input:
+   - `*.test.ts` — `docs/testing/README.md`,
+     `docs/guidance/vitest.md`, and `.agents/checks/test-quality.md`.
+   - `*.spec.ts` — `docs/testing/README.md`,
+     `docs/guidance/playwright.md`, `.agents/checks/test-quality.md`, and the
+     nearest applicable `AGENTS.md` under `browser_tests/`.
+
+   The testing README is the entry point. Follow the test-type-specific guide
+   it selects, assess behavioral coverage for the changed production behavior,
+   and do not report findings allowed by the applicable guidance.
+
+5. Report only high-confidence, diff-caused findings. Each finding needs a
+   severity, file and line, concrete failure scenario, and the smallest
+   practical fix. Also report checks run or skipped and the reason.
+
 ## Testing Guidelines
 
 See @docs/testing/\*.md for detailed patterns.
