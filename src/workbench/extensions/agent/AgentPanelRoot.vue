@@ -16,7 +16,6 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -37,26 +36,23 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { WorkflowUpload } from './services/agent/agentRestClient'
-import { createReconnectingEventSource } from './services/agent/agentEventSource'
+import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 
 const { t } = useI18n()
 const toast = useToastStore()
-const workspaceAuthStore = useWorkspaceAuthStore()
 
 const { userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-const rest = createAgentRestClient({
-  getAuthToken: () => workspaceAuthStore.workspaceToken ?? undefined
-})
+const rest = createAgentRestClient()
 
-// Follows api.socket across reconnects (the api nulls and replaces its socket on
-// close/reopen) so the panel is not left deaf after a reconnect.
-const events = createReconnectingEventSource(api)
+// Rides the api's own typed /ws dispatch (which survives socket reconnects), so the
+// panel is not left deaf after a reconnect and each frame is JSON-parsed only once.
+const events = createAgentEventSource(api)
 
 const workflowStore = useWorkflowStore()
 const bindingStore = useAgentWorkflowTabBindingStore()
@@ -182,7 +178,7 @@ const {
 })
 
 // Every agent error goes through the ONE existing host error modal — no
-// bespoke toasts. Warnings/info stay transient toasts.
+// bespoke toasts.
 const executionErrorStore = useExecutionErrorStore()
 
 function surfaceAgentError(
@@ -197,20 +193,12 @@ function surfaceAgentError(
   executionErrorStore.showErrorOverlay()
 }
 
-const noticeSeverity = { warning: 'warn', info: 'info' } as const
 let noticesSeen = 0
 watch(
   () => notices.value.length,
   (length) => {
-    for (const notice of notices.value.slice(noticesSeen)) {
-      if (notice.level === 'error')
-        surfaceAgentError('agent_api_failed', notice.text)
-      else
-        toast.add({
-          severity: noticeSeverity[notice.level],
-          summary: notice.text
-        })
-    }
+    for (const notice of notices.value.slice(noticesSeen))
+      surfaceAgentError('agent_api_failed', notice.text)
     noticesSeen = length
   }
 )
@@ -417,7 +405,10 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
-    console.warn('[agent] listThreads failed:', error)
+    surfaceAgentError(
+      'agent_api_failed',
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 
@@ -438,13 +429,11 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachSteps: CoachStep[] = [
-  {
-    target: '#agent-panel-root',
-    title: t('agent.coachTitle'),
-    body: t('agent.coachBody')
-  }
-]
+const coachStep: CoachStep = {
+  target: '#agent-panel-root',
+  title: t('agent.coachTitle'),
+  body: t('agent.coachBody')
+}
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   // A new turn re-arms applies AND replays the draft a 'Keep mine' parked —
@@ -553,7 +542,7 @@ async function onFilesPicked(event: Event): Promise<void> {
       @copy-history="onCopyMarkdown"
     />
     <OnboardingCoach
-      :steps="coachSteps"
+      :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"
     />
   </div>

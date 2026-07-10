@@ -5,11 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { ActiveTab } from './ActiveTabStrip.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import type {
-  ApprovalCard,
-  ConflictChoice,
-  LockState
-} from './safety/safetyTypes'
+import type { ConflictChoice } from './safety/safetyTypes'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -19,20 +15,14 @@ import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import SessionBar from './SessionBar.vue'
-import ApprovalCardView from './safety/ApprovalCard.vue'
 import ConflictDialog from './safety/ConflictDialog.vue'
-import LockBanner from './safety/LockBanner.vue'
-import RevertButton from './safety/RevertButton.vue'
 
 const {
   entries,
   userName,
   streaming = false,
   submitting = false,
-  approvalCards = [],
-  lockState = 'UNLOCKED',
   conflictOpen = false,
-  canRevert = false,
   canAttach = false,
   isMaximized = false,
   selectionTags = [],
@@ -44,10 +34,7 @@ const {
   userName?: string
   streaming?: boolean
   submitting?: boolean
-  approvalCards?: ApprovalCard[]
-  lockState?: LockState
   conflictOpen?: boolean
-  canRevert?: boolean
   canAttach?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
@@ -62,10 +49,7 @@ const emit = defineEmits<{
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  answer: [approvalId: string, approved: boolean]
-  takeControl: []
   resolveConflict: [choice: ConflictChoice]
-  revert: []
   newChat: []
   toggleSize: []
   close: []
@@ -152,8 +136,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-else>
       <SessionBar :title="sessionTitle" @open-history="onOpenHistory" />
 
-      <LockBanner :state="lockState" @take-control="emit('takeControl')" />
-
       <div class="min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
@@ -169,18 +151,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-if="!showHistory">
-      <div v-if="approvalCards.length || canRevert" class="space-y-2 px-3 pb-1">
-        <ApprovalCardView
-          v-for="card in approvalCards"
-          :key="card.approvalId"
-          :card="card"
-          @answer="(id, approved) => emit('answer', id, approved)"
-        />
-        <div v-if="canRevert" class="flex justify-end">
-          <RevertButton :can-revert="canRevert" @revert="emit('revert')" />
-        </div>
-      </div>
-
       <footer class="shrink-0 p-4">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
           <Composer

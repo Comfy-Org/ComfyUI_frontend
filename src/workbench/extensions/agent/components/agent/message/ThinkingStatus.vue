@@ -2,10 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 // Plain "Thinking..." per the locked Figma decision (the monolith's rotating status
-// words are dropped). The running think-token count shows only when the server has sent
-// one (tokens > 0).
-const { tokens = 0 } = defineProps<{ tokens?: number }>()
-
+// words are dropped).
 const { t } = useI18n()
 </script>
 
@@ -13,8 +10,5 @@ const { t } = useI18n()
   <div class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm">
     <span class="icon-[lucide--brain] size-3.5 shrink-0" />
     <span class="agent-shimmer-text">{{ t('agent.thinking') }}</span>
-    <span v-if="tokens > 0" class="text-agent-fg-subtle text-xs">{{
-      tokens
-    }}</span>
   </div>
 </template>

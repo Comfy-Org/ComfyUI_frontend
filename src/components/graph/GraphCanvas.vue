@@ -120,6 +120,7 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onMounted,
   onUnmounted,
@@ -190,7 +191,6 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
-import AgentPanelRoot from '@/workbench/extensions/agent/AgentPanelRoot.vue'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -206,6 +206,12 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
+
+// Async so the flag-gated agent subtree stays out of the GraphCanvas chunk;
+// it loads on first dock (the slot renders only while the panel is open).
+const AgentPanelRoot = defineAsyncComponent(
+  () => import('@/workbench/extensions/agent/AgentPanelRoot.vue')
+)
 
 const { t } = useI18n()
 const emit = defineEmits<{

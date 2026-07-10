@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   AGENT_PANEL_FLAG,
-  createPostHogFlagSource,
-  useAgentFeatureGate
+  createPostHogFlagSource
 } from './useAgentFeatureGate'
-import type { AgentFlagSource, PostHogLike } from './useAgentFeatureGate'
+import type { PostHogLike } from './useAgentFeatureGate'
 
 function fakePostHog(initial: boolean | undefined): {
   posthog: PostHogLike
@@ -30,39 +29,35 @@ function fakePostHog(initial: boolean | undefined): {
   }
 }
 
-describe('useAgentFeatureGate', () => {
-  it('fails closed when the source reports disabled', () => {
-    const source: AgentFlagSource = { isEnabled: () => false }
-    const { enabled } = useAgentFeatureGate(source)
-    expect(enabled.value).toBe(false)
-  })
-
-  it('maps an unloaded posthog flag (undefined) to false', () => {
+describe('createPostHogFlagSource', () => {
+  it('maps an unloaded posthog flag (undefined) to false (fail closed)', () => {
     const { posthog } = fakePostHog(undefined)
-    const { enabled } = useAgentFeatureGate(createPostHogFlagSource(posthog))
-    expect(enabled.value).toBe(false)
+    expect(createPostHogFlagSource(posthog).isEnabled()).toBe(false)
   })
 
-  it('flips on when flags load and the listener fires, then off on a later change', () => {
+  it('notifies onChange listeners and reflects flag flips', () => {
     const { posthog, setFlag } = fakePostHog(undefined)
-    const { enabled } = useAgentFeatureGate(createPostHogFlagSource(posthog))
-    expect(enabled.value).toBe(false)
+    const source = createPostHogFlagSource(posthog)
+    const onChange = vi.fn()
+    source.onChange?.(onChange)
 
     setFlag(true)
-    expect(enabled.value).toBe(true)
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(source.isEnabled()).toBe(true)
 
     setFlag(false)
-    expect(enabled.value).toBe(false)
+    expect(source.isEnabled()).toBe(false)
   })
 
-  it('dispose stops further updates', () => {
+  it('unsubscribing stops further notifications', () => {
     const { posthog, setFlag } = fakePostHog(undefined)
-    const { enabled, dispose } = useAgentFeatureGate(
-      createPostHogFlagSource(posthog)
-    )
-    dispose()
+    const source = createPostHogFlagSource(posthog)
+    const onChange = vi.fn()
+    const unsubscribe = source.onChange?.(onChange)
+
+    unsubscribe?.()
     setFlag(true)
-    expect(enabled.value).toBe(false)
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('tolerates a void-returning onFeatureFlags', () => {
@@ -70,14 +65,13 @@ describe('useAgentFeatureGate', () => {
       isFeatureEnabled: () => true,
       onFeatureFlags: vi.fn()
     }
-    const { enabled, dispose } = useAgentFeatureGate(
-      createPostHogFlagSource(posthog)
-    )
-    expect(enabled.value).toBe(true)
-    expect(() => dispose()).not.toThrow()
+    const source = createPostHogFlagSource(posthog)
+    const unsubscribe = source.onChange?.(() => {})
+    expect(source.isEnabled()).toBe(true)
+    expect(() => unsubscribe?.()).not.toThrow()
   })
 
-  it('createPostHogFlagSource queries the agent flag by default', () => {
+  it('queries the agent flag by default', () => {
     const isFeatureEnabled = vi.fn(() => true)
     const source = createPostHogFlagSource({
       isFeatureEnabled,

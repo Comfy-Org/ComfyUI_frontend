@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
+import {
+  CollapsibleContent,
+  CollapsibleRoot,
+  CollapsibleTrigger
+} from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CollapsibleContent from '../../ui/CollapsibleContent.vue'
 import type { ToolPart } from '../../../services/agent/agentMessageParts'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -80,7 +83,9 @@ watch(
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
     </CollapsibleTrigger>
-    <CollapsibleContent>
+    <CollapsibleContent
+      class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
+    >
       <div :class="cn('flex flex-col gap-0.5 pt-1 pl-2')">
         <ToolCallCard
           v-for="(row, index) in rows"

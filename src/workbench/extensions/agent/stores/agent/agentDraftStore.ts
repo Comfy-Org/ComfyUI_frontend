@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import type {
   AgentDraftSnapshot,
@@ -13,8 +13,6 @@ export const useAgentDraftStore = defineStore('agentDraft', () => {
   const workflowId = ref<string | null>(null)
   const content = ref<Record<string, unknown> | null>(null)
   const version = ref<number | null>(null)
-
-  const hasDraft = computed(() => content.value !== null)
 
   // Switching workflows clears content/version so a prior workflow's draft can't bleed in.
   function bind(id: string): void {
@@ -57,7 +55,6 @@ export const useAgentDraftStore = defineStore('agentDraft', () => {
     workflowId,
     content,
     version,
-    hasDraft,
     bind,
     applyPatch,
     checkHeartbeat,

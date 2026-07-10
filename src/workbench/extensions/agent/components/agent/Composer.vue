@@ -9,7 +9,7 @@ import {
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Textarea from '../ui/Textarea.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -101,7 +101,7 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="max-h-48 min-h-20 px-4 py-3"
+      class="max-h-48 min-h-20 resize-none rounded-xl bg-transparent px-4 py-3 focus-visible:ring-0"
       @keydown.enter="onEnter"
     />
 

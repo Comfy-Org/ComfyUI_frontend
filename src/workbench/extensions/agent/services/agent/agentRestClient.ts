@@ -1,11 +1,12 @@
 import type { z } from 'zod'
 
+import { api } from '@/scripts/api'
+
 import {
   zAgentCancelAccepted,
   zAgentDraftSnapshot,
   zAgentError,
   zAgentMessages,
-  zAgentThreadCreated,
   zAgentThreads,
   zAgentTurnAccepted,
   zUploadImageResult
@@ -14,7 +15,6 @@ import type {
   AgentCancelAccepted,
   AgentDraftSnapshot,
   AgentMessages,
-  AgentThreadCreated,
   AgentThreadSummary,
   AgentTurnAccepted,
   UploadImageResult
@@ -31,14 +31,6 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
   }
-}
-
-export interface AgentRestClientDeps {
-  // '' targets the current origin.
-  baseUrl?: string
-  // Resolves the bearer token, or undefined to send unauthenticated.
-  getAuthToken: () => Promise<string | undefined> | string | undefined
-  fetchImpl?: typeof fetch
 }
 
 // The client's canvas, uploaded with a turn so the server seeds the thread's
@@ -72,14 +64,7 @@ function isIngestErrorBody(body: unknown): body is IngestErrorBody {
   )
 }
 
-export function createAgentRestClient(deps: AgentRestClientDeps) {
-  const { baseUrl = '', getAuthToken, fetchImpl = globalThis.fetch } = deps
-
-  async function authHeaders(): Promise<Record<string, string>> {
-    const token = await getAuthToken()
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
-
+export function createAgentRestClient() {
   async function toApiError(response: Response): Promise<AgentApiError> {
     const text = await response.text()
     let body: unknown
@@ -97,37 +82,25 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     return new AgentApiError(message, response.status, body)
   }
 
+  // Rides api.fetchApi so agent calls share the host transport: auth headers
+  // (Firebase/workspace), the 401 remint retry, and the Comfy-User header.
   // A schema violation throws zod's error uncaught here, by design (anti-drift seam).
   async function request<T>(
-    path: string,
+    route: string,
     init: RequestInit,
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await fetchImpl(`${baseUrl}${path}`, init)
+    const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
     return schema.parse(await response.json())
   }
 
-  async function jsonInit(method: string, body: unknown): Promise<RequestInit> {
+  function jsonInit(method: string, body: unknown): RequestInit {
     return {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(await authHeaders())
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }
-  }
-
-  async function createThread(
-    workflowId?: string
-  ): Promise<AgentThreadCreated> {
-    const body = workflowId ? { workflow_id: workflowId } : {}
-    return request(
-      '/api/agent/threads',
-      await jsonInit('POST', body),
-      zAgentThreadCreated
-    )
   }
 
   // threadId 'new' opens a thread as part of posting the first message.
@@ -141,24 +114,24 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.workflow !== undefined) body.workflow = req.workflow
     return request(
-      `/api/agent/threads/${threadId}/messages`,
-      await jsonInit('POST', body),
+      `/agent/threads/${threadId}/messages`,
+      jsonInit('POST', body),
       zAgentTurnAccepted
     )
   }
 
   async function getMessages(threadId: string): Promise<AgentMessages> {
     return request(
-      `/api/agent/threads/${threadId}/messages`,
-      { method: 'GET', headers: await authHeaders() },
+      `/agent/threads/${threadId}/messages`,
+      { method: 'GET' },
       zAgentMessages
     )
   }
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const page = await request(
-      '/api/agent/threads',
-      { method: 'GET', headers: await authHeaders() },
+      '/agent/threads',
+      { method: 'GET' },
       zAgentThreads
     )
     return page.threads
@@ -169,8 +142,8 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     messageId: string
   ): Promise<AgentCancelAccepted> {
     return request(
-      `/api/agent/threads/${threadId}/messages/${messageId}/cancel`,
-      await jsonInit('POST', {}),
+      `/agent/threads/${threadId}/messages/${messageId}/cancel`,
+      jsonInit('POST', {}),
       zAgentCancelAccepted
     )
   }
@@ -178,8 +151,8 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
   async function getDraft(workflowId: string): Promise<AgentDraftSnapshot> {
     const query = encodeURIComponent(workflowId)
     return request(
-      `/api/agent/draft?workflow_id=${query}`,
-      { method: 'GET', headers: await authHeaders() },
+      `/agent/draft?workflow_id=${query}`,
+      { method: 'GET' },
       zAgentDraftSnapshot
     )
   }
@@ -192,14 +165,13 @@ export function createAgentRestClient(deps: AgentRestClientDeps) {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
-      '/api/upload/image',
-      { method: 'POST', headers: await authHeaders(), body: form },
+      '/upload/image',
+      { method: 'POST', body: form },
       zUploadImageResult
     )
   }
 
   return {
-    createThread,
     postMessage,
     getMessages,
     listThreads,

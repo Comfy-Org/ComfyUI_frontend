@@ -84,12 +84,13 @@
       data-testid="integrated-tab-bar-actions"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <button
+      <Button
         v-if="agentPanelEnabled"
-        type="button"
+        variant="link"
+        size="sm"
         :class="
           cn(
-            'no-drag flex h-6 shrink-0 cursor-pointer items-center gap-2 rounded-sm border px-2 text-xs text-base-foreground transition-colors',
+            'no-drag shrink-0 border border-solid text-base-foreground',
             isAgentPanelOpen
               ? 'border-plum-500 bg-plum-600/20'
               : 'border-plum-600 bg-ink-700 hover:border-plum-500'
@@ -100,7 +101,7 @@
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
-      </button>
+      </Button>
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"

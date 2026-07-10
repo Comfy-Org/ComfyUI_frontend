@@ -9,42 +9,44 @@ import { app } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-// A controllable stand-in for the host api: an EventTarget with a swappable socket, the
-// exact surface the reconnecting event source binds to. Emitting a malformed agent frame
-// through its socket is the one seam that drives a session notice at mount without a live
-// backend, which is what FIX 5 forwards to the toast. Hoisted so the api mock factory can
-// close over the same listener map the test emits through.
-const socket = vi.hoisted(() => {
-  type Listener = (event?: { data: unknown }) => void
+// A controllable stand-in for the host api's typed /ws dispatch: the event source
+// registers per message type (addCustomEventListener) and each emitted frame's data
+// arrives as the CustomEvent detail — the same shape api.ts dispatches after its
+// single JSON.parse of a frame. Emitting a malformed agent frame through it is the
+// one seam that drives a session notice at mount without a live backend, which is
+// what FIX 5 forwards to the toast. Hoisted so the api mock factory can close over
+// the same listener map the test emits through.
+const ws = vi.hoisted(() => {
+  type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()
-  const fake = {
-    readyState: 1,
-    addEventListener(type: string, listener: Listener) {
-      const set = listeners.get(type) ?? new Set()
-      set.add(listener)
-      listeners.set(type, set)
-    },
-    removeEventListener(type: string, listener: Listener) {
-      listeners.get(type)?.delete(listener)
-    }
+  const add = (type: string, listener: Listener): void => {
+    const set = listeners.get(type) ?? new Set()
+    set.add(listener)
+    listeners.set(type, set)
   }
-  const emit = (type: string, event?: { data: unknown }): void => {
-    for (const listener of listeners.get(type) ?? []) listener(event)
+  const remove = (type: string, listener: Listener): void => {
+    listeners.get(type)?.delete(listener)
+  }
+  const emit = (type: string, data?: unknown): void => {
+    for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
   const clear = (): void => listeners.clear()
-  return { fake, emit, clear }
+  return { add, remove, emit, clear }
 })
 
-vi.mock('@/scripts/api', () => {
-  const target = new EventTarget()
-  return {
-    api: {
-      socket: socket.fake,
-      addEventListener: target.addEventListener.bind(target),
-      removeEventListener: target.removeEventListener.bind(target)
-    }
+vi.mock('@/scripts/api', () => ({
+  api: {
+    // Same route mapping as the real fetchApi, delegating to global fetch so the
+    // per-test fetch stubs below keep shaping bodies and statuses.
+    fetchApi: (route: string, options?: RequestInit) =>
+      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    socket: { readyState: 1 },
+    addEventListener: ws.add,
+    removeEventListener: ws.remove,
+    addCustomEventListener: ws.add,
+    removeCustomEventListener: ws.remove
   }
-})
+}))
 
 const appMock = vi.hoisted(() => {
   const graph = {
@@ -129,10 +131,6 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ workspaceToken: undefined })
-}))
-
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
 }))
@@ -178,24 +176,35 @@ const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
 describe('AgentPanelRoot session notices', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
     executionErrors.lastPromptError = null
     executionErrors.showErrorOverlay.mockClear()
+    // The mount-time history prefetch must resolve, or its failure would also
+    // raise the error modal and double-count the overlay call below.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response('{"threads":[]}', {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          })
+      )
+    )
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const toast = useToastStore()
 
     // A malformed agent_message_done with no readable message_id makes the
     // session push an error notice; errors share the ONE host error modal.
-    socket.emit('message', {
-      data: JSON.stringify({ type: 'agent_message_done', data: {} })
-    })
+    ws.emit('agent_message_done', {})
     await nextTick()
 
     expect(toast.messagesToAdd).toHaveLength(0)
@@ -210,7 +219,7 @@ describe('AgentPanelRoot session notices', () => {
 describe('AgentPanelRoot attach flow', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
   })
 
   afterEach(() => {
@@ -356,12 +365,7 @@ describe('AgentPanelRoot attach flow', () => {
     await userEvent.type(screen.getByRole('textbox'), 'first message')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1' }
-      })
-    })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
@@ -475,7 +479,7 @@ describe('AgentPanelRoot attach flow', () => {
 describe('AgentPanelRoot draft binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
   })
@@ -510,22 +514,17 @@ describe('AgentPanelRoot draft binding', () => {
 
     // A draft_patch carrying the ack's workflow id now drives the canvas; a foreign one does not.
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: { workflow_id: 'other', base_version: 0, version: 1, content: {} }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'other',
+      base_version: 0,
+      version: 1,
+      content: {}
     })
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: {
-          workflow_id: 'wf-42',
-          base_version: 0,
-          version: 1,
-          content: graph
-        }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: graph
     })
 
     // No tab is bound to wf-42 yet, so the first apply opens a new tab.
@@ -547,7 +546,10 @@ describe('AgentPanelRoot draft binding', () => {
           { status: 202, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      return new Response('{}', { status: 200 })
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
     })
     vi.stubGlobal('fetch', fetchMock)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -576,16 +578,11 @@ describe('AgentPanelRoot draft binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     const patch = (version: number): void =>
-      socket.emit('message', {
-        data: JSON.stringify({
-          type: 'draft_patch',
-          data: {
-            workflow_id: 'wf-42',
-            base_version: version - 1,
-            version,
-            content: { nodes: [{ id: 1 }] }
-          }
-        })
+      ws.emit('draft_patch', {
+        workflow_id: 'wf-42',
+        base_version: version - 1,
+        version,
+        content: { nodes: [{ id: 1 }] }
       })
 
     // One patch per tick: the version watcher batches same-tick bumps into one fire.
@@ -634,7 +631,10 @@ describe('AgentPanelRoot draft binding', () => {
               }),
               { status: 202, headers: { 'Content-Type': 'application/json' } }
             )
-          : new Response('{}', { status: 200 })
+          : new Response('{"threads":[]}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
       )
     )
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -651,16 +651,11 @@ describe('AgentPanelRoot draft binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: {
-          workflow_id: 'wf-42',
-          base_version: 0,
-          version: 1,
-          content: { version: 0.4, nodes: [{ id: 1 }] }
-        }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [{ id: 1 }] }
     })
 
     await vi.waitFor(() =>
@@ -676,7 +671,7 @@ describe('AgentPanelRoot draft binding', () => {
 describe('AgentPanelRoot history', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
   })
 
   afterEach(() => {
@@ -731,6 +726,25 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('surfaces a thread-list failure via the host error modal', async () => {
+    executionErrors.lastPromptError = null
+    executionErrors.showErrorOverlay.mockClear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 500 }))
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    )
+    expect(executionErrors.lastPromptError).toMatchObject({
+      type: 'agent_api_failed'
+    })
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
+  })
+
   it('marks the adopted thread as the current session', async () => {
     vi.stubGlobal(
       'fetch',
@@ -760,7 +774,7 @@ describe('AgentPanelRoot history', () => {
 describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
     telemetry.trackAgentMessageFeedback.mockClear()
   })
 
@@ -811,7 +825,7 @@ describe('AgentPanelRoot feedback capture', () => {
 describe('AgentPanelRoot lifecycle', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
   })
 
   afterEach(() => {
@@ -865,7 +879,7 @@ describe('AgentPanelRoot lifecycle', () => {
 describe('AgentPanelRoot greeting', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
   })
 
   afterEach(() => {
@@ -883,7 +897,7 @@ describe('AgentPanelRoot greeting', () => {
 describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    socket.clear()
+    ws.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     telemetry.trackAgentNodeTagged.mockClear()
@@ -930,16 +944,11 @@ describe('AgentPanelRoot workflow binding', () => {
   }
 
   const patch = (version: number, content: unknown): void =>
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: {
-          workflow_id: 'wf-42',
-          base_version: version - 1,
-          version,
-          content
-        }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: version - 1,
+      version,
+      content
     })
 
   it('names the active tab in the panel strip', async () => {
@@ -1120,16 +1129,11 @@ describe('AgentPanelRoot workflow binding', () => {
     // The send uploaded this tab's canvas, so the minted id binds to it and
     // its first patch applies IN the active tab (the draft mirrors the tab).
     const graph = { version: 0.4, nodes: [{ id: 9 }] }
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: {
-          workflow_id: 'wf-fresh',
-          base_version: 0,
-          version: 1,
-          content: graph
-        }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-fresh',
+      base_version: 0,
+      version: 1,
+      content: graph
     })
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
@@ -1219,12 +1223,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1' }
-      })
-    })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
     // No new patch arrives; the send itself must re-drive the parked draft,
@@ -1346,12 +1345,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     // The next turn re-arms applies; the still-edited tab re-raises the dialog
     // and 'Accept agent changes' overwrites in place.
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1' }
-      })
-    })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
     await userEvent.type(screen.getByRole('textbox'), 'go on')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -1387,12 +1381,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     // The decision sticks: the next turn does NOT re-ask about this version...
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1' }
-      })
-    })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
     await userEvent.type(screen.getByRole('textbox'), 'something else')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -1563,12 +1552,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     expect(bodies[0]).not.toHaveProperty('workflow_id')
 
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'agent_message_done',
-        data: { message_id: 'm-1', thread_id: 'th-1' }
-      })
-    })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
     // Unchanged graph: the second send skips the upload.
@@ -1579,16 +1563,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     // The uploaded draft mirrors the tab, so the minted id applies in place.
     const graph = { version: 0.4, nodes: [{ id: 2 }] }
-    socket.emit('message', {
-      data: JSON.stringify({
-        type: 'draft_patch',
-        data: {
-          workflow_id: 'wf-mint',
-          base_version: 0,
-          version: 1,
-          content: graph
-        }
-      })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-mint',
+      base_version: 0,
+      version: 1,
+      content: graph
     })
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
