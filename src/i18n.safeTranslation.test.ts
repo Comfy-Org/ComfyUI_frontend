@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { i18n, st } from './i18n'
+import { i18n, st, stRaw } from './i18n'
 
 describe('st', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
+  })
+
+  it('returns the fallback when the key is not found', () => {
+    expect(st('safeTranslationTest.missing', 'Fallback value')).toBe(
+      'Fallback value'
+    )
   })
 
   it('uses compiled translations for valid locale messages', () => {
@@ -31,6 +37,43 @@ describe('st', () => {
 
     expect(st('safeTranslationTest.invalidLinkedFormat', 'Fallback value')).toBe(
       message
+    )
+  })
+})
+
+describe('stRaw', () => {
+  beforeEach(() => {
+    i18n.global.locale.value = 'en'
+  })
+
+  it('returns raw locale messages for valid keys', () => {
+    i18n.global.mergeLocaleMessage('en', {
+      safeTranslationTest: {
+        rawValue: 'Raw value'
+      }
+    })
+
+    expect(stRaw('safeTranslationTest.rawValue', 'Fallback value')).toBe(
+      'Raw value'
+    )
+  })
+
+  it('returns raw messages containing vue-i18n syntax', () => {
+    const message =
+      'Provided by @acme/model with JSON such as {"mode":"fast"}'
+
+    i18n.global.mergeLocaleMessage('en', {
+      safeTranslationTest: {
+        rawSyntax: message
+      }
+    })
+
+    expect(stRaw('safeTranslationTest.rawSyntax', 'Fallback value')).toBe(message)
+  })
+
+  it('returns the fallback when the key is not found', () => {
+    expect(stRaw('safeTranslationTest.rawMissing', 'Fallback value')).toBe(
+      'Fallback value'
     )
   })
 })
