@@ -1163,6 +1163,7 @@
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
+      "relevance": "Relevance",
       "recommended": "Recommended",
       "popular": "Popular",
       "alphabetical": "A → Z",
@@ -1812,6 +1813,8 @@
     "Runway": "Runway",
     "scail": "scail",
     "stable diffusion upscaler": "stable diffusion upscaler",
+    "post-processors": "post-processors",
+    "pre-processors": "pre-processors",
     "clip": "clip",
     "Sonilo": "Sonilo",
     "stable zero123": "stable zero123",
@@ -2170,7 +2173,8 @@
     "descLabel": "description",
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
-    "colors": "color_palette"
+    "colors": "color_palette",
+    "grid": "Grid"
   },
   "palette": {
     "addColor": "Add a color",
