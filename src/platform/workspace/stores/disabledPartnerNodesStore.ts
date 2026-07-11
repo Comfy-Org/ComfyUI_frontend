@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -60,9 +60,17 @@ export const useDisabledPartnerNodesStore = defineStore(
       return ids
     })
 
+    const { flags } = useFeatureFlags()
+
     async function fetchDisabledNames(): Promise<void> {
-      if (!isCloud) return
+      // Governance exists only for team workspaces; the guard also keeps unit
+      // tests and personal accounts from ever touching the network.
+      if (!isCloud || !flags.teamWorkspacesEnabled) return
       try {
+        // Dynamic import keeps the auth/axios subtree out of the app's
+        // startup module graph; governance is a post-load concern.
+        const { partnerNodesApi } =
+          await import('@/platform/workspace/api/partnerNodesApi')
         const { partner_nodes } = await partnerNodesApi.list()
         disabledNames.value = new Set(
           partner_nodes.filter((n) => !n.enabled).map((n) => n.name)
