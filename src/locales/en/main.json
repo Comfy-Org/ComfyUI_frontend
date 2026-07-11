@@ -1812,6 +1812,8 @@
     "Runway": "Runway",
     "scail": "scail",
     "stable diffusion upscaler": "stable diffusion upscaler",
+    "post-processors": "post-processors",
+    "pre-processors": "pre-processors",
     "clip": "clip",
     "Sonilo": "Sonilo",
     "stable zero123": "stable zero123",

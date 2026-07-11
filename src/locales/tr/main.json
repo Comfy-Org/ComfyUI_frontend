@@ -359,6 +359,7 @@
     "colors": "renk_paleti",
     "descLabel": "açıklama",
     "descPlaceholder": "bu bölgenin açıklaması",
+    "grid": "Izgara",
     "textLabel": "Metin",
     "textPlaceholder": "görüntülenecek metin (aynen)",
     "typeObj": "nesne",
@@ -953,6 +954,16 @@
       "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
       "title": "Geçersiz İletişim Kutusu"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
+    "confirmSummary": "Masaüstü oturum açmayı onayla?",
+    "expiredDetail": "Oturum açma isteğinin süresi doldu veya zaten kullanıldı. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
+    "expiredSummary": "Masaüstü oturum açma başarısız",
+    "failedDetail": "Masaüstü oturum açma tamamlanırken bir hata oluştu. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
+    "failedSummary": "Masaüstü oturum açma başarısız",
+    "successDetail": "ComfyUI masaüstü uygulamasına dönebilirsiniz.",
+    "successSummary": "Oturum açıldı"
   },
   "desktopMenu": {
     "confirmQuit": "Kaydedilmemiş iş akışları açık; kaydedilmemiş değişiklikler kaybolacaktır. Bunu yoksayıp çıkılsın mı?",
@@ -2854,6 +2865,8 @@
     "phantom subject": "hayalet nesne",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "son işlemciler",
+    "pre-processors": "ön işlemciler",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
     "qwen": "qwen",

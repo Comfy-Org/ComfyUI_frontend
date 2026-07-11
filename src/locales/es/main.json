@@ -359,6 +359,7 @@
     "colors": "paleta_de_colores",
     "descLabel": "descripción",
     "descPlaceholder": "descripción de esta región",
+    "grid": "Cuadrícula",
     "textLabel": "Texto",
     "textPlaceholder": "texto a renderizar (literal)",
     "typeObj": "obj",
@@ -953,6 +954,16 @@
       "message": "Se proporcionó un ID de diálogo no válido.",
       "title": "Diálogo no válido"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
+    "confirmSummary": "¿Aprobar inicio de sesión en el escritorio?",
+    "expiredDetail": "La solicitud de inicio de sesión expiró o ya fue utilizada. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
+    "expiredSummary": "Error en el inicio de sesión en el escritorio",
+    "failedDetail": "Ocurrió un error al completar el inicio de sesión en el escritorio. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
+    "failedSummary": "Error en el inicio de sesión en el escritorio",
+    "successDetail": "Puedes volver a la aplicación de escritorio de ComfyUI.",
+    "successSummary": "Sesión iniciada"
   },
   "desktopMenu": {
     "confirmQuit": "Hay flujos de trabajo abiertos sin guardar; se perderán los cambios no guardados. ¿Ignorar esto y salir?",
@@ -2854,6 +2865,8 @@
     "phantom subject": "sujeto fantasma",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "post-procesadores",
+    "pre-processors": "pre-procesadores",
     "preprocessors": "preprocesadores",
     "primitive": "primitivo",
     "qwen": "qwen",

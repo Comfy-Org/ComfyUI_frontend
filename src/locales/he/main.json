@@ -359,6 +359,7 @@
     "colors": "פלטת צבעים",
     "descLabel": "תיאור",
     "descPlaceholder": "תיאור האזור הזה",
+    "grid": "רשת",
     "textLabel": "טקסט",
     "textPlaceholder": "טקסט להצגה (מילולי)",
     "typeObj": "אובייקט",
@@ -953,6 +954,16 @@
       "message": "סופק מזהה חלון לא תקין.",
       "title": "חלון לא תקין"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "confirmSummary": "לאשר כניסה משולחן העבודה?",
+    "expiredDetail": "בקשת הכניסה פגה או כבר נוצלה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "expiredSummary": "הכניסה משולחן העבודה נכשלה",
+    "failedDetail": "אירעה שגיאה במהלך השלמת הכניסה משולחן העבודה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "failedSummary": "הכניסה משולחן העבודה נכשלה",
+    "successDetail": "ניתן לחזור לאפליקציית ComfyUI במחשב.",
+    "successSummary": "הכניסה בוצעה בהצלחה"
   },
   "desktopMenu": {
     "confirmQuit": "ישנם תהליכי עבודה פתוחים שלא נשמרו; כל שינוי שלא נשמר יאבד. להתעלם מכך ולצאת?",
@@ -2854,6 +2865,8 @@
     "phantom subject": "phantom subject",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "מעבדי פוסט",
+    "pre-processors": "מעבדי פרה",
     "preprocessors": "preprocessors",
     "primitive": "primitive",
     "qwen": "qwen",

@@ -359,6 +359,7 @@
     "colors": "カラーパレット",
     "descLabel": "説明",
     "descPlaceholder": "この領域の説明",
+    "grid": "グリッド",
     "textLabel": "テキスト",
     "textPlaceholder": "表示するテキスト（そのまま）",
     "typeObj": "obj",
@@ -953,6 +954,16 @@
       "message": "無効なダイアログIDが指定されました。",
       "title": "無効なダイアログ"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
+    "confirmSummary": "デスクトップサインインを承認しますか？",
+    "expiredDetail": "サインインリクエストの有効期限が切れたか、すでに使用されています。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "expiredSummary": "デスクトップサインインに失敗しました",
+    "failedDetail": "デスクトップサインインの完了中に問題が発生しました。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "failedSummary": "デスクトップサインインに失敗しました",
+    "successDetail": "ComfyUIデスクトップアプリに戻ることができます。",
+    "successSummary": "サインインしました"
   },
   "desktopMenu": {
     "confirmQuit": "保存されていないワークフローを終了しようとしています。保存されていない変更はすべて失われます。これを無視して終了しますか？",
@@ -2854,6 +2865,8 @@
     "phantom subject": "ファントムサブジェクト",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "ポストプロセッサー",
+    "pre-processors": "プリプロセッサー",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
