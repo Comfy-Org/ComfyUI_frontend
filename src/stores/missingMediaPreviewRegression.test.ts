@@ -29,7 +29,8 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
 })
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
+  st: vi.fn((_key: string, fallback: string) => fallback),
+  t: vi.fn((key: string) => key)
 }))
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
