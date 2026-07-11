@@ -933,7 +933,7 @@ describe('AgentPanelRoot lifecycle', () => {
     expect(useAgentPanelStore().isOpen).toBe(false)
   })
 
-  it('cancels the in-flight turn when the panel unmounts', async () => {
+  it('does not cancel the in-flight turn when the panel unmounts', async () => {
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {
       urls.push(url)
@@ -951,10 +951,9 @@ describe('AgentPanelRoot lifecycle', () => {
     await screen.findByRole('button', { name: 'Stop' })
 
     unmount()
+    await new Promise((resolve) => setTimeout(resolve))
 
-    await vi.waitFor(() =>
-      expect(urls.some((url) => url.endsWith('/cancel'))).toBe(true)
-    )
+    expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
 })
 

@@ -206,4 +206,23 @@ describe('agentEventTransport settle lifecycle', () => {
     transport.settle()
     expect(emit.mock.calls.length).toBe(callsAfterFirst)
   })
+
+  it('events arriving after settle are ignored', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(delta('final'))
+    transport.settle()
+    const callsAfterSettle = emit.mock.calls.length
+
+    transport.ingest(delta(' late'))
+    transport.ingest(toolCall('late_tool', 'ok'))
+
+    expect(emit.mock.calls.length).toBe(callsAfterSettle)
+    expect(textParts(message)[0]).toMatchObject({
+      text: 'final',
+      state: 'done'
+    })
+    expect(toolParts(message)).toHaveLength(0)
+  })
 })
