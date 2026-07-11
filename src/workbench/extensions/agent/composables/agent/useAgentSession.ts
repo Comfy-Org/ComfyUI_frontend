@@ -98,31 +98,41 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    if (
-      conversationStore.threadId === null &&
-      conversationStore.messages.length === 0
-    ) {
+    const surviving = conversationStore.threadId
+    if (surviving !== null) {
+      const generation = ++loadGeneration
+      void hydrateFromServer(surviving, () => generation === loadGeneration)
+      return
+    }
+    if (conversationStore.messages.length === 0) {
       const stored = localStorage.getItem(THREAD_STORAGE_KEY)
       if (stored !== null) {
+        const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
-        void hydrateFromServer(stored)
+        void hydrateFromServer(stored, () => generation === loadGeneration)
       }
     }
   }
 
-  async function hydrateFromServer(threadId: string): Promise<void> {
+  async function hydrateFromServer(
+    threadId: string,
+    isCurrent: () => boolean = () => true
+  ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
-      if (conversationStore.threadId === threadId)
-        conversationStore.hydrate(history)
+      if (conversationStore.threadId !== threadId || !isCurrent()) return false
+      conversationStore.hydrate(history)
+      return true
     } catch (error) {
+      if (!isCurrent()) return false
       if (error instanceof AgentApiError && error.status === 404) {
         if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
         localStorage.removeItem(THREAD_STORAGE_KEY)
-        return
+        return false
       }
       pushError(error instanceof Error ? error.message : String(error))
+      return false
     }
   }
 
@@ -131,6 +141,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
+    conversationStore.abortActiveTurn()
+    conversationStore.dropBackgroundTurns()
   }
 
   async function sendMessage(
@@ -239,8 +251,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  let loadGeneration = 0
+
   function newChat(): void {
-    void stopTurn()
+    loadGeneration++
+    conversationStore.stashActiveTurn()
     conversationStore.reset()
     draftStore.reset()
     localStorage.removeItem(THREAD_STORAGE_KEY)
@@ -251,11 +266,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function loadThread(threadId: string): Promise<void> {
-    void stopTurn()
+    const generation = ++loadGeneration
+    conversationStore.stashActiveTurn()
     draftStore.reset()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    await hydrateFromServer(threadId)
+    const hydrated = await hydrateFromServer(
+      threadId,
+      () => generation === loadGeneration
+    )
+    if (hydrated && generation === loadGeneration)
+      conversationStore.resumeBackgroundTurn()
   }
 
   function onRaw(raw: unknown): void {
@@ -266,13 +287,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
-      if (
-        type === 'agent_message_done' &&
-        (typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId)
-      ) {
-        conversationStore.abortActiveTurn()
-        pushError(i18n.global.t('agent.malformedEvent'))
+      if (type === 'agent_message_done') {
+        if (
+          typeof messageId !== 'string' ||
+          messageId === conversationStore.activeTurnId
+        ) {
+          conversationStore.abortActiveTurn()
+          pushError(i18n.global.t('agent.malformedEvent'))
+        } else {
+          conversationStore.settleBackgroundTurn(messageId)
+        }
       }
       console.warn('[agent] dropping malformed agent event', parsed.error)
       return
@@ -280,7 +304,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const event = parsed.data
     switch (event.type) {
       case 'draft_patch':
-        draftStore.applyPatch(event.data)
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          draftStore.applyPatch(event.data)
         return
       case 'draft_version':
         if (draftStore.checkHeartbeat(event.data) === 'behind')
@@ -292,8 +320,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (live) void resyncDraft()
-    else conversationStore.abortActiveTurn()
+    if (live) {
+      void resyncDraft()
+      return
+    }
+    conversationStore.abortActiveTurn()
+    conversationStore.dropBackgroundTurns()
   }
 
   return {
