@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
+import { onKeyStroke, useWindowSize } from '@vueuse/core'
 import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -14,6 +14,10 @@ const { step, storageKey } = defineProps<{
 
 const { t } = useI18n()
 const { active, finish } = useOnboarding(storageKey)
+
+onKeyStroke('Escape', () => {
+  if (active.value) finish()
+})
 
 const { width, height } = useWindowSize()
 const CARD_W = 256
@@ -44,7 +48,13 @@ watchEffect(
 </script>
 
 <template>
-  <div v-if="active && cardStyle" class="fixed inset-0 z-50">
+  <div
+    v-if="active && cardStyle"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="step.title"
+    class="fixed inset-0 z-50"
+  >
     <div class="absolute inset-0 bg-black/40" />
     <div
       :style="cardStyle"
