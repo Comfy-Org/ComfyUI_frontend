@@ -696,6 +696,9 @@ export class LiteGraphGlobal {
     type_b = String(type_b)
     type_a = type_a.toLowerCase()
     type_b = type_b.toLowerCase()
+    // DETECTION PROOF (row 4, links/type): reject IMAGE connections.
+    // Expected: connectivity sweep red with a CONNECT_REJECTED pair list.
+    if (type_a === 'image' || type_b === 'image') return false
 
     // For nodes supporting multiple connection types
     if (!type_a.includes(',') && !type_b.includes(',')) return type_a == type_b

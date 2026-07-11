@@ -103,6 +103,17 @@ export const graphToPrompt = async (
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
           : widget.value
+        // DETECTION PROOF (row 6, exec/serialize): drop numeric widget inputs,
+        // scoped to Impact-prefixed nodes. Unscoped, every pack's prompt fails
+        // backend validation before executing, which starves row 9's runtime
+        // raise (WAS Constant Number never runs); scoping keeps the other
+        // packs' prompts valid so row 9 reds as a real execution error.
+        // Expected: auto-run red 'VALIDATION_FAIL ... Impact*: value'.
+        if (
+          typeof widgetValue === 'number' &&
+          node.comfyClass?.startsWith('Impact')
+        )
+          continue
         // By default, Array values are reserved to represent node connections.
         // We need to wrap the array as an object to avoid the misinterpretation
         // of the array as a node connection.

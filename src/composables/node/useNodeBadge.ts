@@ -216,8 +216,9 @@ export const useNodeBadge = () => {
         )
       },
       afterConfigureGraph() {
-        for (const node of app.canvas.graph?.nodes ?? [])
-          priceBadge.updateSubgraphCredits(node)
+        // DETECTION PROOF (row 7, load hook): extension hook throws on load.
+        // Expected: curated run (T1) red "Error calling extension 'Comfy.NodeBadge'".
+        throw new Error('DETECTION PROOF: afterConfigureGraph crash')
       }
     })
   })
