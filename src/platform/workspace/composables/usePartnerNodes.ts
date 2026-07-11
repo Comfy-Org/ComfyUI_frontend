@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PartnerNode } from '@/platform/workspace/api/partnerNodesApi'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 
 export interface PartnerGroup {
@@ -161,6 +162,7 @@ export function usePartnerNodes() {
     applyEnabled([node.id], enabled)
     try {
       await partnerNodesApi.setEnabled(node.id, enabled)
+      void useDisabledPartnerNodesStore().applyGovernanceChange()
     } catch {
       nodes.value = nodes.value.map((n) =>
         n.id === node.id
@@ -188,6 +190,7 @@ export function usePartnerNodes() {
     applyEnabled(ids, enabled)
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
+      void useDisabledPartnerNodesStore().applyGovernanceChange()
       return true
     } catch {
       nodes.value = nodes.value.map((n) =>
