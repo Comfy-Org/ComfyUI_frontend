@@ -54,6 +54,8 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Pending integration in stacked PR (#13591 Invoices tab seam, FE-1245)
+    'src/composables/billing/useNextInvoice.ts',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',
