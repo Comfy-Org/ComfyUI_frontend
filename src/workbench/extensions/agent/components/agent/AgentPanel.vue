@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { ActiveTab } from './ActiveTabStrip.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import type { ConflictChoice } from './safety/safetyTypes'
+import type { ConflictChoice } from './safety/ConflictDialog.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -14,7 +14,6 @@ import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
-import SessionBar from './SessionBar.vue'
 import ConflictDialog from './safety/ConflictDialog.vue'
 
 const {
@@ -128,7 +127,22 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <SessionBar :title="sessionTitle" @open-history="onOpenHistory" />
+      <div class="flex shrink-0 items-center px-2 py-1.5">
+        <button
+          v-tooltip.bottom="{
+            value: t('agent.showChatHistory'),
+            showDelay: 500
+          }"
+          type="button"
+          class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
+          @click="onOpenHistory"
+        >
+          <span class="icon-[lucide--align-justify] size-3.5 shrink-0" />
+          <span class="max-w-56 truncate">{{
+            sessionTitle || t('agent.newChatTitle')
+          }}</span>
+        </button>
+      </div>
 
       <div class="min-h-0 flex-1">
         <EmptyState

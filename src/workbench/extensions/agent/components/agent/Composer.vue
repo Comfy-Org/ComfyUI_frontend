@@ -16,7 +16,6 @@ import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
-import SelectionTagChip from './composer/SelectionTagChip.vue'
 
 const {
   streaming = false,
@@ -71,12 +70,22 @@ defineExpose({
     class="border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors"
   >
     <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
-      <SelectionTagChip
+      <span
         v-for="tag in selectionTags"
         :key="tag.id"
-        :title="tag.title"
-        @remove="emit('removeTag', tag.id)"
-      />
+        class="rounded-agent bg-agent-pill text-agent-fg inline-flex items-center gap-1.5 py-1 pr-2 pl-1.5 text-xs"
+      >
+        <span class="text-agent-fg-subtle icon-[lucide--at-sign] size-3.5" />
+        <span class="max-w-40 truncate">{{ tag.title }}</span>
+        <button
+          type="button"
+          :aria-label="t('agent.remove')"
+          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg -my-1 -mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full transition-colors"
+          @click="emit('removeTag', tag.id)"
+        >
+          <span class="icon-[lucide--x] size-3.5" />
+        </button>
+      </span>
     </div>
 
     <div

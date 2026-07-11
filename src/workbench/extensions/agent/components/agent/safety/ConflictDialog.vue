@@ -15,7 +15,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ConflictChoice } from './safetyTypes'
+
+export type ConflictChoice = 'agent' | 'mine' | 'newtab' | 'cancel'
 
 const { open } = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ resolve: [choice: ConflictChoice] }>()

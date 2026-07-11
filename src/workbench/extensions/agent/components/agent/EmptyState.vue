@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SuggestedPromptChip from './composer/SuggestedPromptChip.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { userName } = defineProps<{ userName?: string }>()
 const emit = defineEmits<{ insert: [text: string] }>()
@@ -45,13 +45,24 @@ const promptIcons = [
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap gap-2 @min-[460px]:justify-center">
-      <SuggestedPromptChip
+      <button
         v-for="(prompt, index) in prompts"
         :key="index"
-        :text="prompt"
-        :icon="promptIcons[index] ?? 'icon-[lucide--sparkles]'"
-        @insert="emit('insert', $event)"
-      />
+        type="button"
+        class="bg-agent-surface-raised text-agent-fg hover:bg-agent-surface-hover focus-visible:ring-agent-accent flex h-8 w-full cursor-pointer items-center justify-start gap-2 rounded-full px-3 text-sm whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none @min-[460px]:w-auto"
+        @click="emit('insert', prompt)"
+      >
+        <span
+          :class="
+            cn(
+              'text-agent-fg-muted size-3 shrink-0',
+              promptIcons[index] ?? 'icon-[lucide--sparkles]'
+            )
+          "
+          aria-hidden="true"
+        />
+        <span class="truncate">{{ prompt }}</span>
+      </button>
     </div>
   </div>
 </template>
