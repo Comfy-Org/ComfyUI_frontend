@@ -43,6 +43,7 @@ export function createAgentEventTransport(
   }
 
   function ingest(event: AgentChatEvent): void {
+    if (settled) return
     switch (event.type) {
       case 'agent_thinking':
         if (!gotText) message.thinking = true

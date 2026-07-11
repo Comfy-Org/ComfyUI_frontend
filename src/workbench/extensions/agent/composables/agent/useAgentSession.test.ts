@@ -101,6 +101,30 @@ const draftPatch = (workflowId: string, version: number) =>
   })
 const draftVersion = (workflowId: string, version: number) =>
   wire({ type: 'draft_version', data: { version, workflow_id: workflowId } })
+const deltaIn = (threadId: string, id: string, text: string) =>
+  wire({
+    type: 'agent_message_delta',
+    data: { delta: text, message_id: id, thread_id: threadId }
+  })
+const doneIn = (threadId: string, id: string) =>
+  wire({
+    type: 'agent_message_done',
+    data: { message_id: id, thread_id: threadId, usage: null }
+  })
+const historyRow = (
+  seq: number,
+  role: 'user' | 'assistant',
+  turnId: string,
+  text: string
+): AgentMessages[number] => ({
+  id: `row-${seq}`,
+  thread_id: 'th-1',
+  seq,
+  role,
+  status: 'complete',
+  turn_id: turnId,
+  content: { text }
+})
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
@@ -467,25 +491,602 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
-  it('(l) newChat cancels the active turn exactly once with the right ids', async () => {
+  it('(l) newChat keeps the active turn running instead of cancelling it', async () => {
     const cancelMessage = vi.fn<
       (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
     >(async () => ({ status: 'cancelling' }))
-    const rest = fakeRest({ cancelMessage })
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1' ? [historyRow(1, 'user', 'turn-A', 'go')] : []
+    )
+    const rest = fakeRest({ cancelMessage, getMessages })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
 
     await session.sendMessage('go')
-    emit(delta('msg-1', 'working'))
+    emit(delta('msg-1', 'work'))
     expect(session.isStreaming.value).toBe(true)
 
     session.newChat()
 
-    expect(cancelMessage).toHaveBeenCalledTimes(1)
-    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(cancelMessage).not.toHaveBeenCalled()
     expect(session.entries.value).toHaveLength(0)
     expect(session.threadId.value).toBeNull()
+
+    emit(delta('msg-1', 'ing'))
+    await session.loadThread('th-1')
+
+    expect(session.isStreaming.value).toBe(true)
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working', state: 'done' }
+      ])
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('(l2) switching threads keeps the turn streaming and re-attaches on return', async () => {
+    const cancelMessage = vi.fn<
+      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+    >(async () => ({ status: 'cancelling' }))
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1' ? [historyRow(1, 'user', 'turn-A', 'go')] : []
+    )
+    const rest = fakeRest({ cancelMessage, getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'work'))
+
+    await session.loadThread('th-2')
+    expect(cancelMessage).not.toHaveBeenCalled()
+    expect(session.entries.value).toHaveLength(0)
+    expect(session.isStreaming.value).toBe(false)
+
+    emit(delta('msg-1', 'ing'))
+    expect(session.entries.value).toHaveLength(0)
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    const resumed = session.entries.value.at(-1)
+    expect(resumed?.role).toBe('assistant')
+    if (resumed?.role === 'assistant')
+      expect(resumed.parts).toEqual([
+        { type: 'text', text: 'working', state: 'streaming' }
+      ])
+
+    emit(delta('msg-1', '!'))
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working!', state: 'done' }
+      ])
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('(l3) a turn that completes while away renders from history without duplication', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'turn-A', 'go'),
+              historyRow(2, 'assistant', 'turn-A', 'done deal')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'done'))
+    await session.loadThread('th-2')
+    emit(delta('msg-1', ' deal'))
+    emit(done('msg-1'))
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'done deal', state: 'done' }
+      ])
+  })
+
+  it("(l4) a background turn cannot bleed into another thread's live turn", async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const rest = fakeRest({ postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('first')
+    emit(delta('msg-1', 'A'))
+
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+    emit(deltaIn('th-2', 'msg-2', 'B'))
+    emit(delta('msg-1', 'A2'))
+    emit(doneIn('th-1', 'msg-1'))
+
+    expect(session.isStreaming.value).toBe(true)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'B', state: 'streaming' }
+      ])
+  })
+
+  it('(l5) a done landing during the return hydrate still renders the full reply', async () => {
+    let resolveHistory: ((rows: AgentMessages) => void) | undefined
+    const getMessages = vi.fn(
+      (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? new Promise((resolve) => {
+              resolveHistory = resolve
+            })
+          : Promise.resolve([])
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'the full'))
+    await session.loadThread('th-2')
+    emit(delta('msg-1', ' reply'))
+
+    const returning = session.loadThread('th-1')
+    emit(done('msg-1'))
+    resolveHistory?.([historyRow(1, 'user', 'turn-A', 'go')])
+    await returning
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'the full reply', state: 'done' }
+      ])
+  })
+
+  it('(l6) a stale same-thread load resolving last cannot detach the resumed turn', async () => {
+    const pending: Array<{
+      threadId: string
+      resolve: (rows: AgentMessages) => void
+    }> = []
+    const getMessages = vi.fn(
+      (threadId: string): Promise<AgentMessages> =>
+        new Promise((resolve) => {
+          pending.push({ threadId, resolve })
+        })
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'work'))
+
+    const staleSameThread = session.loadThread('th-1')
+    const detour = session.loadThread('th-2')
+    const current = session.loadThread('th-1')
+
+    pending[2].resolve([historyRow(1, 'user', 'turn-A', 'go')])
+    await current
+    expect(session.isStreaming.value).toBe(true)
+
+    pending[1].resolve([])
+    await detour
+    pending[0].resolve([historyRow(1, 'user', 'turn-A', 'go')])
+    await staleSameThread
+    expect(session.isStreaming.value).toBe(true)
+
+    emit(delta('msg-1', 'ing'))
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working', state: 'done' }
+      ])
+  })
+
+  it('(l7) double-clicking the same history row keeps the turn attached', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1' ? [historyRow(1, 'user', 'turn-A', 'go')] : []
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'work'))
+
+    await Promise.all([session.loadThread('th-1'), session.loadThread('th-1')])
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+
+    emit(delta('msg-1', 'ing'))
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working', state: 'done' }
+      ])
+  })
+
+  it('(l8) socket death settles background turns instead of leaving zombies', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'turn-A', 'go'),
+              historyRow(2, 'assistant', 'turn-A', 'from server')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    await session.loadThread('th-2')
+
+    status(false)
+    emit(delta('msg-1', ' never lands'))
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'from server', state: 'done' }
+      ])
+  })
+
+  it('(l9) two backgrounded threads accumulate independently and resume live', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const rest = fakeRest({ postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('first')
+    emit(delta('msg-1', 'A'))
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+    emit(deltaIn('th-2', 'msg-2', 'B'))
+    await session.loadThread('th-3')
+
+    emit(delta('msg-1', 'A2'))
+    emit(deltaIn('th-2', 'msg-2', 'B2'))
+    emit(doneIn('th-1', 'msg-1'))
+
+    await session.loadThread('th-2')
+    expect(session.isStreaming.value).toBe(true)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'BB2', state: 'streaming' }
+      ])
+  })
+
+  it('(l10) a 404 thread load does not lose a stashed turn in another thread', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> => {
+        if (threadId === 'th-gone')
+          throw new AgentApiError('gone', 404, undefined)
+        return threadId === 'th-1'
+          ? [historyRow(1, 'user', 'turn-A', 'go')]
+          : []
+      }
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'work'))
+
+    await session.loadThread('th-gone')
+    expect(session.threadId.value).toBeNull()
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(true)
+    emit(delta('msg-1', 'ing'))
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working', state: 'done' }
+      ])
+  })
+
+  it('(l11) an explicit Stop cancels only the displayed turn, not backgrounded ones', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const cancelMessage = vi.fn<
+      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+    >(async () => ({ status: 'cancelling' }))
+    const rest = fakeRest({ postMessage, cancelMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('first')
+    emit(delta('msg-1', 'A'))
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+
+    await session.stopTurn()
+    expect(cancelMessage).toHaveBeenCalledTimes(1)
+    expect(cancelMessage).toHaveBeenCalledWith('th-2', 'msg-2')
+
+    emit(delta('msg-1', 'A2'))
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(true)
+  })
+
+  it('(l13) newChat during a pending thread load discards that load and keeps the stash', async () => {
+    const resolvers: Array<(rows: AgentMessages) => void> = []
+    const getMessages = vi.fn(
+      (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? new Promise((resolve) => {
+              resolvers.push(resolve)
+            })
+          : Promise.resolve([])
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'work'))
+    await session.loadThread('th-2')
+
+    const pendingBack = session.loadThread('th-1')
+    session.newChat()
+    resolvers[0]([historyRow(1, 'user', 'turn-A', 'go')])
+    await pendingBack
+
+    expect(session.entries.value).toHaveLength(0)
+    expect(session.threadId.value).toBeNull()
+
+    emit(delta('msg-1', 'ing'))
+    const returning = session.loadThread('th-1')
+    resolvers[1]([historyRow(1, 'user', 'turn-A', 'go')])
+    await returning
+    expect(session.isStreaming.value).toBe(true)
+    emit(done('msg-1'))
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'working', state: 'done' }
+      ])
+  })
+
+  it('(l14) a settled turn already inside a longer history is not duplicated', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'turn-A', 'go'),
+              historyRow(2, 'assistant', 'turn-A', 'the reply'),
+              historyRow(3, 'user', 'turn-B', 'newer question'),
+              historyRow(4, 'assistant', 'turn-B', 'newer reply')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'the reply'))
+    await session.loadThread('th-2')
+    emit(done('msg-1'))
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant',
+      'user',
+      'assistant'
+    ])
+  })
+
+  it('(l15) reopening after a mid-turn close renders history, not a dead live turn', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'turn-A', 'go'),
+              historyRow(2, 'assistant', 'turn-A', 'from server')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    await first.sendMessage('go')
+    expect(first.isStreaming.value).toBe(true)
+    first.stop()
+
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    await second.loadThread('th-1')
+
+    expect(second.isStreaming.value).toBe(false)
+    const assistant = second.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'from server', state: 'done' }
+      ])
+  })
+
+  it('(l16) a malformed done for a background turn defers to server history on return', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'turn-A', 'go'),
+              historyRow(2, 'assistant', 'turn-A', 'server truth')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'trunc'))
+    await session.loadThread('th-2')
+
+    emit({ type: 'agent_message_done', data: { message_id: 'msg-1' } })
+    emit(delta('msg-1', 'ated tail that never lands'))
+
+    await session.loadThread('th-1')
+    expect(session.isStreaming.value).toBe(false)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant?.role).toBe('assistant')
+    if (assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'server truth', state: 'done' }
+      ])
+  })
+
+  it('(l17) remounting the panel refreshes a surviving thread from history', async () => {
+    const getMessages = vi.fn(
+      async (threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-1'
+          ? [
+              historyRow(1, 'user', 'go', 'go'),
+              historyRow(2, 'assistant', 'go', 'finished while closed')
+            ]
+          : []
+    )
+    const rest = fakeRest({ getMessages })
+
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    await first.sendMessage('go')
+    first.stop()
+
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+
+    await vi.waitFor(() => {
+      const assistant = second.entries.value.at(-1)
+      expect(assistant?.role).toBe('assistant')
+      if (assistant?.role === 'assistant')
+        expect(assistant.parts).toEqual([
+          { type: 'text', text: 'finished while closed', state: 'done' }
+        ])
+    })
+    expect(second.isStreaming.value).toBe(false)
+  })
+
+  it('(l12) draft patches from a backgrounded thread cannot drive the displayed draft', async () => {
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    const draft = useAgentDraftStore()
+    expect(draft.workflowId).toBe('wf-1')
+
+    emit(
+      wire({
+        type: 'draft_patch',
+        data: {
+          base_version: 0,
+          version: 1,
+          content: { n: 1 },
+          workflow_id: 'wf-1',
+          thread_id: 'th-OTHER'
+        }
+      })
+    )
+    expect(draft.content).toBeNull()
+
+    emit(
+      wire({
+        type: 'draft_patch',
+        data: {
+          base_version: 0,
+          version: 1,
+          content: { n: 1 },
+          workflow_id: 'wf-1',
+          thread_id: 'th-1'
+        }
+      })
+    )
+    expect(draft.content).toEqual({ n: 1 })
   })
 
   it('(m) a second send while the first POST is pending posts once and records a busy notice', async () => {
@@ -692,8 +1293,13 @@ describe('thread resume (B17)', () => {
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
-  it('does not clobber an in-memory conversation on panel reopen', async () => {
-    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+  it('panel reopen refreshes the surviving conversation without losing the sent message', async () => {
+    const getMessages = vi.fn(
+      async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-A', 'live message'),
+        historyRow(2, 'assistant', 'turn-A', 'finished while closed')
+      ]
+    )
     const rest = fakeRest({ getMessages })
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
@@ -702,12 +1308,20 @@ describe('thread resume (B17)', () => {
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
-    expect(getMessages).not.toHaveBeenCalled()
     expect(
       second.entries.value.some(
         (entry) => entry.role === 'user' && entry.text === 'live message'
       )
     ).toBe(true)
+    await vi.waitFor(() => {
+      expect(getMessages).toHaveBeenCalledWith('th-1')
+      const assistant = second.entries.value.at(-1)
+      expect(assistant?.role).toBe('assistant')
+      if (assistant?.role === 'assistant')
+        expect(assistant.parts).toEqual([
+          { type: 'text', text: 'finished while closed', state: 'done' }
+        ])
+    })
   })
 
   it('loadThread adopts, persists and hydrates a chat picked from history', async () => {

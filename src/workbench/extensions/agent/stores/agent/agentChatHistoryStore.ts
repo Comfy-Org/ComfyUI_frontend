@@ -1,3 +1,4 @@
+import { useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -46,9 +47,10 @@ export function groupSessionsByRecency(
 export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const sessions = ref<ChatSession[]>([])
   const activeId = ref<string | null>(null)
+  const now = useTimestamp({ interval: 60_000 })
 
   const grouped = computed(() =>
-    groupSessionsByRecency(sessions.value, activeId.value, Date.now())
+    groupSessionsByRecency(sessions.value, activeId.value, now.value)
   )
 
   function remove(id: string): void {

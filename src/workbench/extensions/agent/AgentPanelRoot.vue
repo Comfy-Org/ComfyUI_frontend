@@ -353,9 +353,7 @@ function onResolveConflict(choice: ConflictChoice): void {
 }
 
 start()
-onBeforeUnmount(() => {
-  void stopTurn().finally(stop)
-})
+onBeforeUnmount(stop)
 
 const history = useAgentChatHistoryStore()
 
