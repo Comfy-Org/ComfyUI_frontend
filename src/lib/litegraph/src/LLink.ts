@@ -578,6 +578,32 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 }
 
 /**
+ * Finds the floating links attached to a slot. A floating link has exactly
+ * one assigned endpoint, so its attachment is fully encoded in its own
+ * origin/target fields; nothing is stored on the slot.
+ * @param network The network whose floating links to search
+ * @param side Which side of the slot's node the links attach to
+ * @param nodeId The node (or subgraph IO node id) owning the slot
+ * @param slot The slot index
+ */
+export function slotFloatingLinks(
+  network: Pick<ReadonlyLinkNetwork, 'floatingLinks'>,
+  side: 'input' | 'output',
+  nodeId: NodeId,
+  slot: number
+): LLink[] {
+  const result: LLink[] = []
+  for (const link of network.floatingLinks.values()) {
+    const attached =
+      side === 'input'
+        ? link.target_id === nodeId && link.target_slot === slot
+        : link.origin_id === nodeId && link.origin_slot === slot
+    if (attached) result.push(link)
+  }
+  return result
+}
+
+/**
  * Registers a link's topology into {@link useLinkStore} and adopts the
  * store's reactive proxy as {@link LLink._state}, so the store and the link
  * always agree and field writes are tracked.  Call this at every site that

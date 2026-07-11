@@ -196,6 +196,55 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   graph?.onNodeRemoved?.(node)
 }
 
+/** A reroute chain segment, terminal-first. */
+interface ChainSegment {
+  /** Emitted reroute ids, in walk order. */
+  segment: RerouteId[]
+  /** `false` if the walk stopped at a broken reference or a cycle. */
+  complete: boolean
+}
+
+/**
+ * Resolves one hop of a reroute chain.
+ * @param id The reroute id to resolve.
+ * @returns The id to emit and the next id upstream, or `undefined` if the
+ * reference is broken.
+ */
+type ChainStep = (
+  id: RerouteId
+) => { emit: RerouteId; next: RerouteId | undefined } | undefined
+
+/**
+ * Walks a reroute chain, resolving each hop with `step`, until it runs out,
+ * hits a broken reference, or detects a cycle.
+ * @param start The reroute id to walk from, or `undefined` for an empty chain.
+ * @param step Resolves each hop of the chain.
+ * @returns The walked segment.
+ */
+function walkSegment(
+  start: RerouteId | undefined,
+  step: ChainStep
+): ChainSegment {
+  const segment: RerouteId[] = []
+  const visited = new Set<RerouteId>()
+  let id = start
+  while (id !== undefined) {
+    if (visited.has(id)) {
+      console.error('Infinite parentId loop when unpacking')
+      return { segment, complete: false }
+    }
+    visited.add(id)
+    const hop = step(id)
+    if (!hop) {
+      console.error('Broken Id link when unpacking')
+      return { segment, complete: false }
+    }
+    segment.push(hop.emit)
+    id = hop.next
+  }
+  return { segment, complete: true }
+}
+
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
  * supported callbacks:
@@ -1453,34 +1502,12 @@ export class LGraph
     }
     this.floatingLinksInternal.set(link.id, link)
     registerLinkTopology(this, link)
-
-    const slot =
-      link.target_id !== UNASSIGNED_NODE_ID
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
-    if (slot) {
-      slot._floatingLinks ??= new Set()
-      slot._floatingLinks.add(link)
-    } else {
-      console.warn(
-        `Adding invalid floating link: target/slot: [${link.target_id}/${link.target_slot}] origin/slot: [${link.origin_id}/${link.origin_slot}]`
-      )
-    }
-
     return link
   }
 
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
     unregisterLinkTopology(link)
-
-    const slot =
-      link.target_id !== UNASSIGNED_NODE_ID
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
-    if (slot) {
-      slot._floatingLinks?.delete(link)
-    }
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
@@ -2228,88 +2255,52 @@ export class LGraph
       }
       newLink.id = created.id
     }
+    // Migrate the subgraph's reroutes to fresh ids at their new positions.
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
-    for (const reroute of subgraphNode.subgraph.reroutes.values()) {
-      if (
-        reroute.parentId !== undefined &&
-        rerouteIdMap.get(reroute.parentId) === undefined
-      ) {
-        console.error('Missing Parent ID')
-      }
-      const migratedRerouteId = toRerouteId(
-        Number(this.state.lastRerouteId) + 1
-      )
-      this.state.lastRerouteId = migratedRerouteId
-      const migratedReroute = new Reroute(migratedRerouteId, this, [
+    const oldReroutes = subgraphNode.subgraph.reroutes
+    for (const reroute of oldReroutes.values()) {
+      const migratedId = toRerouteId(Number(this.state.lastRerouteId) + 1)
+      this.state.lastRerouteId = migratedId
+      const migratedReroute = new Reroute(migratedId, this, [
         reroute.pos[0] + offsetX,
         reroute.pos[1] + offsetY
       ])
-      rerouteIdMap.set(reroute.id, migratedReroute.id)
+      rerouteIdMap.set(reroute.id, migratedId)
       this._addReroute(migratedReroute)
       toSelect.push(migratedReroute)
     }
-    //iterate over newly created links to update reroute parentIds
+
+    // Stitch each link's chain from its internal (migrated) and external
+    // segments, ordered by which side was nearest the input. External hops walk
+    // this graph's own reroutes; internal hops walk the old subgraph chain,
+    // emitting migrated ids.
     for (const newLink of dedupedNewLinks) {
       const linkInstance = this.links.get(newLink.id)
-      if (!linkInstance) {
-        continue
-      }
-      const visited = new Set<RerouteId>()
-      let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined
-      if (newLink.externalFirst) {
-        parentId = newLink.eparent
-        while (parentId) {
-          instance.parentId = parentId
-          instance = this.reroutes.get(parentId)
-          if (!instance) {
-            console.error('Broken Id link when unpacking')
-            break
-          }
-          if (visited.has(instance.id))
-            throw new Error('Infinite parentId loop')
-          visited.add(instance.id)
-          parentId = instance.parentId
-        }
-      }
-      if (!instance) continue
-      parentId = newLink.iparent
-      while (parentId) {
-        const migratedId = rerouteIdMap.get(parentId)
-        if (!migratedId) {
-          console.error('Broken Id link when unpacking')
-          break
-        }
-        instance.parentId = migratedId
-        instance = this.reroutes.get(migratedId)
-        if (!instance) {
-          console.error('Broken Id link when unpacking')
-          break
-        }
-        if (visited.has(instance.id)) throw new Error('Infinite parentId loop')
-        visited.add(instance.id)
-        const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
-        if (!oldReroute) {
-          console.error('Broken Id link when unpacking')
-          break
-        }
-        parentId = oldReroute.parentId
-      }
-      if (!instance) break
-      if (!newLink.externalFirst) {
-        parentId = newLink.eparent
-        while (parentId) {
-          instance.parentId = parentId
-          instance = this.reroutes.get(parentId)
-          if (!instance) {
-            console.error('Broken Id link when unpacking')
-            break
-          }
-          if (visited.has(instance.id))
-            throw new Error('Infinite parentId loop')
-          visited.add(instance.id)
-          parentId = instance.parentId
-        }
+      if (!linkInstance) continue
+
+      const internal = walkSegment(newLink.iparent, (id) => {
+        const emit = rerouteIdMap.get(id)
+        return emit === undefined
+          ? undefined
+          : { emit, next: oldReroutes.get(id)?.parentId }
+      })
+      const external = walkSegment(newLink.eparent, (id) => {
+        const reroute = this.reroutes.get(id)
+        return reroute && { emit: id, next: reroute.parentId }
+      })
+      const [first, second] = newLink.externalFirst
+        ? [external, internal]
+        : [internal, external]
+      const chain = first.complete
+        ? [...first.segment, ...second.segment]
+        : first.segment
+
+      let segmentEnd: LLink | Reroute = linkInstance
+      for (const rerouteId of chain) {
+        segmentEnd.parentId = rerouteId
+        const next = this.reroutes.get(rerouteId)
+        if (!next) break
+        segmentEnd = next
       }
     }
 

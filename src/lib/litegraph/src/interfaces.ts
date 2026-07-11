@@ -332,11 +332,6 @@ export interface INodeSlot extends HasBoundingRect {
   /** @remarks Automatically calculated; not included in serialisation. */
   boundingRect: ReadOnlyRect
   /**
-   * A list of floating link IDs that are connected to this slot.
-   * This is calculated at runtime; it is **not** serialized.
-   */
-  _floatingLinks?: Set<LLink>
-  /**
    * Whether the slot has errors. It is **not** serialized.
    */
   hasErrors?: boolean

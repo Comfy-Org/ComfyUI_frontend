@@ -22,6 +22,7 @@ import { zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -240,6 +241,25 @@ describe('Floating Links / Reroutes', () => {
     expect(graph.links.size).toBe(0)
     expect(graph.floatingLinks.size).toBe(2)
     expect(graph.reroutes.size).toBe(4)
+  })
+
+  test('slot floating links are derived from link endpoints', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const graph = new LGraph(linkedNodesGraph)
+    graph.createReroute([0, 0], graph.links.values().next().value!)
+    const [origin, target] = graph.nodes
+
+    origin.disconnectOutput(0)
+
+    expect(slotFloatingLinks(graph, 'input', target.id, 0)).toHaveLength(1)
+    expect(slotFloatingLinks(graph, 'output', origin.id, 0)).toHaveLength(0)
+
+    const [floatingLink] = slotFloatingLinks(graph, 'input', target.id, 0)
+    graph.removeFloatingLink(floatingLink)
+
+    expect(slotFloatingLinks(graph, 'input', target.id, 0)).toHaveLength(0)
   })
 
   test('Floating reroutes should be removed when neither input nor output is connected', ({

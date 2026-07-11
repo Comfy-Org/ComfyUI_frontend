@@ -12,7 +12,8 @@ For verified accuracy of these documents, see
 
 > **Target end-state (revised):** N dedicated Pinia stores keyed by composite
 > string IDs, one store per concern (widget values, DOM widgets, layout, node
-> outputs, subgraph navigation, preview exposure). The earlier "single unified
+> outputs, subgraph navigation, preview exposure, link topology, reroute
+> chains). The earlier "single unified
 > World with branded numeric entity IDs and `getComponent`/`setComponent`" model
 > was rejected. PR 12617 shipped the first stores against composite
 > `graphId:nodeId:name` string keys (`WidgetId`). Phases below are reframed
@@ -113,14 +114,25 @@ narrow accessor surface. There is no single container that fronts all entities.
 
 Shipped stores:
 
-| Store                     | File                                            |
-| ------------------------- | ----------------------------------------------- |
-| `widgetValueStore`        | `src/stores/widgetValueStore.ts`                |
-| `domWidgetStore`          | `src/stores/domWidgetStore.ts`                  |
-| `layoutStore`             | `src/renderer/core/layout/store/layoutStore.ts` |
-| `nodeOutputStore`         | `src/stores/nodeOutputStore.ts`                 |
-| `subgraphNavigationStore` | `src/stores/subgraphNavigationStore.ts`         |
-| `previewExposureStore`    | `src/stores/previewExposureStore.ts`            |
+| Store                      | File                                            |
+| -------------------------- | ----------------------------------------------- |
+| `widgetValueStore`         | `src/stores/widgetValueStore.ts`                |
+| `domWidgetStore`           | `src/stores/domWidgetStore.ts`                  |
+| `layoutStore`              | `src/renderer/core/layout/store/layoutStore.ts` |
+| `nodeOutputStore`          | `src/stores/nodeOutputStore.ts`                 |
+| `subgraphNavigationStore`  | `src/stores/subgraphNavigationStore.ts`         |
+| `previewExposureStore`     | `src/stores/previewExposureStore.ts`            |
+| `linkStore` ✅ PR 13436    | `src/stores/linkStore.ts`                       |
+| `rerouteStore` ✅ PR 13449 | `src/stores/rerouteStore.ts`                    |
+
+`linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) keyed by
+target input slot (`` `${targetNodeId}:${targetSlot}` ``) in root-graph-scoped
+buckets — subgraphs share their root's bucket; floating links and links
+targeting subgraph outputs live in a per-graph unkeyed side set. `rerouteStore`
+holds `RerouteChain` records keyed by `RerouteId` in root-graph-scoped buckets;
+link membership is not stored but derived from the links' `parentId` chains.
+Design records: [Link Topology Store](link-topology-store.md),
+[Reroute Chain Store](reroute-chain-store.md).
 
 `widgetValueStore` exposes `registerWidget`, `getWidget`, `setValue`,
 `deleteWidget`, `getNodeWidgets`, and `clearGraph`, all `WidgetId`-native. There
@@ -260,6 +272,14 @@ link-endpoint records from the relevant stores:
 Does not perform mutations yet — just queries. Validates that store connectivity
 data is complete and consistent with the class-based graph.
 
+> **Status (2026-07-05):** The reroute-membership query shipped as `linkStore` +
+> `rerouteStore` (PRs 13436, 13449): "what links pass through this reroute" is
+> derived per root graph by a cached reverse index over the links' `parentId`
+> chains, and input-side connectivity is one lookup via
+> `linkStore.isInputSlotConnected()` / `getInputSlotLink()`. Remaining:
+> slot mirrors (`input.link` / `output.links`), output-side queries, and
+> execution order.
+
 **Risk:** Low. Read-only system with equivalence tests.
 
 ---
@@ -310,6 +330,12 @@ the system knowing about the callback API.
   source-then-target ordering.
 - Bridge lifecycle events remain internal. Legacy callbacks stay the public
   compatibility API during Phase 4.
+
+> **Status (2026-07-05):** Link and reroute store registration now funnels
+> through canonical `LGraph` mutation chokepoints: `_addLink`/`_removeLink` and
+> `_addReroute`/`_removeReroute` pair every map mutation with store
+> (un)registration, and `clear()` / subgraph-definition GC unregister whole
+> graphs. The callback contract above and slot-mirror extraction remain.
 
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.
@@ -596,13 +622,15 @@ state between these calls.
 
 The dedicated stores use per-concern keying strategies:
 
-| Store                     | Key Format                         |
-| ------------------------- | ---------------------------------- |
-| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`) |
-| `domWidgetStore`          | Widget UUID                        |
-| `layoutStore`             | Raw nodeId/linkId/rerouteId        |
-| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`        |
-| `subgraphNavigationStore` | subgraphId or `'root'`             |
+| Store                     | Key Format                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`)                                                   |
+| `domWidgetStore`          | Widget UUID                                                                          |
+| `layoutStore`             | Raw nodeId/linkId/rerouteId                                                          |
+| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`                                                          |
+| `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
+| `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
+| `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior
@@ -629,7 +657,8 @@ Phase 0c (doc fixes)  ─────────┤── no dependencies betwe
 
 Phase 1a (branded WidgetId)  ── ✅ shipped (PR 12617)
 Phase 1b (store state shapes) ─┐── depends on 1a
-Phase 1c (dedicated stores)  ──┘── widgetValueStore + 5 others shipped (PR 12617)
+Phase 1c (dedicated stores)  ──┘── widgetValueStore + 7 others shipped
+                                   (PR 12617; linkStore PR 13436; rerouteStore PR 13449)
 
 Phase 2a (Position via layoutStore) ─┐── depends on 1c
 Phase 2b (Widget consolidation)  ────┤── ✅ largely shipped; depends on 1a, 1c

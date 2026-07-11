@@ -62,7 +62,7 @@ vi.mock('@/scripts/app', () => ({
         getNodeById: (id: string) => ({
           id,
           inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
+          outputs: [{ name: 'out', type: '*', links: [] }]
         }),
         getLink: () => null,
         getReroute: () => null
@@ -186,7 +186,8 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
-  LLink: { getReroutes: () => [] }
+  LLink: { getReroutes: () => [] },
+  slotFloatingLinks: () => []
 }))
 
 vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({

@@ -138,7 +138,7 @@ describe('LinkConnector', () => {
       network.links.set(link.id, link)
       targetNode.inputs[0].link = link.id
 
-      connector.moveInputLink(network, targetNode.inputs[0])
+      connector.moveInputLink(network, targetNode, targetNode.inputs[0])
 
       expect(connector.state.connectingTo).toBe('input')
       expect(connector.state.draggingExistingLinks).toBe(true)
@@ -155,6 +155,7 @@ describe('LinkConnector', () => {
       expect(() => {
         connector.moveInputLink(
           network,
+          new LGraphNode('mock'),
           createMockNodeInputSlot({ link: toLinkId(1) })
         )
       }).toThrow('Already dragging links.')
@@ -178,7 +179,7 @@ describe('LinkConnector', () => {
       network.links.set(link.id, link)
       sourceNode.outputs[0].links = [link.id]
 
-      connector.moveOutputLink(network, sourceNode.outputs[0])
+      connector.moveOutputLink(network, sourceNode, sourceNode.outputs[0])
 
       expect(connector.state.connectingTo).toBe('output')
       expect(connector.state.draggingExistingLinks).toBe(true)
@@ -196,6 +197,7 @@ describe('LinkConnector', () => {
       expect(() => {
         connector.moveOutputLink(
           network,
+          new LGraphNode('mock'),
           createMockNodeOutputSlot({ links: [toLinkId(1)] })
         )
       }).toThrow('Already dragging links.')

@@ -8,6 +8,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, ISlotType } from '@/lib/litegraph/src/litegraph'
+import { toRerouteId } from '@/types/rerouteId'
 
 import {
   createTestSubgraph,
@@ -202,6 +203,65 @@ describe('SubgraphConversion', () => {
         linkRefCount += reroute.linkIds.size
       }
       expect(linkRefCount).toBe(4)
+    })
+    it('Should truncate cyclic reroute chains instead of aborting unpack', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const inner = createNode(subgraph, [], ['number'])
+      const innerLink = subgraph.outputNode.slots[0].connect(
+        inner.outputs[0],
+        inner
+      )
+      assert(innerLink)
+      const outer = createNode(graph, ['number'])
+      const outerLink = subgraphNode.connect(0, outer, 0)
+      assert(outerLink)
+
+      const first = subgraph.createReroute([10, 10], innerLink)!
+      const second = subgraph.createReroute([20, 20], first)!
+      // Simulate corrupt data: first → second → first
+      second._chain.parentId = first.id
+
+      expect(() => graph.unpackSubgraph(subgraphNode)).not.toThrow()
+
+      expect(graph.nodes.length).toBe(2)
+      expect(graph.links.size).toBe(1)
+      expect(graph.reroutes.size).toBe(2)
+      const [link] = [...graph.links.values()]
+      assert(link.parentId !== undefined)
+      expect(graph.reroutes.get(link.parentId)).toBeDefined()
+    })
+    it('Should not stitch broken external parentId references onto merged links', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const inner = createNode(subgraph, [], ['number'])
+      const innerLink = subgraph.outputNode.slots[0].connect(
+        inner.outputs[0],
+        inner
+      )
+      assert(innerLink)
+      const outer = createNode(graph, ['number'])
+      const outerLink = subgraphNode.connect(0, outer, 0)
+      assert(outerLink)
+
+      // Simulate corrupt data: the external chain names a missing reroute
+      outerLink.parentId = toRerouteId(999)
+
+      graph.unpackSubgraph(subgraphNode)
+
+      expect(graph.links.size).toBe(1)
+      const [link] = [...graph.links.values()]
+      expect(link.parentId).toBeUndefined()
     })
   })
 })

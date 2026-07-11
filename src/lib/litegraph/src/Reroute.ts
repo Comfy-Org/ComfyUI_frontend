@@ -384,31 +384,14 @@ export class Reroute
   /**
    * Changes the origin node/output of all floating links that pass through this reroute.
    * @param node The new origin node
-   * @param output The new origin output slot
-   * @param index The slot index of {@link output}
+   * @param index The slot index of the new origin output
    */
-  setFloatingLinkOrigin(
-    node: LGraphNode,
-    output: INodeOutputSlot,
-    index: number
-  ) {
-    const network = this.network.deref()
+  setFloatingLinkOrigin(node: LGraphNode, index: number) {
     const floatingOutLinks = this.getFloatingLinks('output')
     if (!floatingOutLinks)
       throw new Error('[setFloatingLinkOrigin]: Invalid network.')
-    if (!floatingOutLinks.length) return
-
-    output._floatingLinks ??= new Set()
 
     for (const link of floatingOutLinks) {
-      // Update cached floating links
-      output._floatingLinks.add(link)
-
-      network
-        ?.getNodeById(link.origin_id)
-        ?.outputs[link.origin_slot]?._floatingLinks?.delete(link)
-
-      // Update the floating link
       link.origin_id = node.id
       link.origin_slot = index
     }
@@ -435,8 +418,12 @@ export class Reroute
 
     const offsetY = LiteGraph.NODE_SLOT_HEIGHT * 0.7
     const { pos } = this
+    const previousPos = { x: pos[0], y: pos[1] }
     pos[0] = snapTo * Math.round(pos[0] / snapTo)
     pos[1] = snapTo * Math.round((pos[1] - offsetY) / snapTo) + offsetY
+
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveReroute(this.id, { x: pos[0], y: pos[1] }, previousPos)
     return true
   }
 

@@ -256,6 +256,31 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     registeredTypesToCleanup.push(type)
   }
 
+  it('prunes pasted reroutes that no pasted link passes through', () => {
+    const nodeType = 'test/clipboard-reroute-prune'
+    registerClipboardNodeType(nodeType)
+
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+
+    const source = LiteGraph.createNode(nodeType)!
+    rootGraph.add(source)
+    const target = LiteGraph.createNode(nodeType)!
+    rootGraph.add(target)
+    const link = source.connect(0, target, 0)!
+    rootGraph.createReroute([50, 50], link)
+
+    // Copying only the reroute leaves it with no pasted link through it
+    const result = canvas._deserializeItems(
+      canvas._serializeItems([...rootGraph.reroutes.values()]),
+      { position: [300, 300] }
+    )
+
+    expect(result?.reroutes.size).toBe(0)
+    expect(result?.created).toHaveLength(0)
+    expect(rootGraph.reroutes.size).toBe(1)
+  })
+
   it('reconnects pasted inputs when clipboard node IDs differ from link endpoint types', () => {
     const nodeType = 'test/clipboard-node-id-normalization'
     registerClipboardNodeType(nodeType)

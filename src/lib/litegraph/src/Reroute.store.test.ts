@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -190,6 +191,34 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     expect(a.parentId).toBeUndefined()
     expect(c.getReroutes()).not.toBeNull()
+  })
+
+  it('snapToGrid mirrors the snapped position into the layout store', () => {
+    const { graph, link } = connectedGraph()
+    const reroute = graph.createReroute([12, 17], link)!
+
+    reroute.snapToGrid(10)
+
+    expect(layoutStore.getRerouteLayout(reroute.id)?.position).toEqual({
+      x: reroute.pos[0],
+      y: reroute.pos[1]
+    })
+  })
+
+  it('refuses parentId writes that would create a cycle, allows repair', () => {
+    const { graph, link } = connectedGraph()
+    const first = graph.createReroute([10, 10], link)!
+    const second = graph.createReroute([20, 20], first)!
+    expect(first.parentId).toBe(second.id)
+
+    second.parentId = first.id
+
+    expect(second.parentId).toBeUndefined()
+
+    second._chain.parentId = first.id
+    second.parentId = undefined
+
+    expect(second.parentId).toBeUndefined()
   })
 
   it('floating marker survives through the store state', () => {

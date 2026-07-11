@@ -26,7 +26,7 @@ import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink } from './LLink'
+import { LLink, slotFloatingLinks } from './LLink'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -2784,13 +2784,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         output: INodeOutputSlot,
         network: LinkNetwork
       ): boolean {
-        const outputLinks = [
-          ...(output.links ?? []),
-          ...[...(output._floatingLinks ?? new Set())]
-        ]
-        return outputLinks.some(
-          (linkId) =>
-            typeof linkId === 'number' && network.getLink(linkId) !== undefined
+        return (output.links ?? []).some(
+          (linkId) => network.getLink(linkId) !== undefined
         )
       }
 
@@ -2801,7 +2796,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
             if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
-              linkConnector.moveOutputLink(graph, output)
+              linkConnector.moveOutputLink(graph, node, output)
               this._linkConnectorDrop()
               return
             }
@@ -2847,12 +2842,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               ctrlOrMeta &&
               e.altKey &&
               !e.shiftKey
-            if (input.link !== null || input._floatingLinks?.size) {
+            if (
+              input.link !== null ||
+              slotFloatingLinks(graph, 'input', node.id, i).length > 0
+            ) {
               // Existing link
               if (shouldBreakLink || LiteGraph.click_do_break_link_to) {
                 node.disconnectInput(i, true)
               } else if (e.shiftKey || this.allow_reconnect_links) {
-                linkConnector.moveInputLink(graph, input)
+                linkConnector.moveInputLink(graph, node, input)
               }
             }
 
@@ -4295,9 +4293,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Remove reroutes that no pasted link passes through
-    for (const reroute of reroutes.values()) {
+    for (const [sourceId, reroute] of reroutes) {
       if (reroute.totalLinks === 0) {
         graph.removeReroute(reroute.id)
+        reroutes.delete(sourceId)
+
+        const index = created.indexOf(reroute)
+        if (index !== -1) created.splice(index, 1)
       }
     }
 
