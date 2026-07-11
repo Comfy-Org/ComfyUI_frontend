@@ -130,8 +130,12 @@ export function hasWidgetError(
   const errors = widget.sourceExecutionId
     ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
     : nodeErrors?.errors
+  // Raw interior errors name the source widget, not the boundary name
+  const errorInputName = widget.sourceExecutionId
+    ? (widget.sourceWidgetName ?? widget.name)
+    : widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
+    !!errors?.some((e) => e.extra_info?.input_name === errorInputName) ||
     missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }

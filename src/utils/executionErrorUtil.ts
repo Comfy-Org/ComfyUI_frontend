@@ -105,7 +105,9 @@ export const SIMPLE_ERROR_TYPES = new Set([
   'required_input_missing'
 ])
 
-const INPUT_LEVEL_VALIDATION_ERROR_TYPES = new Set([
+export type NodeValidationError = NodeError['errors'][number]
+
+export const INPUT_LEVEL_VALIDATION_ERROR_TYPES = new Set([
   'required_input_missing',
   'bad_linked_input',
   'return_type_mismatch',
@@ -122,13 +124,8 @@ export const NODE_LEVEL_VALIDATION_ERROR_TYPES = new Set([
   'dependency_cycle'
 ])
 
-const KNOWN_VALIDATION_ERROR_TYPES = new Set([
-  ...INPUT_LEVEL_VALIDATION_ERROR_TYPES,
-  ...NODE_LEVEL_VALIDATION_ERROR_TYPES
-])
-
 export function isImageNotLoadedValidationError(
-  error: NodeError['errors'][number]
+  error: NodeValidationError
 ): boolean {
   return (
     error.type === 'custom_validation_failed' &&
@@ -138,12 +135,12 @@ export function isImageNotLoadedValidationError(
   )
 }
 
+// Anything not input-level (including unknown types) is node-level.
 export function isNodeLevelValidationError(
-  error: NodeError['errors'][number]
+  error: NodeValidationError
 ): boolean {
   return (
-    !KNOWN_VALIDATION_ERROR_TYPES.has(error.type) ||
-    NODE_LEVEL_VALIDATION_ERROR_TYPES.has(error.type) ||
+    !INPUT_LEVEL_VALIDATION_ERROR_TYPES.has(error.type) ||
     isImageNotLoadedValidationError(error)
   )
 }

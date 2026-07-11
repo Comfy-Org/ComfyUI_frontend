@@ -166,12 +166,31 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     ]
   }
 
+  /** Range bounds recorded on the error itself win over the caller's widget bounds. */
+  function getTargetRangeOptions(
+    errors: NodeError['errors'],
+    fallback: { min?: number; max?: number }
+  ): { min?: number; max?: number } {
+    for (const error of errors) {
+      const config = error.extra_info?.input_config
+      if (!Array.isArray(config)) continue
+      const bounds = config[1]
+      if (!bounds || typeof bounds !== 'object') continue
+      const { min, max } = bounds as { min?: unknown; max?: unknown }
+      return {
+        min: typeof min === 'number' ? min : fallback.min,
+        max: typeof max === 'number' ? max : fallback.max
+      }
+    }
+    return fallback
+  }
+
   function isTargetStillOutOfRange(
     nodeErrors: Record<string, NodeError>,
     executionId: NodeExecutionId,
     slotName: string,
     value: number,
-    options: { min?: number; max?: number }
+    fallbackOptions: { min?: number; max?: number }
   ): boolean {
     const nodeError = nodeErrors[executionId]
     if (!nodeError) return false
@@ -180,25 +199,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       (error) => error.extra_info?.input_name === slotName
     )
 
-    return isValueStillOutOfRange(value, errors, options)
+    return isValueStillOutOfRange(
+      value,
+      errors,
+      getTargetRangeOptions(errors, fallbackOptions)
+    )
   }
 
-  /**
-   * Removes a node's errors if they consist entirely of simple, auto-resolvable
-   * types. When `slotName` is provided, only errors for that slot are checked.
-   */
-  function clearSimpleNodeErrors(
-    executionId: NodeExecutionId,
-    slotName?: string
+  function clearTargets(
+    targets: { executionId: NodeExecutionId; slotName?: string }[]
   ): void {
     if (!lastNodeErrors.value) return
 
     let updated = lastNodeErrors.value
-    const targets =
-      slotName === undefined
-        ? [{ executionId, slotName }]
-        : getRawClearTargets(executionId, slotName)
-
     for (const target of targets) {
       updated =
         clearSimpleNodeErrorsFromRecord(
@@ -213,8 +226,29 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /**
+   * Removes a node's errors if they consist entirely of simple, auto-resolvable
+   * types. When `slotName` is provided, only errors for that slot are checked
+   * and boundary-lifted errors are also cleared through their raw interior
+   * source. Node-scoped calls (no `slotName`) operate on the raw record key
+   * only.
+   */
+  function clearSimpleNodeErrors(
+    executionId: NodeExecutionId,
+    slotName?: string
+  ): void {
+    clearTargets(
+      slotName === undefined
+        ? [{ executionId }]
+        : getRawClearTargets(executionId, slotName)
+    )
+  }
+
+  /**
    * Attempts to clear an error for a given widget, but avoids clearing it if
    * the error is a range violation and the new value is still out of bounds.
+   * Each clear target is checked against its own recorded bounds, so a
+   * boundary input fanning out to inputs with different constraints clears
+   * only the targets the new value satisfies.
    *
    * Note: `value_not_in_list` errors are optimistically cleared without
    * list-membership validation because combo widgets constrain choices to
@@ -228,23 +262,24 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     options?: { min?: number; max?: number }
   ): void {
     const nodeErrors = lastNodeErrors.value
-    if (typeof newValue === 'number' && nodeErrors) {
-      const targets = getRawClearTargets(executionId, widgetName)
-      if (
-        targets.some((target) =>
-          isTargetStillOutOfRange(
-            nodeErrors,
-            target.executionId,
-            target.slotName,
-            newValue,
-            options ?? {}
+    if (!nodeErrors) return
+
+    const targets = getRawClearTargets(executionId, widgetName)
+    const clearableTargets =
+      typeof newValue === 'number'
+        ? targets.filter(
+            (target) =>
+              !isTargetStillOutOfRange(
+                nodeErrors,
+                target.executionId,
+                target.slotName,
+                newValue,
+                options ?? {}
+              )
           )
-        )
-      ) {
-        return
-      }
-    }
-    clearSimpleNodeErrors(executionId, widgetName)
+        : targets
+
+    clearTargets(clearableTargets)
   }
 
   /**

@@ -1,17 +1,17 @@
 import type { NodeError } from '@/schemas/apiSchema'
-
-type NodeValidationError = NodeError['errors'][number]
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 export function validationError(
   type: string,
   inputName?: string,
   extraInfo: Record<string, unknown> = {},
-  message = `${type} message`
+  message = `${type} message`,
+  details = `${type} details`
 ): NodeValidationError {
   return {
     type,
     message,
-    details: `${type} details`,
+    details,
     ...(inputName
       ? { extra_info: { ...extraInfo, input_name: inputName } }
       : {})

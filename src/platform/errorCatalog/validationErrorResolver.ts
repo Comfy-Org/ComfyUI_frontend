@@ -12,6 +12,7 @@ import {
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
 import {
+  INPUT_LEVEL_VALIDATION_ERROR_TYPES,
   NODE_LEVEL_VALIDATION_ERROR_TYPES,
   isImageNotLoadedValidationError
 } from '@/utils/executionErrorUtil'
@@ -74,41 +75,20 @@ const NODE_LEVEL_VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> =
     ])
   )
 
+const INPUT_LEVEL_VALIDATION_ERROR_RULES: Record<
+  string,
+  ValidationCatalogRule
+> = Object.fromEntries(
+  Array.from(INPUT_LEVEL_VALIDATION_ERROR_TYPES, (type) => [
+    type,
+    { catalogId: type, itemLabel: 'nodeInput' } satisfies ValidationCatalogRule
+  ])
+)
+
 const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
+  ...INPUT_LEVEL_VALIDATION_ERROR_RULES,
   [REQUIRED_INPUT_MISSING_TYPE]: {
     catalogId: MISSING_CONNECTION_CATALOG_ID,
-    itemLabel: 'nodeInput'
-  },
-  bad_linked_input: {
-    catalogId: 'bad_linked_input',
-    itemLabel: 'nodeInput'
-  },
-  return_type_mismatch: {
-    catalogId: 'return_type_mismatch',
-    itemLabel: 'nodeInput'
-  },
-  invalid_input_type: {
-    catalogId: 'invalid_input_type',
-    itemLabel: 'nodeInput'
-  },
-  value_smaller_than_min: {
-    catalogId: 'value_smaller_than_min',
-    itemLabel: 'nodeInput'
-  },
-  value_bigger_than_max: {
-    catalogId: 'value_bigger_than_max',
-    itemLabel: 'nodeInput'
-  },
-  value_not_in_list: {
-    catalogId: 'value_not_in_list',
-    itemLabel: 'nodeInput'
-  },
-  custom_validation_failed: {
-    catalogId: 'custom_validation_failed',
-    itemLabel: 'nodeInput'
-  },
-  exception_during_inner_validation: {
-    catalogId: 'exception_during_inner_validation',
     itemLabel: 'nodeInput'
   },
   ...NODE_LEVEL_VALIDATION_ERROR_RULES

@@ -2,12 +2,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  nodeError,
-  validationError
-} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import {
   createNodeExecutionId,
@@ -483,6 +481,49 @@ describe('executionErrorStore — node error operations', () => {
       )
 
       expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears fan-out lifted targets per their own recorded bounds', () => {
+      const { rootGraph, subgraph } = createBoundaryLinkedSubgraph()
+      const second = new LGraphNode('SecondInterior')
+      second.id = toNodeId(7)
+      const secondInput = second.addInput('other_input', '*')
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(secondInput, second)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ]),
+        '12:7': nodeError([
+          validationError('value_bigger_than_max', 'other_input', {
+            input_config: ['INT', { max: 50 }]
+          })
+        ])
+      }
+
+      expect(store.surfacedNodeErrors?.['12'].errors).toHaveLength(2)
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        75,
+        { max: 100 }
+      )
+
+      expect(
+        store.lastNodeErrors?.['12:5'],
+        'the target whose max=100 is satisfied by 75 clears'
+      ).toBeUndefined()
+      expect(
+        store.lastNodeErrors?.['12:7'].errors,
+        'the target whose max=50 is still violated by 75 stays'
+      ).toHaveLength(1)
     })
   })
 

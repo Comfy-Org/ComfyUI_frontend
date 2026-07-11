@@ -129,10 +129,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import {
-  nodeError,
-  validationError
-} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,

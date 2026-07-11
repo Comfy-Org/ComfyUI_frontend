@@ -3,10 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import {
-  nodeError,
-  validationError
-} from '@/core/graph/subgraph/__fixtures__/nodeErrorHelpers'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createBoundaryLinkedSubgraph,

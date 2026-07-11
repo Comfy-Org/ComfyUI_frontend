@@ -2,16 +2,12 @@ import { groupBy, partition } from 'es-toolkit'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeError } from '@/schemas/apiSchema'
-import {
-  createNodeExecutionId,
-  parseNodeExecutionId
-} from '@/types/nodeIdentification'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-
-type NodeValidationError = NodeError['errors'][number]
 
 export interface LiftedErrorExtraInfo {
   input_name: string
@@ -41,7 +37,7 @@ interface LiftedErrorPlacement {
 type ErrorPlacement = OwnErrorPlacement | LiftedErrorPlacement
 
 export function getLiftedErrorSource(
-  error: NodeError['errors'][number]
+  error: NodeValidationError
 ): LiftedErrorExtraInfo | null {
   const extraInfo = error.extra_info
   if (!extraInfo) return null
@@ -59,10 +55,7 @@ export function getLiftedErrorSource(
 }
 
 function getHostExecutionId(executionId: string): NodeExecutionId | null {
-  const nodeIds = parseNodeExecutionId(executionId)
-  if (!nodeIds || nodeIds.length < 2) return null
-
-  return createNodeExecutionId(nodeIds.slice(0, -1))
+  return getParentExecutionIds(executionId).at(-1) ?? null
 }
 
 function resolveLiftedSurface(
@@ -86,17 +79,18 @@ function resolveLiftedSurface(
   const hostExecId = getHostExecutionId(executionId)
   if (!hostExecId) return null
 
+  const hostInputName = subgraphInput.name
+  const deeperSurface = resolveLiftedSurface(
+    rootGraph,
+    hostExecId,
+    hostInputName
+  )
+  if (deeperSurface) return deeperSurface
+
   const hostNode = getNodeByExecutionId(rootGraph, hostExecId)
   if (!hostNode) return null
 
-  const hostInputName = subgraphInput.name
-  return (
-    resolveLiftedSurface(rootGraph, hostExecId, hostInputName) ?? {
-      hostExecId,
-      hostInputName,
-      hostTitle: hostNode.title
-    }
-  )
+  return { hostExecId, hostInputName, hostTitle: hostNode.title }
 }
 
 function createEmptyNodeError(nodeError: NodeError): NodeError {
