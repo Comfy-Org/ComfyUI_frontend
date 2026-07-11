@@ -8,6 +8,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import { forEachNode, getExecutionIdByNode } from '@/utils/graphTraversalUtil'
@@ -72,7 +74,50 @@ export const useDisabledPartnerNodesStore = defineStore(
       }
     }
 
+    // The legacy right-click Add Node menu and litegraph palette read
+    // skip_list off the registered types (the dev-only filter's mechanism);
+    // api_node types are disjoint from dev_only so the two writers never clash.
+    function syncLitegraphSkipList(): void {
+      const nodeDefStore = useNodeDefStore()
+      for (const def of Object.values(nodeDefStore.nodeDefsByName)) {
+        if (!def.api_node) continue
+        const nodeType = LiteGraph.registered_node_types[def.name]
+        if (!nodeType) continue
+        nodeType.skip_list = isNodeDefDisabled(def)
+      }
+    }
+
+    let hookedGraph: LGraph | null = null
+    let rescanTimer: ReturnType<typeof setTimeout> | null = null
+
+    function scheduleRescan(): void {
+      if (rescanTimer) clearTimeout(rescanTimer)
+      rescanTimer = setTimeout(() => {
+        rescanTimer = null
+        scan()
+      }, 250)
+    }
+
+    // Placing or deleting nodes must re-derive offenders; the load-time scan
+    // alone misses an already-disabled node added mid-session.
+    function ensureGraphHooks(): void {
+      const graph = app.rootGraph
+      if (!graph || hookedGraph === graph) return
+      hookedGraph = graph
+      const prevAdded = graph.onNodeAdded
+      graph.onNodeAdded = function (node) {
+        prevAdded?.call(this, node)
+        scheduleRescan()
+      }
+      const prevRemoved = graph.onNodeRemoved
+      graph.onNodeRemoved = function (node) {
+        prevRemoved?.call(this, node)
+        scheduleRescan()
+      }
+    }
+
     function scan(): void {
+      syncLitegraphSkipList()
       if (!app.isGraphReady || disabledNames.value.size === 0) {
         offenders.value = []
         return
@@ -105,6 +150,7 @@ export const useDisabledPartnerNodesStore = defineStore(
       options: { silent?: boolean } = {}
     ): Promise<void> {
       await fetchDisabledNames()
+      ensureGraphHooks()
       scan()
       if (options.silent || offenders.value.length === 0) return
       useToastStore().add({
