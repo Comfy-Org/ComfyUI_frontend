@@ -95,7 +95,7 @@ describe(deriveNextInvoiceCents, () => {
     expect(deriveNextInvoiceCents(inputs)).toBe(32000)
   })
 
-  it('uses the yearly stop price for annual subscriptions', () => {
+  it('hides the banner for annual subscriptions (no monthly invoice, DES-469)', () => {
     const inputs = makeInputs({
       subscription: makeSubscription({ duration: 'ANNUAL' }),
       teamCreditStops,
@@ -106,7 +106,7 @@ describe(deriveNextInvoiceCents, () => {
       }
     })
 
-    expect(deriveNextInvoiceCents(inputs)).toBe(691200)
+    expect(deriveNextInvoiceCents(inputs)).toBeNull()
   })
 
   it('falls back to the plan price when the stop is not in the ladder', () => {

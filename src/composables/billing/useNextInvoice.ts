@@ -17,11 +17,12 @@ export interface NextInvoiceInputs {
 }
 
 /**
- * Renewal price of the current subscription in cents, or null when no renewal
- * is expected (inactive or cancelled) or the price cannot be resolved from the
- * fetched billing state. Intentionally limited to the subscription price:
- * usage/overage pending charges are excluded until the backend exposes an
- * authoritative upcoming-invoice amount.
+ * Monthly renewal price of the current subscription in cents, or null when no
+ * "next month invoice" exists (inactive, cancelled, or annual — DES-469 hides
+ * the banner when there is no meaningful upcoming monthly invoice) or the
+ * price cannot be resolved from the fetched billing state. Intentionally
+ * limited to the subscription price: usage/overage pending charges are
+ * excluded until the backend exposes an authoritative upcoming-invoice amount.
  */
 export function deriveNextInvoiceCents({
   subscription,
@@ -31,15 +32,12 @@ export function deriveNextInvoiceCents({
   currentTeamCreditStop
 }: NextInvoiceInputs): number | null {
   if (!subscription?.isActive || subscription.isCancelled) return null
+  if (subscription.duration === 'ANNUAL') return null
 
   const stop = teamCreditStops?.stops.find(
     ({ id }) => id === currentTeamCreditStop?.id
   )
-  if (stop) {
-    const price =
-      subscription.duration === 'ANNUAL' ? stop.yearly : stop.monthly
-    return price.price_cents
-  }
+  if (stop) return stop.monthly.price_cents
 
   const plan = plans.find(({ slug }) => slug === planSlug)
   return plan?.price_cents ?? null
