@@ -26,6 +26,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/extensions/core/load3d', () => ({}))
+vi.mock('@/extensions/core/load3dAdvanced', () => ({}))
 vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
 vi.mock('@/extensions/core/saveMesh', () => ({}))
 
@@ -89,7 +90,10 @@ describe('load3dLazy', () => {
     'Preview3D',
     'PreviewGaussianSplat',
     'PreviewPointCloud',
-    'SaveGLB'
+    'SaveGLB',
+    'Save3DAdvanced',
+    'SaveGaussianSplat',
+    'SavePointCloud'
   ])(
     'recognizes %s as a 3D node type and triggers the lazy-load path',
     async (nodeType) => {
@@ -105,6 +109,23 @@ describe('load3dLazy', () => {
   it('injects mesh_upload spec flags into the model_file widget for Load3D nodes', async () => {
     const { hook } = await loadLazyExtensionFresh()
     const nodeData = makeNodeDef('Load3D', {
+      input: {
+        required: { model_file: ['STRING', {}] }
+      }
+    } as Partial<ComfyNodeDef>)
+
+    await hook({} as typeof LGraphNode, nodeData)
+
+    const spec = (
+      nodeData.input!.required!.model_file as [string, Record<string, unknown>]
+    )[1]
+    expect(spec.mesh_upload).toBe(true)
+    expect(spec.upload_subfolder).toBe('3d')
+  })
+
+  it('injects mesh_upload spec flags into the model_file widget for Load3DAdvanced nodes', async () => {
+    const { hook } = await loadLazyExtensionFresh()
+    const nodeData = makeNodeDef('Load3DAdvanced', {
       input: {
         required: { model_file: ['STRING', {}] }
       }

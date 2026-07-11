@@ -2,8 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -29,6 +29,13 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const {
   mockApiKeyAuthStore,
@@ -312,6 +319,82 @@ describe('ComfyApp', () => {
       )
       expect(mockToastStore.remove).toHaveBeenCalledWith(
         mockToastStore.add.mock.calls[0][0]
+      )
+    })
+  })
+
+  describe('reloadNodeDefs', () => {
+    it('syncs refreshed combo options into promoted combo host state', async () => {
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'ckpt_name', type: '*' }]
+      })
+
+      const interiorNode = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      const interiorInput = interiorNode.addInput('ckpt_name', '*')
+      interiorInput.widget = { name: 'ckpt_name' }
+      const interiorWidget = interiorNode.addWidget(
+        'combo',
+        'ckpt_name',
+        'missing.safetensors',
+        () => {},
+        { values: initialOptions }
+      )
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+
+      const hostWidgetId = host.inputs[0].widgetId
+      if (!hostWidgetId) throw new Error('Expected a promoted host widgetId')
+
+      const widgetValueStore = useWidgetValueStore()
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options).toEqual({
+        values: initialOptions
+      })
+
+      const defs: Record<string, ComfyNodeDef> = {
+        CheckpointLoaderSimple: {
+          name: 'CheckpointLoaderSimple',
+          display_name: 'CheckpointLoaderSimple',
+          category: 'loaders',
+          python_module: 'nodes',
+          description: '',
+          input: {
+            required: {
+              ckpt_name: [refreshedOptions, {}]
+            },
+            optional: {}
+          },
+          output: [],
+          output_name: [],
+          output_tooltips: [],
+          output_node: false,
+          deprecated: false,
+          experimental: false
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', rootGraph)
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs()
+
+      expect(interiorWidget.options.values).toEqual(refreshedOptions)
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options.values).toEqual(
+        refreshedOptions
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'refreshComboInNodes',
+        defs
       )
     })
   })

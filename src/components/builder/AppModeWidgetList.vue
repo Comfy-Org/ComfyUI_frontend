@@ -8,7 +8,6 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -23,7 +22,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -50,7 +50,7 @@ const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
 )
 
 provide(HideLayoutFieldKey, true)
-provide(OverlayAppendToKey, 'body')
+provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
 const resolvedInputs = useResolvedSelectedInputs()
 
@@ -62,7 +62,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
-    const { entityId, node, widget, config } = entry
+    const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     if (!nodeDataByNode.has(node)) {
@@ -72,16 +72,16 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
       if (vueWidget.slotMetadata?.linked) return false
-      return vueWidget.entityId === entityId
+      return vueWidget.widgetId === widgetId
     })
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
+    matchingWidget.nodeId = node.id
 
     return [
       {
-        key: entityId,
+        key: widgetId,
         persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,
@@ -141,7 +141,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: -1, onDragDrop }
+  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
@@ -237,7 +237,7 @@ defineExpose({ handleDragDrop })
           :node-data
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
             )
           "

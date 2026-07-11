@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 import MediaLightbox from './MediaLightbox.vue'
 
@@ -28,7 +28,7 @@ type MockResultItem = Partial<ResultItemImpl> & {
   filename: string
   subfolder: string
   type: string
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   mediaType: string
   id?: string
   url?: string
@@ -63,7 +63,7 @@ describe('MediaLightbox', () => {
       filename: 'image1.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '123' as NodeId,
+      nodeId: '123',
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -75,7 +75,7 @@ describe('MediaLightbox', () => {
       filename: 'image2.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '456' as NodeId,
+      nodeId: '456',
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -87,7 +87,7 @@ describe('MediaLightbox', () => {
       filename: 'image3.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '789' as NodeId,
+      nodeId: '789',
       mediaType: 'images',
       isImage: true,
       isVideo: false,

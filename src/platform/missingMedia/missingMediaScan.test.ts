@@ -16,6 +16,10 @@ import {
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
+import {
+  countMissingMediaReferences,
+  getMissingMediaReferences
+} from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
 const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
@@ -115,7 +119,7 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
-    asset_hash: assetHash,
+    hash: assetHash,
     mime_type: null,
     tags: ['input']
   }
@@ -421,7 +425,13 @@ describe('groupCandidatesByName', () => {
 
     const photoGroup = result.find((g) => g.name === 'photo.png')
     expect(photoGroup?.referencingNodes).toHaveLength(2)
+    expect(photoGroup?.referencingNodes[0]).toMatchObject({
+      nodeId: '1',
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     expect(photoGroup?.mediaType).toBe('image')
+    expect(photoGroup?.representative.nodeType).toBe('LoadImage')
 
     const otherGroup = result.find((g) => g.name === 'other.png')
     expect(otherGroup?.referencingNodes).toHaveLength(1)
@@ -486,6 +496,27 @@ describe('groupCandidatesByMediaType', () => {
   })
 })
 
+describe('missing media references', () => {
+  it('flattens references without deduping shared filenames', () => {
+    const groups = groupCandidatesByMediaType([
+      makeCandidate('1', 'shared.png'),
+      makeCandidate('2', 'shared.png'),
+      makeCandidate('3', 'other.png')
+    ])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].items).toHaveLength(2)
+    expect(countMissingMediaReferences(groups)).toBe(3)
+    expect(
+      getMissingMediaReferences(groups).map(({ nodeRef }) => nodeRef)
+    ).toEqual([
+      expect.objectContaining({ nodeId: '1' }),
+      expect.objectContaining({ nodeId: '2' }),
+      expect.objectContaining({ nodeId: '3' })
+    ])
+  })
+})
+
 describe('verifyMediaCandidates', () => {
   const existingHash =
     'blake3:1111111111111111111111111111111111111111111111111111111111111111'
@@ -528,11 +559,12 @@ describe('verifyMediaCandidates', () => {
       isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
   })
 
-  it('matches asset names when asset_hash is null', async () => {
+  it('matches asset names when hash is null', async () => {
     const candidates = [
       makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
       makeCandidate('2', 'missing-photo.png', { isMissing: undefined })
@@ -621,10 +653,93 @@ describe('verifyMediaCandidates', () => {
       generatedMatchNames: new Set([
         '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
       ]),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: true
     })
     expect(candidates[0]).toMatchObject({
       name: '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png [output]',
+      isMissing: false
+    })
+  })
+
+  it('matches cloud output videos with history subfolders against flat asset hashes', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    const resolveAssetSources = makeAssetResolver(
+      [],
+      [makeAsset('ComfyUI_00001_.mp4', outputHash)]
+    )
+
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
+
+    expect(resolveAssetSources).toHaveBeenCalledWith({
+      signal: undefined,
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set([outputHash]),
+      generatedHashRequiredNames: new Set([outputHash]),
+      allowCompactSuffix: true
+    })
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
+      isMissing: false
+    })
+  })
+
+  it('does not match subfoldered cloud output media against unrelated flat asset names', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    const resolveAssetSources = makeAssetResolver([], [makeAsset(outputHash)])
+
+    await verifyMediaCandidates(candidates, {
+      isCloud: true,
+      resolveAssetSources
+    })
+
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
+      isMissing: true
+    })
+  })
+
+  it('stops cloud output paging after a subfoldered candidate matches a flat asset hash', async () => {
+    const outputHash = 'cloud-video-hash.mp4'
+    const candidates = [
+      makeCandidate('1', `video/${outputHash} [output]`, {
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        isMissing: undefined
+      })
+    ]
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([makeAsset('ComfyUI_00001_.mp4', outputHash)], {
+        hasMore: true
+      })
+    )
+
+    await verifyMediaCandidates(candidates, { isCloud: true })
+
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+    expect(candidates[0]).toMatchObject({
+      name: `video/${outputHash} [output]`,
       isMissing: false
     })
   })
@@ -702,6 +817,7 @@ describe('verifyMediaCandidates', () => {
       isCloud: false,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
+      generatedHashRequiredNames: new Set(),
       allowCompactSuffix: false
     })
     expect(candidates[0].isMissing).toBe(true)

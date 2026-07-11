@@ -14,6 +14,7 @@ export type MaterialMode =
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
+export type LoadFolder = 'temp' | 'output'
 
 interface CameraQuaternion {
   x: number
@@ -80,7 +81,6 @@ export interface CameraConfig {
   cameraType: CameraType
   fov: number
   state?: CameraState
-  retainViewOnReload?: boolean
 }
 
 export interface LightConfig {
@@ -243,6 +243,14 @@ export interface LoadModelOptions {
    * (e.g. shared workflows on a fresh machine).
    */
   silentOnNotFound?: boolean
+}
+
+export interface SceneOverlay {
+  attach(scene: THREE.Scene): void
+  detach(): void
+  update?(deltaSeconds: number): void
+  onActiveCameraChange?(camera: THREE.Camera): void
+  dispose(): void
 }
 
 export interface LoaderManagerInterface {

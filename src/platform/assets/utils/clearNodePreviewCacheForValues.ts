@@ -15,7 +15,7 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
  *
  * Comparison is full-string against the widget value as stored — callers must
  * provide the canonical widget-value variants for each deleted asset (e.g.
- * `foo.png`, `foo.png [output]`, `sub/foo.png [output]`, `<asset_hash>`). This
+ * `foo.png`, `foo.png [output]`, `sub/foo.png [output]`, `<hash>`). This
  * avoids false matches when two distinct assets share a basename across
  * input/output sources.
  *

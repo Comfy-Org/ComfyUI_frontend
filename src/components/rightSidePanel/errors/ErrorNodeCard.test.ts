@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -71,13 +73,14 @@ describe('ErrorNodeCard.vue', () => {
         en: {
           g: {
             copy: 'Copy',
+            details: 'Details',
             findIssues: 'Find Issues',
             findOnGithub: 'Find on GitHub',
             getHelpAction: 'Get Help'
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
-            enterSubgraph: 'Enter Subgraph',
+            errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues for related problems',
             getHelpTooltip:
               'Report this error and we\u0027ll help you resolve it'
@@ -96,8 +99,9 @@ describe('ErrorNodeCard.vue', () => {
   ) {
     const user = userEvent.setup()
     const onCopyToClipboard = vi.fn()
+    const onLocateNode = vi.fn()
     render(ErrorNodeCard, {
-      props: { card, onCopyToClipboard },
+      props: { card, onCopyToClipboard, onLocateNode },
       global: {
         plugins: [
           PrimeVue,
@@ -131,14 +135,20 @@ describe('ErrorNodeCard.vue', () => {
           })
         ],
         stubs: {
+          TransitionCollapse: { template: '<div><slot /></div>' },
           Button: {
-            template:
-              '<button :aria-label="$attrs[\'aria-label\']"><slot /></button>'
+            template: '<button v-bind="$attrs"><slot /></button>'
           }
         }
       }
     })
-    return { user, onCopyToClipboard }
+    return { user, onCopyToClipboard, onLocateNode }
+  }
+
+  async function toggleRuntimeDetails(
+    user: ReturnType<typeof userEvent.setup>
+  ) {
+    await user.click(screen.getByRole('button', { name: /Details/ }))
   }
 
   let cardIdCounter = 0
@@ -147,7 +157,7 @@ describe('ErrorNodeCard.vue', () => {
     return {
       id: `exec-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {
@@ -160,40 +170,67 @@ describe('ErrorNodeCard.vue', () => {
     }
   }
 
-  function makeValidationErrorCard(): ErrorCardData {
+  function makePromptErrorCard(): ErrorCardData {
     return {
-      id: `node-${++cardIdCounter}`,
-      title: 'CLIPTextEncode',
-      nodeId: '6',
-      nodeTitle: 'CLIP Text Encode',
+      id: '__prompt__',
+      title: 'Prompt has no outputs',
       errors: [
         {
-          message: 'Required input is missing',
-          details: 'Input: text'
+          message: 'Server Error: No outputs',
+          details: 'Error details',
+          displayMessage:
+            'The workflow does not contain any output nodes to produce a result.'
         }
       ]
     }
   }
 
-  it('displays enriched report for runtime errors on mount', async () => {
+  it('shows runtime details by default and can collapse them', async () => {
     const reportText =
       '# ComfyUI Error Report\n## System Information\n- OS: Linux'
     mockGenerateErrorReport.mockReturnValue(reportText)
 
-    renderCard(makeRuntimeErrorCard())
+    const { user } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
-      expect(screen.getByText(/ComfyUI Error Report/)).toBeInTheDocument()
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
     })
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    expect(screen.getByText('Error log')).toBeInTheDocument()
+    const detailsButton = screen.getByRole('button', { name: /Details/ })
+    const detailsRegion = screen.getByRole('region', { name: 'Error log' })
+    expect(detailsButton).toHaveAttribute(
+      'aria-controls',
+      detailsRegion.getAttribute('id')
+    )
+    expect(screen.getByText(/ComfyUI Error Report/)).toBeInTheDocument()
     expect(screen.getByText(/System Information/)).toBeInTheDocument()
     expect(screen.getByText(/OS: Linux/)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Find on GitHub/ })
+    ).toBeInTheDocument()
+
+    await toggleRuntimeDetails(user)
+
+    expect(screen.queryByText(/ComfyUI Error Report/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Find on GitHub/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('locates the node when the runtime node title is clicked', async () => {
+    const { user, onLocateNode } = renderCard(makeRuntimeErrorCard())
+
+    await user.click(screen.getByRole('button', { name: 'KSampler' }))
+
+    expect(onLocateNode).toHaveBeenCalledWith('10')
   })
 
   it('does not generate report for non-runtime errors', async () => {
-    renderCard(makeValidationErrorCard())
+    renderCard(makePromptErrorCard())
 
     await waitFor(() => {
-      expect(screen.getByText('Input: text')).toBeInTheDocument()
+      expect(screen.getByText('Error details')).toBeInTheDocument()
     })
 
     expect(mockGetLogs).not.toHaveBeenCalled()
@@ -201,19 +238,19 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('displays original details for non-runtime errors', async () => {
-    renderCard(makeValidationErrorCard())
+    renderCard(makePromptErrorCard())
 
     await waitFor(() => {
-      expect(screen.getByText('Input: text')).toBeInTheDocument()
+      expect(screen.getByText('Error details')).toBeInTheDocument()
     })
     expect(screen.queryByText(/ComfyUI Error Report/)).not.toBeInTheDocument()
   })
 
-  it('displays catalog-resolved copy when available', async () => {
+  it('hides grouped catalog copy and shows the item label as a list item', async () => {
     renderCard({
       id: `node-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {
@@ -229,17 +266,17 @@ describe('ErrorNodeCard.vue', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByText('Missing connection')).toBeInTheDocument()
+      expect(screen.getByText('KSampler - model')).toBeInTheDocument()
     })
+    expect(screen.getByRole('listitem')).toHaveTextContent('KSampler - model')
+    expect(screen.queryByText('Missing connection')).not.toBeInTheDocument()
     expect(
-      screen.getByText('Required input slots have no connection feeding them.')
-    ).toBeInTheDocument()
+      screen.queryByText(
+        'Required input slots have no connection feeding them.'
+      )
+    ).not.toBeInTheDocument()
     expect(
-      screen.getByText('KSampler is missing a required input: model')
-    ).toBeInTheDocument()
-    expect(screen.queryByText('KSampler - model')).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('Required input is missing')
+      screen.queryByText('KSampler is missing a required input: model')
     ).not.toBeInTheDocument()
   })
 
@@ -250,29 +287,15 @@ describe('ErrorNodeCard.vue', () => {
     const { user, onCopyToClipboard } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
-      expect(screen.getByText(/Full Report Content/)).toBeInTheDocument()
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
     })
+    expect(screen.getByText(/Full Report Content/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Copy/ }))
 
     expect(onCopyToClipboard).toHaveBeenCalledTimes(1)
     expect(onCopyToClipboard.mock.calls[0][0]).toContain(
       '# Full Report Content'
-    )
-  })
-
-  it('copies original details when copy button is clicked for validation error', async () => {
-    const { user, onCopyToClipboard } = renderCard(makeValidationErrorCard())
-
-    await waitFor(() => {
-      expect(screen.getByText('Input: text')).toBeInTheDocument()
-    })
-
-    await user.click(screen.getByRole('button', { name: /Copy/ }))
-
-    expect(onCopyToClipboard).toHaveBeenCalledTimes(1)
-    expect(onCopyToClipboard.mock.calls[0][0]).toBe(
-      'Required input is missing\n\nInput: text'
     )
   })
 
@@ -300,8 +323,9 @@ describe('ErrorNodeCard.vue', () => {
     renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
-      expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
     })
+    expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
   })
 
   it('opens GitHub issues search when Find Issue button is clicked', async () => {
@@ -310,9 +334,7 @@ describe('ErrorNodeCard.vue', () => {
     const { user } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Find on GitHub/ })
-      ).toBeInTheDocument()
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
     })
 
     await user.click(screen.getByRole('button', { name: /Find on GitHub/ }))
@@ -335,9 +357,7 @@ describe('ErrorNodeCard.vue', () => {
     const { user } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /Get Help/ })
-      ).toBeInTheDocument()
+      expect(mockGenerateErrorReport).toHaveBeenCalledOnce()
     })
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
@@ -368,7 +388,7 @@ describe('ErrorNodeCard.vue', () => {
     const card: ErrorCardData = {
       id: `exec-${++cardIdCounter}`,
       title: 'KSampler',
-      nodeId: '10',
+      nodeId: createNodeExecutionId([toNodeId(10)]),
       nodeTitle: 'KSampler',
       errors: [
         {
@@ -398,9 +418,7 @@ describe('ErrorNodeCard.vue', () => {
       }
     })
 
-    await waitFor(() => {
-      expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
-    })
+    expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
 
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
   })

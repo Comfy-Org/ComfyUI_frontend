@@ -4,7 +4,7 @@ import QuickLRU from '@alloc/quick-lru'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
-import { isLoad3dPreviewNode } from '@/extensions/core/load3d/nodeTypes'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -83,6 +83,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const isStandaloneMode = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
   const canFitToViewer = ref(true)
   const canUseGizmo = ref(true)
   const canUseLighting = ref(true)
@@ -96,6 +97,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const captureAdapterFlags = (source: Load3d) => {
     isSplatModel.value = source.isSplatModel()
     isPlyModel.value = source.isPlyModel()
+    sourceFormat.value = source.getSourceFormat()
     const caps = source.getCurrentModelCapabilities()
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
@@ -369,7 +371,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | LightConfig
         | undefined
 
-      isPreview.value = isLoad3dPreviewNode(node.type ?? '')
+      isPreview.value = isLoad3dResultViewerNode(node.type ?? '')
 
       if (sceneConfig) {
         backgroundColor.value =
@@ -839,6 +841,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     isStandaloneMode,
     isSplatModel,
     isPlyModel,
+    sourceFormat,
     canFitToViewer,
     canUseGizmo,
     canUseLighting,

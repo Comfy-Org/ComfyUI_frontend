@@ -8,8 +8,9 @@ import type { SettingPanelType } from '@/platform/settings/types'
 
 const DIALOG_KEY = 'global-settings'
 
+// The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 const SETTINGS_CONTENT_CLASS =
-  'w-[90vw] max-w-[960px] sm:max-w-[960px] h-[80vh] max-h-none rounded-2xl overflow-hidden'
+  'w-[90vw] max-w-[1280px] sm:max-w-[1280px] h-[80vh] max-h-none rounded-2xl overflow-hidden'
 
 export function useSettingsDialog() {
   const dialogService = useDialogService()
@@ -38,6 +39,11 @@ export function useSettingsDialog() {
         // breaks those nested dialogs' autofocus and click handling. Non-modal
         // keeps the visual overlay without those traps.
         modal: false,
+        // A nested dialog closing (e.g. confirming a Secrets delete) can move
+        // focus onto an app element once the row it focused is removed. As a
+        // non-modal dialog Settings would treat that as an outside focus and
+        // dismiss itself, so opt out — escape and outside clicks still close it.
+        dismissOnFocusOutside: false,
         size: 'full',
         contentClass: SETTINGS_CONTENT_CLASS,
         overlayClass: isWorkspaceMode ? 'p-8' : undefined

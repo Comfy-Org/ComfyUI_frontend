@@ -29,13 +29,33 @@
 
     <PasswordFields />
 
+    <TurnstileWidget
+      v-if="turnstileEnabled"
+      ref="turnstileWidget"
+      v-model:token="turnstileToken"
+      v-model:unavailable="turnstileUnavailable"
+    />
+
+    <small
+      v-show="waitingForTurnstile"
+      id="comfy-org-sign-up-turnstile-hint"
+      role="status"
+      aria-live="polite"
+      class="opacity-80"
+    >
+      {{ t('auth.turnstile.submitBlockedHint') }}
+    </small>
+
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="mx-auto size-8" />
     <Button
       v-else
       type="submit"
       class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid"
+      :disabled="!$form.valid || waitingForTurnstile"
+      :aria-describedby="
+        waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
+      "
     >
       {{ t('auth.signup.signUpButton') }}
     </Button>
@@ -49,27 +69,54 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
 
 import PasswordFields from './PasswordFields.vue'
+import TurnstileWidget from './TurnstileWidget.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
+const { enabled: turnstileEnabled } = useTurnstile()
+const {
+  token: turnstileToken,
+  unavailable: turnstileUnavailable,
+  waiting: waitingForTurnstile
+} = useTurnstileGate(turnstileEnabled)
+const turnstileWidget =
+  useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
+
 const emit = defineEmits<{
-  submit: [values: SignUpData]
+  submit: [values: SignUpData, turnstileToken?: string]
 }>()
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignUpData)
+  if (event.valid && !waitingForTurnstile.value) {
+    emit(
+      'submit',
+      event.values as SignUpData,
+      turnstileToken.value || undefined
+    )
   }
 }, 1_500)
+
+// Turnstile tokens are single-use. The parent calls this after a FAILED signup
+// (the form can't observe the submit outcome itself) to discard the spent token
+// and request a fresh challenge. Driving it from the actual result — instead of
+// watching the store-global loading flag — keeps an unrelated auth action from
+// wiping a freshly-solved token, and avoids resetting a widget that is about to
+// unmount on success.
+function resetTurnstile() {
+  turnstileWidget.value?.reset()
+}
+
+defineExpose({ resetTurnstile })
 </script>

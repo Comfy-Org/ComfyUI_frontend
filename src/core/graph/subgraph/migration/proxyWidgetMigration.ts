@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit/compat'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
@@ -8,6 +8,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
@@ -16,7 +17,7 @@ import type {
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -27,32 +28,35 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: NodeId
 }
 
 const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
 interface StrippedPrefix {
   sourceWidgetName: string
-  deepestPrefixId?: string
+  deepestPrefixId?: NodeId
 }
 
 function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
   let remaining = sourceWidgetName
-  let deepestPrefixId: string | undefined
+  let deepestPrefixId: NodeId | undefined
   while (true) {
     const match = LEGACY_PROXY_WIDGET_PREFIX_PATTERN.exec(remaining)
     if (!match) return { sourceWidgetName: remaining, deepestPrefixId }
-    deepestPrefixId = match[1]
+    deepestPrefixId = toNodeId(match[1])
     remaining = match[2]
   }
 }
 
 function canResolveLegacyProxy(
   hostNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: SerializedNodeId,
   widgetName: string
 ): boolean {
   return (
@@ -63,24 +67,32 @@ function canResolveLegacyProxy(
 
 export function normalizeLegacyProxyWidgetEntry(
   hostNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: SerializedNodeId,
   sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: SerializedNodeId
 ): LegacyProxyEntrySource {
+  const normalizedSourceNodeId = toNodeId(sourceNodeId)
+  const normalizedDisambiguatingSourceNodeId =
+    disambiguatingSourceNodeId === undefined
+      ? undefined
+      : toNodeId(disambiguatingSourceNodeId)
+
   if (canResolveLegacyProxy(hostNode, sourceNodeId, sourceWidgetName)) {
     return {
-      sourceNodeId,
+      sourceNodeId: normalizedSourceNodeId,
       sourceWidgetName,
-      ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+      ...(normalizedDisambiguatingSourceNodeId && {
+        disambiguatingSourceNodeId: normalizedDisambiguatingSourceNodeId
+      })
     }
   }
 
   const stripped = stripLegacyPrefixes(sourceWidgetName)
   const patchDisambiguatingSourceNodeId =
-    stripped.deepestPrefixId ?? disambiguatingSourceNodeId
+    stripped.deepestPrefixId ?? normalizedDisambiguatingSourceNodeId
 
   return {
-    sourceNodeId,
+    sourceNodeId: normalizedSourceNodeId,
     sourceWidgetName: stripped.sourceWidgetName,
     ...(patchDisambiguatingSourceNodeId && {
       disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
@@ -93,23 +105,24 @@ function resolveSourceWidget(
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
 ): IBaseWidget | undefined {
-  const widgets = sourceNode.widgets
-  if (widgets && disambiguatingSourceNodeId !== undefined) {
-    const byDisambiguator = widgets.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceNodeId === disambiguatingSourceNodeId &&
-        w.sourceWidgetName === sourceWidgetName
-    )
-    if (byDisambiguator) return byDisambiguator
-    // Disambiguator missed: fall back only to non-promoted same-name widgets.
-    // A sibling PromotedWidgetView would re-introduce the cross-binding bug.
-    const byName = widgets.find(
-      (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
-    )
-    if (byName) return byName
+  if (sourceNode.isSubgraphNode()) {
+    const input = sourceNode.inputs.find((input) => {
+      const target = resolveSubgraphInputTarget(sourceNode, input.name)
+      if (disambiguatingSourceNodeId) {
+        return (
+          target?.widgetName === sourceWidgetName &&
+          target.nodeId === disambiguatingSourceNodeId
+        )
+      }
+      if (input.name === sourceWidgetName) return true
+      return target?.widgetName === sourceWidgetName
+    })
+    // Store-backed projection for a promoted input on a nested subgraph node:
+    // getSlotFromWidget locates the backing slot by widgetId.
+    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
   }
 
+  const widgets = sourceNode.widgets
   return (
     widgets?.find((w) => w.name === sourceWidgetName) ??
     getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
@@ -139,6 +152,7 @@ type Plan =
   | { kind: 'quarantine'; reason: ProxyWidgetQuarantineReason }
 
 interface PendingEntry {
+  originalEntry: SerializedProxyWidgetTuple
   normalized: LegacyProxyEntrySource
   hostValue: TWidgetValue | undefined
   isHole: boolean
@@ -156,23 +170,27 @@ export function flushProxyWidgetMigration(args: FlushArgs): void {
   const tuples = parseProxyWidgets(hostNode.properties.proxyWidgets)
   if (tuples.length === 0) return
 
-  const cohort: LegacyProxyEntrySource[] = tuples.map(
-    ([sourceNodeId, sourceWidgetName, disambiguator]) =>
-      normalizeLegacyProxyWidgetEntry(
+  const normalizedEntries = tuples.map((originalEntry) => {
+    const [sourceNodeId, sourceWidgetName, disambiguator] = originalEntry
+    return {
+      originalEntry,
+      normalized: normalizeLegacyProxyWidgetEntry(
         hostNode,
         sourceNodeId,
         sourceWidgetName,
         disambiguator
       )
-  )
+    }
+  })
+  const cohort = normalizedEntries.map((entry) => entry.normalized)
 
-  const pending: PendingEntry[] = cohort.map((normalized, index) => {
+  const pending: PendingEntry[] = normalizedEntries.map((entry, index) => {
     const { value, isHole } = pickHostValue(hostWidgetValues, index)
     return {
-      normalized,
+      ...entry,
       hostValue: value,
       isHole,
-      plan: classify(hostNode, normalized, cohort)
+      plan: classify(hostNode, entry.normalized, cohort)
     }
   })
 
@@ -258,6 +276,7 @@ function collectTargetsStrict(
   for (const linkId of linkIds) {
     const link = subgraph.links.get(linkId)
     if (!link) return undefined
+    if (link.target_id === UNASSIGNED_NODE_ID) return undefined
     targets.push({
       targetNodeId: link.target_id,
       targetSlot: link.target_slot
@@ -274,15 +293,20 @@ function collectTargetsSkippingDangling(
   const linkIds = primitiveNode.outputs?.[0]?.links ?? []
   return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
-    return link
-      ? [{ targetNodeId: link.target_id, targetSlot: link.target_slot }]
+    return link && link.target_id !== UNASSIGNED_NODE_ID
+      ? [
+          {
+            targetNodeId: link.target_id,
+            targetSlot: link.target_slot
+          }
+        ]
       : []
   })
 }
 
 function cohortDuplicatesPrimitive(
   cohort: readonly LegacyProxyEntrySource[],
-  primitiveNodeId: string
+  primitiveNodeId: NodeId
 ): boolean {
   return (
     cohort.filter((entry) => entry.sourceNodeId === primitiveNodeId).length >= 2
@@ -300,19 +324,6 @@ function classify(
     normalized.sourceWidgetName
   )
   if (linkedInput) {
-    const ambiguous =
-      hostNode.inputs.filter((input) => {
-        const w = input._widget
-        return (
-          !!w &&
-          isPromotedWidgetView(w) &&
-          w.sourceNodeId === normalized.sourceNodeId &&
-          w.sourceWidgetName === normalized.sourceWidgetName
-        )
-      }).length > 1
-    if (ambiguous) {
-      return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
-    }
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
@@ -373,19 +384,23 @@ function classify(
   }
 }
 
-function applyHostValue(widget: IBaseWidget, entry: PendingEntry): void {
-  if (entry.isHole) return
-  if (
-    isPromotedWidgetView(widget) &&
-    typeof widget.hydrateHostValue === 'function'
-  ) {
-    widget.hydrateHostValue(entry.hostValue)
-    return
-  }
-  console.error(
-    '[proxyWidgetMigration] applyHostValue called with non-promoted widget; refusing to write to shared interior',
-    { widgetName: widget.name, type: widget.type }
-  )
+function applyHostValueToInput(
+  input: INodeInputSlot,
+  entry: PendingEntry
+): boolean {
+  if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
+  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+}
+
+function applyHostLabelToInput(
+  input: INodeInputSlot,
+  label: string | undefined
+): void {
+  if (label === undefined) return
+  input.label = label
+  if (!input.widgetId) return
+  const state = useWidgetValueStore().getWidget(input.widgetId)
+  if (state) state.label = label
 }
 
 function addUniqueSubgraphInput(
@@ -422,10 +437,9 @@ function repairAlreadyLinked(
     return { ok: false, reason: 'ambiguousSubgraphInput' }
   }
   const hostInput = matches[0]
-  if (!hostInput._widget) {
+  if (!applyHostValueToInput(hostInput, entry)) {
     return { ok: false, reason: 'missingSubgraphInput' }
   }
-  applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: hostInput.name }
 }
 
@@ -480,11 +494,10 @@ function repairCreateSubgraphInput(
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  if (!hostInput?._widget) {
-    return { ok: true, subgraphInputName: newSubgraphInput.name }
+  if (hostInput) {
+    applyHostLabelToInput(hostInput, slot.label)
+    applyHostValueToInput(hostInput, entry)
   }
-
-  applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: newSubgraphInput.name }
 }
 
@@ -608,7 +621,10 @@ function repairPrimitive(
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
   const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
     .map((id) => subgraph.links.get(id))
-    .filter((l): l is NonNullable<typeof l> => l !== undefined)
+    .filter(
+      (l): l is NonNullable<typeof l> =>
+        l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
+    )
     .map((l) => ({
       primitiveSlot: l.origin_slot,
       targetNodeId: l.target_id,
@@ -649,22 +665,19 @@ function repairPrimitive(
     return failPrimitive('mutation failed; rolled back', { error: e })
   }
 
-  // Apply through the host's input mirror (PromotedWidgetView), NOT
-  // `newSubgraphInput._widget`: the interior is shared across hosts.
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  const hostInputWidget = hostInput?._widget
-  if (hostInputWidget) {
+  if (hostInput) {
     const valueEntry = validated.uniqueEntries.find((e) => !e.isHole)
     if (valueEntry) {
-      applyHostValue(hostInputWidget, valueEntry)
+      applyHostValueToInput(hostInput, valueEntry)
     } else {
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
       )?.value as TWidgetValue | undefined
       if (primitiveValue !== undefined) {
-        applyHostValue(hostInputWidget, {
+        applyHostValueToInput(hostInput, {
           ...validated.uniqueEntries[0],
           hostValue: primitiveValue,
           isHole: false
@@ -733,13 +746,8 @@ function quarantineFor(
   entry: PendingEntry,
   reason: ProxyWidgetQuarantineReason
 ): ProxyWidgetErrorQuarantineEntry {
-  const { sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId } =
-    entry.normalized
-  const originalEntry: SerializedProxyWidgetTuple = disambiguatingSourceNodeId
-    ? [sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId]
-    : [sourceNodeId, sourceWidgetName]
   return makeQuarantineEntry({
-    originalEntry,
+    originalEntry: entry.originalEntry,
     reason,
     hostValue: entry.isHole ? undefined : entry.hostValue
   })

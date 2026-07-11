@@ -13,7 +13,7 @@
       <div class="mx-1 flex flex-col items-end gap-1">
         <div class="flex items-center gap-2">
           <div
-            v-if="managerState.shouldShowManagerButtons.value"
+            v-if="managerState.shouldShowManagerButtons.value || isCloud"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
           >
             <Button
@@ -78,7 +78,7 @@
                 variant="secondary"
                 size="icon"
                 :aria-label="t('rightSidePanel.togglePanel')"
-                @click="rightSidePanelStore.togglePanel"
+                @click="openRightSidePanel"
               >
                 <i class="icon-[lucide--panel-right] size-4" />
               </Button>
@@ -148,6 +148,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
@@ -162,6 +163,7 @@ import {
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -169,6 +171,7 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
+const managerSurveyDialog = useManagerSurveyDialog()
 const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
@@ -282,6 +285,14 @@ const rightSidePanelTooltipConfig = computed(() =>
   buildTooltipConfig(t('rightSidePanel.togglePanel'))
 )
 
+function openRightSidePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_opened',
+    element_group: 'top_menu'
+  })
+  rightSidePanelStore.togglePanel()
+}
+
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
@@ -328,6 +339,10 @@ onBeforeUnmount(() => {
 })
 
 const openCustomNodeManager = async () => {
+  if (isCloud) {
+    managerSurveyDialog.show()
+    return
+  }
   try {
     await managerState.openManager({
       initialTab: ManagerTab.All,

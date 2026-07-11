@@ -1,5 +1,8 @@
 import { expect } from '@playwright/test'
 
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
@@ -39,9 +42,10 @@ async function getPrimitiveFanoutSnapshot(
   comfyPage: ComfyPage,
   hostNodeId: string
 ): Promise<PrimitiveFanoutSnapshot> {
+  const localHostNodeId = toNodeId(hostNodeId)
   return comfyPage.page.evaluate((id) => {
     const graph = window.app!.canvas.graph!
-    const hostNode = graph.getNodeById(Number(id))
+    const hostNode = graph.getNodeById(id)
     if (!hostNode?.isSubgraphNode?.()) {
       throw new Error(`Host node ${id} is not a SubgraphNode`)
     }
@@ -80,7 +84,7 @@ async function getPrimitiveFanoutSnapshot(
       primitiveOriginLinkCount,
       serializedProperties: serializedNode?.properties ?? {}
     }
-  }, hostNodeId)
+  }, localHostNodeId)
 }
 
 async function getSerializedSubgraphNodeProperties(
@@ -103,19 +107,20 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 ) {
   expect(widgets.length).toBeGreaterThan(0)
 
-  const interiorNodeIds = widgets.map(([id]) => id)
+  const hostNodeId = toNodeId(hostSubgraphNodeId)
+  const interiorNodeIds = widgets.map(([id]) => toNodeId(id))
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
       const graph = window.app!.graph!
-      const hostNode = graph.getNodeById(Number(hostId))
+      const hostNode = graph.getNodeById(hostId)
       if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 
       return ids.map((id) => {
-        const interiorNode = hostNode.subgraph.getNodeById(Number(id))
+        const interiorNode = hostNode.subgraph.getNodeById(id)
         return interiorNode !== null && interiorNode !== undefined
       })
     },
-    [hostSubgraphNodeId, interiorNodeIds] as const
+    [hostNodeId, interiorNodeIds] as const
   )
 
   expect(results).toEqual(widgets.map(() => true))
@@ -484,6 +489,14 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
+      // Assert against the visible textbox the user sees, not the internal
+      // graph/widget projection.
+      const promotedTextWidgets = comfyPage.page.getByRole('textbox', {
+        name: 'text',
+        exact: true
+      })
+      await comfyExpect(promotedTextWidgets).toHaveCount(1)
+
       const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
       const originalPos = await originalNode.getPosition()
 
@@ -497,31 +510,58 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await comfyPage.page.keyboard.up('Alt')
       }
 
-      async function collectSubgraphNodeIds() {
-        return comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph!
-          return graph.nodes
-            .filter(
-              (n) =>
-                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-            )
-            .map((n) => String(n.id))
-        })
-      }
-
-      await expect
-        .poll(async () => (await collectSubgraphNodeIds()).length)
-        .toBeGreaterThan(1)
-
-      const subgraphNodeIds = await collectSubgraphNodeIds()
-      for (const nodeId of subgraphNodeIds) {
-        const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
-        expect(promotedWidgets.length).toBeGreaterThan(0)
-        expect(
-          promotedWidgets.some(([, widgetName]) => widgetName === 'text')
-        ).toBe(true)
-      }
+      await comfyExpect(promotedTextWidgets).toHaveCount(2)
     })
+
+    test(
+      'Cloning a subgraph node preserves edited promoted widget values on original and clone',
+      { tag: ['@vue-nodes'] },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+
+        const editedValue = 'Edited prompt that must survive cloning'
+        const originalTextbox = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await expect(originalTextbox).toBeVisible()
+        await expect(originalTextbox).toHaveValue('')
+        await originalTextbox.fill(editedValue)
+
+        const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await originalNode.click('title')
+        await comfyPage.clipboard.copy()
+        await comfyPage.clipboard.paste()
+
+        async function collectSubgraphNodeIds() {
+          return comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            return graph.nodes
+              .filter(
+                (n) =>
+                  typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+              )
+              .map((n) => String(n.id))
+          })
+        }
+
+        await expect
+          .poll(async () => (await collectSubgraphNodeIds()).length)
+          .toBeGreaterThan(1)
+
+        const subgraphNodeIds = await collectSubgraphNodeIds()
+        for (const nodeId of subgraphNodeIds) {
+          const textbox = comfyPage.vueNodes
+            .getNodeLocator(nodeId)
+            .getByRole('textbox', { name: 'text' })
+          await expect(
+            textbox,
+            `node ${nodeId} promoted text widget reset to default after clone`
+          ).toHaveValue(editedValue)
+        }
+      }
+    )
   })
 
   test.describe('Duplicate ID Remapping', () => {
@@ -535,8 +575,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const allGraphs = [graph, ...graph.subgraphs.values()]
         const allIds = allGraphs
           .flatMap((g) => g._nodes)
-          .map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
+          .map((n) => String(n.id))
 
         return { allIds, uniqueCount: new Set(allIds).size }
       })
@@ -552,10 +591,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
       const rootIds = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
-        return graph._nodes
-          .map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
-          .sort((a, b) => a - b)
+        return graph._nodes.map((n) => Number(n.id)).sort((a, b) => a - b)
       })
 
       expect(rootIds).toEqual([1, 2, 5])
@@ -598,18 +634,18 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           )
         ]
 
-        const SENTINEL_IDS = new Set([-1, -10, -20])
-        const isSentinelNodeId = (id: number | string): id is number =>
-          typeof id === 'number' && SENTINEL_IDS.has(id)
+        const SENTINEL_IDS = new Set(['-1', '-10', '-20'])
+        const isSentinelNodeId = (id: number | string) =>
+          SENTINEL_IDS.has(String(id))
 
         const checkEndpoint = (
           label: string,
           kind: 'origin_id' | 'target_id',
-          id: number | string,
+          id: NodeId,
           g: typeof graph
         ): string | null => {
           if (isSentinelNodeId(id)) return null
-          if (typeof id !== 'number' || !g._nodes_by_id[id]) {
+          if (!g.getNodeById(id)) {
             return `${label}: ${kind} ${id} invalid or not found`
           }
           return null

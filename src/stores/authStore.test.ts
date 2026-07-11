@@ -6,8 +6,15 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import {
+  capturePreservedQuery,
+  clearPreservedQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -18,8 +25,16 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
-type MockUser = Omit<User, 'getIdToken'> & {
+const { mockFeatureFlags } = vi.hoisted(() => ({
+  mockFeatureFlags: {
+    teamWorkspacesEnabled: false,
+    unifiedCloudAuthEnabled: false
+  }
+}))
+
+type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
+  delete: Mock
 }
 
 type MockAuth = Record<string, unknown>
@@ -108,6 +123,11 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: mockFeatureFlags
+  })
+}))
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
@@ -134,11 +154,17 @@ describe('useAuthStore', () => {
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
-    getIdToken: vi.fn().mockResolvedValue('mock-id-token')
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
   beforeEach(() => {
     vi.resetAllMocks()
+    sessionStorage.clear()
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
+
+    mockFeatureFlags.teamWorkspacesEnabled = false
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -237,6 +263,18 @@ describe('useAuthStore', () => {
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       idTokenCallback?.(otherUser)
+      expect(store.tokenRefreshTrigger).toBe(1)
+    })
+
+    it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      idTokenCallback?.(mockUser) // initial event (always skipped)
+      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      expect(store.tokenRefreshTrigger).toBe(0)
+    })
+
+    it('notifyTokenRefreshed increments the rotation trigger (unified rotation driver)', () => {
+      store.notifyTokenRefreshed()
       expect(store.tokenRefreshTrigger).toBe(1)
     })
   })
@@ -365,6 +403,90 @@ describe('useAuthStore', () => {
         'password'
       )
       expect(store.loading).toBe(false)
+    })
+
+    it('forwards the turnstile token to createCustomer as turnstile_token', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password', 'turnstile-abc')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ turnstile_token: 'turnstile-abc' })
+        })
+      )
+    })
+
+    it('omits the request body when no turnstile token is provided', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      const customerCall = mockFetch.mock.calls.find(([url]) =>
+        String(url).endsWith('/customers')
+      )
+      expect(customerCall?.[1]).not.toHaveProperty('body')
+    })
+
+    it('rolls back the orphaned Firebase user when customer creation fails', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      // The server-side customer creation (where Turnstile is validated) fails.
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      // The just-created user is deleted so the email is freed for retry.
+      expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not delete the user on a successful registration', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockUser.delete).not.toHaveBeenCalled()
+    })
+
+    it('does not delete an existing user when customer creation fails during login', async () => {
+      // Regression guard: the rollback must be scoped to register only — login
+      // signs in an EXISTING user, so a customer hiccup must never delete it.
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.login('test@example.com', 'password')
+      ).rejects.toThrow()
+      expect(mockUser.delete).not.toHaveBeenCalled()
     })
   })
 
@@ -501,6 +623,114 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('getAuthHeader workspace recovery', () => {
+    beforeEach(() => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+    })
+
+    it('uses the workspace header when a valid workspace token exists', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
+        Authorization: 'Bearer ws-token'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer ws-token' })
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('recovers the workspace token instead of downgrading to personal auth', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      const ensureSpy = vi
+        .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
+        .mockResolvedValue({ Authorization: 'Bearer recovered-ws-token' })
+
+      const header = await store.getAuthHeader()
+
+      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
+      expect(header).toEqual({ Authorization: 'Bearer recovered-ws-token' })
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
+        null
+      )
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = null
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
+
+      const header = await store.getAuthHeader()
+
+      expect(ensureSpy).not.toHaveBeenCalled()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+  })
+
+  describe('getAuthToken workspace recovery', () => {
+    beforeEach(() => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+    })
+
+    it('recovers the workspace token instead of downgrading to personal auth', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      const ensureSpy = vi
+        .spyOn(workspaceAuth, 'ensureWorkspaceToken')
+        .mockResolvedValue('recovered-ws-token')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
+      expect(token).toBe('recovered-ws-token')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = null
+      vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
+      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).not.toHaveBeenCalled()
+      expect(token).toBe('mock-id-token')
+    })
+  })
+
   describe('social authentication', () => {
     describe('loginWithGoogle', () => {
       it('should sign in with Google', async () => {
@@ -517,6 +747,20 @@ describe('useAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
+      })
+
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGoogle()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
       })
 
       it('should handle Google sign in errors', async () => {
@@ -550,6 +794,20 @@ describe('useAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
+      })
+
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGithub()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
       })
 
       it('should handle Github sign in errors', async () => {
@@ -656,6 +914,105 @@ describe('useAuthStore', () => {
           )
         }
       )
+    })
+  })
+
+  describe('share auth attribution', () => {
+    const mockUserCredential = {
+      user: mockUser,
+      providerId: null,
+      operationType: 'signIn'
+    } satisfies UserCredential
+
+    const preserveShareAuth = () => {
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+        { share: 'share-1' },
+        ['share']
+      )
+    }
+
+    const expectShareAuthConsumed = () => {
+      expect(
+        sessionStorage.getItem('Comfy.PreservedQuery.share_auth')
+      ).toBeNull()
+    }
+
+    beforeEach(() => {
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+        isNewUser: true,
+        providerId: 'google.com',
+        profile: null
+      })
+    })
+
+    it('includes share_id on email signup auth completion', async () => {
+      preserveShareAuth()
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'email',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on email login auth completion', async () => {
+      preserveShareAuth()
+
+      await store.login('test@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'email',
+        is_new_user: false,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on Google auth completion', async () => {
+      preserveShareAuth()
+
+      await store.loginWithGoogle()
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on GitHub auth completion', async () => {
+      preserveShareAuth()
+
+      await store.loginWithGithub()
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'github',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
     })
   })
 
@@ -802,6 +1159,18 @@ describe('useAuthStore', () => {
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+    })
+
+    it('carries the HTTP status on a non-ok response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable Entity'
+      })
+
+      const error = await store.createCustomer().catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(AuthStoreError)
+      expect((error as AuthStoreError).status).toBe(422)
     })
   })
 })

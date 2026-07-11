@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -67,18 +68,12 @@ describe('useMissingMediaStore', () => {
     expect(store.hasMissingMedia).toBe(false)
   })
 
-  it('clearMissingMedia resets all state including interaction state', () => {
+  it('clearMissingMedia resets candidates and aborts verification', () => {
     const store = useMissingMediaStore()
     store.setMissingMedia([
       makeCandidate('1', 'photo.png'),
       makeCandidate('2', 'clip.mp4', 'video')
     ])
-    store.expandState['photo.png'] = true
-    store.uploadState['photo.png'] = {
-      fileName: 'photo.png',
-      status: 'uploaded'
-    }
-    store.pendingSelection['photo.png'] = 'uploaded/photo.png'
     const controller = store.createVerificationAbortController()
 
     store.clearMissingMedia()
@@ -87,9 +82,6 @@ describe('useMissingMediaStore', () => {
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaCount).toBe(0)
     expect(controller.signal.aborted).toBe(true)
-    expect(store.expandState).toEqual({})
-    expect(store.uploadState).toEqual({})
-    expect(store.pendingSelection).toEqual({})
   })
 
   it('missingMediaNodeIds tracks unique node IDs', () => {
@@ -103,14 +95,6 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaNodeIds.size).toBe(2)
     expect(store.missingMediaNodeIds.has('1')).toBe(true)
     expect(store.missingMediaNodeIds.has('2')).toBe(true)
-  })
-
-  it('hasMissingMediaOnNode checks node presence', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('42', 'photo.png')])
-
-    expect(store.hasMissingMediaOnNode('42')).toBe(true)
-    expect(store.hasMissingMediaOnNode('99')).toBe(false)
   })
 
   it('removeMissingMediaByWidget removes matching node+widget entry', () => {
@@ -143,47 +127,6 @@ describe('useMissingMediaStore', () => {
     store.removeMissingMediaByWidget('99', 'image')
 
     expect(store.missingMediaCandidates).toHaveLength(1)
-  })
-
-  it('removeMissingMediaByName clears interaction state for removed name', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('1', 'photo.png')])
-    store.expandState['photo.png'] = true
-    store.uploadState['photo.png'] = {
-      fileName: 'photo.png',
-      status: 'uploaded'
-    }
-    store.pendingSelection['photo.png'] = 'uploaded/photo.png'
-
-    store.removeMissingMediaByName('photo.png')
-
-    expect(store.expandState['photo.png']).toBeUndefined()
-    expect(store.uploadState['photo.png']).toBeUndefined()
-    expect(store.pendingSelection['photo.png']).toBeUndefined()
-  })
-
-  it('removeMissingMediaByWidget clears interaction state for removed name', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('1', 'photo.png')])
-    store.pendingSelection['photo.png'] = 'library/photo.png'
-
-    store.removeMissingMediaByWidget('1', 'image')
-
-    expect(store.pendingSelection['photo.png']).toBeUndefined()
-  })
-
-  it('removeMissingMediaByWidget preserves interaction state when other candidates share the name', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([
-      makeCandidate('1', 'photo.png'),
-      makeCandidate('2', 'photo.png')
-    ])
-    store.pendingSelection['photo.png'] = 'library/photo.png'
-
-    store.removeMissingMediaByWidget('1', 'image')
-
-    expect(store.missingMediaCandidates).toHaveLength(1)
-    expect(store.pendingSelection['photo.png']).toBe('library/photo.png')
   })
 
   it('createVerificationAbortController aborts previous controller', () => {
@@ -262,40 +205,6 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toBeNull()
       expect(store.hasMissingMedia).toBe(false)
-    })
-
-    it('cleans interaction state for removed names', () => {
-      const store = useMissingMediaStore()
-      store.setMissingMedia([
-        makeCandidate('1', 'photo.png'),
-        makeCandidate('2', 'clip.mp4', 'video')
-      ])
-      store.expandState['photo.png'] = true
-      store.uploadState['photo.png'] = {
-        fileName: 'photo.png',
-        status: 'uploaded'
-      }
-      store.pendingSelection['photo.png'] = 'uploaded/photo.png'
-
-      store.removeMissingMediaByNodeId('1')
-
-      expect(store.expandState['photo.png']).toBeUndefined()
-      expect(store.uploadState['photo.png']).toBeUndefined()
-      expect(store.pendingSelection['photo.png']).toBeUndefined()
-    })
-
-    it('preserves interaction state when other candidates share the name', () => {
-      const store = useMissingMediaStore()
-      store.setMissingMedia([
-        makeCandidate('1', 'photo.png'),
-        makeCandidate('2', 'photo.png')
-      ])
-      store.pendingSelection['photo.png'] = 'library/photo.png'
-
-      store.removeMissingMediaByNodeId('1')
-
-      expect(store.missingMediaCandidates).toHaveLength(1)
-      expect(store.pendingSelection['photo.png']).toBe('library/photo.png')
     })
 
     it('does nothing when candidates are null', () => {
@@ -380,7 +289,7 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
-    it('preserves candidates with a nullish nodeId (defensive)', () => {
+    it('preserves candidates with a nullish toNodeId(defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
         nodeId: undefined as unknown as string,
@@ -396,22 +305,6 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
-    })
-
-    it('clears interaction state for removed names not used elsewhere', () => {
-      const store = useMissingMediaStore()
-      store.setMissingMedia([
-        makeCandidate('65:70:63', 'shared.png'),
-        makeCandidate('65:80:5', 'shared.png'),
-        makeCandidate('65:70:64', 'only-interior.png')
-      ])
-      store.pendingSelection['shared.png'] = 'library/shared.png'
-      store.pendingSelection['only-interior.png'] = 'library/interior.png'
-
-      store.removeMissingMediaByPrefix('65:70:')
-
-      expect(store.pendingSelection['only-interior.png']).toBeUndefined()
-      expect(store.pendingSelection['shared.png']).toBe('library/shared.png')
     })
   })
 })

@@ -44,6 +44,7 @@ export type OnboardingSurveyOption = {
   value: string
   label?: LocalizedString
   labelKey?: string
+  icon?: string
 }
 
 export type OnboardingSurveyFieldCondition = {
@@ -82,18 +83,28 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  syftdata_source_id?: string
+  customer_io?: {
+    write_key?: string
+    site_id?: string
+    user_id?: string
+  }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  firebase_env?: 'dev'
   telemetry_disabled_events?: TelemetryEventName[]
+  enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
   asset_rename_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
+  manager_survey_url?: string
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
   user_secrets_enabled?: boolean
@@ -103,5 +114,20 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  unified_cloud_auth?: boolean
+  consolidated_billing_enabled?: boolean
   sentry_dsn?: string
+  turnstile_sitekey?: string
+  // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
+  // Always funnel it through normalizeTurnstileMode before trusting it as a
+  // TurnstileMode — that resolver is the single narrowing boundary.
+  signup_turnstile?: string
 }
+
+/**
+ * Gate mode for the signup Turnstile challenge.
+ * - 'off': do not render the widget
+ * - 'shadow': render the widget but never block submit (observe only)
+ * - 'enforce': block submit until the challenge is solved
+ */
+export type TurnstileMode = 'off' | 'shadow' | 'enforce'

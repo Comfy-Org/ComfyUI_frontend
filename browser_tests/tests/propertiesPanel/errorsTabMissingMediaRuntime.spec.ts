@@ -1,6 +1,11 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  GetAllSettingsResponse,
+  GetSettingByIdResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 
 import {
   assetRequestIncludesTag,
@@ -8,6 +13,11 @@ import {
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 import {
   createRouteMockJob,
   jobsRouteFixture
@@ -19,15 +29,36 @@ import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 const ossTest = mergeTests(comfyPageFixture, jobsRouteFixture)
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
+const outputVideoHash = 'cloud-video-hash.mp4'
 const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
-const missingMediaUploadObservationMs = 1_000
-const missingMediaUploadPollMs = 100
+const missingMediaObservationMs = 1_000
+const missingMediaPollMs = 100
+const emptyMediaLoaderNodes = [
+  {
+    nodeType: 'LoadImage',
+    widgetName: 'image',
+    serverOnlyOption: 'server-only-image.png',
+    position: { x: 150, y: 150 }
+  },
+  {
+    nodeType: 'LoadVideo',
+    widgetName: 'file',
+    serverOnlyOption: 'server-only-video.mp4',
+    position: { x: 450, y: 150 }
+  },
+  {
+    nodeType: 'LoadAudio',
+    widgetName: 'audio',
+    serverOnlyOption: 'server-only-audio.wav',
+    position: { x: 750, y: 150 }
+  }
+]
 
-const cloudOutputAsset: Asset = {
+const cloudOutputAsset: Asset & { hash?: string } = {
   id: 'test-output-hash-001',
   name: 'ComfyUI_00001_.png',
-  asset_hash: outputHash,
+  hash: outputHash,
   size: 4_194_304,
   mime_type: 'image/png',
   tags: ['output'],
@@ -36,10 +67,22 @@ const cloudOutputAsset: Asset = {
   last_access_time: '2026-05-01T00:00:00Z'
 }
 
-const cloudUploadedVideoAsset: Asset = {
+const cloudOutputVideoAsset: Asset & { hash?: string } = {
+  id: 'test-output-video-hash-001',
+  name: 'ComfyUI_00001_.mp4',
+  hash: outputVideoHash,
+  size: 4_194_304,
+  mime_type: 'video/mp4',
+  tags: ['output'],
+  created_at: '2026-05-01T00:00:00Z',
+  updated_at: '2026-05-01T00:00:00Z',
+  last_access_time: '2026-05-01T00:00:00Z'
+}
+
+const cloudUploadedVideoAsset: Asset & { hash?: string } = {
   id: 'test-uploaded-video-001',
   name: plainVideoFileName,
-  asset_hash: plainVideoFileName,
+  hash: plainVideoFileName,
   size: 1_024,
   mime_type: 'video/mp4',
   tags: ['input'],
@@ -50,10 +93,10 @@ const cloudUploadedVideoAsset: Asset = {
 
 // The Cloud test app starts with a default LoadImage node. Keep that baseline
 // input resolvable so this spec only observes the media it creates.
-const cloudDefaultGraphInputAsset: Asset = {
+const cloudDefaultGraphInputAsset: Asset & { hash?: string } = {
   id: 'test-default-input-001',
   name: '00000000000000000000000Aexample.png',
-  asset_hash: '00000000000000000000000Aexample.png',
+  hash: '00000000000000000000000Aexample.png',
   size: 1_024,
   mime_type: 'image/png',
   tags: ['input'],
@@ -66,12 +109,94 @@ interface CloudUploadAssetState {
   isUploadedAssetAvailable: boolean
 }
 
-const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset])
+async function routeCloudBootstrapApis(page: Page) {
+  await page.route('**/api/settings**', async (route) => {
+    const completedSurveySetting: GetSettingByIdResponse = {
+      value: { usage: 'personal' }
+    }
+    const allSettings: GetAllSettingsResponse = {}
+    const body = route
+      .request()
+      .url()
+      .includes('/api/settings/onboarding_survey')
+      ? completedSurveySetting
+      : allSettings
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    })
+  })
+  await page.route('**/api/userdata**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([])
+    })
+  })
+  await page.route('**/i18n', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({})
+    })
+  })
+  await page.route('**/customers/cloud-subscription-status', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ is_active: true })
+    })
+  })
+}
+
+const cloudOutputTest = createCloudAssetsFixture([
+  cloudOutputAsset,
+  cloudOutputVideoAsset
+]).extend({
+  page: async ({ page }, use) => {
+    await routeCloudBootstrapApis(page)
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
+
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
+
+const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend({
+  page: async ({ page }, use) => {
+    await routeCloudBootstrapApis(page)
+
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) => {
+        for (const node of emptyMediaLoaderNodes) {
+          setComboInputOptions(objectInfo, node.nodeType, node.widgetName, [
+            node.serverOnlyOption
+          ])
+        }
+      }
+    )
+
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
 const cloudUploadAssetStateByPage = new WeakMap<Page, CloudUploadAssetState>()
 const cloudUploadRaceTest = comfyPageFixture.extend<{
   markUploadedCloudAssetAvailable: () => void
 }>({
   page: async ({ page }, use) => {
+    await routeCloudBootstrapApis(page)
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
+
     const state: CloudUploadAssetState = {
       isUploadedAssetAvailable: false
     }
@@ -106,9 +231,13 @@ const cloudUploadRaceTest = comfyPageFixture.extend<{
     }
 
     await page.route(/\/api\/assets(?:\?.*)?$/, assetsRouteHandler)
-    await use(page)
-    await page.unroute(/\/api\/assets(?:\?.*)?$/, assetsRouteHandler)
-    cloudUploadAssetStateByPage.delete(page)
+    try {
+      await use(page)
+    } finally {
+      await page.unroute(/\/api\/assets(?:\?.*)?$/, assetsRouteHandler)
+      await unrouteObjectInfo()
+      cloudUploadAssetStateByPage.delete(page)
+    }
   },
   markUploadedCloudAssetAvailable: async ({ page }, use) => {
     await use(() => {
@@ -129,6 +258,33 @@ function getErrorOverlay(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
 }
 
+function isOutputAssetsRequest(url: string) {
+  return url.includes('/api/assets') && assetRequestIncludesTag(url, 'output')
+}
+
+async function waitForOutputAssetsResponse(comfyPage: ComfyPage) {
+  await comfyPage.page.waitForResponse(
+    (response) =>
+      response.status() === 200 && isOutputAssetsRequest(response.url())
+  )
+}
+
+async function getCachedMissingMediaWarningNames(
+  comfyPage: ComfyPage
+): Promise<string[] | null> {
+  return await comfyPage.page.evaluate(() => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow
+    if (!workflow) return null
+
+    return (
+      workflow.pendingWarnings?.missingMediaCandidates?.map(
+        (candidate) => candidate.name
+      ) ?? []
+    )
+  })
+}
+
 async function expectNoErrorsTab(comfyPage: ComfyPage) {
   await expect(getErrorOverlay(comfyPage)).toBeHidden()
 
@@ -139,7 +295,41 @@ async function expectNoErrorsTab(comfyPage: ComfyPage) {
   ).toBeHidden()
 }
 
-async function delayNextUpload(comfyPage: ComfyPage) {
+async function closeTemplatesDialogIfOpen(comfyPage: ComfyPage) {
+  const templatesDialog = comfyPage.page.getByRole('dialog').filter({
+    has: comfyPage.templates.content
+  })
+  const closeButton = templatesDialog.getByRole('button', {
+    name: 'Close dialog'
+  })
+  await closeButton
+    .waitFor({ state: 'visible', timeout: 1_000 })
+    .catch(() => undefined)
+
+  if (await closeButton.isVisible()) {
+    await closeButton.click()
+    await expect(templatesDialog).toBeHidden()
+  }
+}
+
+async function getMediaLoaderWidgetValues(comfyPage: ComfyPage) {
+  return await comfyPage.page.evaluate((nodes) => {
+    return nodes.map(({ nodeType, widgetName }) => {
+      const node = window.app!.graph.nodes.find(
+        (graphNode) => graphNode.type === nodeType
+      )
+      const widget = node?.widgets?.find(
+        (candidate) => candidate.name === widgetName
+      )
+      return widget?.value ?? null
+    })
+  }, emptyMediaLoaderNodes)
+}
+
+async function delayNextUpload(
+  comfyPage: ComfyPage,
+  uploadResult?: { name: string; subfolder: string; type: 'input' }
+) {
   let releaseUpload!: () => void
   let resolveUploadStarted!: () => void
   const uploadStarted = new Promise<void>((resolve) => {
@@ -152,6 +342,14 @@ async function delayNextUpload(comfyPage: ComfyPage) {
   const uploadRouteHandler = async (route: Route) => {
     resolveUploadStarted()
     await release
+    if (uploadResult) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(uploadResult)
+      })
+      return
+    }
     await route.continue()
   }
 
@@ -189,25 +387,31 @@ async function expectLoadVideoUploading(comfyPage: ComfyPage) {
     .toBe(true)
 }
 
-async function expectNoMissingMediaDuringUpload(comfyPage: ComfyPage) {
+async function expectNoMissingMediaForObservationWindow(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
   await comfyPage.nextFrame()
 
   let sawErrorOverlay = false
+  let sawCachedMissingMedia = false
   const startedAt = Date.now()
   await expect
     .poll(
       async () => {
+        const cachedMissingMedia =
+          await getCachedMissingMediaWarningNames(comfyPage)
+        sawCachedMissingMedia =
+          sawCachedMissingMedia || !!cachedMissingMedia?.length
         sawErrorOverlay =
           sawErrorOverlay || (await getErrorOverlay(comfyPage).isVisible())
         return (
           !sawErrorOverlay &&
-          Date.now() - startedAt >= missingMediaUploadObservationMs
+          !sawCachedMissingMedia &&
+          Date.now() - startedAt >= missingMediaObservationMs
         )
       },
       {
-        timeout: missingMediaUploadObservationMs + missingMediaUploadPollMs * 5,
-        intervals: [missingMediaUploadPollMs]
+        timeout: missingMediaObservationMs + missingMediaPollMs * 5,
+        intervals: [missingMediaPollMs]
       }
     )
     .toBe(true)
@@ -286,10 +490,48 @@ ossTest.describe(
         })
 
         await expectLoadVideoUploading(comfyPage)
-        await expectNoMissingMediaDuringUpload(comfyPage)
+        await expectNoMissingMediaForObservationWindow(comfyPage)
 
         await delayedUpload.finishUpload()
         await expect(getErrorOverlay(comfyPage)).toBeHidden()
+      }
+    )
+  }
+)
+
+cloudEmptyMediaInputsTest.describe(
+  'Errors tab - Cloud empty media loader inputs',
+  { tag: '@cloud' },
+  () => {
+    cloudEmptyMediaInputsTest.beforeEach(async ({ comfyPage }) => {
+      await enableErrorsTab(comfyPage)
+      await closeTemplatesDialogIfOpen(comfyPage)
+    })
+
+    cloudEmptyMediaInputsTest(
+      'does not surface missing inputs after adding LoadImage, LoadVideo, and LoadAudio nodes with no cloud input assets',
+      async ({ cloudAssetRequests, comfyPage }) => {
+        await comfyPage.nodeOps.clearGraph()
+
+        for (const node of emptyMediaLoaderNodes) {
+          await comfyPage.nodeOps.addNode(
+            node.nodeType,
+            undefined,
+            node.position
+          )
+        }
+
+        await expect
+          .poll(() =>
+            cloudAssetRequests.some((url) =>
+              assetRequestIncludesTag(url, 'input')
+            )
+          )
+          .toBe(true)
+        await expect
+          .poll(() => getMediaLoaderWidgetValues(comfyPage))
+          .toEqual(['', '', ''])
+        await expectNoErrorsTab(comfyPage)
       }
     )
   }
@@ -301,22 +543,35 @@ cloudOutputTest.describe(
   () => {
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
       await enableErrorsTab(comfyPage)
+      await closeTemplatesDialogIfOpen(comfyPage)
     })
 
     cloudOutputTest(
       'resolves compact annotated output media from output assets',
-      async ({ cloudAssetRequests, comfyPage }) => {
+      async ({ comfyPage }) => {
+        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
+
         await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_cloud_output_annotation'
         )
 
-        await expect
-          .poll(() =>
-            cloudAssetRequests.some((url) =>
-              assetRequestIncludesTag(url, 'output')
-            )
-          )
-          .toBe(true)
+        await outputAssetsResponse
+        await expectNoMissingMediaForObservationWindow(comfyPage)
+        await expectNoErrorsTab(comfyPage)
+      }
+    )
+
+    cloudOutputTest(
+      'resolves subfoldered output video media from flat output asset hashes',
+      async ({ comfyPage }) => {
+        const outputAssetsResponse = waitForOutputAssetsResponse(comfyPage)
+
+        await comfyPage.workflow.loadWorkflow(
+          'missing/missing_media_cloud_output_video_subfolder'
+        )
+
+        await outputAssetsResponse
+        await expectNoMissingMediaForObservationWindow(comfyPage)
         await expectNoErrorsTab(comfyPage)
       }
     )
@@ -329,13 +584,18 @@ cloudUploadRaceTest.describe(
   () => {
     cloudUploadRaceTest.beforeEach(async ({ comfyPage }) => {
       await enableErrorsTab(comfyPage)
+      await closeTemplatesDialogIfOpen(comfyPage)
     })
 
     cloudUploadRaceTest(
       'does not surface missing media while dropped video upload is in progress',
       async ({ comfyFiles, comfyPage, markUploadedCloudAssetAvailable }) => {
         await comfyPage.nodeOps.clearGraph()
-        const delayedUpload = await delayNextUpload(comfyPage)
+        const delayedUpload = await delayNextUpload(comfyPage, {
+          name: plainVideoFileName,
+          subfolder: '',
+          type: 'input'
+        })
 
         await comfyPage.dragDrop.dragAndDropFile(plainVideoFileName, {
           dropPosition: graphDropPosition
@@ -347,7 +607,7 @@ cloudUploadRaceTest.describe(
         })
 
         await expectLoadVideoUploading(comfyPage)
-        await expectNoMissingMediaDuringUpload(comfyPage)
+        await expectNoMissingMediaForObservationWindow(comfyPage)
 
         markUploadedCloudAssetAvailable()
         await delayedUpload.finishUpload()

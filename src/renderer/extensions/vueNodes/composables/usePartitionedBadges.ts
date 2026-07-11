@@ -4,14 +4,17 @@ import { computed, toValue } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { widgetId } from '@/types/widgetId'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -20,7 +23,7 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
 }
 
 type TrackableNode = {
-  id: NodeId
+  id: SerializedNodeId
   type: string
   inputs?: INodeInputSlot[]
 }
@@ -34,7 +37,8 @@ export function trackNodePrice(node: TrackableNode) {
     getNodeRevisionRef
   } = useNodePricing()
   // Access per-node revision ref to establish dependency (each node has its own ref)
-  void getNodeRevisionRef(node.id).value
+  const nodeId = toNodeId(node.id)
+  void getNodeRevisionRef(nodeId).value
 
   if (!hasDynamicPricing(node.type)) return
 
@@ -46,7 +50,7 @@ export function trackNodePrice(node: TrackableNode) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
       if (!graphId) continue
-      void widgetStore.getWidget(graphId, node.id, name)?.value
+      void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
     }
   }
   // Access input connections for regular inputs
@@ -148,7 +152,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
           for (const name of relevantNames) {
             // Access value from store to create reactive dependency
             if (!graphId) continue
-            void widgetStore.getWidget(graphId, nodeData.id, name)?.value
+            void widgetStore.getWidget(widgetId(graphId, nodeData.id, name))
+              ?.value
           }
         }
         // Access input connections for regular inputs

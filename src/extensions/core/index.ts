@@ -2,12 +2,12 @@ import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
+import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'
 import './groupNode'
-import './groupNodeManage'
 import './groupOptions'
 import './imageCompare'
 import './imageCrop'
@@ -21,6 +21,7 @@ if (!isCloud) {
 import './noteNode'
 import './painter'
 import './previewAny'
+import './saveText'
 import './rerouteNode'
 import './saveImageExtraOutput'
 // saveMesh is loaded on-demand with load3d (see load3dLazy.ts)
@@ -37,10 +38,6 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-
-  if (window.__CONFIG__?.subscription_required) {
-    await import('./cloudSubscription')
-  }
 }
 
 // Feedback button for cloud and nightly builds

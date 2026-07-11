@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -7,6 +8,52 @@ import {
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  appendComboInputOptions,
+  routeObjectInfoFromSetupApi
+} from '@e2e/fixtures/utils/objectInfo'
+import {
+  NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+  expectMissingModelReferenceCount,
+  expectNoMissingModelUi,
+  expectResolvedPromotedModelSuppressesStaleInteriorErrors,
+  expectSingleMissingModelReference,
+  getMissingModelLabel,
+  loadPromotedMissingModelAndOpenErrorsTab,
+  loadPromotedMissingModelWithHostValuesAndOpenErrorsTab,
+  selectSectionComboPromotedModel,
+  selectVueComboPromotedModelByTitle,
+  setLegacyPromotedComboModel
+} from '@e2e/fixtures/utils/promotedMissingModel'
+
+const FAKE_MODEL_NAME = 'fake_model.safetensors'
+const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'
+
+const promotedModelTest = test.extend({
+  page: async ({ page }, use) => {
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) =>
+        appendComboInputOptions(
+          objectInfo,
+          'CheckpointLoaderSimple',
+          'ckpt_name',
+          [RESOLVED_PROMOTED_MODEL_NAME]
+        )
+    )
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
+
+async function expectReferenceBadge(group: Locator, count: number) {
+  await expect(
+    group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
+  ).toHaveText(String(count))
+}
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -130,9 +177,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         'missing/missing_models_from_node_properties'
       )
 
-      const copyUrlButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelCopyUrl
-      )
+      const copyUrlButton = comfyPage.page.getByRole('button', {
+        name: 'Copy URL'
+      })
       await expect(copyUrlButton.first()).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
@@ -156,9 +203,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
-      await expect(missingModelGroup).toContainText(
-        /fake_model\.safetensors\s*\(1\)/
-      )
+      await expect(
+        getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+      ).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
@@ -168,9 +215,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
 
       await comfyPage.canvas.click()
-      await expect(missingModelGroup).toContainText(
-        /fake_model\.safetensors\s*\(2\)/
-      )
+      await expectReferenceBadge(missingModelGroup, 2)
     })
 
     test('Pasting a bypassed node does not add a new error', async ({
@@ -241,7 +286,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all errors visible and shows selection context', async ({
       comfyPage
     }) => {
       await loadWorkflowAndOpenErrorsTab(
@@ -252,14 +297,30 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       const missingModelGroup = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelsGroup
       )
-      await expect(missingModelGroup).toContainText(/\(2\)/)
+      await expectReferenceBadge(missingModelGroup, 2)
 
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
-      await expect(missingModelGroup).toContainText(/\(1\)/)
+
+      await expect(
+        getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+      ).toBeVisible()
+      await expectReferenceBadge(missingModelGroup, 2)
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
+      await expect(
+        strip,
+        'The strip count is scoped to the selection, diverging from the global reference badge'
+      ).toContainText('1 error')
 
       await comfyPage.canvas.click()
-      await expect(missingModelGroup).toContainText(/\(2\)/)
+      await expect(
+        strip,
+        'Deselecting swaps the always-visible strip back to the summary'
+      ).toContainText('2 nodes — 1 error')
+      await expectReferenceBadge(missingModelGroup, 2)
     })
   })
 
@@ -331,7 +392,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingMediaGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all media rows visible and shows selection context', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_media_multiple')
@@ -353,10 +414,63 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById('10')
       await node.click('title')
-      await expect(mediaRows).toHaveCount(1)
+
+      // Selection no longer filters the list — rows stay global and the
+      // selection is surfaced via the context strip instead.
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
+      await expect(strip).toContainText('1 error')
+      await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      // Deselecting swaps the always-visible strip back to the summary
+      await expect(strip).toContainText('2 nodes — 2 errors')
       await expect(mediaRows).toHaveCount(2)
+    })
+  })
+
+  test.describe('Selection emphasis', () => {
+    test('Selecting a node collapses unrelated groups and highlights its rows', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_nodes_and_media'
+      )
+
+      const missingNodeCard = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodeCard
+      )
+      const mediaRow = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).toBeVisible()
+      await expect(strip).toContainText('2 nodes — 2 errors')
+
+      const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
+      // The node sits near the canvas top where overlays intercept clicks
+      await mediaNode.centerOnNode()
+      await mediaNode.click('title')
+
+      // The unrelated missing-node group auto-collapses while the matched
+      // media row stays visible and is marked as part of the selection
+      await expect(missingNodeCard).toBeHidden()
+      await expect(mediaRow).toBeVisible()
+      await expect(mediaRow).toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('1 error')
+
+      await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      // Emphasis ends: the collapsed group re-expands and the strip
+      // returns to the workflow summary
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('2 nodes — 2 errors')
     })
   })
 
@@ -368,6 +482,220 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test.afterEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
     })
+
+    promotedModelTest(
+      'Changing an OSS Vue promoted model clears a nested subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        let missingModelGroup: Locator
+
+        await test.step('A: shared-definition active host reports the missing model', async () => {
+          missingModelGroup = await loadPromotedMissingModelAndOpenErrorsTab(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            FAKE_MODEL_NAME
+          )
+        })
+
+        await test.step('B: bypassing the resolved sibling host keeps the active host error visible', async () => {
+          const siblingHostNodeId =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeId
+          if (siblingHostNodeId === undefined) {
+            throw new Error('Expected a shared-definition sibling host')
+          }
+
+          const siblingHost =
+            await comfyPage.nodeOps.getNodeRefById(siblingHostNodeId)
+          await siblingHost.centerOnNode()
+          await siblingHost.click('title')
+          await comfyPage.keyboard.bypass()
+          await expect.poll(() => siblingHost.isBypassed()).toBeTruthy()
+          await comfyPage.canvas.click({ position: { x: 700, y: 650 } })
+          await openErrorsTab(comfyPage)
+          await expectSingleMissingModelReference(
+            missingModelGroup,
+            FAKE_MODEL_NAME
+          )
+        })
+
+        await test.step('C: changing the active host promoted widget resolves the model', async () => {
+          const activeHost = await comfyPage.nodeOps.getNodeRefById(
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId
+          )
+          await activeHost.centerOnNode()
+          await selectVueComboPromotedModelByTitle(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeTitle,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+        })
+
+        await test.step('D: the missing model UI clears', async () => {
+          await expectNoMissingModelUi(comfyPage)
+        })
+
+        await test.step('E: two missing shared-definition hosts report two references', async () => {
+          const siblingHostNodeId =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeId
+          if (siblingHostNodeId === undefined) {
+            throw new Error('Expected a shared-definition sibling host')
+          }
+
+          missingModelGroup =
+            await loadPromotedMissingModelWithHostValuesAndOpenErrorsTab(
+              comfyPage,
+              NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+              {
+                [siblingHostNodeId]: FAKE_MODEL_NAME,
+                [NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId]:
+                  FAKE_MODEL_NAME
+              },
+              FAKE_MODEL_NAME,
+              2
+            )
+        })
+
+        await test.step('F: changing one missing host leaves the other missing reference', async () => {
+          await selectVueComboPromotedModelByTitle(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeTitle,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+          await expectMissingModelReferenceCount(
+            missingModelGroup,
+            FAKE_MODEL_NAME,
+            1
+          )
+        })
+
+        await test.step('G: changing the remaining missing host clears the model error', async () => {
+          const siblingHostTitle =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeTitle
+          if (siblingHostTitle === undefined) {
+            throw new Error('Expected a shared-definition sibling host title')
+          }
+
+          await selectVueComboPromotedModelByTitle(
+            comfyPage,
+            siblingHostTitle,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+          await expectNoMissingModelUi(comfyPage)
+        })
+      }
+    )
+
+    promotedModelTest(
+      'Changing an OSS Vue promoted model from the Parameters tab clears a nested subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectSectionComboPromotedModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Changing an OSS legacy promoted model clears a nested subgraph error',
+      { tag: ['@canvas', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await setLegacyPromotedComboModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Refreshing a resolved promoted missing model clears the combo invalid state',
+      { tag: ['@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.workflowName
+        )
+        await comfyPage.vueNodes.waitForNodes()
+
+        const missingModelGroup = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelsGroup
+        )
+        await expect(
+          getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+        ).toBeVisible()
+
+        const promotedModelCombo = comfyPage.vueNodes
+          .getNodeByTitle(NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeTitle)
+          .getByRole('combobox', { name: 'ckpt_name', exact: true })
+        await expect(promotedModelCombo).toHaveAttribute('aria-invalid', 'true')
+
+        const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+          comfyPage.page,
+          (objectInfo) =>
+            appendComboInputOptions(
+              objectInfo,
+              'CheckpointLoaderSimple',
+              'ckpt_name',
+              [FAKE_MODEL_NAME, RESOLVED_PROMOTED_MODEL_NAME]
+            )
+        )
+
+        try {
+          await comfyPage.page
+            .getByTestId(TestIds.dialogs.missingModelRefresh)
+            .click()
+
+          await expect(missingModelGroup).toBeHidden()
+          await expect(promotedModelCombo).toBeVisible()
+          await expect(promotedModelCombo).not.toHaveAttribute(
+            'aria-invalid',
+            'true'
+          )
+        } finally {
+          await unrouteObjectInfo()
+        }
+      }
+    )
+
+    promotedModelTest(
+      'Reloading a resolved nested promoted model ignores stale interior values',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await expectResolvedPromotedModelSuppressesStaleInteriorErrors(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          [
+            {
+              subgraphNodeIdToEnter: '4',
+              nodeTitle: 'Inner Subgraph with Promoted Missing Model'
+            },
+            { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
+          ],
+          RESOLVED_PROMOTED_MODEL_NAME,
+          FAKE_MODEL_NAME
+        )
+      }
+    )
 
     test('Bypassing a subgraph hides interior errors, un-bypassing restores them', async ({
       comfyPage

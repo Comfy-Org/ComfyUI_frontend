@@ -38,13 +38,14 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    missingNodePackExpand: 'missing-node-pack-expand',
+    missingNodePackCount: 'missing-node-pack-count',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
@@ -54,25 +55,24 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
+    missingModelImport: 'missing-model-import',
+    missingModelImportableRows: 'missing-model-importable-rows',
     missingModelLocate: 'missing-model-locate',
-    missingModelCopyName: 'missing-model-copy-name',
-    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelReferenceCount: 'missing-model-reference-count',
+    missingModelUnsupportedSection:
+      'missing-model-import-not-supported-section',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
-    missingModelRefresh: 'missing-model-refresh',
-    missingModelImportUnsupported: 'missing-model-import-unsupported',
+    missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
-    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
-    missingMediaLibrarySelect: 'missing-media-library-select',
-    missingMediaStatusCard: 'missing-media-status-card',
-    missingMediaConfirmButton: 'missing-media-confirm-button',
-    missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
@@ -110,7 +110,12 @@ export const TestIds = {
   },
   propertiesPanel: {
     root: 'properties-panel',
-    errorsTab: 'panel-tab-errors'
+    errorsTab: 'panel-tab-errors',
+    selectionContextStrip: 'selection-context-strip'
+  },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -138,7 +143,8 @@ export const TestIds = {
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button'
+    convertSubgraph: 'convert-to-subgraph-button',
+    bypass: 'bypass-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
@@ -167,6 +173,9 @@ export const TestIds = {
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
+    runButton: 'linear-run-button',
+    validationWarning: 'linear-validation-warning',
+    viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },
   builder: {

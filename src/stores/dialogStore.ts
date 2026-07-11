@@ -21,10 +21,10 @@ type DialogPosition =
   | 'bottomright'
 
 /**
- * Selects the dialog renderer used by `GlobalDialog`. `'primevue'` is the
- * current default and runs the legacy PrimeVue `Dialog` path. `'reka'` opts
- * into the Reka-UI primitive set under `src/components/ui/dialog/`. Migration
- * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
+ * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
+ * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
+ * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
+ * the branch is deleted in the Phase 6 cleanup (FE-578).
  */
 type DialogRenderer = 'primevue' | 'reka'
 
@@ -38,6 +38,14 @@ interface CustomDialogComponentProps {
   pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
+  /**
+   * When `false`, the Reka dialog does not dismiss when focus leaves its
+   * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
+   * where a nested dialog closing can move focus onto an ordinary app element
+   * — a programmatic shift that must not be read as a dismiss. Escape and
+   * outside-pointer dismissal are unaffected. Defaults to `true`.
+   */
+  dismissOnFocusOutside?: boolean
   unstyled?: boolean
   headless?: boolean
   renderer?: DialogRenderer
@@ -52,6 +60,22 @@ interface CustomDialogComponentProps {
    * PrimeVue path — use `pt.mask` for that renderer.
    */
   overlayClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogHeader` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
+   */
+  headerClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the wrapper around the content component on the Reka-UI
+   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
+   * that renderer.
+   */
+  bodyClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogFooter` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
+   */
+  footerClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = Record<string, unknown> &
@@ -185,6 +209,7 @@ export const useDialogStore = defineStore('dialog', () => {
         closable: true,
         closeOnEscape: true,
         dismissableMask: true,
+        renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
         maximized: false,
         onMaximize: () => {

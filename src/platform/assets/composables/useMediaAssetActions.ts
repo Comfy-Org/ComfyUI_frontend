@@ -6,6 +6,7 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -17,13 +18,19 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import { getAssetOutputCount } from '../utils/outputAssetUtil'
+import {
+  getAssetOutputCount,
+  resolveOutputAssetItems
+} from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -42,8 +49,8 @@ const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
  *
  * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
  * present in metadata). Input/temp assets emit the bare name plus the explicit
- * annotation. `asset_hash` is included whenever present, since cloud-stored
- * assets can be referenced by hash.
+ * annotation. The content `hash` is included whenever present, since
+ * cloud-stored assets can be referenced by hash.
  */
 function widgetValueVariantsForAsset(asset: AssetItem): string[] {
   const variants: string[] = []
@@ -61,7 +68,7 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  const hash = asset.hash ?? asset.asset_hash
+  const hash = asset.hash
   if (hash) variants.push(hash)
   return variants
 }
@@ -105,8 +112,9 @@ export function useMediaAssetActions() {
    * Download one or more assets.
    * In cloud mode, creates a ZIP export via the backend when called with
    * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * Falls back to direct downloads in OSS mode and for single single-output
-   * assets. With no argument, uses the asset from `MediaAssetKey` context.
+   * In OSS mode, downloads each file directly, expanding grouped assets
+   * (`outputCount > 1`) into their individual outputs.
+   * With no argument, uses the asset from `MediaAssetKey` context.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
@@ -123,17 +131,77 @@ export function useMediaAssetActions() {
       return
     }
 
-    try {
-      targetAssets.forEach((asset) => {
-        const filename = getAssetDisplayName(asset)
-        const downloadUrl = asset.preview_url || getAssetUrl(asset)
-        downloadFile(downloadUrl, filename)
-      })
+    if (hasMultiOutputJobs) {
+      void downloadAssetsIndividually(targetAssets)
+      return
+    }
 
+    try {
+      targetAssets.forEach((asset) => downloadSingleAsset(asset))
       toast.add({
         severity: 'success',
         summary: t('g.success'),
         detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to download assets:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadImage')
+      })
+    }
+  }
+
+  function downloadSingleAsset(asset: AssetItem) {
+    const filename = getAssetDisplayName(asset)
+    const downloadUrl = asset.preview_url || getAssetUrl(asset)
+    downloadFile(downloadUrl, filename)
+  }
+
+  async function expandAssetForDownload(
+    asset: AssetItem
+  ): Promise<AssetItem[]> {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (
+      !metadata ||
+      typeof metadata.outputCount !== 'number' ||
+      metadata.outputCount <= 1
+    ) {
+      return [asset]
+    }
+
+    try {
+      const resolved = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return resolved.length > 0 ? resolved : [asset]
+    } catch (error) {
+      console.error('Failed to expand grouped asset for download:', error)
+      return [asset]
+    }
+  }
+
+  async function downloadAssetsIndividually(assets: AssetItem[]) {
+    try {
+      const expanded = await Promise.all(assets.map(expandAssetForDownload))
+      const seenAssetIds = new Set<string>()
+      const filesToDownload = expanded.flat().filter((asset) => {
+        if (seenAssetIds.has(asset.id)) return false
+        seenAssetIds.add(asset.id)
+        return true
+      })
+
+      filesToDownload.forEach((asset) => downloadSingleAsset(asset))
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t(
+          'mediaAsset.selection.downloadsStarted',
+          filesToDownload.length
+        ),
         life: 2000
       })
     } catch (error) {
@@ -200,7 +268,8 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
-        naming_strategy: namingStrategy
+        naming_strategy: namingStrategy,
+        include_previews: true
       })
 
       assetExportStore.trackExport(result.task_id)
@@ -280,9 +349,11 @@ export function useMediaAssetActions() {
       return
     }
 
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) {
       toast.add({
@@ -297,11 +368,7 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use the content hash (the actual stored filename),
-    // preferring hash and falling back to the deprecated asset_hash alias.
-    // In OSS mode, use the original name.
-    const cloudHash = targetAsset.hash ?? targetAsset.asset_hash
-    const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
+    const filename = getAssetStoredFilename(targetAsset)
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
@@ -310,9 +377,7 @@ export function useMediaAssetActions() {
         subfolder: metadata?.subfolder || '',
         type: isResultItemType(assetType) ? assetType : undefined
       },
-      {
-        rootFolder: isResultItemType(assetType) ? assetType : undefined
-      }
+      { rootFolder: 'input' }
     )
 
     const widget = node.widgets?.find((w) => w.name === widgetName)
@@ -425,12 +490,14 @@ export function useMediaAssetActions() {
       }
 
       const center = litegraphService.getCanvasCenter()
-      const node = litegraphService.addNodeOnGraph(nodeDef, {
-        pos: [
-          center[0] + nodeIndex * NODE_OFFSET,
-          center[1] + nodeIndex * NODE_OFFSET
-        ]
-      })
+      const node = withNodeAddSource('programmatic', () =>
+        litegraphService.addNodeOnGraph(nodeDef, {
+          pos: [
+            center[0] + nodeIndex * NODE_OFFSET,
+            center[1] + nodeIndex * NODE_OFFSET
+          ]
+        })
+      )
 
       if (!node) {
         failed++
@@ -440,11 +507,7 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use the content hash (the actual stored filename),
-      // preferring hash and falling back to the deprecated asset_hash alias.
-      // In OSS mode, use the original name.
-      const cloudHash = asset.hash ?? asset.asset_hash
-      const filename = isCloud && cloudHash ? cloudHash : asset.name
+      const filename = getAssetStoredFilename(asset)
 
       const annotated = createAnnotatedPath(
         {
@@ -775,6 +838,10 @@ export function useMediaAssetActions() {
           onCancel: () => {
             resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md'
         }
       })
     })

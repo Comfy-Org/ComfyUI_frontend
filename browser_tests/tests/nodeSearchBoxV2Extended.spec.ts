@@ -309,50 +309,6 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     )
   })
 
-  test.describe('Empty graph defaults', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.featureFlags.setServerFlag(
-        'node_library_essentials_enabled',
-        true
-      )
-    })
-
-    test('Defaults to Essentials when graph is empty', async ({
-      comfyPage
-    }) => {
-      const { searchBoxV2 } = comfyPage
-      await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-
-      await searchBoxV2.open()
-
-      const essentialsBtn = searchBoxV2.rootCategoryButton(
-        RootCategory.Essentials
-      )
-      await expect(essentialsBtn).toBeVisible()
-      await expect(essentialsBtn).toHaveAttribute('aria-pressed', 'true')
-    })
-
-    test('Defaults to Most Relevant when graph has nodes', async ({
-      comfyPage
-    }) => {
-      const { searchBoxV2 } = comfyPage
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
-
-      await searchBoxV2.open()
-
-      await expect(searchBoxV2.categoryButton('most-relevant')).toHaveAttribute(
-        'aria-current',
-        'true'
-      )
-      await expect(
-        searchBoxV2.rootCategoryButton(RootCategory.Essentials)
-      ).toHaveAttribute('aria-pressed', 'false')
-    })
-  })
-
   test.describe('Search behavior', () => {
     test('Search narrows results progressively', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
