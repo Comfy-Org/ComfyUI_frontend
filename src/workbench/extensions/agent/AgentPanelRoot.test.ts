@@ -146,6 +146,21 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
 }))
 
+const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const { ref } = await import('vue')
+  return {
+    ...(await importOriginal<object>()),
+    useClipboard: () => ({
+      copy: clipboard.copy,
+      copied: ref(false),
+      isSupported: ref(true),
+      text: ref('')
+    })
+  }
+})
+
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
   trackAgentWorkflowApplied: vi.fn(),
@@ -757,6 +772,92 @@ describe('AgentPanelRoot history', () => {
   })
 })
 
+describe('AgentPanelRoot transcript copy', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+    clipboard.copy.mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('copies the active session from chat history as formatted markdown', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? new Response(
+              JSON.stringify({
+                threads: [
+                  {
+                    id: 'th-1',
+                    title: 'make a cat',
+                    last_message_at: '2026-07-07T10:00:00Z'
+                  }
+                ],
+                pagination: { page: 1 }
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          : new Response('{}', { status: 200 })
+      )
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const convo = useAgentConversationStore()
+    const turnId = 'turn-1' as TurnId
+    convo.setThreadId('th-1')
+    convo.recordUser(turnId, 'make a cat')
+    convo.startTurn(turnId)
+    convo.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Here is ', message_id: 'turn-1', thread_id: 'th-1' }
+      })
+    )
+    convo.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_tool_call',
+        data: {
+          tool_name: 'add_node',
+          status: 'ok',
+          args: [],
+          message_id: 'turn-1',
+          thread_id: 'th-1'
+        }
+      })
+    )
+    convo.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'a cat.', message_id: 'turn-1', thread_id: 'th-1' }
+      })
+    )
+    convo.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-1', thread_id: 'th-1', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(screen.getByRole('button', { name: 'make a cat' }))
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.copyMarkdown')
+      })
+    )
+
+    expect(clipboard.copy).toHaveBeenCalledWith(
+      '**You:** make a cat\n\n**Agent:** Here is a cat.'
+    )
+  })
+})
+
 describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -1043,9 +1144,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     executionErrors.showErrorOverlay.mockClear()
     workflowService.saveWorkflow.mockRejectedValueOnce(new Error('offline'))
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -1137,9 +1236,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const mintedPath = 'workflows/Unsaved Workflow.json'
     const renamedPath = 'workflows/Unsaved Workflow.app.json'
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     workflowService.saveWorkflowAs.mockImplementationOnce(async (tab) => {
       const renamed = hostStores.workflow.tabs.get(tab.path)
       hostStores.workflow.tabs.delete(tab.path)

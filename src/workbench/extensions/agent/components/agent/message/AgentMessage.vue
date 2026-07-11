@@ -12,7 +12,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import MarkdownStream from './MarkdownStream.vue'
 import MessageFeedback from './MessageFeedback.vue'
-import ThinkingStatus from './ThinkingStatus.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
 const { message } = defineProps<{ message: AssistantMessage }>()
@@ -57,9 +56,13 @@ const raw = ref(false)
 
 <template>
   <div class="space-y-1.5">
-    <ThinkingStatus
+    <div
       v-if="message.thinking || (message.streaming && !message.parts.length)"
-    />
+      class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm"
+    >
+      <span class="icon-[lucide--brain] size-3.5 shrink-0" />
+      <span class="agent-shimmer-text">{{ t('agent.thinking') }}</span>
+    </div>
 
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream
