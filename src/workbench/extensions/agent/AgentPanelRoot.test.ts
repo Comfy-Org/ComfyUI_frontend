@@ -63,10 +63,12 @@ vi.mock(
 
 type FakeTab = {
   path: string
+  directory: string
   filename: string
+  isTemporary: boolean
   isModified: boolean
   activeState: { id?: string } | null
-  changeTracker?: { reset: (state?: unknown) => void }
+  initialMode?: 'app' | 'graph'
 }
 const hostStores = vi.hoisted(() => ({
   workflow: null as unknown as {
@@ -99,6 +101,27 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   hostStores.canvas = store
   return { useCanvasStore: () => store }
 })
+
+const workflowService = vi.hoisted(() => ({
+  saveWorkflow: vi.fn(async (tab: { isModified: boolean }) => {
+    tab.isModified = false
+    return true
+  }),
+  saveWorkflowAs: vi.fn(
+    async (
+      tab: { path: string; isTemporary: boolean; isModified: boolean },
+      _options?: { filename?: string }
+    ) => {
+      tab.isTemporary = false
+      tab.isModified = false
+      return true
+    }
+  )
+}))
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => workflowService
+}))
 
 vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -144,6 +167,7 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -154,6 +178,8 @@ beforeEach(() => {
   hostStores.canvas.selectedItems = []
   appMock.graph.nodes = []
   appMock.canvas = undefined
+  workflowService.saveWorkflow.mockClear()
+  workflowService.saveWorkflowAs.mockClear()
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -865,10 +891,11 @@ describe('AgentPanelRoot workflow binding', () => {
   function makeTab(id?: string): FakeTab {
     const tab: FakeTab = {
       path: 'workflows/current.json',
+      directory: 'workflows',
       filename: 'current',
+      isTemporary: false,
       isModified: false,
-      activeState: id === undefined ? null : { id },
-      changeTracker: { reset: vi.fn() }
+      activeState: id === undefined ? null : { id }
     }
     hostStores.workflow.tabs.set(tab.path, tab)
     hostStores.workflow.activeWorkflow = tab
@@ -889,6 +916,12 @@ describe('AgentPanelRoot workflow binding', () => {
               workflow_id: ackWorkflowId
             }),
             { status: 202, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        if (url.includes('/agent/threads')) {
+          return new Response(
+            JSON.stringify({ threads: [], pagination: { page: 1 } }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
           )
         }
         return new Response('{}', { status: 200 })
@@ -915,7 +948,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const other: FakeTab = {
       path: 'workflows/other.json',
+      directory: 'workflows',
       filename: 'other',
+      isTemporary: false,
       isModified: false,
       activeState: null
     }
@@ -944,7 +979,10 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
     )
     expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-    expect(tab.changeTracker?.reset).toHaveBeenCalled()
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
+    )
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
     expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-42',
@@ -960,10 +998,11 @@ describe('AgentPanelRoot workflow binding', () => {
         if (workflowTab !== null) return
         const minted: FakeTab = {
           path: mintedPath,
+          directory: 'workflows',
           filename: 'Unsaved Workflow',
+          isTemporary: true,
           isModified: true,
-          activeState: null,
-          changeTracker: { reset: vi.fn() }
+          activeState: null
         }
         hostStores.workflow.tabs.set(minted.path, minted)
         hostStores.workflow.activeWorkflow = minted
@@ -981,7 +1020,9 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(hostStores.workflow.tabs.get(mintedPath)?.isModified).toBe(false)
     })
     const minted = hostStores.workflow.tabs.get(mintedPath)
-    expect(minted?.changeTracker?.reset).toHaveBeenCalled()
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(minted, {
+      filename: 'Unsaved Workflow'
+    })
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-42',
       target: 'new_tab'
@@ -995,6 +1036,150 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.queryByText(i18n.global.t('agent.conflictTitle'))
     ).not.toBeInTheDocument()
+  })
+
+  it('a failed autosave keeps the applied draft and surfaces no apply error', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    executionErrors.showErrorOverlay.mockClear()
+    workflowService.saveWorkflow.mockRejectedValueOnce(new Error('offline'))
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'add an upscaler')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    tab.isModified = false
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
+    )
+    await vi.waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(
+        `Agent draft autosave failed for ${tab.path}:`,
+        expect.any(Error)
+      )
+    )
+    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
+    expect(
+      screen.queryByText(i18n.global.t('agent.conflictTitle'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('autosave dodges an occupied app-mode save path and rebinds the renamed tab', async () => {
+    mockMessagesEndpoint('wf-42')
+    const occupant: FakeTab = {
+      path: 'workflows/Unsaved Workflow.app.json',
+      directory: 'workflows',
+      filename: 'Unsaved Workflow',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(occupant.path, occupant)
+    const mintedPath = 'workflows/Unsaved Workflow.json'
+    const renamedPath = 'workflows/Unsaved Workflow (2).app.json'
+    workflowService.saveWorkflowAs.mockImplementationOnce(
+      async (tab, options) => {
+        const renamed = hostStores.workflow.tabs.get(tab.path)
+        hostStores.workflow.tabs.delete(tab.path)
+        tab.isTemporary = false
+        tab.isModified = false
+        tab.path = `workflows/${options?.filename}.app.json`
+        if (renamed) hostStores.workflow.tabs.set(tab.path, renamed)
+        return true
+      }
+    )
+    vi.mocked(app.loadGraphData).mockImplementation(
+      async (_graph, _clean, _restore, workflowTab) => {
+        if (workflowTab !== null) return
+        const minted: FakeTab = {
+          path: mintedPath,
+          directory: 'workflows',
+          filename: 'Unsaved Workflow',
+          isTemporary: true,
+          isModified: true,
+          activeState: null,
+          initialMode: 'app'
+        }
+        hostStores.workflow.tabs.set(minted.path, minted)
+        hostStores.workflow.activeWorkflow = minted
+      }
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    await vi.waitFor(() =>
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(
+        hostStores.workflow.tabs.get(renamedPath),
+        { filename: 'Unsaved Workflow (2)' }
+      )
+    )
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+        renamedPath
+      )
+    )
+  })
+
+  it('a save that fails after the service renames still rebinds the tab', async () => {
+    mockMessagesEndpoint('wf-42')
+    const mintedPath = 'workflows/Unsaved Workflow.json'
+    const renamedPath = 'workflows/Unsaved Workflow.app.json'
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    workflowService.saveWorkflowAs.mockImplementationOnce(async (tab) => {
+      const renamed = hostStores.workflow.tabs.get(tab.path)
+      hostStores.workflow.tabs.delete(tab.path)
+      tab.path = renamedPath
+      if (renamed) hostStores.workflow.tabs.set(tab.path, renamed)
+      throw new Error('offline')
+    })
+    vi.mocked(app.loadGraphData).mockImplementation(
+      async (_graph, _clean, _restore, workflowTab) => {
+        if (workflowTab !== null) return
+        const minted: FakeTab = {
+          path: mintedPath,
+          directory: 'workflows',
+          filename: 'Unsaved Workflow',
+          isTemporary: true,
+          isModified: true,
+          activeState: null,
+          initialMode: 'app'
+        }
+        hostStores.workflow.tabs.set(minted.path, minted)
+        hostStores.workflow.activeWorkflow = minted
+      }
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    await vi.waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(
+        `Agent draft autosave failed for ${renamedPath}:`,
+        expect.any(Error)
+      )
+    )
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      renamedPath
+    )
   })
 
   it('stages a mention pick once and reports the tag gesture', async () => {
@@ -1100,7 +1285,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const other: FakeTab = {
       path: 'workflows/other.json',
+      directory: 'workflows',
       filename: 'other',
+      isTemporary: false,
       isModified: false,
       activeState: null
     }

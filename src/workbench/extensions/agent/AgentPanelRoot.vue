@@ -5,10 +5,11 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
@@ -53,6 +54,7 @@ const rest = createAgentRestClient()
 const events = createAgentEventSource(api)
 
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
 const agentPanelStore = useAgentPanelStore()
@@ -200,11 +202,36 @@ function boundTabFor(workflowId: string): ComfyWorkflow | null {
   return path === undefined ? null : workflowStore.getWorkflowByPath(path)
 }
 
-function autosaveAppliedDraft(tab: ComfyWorkflow): void {
-  const canvasState = app.graph?.serialize()
-  if (!canvasState) return
-  tab.changeTracker?.reset(canvasState as unknown as ComfyWorkflowJSON)
-  tab.isModified = false
+function unusedFilenameFor(tab: ComfyWorkflow): string {
+  const takenByOther = (filename: string) => {
+    const path =
+      tab.directory +
+      '/' +
+      appendWorkflowJsonExt(filename, tab.initialMode === 'app')
+    return path !== tab.path && workflowStore.getWorkflowByPath(path) !== null
+  }
+  if (!takenByOther(tab.filename)) return tab.filename
+  let counter = 2
+  while (takenByOther(`${tab.filename} (${counter})`)) counter++
+  return `${tab.filename} (${counter})`
+}
+
+async function autosaveAppliedDraft(
+  workflowId: string,
+  tab: ComfyWorkflow
+): Promise<void> {
+  try {
+    const saved = tab.isTemporary
+      ? await workflowService.saveWorkflowAs(tab, {
+          filename: unusedFilenameFor(tab)
+        })
+      : await workflowService.saveWorkflow(tab)
+    if (!saved) console.error(`Agent draft autosave failed for ${tab.path}`)
+  } catch (error) {
+    console.error(`Agent draft autosave failed for ${tab.path}:`, error)
+  } finally {
+    bindingStore.bind(workflowId, tab.path)
+  }
 }
 
 async function loadDraft(
@@ -232,11 +259,11 @@ async function loadDraft(
       )
       if (opened) {
         bindingStore.bind(workflowId, opened.path)
-        autosaveAppliedDraft(opened)
+        await autosaveAppliedDraft(workflowId, opened)
       }
       return
     }
-    autosaveAppliedDraft(tab)
+    await autosaveAppliedDraft(workflowId, tab)
   } catch (error) {
     surfaceDraftApplyFailure(
       error instanceof Error ? error.message : String(error)
