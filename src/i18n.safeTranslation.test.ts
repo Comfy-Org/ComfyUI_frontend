@@ -68,7 +68,9 @@ describe('stRaw', () => {
       }
     })
 
-    expect(stRaw('safeTranslationTest.rawSyntax', 'Fallback value')).toBe(message)
+    expect(stRaw('safeTranslationTest.rawSyntax', 'Fallback value')).toBe(
+      message
+    )
   })
 
   it('returns the fallback when the key is not found', () => {
