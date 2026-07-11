@@ -2,6 +2,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
@@ -13,6 +14,7 @@ export function useKeybindingService() {
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
+  const subgraphNavigationStore = useSubgraphNavigationStore()
 
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -51,6 +53,17 @@ export function useKeybindingService() {
         !event.metaKey
       ) {
         if (dialogStore.dialogStack.length > 0) {
+          return
+        }
+        // `Comfy.Graph.ExitSubgraph` is a no-op at the top level.
+        // preventDefault() then eats the Escape that Reka's
+        // DismissableLayer (Popover, DropdownMenu, etc.) needs to
+        // dismiss; DismissableLayer skips its own dismiss when
+        // defaultPrevented.
+        if (
+          keybinding.commandId === 'Comfy.Graph.ExitSubgraph' &&
+          !subgraphNavigationStore.activeSubgraph
+        ) {
           return
         }
       }
