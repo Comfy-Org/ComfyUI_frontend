@@ -96,8 +96,8 @@ reviews:
     - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
       instructions: |
         Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`,
-        `docs/testing/vitest-patterns.md`, and `docs/guidance/playwright.md`
-        as required review context for every changed Playwright test file. For
+        and `docs/guidance/playwright.md` as required review context for every
+        changed Playwright test file. For
         `browser_tests/`, also read `browser_tests/README.md` and
         `browser_tests/AGENTS.md`, and apply
         `.agents/checks/playwright-e2e.md`.
