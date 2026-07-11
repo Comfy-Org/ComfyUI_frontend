@@ -20,7 +20,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
-import type { ConflictChoice } from './components/agent/safety/safetyTypes'
+import type { ConflictChoice } from './components/agent/safety/ConflictDialog.vue'
 import { useAttachment } from './composables/agent/useAttachment'
 import type { ActiveTab } from './components/agent/ActiveTabStrip.vue'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
@@ -29,12 +29,11 @@ import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import type { AgentThreadSummary } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
-import { useDraftCanvasApply } from './composables/agent/useDraftCanvasApply'
 import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftUpload } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -311,7 +310,13 @@ async function applyDraft(): Promise<void> {
   }
 }
 
-useDraftCanvasApply(() => void applyDraft())
+watch(
+  () => draftStore.version,
+  (version) => {
+    if (version === null || draftStore.content === null) return
+    void applyDraft()
+  }
+)
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => void applyDraft()
@@ -393,6 +398,19 @@ async function onSelectHistory(id: string): Promise<void> {
   resetSnapshotGuard()
   await loadThread(id)
   void refreshHistory()
+}
+
+function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
+  return entries
+    .map((entry) => {
+      if (entry.role === 'user') return `**You:** ${entry.text}`
+      const text = entry.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+      return `**Agent:** ${text}`
+    })
+    .join('\n\n')
 }
 
 function onCopyMarkdown(id: string): void {
