@@ -79,10 +79,14 @@ const mockWorkspaceStore = {
   shiftDown: false
 }
 
+const eventListenerCleanups = vi.hoisted(() => new Set<() => void>())
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn((target, event, handler) => {
     target.addEventListener(event, handler)
-    return () => target.removeEventListener(event, handler)
+    const cleanup = () => target.removeEventListener(event, handler)
+    eventListenerCleanups.add(cleanup)
+    return cleanup
   })
 }))
 
@@ -423,7 +427,14 @@ describe('pasteVideoNodes', () => {
 
 describe('usePaste', () => {
   beforeEach(() => {
+    for (const cleanup of eventListenerCleanups) cleanup()
+    eventListenerCleanups.clear()
+
     vi.clearAllMocks()
+    vi.mocked(isAudioNode).mockReturnValue(false)
+    vi.mocked(isImageNode).mockReturnValue(false)
+    vi.mocked(isVideoNode).mockReturnValue(false)
+
     mockCanvas.current_node = null
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(

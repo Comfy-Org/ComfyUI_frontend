@@ -48,8 +48,11 @@ export const useNodeDragAndDrop = <T>(
       return true
     }
 
-    if (filterItemFiles(e.dataTransfer.items).length > 0) {
-      return true
+    const itemFiles = getFilesFromItems(e.dataTransfer.items).filter(
+      (file) => !isSyntheticImageBmpPlaceholder(file)
+    )
+    if (itemFiles.length > 0) {
+      return itemFiles.some(fileFilter)
     }
 
     // Native OS drags may expose only opaque file items during dragover.

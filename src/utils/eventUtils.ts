@@ -91,11 +91,12 @@ function getMediaTypeFromFile({ name, type }: File): SupportedMediaType | null {
   if (type.startsWith('video/')) return 'video'
   if (type) return null
 
-  const mediaType =
-    getMediaTypeFromFilename(name) ?? getFallbackMediaTypeFromFilename(name)
-  return mediaType === 'image' || mediaType === 'audio' || mediaType === 'video'
-    ? mediaType
-    : null
+  const mediaType = getMediaTypeFromFilename(name)
+  if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video') {
+    return mediaType
+  }
+
+  return getFallbackMediaTypeFromFilename(name)
 }
 
 export function hasImageType(file: File): boolean {

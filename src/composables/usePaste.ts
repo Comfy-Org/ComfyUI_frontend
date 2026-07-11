@@ -204,10 +204,15 @@ export const usePaste = () => {
     const { canvas } = canvasStore
     if (!canvas) return
 
-    let data: DataTransfer | string | null = e.clipboardData
-    if (!data) throw new Error('No clipboard data on clipboard event')
-    data = cloneDataTransfer(data)
+    const clipboardData = e.clipboardData
+    if (!clipboardData) {
+      throw new Error('No clipboard data on clipboard event')
+    }
 
+    // Capture original files before cloning the DataTransfer.
+    const files = getFilesFromItems(clipboardData.items)
+
+    let data: DataTransfer | string = cloneDataTransfer(clipboardData)
     const { items } = data
 
     const currentNode = canvas.current_node as LGraphNode
@@ -227,31 +232,49 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    const files = getFilesFromItems(items)
+    const imageFiles = files.filter(hasImageType)
+    const videoFiles = files.filter(hasVideoType)
+    const audioFiles = files.filter(hasAudioType)
 
-    if (imageNode && files.some(hasImageType)) {
-      await pasteImageNode(canvas as LGraphCanvas, items, imageNode, files)
+    if (imageNode && imageFiles.length > 0) {
+      await pasteImageNode(canvas as LGraphCanvas, items, imageNode, imageFiles)
       return
     }
-    if (videoNode && files.some(hasVideoType)) {
-      await pasteVideoNode(canvas as LGraphCanvas, items, videoNode, files)
+    if (videoNode && videoFiles.length > 0) {
+      await pasteVideoNode(canvas as LGraphCanvas, items, videoNode, videoFiles)
       return
     }
-    if (audioNode && files.some(hasAudioType)) {
-      await pasteAudioNode(canvas as LGraphCanvas, items, audioNode, files)
+    if (audioNode && audioFiles.length > 0) {
+      await pasteAudioNode(canvas as LGraphCanvas, items, audioNode, audioFiles)
       return
     }
 
-    // Look for media paste data
+    // Preserve the original clipboard ordering when choosing which media
+    // node type to create, while only passing files of that selected type.
     for (const file of files) {
       if (hasImageType(file)) {
-        await pasteImageNode(canvas as LGraphCanvas, items, imageNode, files)
+        await pasteImageNode(
+          canvas as LGraphCanvas,
+          items,
+          imageNode,
+          imageFiles
+        )
         return
       } else if (hasVideoType(file)) {
-        await pasteVideoNode(canvas as LGraphCanvas, items, videoNode, files)
+        await pasteVideoNode(
+          canvas as LGraphCanvas,
+          items,
+          videoNode,
+          videoFiles
+        )
         return
       } else if (hasAudioType(file)) {
-        await pasteAudioNode(canvas as LGraphCanvas, items, audioNode, files)
+        await pasteAudioNode(
+          canvas as LGraphCanvas,
+          items,
+          audioNode,
+          audioFiles
+        )
         return
       }
     }

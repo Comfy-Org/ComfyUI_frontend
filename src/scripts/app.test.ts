@@ -36,6 +36,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 const {
   mockApiKeyAuthStore,
@@ -150,6 +151,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
+    graph_mouse: [0, 0],
     draw: vi.fn(),
     selectItems: vi.fn(),
     setDirty: vi.fn()
@@ -748,7 +750,7 @@ describe('ComfyApp', () => {
 
     it('preserves aggregate drag-over targets without onDragOver', async () => {
       const aggregateDragOverNode = {
-        id: -1,
+        id: UNASSIGNED_NODE_ID,
         onDragDrop: vi.fn().mockResolvedValue(true)
       }
       const positionNode = createMockNode({
