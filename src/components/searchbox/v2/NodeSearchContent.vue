@@ -99,7 +99,11 @@
             data-testid="no-results"
             class="px-4 py-8 text-center text-muted-foreground"
           >
-            {{ $t('g.noResults') }}
+            {{
+              disabledMatchCount > 0
+                ? $t('nodeSearch.disabledByTeamAdmin', disabledMatchCount)
+                : $t('g.noResults')
+            }}
           </div>
         </div>
       </div>
@@ -125,6 +129,8 @@ import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSear
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
@@ -158,6 +164,7 @@ const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
+const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
 
 const nodeAvailability = computed(() => {
   let essential = false
@@ -216,21 +223,28 @@ const rootFilterLabel = computed(() => {
   }
 })
 
+function rootFilterPredicate(
+  root: RootCategoryId
+): (n: ComfyNodeDefImpl) => boolean {
+  const sourceFilter = sourceCategoryFilters[root]
+  if (sourceFilter) return sourceFilter
+  switch (root) {
+    case RootCategory.Favorites:
+      return (n) => nodeBookmarkStore.isBookmarked(n)
+    case RootCategory.Blueprint:
+      return (n) => n.category.startsWith(BLUEPRINT_CATEGORY)
+    case RootCategory.PartnerNodes:
+      return (n) => n.api_node
+    default:
+      return () => true
+  }
+}
+
 const rootFilteredNodeDefs = computed(() => {
   if (!rootFilter.value) return nodeDefStore.visibleNodeDefs
-  const allNodes = nodeDefStore.visibleNodeDefs
-  const sourceFilter = sourceCategoryFilters[rootFilter.value]
-  if (sourceFilter) return allNodes.filter(sourceFilter)
-  switch (rootFilter.value) {
-    case RootCategory.Favorites:
-      return allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
-    case RootCategory.Blueprint:
-      return allNodes.filter((n) => n.category.startsWith(BLUEPRINT_CATEGORY))
-    case RootCategory.PartnerNodes:
-      return allNodes.filter((n) => n.api_node)
-    default:
-      return allNodes
-  }
+  return nodeDefStore.visibleNodeDefs.filter(
+    rootFilterPredicate(rootFilter.value)
+  )
 })
 
 function onToggleFilter(
@@ -334,6 +348,35 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   const sourceFilter = sourceCategoryFilters[category]
   if (sourceFilter) return source.filter(sourceFilter)
   return getCategoryResults(source, category)
+})
+
+// Same matcher over the hidden (admin-disabled) defs: when results are empty
+// the panel can say WHY — the partition, not a second heuristic, decides.
+const disabledNodeDefs = computed(() =>
+  Object.values(nodeDefStore.nodeDefsByName).filter((d) =>
+    disabledPartnerNodesStore.isNodeDefDisabled(d)
+  )
+)
+const disabledSearchService = computed(
+  () => new NodeSearchService(disabledNodeDefs.value)
+)
+const disabledMatchCount = computed(() => {
+  if (displayedResults.value.length > 0) return 0
+  if (disabledNodeDefs.value.length === 0) return 0
+  const inRoot = rootFilter.value
+    ? disabledNodeDefs.value.filter(rootFilterPredicate(rootFilter.value))
+    : disabledNodeDefs.value
+  if (!searchQuery.value && filters.length === 0) {
+    return rootFilter.value ? inRoot.length : 0
+  }
+  const matched = disabledSearchService.value.searchNode(
+    searchQuery.value,
+    filters,
+    { limit: 64 }
+  )
+  if (!rootFilter.value) return matched.length
+  const inRootNames = new Set(inRoot.map((n) => n.name))
+  return matched.filter((n) => inRootNames.has(n.name)).length
 })
 
 const hoveredNodeDef = computed(

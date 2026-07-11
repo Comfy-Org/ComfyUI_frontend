@@ -6,6 +6,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
@@ -27,6 +28,25 @@ export const useDisabledPartnerNodesStore = defineStore(
   () => {
     const disabledNames = ref<Set<string>>(new Set())
     const offenders = ref<DisabledGraphNode[]>([])
+
+    function isNodeDefDisabled(
+      def: Pick<ComfyNodeDefImpl, 'name' | 'display_name' | 'api_node'>
+    ): boolean {
+      if (!def.api_node) return false
+      return (
+        disabledNames.value.has(def.display_name) ||
+        disabledNames.value.has(def.name)
+      )
+    }
+
+    // Hides disabled partner nodes from every discovery surface (node search,
+    // node library) — same mechanism as the deprecated/experimental filters.
+    // Canvas instances are untouched; they surface through the error panel.
+    useNodeDefStore().registerNodeDefFilter({
+      id: 'workspace.disabled-partner-nodes',
+      name: t('nodeFilters.hideDisabledPartnerNodes'),
+      predicate: (def) => !isNodeDefDisabled(def)
+    })
 
     const disabledAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
       const ids = new Set<NodeExecutionId>()
@@ -111,6 +131,7 @@ export const useDisabledPartnerNodesStore = defineStore(
     return {
       offenders,
       disabledAncestorExecutionIds,
+      isNodeDefDisabled,
       surfaceDisabledNodes,
       applyGovernanceChange
     }
