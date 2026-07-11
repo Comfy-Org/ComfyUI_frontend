@@ -96,6 +96,7 @@ export class ComfyNodeDefImpl
   readonly inputs: Record<string, InputSpecV2>
   readonly outputs: OutputSpecV2[]
   readonly hidden?: Record<string, boolean>
+  readonly interactive_ui?: ComfyNodeDefV2['interactive_ui']
 
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource

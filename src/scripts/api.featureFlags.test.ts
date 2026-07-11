@@ -37,9 +37,19 @@ describe('API Feature Flags', () => {
     vi.stubGlobal('WebSocket', function (this: WebSocket) {
       Object.assign(this, mockWebSocket)
     })
+    Reflect.set(WebSocket, 'OPEN', 1)
 
     // Reset API state
+    for (const event of Object.keys(wsEventHandlers)) {
+      delete wsEventHandlers[event]
+    }
+    api.socket = null
+    api.clientId = undefined
+    Reflect.set(api, 'socketGeneration', 0)
+    Reflect.set(api, 'confirmedSocket', null)
+    Reflect.set(api, 'confirmedClientId', undefined)
     api.serverFeatureFlags.value = {}
+    window.name = ''
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -146,6 +156,60 @@ describe('API Feature Flags', () => {
 
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
+    })
+
+    it('queues an interactive prompt with the SID confirmed by the current socket', async () => {
+      const fetchSpy = vi
+        .spyOn(api, 'fetchApi')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ prompt_id: 'job-1' }), { status: 200 })
+        )
+      api.init()
+      await Promise.resolve()
+      const oldSocketHandlers = { ...wsEventHandlers }
+      oldSocketHandlers.open(new Event('open'))
+      oldSocketHandlers.message({
+        data: JSON.stringify({
+          type: 'status',
+          data: { status: {}, sid: 'old-sid' }
+        })
+      })
+      oldSocketHandlers.close(new CloseEvent('close'))
+
+      const queuePromise = api.queuePrompt(
+        0,
+        { output: {}, workflow: {} as never },
+        { requireConnectedClient: true }
+      )
+      await Promise.resolve()
+      expect(fetchSpy).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(300)
+      const replacementSocketHandlers = { ...wsEventHandlers }
+      replacementSocketHandlers.open(new Event('open'))
+      await vi.advanceTimersByTimeAsync(100)
+      expect(fetchSpy).not.toHaveBeenCalled()
+
+      replacementSocketHandlers.message({
+        data: JSON.stringify({
+          type: 'status',
+          data: { status: {}, sid: 'replacement-sid' }
+        })
+      })
+      oldSocketHandlers.message({
+        data: JSON.stringify({
+          type: 'status',
+          data: { status: {}, sid: 'stale-sid' }
+        })
+      })
+      oldSocketHandlers.close(new CloseEvent('close'))
+      await vi.advanceTimersByTimeAsync(50)
+      await expect(queuePromise).resolves.toEqual({ prompt_id: 'job-1' })
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      const request = fetchSpy.mock.calls[0][1]
+      expect(JSON.parse(request?.body as string).client_id).toBe(
+        'replacement-sid'
+      )
     })
   })
 

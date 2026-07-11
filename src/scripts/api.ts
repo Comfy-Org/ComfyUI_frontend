@@ -152,6 +152,11 @@ interface QueuePromptOptions {
    * 'default' uses the server's CLI setting and is not sent to backend.
    */
   previewMethod?: PreviewMethod
+  /**
+   * Wait for the current WebSocket connection to receive its server session ID
+   * before submitting a prompt that requires a live browser session.
+   */
+  requireConnectedClient?: boolean
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -361,6 +366,9 @@ export class ComfyApi extends EventTarget {
    */
   user: string
   socket: WebSocket | null = null
+  private socketGeneration = 0
+  private confirmedSocket: WebSocket | null = null
+  private confirmedClientId?: string
 
   /**
    * Cache Firebase auth store composable function.
@@ -662,6 +670,7 @@ export class ComfyApi extends EventTarget {
     if (this.socket) {
       return
     }
+    const generation = ++this.socketGeneration
 
     let opened = false
     let existingSession = window.name
@@ -696,14 +705,19 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    this.socket = new WebSocket(wsUrl)
-    this.socket.binaryType = 'arraybuffer'
+    if (generation !== this.socketGeneration || this.socket) return
+    const socket = new WebSocket(wsUrl)
+    this.socket = socket
+    this.confirmedSocket = null
+    this.confirmedClientId = undefined
+    socket.binaryType = 'arraybuffer'
 
-    this.socket.addEventListener('open', () => {
+    socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
 
       // Send feature flags as the first message
-      this.socket!.send(
+      socket.send(
         JSON.stringify({
           type: 'feature_flags',
           data: this.getClientFeatureFlags()
@@ -715,15 +729,19 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('error', () => {
-      if (this.socket) this.socket.close()
+    socket.addEventListener('error', () => {
+      socket.close()
       if (!isReconnect && !opened) {
         this._pollQueue()
       }
     })
 
-    this.socket.addEventListener('close', () => {
+    socket.addEventListener('close', () => {
+      if (this.socket !== socket) return
+      this.confirmedSocket = null
+      this.confirmedClientId = undefined
       setTimeout(async () => {
+        if (this.socket !== socket) return
         this.socket = null
         await this.createSocket(true)
       }, 300)
@@ -734,7 +752,8 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
+      if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
@@ -845,6 +864,8 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
+                this.confirmedSocket = socket
+                this.confirmedClientId = clientId
                 window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
@@ -1021,9 +1042,20 @@ export class ComfyApi extends EventTarget {
     options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
+    let clientId = this.clientId ?? ''
+
+    if (options?.requireConnectedClient) {
+      const confirmedClientId = await this.waitForSocketSession()
+      if (!confirmedClientId) {
+        throw new Error(
+          'The browser connection is still reconnecting. Wait a moment and try again.'
+        )
+      }
+      clientId = confirmedClientId
+    }
 
     const body: QueuePromptRequestBody = {
-      client_id: this.clientId ?? '', // TODO: Unify clientId access
+      client_id: clientId,
       prompt,
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
@@ -1072,6 +1104,22 @@ export class ComfyApi extends EventTarget {
     }
 
     return await res.json()
+  }
+
+  private async waitForSocketSession(
+    timeout = 5000
+  ): Promise<string | undefined> {
+    const deadline = Date.now() + timeout
+    while (Date.now() < deadline) {
+      if (
+        this.socket &&
+        this.socket === this.confirmedSocket &&
+        this.socket.readyState === WebSocket.OPEN
+      ) {
+        return this.confirmedClientId
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 50))
+    }
   }
 
   /**
