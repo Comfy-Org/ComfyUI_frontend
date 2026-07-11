@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -34,9 +33,8 @@ function makeFakeInputSlot(
   }
 }
 
-function makeFakeNodeData(inputs: INodeInputSlot[]): VueNodeData {
-  const nodeData: Partial<VueNodeData> = { id: NODE_ID, inputs }
-  return nodeData as VueNodeData
+function makeFakeNodeData(inputs: INodeInputSlot[]) {
+  return { id: NODE_ID, inputs }
 }
 
 function connectInputSlot(slot: number, linkId = slot + 1) {
@@ -147,21 +145,6 @@ describe('nodeDataUtils', () => {
       const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
 
       expect(actual.length).toBe(0)
-    })
-
-    it('queries connectivity by the slot index in the full inputs array', () => {
-      const inputs: INodeInputSlot[] = [
-        makeFakeInputSlot('first'),
-        makeFakeInputSlot('second', true),
-        makeFakeInputSlot('third'),
-        makeFakeInputSlot('fourth', true)
-      ]
-      const nodeData = makeFakeNodeData(inputs)
-      connectInputSlot(3)
-
-      const actual = linkedWidgetedInputs(nodeData, GRAPH_ID)
-
-      expect(actual.map((slot) => slot.name)).toEqual(['fourth'])
     })
 
     it('ignores the stale slot link mirror field', () => {

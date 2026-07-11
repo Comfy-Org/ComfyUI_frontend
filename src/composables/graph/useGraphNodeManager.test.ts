@@ -17,6 +17,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { linkedWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -155,6 +156,9 @@ describe('Widget input link reactivity', () => {
     const nodeData = vueNodeData.get(node.id)
 
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
+    expect(
+      linkedWidgetedInputs(nodeData, subgraph.rootGraph.id).map((s) => s.name)
+    ).toEqual(['prompt'])
   })
 
   it('registers promoted widget render state separately from value state', () => {

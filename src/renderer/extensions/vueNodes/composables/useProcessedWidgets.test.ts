@@ -28,13 +28,7 @@ const GRAPH_ID = 'graph-test'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    canvas: {
-      graph: {
-        rootGraph: {
-          id: GRAPH_ID
-        }
-      }
-    }
+    rootGraphId: GRAPH_ID
   })
 }))
 

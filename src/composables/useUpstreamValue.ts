@@ -21,7 +21,7 @@ export function useUpstreamValue<T>(
   return computed(() => {
     const upstream = getLinkedUpstream()
     if (!upstream) return undefined
-    const graphId = canvasStore.canvas?.graph?.rootGraph.id
+    const graphId = canvasStore.rootGraphId
     if (!graphId) return undefined
     const widgets = widgetValueStore.getNodeWidgets(graphId, upstream.nodeId)
     return extractValue(widgets, upstream.outputName)

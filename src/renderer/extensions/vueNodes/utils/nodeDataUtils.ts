@@ -18,7 +18,7 @@ function inputHasWidget(input: INodeInputSlot) {
   return isSlotObject(input) && 'widget' in input && input.widget
 }
 export function nonWidgetedInputs(
-  nodeData: VueNodeData | undefined
+  nodeData: Pick<VueNodeData, 'inputs'> | undefined
 ): INodeSlot[] {
   if (!nodeData?.inputs) return []
 
@@ -28,7 +28,7 @@ export function nonWidgetedInputs(
 }
 
 export function linkedWidgetedInputs(
-  nodeData: VueNodeData | undefined,
+  nodeData: Pick<VueNodeData, 'id' | 'inputs'> | undefined,
   graphId: UUID | undefined
 ): INodeSlot[] {
   if (!nodeData?.inputs || graphId === undefined) return []

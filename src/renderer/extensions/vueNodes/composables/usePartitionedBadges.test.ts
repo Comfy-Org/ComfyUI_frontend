@@ -1,29 +1,22 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { computed, ref } from 'vue'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-const GRAPH_ID = vi.hoisted(() => 'graph-test')
+const GRAPH_ID = 'graph-test'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      graph: {
-        rootGraph: {
-          id: GRAPH_ID
-        }
-      }
-    }
-  }
-}))
+vi.mock('@/scripts/app', () => ({ app: {} }))
 
 vi.mock('@/composables/node/useNodePricing', () => {
   const revision = ref(0)
@@ -45,6 +38,9 @@ function makeInputSlot(name: string): INodeInputSlot {
 describe('trackNodePrice', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    useCanvasStore().currentGraph = fromPartial<LGraph>({
+      rootGraph: { id: GRAPH_ID }
+    })
     // Instantiate up front so first-use state registration inside a test
     // cannot masquerade as connectivity-driven invalidation.
     useLinkStore()

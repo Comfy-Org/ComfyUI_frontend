@@ -297,10 +297,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     )
 
     const triggerHandlers: {
-      [K in Extract<
-        LGraphTriggerAction,
-        'node:property:changed' | 'node:slot-label:changed'
-      >]: (event: LGraphTriggerParam<K>) => void
+      [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
     } = {
       'node:property:changed': (propertyEvent) => {
         const nodeId = toNodeId(propertyEvent.nodeId)

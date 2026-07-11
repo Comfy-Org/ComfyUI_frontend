@@ -65,14 +65,6 @@ export interface LGraphEventMap {
     oldValue: unknown
     newValue: unknown
   }
-  'node:slot-errors:changed': { nodeId: SerializedNodeId }
-  'node:slot-links:changed': {
-    nodeId: SerializedNodeId
-    slotType: NodeSlotType
-    slotIndex: number
-    connected: boolean
-    linkId: number
-  }
   'node:slot-label:changed': {
     nodeId: SerializedNodeId
     slotType?: NodeSlotType

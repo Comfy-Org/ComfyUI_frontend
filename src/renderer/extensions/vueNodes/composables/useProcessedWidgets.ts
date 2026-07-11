@@ -539,7 +539,7 @@ export function useProcessedWidgets(
     computeProcessedWidgets({
       nodeData: nodeDataGetter(),
       widgetIds: widgetIdsGetter(),
-      graphId: canvasStore.canvas?.graph?.rootGraph.id,
+      graphId: canvasStore.rootGraphId,
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,

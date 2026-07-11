@@ -74,6 +74,12 @@ queries — presence is all any of them needed — which deletes the
 `node:slot-links:changed` → `refreshNodeInputs` reprojection in
 `useGraphNodeManager`, the dead `node:slot-errors:changed` handler
 (zero emitters repo-wide), and the node-removal refresh-all loop.
+With their last listeners gone, both trigger actions are deleted
+outright — emitters, event-map entries, and types (the badge system
+sources connectivity from `linkStore`, not events; resurrect from git
+if a consumer ever materialises). Readers get the root graph id from
+`canvasStore.rootGraphId`, the shared tracked accessor, rather than
+per-site `canvas?.graph?.rootGraph.id` chains.
 Shipped ahead of the store itself (2026-07-05).
 
 ## Decision 4: Renderer consumes the NodeState proxy, `VueNodeData` dies

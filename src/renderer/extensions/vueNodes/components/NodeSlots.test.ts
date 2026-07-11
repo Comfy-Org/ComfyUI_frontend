@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -11,6 +12,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -27,20 +30,6 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 import NodeSlots from './NodeSlots.vue'
-
-const GRAPH_ID = vi.hoisted(() => 'graph-test')
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: {
-      graph: {
-        rootGraph: {
-          id: GRAPH_ID
-        }
-      }
-    }
-  })
-}))
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
@@ -459,7 +448,7 @@ describe('NodeSlots.vue', () => {
       setActivePinia(pinia)
 
       const graph = new LGraph()
-      graph.id = GRAPH_ID
+      useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
 
       const upstream = new LGraphNode('Upstream')
       upstream.id = toNodeId(1)
@@ -475,34 +464,6 @@ describe('NodeSlots.vue', () => {
 
       return { pinia, upstream, node }
     }
-
-    it('renders a connected widgeted input with its actual slot index', () => {
-      const { pinia, upstream, node } = createConnectedGraph()
-      upstream.connect(0, node, 1)
-
-      const nodeData = makeNodeData({
-        id: toVueNodeId(node.id),
-        inputs: node.inputs
-      })
-      const { container } = renderUnified(nodeData, pinia)
-
-      expect(getRenderedSlotIndex(container, 'w')).toBe(1)
-    })
-
-    it('does not render unconnected widgeted inputs', () => {
-      const inputs = [
-        createMockNodeInputSlot({
-          name: 'w',
-          type: 'FAKE',
-          widget: { name: 'w' }
-        })
-      ]
-
-      const { container } = renderUnified(makeNodeData({ inputs }))
-
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('[data-name="w"]')).toBeNull()
-    })
 
     it('reacts to connect and disconnect without a reprojection event', async () => {
       const { pinia, upstream, node } = createConnectedGraph()

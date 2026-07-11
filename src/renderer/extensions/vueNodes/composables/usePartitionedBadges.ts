@@ -8,6 +8,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -52,7 +53,6 @@ function touchPricingInputConnectivity(
     if (relevant) void linkStore.isInputSlotConnected(graphId, nodeId, index)
   })
 }
-//TODO deduplicate reactivity tracking once more thoroughly tested
 export function trackNodePrice(node: TrackableNode) {
   const {
     getRelevantWidgetNames,
@@ -61,7 +61,8 @@ export function trackNodePrice(node: TrackableNode) {
     getInputNames,
     getNodeRevisionRef
   } = useNodePricing()
-  // Access per-node revision ref to establish dependency (each node has its own ref)
+  // Read the per-node revision ref even for static pricing: JSONata 2.x
+  // evaluation is async, so the badge must re-run when evaluation completes.
   const nodeId = toNodeId(node.id)
   void getNodeRevisionRef(nodeId).value
 
@@ -70,7 +71,7 @@ export function trackNodePrice(node: TrackableNode) {
   // Access only the widget values that affect pricing (from widgetValueStore)
   const relevantNames = getRelevantWidgetNames(node.type)
   const widgetStore = useWidgetValueStore()
-  const graphId = app.canvas?.graph?.rootGraph.id
+  const graphId = useCanvasStore().rootGraphId
   if (relevantNames.length > 0 && node.id != null) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
@@ -120,65 +121,15 @@ function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
 }
 
 export function usePartitionedBadges(nodeData: VueNodeData) {
-  // Use per-node pricing revision to re-compute badges only when this node's pricing updates
-  const {
-    getRelevantWidgetNames,
-    hasDynamicPricing,
-    getInputGroupPrefixes,
-    getInputNames,
-    getNodeRevisionRef
-  } = useNodePricing()
-
   const { isCreditsBadge } = usePriceBadge()
   const settingStore = useSettingStore()
 
-  // Cache pricing metadata (won't change during node lifetime)
-  const isDynamicPricing = computed(() =>
-    nodeData?.apiNode ? hasDynamicPricing(nodeData.type) : false
-  )
-  const relevantPricingWidgets = computed(() =>
-    nodeData?.apiNode ? getRelevantWidgetNames(nodeData.type) : []
-  )
-  const inputGroupPrefixes = computed(() =>
-    nodeData?.apiNode ? getInputGroupPrefixes(nodeData.type) : []
-  )
-  const relevantInputNames = computed(() =>
-    nodeData?.apiNode ? getInputNames(nodeData.type) : []
-  )
   const unpartitionedBadges = computed<NodeBadgeProps[]>(() => {
     if (nodeData?.id != null) {
       const wrapper = app.canvas?.graph?.getNodeById(nodeData.id)
       if (wrapper?.isSubgraphNode()) trackSubgraphInnerNodePrices(wrapper)
     }
-    // For ALL API nodes: access per-node revision ref to detect when async pricing evaluation completes
-    // This is needed even for static pricing because JSONata 2.x evaluation is async
-    if (nodeData?.apiNode && nodeData?.id != null) {
-      // Access per-node revision ref to establish dependency (each node has its own ref)
-      void getNodeRevisionRef(nodeData.id).value
-
-      // For dynamic pricing, also track widget values and input connections
-      if (isDynamicPricing.value) {
-        // Access only the widget values that affect pricing (from widgetValueStore)
-        const relevantNames = relevantPricingWidgets.value
-        const widgetStore = useWidgetValueStore()
-        const graphId = app.canvas?.graph?.rootGraph.id
-        if (relevantNames.length > 0 && nodeData?.id != null) {
-          for (const name of relevantNames) {
-            // Access value from store to create reactive dependency
-            if (!graphId) continue
-            void widgetStore.getWidget(widgetId(graphId, nodeData.id, name))
-              ?.value
-          }
-        }
-        touchPricingInputConnectivity(
-          graphId,
-          nodeData.id,
-          nodeData?.inputs,
-          relevantInputNames.value,
-          inputGroupPrefixes.value
-        )
-      }
-    }
+    if (nodeData?.apiNode && nodeData?.id != null) trackNodePrice(nodeData)
     return [...(nodeData?.badges ?? [])].map(toValue)
   })
   const nodeDef = useNodeDefStore().nodeDefsByName[nodeData.type]
