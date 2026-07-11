@@ -125,7 +125,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       { immediate: true }
     )
 
-    const apiKey = window.__CONFIG__?.posthog_project_token
+    const apiKey =
+      window.__CONFIG__?.posthog_project_token ??
+      import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
