@@ -1163,6 +1163,7 @@
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
+      "relevance": "Relevance",
       "recommended": "Recommended",
       "popular": "Popular",
       "alphabetical": "A → Z",
