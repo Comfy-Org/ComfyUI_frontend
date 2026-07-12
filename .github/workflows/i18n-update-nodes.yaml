@@ -49,6 +49,20 @@ jobs:
             Automated PR to update locales for node definitions
 
             This PR was created automatically by the frontend update workflow.
+
+            ## Reproduction or validation steps
+            1. Review the locale diff for the expected node-definition strings.
+            2. Confirm locale generation and repository checks pass in CI.
+
+            ## Evidence type
+            - [ ] Visual
+            - [x] Non-visual
+
+            ## Non-visual rationale
+            N/A: This automated locale data update has no visual behavior.
+
+            ## Test or log evidence
+            `pnpm locale` passed in workflow run `${{ github.run_id }}`.
           branch: update-locales-node-defs-${{ github.event.inputs.trigger_type }}-${{ github.run_id }}
           base: main
           labels: dependencies

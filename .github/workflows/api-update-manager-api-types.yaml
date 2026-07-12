@@ -98,6 +98,20 @@ jobs:
             - Generated on: ${{ github.event.repository.updated_at }}
 
             These types are automatically generated using openapi-typescript.
+
+            ## Reproduction or validation steps
+            1. Review the generated type diff against the referenced Manager commit.
+            2. Confirm the generated type lint and repository checks pass in CI.
+
+            ## Evidence type
+            - [ ] Visual
+            - [x] Non-visual
+
+            ## Non-visual rationale
+            N/A: This automated generated-type update has no visual behavior.
+
+            ## Test or log evidence
+            `pnpm lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts` passed in workflow run `${{ github.run_id }}`.
           branch: update-manager-types-${{ steps.manager-info.outputs.commit }}
           base: ${{ inputs.target_branch }}
           labels: Manager

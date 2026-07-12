@@ -348,22 +348,34 @@ jobs:
         run: |
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author)
+            PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json title,author,body)
             PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
             PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.author.login')
+            PR_SOURCE_BODY=$(echo "$PR_DATA" | jq -r '.body // ""')
           else
             PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
             PR_AUTHOR=$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")
+            PR_SOURCE_BODY=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
           fi
 
           for backport in ${{ steps.backport.outputs.success }}; do
             IFS=':' read -r target branch <<< "${backport}"
 
+            PR_BODY=$(cat <<EOF
+          Backport of #${PR_NUMBER} to \`${target}\`.
+
+          Automatically created by the backport workflow.
+
+          ## Source pull request evidence
+          ${PR_SOURCE_BODY}
+          EOF
+          )
+
             if PR_URL=$(gh pr create \
               --base "${target}" \
               --head "${branch}" \
               --title "[backport ${target}] ${PR_TITLE}" \
-              --body "Backport of #${PR_NUMBER} to \`${target}\`"$'\n\n'"Automatically created by backport workflow." \
+              --body "${PR_BODY}" \
               --label "backport" 2>&1); then
 
               # Extract PR number from URL

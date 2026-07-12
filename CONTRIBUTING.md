@@ -258,8 +258,11 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
 
 1. Ensure your branch is up to date with main
 2. Run all tests and ensure they pass
-3. Create a pull request with a clear title and description
-4. Use conventional commit format for PR titles:
+3. Create a pull request with a clear title, description, and exact reproduction or validation steps
+4. Include contribution evidence:
+   - For visual behavior or presentation changes, add distinct Before and After screenshots or one screencast that demonstrates both states.
+   - For a truly non-visual change, select Non-visual, add an `N/A:` rationale, and include the test command and result or relevant logs.
+5. Use conventional commit format for PR titles:
    - `feat:` for new features
    - `fix:` for bug fixes
    - `docs:` for documentation
@@ -270,9 +273,51 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
 ### Review Process
 
 1. All PRs require at least one review
-2. Address review feedback promptly
-3. Keep PRs focused - one feature/fix per PR
-4. Large features should be discussed in an issue first
+2. Issues and pull requests under active execution require an active human member of the Comfy-Org `comfy_frontend_devs` team as an assignee. Automation and service accounts are executors, not accountable owners. Choose the person with the most context, using CODEOWNERS and recent changes to the related code path. The policy preserves existing assignees; COMOS performs contextual selection for artifacts it creates.
+3. Address review feedback promptly
+4. Keep PRs focused - one feature/fix per PR
+5. Large features should be discussed in an issue first
+
+The `pr-evidence` check fails until both the evidence contract and human owner
+contract are satisfied. Issues receive `blocked: needs-evidence` and
+`blocked: needs-maintainer` labels as applicable, and the policy workflow fails
+until both conditions are fixed. Opaque GitHub attachment links in Screencast
+fields are fetched without credentials and accepted only when GitHub serves
+video content or an animated GIF. A static screenshot labeled as a screencast
+does not satisfy the check.
+
+Repository administrators must configure the
+`COMFY_ORG_MEMBERS_READ_TOKEN` Actions secret before enabling `pr-evidence` in
+the ProtectMain or Core release branch rulesets. Use a dedicated fine-grained
+token with `Comfy-Org` organization `Members: read` permission, including team
+membership reads, and no repository write permission. The trusted workflows use
+it to verify the assignee's GitHub user type, active organization membership,
+and active `comfy_frontend_devs` team membership. They fail closed when the
+secret or any lookup is unavailable. Merge the workflow to the default branch
+and verify a successful check before making it required.
+
+#### Contribution policy rollout
+
+Do not make `pr-evidence` required when the workflow first lands. Use this
+sequence so existing open contributions are not blocked without warning:
+
+1. Configure and verify `COMFY_ORG_MEMBERS_READ_TOKEN`.
+2. Merge the policy workflows while `pr-evidence` is not a required check. New
+   and updated contributions still report failures and blocked labels, which is
+   the audit signal.
+3. Observe a small canary across manual, fork, and automated contributions.
+   Confirm assignment edits rerun the check and valid edits clear issue labels.
+4. Audit and backfill the active pull request and issue queues with evidence and
+   a contextual Comfy-Org human assignee.
+5. Add `pr-evidence` to ProtectMain ruleset `991238` only after the active main
+   queue is ready.
+6. Test a canary against both `core/**` and `cloud/**`. Add `pr-evidence` to Core
+   release branches ruleset `7297873` only after both targets are confirmed to
+   trigger the trusted workflow. Confirm the merge-group check refetches and
+   validates current PR bodies and assignees before enabling the ruleset.
+
+The workflow is intentionally fail closed during the audit phase. It remains
+non-blocking only because the rulesets do not require its check yet.
 
 ## Questions?
 
