@@ -265,8 +265,14 @@ function handleFileChange(event: Event) {
 
 function handleSelection(item: FormDropdownItem, index: number) {
   if (disabled) return
+  const itemIsSelected = internalIsSelected(item, index)
+  if (isSingleSelect.value && itemIsSelected) {
+    closeDropdown({ restoreFocus: true })
+    return
+  }
+
   const sel = selected.value
-  if (internalIsSelected(item, index)) {
+  if (itemIsSelected) {
     sel.delete(item.id)
   } else {
     if (sel.size < maxSelectable.value) {
@@ -281,7 +287,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
   }
   selected.value = new Set(sel)
 
-  if (maxSelectable.value === 1) {
+  if (isSingleSelect.value) {
     closeDropdown({ restoreFocus: true })
   }
 }
