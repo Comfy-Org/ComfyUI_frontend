@@ -193,9 +193,35 @@ export function getAssetCategories(
   if (modelTypeMode) {
     const modelTypes = getModelTypeTagValues(asset)
     if (modelTypes.length > 0) return modelTypes
+    // Uncovered assets route by bare tags, but namespace residue (e.g. a
+    // malformed empty `model_type:`) must not surface as a raw category.
+    return getBareTagCategories(asset).filter(
+      (category) => !category.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
   }
 
   return getBareTagCategories(asset)
+}
+
+/**
+ * Resolves the primary tag a browser surface titles itself after. In
+ * `modelTypeMode` a covered asset uses its first `model_type:*` value — the
+ * key it groups under — while an uncovered asset keeps the legacy selection
+ * (first non-`models` tag, verbatim, hierarchical paths intact). Outside the
+ * mode this is exactly the legacy selection.
+ */
+export function getPrimaryCategoryTag(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string | undefined {
+  if (modelTypeMode) {
+    const [modelType] = getModelTypeTagValues(asset)
+    if (modelType) return modelType
+    return asset.tags.find(
+      (tag) => tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
+  }
+  return asset.tags.find((tag) => tag !== MODELS_TAG)
 }
 
 /** Number of `parent/child` segments in a tag, used to pick the most specific. */

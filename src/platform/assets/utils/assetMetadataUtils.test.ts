@@ -19,6 +19,7 @@ import {
   getAssetModelType,
   getAssetNodeCategoryCandidates,
   getAssetSourceUrl,
+  getPrimaryCategoryTag,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
   getAssetTypeBadge,
@@ -634,6 +635,44 @@ describe('getAssetCategories', () => {
         false
       )
     ).toEqual(['model_type:checkpoints', 'sdxl'])
+  })
+
+  it('never surfaces namespace residue as a category for uncovered assets in mode', () => {
+    expect(
+      getAssetCategories(asset(['models', 'model_type:', 'sdxl']), true)
+    ).toEqual(['sdxl'])
+  })
+})
+
+describe('getPrimaryCategoryTag', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('uses the model_type value a covered asset groups under', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'sdxl', 'model_type:vae']), true)
+    ).toBe('vae')
+  })
+
+  it('keeps the legacy verbatim tag for an uncovered hierarchical asset', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'Chatterbox/sub/model']), true)
+    ).toBe('Chatterbox/sub/model')
+  })
+
+  it('skips namespace residue instead of titling off a raw model_type: tag', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'model_type:']), true)
+    ).toBeUndefined()
+  })
+
+  it('returns the legacy first non-models tag when mode is off', () => {
+    expect(
+      getPrimaryCategoryTag(asset(['models', 'model_type:vae']), false)
+    ).toBe('model_type:vae')
   })
 })
 

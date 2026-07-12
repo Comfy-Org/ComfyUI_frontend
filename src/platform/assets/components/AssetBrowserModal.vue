@@ -110,7 +110,7 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetCategories } from '@/platform/assets/utils/assetMetadataUtils'
+import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtils'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -196,14 +196,11 @@ const isRightPanelOpen = ref(false)
 const primaryCategoryTag = computed(() => {
   const modelTypeMode = flags.supportsModelTypeTags
   const assets = fetchedAssets.value ?? []
-  // In modelTypeMode the title keys off the same category the asset groups
-  // under (getAssetCategories), so title and grouping cannot diverge.
+  // Covered assets title off the model_type value they group under (so title
+  // and grouping cannot diverge); uncovered assets keep the legacy verbatim
+  // first tag.
   const tagFromAssets = assets
-    .map((asset) =>
-      modelTypeMode
-        ? getAssetCategories(asset, true)[0]
-        : asset.tags?.find((tag) => tag !== 'models')
-    )
+    .map((asset) => getPrimaryCategoryTag(asset, modelTypeMode))
     .find((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
   if (tagFromAssets) return tagFromAssets
