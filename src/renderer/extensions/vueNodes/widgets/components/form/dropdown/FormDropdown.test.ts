@@ -284,6 +284,22 @@ describe('FormDropdown', () => {
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
 
+  it('replaces the selected item when a different item is clicked in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const firstItem = createItem('first', 'first.png')
+    const secondItem = createItem('second', 'second.png')
+    const { user } = mountDropdown([firstItem, secondItem], {
+      selected: new Set([firstItem.id]),
+      onUpdateSelected
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: secondItem.label }))
+
+    expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()
     const { user } = mountDropdown(

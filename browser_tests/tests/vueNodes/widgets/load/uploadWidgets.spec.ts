@@ -39,6 +39,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await menu.getByText('example.png', { exact: true }).click()
       await expect(menu).toBeHidden()
 
+      await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()
       await expect.poll(() => imageWidget.getValue()).toBe('example.png')
       await expect(imageLoadError).toBeHidden()
