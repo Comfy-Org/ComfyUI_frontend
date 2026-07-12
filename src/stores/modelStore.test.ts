@@ -6,6 +6,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
+  ResourceState,
   effectiveModelExtensions,
   matchesModelExtension,
   useModelStore
@@ -276,6 +277,33 @@ describe('useModelStore', () => {
   })
 
   describe('refreshModelFolder races', () => {
+    it('keeps the newer refresh when an older one for the same folder finishes last', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+
+      let resolveOld!: (value: { name: string; pathIndex: number }[]) => void
+      vi.mocked(api.getModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOld = resolve
+        })
+      )
+      const oldRefresh = store.refreshModelFolder('checkpoints')
+
+      vi.mocked(api.getModels).mockResolvedValueOnce([
+        { name: 'newer.safetensors', pathIndex: 0 }
+      ])
+      await store.refreshModelFolder('checkpoints')
+
+      resolveOld([{ name: 'older.safetensors', pathIndex: 0 }])
+      await oldRefresh
+
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      expect(folder!.models['0/newer.safetensors']).toBeDefined()
+      expect(folder!.models['0/older.safetensors']).toBeUndefined()
+    })
+
     it('does not resurrect a stale folder over a fresher structure', async () => {
       enableMocks()
       store = useModelStore()
@@ -306,6 +334,37 @@ describe('useModelStore', () => {
   })
 
   describe('scan fast-phase completion', () => {
+    it('re-loads folders whose eager load was still in flight when the reload fired', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+
+      // Eager load starts but its fetch never lands before the scan event.
+      let resolveEager!: (value: { name: string; pathIndex: number }[]) => void
+      vi.mocked(assetService.getAssetModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveEager = resolve
+        })
+      )
+      const eagerLoad = store.getLoadedModelFolder('checkpoints')
+
+      const scanCallback = vi.mocked(assetService.onModelsScanned).mock
+        .calls[0]?.[0]
+      await scanCallback!()
+
+      // The rebuilt folder must have been re-loaded, not left uninitialized
+      // while the original request finishes into a detached folder object.
+      const folder = store.modelFolders.find(
+        (f) => f.directory === 'checkpoints'
+      )
+      expect(folder!.state).toBe(ResourceState.Loaded)
+
+      resolveEager([{ name: 'detached.safetensors', pathIndex: 0 }])
+      await eagerLoad
+      const current = await store.getLoadedModelFolder('checkpoints')
+      expect(current!.models['0/detached.safetensors']).toBeUndefined()
+    })
+
     it('re-loads previously loaded folders when the event fires', async () => {
       enableMocks(true)
       store = useModelStore()

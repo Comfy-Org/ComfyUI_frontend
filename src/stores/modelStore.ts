@@ -338,6 +338,8 @@ export const useModelStore = defineStore('models', () => {
    * a newly-introduced folder type is picked up without dropping other
    * folders' loaded contents.
    */
+  const folderRefreshIds = new Map<string, number>()
+
   async function refreshModelFolder(folderName: string) {
     assetService.invalidateModelBuckets()
     if (!(folderName in modelFolderByName.value)) {
@@ -345,6 +347,8 @@ export const useModelStore = defineStore('models', () => {
       return
     }
     const requestId = modelFoldersRequestId
+    const refreshId = (folderRefreshIds.get(folderName) ?? 0) + 1
+    folderRefreshIds.set(folderName, refreshId)
     const folder = new ModelFolder(
       folderName,
       createGetModelsFunc(),
@@ -352,8 +356,10 @@ export const useModelStore = defineStore('models', () => {
     )
     await folder.load()
     // A full reload may have rebuilt the folder structure while this folder
-    // refreshed; committing then would resurrect a stale folder object.
+    // refreshed, and a newer refresh of the same folder may have already
+    // committed; committing then would resurrect a stale folder object.
     if (requestId !== modelFoldersRequestId) return
+    if (folderRefreshIds.get(folderName) !== refreshId) return
     modelFolderByName.value[folderName] = folder
   }
 
@@ -364,8 +370,13 @@ export const useModelStore = defineStore('models', () => {
    */
   async function reloadModels() {
     assetService.invalidateModelBuckets()
+    // Loading counts as previously loaded: a scan-complete reload can land
+    // while the eager load is still in flight, and replacing those folder
+    // objects without re-loading them would strand the sidebar on
+    // uninitialized folders whose original loads finish into detached
+    // objects.
     const previouslyLoaded = modelFolders.value
-      .filter((folder) => folder.state === ResourceState.Loaded)
+      .filter((folder) => folder.state !== ResourceState.Uninitialized)
       .map((folder) => folder.directory)
     await loadModelFolders()
     await Promise.all(
