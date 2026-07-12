@@ -57,12 +57,12 @@ function createDownload(
 
 function mountRow(
   download: DownloadStatus,
-  onOpenCredentials?: (host: string) => void
+  onOpenAuth?: (provider: string | undefined) => void
 ) {
   return render(ModelDownloadRow, {
     props: {
       download,
-      ...(onOpenCredentials ? { onOpenCredentials } : {})
+      ...(onOpenAuth ? { onOpenAuth } : {})
     },
     global: { plugins: [i18n] }
   })
@@ -154,7 +154,9 @@ describe('ModelDownloadRow', () => {
       expect(screen.queryByTitle('Pause')).not.toBeInTheDocument()
       expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument()
       expect(screen.queryByTitle('Remove from list')).not.toBeInTheDocument()
-      expect(screen.queryByTitle('Add credentials')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTitle('Set up download access')
+      ).not.toBeInTheDocument()
     })
 
     it('shows the remove action for terminal downloads', () => {
@@ -167,25 +169,25 @@ describe('ModelDownloadRow', () => {
   })
 
   describe('auth errors', () => {
-    it('shows the credentials button and a host-specific hint', async () => {
-      const onOpenCredentials = vi.fn()
+    it('shows the auth button and a host-specific hint, emitting the provider', async () => {
+      const onOpenAuth = vi.fn()
       mountRow(
         createDownload({
           status: 'failed',
           url: 'https://huggingface.co/org/x.safetensors',
           error: '401 Unauthorized'
         }),
-        onOpenCredentials
+        onOpenAuth
       )
 
       expect(
         screen.getByText(
-          'huggingface.co needs an API key. Add one in the Credentials Manager, then resume.'
+          'huggingface.co needs authentication. Set up download access, then resume.'
         )
       ).toBeInTheDocument()
 
-      await userEvent.click(screen.getByTitle('Add credentials'))
-      expect(onOpenCredentials).toHaveBeenCalledWith('huggingface.co')
+      await userEvent.click(screen.getByTitle('Set up download access'))
+      expect(onOpenAuth).toHaveBeenCalledWith('huggingface')
     })
 
     it('falls back to a hostless hint when the url cannot be parsed', () => {
@@ -199,7 +201,7 @@ describe('ModelDownloadRow', () => {
 
       expect(
         screen.getByText(
-          'This host/model needs an API key. Add one in the Credentials Manager, then resume.'
+          'This download needs authentication. Set up download access, then resume.'
         )
       ).toBeInTheDocument()
     })
@@ -208,7 +210,9 @@ describe('ModelDownloadRow', () => {
       mountRow(createDownload({ status: 'failed', error: 'disk full' }))
 
       expect(screen.getByText('disk full')).toBeInTheDocument()
-      expect(screen.queryByTitle('Add credentials')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTitle('Set up download access')
+      ).not.toBeInTheDocument()
     })
 
     it('hides a leftover error while the download is not yet terminal', () => {
@@ -222,7 +226,7 @@ describe('ModelDownloadRow', () => {
     const gatedError =
       'https://huggingface.co/black-forest-labs/FLUX.2-dev/blob/main/vae/diffusion_pytorch_model.safetensors is a gated model — Access to model black-forest-labs/FLUX.2-dev is restricted. You must have access to it and be authenticated to access it.'
 
-    it('shows the gated hint, credentials button, and a link to accept the license on the model page', () => {
+    it('shows the gated hint, auth button, and a link to accept the license on the model page', () => {
       mountRow(
         createDownload({
           status: 'failed',
@@ -233,10 +237,10 @@ describe('ModelDownloadRow', () => {
 
       expect(
         screen.getByText(
-          "This model is gated. Accept its license on the model's page, then add an API key and resume."
+          "This model is gated. Accept its license on the model's page, set up download access, then resume."
         )
       ).toBeInTheDocument()
-      expect(screen.getByTitle('Add credentials')).toBeInTheDocument()
+      expect(screen.getByTitle('Set up download access')).toBeInTheDocument()
 
       const link = screen.getByRole('link', { name: 'Accept license' })
       expect(link).toHaveAttribute(
@@ -272,6 +276,25 @@ describe('ModelDownloadRow', () => {
       )
 
       expect(screen.queryByText(gatedError)).not.toBeInTheDocument()
+    })
+
+    it('shows the raw 404 message instead of the gated hint even though HF appends a generic gated-repo suggestion', () => {
+      const notFoundError =
+        '404 Client Error. (Request ID: abc123)\n\nRepository Not Found for url: https://huggingface.co/org/renamed-model/resolve/main/model.safetensors.\nPlease make sure you specified the correct `repo_id` and `repo_type`.\nIf you are trying to access a private or gated repo, make sure you are authenticated and your Access Token has the right permissions.'
+      mountRow(
+        createDownload({
+          status: 'failed',
+          url: 'https://huggingface.co/org/renamed-model/resolve/main/model.safetensors',
+          error: notFoundError
+        })
+      )
+
+      expect(
+        screen.queryByText(
+          "This model is gated. Accept its license on the model's page, set up download access, then resume."
+        )
+      ).not.toBeInTheDocument()
+      expect(screen.getByText(notFoundError)).toBeInTheDocument()
     })
 
     it('omits the accept-license link when no huggingface url is present', () => {

@@ -49,8 +49,8 @@
           v-if="isAuthError"
           variant="textonly"
           size="icon"
-          :title="$t('modelManager.addCredentials')"
-          @click="emit('openCredentials', host)"
+          :title="$t('modelManager.setUpDownloadAccess')"
+          @click="emit('openAuth', provider)"
         >
           <i class="icon-[lucide--key-round] size-4" />
         </Button>
@@ -138,13 +138,16 @@ import { useProgressBarBackground } from '@/composables/useProgressBarBackground
 import { formatSize } from '@/utils/formatUtil'
 
 import { useModelDownloadActions } from '../composables/useModelDownloadActions'
+import { providerForUrl } from '../downloadAuthProviders'
 import { downloadProgressFraction } from '../stores/modelDownloadStore'
-import type { DownloadStatus } from '../types'
+import type { DownloadProvider, DownloadStatus } from '../types'
 import { directoryOf, filenameOf } from '../utils/modelId'
 
 const { download } = defineProps<{ download: DownloadStatus }>()
 
-const emit = defineEmits<{ openCredentials: [host: string] }>()
+const emit = defineEmits<{
+  openAuth: [provider: DownloadProvider | undefined]
+}>()
 
 const { t } = useI18n()
 const actions = useModelDownloadActions()
@@ -164,6 +167,8 @@ const host = computed(() => {
     return ''
   }
 })
+
+const provider = computed(() => providerForUrl(download.url))
 
 const percent = computed(() => {
   const fraction = downloadProgressFraction(download)
@@ -189,17 +194,32 @@ const canCancel = computed(
 )
 const canRaisePriority = computed(() => download.status === 'queued')
 
-const GATED_MODEL_PATTERN = /gated|restricted|request access|must have access/i
+// Matches an explicit statement that the model is gated, not HF's generic
+// 404 boilerplate that merely suggests a missing file "might" be private or
+// gated ("...If you are trying to access a private or gated repo, make sure
+// you are authenticated and your Access Token has the right permissions."),
+// which would otherwise mask the real 404 message behind both this hint and
+// the auth-error hint below (that boilerplate also mentions "Access Token").
+const GATED_MODEL_PATTERN =
+  /is a gated (model|repo)|access .* is restricted|must have access|request access to/i
+const NOT_FOUND_PATTERN = /\b404\b|not found/i
 const AUTH_ERROR_PATTERN =
   /api key|credential|token|unauthor|forbidden|\b401\b|\b403\b/i
 
 const isFailed = computed(() => download.status === 'failed')
+const looksLikeNotFound = computed(() =>
+  NOT_FOUND_PATTERN.test(download.error ?? '')
+)
 const isGatedModel = computed(
-  () => isFailed.value && !!download.error?.match(GATED_MODEL_PATTERN)
+  () =>
+    isFailed.value &&
+    !looksLikeNotFound.value &&
+    !!download.error?.match(GATED_MODEL_PATTERN)
 )
 const isAuthError = computed(
   () =>
     isFailed.value &&
+    !looksLikeNotFound.value &&
     (isGatedModel.value || !!download.error?.match(AUTH_ERROR_PATTERN))
 )
 

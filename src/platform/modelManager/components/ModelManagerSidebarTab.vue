@@ -4,8 +4,8 @@
       <Button
         variant="textonly"
         size="icon"
-        :title="$t('modelManager.credentials.title')"
-        @click="openCredentials('')"
+        :title="$t('modelManager.downloadAuth.title')"
+        @click="openAuth()"
       >
         <i class="icon-[lucide--key-round] size-4" />
       </Button>
@@ -29,7 +29,7 @@
             v-for="download in activeDownloads"
             :key="download.download_id"
             :download
-            @open-credentials="openCredentials"
+            @open-auth="openAuth"
           />
         </section>
 
@@ -46,7 +46,7 @@
             v-for="download in historyDownloads"
             :key="download.download_id"
             :download
-            @open-credentials="openCredentials"
+            @open-auth="openAuth"
           />
         </section>
 
@@ -64,11 +64,8 @@
     </template>
   </SidebarTabTemplate>
 
-  <AddModelByUrlDialog v-model:open="addOpen" />
-  <HostCredentialsDialog
-    v-model:open="credentialsOpen"
-    :prefill-host="prefillHost"
-  />
+  <AddModelByUrlDialog v-model:open="addOpen" @auth-required="openAuth" />
+  <DownloadAuthDialog v-model:open="authOpen" :focus-provider="focusProvider" />
 </template>
 
 <script setup lang="ts">
@@ -79,22 +76,23 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import Button from '@/components/ui/button/Button.vue'
 
 import AddModelByUrlDialog from './AddModelByUrlDialog.vue'
-import HostCredentialsDialog from './HostCredentialsDialog.vue'
+import DownloadAuthDialog from './DownloadAuthDialog.vue'
 import ModelDownloadRow from './ModelDownloadRow.vue'
 import { useModelDownloadActions } from '../composables/useModelDownloadActions'
 import { useModelDownloadStore } from '../stores/modelDownloadStore'
+import type { DownloadProvider } from '../types'
 
 const store = useModelDownloadStore()
 const actions = useModelDownloadActions()
 const { activeDownloads, historyDownloads } = storeToRefs(store)
 
 const addOpen = ref(false)
-const credentialsOpen = ref(false)
-const prefillHost = ref('')
+const authOpen = ref(false)
+const focusProvider = ref<DownloadProvider | undefined>(undefined)
 
-function openCredentials(host: string) {
-  prefillHost.value = host
-  credentialsOpen.value = true
+function openAuth(provider?: DownloadProvider) {
+  focusProvider.value = provider
+  authOpen.value = true
 }
 
 onMounted(() => {

@@ -1,5 +1,3 @@
-import { z } from 'zod'
-
 import type { DownloadState, DownloadStatus } from '@/schemas/apiSchema'
 
 export type { DownloadState, DownloadStatus }
@@ -38,7 +36,6 @@ export interface EnqueueRequest {
   priority?: number
   expected_sha256?: string | null
   allow_any_extension?: boolean
-  credential_id?: string | null
 }
 
 export interface EnqueueResponse {
@@ -46,33 +43,31 @@ export interface EnqueueResponse {
   accepted: boolean
 }
 
-export const AUTH_SCHEMES = ['bearer', 'header', 'query'] as const
-export type AuthScheme = (typeof AUTH_SCHEMES)[number]
+/**
+ * Providers whose gated/private downloads can require server-side auth. The
+ * backend resolves a token per request (env key first, then OAuth), so the
+ * frontend only ever reads status — never a token value.
+ */
+export const DOWNLOAD_PROVIDERS = ['huggingface', 'civitai'] as const
+export type DownloadProvider = (typeof DOWNLOAD_PROVIDERS)[number]
 
-const zHostCredentialView = z.object({
-  id: z.string(),
-  host: z.string(),
-  auth_scheme: z.enum(AUTH_SCHEMES),
-  header_name: z.string().nullable(),
-  query_param: z.string().nullable(),
-  label: z.string().nullable(),
-  match_subdomains: z.boolean(),
-  enabled: z.boolean(),
-  secret_last4: z.string().nullable(),
-  created_at: z.number(),
-  updated_at: z.number()
-})
-export type HostCredentialView = z.infer<typeof zHostCredentialView>
+/**
+ * Per-provider auth status from `GET /download/auth`. A provider is
+ * authenticated (the frontend needs to do nothing) when
+ * `env_key_present || logged_in`.
+ */
+export interface ProviderAuthStatus {
+  provider: DownloadProvider
+  /** An API-key env var is set on the server for this provider. */
+  env_key_present: boolean
+  /** A stored OAuth token exists for this provider. */
+  logged_in: boolean
+  /** An OAuth login is awaiting its browser callback. */
+  login_in_progress: boolean
+}
 
-export interface HostCredentialUpsert {
-  host: string
-  secret: string
-  auth_scheme?: AuthScheme
-  header_name?: string | null
-  query_param?: string | null
-  label?: string | null
-  match_subdomains?: boolean
-  enabled?: boolean
+export interface LoginStartResponse {
+  authorize_url: string
 }
 
 interface AvailabilityBase {
@@ -100,11 +95,17 @@ const DOWNLOAD_ERROR_CODES = [
   'INVALID_BODY',
   'URL_NOT_ALLOWED',
   'INVALID_MODEL_ID',
-  'INVALID_CREDENTIAL',
   'ALREADY_AVAILABLE',
   'ALREADY_DOWNLOADING',
   'DOWNLOAD_ACTIVE',
-  'NOT_FOUND'
+  'NOT_FOUND',
+  // Auth failures surfaced by enqueue when the URL needs a network resolve.
+  'GATED_REPO',
+  'CREDENTIALS_REQUIRED',
+  // Provider OAuth login (`/download/auth/{provider}/login`).
+  'UNKNOWN_PROVIDER',
+  'OAUTH_NOT_CONFIGURED',
+  'LOGIN_IN_PROGRESS'
 ] as const
 export type DownloadErrorCode = (typeof DOWNLOAD_ERROR_CODES)[number]
 

@@ -31,10 +31,10 @@ vi.mock('./ModelDownloadRow.vue', () => ({
   default: {
     name: 'ModelDownloadRow',
     props: ['download'],
-    emits: ['openCredentials'],
+    emits: ['openAuth'],
     template:
       '<div><span>{{ download.download_id }}</span>' +
-      '<button @click="$emit(\'openCredentials\', download.model_id)">open-credentials</button></div>'
+      "<button @click=\"$emit('openAuth', 'huggingface')\">open-auth</button></div>"
   }
 }))
 
@@ -42,16 +42,17 @@ vi.mock('./AddModelByUrlDialog.vue', () => ({
   default: {
     name: 'AddModelByUrlDialog',
     props: ['open'],
+    emits: ['authRequired'],
     template: '<div data-testid="add-model-dialog">{{ open }}</div>'
   }
 }))
 
-vi.mock('./HostCredentialsDialog.vue', () => ({
+vi.mock('./DownloadAuthDialog.vue', () => ({
   default: {
-    name: 'HostCredentialsDialog',
-    props: ['open', 'prefillHost'],
+    name: 'DownloadAuthDialog',
+    props: ['open', 'focusProvider'],
     template:
-      '<div data-testid="credentials-dialog">{{ open }}:{{ prefillHost }}</div>'
+      '<div data-testid="auth-dialog">{{ open }}:{{ focusProvider }}</div>'
   }
 }))
 
@@ -153,14 +154,14 @@ describe('ModelManagerSidebarTab', () => {
     expect(screen.getByTestId('add-model-dialog')).toHaveTextContent('true')
   })
 
-  it('opens the credentials dialog with an empty prefill from the toolbar button', async () => {
+  it('opens the download-auth dialog with no focused provider from the toolbar button', async () => {
     mountTab()
 
-    await userEvent.click(screen.getByTitle('Credentials Manager'))
-    expect(screen.getByTestId('credentials-dialog')).toHaveTextContent('true:')
+    await userEvent.click(screen.getByTitle('Download access'))
+    expect(screen.getByTestId('auth-dialog')).toHaveTextContent('true:')
   })
 
-  it('opens the credentials dialog prefilled with the row host', async () => {
+  it('opens the download-auth dialog focused on the row provider', async () => {
     const download = createDownload({
       download_id: 'd1',
       model_id: 'loras/x.safetensors'
@@ -169,10 +170,10 @@ describe('ModelManagerSidebarTab', () => {
     mockStore.downloadList = [download]
     mountTab()
 
-    await userEvent.click(screen.getByText('open-credentials'))
+    await userEvent.click(screen.getByText('open-auth'))
 
-    expect(screen.getByTestId('credentials-dialog')).toHaveTextContent(
-      'true:loras/x.safetensors'
+    expect(screen.getByTestId('auth-dialog')).toHaveTextContent(
+      'true:huggingface'
     )
   })
 })

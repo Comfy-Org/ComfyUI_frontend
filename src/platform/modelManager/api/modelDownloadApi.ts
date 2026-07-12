@@ -2,11 +2,12 @@ import { api } from '@/scripts/api'
 
 import type {
   AvailabilityResponse,
+  DownloadProvider,
   DownloadStatus,
   EnqueueRequest,
   EnqueueResponse,
-  HostCredentialUpsert,
-  HostCredentialView
+  LoginStartResponse,
+  ProviderAuthStatus
 } from '../types'
 import { DownloadApiError } from '../types'
 
@@ -100,22 +101,27 @@ export async function checkAvailability(
   return parseJson<AvailabilityResponse>(response)
 }
 
-export async function listCredentials(): Promise<HostCredentialView[]> {
-  const response = await api.fetchApi(`${BASE}/credentials`)
-  const data = await parseJson<{ credentials: HostCredentialView[] }>(response)
-  return data.credentials
+export async function getDownloadAuth(): Promise<ProviderAuthStatus[]> {
+  const response = await api.fetchApi(`${BASE}/auth`)
+  const data = await parseJson<{ providers: ProviderAuthStatus[] }>(response)
+  return data.providers
 }
 
-export async function upsertCredential(
-  body: HostCredentialUpsert
-): Promise<HostCredentialView> {
-  const response = await postJson(`${BASE}/credentials`, body)
-  return parseJson<HostCredentialView>(response)
+/**
+ * Starts an OAuth login and returns the URL to open in the browser. Throws a
+ * {@link DownloadApiError} with `OAUTH_NOT_CONFIGURED` when the server has no
+ * OAuth client id, or `LOGIN_IN_PROGRESS` when one is already running.
+ */
+export async function startProviderLogin(
+  provider: DownloadProvider
+): Promise<LoginStartResponse> {
+  const response = await postJson(`${BASE}/auth/${provider}/login`, undefined)
+  return parseJson<LoginStartResponse>(response)
 }
 
-export async function deleteCredential(id: string): Promise<void> {
-  const response = await api.fetchApi(`${BASE}/credentials/${id}`, {
-    method: 'DELETE'
-  })
-  await parseJson<{ deleted: boolean }>(response)
+export async function logoutProvider(
+  provider: DownloadProvider
+): Promise<void> {
+  const response = await postJson(`${BASE}/auth/${provider}/logout`, undefined)
+  await parseJson<{ logged_out: boolean }>(response)
 }

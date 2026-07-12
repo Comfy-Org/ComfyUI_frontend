@@ -3,23 +3,20 @@ import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import type {
   DownloadStatus,
   EnqueueResponse,
-  HostCredentialUpsert,
-  HostCredentialView
+  ProviderAuthStatus
 } from '@/platform/modelManager/types'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const DOWNLOADS_ROUTE = /\/api\/download$/
 const ENQUEUE_ROUTE = /\/api\/download\/enqueue$/
-const CREDENTIALS_ROUTE = /\/api\/download\/credentials$/
-const CREDENTIAL_ROUTE = /\/api\/download\/credentials\/([^/?]+)$/
+const AUTH_ROUTE = /\/api\/download\/auth$/
 const CLEAR_ROUTE = /\/api\/download\/clear$/
 
 const DOWNLOAD_ID = 'e2e-download-1'
@@ -211,94 +208,43 @@ test.describe('Model Downloader sidebar', { tag: '@ui' }, () => {
     ).toBeHidden()
   })
 
-  test('manages download credentials: add, edit, and delete', async ({
+  test('shows per-provider download auth status in the access dialog', async ({
     comfyPage
   }) => {
-    let credentials: HostCredentialView[] = []
-    let nextId = 1
+    const providers: ProviderAuthStatus[] = [
+      {
+        provider: 'huggingface',
+        env_key_present: true,
+        logged_in: false,
+        login_in_progress: false
+      },
+      {
+        provider: 'civitai',
+        env_key_present: false,
+        logged_in: false,
+        login_in_progress: false
+      }
+    ]
+    await comfyPage.page.route(AUTH_ROUTE, async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      await route.fulfill(jsonRoute({ providers }))
+    })
 
-    await comfyPage.page.route(CREDENTIALS_ROUTE, async (route) => {
-      const method = route.request().method()
-      if (method === 'GET') {
-        await route.fulfill(jsonRoute({ credentials }))
-        return
-      }
-      if (method === 'POST') {
-        const body = route.request().postDataJSON() as HostCredentialUpsert
-        const existing = credentials.find((c) => c.host === body.host)
-        const now = Math.floor(Date.now() / 1000)
-        const view: HostCredentialView = {
-          id: existing?.id ?? `cred-${nextId++}`,
-          host: body.host,
-          auth_scheme: body.auth_scheme ?? 'bearer',
-          header_name: body.header_name ?? null,
-          query_param: body.query_param ?? null,
-          label: body.label ?? null,
-          match_subdomains: body.match_subdomains ?? false,
-          enabled: body.enabled ?? true,
-          secret_last4: body.secret.slice(-4),
-          created_at: existing?.created_at ?? now,
-          updated_at: now
-        }
-        credentials = existing
-          ? credentials.map((c) => (c.id === view.id ? view : c))
-          : [...credentials, view]
-        await route.fulfill(jsonRoute(view))
-        return
-      }
-      await route.fallback()
-    })
-    await comfyPage.page.route(CREDENTIAL_ROUTE, async (route) => {
-      if (route.request().method() !== 'DELETE') return route.fallback()
-      const id = route.request().url().match(CREDENTIAL_ROUTE)?.[1]
-      credentials = credentials.filter((c) => c.id !== id)
-      await route.fulfill(jsonRoute({ deleted: true }))
-    })
+    await openModelDownloaderTab(comfyPage)
+    const panel = modelDownloaderPanel(comfyPage)
+    await panel.getByTitle('Download access').click()
 
     const dialog = comfyPage.page
       .getByRole('dialog')
-      .filter({ hasText: 'Credentials Manager' })
+      .filter({ hasText: 'Download access' })
+    await expect(dialog.getByText('HuggingFace')).toBeVisible()
+    await expect(dialog.getByText('API key set on the server')).toBeVisible()
 
-    // The success toast shown after saving can momentarily steal focus and
-    // close the dialog, so re-opening is retried until it sticks.
-    async function ensureCredentialsDialogOpen() {
-      await expect(async () => {
-        const panel = modelDownloaderPanel(comfyPage)
-        await panel.hover()
-        await panel.getByTitle('Credentials Manager').click()
-        await expect(dialog).toBeVisible({ timeout: 1000 })
-      }).toPass({ timeout: 10_000 })
-    }
-
-    await openModelDownloaderTab(comfyPage)
-    await ensureCredentialsDialogOpen()
-
-    await dialog.getByLabel('Host').fill('huggingface.co')
-    await dialog.getByLabel('API key').fill('secret-key-1234')
-    await dialog.getByRole('button', { name: 'Save', exact: true }).click()
-
-    await ensureCredentialsDialogOpen()
+    // Civitai is unauthenticated; on this loopback deployment the OAuth login
+    // action is offered.
+    await expect(dialog.getByRole('button', { name: 'Log in' })).toBeVisible()
     await expect(
-      dialog.getByText('huggingface.co · Bearer token · ••••1234')
+      dialog.getByRole('button', { name: 'How to add an API key' })
     ).toBeVisible()
-
-    await dialog.getByTitle('Edit').click()
-    await expect(dialog.getByText('Update credential')).toBeVisible()
-    await expect(dialog.getByLabel('API key')).toHaveValue('')
-    await dialog.getByLabel('Label').fill('My HF Key')
-    await dialog.getByLabel('API key').fill('updated-secret-5678')
-    await dialog.getByRole('button', { name: 'Save', exact: true }).click()
-
-    await ensureCredentialsDialogOpen()
-    await expect(dialog.getByText('My HF Key')).toBeVisible()
-    await expect(
-      dialog.getByText('huggingface.co · Bearer token · ••••5678')
-    ).toBeVisible()
-
-    await dialog.getByTitle('Delete').click()
-    const confirm = new ConfirmDialog(comfyPage.page)
-    await confirm.click('delete')
-
-    await expect(dialog.getByText('My HF Key')).toBeHidden()
   })
 })

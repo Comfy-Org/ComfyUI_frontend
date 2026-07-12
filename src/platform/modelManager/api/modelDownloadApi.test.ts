@@ -7,15 +7,15 @@ import {
   cancelDownload,
   checkAvailability,
   clearDownloads,
-  deleteCredential,
   deleteDownload,
   enqueueDownload,
-  listCredentials,
+  getDownloadAuth,
   listDownloads,
+  logoutProvider,
   pauseDownload,
   resumeDownload,
   setDownloadPriority,
-  upsertCredential
+  startProviderLogin
 } from './modelDownloadApi'
 
 vi.mock('@/scripts/api', () => ({
@@ -210,31 +210,70 @@ describe('modelDownloadApi', () => {
     })
   })
 
-  describe('credentials', () => {
-    it('unwraps the credentials list', async () => {
+  describe('auth', () => {
+    it('unwraps the provider status list from GET /download/auth', async () => {
       fetchApi.mockResolvedValue(
-        jsonResponse(200, { credentials: [{ id: 'c1' }] })
+        jsonResponse(200, {
+          providers: [
+            {
+              provider: 'huggingface',
+              env_key_present: true,
+              logged_in: false,
+              login_in_progress: false
+            }
+          ]
+        })
       )
 
-      expect(await listCredentials()).toEqual([{ id: 'c1' }])
+      const result = await getDownloadAuth()
+
+      expect(fetchApi).toHaveBeenCalledWith('/download/auth')
+      expect(result).toEqual([
+        {
+          provider: 'huggingface',
+          env_key_present: true,
+          logged_in: false,
+          login_in_progress: false
+        }
+      ])
     })
 
-    it('returns the created credential view', async () => {
-      fetchApi.mockResolvedValue(jsonResponse(201, { id: 'c1', host: 'h' }))
-
-      const result = await upsertCredential({ host: 'h', secret: 's' })
-
-      expect(result).toEqual({ id: 'c1', host: 'h' })
-    })
-
-    it('throws on a failed delete', async () => {
+    it('posts to the provider login route and returns the authorize url', async () => {
       fetchApi.mockResolvedValue(
-        jsonResponse(404, { error: { code: 'NOT_FOUND', message: 'gone' } })
+        jsonResponse(200, { authorize_url: 'https://auth.example/go' })
       )
 
-      await expect(deleteCredential('c1')).rejects.toMatchObject({
-        code: 'NOT_FOUND'
-      })
+      const result = await startProviderLogin('huggingface')
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/auth/huggingface/login',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(result).toEqual({ authorize_url: 'https://auth.example/go' })
+    })
+
+    it('surfaces OAUTH_NOT_CONFIGURED as a DownloadApiError', async () => {
+      fetchApi.mockResolvedValue(
+        jsonResponse(400, {
+          error: { code: 'OAUTH_NOT_CONFIGURED', message: 'no client id' }
+        })
+      )
+
+      const error = await startProviderLogin('civitai').catch((e) => e)
+
+      expect(error).toBeInstanceOf(DownloadApiError)
+      expect(error.is('OAUTH_NOT_CONFIGURED')).toBe(true)
+    })
+
+    it('posts to the provider logout route', async () => {
+      fetchApi.mockResolvedValue(jsonResponse(200, { logged_out: true }))
+
+      await logoutProvider('civitai')
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        '/download/auth/civitai/logout',
+        expect.objectContaining({ method: 'POST' })
+      )
     })
   })
 })

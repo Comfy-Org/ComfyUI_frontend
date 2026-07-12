@@ -105,8 +105,10 @@ import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
+import { providerForUrl } from '../downloadAuthProviders'
 import { useModelDownloadStore } from '../stores/modelDownloadStore'
 import { DownloadApiError } from '../types'
+import type { DownloadProvider } from '../types'
 import {
   buildModelId,
   filenameFromUrl,
@@ -116,6 +118,10 @@ import {
 } from '../utils/modelId'
 
 const isOpen = defineModel<boolean>('open', { required: true })
+
+const emit = defineEmits<{
+  authRequired: [provider: DownloadProvider | undefined]
+}>()
 
 const { t } = useI18n()
 const store = useModelDownloadStore()
@@ -226,6 +232,11 @@ function handleEnqueueError(error: unknown) {
       })
       reset()
       isOpen.value = false
+      return
+    }
+    if (error.is('GATED_REPO') || error.is('CREDENTIALS_REQUIRED')) {
+      errorMessage.value = error.message
+      emit('authRequired', providerForUrl(url.value))
       return
     }
     errorMessage.value = error.message
