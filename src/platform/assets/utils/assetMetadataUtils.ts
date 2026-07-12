@@ -237,31 +237,32 @@ export function stripModelTypePrefix(tag: string): string {
 }
 
 /**
- * Resolves the short label shown on an asset card's type badge.
+ * Resolves the labels shown as an asset card's type badges.
  *
- * In `modelTypeMode` the badge is the asset's first `model_type:*` value —
- * the same key the asset groups under (`getAssetCategories`), so badge and
- * grouping cannot diverge for covered assets. Uncovered assets (and legacy
- * mode) keep the original selection: first non-`models` tag, with bare
- * hierarchical tags showing the segment after the first `/`.
+ * In `modelTypeMode` a covered asset badges every `model_type:*` value — the
+ * same keys it groups under (`getAssetCategories`) — so a shared-root asset
+ * tagged with several categories carries each of them; whichever category
+ * view the card appears in is represented on the card. Uncovered assets (and
+ * legacy mode) keep the original single selection: first non-`models` tag,
+ * with bare hierarchical tags showing the segment after the first `/`.
  */
-export function getAssetTypeBadge(
+export function getAssetTypeBadges(
   asset: AssetItem,
   modelTypeMode: boolean
-): string | undefined {
+): string[] {
   if (modelTypeMode) {
-    const [modelType] = getModelTypeTagValues(asset)
-    if (modelType) return modelType
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
   }
   const typeTag = asset.tags.find(
     (tag) =>
       tag !== MODELS_TAG &&
       !(modelTypeMode && tag.startsWith(MODEL_TYPE_TAG_PREFIX))
   )
-  if (!typeTag) return undefined
-  return typeTag.includes('/')
-    ? typeTag.slice(typeTag.indexOf('/') + 1)
-    : typeTag
+  if (!typeTag) return []
+  return [
+    typeTag.includes('/') ? typeTag.slice(typeTag.indexOf('/') + 1) : typeTag
+  ]
 }
 
 /**

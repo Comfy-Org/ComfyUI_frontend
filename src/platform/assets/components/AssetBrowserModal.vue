@@ -195,6 +195,14 @@ const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
   const modelTypeMode = flags.supportsModelTypeTags
+  // A node-typed picker is FOR a category; title off that category rather
+  // than guessing from the first asset, whose first model_type value may be
+  // a different category it shares a root with.
+  if (modelTypeMode && props.nodeType) {
+    const mapped = modelToNodeStore.getCategoryForNodeType(props.nodeType)
+    if (mapped) return mapped
+  }
+
   const assets = fetchedAssets.value ?? []
   // Covered assets title off the model_type value they group under (so title
   // and grouping cannot diverge); uncovered assets keep the legacy verbatim

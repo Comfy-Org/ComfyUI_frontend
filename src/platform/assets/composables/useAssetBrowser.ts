@@ -21,7 +21,7 @@ import {
   getAssetBaseModels,
   getAssetCategories,
   getAssetFilename,
-  getAssetTypeBadge
+  getAssetTypeBadges
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
@@ -57,8 +57,7 @@ function buildDisplayItem(
 ): AssetDisplayItem {
   const badges: AssetBadge[] = []
 
-  const typeBadge = getAssetTypeBadge(asset, modelTypeMode)
-  if (typeBadge) {
+  for (const typeBadge of getAssetTypeBadges(asset, modelTypeMode)) {
     badges.push({ label: typeBadge, type: 'type' })
   }
 

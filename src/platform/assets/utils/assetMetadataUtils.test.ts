@@ -22,7 +22,7 @@ import {
   getPrimaryCategoryTag,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
-  getAssetTypeBadge,
+  getAssetTypeBadges,
   getAssetUserDescription,
   getSourceName,
   resolveDisplayImageDimensions,
@@ -750,7 +750,7 @@ describe('getAssetNodeCategoryCandidates', () => {
   })
 })
 
-describe('getAssetTypeBadge', () => {
+describe('getAssetTypeBadges', () => {
   const asset = (tags: string[]): AssetItem => ({
     id: 'a',
     name: 'model.safetensors',
@@ -759,43 +759,58 @@ describe('getAssetTypeBadge', () => {
 
   it('strips the model_type: prefix in model_type mode (no raw leak)', () => {
     expect(
-      getAssetTypeBadge(
+      getAssetTypeBadges(
         asset(['models', 'model_type:checkpoints', 'sdxl']),
         true
       )
-    ).toBe('checkpoints')
+    ).toEqual(['checkpoints'])
   })
 
   it('badges the model_type value even when a bare tag comes first, matching the grouping', () => {
     expect(
-      getAssetTypeBadge(asset(['models', 'foo', 'model_type:bar']), true)
-    ).toBe('bar')
+      getAssetTypeBadges(asset(['models', 'foo', 'model_type:bar']), true)
+    ).toEqual(['bar'])
+  })
+
+  it('badges every category a shared multi-type asset groups under', () => {
+    expect(
+      getAssetTypeBadges(
+        asset([
+          'models',
+          'model_type:checkpoints',
+          'model_type:diffusion_models'
+        ]),
+        true
+      )
+    ).toEqual(['checkpoints', 'diffusion_models'])
   })
 
   it('falls back to the bare tag for an uncovered asset in model_type mode', () => {
-    expect(getAssetTypeBadge(asset(['models', 'sdxl']), true)).toBe('sdxl')
+    expect(getAssetTypeBadges(asset(['models', 'sdxl']), true)).toEqual([
+      'sdxl'
+    ])
   })
 
-  it('returns undefined rather than a blank badge for a malformed empty model_type: tag', () => {
-    expect(
-      getAssetTypeBadge(asset(['models', 'model_type:']), true)
-    ).toBeUndefined()
+  it('returns no badge rather than a blank one for a malformed empty model_type: tag', () => {
+    expect(getAssetTypeBadges(asset(['models', 'model_type:']), true)).toEqual(
+      []
+    )
   })
 
   it('leaks the literal model_type: tag when mode is off', () => {
     expect(
-      getAssetTypeBadge(asset(['models', 'model_type:checkpoints']), false)
-    ).toBe('model_type:checkpoints')
+      getAssetTypeBadges(asset(['models', 'model_type:checkpoints']), false)
+    ).toEqual(['model_type:checkpoints'])
   })
 
   it('shows the segment after the first slash for a bare hierarchical tag', () => {
-    expect(getAssetTypeBadge(asset(['models', 'checkpoint/xl']), false)).toBe(
-      'xl'
-    )
+    expect(
+      getAssetTypeBadges(asset(['models', 'checkpoint/xl']), false)
+    ).toEqual(['xl'])
   })
 
-  it('returns undefined when only the models tag is present', () => {
-    expect(getAssetTypeBadge(asset(['models']), true)).toBeUndefined()
+  it('returns no badges when only the models tag is present', () => {
+    expect(getAssetTypeBadges(asset(['models']), true)).toEqual([])
   })
 })
 
@@ -825,7 +840,7 @@ describe('reserved tag mirrors', () => {
         true
       )
     ).toEqual(['x'])
-    expect(getAssetTypeBadge(asset([MODELS_TAG, 'x']), false)).toBe('x')
+    expect(getAssetTypeBadges(asset([MODELS_TAG, 'x']), false)).toEqual(['x'])
     expect(getAssetModelType(asset([MODELS_TAG]))).toBeNull()
   })
 })
