@@ -2293,6 +2293,11 @@
       "member": "Member"
     }
   },
+  "onboardingTour": {
+    "overlayLabel": "Getting started tour",
+    "skip": "Skip",
+    "stepCounter": "{current} of {total}"
+  },
   "auth": {
     "apiKey": {
       "title": "API Key",

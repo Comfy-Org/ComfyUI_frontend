@@ -21,6 +21,7 @@
   </div>
 
   <GlobalToast />
+  <OnboardingTourOverlay />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
   <ModelImportProgressDialog />
@@ -50,6 +51,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import OnboardingTourOverlay from '@/renderer/extensions/onboardingTour/OnboardingTourOverlay.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
