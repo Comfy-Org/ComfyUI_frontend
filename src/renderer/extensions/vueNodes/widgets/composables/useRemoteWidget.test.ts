@@ -211,6 +211,76 @@ describe('useRemoteWidget', () => {
     })
   })
 
+  describe('preserving a pre-existing widget value on first load', () => {
+    it('keeps a value restored from a saved workflow if still present in the resolved options', async () => {
+      const widget = createMockWidget({ value: 'saved_model.safetensors' })
+      const options = createMockOptions()
+      options.widget = widget
+      mockAxiosResponse([
+        'a.safetensors',
+        'saved_model.safetensors',
+        'b.safetensors'
+      ])
+
+      const hook = useRemoteWidget(options)
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      expect(widget.value).toBe('saved_model.safetensors')
+    })
+
+    it('falls back to the first option when the saved value no longer exists', async () => {
+      const widget = createMockWidget({ value: 'deleted_model.safetensors' })
+      const options = createMockOptions()
+      options.widget = widget
+      mockAxiosResponse(['a.safetensors', 'b.safetensors'])
+
+      const hook = useRemoteWidget(options)
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      expect(widget.value).toBe('a.safetensors')
+    })
+
+    it('uses the first option for a brand new widget still on the loading placeholder', async () => {
+      const widget = createMockWidget({ value: DEFAULT_VALUE })
+      const options = createMockOptions()
+      options.widget = widget
+      mockAxiosResponse(['a.safetensors', 'b.safetensors'])
+
+      const hook = useRemoteWidget(options)
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      expect(widget.value).toBe('a.safetensors')
+    })
+
+    it('falls back to the default value when a saved value exists but the resolved options array is empty', async () => {
+      const widget = createMockWidget({ value: 'saved_model.safetensors' })
+      const options = createMockOptions()
+      options.widget = widget
+      mockAxiosResponse([])
+
+      const hook = useRemoteWidget(options)
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      expect(widget.value).toBe(DEFAULT_VALUE)
+    })
+
+    it('does not touch widget.value when the fetch fails before any options resolve', async () => {
+      const widget = createMockWidget({ value: 'saved_model.safetensors' })
+      const options = createMockOptions()
+      options.widget = widget
+      mockAxiosError('Network error')
+
+      const hook = useRemoteWidget(options)
+      await new Promise<void>((resolve) => hook.getValue(() => resolve()))
+
+      // onFirstLoad only fires once options have actually resolved
+      // (isInitialized checks a successful fetch's timestamp), so a widget
+      // value restored from a saved workflow must survive a failed fetch
+      // rather than being reset before any valid options exist.
+      expect(widget.value).toBe('saved_model.safetensors')
+    })
+  })
+
   describe('refresh behavior', () => {
     beforeEach(() => {
       vi.useFakeTimers()
