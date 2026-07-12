@@ -303,7 +303,8 @@ function createRow(
       ...spec,
       name: fieldName(group, row, spec.name),
       display_name: spec.display_name ?? spec.name,
-      hidden: true
+      hidden: true,
+      socketless: true
     })
 
   return node.widgets!.splice(startLen)

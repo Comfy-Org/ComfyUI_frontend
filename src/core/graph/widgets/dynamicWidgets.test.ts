@@ -325,13 +325,11 @@ describe('Dynamic Groups', () => {
   const widgetNamed = (node: LGraphNode, name: string) =>
     node.widgets!.find((w) => w.name === name)!
 
-  test('renders min rows on creation with connectable field inputs', () => {
+  test('renders min rows on creation', () => {
     const node = testNode()
     addDynamicGroup(node, stringTemplate, { min: 2, max: 5 })
     expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
-    // Each widget field is backed by a widget-input so it can be connected to.
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
-    expect(node.inputs.every((i) => i.widget?.name === i.name)).toBe(true)
+    expect(inputNames(node)).toStrictEqual([])
   })
 
   test('add row appends a new row up to max', () => {
@@ -405,17 +403,17 @@ describe('Dynamic Groups', () => {
 
     const graph = new LGraph()
     graph.add(node)
-    // Field widget-inputs are created automatically; connect to row 1's input.
+    node.addInput('g.1.a', 'STRING')
     const row1Index = node.inputs.findIndex((i) => i.name === 'g.1.a')
     connectInput(node, row1Index, graph)
     const linkId = node.inputs[row1Index].link!
+    node.addInput('g.2.a', 'STRING')
 
     state.removeRow(1)
 
     expect(graph.links[linkId]).toBeUndefined()
-    // Row 2's input shifts down to fill the removed row 1.
-    expect(inputNames(node)).toStrictEqual(['g.0.a', 'g.1.a'])
-    expect(node.inputs.every((i) => i.link == null)).toBe(true)
+    expect(inputNames(node)).toStrictEqual(['g.1.a'])
+    expect(node.inputs[0].link).toBeNull()
     expect(widgetNames(node)).toStrictEqual(['g', 'g.0.a', 'g.1.a'])
   })
 
