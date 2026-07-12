@@ -155,6 +155,8 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -165,6 +167,11 @@ import {
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+
+function isMeshModelFile(file: File): boolean {
+  const name = file.name.toLowerCase()
+  return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
+}
 
 export function sanitizeNodeName(string: string) {
   let entityMap = {
@@ -1869,6 +1876,11 @@ export class ComfyApp {
         return
       }
 
+      if (isMeshModelFile(file)) {
+        await this.handleMeshFile(file)
+        return
+      }
+
       this.showErrorOnFileLoad(file)
       return
     }
@@ -1945,6 +1957,26 @@ export class ComfyApp {
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  /**
+   * Uploads a mesh model file and creates a Load3DAdvanced node displaying it
+   * @param {File} file
+   */
+  private async handleMeshFile(file: File) {
+    const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
+    if (!uploadedPath) return
+
+    const node = await createNode(this.canvas, 'Load3DAdvanced')
+    const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
+    if (!modelWidget) return
+
+    const values = (modelWidget.options as { values?: string[] } | undefined)
+      ?.values
+    if (values && !values.includes(uploadedPath)) {
+      values.push(uploadedPath)
+    }
+    modelWidget.value = uploadedPath
   }
 
   /**

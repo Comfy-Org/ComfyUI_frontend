@@ -19,6 +19,7 @@ import {
   pasteVideoNode,
   pasteVideoNodes
 } from '@/composables/usePaste'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { api } from '@/scripts/api'
@@ -102,6 +103,12 @@ vi.mock('@/composables/usePaste', () => ({
 
 vi.mock('@/scripts/metadata/parser', () => ({
   getWorkflowDataFromFile: vi.fn()
+}))
+
+vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+  default: {
+    uploadFile: vi.fn()
+  }
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -589,6 +596,60 @@ describe('ComfyApp', () => {
         expect.any(DataTransferItemList),
         mockNode
       )
+    })
+
+    it('should handle mesh model files by uploading and creating Load3DAdvanced node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/model.glb')
+
+      const modelWidget = {
+        name: 'model_file',
+        value: 'existing.glb',
+        options: { values: ['existing.glb'] }
+      }
+      const mockNode = createMockNode({
+        type: 'Load3DAdvanced',
+        widgets: [modelWidget]
+      })
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      const meshFile = createTestFile('model.glb', '')
+
+      await app.handleFile(meshFile)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(meshFile, '3d')
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'Load3DAdvanced')
+      expect(modelWidget.value).toBe('3d/model.glb')
+      expect(modelWidget.options.values).toContain('3d/model.glb')
+    })
+
+    it('should load embedded workflow from mesh files instead of creating Load3DAdvanced node', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: createWorkflowGraphData()
+      })
+      const loadGraphData = vi
+        .spyOn(app, 'loadGraphData')
+        .mockResolvedValue(undefined)
+
+      const meshFile = createTestFile('model.glb', 'model/gltf-binary')
+
+      await app.handleFile(meshFile)
+
+      expect(loadGraphData).toHaveBeenCalled()
+      expect(Load3dUtils.uploadFile).not.toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    })
+
+    it('should not create Load3DAdvanced node when mesh upload fails', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
+
+      const meshFile = createTestFile('model.obj', '')
+
+      await app.handleFile(meshFile)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(meshFile, '3d')
+      expect(createNode).not.toHaveBeenCalled()
     })
 
     it('should handle image files with non-workflow metadata by creating LoadImage node', async () => {
