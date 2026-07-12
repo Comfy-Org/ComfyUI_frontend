@@ -987,6 +987,28 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'p3'
       ])
     })
+
+  })
+
+  describe('refresh error surfacing', () => {
+    it('surfaces a failed refresh on the committed state consumers read', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('existing')
+      ])
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getError(nodeType)).toBeUndefined()
+
+      vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+        new Error('backend down')
+      )
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['existing'])
+      expect(store.getError(nodeType)?.message).toBe('backend down')
+    })
   })
 
   describe('concurrent request handling', () => {
@@ -1038,6 +1060,34 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(store.getAssets(nodeType)).toHaveLength(2)
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a newer request single-flighted when a stale request finishes after invalidation', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      let resolveFirst!: (assets: AssetItem[]) => void
+      const firstFetch = new Promise<AssetItem[]>((resolve) => {
+        resolveFirst = resolve
+      })
+      vi.mocked(assetService.getAssetsForNodeType)
+        .mockReturnValueOnce(firstFetch)
+        .mockReturnValue(new Promise<AssetItem[]>(() => {}))
+
+      const staleRequest = store.updateModelsForNodeType(nodeType)
+      store.invalidateCategory('checkpoints')
+      void store.updateModelsForNodeType(nodeType)
+
+      resolveFirst([createMockAsset('stale')])
+      await staleRequest
+
+      // The stale request's teardown must not evict the newer request's
+      // single-flight entry: a third call short-circuits instead of starting
+      // a duplicate walk.
+      void store.updateModelsForNodeType(nodeType)
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
       ).toHaveBeenCalledTimes(2)
     })
   })

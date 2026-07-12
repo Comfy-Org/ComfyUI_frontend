@@ -410,6 +410,10 @@ export const useAssetsStore = defineStore('assets', () => {
    * Multiple node types sharing the same category share the same cache entry.
    * Public API accepts nodeType for backwards compatibility but translates
    * to category internally using modelToNodeStore.getCategoryForNodeType().
+   *
+   * Runs on every distribution; whether anything fetches through it is
+   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
+   * the authoritative off-cloud gate.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
@@ -653,7 +657,16 @@ export const useAssetsStore = defineStore('assets', () => {
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             state.isLoading = false
-            pendingRequestByCategory.delete(category)
+            // A refresh that fails before its first batch never replaces the
+            // committed state, so mirror the error onto the state consumers
+            // actually read (getError) instead of only the discarded one.
+            const committed = modelStateByCategory.value.get(category)
+            if (committed && committed !== state) {
+              committed.error = state.error
+            }
+            if (pendingRequestByCategory.get(category) === state) {
+              pendingRequestByCategory.delete(category)
+            }
 
             return
           }
@@ -671,7 +684,9 @@ export const useAssetsStore = defineStore('assets', () => {
           }
         }
         assetsArrayCache.delete(category)
-        pendingRequestByCategory.delete(category)
+        if (pendingRequestByCategory.get(category) === state) {
+          pendingRequestByCategory.delete(category)
+        }
       }
 
       const promise = loadBatches()
