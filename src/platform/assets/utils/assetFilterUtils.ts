@@ -5,7 +5,7 @@ import {
   getAssetCategories
 } from '@/platform/assets/utils/assetMetadataUtils'
 
-export function filterByCategory(category: string, modelTypeMode = false) {
+export function filterByCategory(category: string, modelTypeMode: boolean) {
   return (asset: AssetItem) => {
     if (category === 'all') return true
     return getAssetCategories(asset, modelTypeMode).includes(category)

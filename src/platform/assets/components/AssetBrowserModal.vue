@@ -110,7 +110,7 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { stripModelTypePrefix } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetCategories } from '@/platform/assets/utils/assetMetadataUtils'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -194,16 +194,19 @@ const focusedAsset = ref<AssetDisplayItem | null>(null)
 const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
+  const modelTypeMode = flags.supportsModelTypeTags
   const assets = fetchedAssets.value ?? []
+  // In modelTypeMode the title keys off the same category the asset groups
+  // under (getAssetCategories), so title and grouping cannot diverge.
   const tagFromAssets = assets
-    .map((asset) => asset.tags?.find((tag) => tag !== 'models'))
+    .map((asset) =>
+      modelTypeMode
+        ? getAssetCategories(asset, true)[0]
+        : asset.tags?.find((tag) => tag !== 'models')
+    )
     .find((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
-  if (tagFromAssets) {
-    return flags.supportsModelTypeTags
-      ? stripModelTypePrefix(tagFromAssets)
-      : tagFromAssets
-  }
+  if (tagFromAssets) return tagFromAssets
 
   if (props.nodeType) {
     const mapped = modelToNodeStore.getCategoryForNodeType(props.nodeType)

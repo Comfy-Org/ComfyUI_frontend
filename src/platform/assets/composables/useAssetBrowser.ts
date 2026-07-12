@@ -131,11 +131,10 @@ export function useAssetBrowser(
   })
 
   const typeCategories = computed<NavItemData[]>(() => {
+    const modelTypeMode = flags.supportsModelTypeTags
     const categories = assets.value
       .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap((asset) =>
-        getAssetCategories(asset, flags.supportsModelTypeTags)
-      )
+      .flatMap((asset) => getAssetCategories(asset, modelTypeMode))
 
     return Array.from(new Set(categories))
       .sort()
@@ -258,8 +257,9 @@ export function useAssetBrowser(
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)
 
     // Transform to display format
+    const modelTypeMode = flags.supportsModelTypeTags
     return sortedAssets.map((asset) =>
-      transformAssetForDisplay(asset, flags.supportsModelTypeTags)
+      transformAssetForDisplay(asset, modelTypeMode)
     )
   })
 

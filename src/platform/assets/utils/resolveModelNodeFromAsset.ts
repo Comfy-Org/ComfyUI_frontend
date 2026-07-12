@@ -114,6 +114,9 @@ export function resolveModelNodeFromAsset(
     .find((candidate) => candidate.provider !== undefined)
 
   if (!resolved?.provider) {
+    // Known gap (out of scope for FE-1076): flat `model_type:LLM`-style tags
+    // whose loaders are only registered hierarchically land here until the
+    // backend emits a subtype-carrying tag.
     console.error(
       `No node provider registered for category: ${candidates.join(', ')}`
     )

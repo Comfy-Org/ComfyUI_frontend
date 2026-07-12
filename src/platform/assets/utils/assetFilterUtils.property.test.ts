@@ -45,7 +45,7 @@ describe('assetFilterUtils properties', () => {
   it('filterByCategory("all") accepts every asset', () => {
     fc.assert(
       fc.property(arbAssetItem, (asset) => {
-        expect(filterByCategory('all')(asset)).toBe(true)
+        expect(filterByCategory('all', false)(asset)).toBe(true)
       })
     )
   })
@@ -56,7 +56,7 @@ describe('assetFilterUtils properties', () => {
         fc.array(arbAssetItem, { maxLength: 30 }),
         fc.stringMatching(/^[a-z]{1,8}$/),
         (assets, category) => {
-          const filter = filterByCategory(category)
+          const filter = filterByCategory(category, false)
           const result = assets.filter(filter)
           expect(result.length).toBeLessThanOrEqual(assets.length)
           for (const item of result) {
