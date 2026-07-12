@@ -188,7 +188,7 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
  */
 export function getEditableModelType(
   asset: AssetItem,
-  modelTypeMode = false
+  modelTypeMode: boolean
 ): string | null {
   if (modelTypeMode) {
     const [modelType] = getModelTypeTagValues(asset)
@@ -208,7 +208,7 @@ export function getEditableModelType(
 export function buildModelTypeTagUpdate(
   asset: AssetItem,
   newFolderName: string,
-  modelTypeMode = false
+  modelTypeMode: boolean
 ): string[] {
   if (!modelTypeMode) {
     const currentType = getAssetModelType(asset)

@@ -886,10 +886,10 @@ describe('getEditableModelType', () => {
     expect(getEditableModelType(asset(['models', 'sam2']), true)).toBe('sam2')
   })
 
-  it('uses the legacy first-non-models tag when mode is off (default)', () => {
-    expect(getEditableModelType(asset(['models', 'checkpoints', 'sdxl']))).toBe(
-      'checkpoints'
-    )
+  it('uses the legacy first-non-models tag when mode is off', () => {
+    expect(
+      getEditableModelType(asset(['models', 'checkpoints', 'sdxl']), false)
+    ).toBe('checkpoints')
   })
 
   it('returns null when only the models tag is present', () => {
@@ -904,15 +904,19 @@ describe('buildModelTypeTagUpdate', () => {
     tags
   })
 
-  it('swaps the bare subtype tag when mode is off (default)', () => {
+  it('swaps the bare subtype tag when mode is off', () => {
     expect(
-      buildModelTypeTagUpdate(asset(['models', 'checkpoints']), 'loras')
+      buildModelTypeTagUpdate(asset(['models', 'checkpoints']), 'loras', false)
     ).toEqual(['models', 'loras'])
   })
 
   it('preserves user labels and swaps only the subtype tag when mode is off', () => {
     expect(
-      buildModelTypeTagUpdate(asset(['models', 'checkpoints', 'sdxl']), 'loras')
+      buildModelTypeTagUpdate(
+        asset(['models', 'checkpoints', 'sdxl']),
+        'loras',
+        false
+      )
     ).toEqual(['models', 'sdxl', 'loras'])
   })
 
