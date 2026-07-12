@@ -500,6 +500,11 @@ function createAssetService() {
       // value the asset browser serializes — rather than `name`, which is a
       // content hash on cloud.
       name: asset.loader_path ?? getAssetFilename(asset),
+      // Asset records carry no root identity, so every model reports root 0.
+      // Known limitation: on multi-root categories (extra_model_paths.yaml)
+      // metadata/preview reads for secondary-root files resolve against root
+      // 0 (wrong file or 404). Loader widget values are unaffected; needs the
+      // backend to carry root identity on assets.
       pathIndex: 0
     }))
   }
