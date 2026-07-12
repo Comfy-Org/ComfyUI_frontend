@@ -394,6 +394,15 @@ https://example.com/hidden.webm
     )
   })
 
+  it('rejects selecting neither evidence mode', () => {
+    const result = validatePullRequestEvidence(
+      pullRequestBody({ mode: 'Neither' })
+    )
+    expect(result.errors).toContain(
+      'Check exactly one evidence type: Visual or Non-visual.'
+    )
+  })
+
   it('rejects template placeholders', () => {
     const result = validatePullRequestEvidence(
       pullRequestBody({
@@ -511,6 +520,15 @@ describe('probeGitHubScreencast', () => {
   const attachment =
     'https://github.com/user-attachments/assets/77777777-7777-4777-8777-777777777777'
 
+  it('rejects non-GitHub attachment URLs without making a request', async () => {
+    const request = vi.fn()
+
+    await expect(
+      probeGitHubScreencast('https://example.com/demo.mp4', request)
+    ).resolves.toBe(false)
+    expect(request).not.toHaveBeenCalled()
+  })
+
   it('follows a manual GitHub redirect and accepts video content', async () => {
     const request = vi.fn().mockResolvedValueOnce(
       mediaResponse(302, {
@@ -580,6 +598,75 @@ describe('probeGitHubScreencast', () => {
       expect.stringContaining('github-production-user-asset-6210df'),
       expect.objectContaining({ method: 'GET', redirect: 'manual' })
     )
+  })
+
+  it.for([405, 501])(
+    'uses a range GET when the initial HEAD returns %i',
+    async (status) => {
+      const request = vi
+        .fn()
+        .mockResolvedValueOnce(mediaResponse(status))
+        .mockResolvedValueOnce(
+          mediaResponse(206, { 'content-type': 'video/mp4' })
+        )
+
+      await expect(probeGitHubScreencast(attachment, request)).resolves.toBe(
+        true
+      )
+      expect(request).toHaveBeenNthCalledWith(
+        2,
+        attachment,
+        expect.objectContaining({ method: 'GET', redirect: 'manual' })
+      )
+    }
+  )
+
+  it('does not retry an initial 403 response with GET', async () => {
+    const request = vi.fn().mockResolvedValue(mediaResponse(403))
+
+    await expect(probeGitHubScreencast(attachment, request)).resolves.toBe(
+      false
+    )
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(request).toHaveBeenCalledWith(
+      attachment,
+      expect.objectContaining({ method: 'HEAD', redirect: 'manual' })
+    )
+  })
+
+  it('rejects a redirect without a location header', async () => {
+    const request = vi.fn().mockResolvedValue(mediaResponse(302))
+
+    await expect(probeGitHubScreencast(attachment, request)).resolves.toBe(
+      false
+    )
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    'http://github-production-user-asset-6210df.s3.amazonaws.com/assets/demo',
+    'https://user:password@github-production-user-asset-6210df.s3.amazonaws.com/assets/demo'
+  ])('rejects an unsafe redirect target: %s', async (location) => {
+    const request = vi.fn().mockResolvedValue(mediaResponse(302, { location }))
+
+    await expect(probeGitHubScreencast(attachment, request)).resolves.toBe(
+      false
+    )
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects a redirect chain after five hops', async () => {
+    const request = vi.fn().mockResolvedValue(
+      mediaResponse(302, {
+        location:
+          'https://github-production-user-asset-6210df.s3.amazonaws.com/assets/next'
+      })
+    )
+
+    await expect(probeGitHubScreencast(attachment, request)).resolves.toBe(
+      false
+    )
+    expect(request).toHaveBeenCalledTimes(5)
   })
 
   it('rejects redirects outside GitHub media hosts', async () => {

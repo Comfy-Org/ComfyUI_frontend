@@ -306,7 +306,8 @@ function isVerifiedScreencastResponse(
 
 export async function probeGitHubScreencast(
   rawUrl: string,
-  request: MediaRequest = async (url, init) => fetch(url, init)
+  request: MediaRequest = async (url, init) =>
+    fetch(url, { ...init, signal: AbortSignal.timeout(15_000) })
 ): Promise<boolean> {
   if (!isOpaqueGitHubAttachmentUrl(rawUrl)) return false
 

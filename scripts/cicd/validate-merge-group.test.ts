@@ -1,3 +1,8 @@
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -33,6 +38,21 @@ function activeHuman() {
 }
 
 describe('loadMergeGroupPullRequests', () => {
+  it.for([null, 'not-a-sha'])(
+    'fails before requesting metadata when head_sha is %s',
+    async (headSha) => {
+      const request: RepoRequest = vi.fn()
+
+      await expect(
+        loadMergeGroupPullRequests(
+          { merge_group: { head_ref: 'unused', head_sha: headSha } },
+          request
+        )
+      ).rejects.toThrow('Merge group head SHA is missing or malformed.')
+      expect(request).not.toHaveBeenCalled()
+    }
+  )
+
   it('uses associated PRs and refetches current metadata for every PR', async () => {
     const request: RepoRequest = vi.fn(async (path) => {
       if (path === `commits/${HEAD_SHA}/pulls`) {
@@ -116,6 +136,21 @@ describe('loadMergeGroupPullRequests', () => {
       )
     ).rejects.toThrow('GitHub API unavailable')
   })
+
+  it('rejects malformed refetched pull request metadata', async () => {
+    const request: RepoRequest = vi.fn(async (path) => {
+      if (path === `commits/${HEAD_SHA}/pulls`) return [{ number: 41 }]
+      if (path === 'pulls/41') return { body: validBody() }
+      throw new Error(`Unexpected path: ${path}`)
+    })
+
+    await expect(
+      loadMergeGroupPullRequests(
+        { merge_group: { head_ref: 'unused', head_sha: HEAD_SHA } },
+        request
+      )
+    ).rejects.toThrow('GitHub returned malformed pull request metadata.')
+  })
 })
 
 describe('validateMergeGroupPolicy', () => {
@@ -164,5 +199,41 @@ describe('validateMergeGroupPolicy', () => {
     expect(result.errors.some((error) => error.startsWith('PR #42:'))).toBe(
       true
     )
+  })
+})
+
+describe('validate-merge-group CLI', () => {
+  it('loads in Node before failing closed on missing setup', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'merge-group-policy-'))
+    const eventPath = join(directory, 'event.json')
+    const outputPath = join(directory, 'github-output.txt')
+    writeFileSync(eventPath, JSON.stringify({ merge_group: {} }))
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ['scripts/cicd/validate-merge-group.ts', eventPath],
+        {
+          cwd: process.cwd(),
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            COMFY_ORG_MEMBERS_READ_TOKEN: '',
+            GITHUB_OUTPUT: outputPath,
+            GITHUB_REPOSITORY: '',
+            GITHUB_TOKEN: ''
+          }
+        }
+      )
+
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain(
+        '::error::Event path, GITHUB_TOKEN, GITHUB_REPOSITORY, and COMFY_ORG_MEMBERS_READ_TOKEN are required.'
+      )
+      expect(result.stderr).not.toContain('ERR_MODULE_NOT_FOUND')
+      expect(readFileSync(outputPath, 'utf8')).toBe('valid=false\n')
+    } finally {
+      rmSync(directory, { force: true, recursive: true })
+    }
   })
 })

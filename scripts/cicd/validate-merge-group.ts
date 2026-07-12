@@ -1,20 +1,20 @@
 import { appendFileSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
-import { validatePullRequestEvidenceBatch } from './validate-evidence'
+import { validatePullRequestEvidenceBatch } from './validate-evidence.ts'
 import type {
   EvidenceValidation,
   PullRequestEvidencePayload,
   ScreencastProbe
-} from './validate-evidence'
+} from './validate-evidence.ts'
 import {
   createGitHubMembershipLookup,
   validatePullRequestMaintainers
-} from './validate-maintainer'
+} from './validate-maintainer.ts'
 import type {
   MembershipLookup,
   PullRequestAssigneePayload
-} from './validate-maintainer'
+} from './validate-maintainer.ts'
 
 type MergeGroupEvent = {
   merge_group?: {
@@ -143,7 +143,8 @@ function createRepoRequest(repository: string, token: string): RepoRequest {
           Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${token}`,
           'X-GitHub-Api-Version': '2026-03-10'
-        }
+        },
+        signal: AbortSignal.timeout(30_000)
       }
     )
     if (!response.ok) {
