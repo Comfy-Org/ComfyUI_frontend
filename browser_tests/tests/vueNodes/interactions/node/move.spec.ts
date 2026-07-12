@@ -6,19 +6,20 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
     comfyPage: ComfyPage,
     title: string
-  ): Promise<{ x: number; y: number; width: number; height: number }> => {
+  ): Promise<{ x: number; y: number }> => {
     const box = await comfyPage.vueNodes
       .getNodeByTitle(title)
       .getByTestId('node-title')
       .first()
       .boundingBox()
     if (!box) throw new Error(`${title} header not found`)
-    return box
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
   const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) =>
@@ -83,29 +84,27 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.idleFrames(2)
   }
 
-  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
-    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
-      x: 256,
-      y: 256
-    })
+  test('should allow moving nodes by dragging', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const initialHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 100, y: 100 })
 
     const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+    await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
   test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
     // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(headerPos.x + 2, headerPos.y + 1, {
-      steps: 5
-    })
-    await comfyPage.page.mouse.up()
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
     await comfyPage.nextFrame()
 
     const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
@@ -294,14 +293,12 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
-      const dragSrc = await getHeaderPos(comfyPage, 'Load Checkpoint')
-      const centerX = dragSrc.x + dragSrc.width / 2
-      const centerY = dragSrc.y + dragSrc.height / 2
+      const headerPos = await getHeaderPos(comfyPage, 'Load Checkpoint')
 
-      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
       await comfyPage.page.mouse.down()
       await comfyPage.nextFrame()
-      await comfyPage.page.mouse.move(centerX + dx, centerY + dy, {
+      await comfyPage.page.mouse.move(headerPos.x + dx, headerPos.y + dy, {
         steps: 20
       })
       await comfyPage.page.mouse.up()
@@ -333,6 +330,79 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     expectSameDelta(checkpointDelta, latentDelta)
 
     await comfyPage.canvasOps.moveMouseToEmptyArea()
+  })
+
+  test('pointerCancel stops autopan', async ({ comfyPage }) => {
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await ksampler.header.click({ trial: true })
+    await comfyPage.page.mouse.down()
+
+    const getOffset = () => comfyPage.canvasOps.getOffset()
+    const initialOffset = await getOffset()
+    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await expect.poll(getOffset, 'drag with autopan').not.toEqual(initialOffset)
+
+    await test.step('move outside pan range and cancel drag', async () => {
+      await comfyPage.page.mouse.move(400, 400, { steps: 20 })
+      await ksampler.header.evaluate((node) =>
+        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+      )
+    })
+
+    const secondaryOffset = await getOffset()
+
+    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await comfyPage.nextFrame()
+    expect(await getOffset(), 'drag canceled').toEqual(secondaryOffset)
+  })
+
+  test('dragging a node moves all selected items', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const samplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(samplerLocator)
+    const loaderLocator = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const loader = new VueNodeFixture(loaderLocator)
+
+    await test.step('create graph with group and reroute', async () => {
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.searchBoxV2.addNode('Load Checkpoint')
+      const samplerOptions = { position: { x: 800, y: 200 } }
+      await comfyPage.searchBoxV2.addNode('KSampler', samplerOptions)
+      await ksampler.getSlot('model').dragTo(loader.getSlot('MODEL'))
+
+      await test.step('add reroute', async () => {
+        const b1 = await ksampler.getSlot('model').boundingBox()
+        const b2 = await loader.getSlot('MODEL').boundingBox()
+        if (!b1 || !b2) throw new Error('Failed to get bounds')
+
+        const x = (b1.x + b2.x + (b1.width + b2.width) / 2) / 2
+        const y = (b1.y + b2.y + (b1.height + b2.height) / 2) / 2
+        await comfyPage.page.keyboard.down('Alt')
+        await comfyPage.page.mouse.click(x, y)
+        await comfyPage.page.keyboard.up('Alt')
+
+        const rerouteCount = () =>
+          comfyPage.page.evaluate(() => graph!.reroutes.size)
+        await expect.poll(rerouteCount).toBe(1)
+      })
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press('Control+G')
+      await comfyPage.keyboard.selectAll()
+    })
+
+    const getReroutePos = () =>
+      comfyPage.page.evaluate(() => [...graph!.reroutes.values()][0])
+    const getGroupPos = () =>
+      comfyPage.page.evaluate(() => graph!.groups[0].pos)
+    const initialReroutePos = await getReroutePos()
+    const initialGroupPos = await getGroupPos()
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
+
+    await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
+    await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
   })
 
   test(

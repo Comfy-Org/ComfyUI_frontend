@@ -73,4 +73,16 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
 
     await expect(widget, 'Widget has restored value').toHaveText('scale width')
   })
+
+  test('Dynamic children have separate state', async ({ comfyPage }) => {
+    const nodeName = 'Node With Dynamic Combo'
+    await comfyPage.searchBoxV2.addNode(nodeName, {
+      position: { x: 200, y: 150 }
+    })
+    const child = comfyPage.vueNodes.getWidgetByName(nodeName, 'suboption')
+    await expect(child, 'initial state').toHaveText('1x')
+
+    await comfyPage.vueNodes.selectComboOption(nodeName, 'combo', 'option2')
+    await expect(child, 'child of same name has new state').toHaveText('2x')
+  })
 })

@@ -108,7 +108,7 @@ describe('keybindingService - Escape key handling', () => {
     expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
-  it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
+  it('should NOT execute Escape keybinding with modifiers when a dialog is open', async () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
@@ -125,7 +125,7 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape', { ctrlKey: true })
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).toHaveBeenCalledWith('Test.CtrlEscape')
+    expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {

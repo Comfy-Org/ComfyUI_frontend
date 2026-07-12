@@ -10,12 +10,13 @@ import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
-  nodeIdRef: MaybeRefOrGetter<string>
+  nodeIdRef: MaybeRefOrGetter<NodeId>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -24,6 +25,10 @@ export function useNodePointerInteractions(
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
+
+  function isPinnedNode(nodeId: NodeId): boolean {
+    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+  }
 
   const forwardMiddlePointerIfNeeded = (
     event: PointerEvent,
@@ -59,7 +64,7 @@ export function useNodePointerInteractions(
     }
 
     // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
@@ -76,7 +81,7 @@ export function useNodePointerInteractions(
 
     const nodeId = toValue(nodeIdRef)
 
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
@@ -111,7 +116,7 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = false
   }
 
-  function safeDragStart(event: PointerEvent, nodeId: string) {
+  function safeDragStart(event: PointerEvent, nodeId: NodeId) {
     try {
       startDrag(event, nodeId)
     } finally {

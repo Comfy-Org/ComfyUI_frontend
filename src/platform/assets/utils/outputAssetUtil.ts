@@ -1,11 +1,11 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -22,7 +22,7 @@ type ResolveOutputAssetItemsOptions = {
 }
 
 type OutputKeyParts = {
-  nodeId?: NodeId | null
+  nodeId?: SerializedNodeId | null
   subfolder?: string | null
   filename?: string | null
 }

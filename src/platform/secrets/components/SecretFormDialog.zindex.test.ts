@@ -13,6 +13,7 @@ vi.mock('../composables/useSecretForm', () => ({
     loading: false,
     apiError: '',
     providerOptions: [],
+    providerHelp: '',
     handleSubmit: vi.fn()
   })
 }))

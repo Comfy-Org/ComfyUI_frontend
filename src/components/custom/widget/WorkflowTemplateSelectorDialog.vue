@@ -97,7 +97,7 @@
         <!-- Sort Options -->
         <div>
           <SingleSelect
-            v-model="sortBy"
+            v-model="sortSelection"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
             :content-style="selectContentStyle"
@@ -427,7 +427,6 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
@@ -453,16 +452,14 @@ onMounted(() => {
 
 // Wrap onClose to track session end
 const onClose = () => {
-  if (isCloud) {
-    const timeSpentSeconds = Math.floor(
-      (Date.now() - sessionStartTime.value) / 1000
-    )
+  const timeSpentSeconds = Math.floor(
+    (Date.now() - sessionStartTime.value) / 1000
+  )
 
-    useTelemetry()?.trackTemplateLibraryClosed({
-      template_selected: templateWasSelected.value,
-      time_spent_seconds: timeSpentSeconds
-    })
-  }
+  useTelemetry()?.trackTemplateLibraryClosed({
+    template_selected: templateWasSelected.value,
+    time_spent_seconds: timeSpentSeconds
+  })
 
   originalOnClose()
 }
@@ -559,7 +556,8 @@ const {
   selectedModels,
   selectedUseCases,
   selectedRunsOn,
-  sortBy,
+  sortSelection,
+  hasActiveQuery,
   activeModels,
   activeUseCases,
   filteredTemplates,
@@ -568,14 +566,13 @@ const {
   availableRunsOn,
   filteredCount,
   totalCount,
-  resetFilters,
-  loadFuseOptions
+  resetFilters
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
  * by the filtering composable is only updated via `applySearchQuery` after the
- * debounce settles, keeping Fuse/grid re-renders off the keystroke critical path.
+ * debounce settles, keeping search/grid re-renders off the keystroke critical path.
  */
 const searchInput = ref(searchQuery.value)
 
@@ -598,15 +595,13 @@ watch(searchQuery, (value) => {
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
   const isPopularNav = selectedNavItem.value === 'popular'
-  const isPopularSort = sortBy.value === 'popular'
+  const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
     if (isPopularNav && !isPopularSort) {
-      // When navigating to 'Popular' category, automatically set sort to 'Popular'.
-      sortBy.value = 'popular'
+      sortSelection.value = 'popular'
     } else if (!isPopularNav && isPopularSort) {
-      // When navigating away from 'Popular' category while sort is 'Popular', reset sort to default.
-      sortBy.value = 'default'
+      sortSelection.value = 'default'
     }
   } else if (source === 'sort') {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
@@ -619,7 +614,7 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 
 // Watch for changes from the two sources ('nav' and 'sort') and trigger the coordinator.
 watch(selectedNavItem, () => coordinateNavAndSort('nav'))
-watch(sortBy, () => coordinateNavAndSort('sort'))
+watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
 // Only show selected items that exist in the current scope
@@ -729,8 +724,15 @@ const runsOnFilterLabel = computed(() => {
   }
 })
 
-// Sort options
 const sortOptions = computed(() => [
+  ...(hasActiveQuery.value
+    ? [
+        {
+          name: t('templateWorkflows.sort.relevance', 'Relevance'),
+          value: 'relevance'
+        }
+      ]
+    : []),
   {
     name: t('templateWorkflows.sort.default', 'Default'),
     value: 'default'
@@ -792,7 +794,7 @@ watch(
   [
     filteredTemplates,
     selectedNavItem,
-    sortBy,
+    sortSelection,
     selectedModels,
     selectedUseCases,
     selectedRunsOn
@@ -842,8 +844,7 @@ const { isLoading } = useAsyncState(
   async () => {
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates(),
-      loadFuseOptions()
+      workflowTemplatesStore.loadWorkflowTemplates()
     ])
     return true
   },
