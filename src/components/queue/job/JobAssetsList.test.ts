@@ -160,6 +160,8 @@ type TestPreviewOutput = {
 type TestTaskRef = {
   workflowId?: string
   previewOutput?: TestPreviewOutput
+  isPartialSuccess?: boolean
+  executionErrorCount?: number
 }
 
 type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
@@ -308,6 +310,23 @@ describe('JobAssetsList', () => {
     const stubRoot = container.querySelector('.assets-list-item-stub')!
     expect(stubRoot.getAttribute('data-preview-url')).toBe(preview.previewUrl)
     expect(stubRoot.getAttribute('data-preview-url')).not.toBe(preview.url)
+  })
+
+  it('shows a warning badge for completed jobs with node errors', () => {
+    const job = buildJob({
+      taskRef: {
+        ...createTaskRef(createPreviewOutput('job-1.png')),
+        isPartialSuccess: true,
+        executionErrorCount: 2
+      }
+    })
+
+    renderJobAssetsList({ jobs: [job] })
+
+    expect(screen.getByTestId('partial-success-badge')).toHaveAttribute(
+      'aria-label',
+      'queue.jobDetails.completedWithErrors'
+    )
   })
 
   it('emits viewItem on double-click for completed jobs with preview', async () => {

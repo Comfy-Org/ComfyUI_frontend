@@ -56,6 +56,20 @@
               {{ item.label }}
             </Button>
           </DropdownMenuItem>
+          <DropdownMenuCheckboxItem
+            v-if="supportsNodeFailurePolicy"
+            v-model:checked="continueIndependentBranches"
+            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-primary outline-none hover:bg-secondary-background-hover"
+            data-testid="continue-independent-branches"
+            @select.prevent
+          >
+            <span class="flex size-4 items-center justify-center">
+              <DropdownMenuItemIndicator>
+                <i class="icon-[lucide--check] size-4" />
+              </DropdownMenuItemIndicator>
+            </span>
+            {{ t('menu.continueIndependentBranches') }}
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
@@ -64,8 +78,10 @@
 
 <script setup lang="ts">
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
@@ -78,6 +94,7 @@ import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
@@ -93,7 +110,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 const workspaceStore = useWorkspaceStore()
-const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+const {
+  mode: queueMode,
+  batchCount,
+  continueIndependentBranches
+} = storeToRefs(useQueueSettingsStore())
+const { flags } = useFeatureFlags()
+const supportsNodeFailurePolicy = computed(
+  () => flags.supportsNodeFailurePolicy
+)
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>

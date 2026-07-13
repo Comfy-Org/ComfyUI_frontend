@@ -5,6 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -72,6 +73,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -1669,6 +1671,13 @@ export class ComfyApp {
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
+              nodeFailurePolicy:
+                useQueueSettingsStore().continueIndependentBranches &&
+                api.serverSupportsFeature(
+                  ServerFeatureFlag.SUPPORTS_NODE_FAILURE_POLICY
+                )
+                  ? 'continue_independent'
+                  : undefined,
               previewMethod
             })
             delete api.authToken

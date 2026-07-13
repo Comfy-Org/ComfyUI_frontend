@@ -80,7 +80,13 @@ export interface MinimapNodeData {
   bgcolor?: string
   mode?: number
   hasErrors?: boolean
-  executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+  executionState?:
+    | 'pending'
+    | 'running'
+    | 'finished'
+    | 'error'
+    | 'blocked'
+    | null
 }
 
 /**
