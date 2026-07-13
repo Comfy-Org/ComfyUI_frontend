@@ -64,6 +64,9 @@ const zRawJobListItem = z
     preview_output: zPreviewOutput.nullable().optional(),
     outputs_count: z.number().nullable().optional(),
     execution_error: zExecutionError.nullable().optional(),
+    completion_status: z.enum(['success', 'partial_success']).optional(),
+    has_errors: z.boolean().optional(),
+    execution_error_count: z.number().int().optional(),
     workflow_id: z.string().nullable().optional(),
     priority: z.number().optional()
   })
@@ -79,7 +82,8 @@ export const zJobDetail = zRawJobListItem
     outputs: zTaskOutput.optional(),
     update_time: z.number().optional(),
     execution_status: z.unknown().optional(),
-    execution_meta: z.unknown().optional()
+    execution_meta: z.unknown().optional(),
+    execution_errors: z.array(zExecutionError).optional()
   })
   .passthrough()
 

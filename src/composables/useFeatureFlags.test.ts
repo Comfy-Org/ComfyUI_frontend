@@ -56,6 +56,23 @@ describe('useFeatureFlags', () => {
       )
     })
 
+    it('should access supportsNodeFailurePolicy', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.SUPPORTS_NODE_FAILURE_POLICY)
+            return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.supportsNodeFailurePolicy).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.SUPPORTS_NODE_FAILURE_POLICY,
+        false
+      )
+    })
+
     it('should access maxUploadSize', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {

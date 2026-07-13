@@ -83,12 +83,54 @@
           {{ errorMessageValue }}
         </div>
       </div>
+      <div
+        v-if="taskForJob?.isPartialSuccess"
+        class="rounded-sm border border-warning-background/30 bg-warning-background/10 p-3 text-xs/normal text-text-primary"
+      >
+        <div class="flex items-center gap-2 font-medium">
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
+          />
+          {{
+            t(
+              'queue.jobDetails.completedWithErrors',
+              { count: taskForJob.executionErrorCount },
+              taskForJob.executionErrorCount
+            )
+          }}
+        </div>
+        <div
+          v-if="recoverableExecutionErrors.length"
+          class="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto"
+        >
+          <div
+            v-for="(error, index) in recoverableExecutionErrors"
+            :key="`${error.node_id}-${index}`"
+            class="rounded-sm bg-interface-panel-hover-surface px-3 py-2"
+          >
+            <div class="font-medium text-text-primary">
+              {{
+                t('queue.jobDetails.nodeError', {
+                  nodeType: error.node_type,
+                  nodeId: error.node_id
+                })
+              }}
+            </div>
+            <div
+              class="mt-1 wrap-break-word whitespace-pre-wrap text-text-secondary"
+            >
+              {{ error.exception_message }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -96,6 +138,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -150,6 +193,33 @@ const jobState = computed(() => {
   const isInitializing = executionStore.isJobInitializing(String(task?.jobId))
   return jobStateFromTask(task, isInitializing)
 })
+
+type RecoverableExecutionError = {
+  node_id: string | number
+  node_type: string
+  exception_message: string
+}
+
+const storedExecutionErrors = ref<RecoverableExecutionError[]>([])
+const recoverableExecutionErrors = computed<RecoverableExecutionError[]>(() =>
+  storedExecutionErrors.value.length
+    ? storedExecutionErrors.value
+    : (executionStore.executionErrorsByJob[props.jobId] ?? [])
+)
+
+watch(
+  () => [props.jobId, taskForJob.value?.isPartialSuccess] as const,
+  async ([jobId, isPartialSuccess]) => {
+    storedExecutionErrors.value = []
+    if (!isPartialSuccess) return
+
+    const detail = await getJobDetail(jobId)
+    if (props.jobId === jobId) {
+      storedExecutionErrors.value = detail?.execution_errors ?? []
+    }
+  },
+  { immediate: true }
+)
 
 const firstSeenTs = computed<number | undefined>(() => {
   const task = taskForJob.value

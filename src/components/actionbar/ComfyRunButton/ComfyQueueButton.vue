@@ -56,6 +56,20 @@
               {{ item.label }}
             </Button>
           </DropdownMenuItem>
+          <DropdownMenuCheckboxItem
+            v-if="supportsNodeFailurePolicy"
+            v-model="continueIndependentBranches"
+            class="m-1 flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm leading-none outline-none data-highlighted:bg-secondary-background-hover"
+            data-testid="continue-independent-branches"
+            @select.prevent
+          >
+            <span class="flex-1">{{
+              t('menu.continueIndependentBranches')
+            }}</span>
+            <DropdownMenuItemIndicator class="size-4 shrink-0">
+              <i class="icon-[lucide--check]" />
+            </DropdownMenuItemIndicator>
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
@@ -64,8 +78,10 @@
 
 <script setup lang="ts">
 import {
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
@@ -78,6 +94,7 @@ import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -91,8 +108,16 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useWorkspaceStore()
-const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+const {
+  mode: queueMode,
+  batchCount,
+  continueIndependentBranches
+} = storeToRefs(useQueueSettingsStore())
 const { hasMissingError } = storeToRefs(useExecutionErrorStore())
+const { flags } = useFeatureFlags()
+const supportsNodeFailurePolicy = computed(
+  () => flags.supportsNodeFailurePolicy
+)
 
 const { t } = useI18n()
 type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'

@@ -22,7 +22,7 @@
         >
           <div
             :data-job-id="row.job.id"
-            class="h-12"
+            class="relative h-12"
             @mouseenter="onJobEnter(row.job, $event)"
             @mouseleave="onJobLeave(row.job.id)"
           >
@@ -84,6 +84,18 @@
                 </Button>
               </template>
             </AssetsListItem>
+            <span
+              v-if="row.job.taskRef?.isPartialSuccess"
+              data-testid="partial-success-badge"
+              class="pointer-events-none absolute bottom-1 left-7 z-2 flex size-4 items-center justify-center rounded-full bg-interface-panel-surface"
+              :aria-label="getPartialSuccessLabel(row.job)"
+              :title="getPartialSuccessLabel(row.job)"
+            >
+              <i
+                aria-hidden="true"
+                class="icon-[lucide--triangle-alert] size-3 text-warning-background"
+              />
+            </span>
           </div>
         </div>
       </template>
@@ -392,6 +404,11 @@ function getJobIconClass(job: JobListItem): string | undefined {
     return 'animate-spin'
   }
   return undefined
+}
+
+function getPartialSuccessLabel(job: JobListItem): string {
+  const count = job.taskRef?.executionErrorCount ?? 0
+  return t('queue.jobDetails.completedWithErrors', { count }, count)
 }
 
 watch(
