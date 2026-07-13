@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/vfx/HeroSection.vue'
+import TutorialsSection from '../../components/vfx/TutorialsSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
+import CallToActionSection from '../../components/common/CallToActionSection.vue'
+import { getRoutes } from '../../config/routes'
+import { externalLinks } from '../../config/routes'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout title="VFX — Comfy">
+  <HeroSection client:load />
+  <SocialProofBarSection client:visible />
+  <TutorialsSection client:visible />
+  <CallToActionSection
+    headingKey="vfx.cta.heading"
+    primaryLabelKey="vfx.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>
