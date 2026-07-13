@@ -1,3 +1,4 @@
+import type { OnboardingTourStepKey } from '@/platform/telemetry/types'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -12,7 +13,7 @@ export type MediaKind = 'image' | 'video'
  * it plus the subgraph's exposed `prompt` input port as a fallback spotlight
  * target when programmatic focus of the inner widget fails.
  */
-interface PromptRole {
+export interface PromptRole {
   subgraphNodeId: NodeId
   innerNodeId: NodeId
   widgetName: string
@@ -21,7 +22,7 @@ interface PromptRole {
 }
 
 /** A resolved graph node targeted by a tour step. */
-interface NodeRole {
+export interface NodeRole {
   nodeId: NodeId
 }
 
@@ -37,4 +38,45 @@ export interface ResolvedRoles {
   engine: NodeRole | null
   sink: NodeRole | null
   mediaKind: MediaKind
+}
+
+/** Step kinds are the telemetry step keys, so the two can never drift. */
+type TourStepKind = OnboardingTourStepKey
+
+/**
+ * One step in a built tour. `nodeId` is the spotlight target (null for Run,
+ * which points at the toolbar button, not a node); `prompt` carries the
+ * subgraph-aware focus path; `mediaKind` shapes the Result renderer.
+ */
+export interface TourStep {
+  kind: TourStepKind
+  nodeId: NodeId | null
+  prompt?: PromptRole
+  mediaKind?: MediaKind
+}
+
+/**
+ * Turns resolved roles into the ordered step list by shape: an Upload step only
+ * when a source image resolved, then always Prompt → Run → Result. A role that
+ * failed to resolve omits its step instead of crashing.
+ */
+export function sequenceBuilder(roles: ResolvedRoles): TourStep[] {
+  const steps: TourStep[] = []
+
+  if (roles.source) {
+    steps.push({ kind: 'upload', nodeId: roles.source.nodeId })
+  }
+  if (roles.prompt) {
+    steps.push({ kind: 'prompt', nodeId: null, prompt: roles.prompt })
+  }
+  steps.push({ kind: 'run', nodeId: null })
+  if (roles.sink) {
+    steps.push({
+      kind: 'result',
+      nodeId: roles.sink.nodeId,
+      mediaKind: roles.mediaKind
+    })
+  }
+
+  return steps
 }

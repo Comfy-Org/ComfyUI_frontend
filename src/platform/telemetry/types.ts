@@ -531,7 +531,7 @@ export interface WorkspaceInviteMetadata extends Record<string, unknown> {
  */
 type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
 type OnboardingTourEntry = 'getting_started' | 'share_url' | 'template_url'
-type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
+export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
 
 export interface OnboardingTourStartedMetadata {
   template_id?: string
