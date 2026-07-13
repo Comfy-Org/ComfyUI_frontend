@@ -10,6 +10,15 @@ vi.mock('./subgraphNavigation', () => ({ restoreView }))
 const resolveRoles = vi.hoisted(() => vi.fn())
 vi.mock('./roleResolver', () => ({ resolveRoles }))
 
+const sinkNode = vi.hoisted(() => ({}) as object)
+const resolveNode = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/litegraphUtil', () => ({ resolveNode }))
+
+const getNodeImageUrls = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({ getNodeImageUrls })
+}))
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { useOnboardingTourStore } from './onboardingTourStore'
@@ -51,6 +60,10 @@ describe('onboardingTourStore', () => {
     store = useOnboardingTourStore()
     resolveRoles.mockReset()
     restoreView.mockReset()
+    resolveNode.mockReset()
+    getNodeImageUrls.mockReset()
+    resolveNode.mockReturnValue(sinkNode)
+    getNodeImageUrls.mockReturnValue(['blob:sink-output'])
   })
 
   it('reset() clears all state back to idle', () => {
@@ -66,6 +79,7 @@ describe('onboardingTourStore', () => {
     store.revealedNodeIds.add(toNodeId(42))
     store.resultMedia = { url: 'blob:x', kind: 'image' }
     store.runStatus = 'running'
+    store.nudgePending = true
 
     store.reset()
 
@@ -75,6 +89,7 @@ describe('onboardingTourStore', () => {
     expect(store.revealedNodeIds.size).toBe(0)
     expect(store.resultMedia).toBeNull()
     expect(store.runStatus).toBe('idle')
+    expect(store.nudgePending).toBe(false)
   })
 
   it('start() on I2V roles builds [Upload, Prompt, Run, Result] and reveals the source', () => {
@@ -187,5 +202,60 @@ describe('onboardingTourStore', () => {
     // always-present Run step rather than crashing.
     expect(store.steps.map((s) => s.kind)).toEqual(['run'])
     expect(store.phase).toBe('active')
+  })
+
+  it('captureResultMedia() records the sink output URL with the resolved media kind', () => {
+    resolveRoles.mockReturnValue(i2vRoles)
+    store.start(workflow)
+
+    store.captureResultMedia()
+
+    expect(resolveNode).toHaveBeenCalledWith(toNodeId(108))
+    expect(getNodeImageUrls).toHaveBeenCalledWith(sinkNode)
+    expect(store.resultMedia).toEqual({
+      url: 'blob:sink-output',
+      kind: 'video'
+    })
+    expect(store.runStatus).toBe('completed')
+  })
+
+  it('captureResultMedia() is a no-op while the tour is idle', () => {
+    store.captureResultMedia()
+
+    expect(resolveNode).not.toHaveBeenCalled()
+    expect(store.resultMedia).toBeNull()
+  })
+
+  it('captureResultMedia() ignores a sink with no output', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+    getNodeImageUrls.mockReturnValue(undefined)
+
+    store.captureResultMedia()
+
+    expect(store.resultMedia).toBeNull()
+    expect(store.runStatus).toBe('idle')
+  })
+
+  it('captureResultMedia() ignores an unresolvable sink node', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+    resolveNode.mockReturnValue(null)
+
+    store.captureResultMedia()
+
+    expect(getNodeImageUrls).not.toHaveBeenCalled()
+    expect(store.resultMedia).toBeNull()
+  })
+
+  it('markNudgePending() flags the post-tour nudge and end() clears it', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+
+    store.markNudgePending()
+    expect(store.nudgePending).toBe(true)
+
+    store.end()
+    expect(store.nudgePending).toBe(false)
   })
 })

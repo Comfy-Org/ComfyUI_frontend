@@ -11,6 +11,12 @@ interface StoryArgs {
   revealedCount: number
 }
 
+const SAMPLE_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160"><rect width="100%" height="100%" fill="%234f46e5"/></svg>'
+  )
+
 const steps: TourStep[] = [
   { kind: 'upload', nodeId: toNodeId(1) },
   {
@@ -24,7 +30,7 @@ const steps: TourStep[] = [
     }
   },
   { kind: 'run', nodeId: null },
-  { kind: 'result', nodeId: toNodeId(4), mediaKind: 'video' }
+  { kind: 'result', nodeId: toNodeId(4), mediaKind: 'image' }
 ]
 
 const meta: Meta<StoryArgs> = {
@@ -49,6 +55,11 @@ const meta: Meta<StoryArgs> = {
           toNodeId(i + 1)
         )
       )
+      const activeStep = steps[context.args.stepIndex]
+      store.resultMedia =
+        activeStep?.kind === 'result'
+          ? { url: SAMPLE_IMAGE, kind: activeStep.mediaKind ?? 'image' }
+          : null
       // Spotlight geometry needs a live litegraph canvas (absent in Storybook),
       // so holes are exercised by the unit test; this catalogs the coach-mark.
       return { template: '<story />' }

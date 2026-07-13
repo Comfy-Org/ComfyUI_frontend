@@ -68,6 +68,20 @@
           {{ t('onboardingTour.step.prompt.portHint') }}
         </p>
 
+        <img
+          v-if="resultImageSrc"
+          :src="resultImageSrc"
+          :alt="t(copy.body)"
+          class="max-w-full rounded-md"
+        />
+        <video
+          v-else-if="resultVideoSrc"
+          data-testid="onboarding-result-video"
+          :src="resultVideoSrc"
+          controls
+          class="max-w-full rounded-md"
+        />
+
         <div class="flex items-center justify-between">
           <button
             type="button"
@@ -102,10 +116,12 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
+import { useEventListener, useRafFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { api } from '@/scripts/api'
 
 import { maskRectsFor } from './canvasSpotlightAdapter'
 import type { ScreenRect } from './canvasSpotlightAdapter'
@@ -123,7 +139,8 @@ const {
   revealedNodeIds,
   currentStep,
   totalSteps,
-  promptPortFallback
+  promptPortFallback,
+  resultMedia
 } = storeToRefs(store)
 
 const isActive = computed(() => phase.value === 'active')
@@ -132,6 +149,22 @@ const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
 const showPortHint = computed(
   () => currentStep.value?.kind === 'prompt' && promptPortFallback.value
 )
+
+const onResultStep = computed(() => currentStep.value?.kind === 'result')
+const resultImageSrc = computed(() =>
+  onResultStep.value && resultMedia.value?.kind === 'image'
+    ? resultMedia.value.url
+    : null
+)
+const resultVideoSrc = computed(() =>
+  onResultStep.value && resultMedia.value?.kind === 'video'
+    ? resultMedia.value.url
+    : null
+)
+
+// The saved output arrives after the user's run completes; capture it so the
+// Result step can render the real image/video.
+useEventListener(api, 'execution_success', () => store.captureResultMedia())
 
 function stepCopyKey(step: TourStep): { title: string; body: string } {
   const base = 'onboardingTour.step'

@@ -27,6 +27,15 @@ vi.mock('./useOnboardingTourController', () => ({
   useOnboardingTourController: () => mocks.controller
 }))
 
+const apiListeners = vi.hoisted(() => new Map<string, (e: Event) => void>())
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: (type: string, cb: (e: Event) => void) =>
+      apiListeners.set(type, cb),
+    removeEventListener: (type: string) => apiListeners.delete(type)
+  }
+}))
+
 import OnboardingTourOverlay from './OnboardingTourOverlay.vue'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
@@ -57,6 +66,12 @@ const videoResultStep: TourStep = {
   mediaKind: 'video'
 }
 
+const imageResultStep: TourStep = {
+  kind: 'result',
+  nodeId: toNodeId(4),
+  mediaKind: 'image'
+}
+
 function rect(left: number): ScreenRect {
   return { left, top: 0, width: 100, height: 50 }
 }
@@ -72,6 +87,7 @@ describe('OnboardingTourOverlay', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useOnboardingTourStore()
     mocks.maskRects = []
+    apiListeners.clear()
   })
 
   afterEach(() => {
@@ -133,6 +149,50 @@ describe('OnboardingTourOverlay', () => {
     expect(
       await screen.findByText('Your first video is ready.')
     ).toBeInTheDocument()
+  })
+
+  it('renders an inline image on the Result step for an image sink', async () => {
+    store.phase = 'active'
+    store.steps = [runStep, imageResultStep]
+    store.stepIndex = 1
+    store.resultMedia = { url: 'blob:image-output', kind: 'image' }
+
+    renderOverlay()
+
+    const img = await screen.findByRole('img', {
+      name: 'Your first image is ready.'
+    })
+    expect(img).toHaveAttribute('src', 'blob:image-output')
+    expect(screen.queryByTestId('onboarding-result-video')).toBeNull()
+  })
+
+  it('renders an inline video on the Result step for a video sink', async () => {
+    store.phase = 'active'
+    store.steps = [runStep, videoResultStep]
+    store.stepIndex = 1
+    store.resultMedia = { url: 'blob:video-output', kind: 'video' }
+
+    renderOverlay()
+
+    const video = await screen.findByTestId('onboarding-result-video')
+    expect(video).toHaveAttribute('src', 'blob:video-output')
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('captures the sink output when the run finishes', async () => {
+    const captureResultMedia = vi.spyOn(store, 'captureResultMedia')
+    store.phase = 'active'
+    store.steps = [runStep, videoResultStep]
+
+    renderOverlay()
+    await vi.waitFor(() =>
+      expect(apiListeners.has('execution_success')).toBe(true)
+    )
+
+    apiListeners.get('execution_success')?.(
+      new CustomEvent('execution_success')
+    )
+    expect(captureResultMedia).toHaveBeenCalledOnce()
   })
 
   it('shows the port hint only when prompt focus fell back to the port', async () => {

@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/types/nodeId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import { resolveRoles } from './roleResolver'
 import { restoreView } from './subgraphNavigation'
@@ -33,6 +35,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const runStatus = ref<RunStatus>('idle')
   /** Set when programmatic prompt focus failed and the port is spotlit instead. */
   const promptPortFallback = ref(false)
+  /** True once the tour ends into the post-run nudge (rendered by the nudge component). */
+  const nudgePending = ref(false)
 
   const currentStep = computed<TourStep | null>(
     () => steps.value[stepIndex.value] ?? null
@@ -74,6 +78,32 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     syncRevealed()
   }
 
+  /**
+   * Record the sink's generated output as the Result step's media. The URL is
+   * server-built (`/view?...`) and rendered via a bound `:src`; the media kind
+   * comes from the resolved sink, not the output MIME, so a restored-from-URL
+   * result still picks the right renderer. No-op unless the tour is active and
+   * the sink both resolves and has an output.
+   */
+  function captureResultMedia() {
+    if (phase.value !== 'active') return
+    const sink = resolvedRoles.value?.sink
+    if (!sink) return
+
+    const node = resolveNode(sink.nodeId)
+    if (!node) return
+
+    const [url] = useNodeOutputStore().getNodeImageUrls(node) ?? []
+    if (!url) return
+
+    resultMedia.value = { url, kind: resolvedRoles.value?.mediaKind ?? 'image' }
+    runStatus.value = 'completed'
+  }
+
+  function markNudgePending() {
+    nudgePending.value = true
+  }
+
   function reset() {
     phase.value = 'idle'
     stepIndex.value = 0
@@ -83,6 +113,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia.value = null
     runStatus.value = 'idle'
     promptPortFallback.value = false
+    nudgePending.value = false
   }
 
   function end() {
@@ -101,9 +132,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia,
     runStatus,
     promptPortFallback,
+    nudgePending,
     start,
     advance,
     back,
+    captureResultMedia,
+    markNudgePending,
     end,
     reset
   }
