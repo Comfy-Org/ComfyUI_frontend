@@ -2,7 +2,8 @@
   Progressive-disclosure overlay (true-hide, option (a): SVG-mask only).
   A near-opaque scrim covers the canvas; holes are cut only for the current
   step's revealed nodes, so everything else reads as absent without any graph
-  mutation. Presentation only — Skip emits; step content arrives via slots.
+  mutation. Step copy binds from the active step; Skip/Back/Next drive the tour
+  controller.
 -->
 <template>
   <Teleport v-if="isActive" to="body">
@@ -59,17 +60,41 @@
           }}
         </span>
 
-        <slot name="content" />
+        <h2 class="text-base font-semibold text-base-foreground">
+          {{ t(copy.title) }}
+        </h2>
+        <p class="text-xs text-muted-foreground">{{ t(copy.body) }}</p>
+        <p v-if="showPortHint" class="text-xs text-muted-foreground">
+          {{ t('onboardingTour.step.prompt.portHint') }}
+        </p>
 
         <div class="flex items-center justify-between">
           <button
             type="button"
             class="text-xs text-muted-foreground transition-colors hover:text-base-foreground"
-            @click="emit('skip')"
+            @click="controller.end('skip')"
           >
             {{ t('onboardingTour.skip') }}
           </button>
-          <slot name="actions" />
+          <div class="flex items-center gap-2">
+            <button
+              v-if="stepIndex > 0"
+              type="button"
+              class="rounded-md px-3 py-1 text-xs text-base-foreground transition-colors hover:bg-node-component-surface"
+              @click="controller.back()"
+            >
+              {{ t('onboardingTour.back') }}
+            </button>
+            <button
+              type="button"
+              class="rounded-md bg-primary-background px-3 py-1 text-xs text-base-foreground transition-colors hover:bg-primary-background-hover"
+              @click="onNext"
+            >
+              {{
+                isLastStep ? t('onboardingTour.done') : t('onboardingTour.next')
+              }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -79,23 +104,65 @@
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { maskRectsFor } from './canvasSpotlightAdapter'
 import type { ScreenRect } from './canvasSpotlightAdapter'
+import { useOnboardingTourController } from './useOnboardingTourController'
 import { useOnboardingTourStore } from './onboardingTourStore'
-
-const { totalSteps = 1 } = defineProps<{ totalSteps?: number }>()
-
-const emit = defineEmits<{ skip: [] }>()
+import type { TourStep } from './tourSequence'
 
 const { t } = useI18n()
 
 const store = useOnboardingTourStore()
-const { phase, stepIndex, revealedNodeIds } = storeToRefs(store)
+const controller = useOnboardingTourController()
+const {
+  phase,
+  stepIndex,
+  revealedNodeIds,
+  currentStep,
+  totalSteps,
+  promptPortFallback
+} = storeToRefs(store)
 
 const isActive = computed(() => phase.value === 'active')
+const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
+
+const showPortHint = computed(
+  () => currentStep.value?.kind === 'prompt' && promptPortFallback.value
+)
+
+function stepCopyKey(step: TourStep): { title: string; body: string } {
+  const base = 'onboardingTour.step'
+  switch (step.kind) {
+    case 'upload':
+      return { title: `${base}.upload.title`, body: `${base}.upload.body` }
+    case 'prompt':
+      return { title: `${base}.prompt.title`, body: `${base}.prompt.body` }
+    case 'run':
+      return { title: `${base}.run.title`, body: `${base}.run.body` }
+    case 'result': {
+      const media = step.mediaKind ?? 'image'
+      return {
+        title: `${base}.result.${media}.title`,
+        body: `${base}.result.${media}.body`
+      }
+    }
+  }
+}
+
+const copy = computed(() =>
+  currentStep.value ? stepCopyKey(currentStep.value) : { title: '', body: '' }
+)
+
+function onNext() {
+  if (isLastStep.value) {
+    controller.end('done')
+  } else {
+    void controller.advance()
+  }
+}
 
 const litRects = ref<ScreenRect[]>([])
 
@@ -128,6 +195,12 @@ watch(
 // reveal, which would yank focus back mid-interaction.
 watch(isActive, (active) => {
   if (active) void bubbleRef.value?.focus()
+})
+
+// Tearing down the overlay (e.g. route away mid-tour) must end the tour so the
+// controller's grace timer can't outlive the UI it drives.
+onUnmounted(() => {
+  if (isActive.value) controller.end('skip')
 })
 
 function ringStyle(rect: ScreenRect) {

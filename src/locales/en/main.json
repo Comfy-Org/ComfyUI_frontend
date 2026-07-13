@@ -2296,7 +2296,35 @@
   "onboardingTour": {
     "overlayLabel": "Getting started tour",
     "skip": "Skip",
-    "stepCounter": "{current} of {total}"
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "stepCounter": "{current} of {total}",
+    "step": {
+      "upload": {
+        "title": "Start with an image",
+        "body": "Upload the image you want to build from."
+      },
+      "prompt": {
+        "title": "Tell it what to make",
+        "body": "Describe what you want to create.",
+        "portHint": "Click the prompt input to start typing."
+      },
+      "run": {
+        "title": "Now run it and watch it come to life",
+        "body": "Press Run to generate your result."
+      },
+      "result": {
+        "image": {
+          "title": "And there it is",
+          "body": "Your first image is ready."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your first video is ready."
+        }
+      }
+    }
   },
   "auth": {
     "apiKey": {

@@ -4,12 +4,28 @@ import { toNodeId } from '@/types/nodeId'
 
 import OnboardingTourOverlay from './OnboardingTourOverlay.vue'
 import { useOnboardingTourStore } from './onboardingTourStore'
+import type { TourStep } from './tourSequence'
 
 interface StoryArgs {
-  totalSteps: number
   stepIndex: number
   revealedCount: number
 }
+
+const steps: TourStep[] = [
+  { kind: 'upload', nodeId: toNodeId(1) },
+  {
+    kind: 'prompt',
+    nodeId: null,
+    prompt: {
+      subgraphNodeId: toNodeId(2),
+      innerNodeId: toNodeId(3),
+      widgetName: 'text',
+      portFallback: 'prompt'
+    }
+  },
+  { kind: 'run', nodeId: null },
+  { kind: 'result', nodeId: toNodeId(4), mediaKind: 'video' }
+]
 
 const meta: Meta<StoryArgs> = {
   title: 'Renderer/OnboardingTour/OnboardingTourOverlay',
@@ -19,14 +35,14 @@ const meta: Meta<StoryArgs> = {
     backgrounds: { default: 'dark' }
   },
   argTypes: {
-    totalSteps: { control: { type: 'number', min: 1, max: 6 } },
-    stepIndex: { control: { type: 'number', min: 0, max: 5 } },
+    stepIndex: { control: { type: 'number', min: 0, max: 3 } },
     revealedCount: { control: { type: 'number', min: 0, max: 4 } }
   },
   decorators: [
     (_, context) => {
       const store = useOnboardingTourStore()
       store.phase = 'active'
+      store.steps = steps
       store.stepIndex = context.args.stepIndex
       store.revealedNodeIds = new Set(
         Array.from({ length: context.args.revealedCount }, (_, i) =>
@@ -43,37 +59,22 @@ const meta: Meta<StoryArgs> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const render: Story['render'] = (args) => ({
+const render: Story['render'] = () => ({
   components: { OnboardingTourOverlay },
-  setup() {
-    return { args }
-  },
-  template: `
-    <OnboardingTourOverlay :totalSteps="args.totalSteps">
-      <template #content>
-        <p class="text-base font-semibold text-base-foreground">Tell it what to make</p>
-        <p class="text-sm text-muted-foreground">
-          This prompt reshapes the image: same style, new subject. This line is yours to change.
-        </p>
-      </template>
-      <template #actions>
-        <button type="button" class="text-xs font-medium text-base-foreground">Next</button>
-      </template>
-    </OnboardingTourOverlay>
-  `
+  template: '<OnboardingTourOverlay />'
 })
 
 export const FirstStep: Story = {
-  args: { totalSteps: 4, stepIndex: 0, revealedCount: 1 },
+  args: { stepIndex: 0, revealedCount: 1 },
   render
 }
 
 export const MultiReveal: Story = {
-  args: { totalSteps: 4, stepIndex: 1, revealedCount: 2 },
+  args: { stepIndex: 1, revealedCount: 2 },
   render
 }
 
 export const LastStep: Story = {
-  args: { totalSteps: 4, stepIndex: 3, revealedCount: 1 },
+  args: { stepIndex: 3, revealedCount: 1 },
   render
 }

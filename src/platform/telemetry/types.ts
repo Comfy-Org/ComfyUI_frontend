@@ -529,7 +529,7 @@ export interface WorkspaceInviteMetadata extends Record<string, unknown> {
  * best-effort but that aren't a named shape. `step_key`/`template_id` carry no
  * user content or share id, so no PII.
  */
-type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
+export type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
 type OnboardingTourEntry = 'getting_started' | 'share_url' | 'template_url'
 export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
 
