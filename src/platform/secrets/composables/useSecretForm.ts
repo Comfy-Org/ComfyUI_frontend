@@ -101,8 +101,11 @@ export function useSecretForm(options: UseSecretFormOptions) {
 
   // Once the server allowlist resolves, drop a selection the resolved list no
   // longer offers so the user cannot submit an unlisted provider.
-  watch(providerOptions, (options) => {
-    if (form.provider && !options.some((o) => o.value === form.provider)) {
+  watch(providerOptions, (resolvedOptions) => {
+    if (
+      form.provider &&
+      !resolvedOptions.some((o) => o.value === form.provider)
+    ) {
       form.provider = null
     }
   })
