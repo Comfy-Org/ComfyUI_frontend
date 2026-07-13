@@ -8,6 +8,7 @@ import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutPlatformSource } from '@/platform/telemetry/utils/platformSource'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -136,7 +137,8 @@ export const useAuthActions = () => {
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
-      currency: 'usd'
+      currency: 'usd',
+      platform_source: getCheckoutPlatformSource()
     })
 
     if (!response.checkout_url) {

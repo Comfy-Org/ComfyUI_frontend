@@ -30,6 +30,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import type { PlatformSource } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -41,7 +42,9 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
-  operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
+  operations['InitiateCreditPurchase']['requestBody']['content']['application/json'] & {
+    platform_source?: PlatformSource
+  }
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
