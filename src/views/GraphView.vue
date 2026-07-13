@@ -1,6 +1,10 @@
 <template>
   <div class="comfyui-body grid size-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
+    <div id="comfyui-body-top" class="comfyui-body-top">
+      <!-- LinearView and the builder chrome overlay this grid row, so they
+           host or suppress the banner themselves. -->
+      <BillingStatusBanner v-show="!linearMode && !isBuilderMode" />
+    </div>
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
@@ -50,6 +54,7 @@ import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import BillingStatusBanner from '@/platform/workspace/components/BillingStatusBanner.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'

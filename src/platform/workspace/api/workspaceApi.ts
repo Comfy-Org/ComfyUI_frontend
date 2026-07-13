@@ -244,6 +244,9 @@ export type BillingSubscriptionStatus =
   | 'scheduled'
   | 'ended'
   | 'canceled'
+  // Not yet emitted by the backend; the paused banner stays inert until the
+  // status API projects the workspace's Stripe-paused state (see FE-968).
+  | 'paused'
 
 export type BillingStatus =
   | 'awaiting_payment_method'

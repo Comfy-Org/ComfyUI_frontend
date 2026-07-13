@@ -242,6 +242,21 @@ describe('useSubscriptionDialog', () => {
       expect(mockTrackSubscription).not.toHaveBeenCalled()
     })
 
+    it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'out_of_credits' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onClose')
+      expect(props).not.toHaveProperty('reason')
+      expect(props).not.toHaveProperty('initialPlanMode')
+    })
+
     it('does not track on non-cloud', () => {
       mockIsCloud.value = false
       const { showPricingTable } = useSubscriptionDialog()
