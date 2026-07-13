@@ -39,6 +39,22 @@ const sampleNodes: PartnerNode[] = [
   node({ id: 'c', name: 'Beta Node', partner: 'BFL', enabled: true })
 ]
 
+type Deferred<T> = {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason?: unknown) => void
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolveFn, rejectFn) => {
+    resolve = resolveFn
+    reject = rejectFn
+  })
+  return { promise, resolve, reject }
+}
+
 async function setupLoaded() {
   vi.mocked(partnerNodesApi.list).mockResolvedValue({
     partner_nodes: sampleNodes.map((n) => ({ ...n })),
@@ -166,6 +182,46 @@ describe('usePartnerNodes', () => {
     expect(pn.nodes.value.find((n) => n.id === 'b')!.enabled).toBe(true)
   })
 
+  it('does not let an older failed node update undo a newer success', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabled)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockResolvedValueOnce()
+
+    const firstUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      false
+    )
+    await pn.setEnabled(pn.nodes.value.find((n) => n.id === 'a')!, false)
+    firstRequest.reject(new Error('older update failed'))
+    await firstUpdate
+
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+  })
+
+  it('does not let an older failed bulk update undo a newer success', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabledBulk)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockResolvedValueOnce()
+
+    const firstUpdate = pn.setGroupEnabled(
+      pn.groups.value.find((group) => group.partner === 'BFL')!,
+      false
+    )
+    await pn.setGroupEnabled(
+      pn.groups.value.find((group) => group.partner === 'BFL')!,
+      false
+    )
+    firstRequest.reject(new Error('older update failed'))
+    await firstUpdate
+
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+    expect(pn.nodes.value.find((n) => n.id === 'c')!.enabled).toBe(false)
+  })
+
   it('group toggle bulk-toggles every node in the group', async () => {
     const pn = await setupLoaded()
     const bfl = pn.groups.value.find((g) => g.partner === 'BFL')!
@@ -207,6 +263,21 @@ describe('usePartnerNodes', () => {
 
     expect(pn.autoEnableNew.value).toBe(true)
     expect(mockToastAdd).toHaveBeenCalled()
+  })
+
+  it('does not let an older auto-enable failure undo a newer success', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setAutoEnableNew)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockResolvedValueOnce()
+
+    const firstUpdate = pn.setAutoEnableNew(false)
+    await pn.setAutoEnableNew(false)
+    firstRequest.reject(new Error('older update failed'))
+    await firstUpdate
+
+    expect(pn.autoEnableNew.value).toBe(false)
   })
 
   it('exposes loading and error state when the initial fetch fails', async () => {

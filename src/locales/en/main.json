@@ -3126,6 +3126,7 @@
       "loading": "Loading partner nodes...",
       "neverModified": "—",
       "nodeToggle": "Enable or disable {name}",
+      "retry": "Retry",
       "searchPlaceholder": "Search partner nodes",
       "selectAll": "Select all partner nodes",
       "selectedCount": "{count} node selected | {count} nodes selected",

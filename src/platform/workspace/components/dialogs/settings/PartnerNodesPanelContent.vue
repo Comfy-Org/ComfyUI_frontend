@@ -68,7 +68,7 @@
             <TableRow
               class="hover:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors"
             >
-              <TableCell @click.stop>
+              <TableCell>
                 <Checkbox
                   :model-value="groupSelectionState(group)"
                   :aria-label="group.partner"
@@ -126,7 +126,7 @@
               <TableCell class="text-muted-foreground">
                 {{ formatLastModified(group.lastModified) }}
               </TableCell>
-              <TableCell class="text-right" @click.stop>
+              <TableCell class="text-right">
                 <!-- On when any node in the group is enabled; the count column
                 carries the partial state. Off disables the whole group. -->
                 <Switch
@@ -151,7 +151,7 @@
                 :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
                 class="group hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
               >
-                <TableCell @click.stop>
+                <TableCell>
                   <Checkbox
                     :model-value="selectedIds.has(node.id)"
                     :aria-label="node.name"
@@ -174,7 +174,7 @@
                 <TableCell class="text-muted-foreground">
                   {{ formatLastModified(node.last_modified) }}
                 </TableCell>
-                <TableCell class="text-right" @click.stop>
+                <TableCell class="text-right">
                   <Switch
                     :model-value="node.enabled"
                     :aria-label="
@@ -204,9 +204,14 @@
               :colspan="5"
               class="py-6 text-center text-sm text-muted-foreground"
             >
-              <span role="alert">
-                {{ $t('workspacePanel.partnerNodes.loadError') }}
-              </span>
+              <div class="flex items-center justify-center gap-2">
+                <span role="alert">
+                  {{ $t('workspacePanel.partnerNodes.loadError') }}
+                </span>
+                <Button variant="muted-textonly" @click="fetch">
+                  {{ $t('workspacePanel.partnerNodes.retry') }}
+                </Button>
+              </div>
             </TableCell>
           </TableRow>
           <TableRow

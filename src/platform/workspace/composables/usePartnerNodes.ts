@@ -59,6 +59,8 @@ export function usePartnerNodes() {
   const sortField = ref<SortField>('name')
   const sortDirection = ref<SortDirection>('asc')
   const selectedIds = ref<Set<string>>(new Set())
+  const nodeMutationVersions = new Map<string, number>()
+  let autoEnableMutationVersion = 0
 
   const filteredNodes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
@@ -185,17 +187,27 @@ export function usePartnerNodes() {
     )
   }
 
+  function startNodeMutation(id: string): number {
+    const version = (nodeMutationVersions.get(id) ?? 0) + 1
+    nodeMutationVersions.set(id, version)
+    return version
+  }
+
   async function setEnabled(node: PartnerNode, enabled: boolean) {
-    const { enabled: prevEnabled, last_modified: prevModified } = node
+    const currentNode = nodes.value.find((n) => n.id === node.id) ?? node
+    const { enabled: prevEnabled, last_modified: prevModified } = currentNode
+    const mutationVersion = startNodeMutation(node.id)
     applyEnabled([node.id], enabled)
     try {
       await partnerNodesApi.setEnabled(node.id, enabled)
     } catch {
-      nodes.value = nodes.value.map((n) =>
-        n.id === node.id
-          ? { ...n, enabled: prevEnabled, last_modified: prevModified }
-          : n
-      )
+      if (nodeMutationVersions.get(node.id) === mutationVersion) {
+        nodes.value = nodes.value.map((n) =>
+          n.id === node.id
+            ? { ...n, enabled: prevEnabled, last_modified: prevModified }
+            : n
+        )
+      }
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.updateError')
@@ -217,14 +229,22 @@ export function usePartnerNodes() {
           { enabled: n.enabled, last_modified: n.last_modified }
         ])
     )
+    const mutationVersions = new Map(
+      [...idSet].map((id) => [id, startNodeMutation(id)])
+    )
     applyEnabled(ids, enabled)
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
       return true
     } catch {
-      nodes.value = nodes.value.map((n) =>
-        previous.has(n.id) ? { ...n, ...previous.get(n.id)! } : n
-      )
+      nodes.value = nodes.value.map((n) => {
+        const previousNode = previous.get(n.id)
+        const mutationVersion = mutationVersions.get(n.id)
+        return previousNode &&
+          mutationVersion === nodeMutationVersions.get(n.id)
+          ? { ...n, ...previousNode }
+          : n
+      })
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.updateError')
@@ -257,11 +277,14 @@ export function usePartnerNodes() {
 
   async function setAutoEnableNew(value: boolean) {
     const previous = autoEnableNew.value
+    const mutationVersion = ++autoEnableMutationVersion
     autoEnableNew.value = value
     try {
       await partnerNodesApi.setAutoEnableNew(value)
     } catch {
-      autoEnableNew.value = previous
+      if (autoEnableMutationVersion === mutationVersion) {
+        autoEnableNew.value = previous
+      }
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.updateError')
