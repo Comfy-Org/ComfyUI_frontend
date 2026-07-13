@@ -394,14 +394,10 @@ describe('Viewport3d', () => {
         initialRenderTimer: null,
         startAnimation: vi.fn(),
         renderLoop: { stop: vi.fn() },
-        resizeObserver: null,
         disposeContextMenuGuard: null,
-        renderer: {
-          forceContextLoss: vi.fn(),
-          dispose: vi.fn(),
-          domElement: Object.assign(document.createElement('canvas'), {
-            remove: vi.fn()
-          })
+        view: {
+          canvas: document.createElement('canvas'),
+          dispose: vi.fn()
         },
         disposeManagers: vi.fn()
       })

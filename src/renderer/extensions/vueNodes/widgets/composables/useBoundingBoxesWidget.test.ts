@@ -5,7 +5,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { useBoundingBoxesWidget } from './useBoundingBoxesWidget'
 
-const widgetOptions = { serialize: true, canvasOnly: false }
+const widgetOptions = { serialize: true, canvasOnly: false, hideInPanel: true }
 
 function mockNode() {
   return { addWidget: vi.fn(() => ({})) } as unknown as LGraphNode & {

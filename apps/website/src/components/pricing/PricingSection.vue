@@ -167,7 +167,7 @@ const planCards = computed(() =>
             :label="t(plan.labelKey, locale)"
             class="ppformula-text-center text-base uppercase"
           />
-          <Badge v-if="plan.isPopular" variant="callout">
+          <Badge v-if="plan.isPopular" variant="callout" size="xs">
             {{ t('pricing.badge.popular', locale) }}</Badge
           >
         </div>

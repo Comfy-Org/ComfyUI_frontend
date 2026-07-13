@@ -359,6 +359,7 @@
     "colors": "پالت رنگ",
     "descLabel": "توضیحات",
     "descPlaceholder": "توضیحات این ناحیه",
+    "grid": "شبکه",
     "textLabel": "متن",
     "textPlaceholder": "متن برای نمایش (عیناً)",
     "typeObj": "obj",
@@ -953,6 +954,16 @@
       "message": "شناسه گفت‌وگوی نامعتبری ارائه شده است.",
       "title": "گفت‌وگوی نامعتبر"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
+    "confirmSummary": "تأیید ورود دسکتاپ",
+    "expiredDetail": "درخواست ورود منقضی شده یا قبلاً استفاده شده است. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "expiredSummary": "ورود دسکتاپ ناموفق بود",
+    "failedDetail": "در تکمیل ورود دسکتاپ مشکلی پیش آمد. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "failedSummary": "ورود دسکتاپ ناموفق بود",
+    "successDetail": "می‌توانید به برنامه دسکتاپ ComfyUI بازگردید.",
+    "successSummary": "ورود انجام شد"
   },
   "desktopMenu": {
     "confirmQuit": "جریان‌های کاری ذخیره‌نشده باز هستند؛ هرگونه تغییر ذخیره‌نشده از بین خواهد رفت. آیا می‌خواهید بدون توجه به این موضوع خارج شوید؟",
@@ -2854,6 +2865,8 @@
     "phantom subject": "موضوع فانتوم",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "پردازش‌گرهای پسین",
+    "pre-processors": "پردازش‌گرهای پیشین",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
@@ -4135,6 +4148,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
+      "relevance": "مرتبط‌ترین",
       "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",
