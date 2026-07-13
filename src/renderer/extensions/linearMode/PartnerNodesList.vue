@@ -21,7 +21,7 @@ const { isCreditsBadge } = usePriceBadge()
 const { t } = useI18n()
 
 const creditsBadges = computed(() =>
-  mapAllNodes(app.graph, (node) => {
+  mapAllNodes(app.rootGraph, (node) => {
     if (node.isSubgraphNode()) return
 
     const priceBadge = node.badges.find(isCreditsBadge)

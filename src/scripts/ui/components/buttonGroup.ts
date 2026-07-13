@@ -10,7 +10,7 @@ export class ComfyButtonGroup {
     this.buttons = prop(this, 'buttons', buttons, () => this.update())
   }
 
-  insert(button: ComfyButton, index: number) {
+  insert(button: HTMLElement | ComfyButton, index: number) {
     this.buttons.splice(index, 0, button)
     this.update()
   }

@@ -12,6 +12,7 @@ import {
   Reroute,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
@@ -126,6 +127,31 @@ describe('LGraph', () => {
   test('supports schema v0.4 graphs', ({ expect, oldSchemaGraph }) => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot('oldSchemaGraph')
+  })
+
+  test('skips null entries in v0.4 links arrays during configure()', ({
+    expect,
+    oldSchemaGraph
+  }) => {
+    const graph = new LGraph()
+    const validLink: SerialisedLLinkArray = [
+      1,
+      toNodeId(1),
+      0,
+      toNodeId(2),
+      0,
+      'number'
+    ]
+
+    expect(() =>
+      graph.configure({
+        ...oldSchemaGraph,
+        links: [null, validLink]
+      })
+    ).not.toThrow()
+
+    expect(graph._links.size).toBe(1)
+    expect(graph._links.get(toLinkId(1))).toBeInstanceOf(LLink)
   })
   subgraphTest('should snap slots to same y-level', ({ emptySubgraph }) => {
     const node = new LGraphNode('testname')

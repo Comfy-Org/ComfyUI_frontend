@@ -148,13 +148,13 @@ describe('useWorkflowAutoSave', () => {
 
     const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
+      .calls[0][1] as EventListener | undefined
 
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    graphChangedCallback?.({} as Event)
 
     vi.advanceTimersByTime(500)
 
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    graphChangedCallback?.({} as Event)
 
     vi.advanceTimersByTime(1999)
     expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
@@ -221,8 +221,8 @@ describe('useWorkflowAutoSave', () => {
     vi.advanceTimersByTime(1000)
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+      .calls[0][1] as EventListener | undefined
+    graphChangedCallback?.({} as Event)
 
     resolveSave!()
     await Promise.resolve()
@@ -269,8 +269,8 @@ describe('useWorkflowAutoSave', () => {
     mockAutoSaveDelay = -500
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+      .calls[0][1] as EventListener | undefined
+    graphChangedCallback?.({} as Event)
 
     await vi.runAllTimersAsync()
 

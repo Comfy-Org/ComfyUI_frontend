@@ -2,7 +2,7 @@ export type ClassList = string | string[] | Record<string, boolean>
 
 export function applyClasses(
   element: HTMLElement,
-  classList: ClassList,
+  classList: ClassList | null | undefined,
   ...requiredClasses: string[]
 ) {
   classList ??= ''

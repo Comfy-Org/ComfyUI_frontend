@@ -74,7 +74,7 @@ describe('useSubgraphNavigationStore', () => {
     app.canvas.ds.offset = [0, 0]
     app.canvas.ds.state.scale = 1
     app.canvas.ds.state.offset = [0, 0]
-    app.graph.getNodeById = vi.fn()
+    app.rootGraph.getNodeById = vi.fn()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -223,7 +223,7 @@ describe('useSubgraphNavigationStore', () => {
 
     const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
 
-    app.graph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
+    app.rootGraph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
     vi.mocked(findSubgraphPathById).mockReturnValue(null)
 
     const mockWorkflow = fromPartial<ComfyWorkflow>({
@@ -251,7 +251,7 @@ describe('useSubgraphNavigationStore', () => {
     const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)
 
     // Add the subgraph to the graph's subgraphs map
-    app.graph.subgraphs.set('subgraph-1', mockSubgraph)
+    app.rootGraph.subgraphs.set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
     const mockWorkflow = fromPartial<ComfyWorkflow>({

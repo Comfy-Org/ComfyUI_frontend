@@ -11,8 +11,8 @@ interface FilterItem {
   options: string[]
 }
 
-const makeSearch = <T>(data: T[] = []) =>
-  new FuseSearch<T>(data, {
+function makeSearch<T>(data: T[] = []) {
+  return new FuseSearch<T>(data, {
     fuseOptions: {
       keys: ['name'],
       includeScore: true,
@@ -21,6 +21,7 @@ const makeSearch = <T>(data: T[] = []) =>
     },
     advancedScoring: true
   })
+}
 
 describe('FuseSearch', () => {
   it('assigns stable ranking tiers for exact, prefix, word, substring, and multi-part matches', () => {

@@ -7,7 +7,8 @@ import {
   EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
-  mockFileReaderError
+  mockFileReaderError,
+  mockFileReaderResult
 } from './__fixtures__/helpers'
 import { getFromAvifFile } from './avif'
 
@@ -83,6 +84,11 @@ describe('AVIF metadata', () => {
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
     })
+
+    it('resolves empty when the FileReader load has no result', async () => {
+      mockFileReaderResult('readAsArrayBuffer', null)
+      expect(await getFromAvifFile(file)).toEqual({})
+    })
   })
 })
 
@@ -154,6 +160,35 @@ const buildInfeBox = (
   return buf
 }
 
+const buildVersionedInfeBox = (
+  itemId: number,
+  itemType: string,
+  version = 2
+): Uint8Array => {
+  const itemIdSize = version === 2 ? 2 : version >= 3 ? 4 : 0
+  const bodySize = 4 + itemIdSize + (version >= 2 ? 2 + 4 + 1 + 1 : 0)
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('infe'), 4)
+  buf[8] = version
+  if (version >= 2) {
+    let p = 12
+    if (version === 2) {
+      setU16BE(dv, p, itemId)
+      p += 2
+    } else {
+      setU32BE(dv, p, itemId)
+      p += 4
+    }
+    setU16BE(dv, p, 0)
+    p += 2
+    buf.set(new TextEncoder().encode(itemType.padEnd(4).slice(0, 4)), p)
+  }
+  return buf
+}
+
 const buildIinfBox = (infeBoxes: Uint8Array[]): Uint8Array => {
   const bodySize = 4 + 2 + infeBoxes.reduce((s, b) => s + b.length, 0)
   const totalSize = 8 + bodySize
@@ -163,6 +198,31 @@ const buildIinfBox = (infeBoxes: Uint8Array[]): Uint8Array => {
   buf.set(new TextEncoder().encode('iinf'), 4)
   setU16BE(dv, 12, infeBoxes.length)
   let off = 14
+  for (const ib of infeBoxes) {
+    buf.set(ib, off)
+    off += ib.length
+  }
+  return buf
+}
+
+const buildVersionedIinfBox = (
+  infeBoxes: Uint8Array[],
+  version = 0
+): Uint8Array => {
+  const countSize = version === 0 ? 2 : 4
+  const bodySize = 4 + countSize + infeBoxes.reduce((s, b) => s + b.length, 0)
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('iinf'), 4)
+  buf[8] = version
+  if (version === 0) {
+    setU16BE(dv, 12, infeBoxes.length)
+  } else {
+    setU32BE(dv, 12, infeBoxes.length)
+  }
+  let off = 8 + 4 + countSize
   for (const ib of infeBoxes) {
     buf.set(ib, off)
     off += ib.length
@@ -199,6 +259,95 @@ const buildIlocBox = (
   return buf
 }
 
+interface IlocItem {
+  itemId: number
+  extentOffset: number
+  extentLength: number
+  extents?: Array<{ extentOffset: number; extentLength: number }>
+}
+
+const buildIlocBoxWithOptions = (
+  items: IlocItem[],
+  {
+    version = 0,
+    baseOffsetSize = 0,
+    indexSize = 0
+  }: { version?: number; baseOffsetSize?: number; indexSize?: number } = {}
+): Uint8Array => {
+  const itemCountSize = version < 2 ? 2 : 4
+  const itemIdSize = version < 2 ? 2 : 4
+  const constructionMethodSize = version === 1 || version === 2 ? 2 : 0
+  const itemSizes = items.map((item) => {
+    const extents = item.extents ?? [
+      {
+        extentOffset: item.extentOffset,
+        extentLength: item.extentLength
+      }
+    ]
+    return (
+      itemIdSize +
+      constructionMethodSize +
+      2 +
+      baseOffsetSize +
+      2 +
+      extents.length * (indexSize + 4 + 4)
+    )
+  })
+  const bodySize =
+    4 + 1 + 1 + itemCountSize + itemSizes.reduce((sum, size) => sum + size, 0)
+  const totalSize = 8 + bodySize
+  const buf = new Uint8Array(totalSize)
+  const dv = new DataView(buf.buffer)
+  setU32BE(dv, 0, totalSize)
+  buf.set(new TextEncoder().encode('iloc'), 4)
+  buf[8] = version
+  buf[12] = 0x44
+  buf[13] = (baseOffsetSize << 4) | indexSize
+  let p = 14
+  if (version < 2) {
+    setU16BE(dv, p, items.length)
+    p += 2
+  } else {
+    setU32BE(dv, p, items.length)
+    p += 4
+  }
+  for (const it of items) {
+    if (version < 2) {
+      setU16BE(dv, p, it.itemId)
+      p += 2
+    } else {
+      setU32BE(dv, p, it.itemId)
+      p += 4
+    }
+    if (version === 1 || version === 2) {
+      setU16BE(dv, p, 0)
+      p += 2
+    }
+    setU16BE(dv, p, 0)
+    p += 2
+    if (baseOffsetSize > 0) {
+      setU32BE(dv, p, 0)
+      p += baseOffsetSize
+    }
+    const extents = it.extents ?? [
+      {
+        extentOffset: it.extentOffset,
+        extentLength: it.extentLength
+      }
+    ]
+    setU16BE(dv, p, extents.length)
+    p += 2
+    for (const extent of extents) {
+      p += indexSize
+      setU32BE(dv, p, extent.extentOffset)
+      p += 4
+      setU32BE(dv, p, extent.extentLength)
+      p += 4
+    }
+  }
+  return buf
+}
+
 const buildMetaBox = (boxes: Uint8Array[]): Uint8Array => {
   const bodySize = 4 + boxes.reduce((s, b) => s + b.length, 0)
   const totalSize = 8 + bodySize
@@ -231,7 +380,13 @@ interface BuildAvifOpts {
   ftypBrand?: string
   omitMeta?: boolean
   omitIloc?: boolean
+  iinfVersion?: number
   infeVersion?: number
+  ilocVersion?: number
+  ilocBaseOffsetSize?: number
+  ilocIndexSize?: number
+  ilocExtents?: Array<{ extentOffset: number; extentLength: number }>
+  rawExifData?: Uint8Array
 }
 
 const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
@@ -263,6 +418,79 @@ const buildAvifFile = (opts: BuildAvifOpts = {}): ArrayBuffer => {
   const finalIloc = buildIlocBox([
     { itemId: 1, extentOffset: exifOffset, extentLength: exifData.length }
   ])
+  const finalInner = omitIloc ? [iinf] : [iinf, finalIloc]
+  const meta = buildMetaBox(finalInner)
+
+  const total = ftyp.length + meta.length + exifData.length
+  const buf = new Uint8Array(total)
+  let p = 0
+  buf.set(ftyp, p)
+  p += ftyp.length
+  buf.set(meta, p)
+  p += meta.length
+  buf.set(exifData, p)
+  return buf.slice().buffer as ArrayBuffer
+}
+
+const buildAvifFileWithOptions = (opts: BuildAvifOpts = {}): ArrayBuffer => {
+  const {
+    exifEntries = [],
+    endian = 'II',
+    itemType = 'Exif',
+    ftypBrand = 'avif',
+    omitMeta = false,
+    omitIloc = false,
+    iinfVersion = 0,
+    infeVersion = 2,
+    ilocVersion = 0,
+    ilocBaseOffsetSize = 0,
+    ilocIndexSize = 0,
+    ilocExtents,
+    rawExifData
+  } = opts
+
+  const ftyp = buildFtypBox(ftypBrand)
+  if (omitMeta) {
+    return ftyp.slice().buffer as ArrayBuffer
+  }
+
+  const exifData = rawExifData ?? buildExifBlob(exifEntries, endian)
+  const infe = buildVersionedInfeBox(1, itemType, infeVersion)
+  const iinf = buildVersionedIinfBox([infe], iinfVersion)
+
+  const realIloc = buildIlocBoxWithOptions(
+    [
+      {
+        itemId: 1,
+        extentOffset: 0,
+        extentLength: exifData.length,
+        extents: ilocExtents
+      }
+    ],
+    {
+      version: ilocVersion,
+      baseOffsetSize: ilocBaseOffsetSize,
+      indexSize: ilocIndexSize
+    }
+  )
+  const metaSize = 8 + 4 + iinf.length + (omitIloc ? 0 : realIloc.length)
+  const exifOffset = ftyp.length + metaSize
+
+  const finalIloc = buildIlocBoxWithOptions(
+    [
+      {
+        itemId: 1,
+        extentOffset: exifOffset,
+        extentLength: exifData.length,
+        extents: ilocExtents
+      }
+    ],
+    {
+      version: ilocVersion,
+      baseOffsetSize: ilocBaseOffsetSize,
+      indexSize: ilocIndexSize
+    }
+  )
   const finalInner = omitIloc ? [iinf] : [iinf, finalIloc]
   const meta = buildMetaBox(finalInner)
 
@@ -317,6 +545,52 @@ describe('getFromAvifFile', () => {
     const result = await getFromAvifFile(file)
 
     expect(result.workflow).toBe(JSON.stringify(JSON.parse(workflow)))
+  })
+
+  it('extracts EXIF metadata from versioned item info and location boxes', async () => {
+    const workflow = '{"versioned":true}'
+    const file = fileFromBuffer(
+      buildAvifFileWithOptions({
+        exifEntries: [`workflow:${workflow}`],
+        iinfVersion: 1,
+        infeVersion: 3,
+        ilocVersion: 2,
+        ilocBaseOffsetSize: 4,
+        ilocIndexSize: 4
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBe(JSON.stringify(JSON.parse(workflow)))
+  })
+
+  it('returns {} when the Exif item has no extents', async () => {
+    const file = fileFromBuffer(
+      buildAvifFileWithOptions({
+        exifEntries: ['workflow:{}'],
+        ilocExtents: []
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({})
+  })
+
+  it('returns {} when the Exif payload has no TIFF header', async () => {
+    const file = fileFromBuffer(
+      buildAvifFileWithOptions({
+        rawExifData: new TextEncoder().encode('not tiff data')
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({})
+    expect(console.log).toHaveBeenCalledWith(
+      'Warning: TIFF header not found in EXIF data.'
+    )
   })
 
   it('returns {} when AVIF major brand is not "avif"', async () => {
