@@ -81,6 +81,39 @@ describe('usePartnerNodes', () => {
     expect(pn.filteredNodes.value.map((n) => n.id)).toEqual(['b'])
   })
 
+  it('keeps provider counts and controls scoped to the full provider', async () => {
+    const pn = await setupLoaded()
+    pn.searchQuery.value = 'Zeta'
+
+    const bfl = pn.groups.value.find((group) => group.partner === 'BFL')!
+    expect(bfl.nodes.map((n) => n.id)).toEqual(['a'])
+    expect(bfl.enabledCount).toBe(2)
+    expect(bfl.totalCount).toBe(2)
+
+    await pn.setGroupEnabled(bfl, false)
+    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(
+      ['a', 'c'],
+      false
+    )
+  })
+
+  it('sorts provider rows by the active column', async () => {
+    const pn = await setupLoaded()
+    pn.nodes.value = pn.nodes.value.map((n) => ({
+      ...n,
+      last_modified:
+        n.partner === 'BFL' ? '2026-01-02T00:00:00Z' : '2026-01-01T00:00:00Z'
+    }))
+
+    pn.toggleSort('lastModified')
+    pn.toggleSort('lastModified')
+
+    expect(pn.groups.value.map((group) => group.partner)).toEqual([
+      'BFL',
+      'Anthropic'
+    ])
+  })
+
   it('optimistically toggles a node and calls the api', async () => {
     const pn = await setupLoaded()
     const target = pn.nodes.value.find((n) => n.id === 'b')!
@@ -112,6 +145,27 @@ describe('usePartnerNodes', () => {
     expect(pn.selectedCount.value).toBe(0)
   })
 
+  it('does not roll back an unrelated update when a bulk update fails', async () => {
+    const pn = await setupLoaded()
+    let rejectBulk!: (reason?: unknown) => void
+    vi.mocked(partnerNodesApi.setEnabledBulk).mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectBulk = reject
+        })
+    )
+    pn.toggleSelection('a')
+    pn.toggleSelection('c')
+
+    const bulkUpdate = pn.setSelectedEnabled(false)
+    const unrelatedNode = pn.nodes.value.find((n) => n.id === 'b')!
+    await pn.setEnabled(unrelatedNode, true)
+    rejectBulk(new Error('bulk failed'))
+    await bulkUpdate
+
+    expect(pn.nodes.value.find((n) => n.id === 'b')!.enabled).toBe(true)
+  })
+
   it('group toggle bulk-toggles every node in the group', async () => {
     const pn = await setupLoaded()
     const bfl = pn.groups.value.find((g) => g.partner === 'BFL')!
@@ -130,5 +184,41 @@ describe('usePartnerNodes', () => {
     pn.toggleSelectAll()
     expect(pn.selectedCount.value).toBe(2)
     expect(pn.allFilteredSelected.value).toBe(true)
+  })
+
+  it('bulk-toggles only the filtered set', async () => {
+    const pn = await setupLoaded()
+    pn.searchQuery.value = 'Zeta'
+
+    await pn.setAllFilteredEnabled(false)
+
+    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(['a'], false)
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+    expect(pn.nodes.value.find((n) => n.id === 'c')!.enabled).toBe(true)
+  })
+
+  it('reverts the auto-enable default when its update fails', async () => {
+    const pn = await setupLoaded()
+    vi.mocked(partnerNodesApi.setAutoEnableNew).mockRejectedValueOnce(
+      new Error('update failed')
+    )
+
+    await pn.setAutoEnableNew(false)
+
+    expect(pn.autoEnableNew.value).toBe(true)
+    expect(mockToastAdd).toHaveBeenCalled()
+  })
+
+  it('exposes loading and error state when the initial fetch fails', async () => {
+    vi.mocked(partnerNodesApi.list).mockRejectedValueOnce(
+      new Error('load failed')
+    )
+    const pn = usePartnerNodes()
+
+    expect(pn.isLoading.value).toBe(true)
+    await pn.fetch()
+
+    expect(pn.isLoading.value).toBe(false)
+    expect(pn.loadError.value).toBe(true)
   })
 })

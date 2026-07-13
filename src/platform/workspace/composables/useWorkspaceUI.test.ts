@@ -129,7 +129,8 @@ describe('useWorkspaceUI', () => {
         canManageInvites: false,
         canManageMembers: false,
         canLeaveWorkspace: false,
-        canAccessWorkspaceMenu: false
+        canAccessWorkspaceMenu: false,
+        canManagePartnerNodes: false
       })
     })
 
@@ -176,6 +177,7 @@ describe('useWorkspaceUI', () => {
         canManageMembers: true,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
+        canManagePartnerNodes: true,
         canManageSubscription: true,
         canTopUp: true
       })
@@ -215,6 +217,7 @@ describe('useWorkspaceUI', () => {
         canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
+        canManagePartnerNodes: false,
         canManageSubscription: false,
         canTopUp: false
       })
