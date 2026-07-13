@@ -189,6 +189,10 @@ vi.mock(
 )
 vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
 vi.mock(
+  '@/renderer/extensions/onboardingTour/GettingStartedScreen.vue',
+  () => stubModule
+)
+vi.mock(
   '@/renderer/extensions/onboardingTour/OnboardingTourOverlay.vue',
   () => stubModule
 )
