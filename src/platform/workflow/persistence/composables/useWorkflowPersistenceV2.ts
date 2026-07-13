@@ -235,12 +235,10 @@ export function useWorkflowPersistenceV2() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
-    const query = await ensureTemplateQueryFromIntent()
-    const hasTemplateUrl = query.template && typeof query.template === 'string'
-
-    if (hasTemplateUrl) {
-      await templateUrlLoader.loadTemplateFromUrl()
-    }
+    // Hydrate any preserved ?template= intent into the route first; the loader
+    // reads the route and returns the id only after validating it.
+    await ensureTemplateQueryFromIntent()
+    return templateUrlLoader.loadTemplateFromUrl()
   }
 
   const loadSharedWorkflowFromUrlIfPresent = async () => {

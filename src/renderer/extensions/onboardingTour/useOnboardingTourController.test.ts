@@ -182,9 +182,10 @@ describe('useOnboardingTourController.shouldStartTour', () => {
     expect(useOnboardingTourController().shouldStartTour()).toBe(false)
   })
 
-  it('does not start once the tutorial is already completed', () => {
+  it('still starts when the tutorial flag is already set but the user is new', () => {
     mocks.tutorialCompleted = true
-    expect(useOnboardingTourController().shouldStartTour()).toBe(false)
+    mocks.isNewUser.mockReturnValue(true)
+    expect(useOnboardingTourController().shouldStartTour()).toBe(true)
   })
 })
 
@@ -216,7 +217,7 @@ describe('useOnboardingTourController.start', () => {
   })
 
   it('does not start the store when gating fails', async () => {
-    mocks.tutorialCompleted = true
+    mocks.isNewUser.mockReturnValue(false)
 
     await useOnboardingTourController().start()
 
@@ -248,6 +249,48 @@ describe('useOnboardingTourController.start', () => {
 
     expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
       expect.objectContaining({ shape: 't2i' })
+    )
+  })
+
+  it('defaults the entry to getting_started when none is passed', async () => {
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start('image_z_image_turbo')
+
+    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ entry: 'getting_started' })
+    )
+  })
+
+  it('threads the template_url entry for a ?template= arrival', async () => {
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start(
+      'image_z_image_turbo',
+      'template_url'
+    )
+
+    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        template_id: 'image_z_image_turbo',
+        entry: 'template_url'
+      })
+    )
+  })
+
+  it('threads the share_url entry with no template id for a ?share= arrival', async () => {
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+    mocks.resolvedRoles.value = { ...imageEditRoles, prompt: null, sink: null }
+
+    await useOnboardingTourController().start(undefined, 'share_url')
+
+    expect(mocks.storeStart).toHaveBeenCalledWith(activeState, undefined)
+    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        template_id: undefined,
+        shape: 'other',
+        entry: 'share_url'
+      })
     )
   })
 

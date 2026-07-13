@@ -172,6 +172,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
+import { useOnboardingTourController } from '@/renderer/extensions/onboardingTour/useOnboardingTourController'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
@@ -495,6 +496,9 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
+  let templateFromUrl: Awaited<
+    ReturnType<typeof workflowPersistence.loadTemplateFromUrlIfPresent>
+  >
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -552,11 +556,27 @@ onMounted(async () => {
     // Restore saved workflow and workflow tabs state
     await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    templateFromUrl = await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
-  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedFromUrl =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+
+  // A ?template=/?share= URL loads a workflow directly (Getting Started is
+  // skipped). Start the onboarding tour on it; start() self-gates and reads the
+  // now-loaded graph, so the loaders above must have finished first.
+  if (templateFromUrl.loaded) {
+    void useOnboardingTourController().start(
+      templateFromUrl.templateId,
+      'template_url'
+    )
+  } else if (
+    sharedFromUrl === 'loaded' ||
+    sharedFromUrl === 'loaded-without-assets'
+  ) {
+    void useOnboardingTourController().start(undefined, 'share_url')
+  }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,

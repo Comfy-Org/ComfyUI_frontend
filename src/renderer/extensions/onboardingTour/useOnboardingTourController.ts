@@ -3,9 +3,11 @@ import { createSharedComposable } from '@vueuse/core'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { OnboardingTourShape } from '@/platform/telemetry/types'
+import type {
+  OnboardingTourEntry,
+  OnboardingTourShape
+} from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNewUserService } from '@/services/useNewUserService'
 
@@ -34,14 +36,13 @@ function _useOnboardingTourController() {
 
   /**
    * Whether the onboarding tour should run for this session. Cloud-only, gated
-   * behind the feature flag, shown once per user via `Comfy.TutorialCompleted`.
+   * behind the feature flag and shown once per user via `isNewUser()`.
    */
   function shouldStartTour(): boolean {
     if (!isCloud) return false
     if (!useSubscription().isSubscriptionEnabled()) return false
     if (useNewUserService().isNewUser() !== true) return false
     if (!useFeatureFlags().flags.onboardingTourEnabled) return false
-    if (useSettingStore().get('Comfy.TutorialCompleted')) return false
     return true
   }
 
@@ -52,10 +53,15 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Serialize the loaded graph and run the tour on it. Aborts cleanly if gating
-   * fails or no workflow is active.
+   * Serialize the loaded graph and run the tour on it. `entry` tags where the
+   * tour was launched from; `?share=`/`?template=` arrivals pass `share_url`/
+   * `template_url`, the Getting Started card keeps the default. Aborts cleanly if
+   * gating fails or no workflow is active.
    */
-  async function start(templateId?: string) {
+  async function start(
+    templateId?: string,
+    entry: OnboardingTourEntry = 'getting_started'
+  ) {
     if (!shouldStartTour()) return
 
     const workflow = useWorkflowStore().activeWorkflow?.activeState
@@ -70,7 +76,7 @@ function _useOnboardingTourController() {
     useTelemetry()?.trackOnboardingTourStarted?.({
       template_id: activeTemplateId,
       shape: activeShape,
-      entry: 'getting_started'
+      entry
     })
     await enterStep()
   }

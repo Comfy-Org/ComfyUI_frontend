@@ -59,11 +59,17 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   })
 }))
 
+const templateLoaderMocks = vi.hoisted(() => ({
+  loadTemplateFromUrl: vi.fn(
+    async () => ({ loaded: false }) as { loaded: boolean; templateId?: string }
+  )
+}))
+
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateUrlLoader',
   () => ({
     useTemplateUrlLoader: () => ({
-      loadTemplateFromUrl: vi.fn()
+      loadTemplateFromUrl: templateLoaderMocks.loadTemplateFromUrl
     })
   })
 )
@@ -230,6 +236,8 @@ describe('useWorkflowPersistenceV2', () => {
     preservedQueryMocks.payloads = {}
     onboardingMocks.onboardingTourEnabled = false
     onboardingMocks.isNewUser = null
+    templateLoaderMocks.loadTemplateFromUrl.mockReset()
+    templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({ loaded: false })
   })
 
   afterEach(() => {
@@ -698,6 +706,51 @@ describe('useWorkflowPersistenceV2', () => {
       expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
         'Comfy.BrowseTemplates'
       )
+    })
+  })
+
+  describe('loadTemplateFromUrlIfPresent', () => {
+    it('surfaces the validated template id the loader reports', async () => {
+      routeMocks.query = { template: 'image_z_image_turbo' }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+
+      await expect(loadTemplateFromUrlIfPresent()).resolves.toEqual({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+    })
+
+    it('reports not-loaded when the loader loads nothing', async () => {
+      routeMocks.query = {}
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: false
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+
+      await expect(loadTemplateFromUrlIfPresent()).resolves.toEqual({
+        loaded: false
+      })
+    })
+
+    it('hydrates preserved template intent before delegating to the loader', async () => {
+      preservedQueryMocks.payloads.template = {
+        template: 'image_z_image_turbo'
+      }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+      await loadTemplateFromUrlIfPresent()
+
+      expect(templateLoaderMocks.loadTemplateFromUrl).toHaveBeenCalled()
     })
   })
 })

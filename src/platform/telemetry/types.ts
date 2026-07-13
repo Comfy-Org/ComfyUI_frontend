@@ -530,7 +530,10 @@ export interface WorkspaceInviteMetadata extends Record<string, unknown> {
  * user content or share id, so no PII.
  */
 export type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
-type OnboardingTourEntry = 'getting_started' | 'share_url' | 'template_url'
+export type OnboardingTourEntry =
+  | 'getting_started'
+  | 'share_url'
+  | 'template_url'
 export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
 
 export interface OnboardingTourStartedMetadata {
