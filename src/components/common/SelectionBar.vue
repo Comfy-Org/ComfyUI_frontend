@@ -1,6 +1,7 @@
 <template>
   <div class="relative mx-2">
     <div
+      v-bind="$attrs"
       class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
     >
       <Button
@@ -26,6 +27,8 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+
+defineOptions({ inheritAttrs: false })
 
 defineProps<{
   /** The "N selected" text; the caller formats it (pluralization, wording). */

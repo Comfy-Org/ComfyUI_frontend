@@ -205,30 +205,27 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(content.getByText('Total credits')).toBeVisible()
     await expect(content.getByText('12,660')).toBeVisible()
 
-    // Monthly usage bar header + used / left-of-total labels.
     await expect(content.getByText('Monthly', { exact: true })).toBeVisible()
-    await expect(content.getByText(/Refills Feb/)).toBeVisible()
-    await expect(content.getByText('10,550 used')).toBeVisible()
-    await expect(content.getByText('10,550 left of 21,100')).toBeVisible()
+    await expect(content.getByText('50% used')).toBeVisible()
 
     // Additional credits row + subtitle.
     await expect(content.getByText('Additional credits')).toBeVisible()
     await expect(content.getByText('2,110')).toBeVisible()
-    await expect(content.getByText('Used after monthly runs out')).toBeVisible()
+    await expect(
+      content.getByText('Used after plan credits run out')
+    ).toBeVisible()
 
     // Permission-gated add-credits action (personal owner can top up).
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
 
-    // Narrow container (DES-247 responsive variants): drop the used/remaining
-    // labels and the breakdown subtitle, compact the monthly summary numbers.
     await page.setViewportSize({ width: 360, height: 800 })
-    await expect(content.getByText('10,550 used')).toBeHidden()
     await expect(content.getByText('remaining', { exact: true })).toBeHidden()
-    await expect(content.getByText('Used after monthly runs out')).toBeHidden()
-    await expect(content.getByText('10,550 left of 21,100')).toBeHidden()
-    await expect(content.getByText('11K left of 21K')).toBeVisible()
+    await expect(
+      content.getByText('Used after plan credits run out')
+    ).toBeHidden()
+    await expect(content.getByText('50% used')).toBeVisible()
   })
 
   test('renders the depleted-credit empty states', async ({ page }) => {
@@ -240,27 +237,17 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     const content = await openPlanAndCredits(page)
 
-    // 0-monthly state: depletion notice + IN USE badge on additional credits.
-    await expect(
-      content.getByText('Monthly credits are used up. Refills Feb 20')
-    ).toBeVisible()
-    await expect(
-      content.getByText("You're now spending additional credits.")
-    ).toBeVisible()
+    await expect(content.getByText('100% used')).toBeVisible()
     await expect(content.getByText('In use')).toBeVisible()
-    await expect(content.getByText('0 left of 21,100')).toBeVisible()
+    await expect(
+      content.getByText('2,110', { exact: true }).last()
+    ).toBeVisible()
 
-    // Drain the remaining additional credits and refresh the tile: the
-    // out-of-credits notice takes over and the badge drops.
     await mockBalance(page, { amount: 0, monthly: 0, prepaid: 0 })
     await content.getByRole('button', { name: 'Refresh credits' }).click()
 
-    await expect(
-      content.getByText("You're out of credits. Credits refill Feb 20")
-    ).toBeVisible()
-    await expect(
-      content.getByText('Add more credits to continue generating.')
-    ).toBeVisible()
+    await expect(content.getByText('0', { exact: true }).first()).toBeVisible()
+    await expect(content.getByText('100% used')).toBeVisible()
     await expect(content.getByText('In use')).toBeHidden()
     await expect(
       content.getByRole('button', { name: 'Add credits' })

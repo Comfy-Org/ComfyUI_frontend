@@ -193,11 +193,15 @@ describe('usePartnerNodes', () => {
       pn.nodes.value.find((n) => n.id === 'a')!,
       false
     )
-    await pn.setEnabled(pn.nodes.value.find((n) => n.id === 'a')!, false)
+    const secondUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      false
+    )
     firstRequest.reject(new Error('older update failed'))
-    await firstUpdate
+    await Promise.all([firstUpdate, secondUpdate])
 
     expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+    expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
   it('does not let an older failed bulk update undo a newer success', async () => {
@@ -211,15 +215,16 @@ describe('usePartnerNodes', () => {
       pn.groups.value.find((group) => group.partner === 'BFL')!,
       false
     )
-    await pn.setGroupEnabled(
+    const secondUpdate = pn.setGroupEnabled(
       pn.groups.value.find((group) => group.partner === 'BFL')!,
       false
     )
     firstRequest.reject(new Error('older update failed'))
-    await firstUpdate
+    await Promise.all([firstUpdate, secondUpdate])
 
     expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
     expect(pn.nodes.value.find((n) => n.id === 'c')!.enabled).toBe(false)
+    expect(mockToastAdd).not.toHaveBeenCalled()
   })
 
   it('group toggle bulk-toggles every node in the group', async () => {
@@ -273,11 +278,69 @@ describe('usePartnerNodes', () => {
       .mockResolvedValueOnce()
 
     const firstUpdate = pn.setAutoEnableNew(false)
-    await pn.setAutoEnableNew(false)
+    const secondUpdate = pn.setAutoEnableNew(false)
     firstRequest.reject(new Error('older update failed'))
-    await firstUpdate
+    await Promise.all([firstUpdate, secondUpdate])
 
     expect(pn.autoEnableNew.value).toBe(false)
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
+  it('sends overlapping writes to the same node in order', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    const secondRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabled)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise)
+
+    const firstUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      false
+    )
+    const secondUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      true
+    )
+
+    await vi.waitFor(() =>
+      expect(partnerNodesApi.setEnabled).toHaveBeenCalledTimes(1)
+    )
+    firstRequest.resolve()
+    await firstUpdate
+    await vi.waitFor(() =>
+      expect(partnerNodesApi.setEnabled).toHaveBeenCalledTimes(2)
+    )
+    secondRequest.resolve()
+    await secondUpdate
+
+    expect(vi.mocked(partnerNodesApi.setEnabled).mock.calls).toEqual([
+      ['a', false],
+      ['a', true]
+    ])
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(true)
+  })
+
+  it('restores confirmed state when overlapping writes both fail', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabled)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockRejectedValueOnce(new Error('newer update failed'))
+
+    const firstUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      false
+    )
+    const secondUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      true
+    )
+    firstRequest.reject(new Error('older update failed'))
+    await Promise.all([firstUpdate, secondUpdate])
+
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(true)
+    expect(mockToastAdd).toHaveBeenCalledTimes(1)
   })
 
   it('exposes loading and error state when the initial fetch fails', async () => {
