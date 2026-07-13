@@ -123,7 +123,7 @@ function scroll(direction: -1 | 1) {
 
       <button
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="locale === 'zh-CN' ? '上一条' : 'Previous'"
+        :aria-label="t('seedance.reviews.prev', locale)"
         @click="scroll(-1)"
       >
         <img
@@ -135,7 +135,7 @@ function scroll(direction: -1 | 1) {
 
       <button
         class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
-        :aria-label="locale === 'zh-CN' ? '下一条' : 'Next'"
+        :aria-label="t('seedance.reviews.next', locale)"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

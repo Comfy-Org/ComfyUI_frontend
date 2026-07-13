@@ -4557,7 +4557,9 @@ const translations = {
     'zh-CN':
       '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
-  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' }
+  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'seedance.reviews.prev': { en: 'Previous', 'zh-CN': '上一条' },
+  'seedance.reviews.next': { en: 'Next', 'zh-CN': '下一条' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
