@@ -14,8 +14,9 @@ const mocks = vi.hoisted(() => ({
     (template: TemplateInfo) => template.title ?? template.name
   ),
   controllerStart: vi.fn(async () => {}),
-  selectorShow: vi.fn(),
-  templatesByName: new Map<string, TemplateInfo>()
+  templatesByName: new Map<string, TemplateInfo>(),
+  templatesLoaded: true,
+  loadWorkflowTemplates: vi.fn(async () => {})
 }))
 
 function makeTemplate(name: string, title: string): TemplateInfo {
@@ -50,17 +51,17 @@ vi.mock(
   '@/platform/workflow/templates/repositories/workflowTemplatesStore',
   () => ({
     useWorkflowTemplatesStore: () => ({
-      getTemplateByName: (name: string) => mocks.templatesByName.get(name)
+      getTemplateByName: (name: string) => mocks.templatesByName.get(name),
+      get isLoaded() {
+        return mocks.templatesLoaded
+      },
+      loadWorkflowTemplates: mocks.loadWorkflowTemplates
     })
   })
 )
 
 vi.mock('./useOnboardingTourController', () => ({
   useOnboardingTourController: () => ({ start: mocks.controllerStart })
-}))
-
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.selectorShow })
 }))
 
 import GettingStartedScreen from './GettingStartedScreen.vue'
@@ -88,7 +89,8 @@ describe('GettingStartedScreen', () => {
 
     mocks.loadWorkflowTemplate.mockClear()
     mocks.controllerStart.mockClear()
-    mocks.selectorShow.mockClear()
+    mocks.loadWorkflowTemplates.mockClear()
+    mocks.templatesLoaded = true
     mocks.templatesByName.clear()
     CARD_IDS.forEach((id, i) =>
       mocks.templatesByName.set(id, makeTemplate(id, `Template ${i + 1}`))
@@ -101,6 +103,28 @@ describe('GettingStartedScreen', () => {
     for (const id of CARD_IDS) {
       expect(screen.getByTestId(`getting-started-card-${id}`)).toBeTruthy()
     }
+  })
+
+  it('loads the templates store when opened unloaded so cards can resolve', () => {
+    mocks.templatesLoaded = false
+    renderScreen()
+
+    expect(mocks.loadWorkflowTemplates).toHaveBeenCalledOnce()
+  })
+
+  it('does not reload the templates store when it is already loaded', () => {
+    mocks.templatesLoaded = true
+    renderScreen()
+
+    expect(mocks.loadWorkflowTemplates).not.toHaveBeenCalled()
+  })
+
+  it('does not load the templates store while the screen is hidden', () => {
+    store.dismissGettingStarted()
+    mocks.templatesLoaded = false
+    renderScreen()
+
+    expect(mocks.loadWorkflowTemplates).not.toHaveBeenCalled()
   })
 
   it('loads the template then starts the tour when a card is picked', async () => {
@@ -149,34 +173,11 @@ describe('GettingStartedScreen', () => {
     expect(store.shouldShowGettingStarted).toBe(true)
   })
 
-  it('dismisses without starting the tour on Start from scratch', async () => {
-    const user = userEvent.setup()
-    renderScreen()
-
-    await user.click(screen.getByTestId('getting-started-start-from-scratch'))
-
-    expect(mocks.loadWorkflowTemplate).not.toHaveBeenCalled()
-    expect(mocks.controllerStart).not.toHaveBeenCalled()
-    expect(store.shouldShowGettingStarted).toBe(false)
-  })
-
-  it('opens the template selector on Discover all templates', async () => {
-    const user = userEvent.setup()
-    renderScreen()
-
-    await user.click(screen.getByTestId('getting-started-discover-all'))
-
-    expect(mocks.selectorShow).toHaveBeenCalledWith('command', {
-      initialCategory: 'basics-getting-started'
-    })
-    expect(store.shouldShowGettingStarted).toBe(false)
-  })
-
   it('shows a placeholder and no template cards on the Import tab', async () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(screen.getByRole('button', { name: /import workflow/i }))
+    await user.click(screen.getByRole('tab', { name: /import workflow/i }))
 
     expect(
       screen.queryByTestId('getting-started-card-image_z_image_turbo')
@@ -188,7 +189,7 @@ describe('GettingStartedScreen', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.click(screen.getByRole('button', { name: /tutorials/i }))
+    await user.click(screen.getByRole('tab', { name: /tutorials/i }))
 
     expect(
       screen.queryByTestId('getting-started-card-image_z_image_turbo')

@@ -10,25 +10,27 @@
     @click="emit('select', template.name)"
     @keydown.enter.prevent="emit('select', template.name)"
     @keydown.space.prevent="emit('select', template.name)"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
   >
     <template #top>
       <CardTop ratio="square">
         <div class="relative size-full overflow-hidden rounded-lg">
-          <DefaultThumbnail
+          <LazyImage
             :src="thumbnailSrc"
             :alt="title"
-            :is-hovered="isHovered"
-            :is-video="isVideo"
-            :hover-zoom="5"
+            image-class="size-full object-cover transition-transform duration-300 ease-out group-hover/card:scale-105"
+          />
+          <div
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/40 to-transparent"
           />
         </div>
       </CardTop>
     </template>
     <template #bottom>
       <CardBottom>
-        <h3 class="m-0 line-clamp-1 pt-3 text-sm text-base-foreground" :title>
+        <h3
+          class="m-0 truncate pt-2 text-sm font-semibold text-base-foreground"
+          :title
+        >
           {{ title }}
         </h3>
       </CardBottom>
@@ -37,12 +39,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
+import LazyImage from '@/components/common/LazyImage.vue'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
@@ -52,13 +54,8 @@ const emit = defineEmits<{ select: [id: string] }>()
 
 const { getTemplateThumbnailUrl, getTemplateTitle } = useTemplateWorkflows()
 
-const isHovered = ref(false)
-
 const thumbnailSrc = computed(() =>
   getTemplateThumbnailUrl(template, 'default')
 )
 const title = computed(() => getTemplateTitle(template, 'default'))
-const isVideo = computed(
-  () => template.mediaType === 'video' || template.mediaSubtype === 'webp'
-)
 </script>

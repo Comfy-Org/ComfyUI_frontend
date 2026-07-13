@@ -16,8 +16,8 @@ const meta: Meta<typeof GettingStartedScreen> = {
       useOnboardingEntryStore().showGettingStarted()
       // Template cards need the served template package; without a backend the
       // curated lookups return nothing, so this catalogs the screen chrome
-      // (heading, tabs, Start from scratch, placeholders). Card rendering is
-      // covered by the unit test.
+      // (heading, tabs, placeholders). Card rendering is covered by the unit
+      // test.
       return { template: '<story />' }
     }
   ]

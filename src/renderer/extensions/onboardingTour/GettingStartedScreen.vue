@@ -14,92 +14,62 @@
       tabindex="-1"
     >
       <div class="flex w-full max-w-5xl flex-col items-center">
-        <h1 class="text-center text-3xl font-semibold text-base-foreground">
-          {{ t('onboardingTour.gettingStarted.title') }}
-        </h1>
-        <p class="mt-2 text-center text-sm text-muted-foreground">
-          {{ t('onboardingTour.gettingStarted.subtitle') }}
-        </p>
-
-        <ToggleGroup
-          v-model="activeTab"
-          type="single"
-          class="mt-8"
-          :aria-label="t('onboardingTour.gettingStarted.tabsLabel')"
-        >
-          <ToggleGroupItem
-            v-for="tab in tabs"
-            :key="tab.value"
-            :value="tab.value"
+        <div class="flex flex-col items-center gap-3">
+          <h1
+            class="text-center text-[2.5rem]/11 font-medium text-base-foreground"
           >
-            <i :class="cn(tab.icon, 'mr-2 size-3.5')" aria-hidden="true" />
-            {{ t(tab.labelKey) }}
-          </ToggleGroupItem>
-        </ToggleGroup>
-
-        <div class="mt-6 w-full">
-          <div v-if="activeTab === 'templates'" class="flex gap-5">
-            <GettingStartedTemplateCard
-              v-for="template in cards"
-              :key="template.name"
-              :template
-              class="min-w-0 flex-1"
-              @select="onSelectTemplate"
-            />
-            <CardContainer
-              variant="ghost"
-              rounded="lg"
-              role="button"
-              tabindex="0"
-              data-testid="getting-started-start-from-scratch"
-              :aria-label="t('onboardingTour.gettingStarted.startFromScratch')"
-              class="focus-visible:ring-ring min-w-0 flex-1 hover:bg-node-component-surface focus-visible:ring-1 focus-visible:outline-none"
-              @click="onStartFromScratch"
-              @keydown.enter.prevent="onStartFromScratch"
-              @keydown.space.prevent="onStartFromScratch"
-            >
-              <template #top>
-                <CardTop ratio="square">
-                  <div
-                    class="flex size-full items-center justify-center rounded-lg border border-border-default"
-                  >
-                    <i
-                      class="icon-[lucide--plus] size-7 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </div>
-                </CardTop>
-              </template>
-              <template #bottom>
-                <CardBottom>
-                  <h3
-                    class="m-0 line-clamp-1 pt-3 text-sm text-base-foreground"
-                  >
-                    {{ t('onboardingTour.gettingStarted.startFromScratch') }}
-                  </h3>
-                </CardBottom>
-              </template>
-            </CardContainer>
-          </div>
-
-          <p
-            v-else
-            data-testid="getting-started-placeholder"
-            class="py-16 text-center text-sm text-muted-foreground"
-          >
-            {{ placeholderCopy }}
+            {{ t('onboardingTour.gettingStarted.title') }}
+          </h1>
+          <p class="text-center text-base/5 text-muted-foreground">
+            {{ t('onboardingTour.gettingStarted.subtitle') }}
           </p>
         </div>
 
-        <button
-          type="button"
-          data-testid="getting-started-discover-all"
-          class="mt-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-base-foreground"
-          @click="onDiscoverAll"
+        <TabList
+          v-model="activeTab"
+          class="mt-8 w-auto gap-1 rounded-full border border-white/10 p-0.5"
+          :aria-label="t('onboardingTour.gettingStarted.tabsLabel')"
         >
-          {{ t('onboardingTour.gettingStarted.discoverAll') }}
-          <i class="icon-[lucide--arrow-right] size-3.5" aria-hidden="true" />
-        </button>
+          <Tab
+            v-for="tab in tabs"
+            :key="tab.value"
+            :value="tab.value"
+            class="gap-2.5 rounded-full px-3 text-xs font-medium text-base-foreground hover:opacity-100 data-[state=active]:bg-tertiary-background data-[state=inactive]:opacity-70"
+          >
+            <i :class="cn(tab.icon, 'size-3.5')" aria-hidden="true" />
+            {{ t(tab.labelKey) }}
+          </Tab>
+        </TabList>
+
+        <div class="mt-6 w-full">
+          <TabPanel
+            v-for="tab in tabs"
+            :key="tab.value"
+            :value="tab.value"
+            :model-value="activeTab"
+          >
+            <div
+              v-if="tab.value === 'templates'"
+              class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
+            >
+              <GettingStartedTemplateCard
+                v-for="template in cards"
+                :key="template.name"
+                :template
+                class="min-w-0"
+                @select="onSelectTemplate"
+              />
+            </div>
+
+            <p
+              v-else
+              data-testid="getting-started-placeholder"
+              class="py-16 text-center text-sm text-muted-foreground"
+            >
+              {{ placeholderCopy }}
+            </p>
+          </TabPanel>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -112,12 +82,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
+import TabPanel from '@/components/tab/TabPanel.vue'
 import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboardingEntryStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -161,9 +128,7 @@ const templatesStore = useWorkflowTemplatesStore()
 const { loadWorkflowTemplate } = useTemplateWorkflows()
 const controller = useOnboardingTourController()
 
-// ToggleGroup (single) writes back an empty value when the active item is
-// toggled off, so the ref must admit `''` for the reset guard below to type-check.
-const activeTab = ref<TabValue | ''>('templates')
+const activeTab = ref<TabValue>('templates')
 
 const screenRef = useTemplateRef<HTMLElement>('screenRef')
 
@@ -173,19 +138,23 @@ const cards = computed(() =>
   )
 )
 
+// Cards and per-card loads no-op until the templates store is loaded; nothing
+// else loads it on this path, so load it (and focus the takeover) on open.
+watch(
+  visible,
+  (isVisible) => {
+    if (!isVisible) return
+    if (!templatesStore.isLoaded) void templatesStore.loadWorkflowTemplates()
+    void nextTick(() => screenRef.value?.focus())
+  },
+  { immediate: true }
+)
+
 const placeholderCopy = computed(() =>
   activeTab.value === 'import'
     ? t('onboardingTour.gettingStarted.placeholder.import')
     : t('onboardingTour.gettingStarted.placeholder.tutorials')
 )
-
-watch(activeTab, (value) => {
-  if (!value) activeTab.value = 'templates'
-})
-
-watch(visible, (isVisible) => {
-  if (isVisible) void nextTick(() => screenRef.value?.focus())
-})
 
 async function onSelectTemplate(id: string) {
   // Keep the screen up until the template loads, so a failed load leaves the
@@ -199,16 +168,5 @@ async function onSelectTemplate(id: string) {
   if (!loaded) return
   entryStore.dismissGettingStarted()
   await controller.start(id)
-}
-
-function onStartFromScratch() {
-  entryStore.dismissGettingStarted()
-}
-
-function onDiscoverAll() {
-  entryStore.dismissGettingStarted()
-  useWorkflowTemplateSelectorDialog().show('command', {
-    initialCategory: 'basics-getting-started'
-  })
 }
 </script>

@@ -2335,8 +2335,6 @@
         "import": "Import workflow",
         "tutorials": "Tutorials"
       },
-      "startFromScratch": "Start from scratch",
-      "discoverAll": "Discover all templates",
       "placeholder": {
         "import": "Importing workflows is coming soon.",
         "tutorials": "Tutorials are coming soon."
