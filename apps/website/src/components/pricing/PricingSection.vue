@@ -118,25 +118,25 @@ const planCards = computed(() =>
           value="monthly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          {{
+          <span class="ppformula-text-center">{{
             t(
               education
                 ? 'pricing.period.monthly.edu'
                 : 'pricing.period.monthly',
               locale
             )
-          }}
+          }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
           value="yearly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          {{
+          <span class="ppformula-text-center">{{
             t(
               education ? 'pricing.period.yearly.edu' : 'pricing.period.yearly',
               locale
             )
-          }}
+          }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
