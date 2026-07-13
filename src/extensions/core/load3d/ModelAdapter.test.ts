@@ -19,6 +19,7 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
     expect(DEFAULT_MODEL_CAPABILITIES.exportable).toBe(true)
     expect([...DEFAULT_MODEL_CAPABILITIES.materialModes]).toEqual([
       'original',
+      'clay',
       'normal',
       'wireframe'
     ])

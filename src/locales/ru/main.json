@@ -359,6 +359,7 @@
     "colors": "палитра_цветов",
     "descLabel": "описание",
     "descPlaceholder": "описание этой области",
+    "grid": "Сетка",
     "textLabel": "Текст",
     "textPlaceholder": "текст для отображения (дословно)",
     "typeObj": "объект",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Пожалуйста, сократите ваш ответ до {max} символов.",
         "chooseAnOption": "Пожалуйста, выберите вариант.",
         "describeAnswer": "Пожалуйста, опишите ваш ответ.",
         "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
       },
       "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
-          "basics": "Уверенно владею основами",
-          "expert": "Эксперт (помогаю другим)",
-          "new": "Новичок в ComfyUI (никогда не использовал)",
-          "starting": "Только начинаю (следую руководствам)"
+        "experience": {
+          "new": "Впервые в ComfyUI",
+          "pro": "Я опытный пользователь",
+          "some": "Я немного знаком(а)"
+        },
+        "focus": {
+          "custom_nodes": "Пользовательские узлы",
+          "pipelines": "Автоматизированные пайплайны",
+          "products": "Продукты для других"
         },
         "intent": {
-          "3d_game": "3D-ассеты / игровые ассеты",
-          "api": "API endpoints для запуска workflow",
-          "apps": "Упрощённые приложения из workflow",
-          "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские node",
+          "apps_api": "Приложения и API",
+          "exploring": "Просто изучаю",
           "images": "Изображения",
-          "not_sure": "Не уверен",
-          "videos": "Видео",
+          "other": "Другое",
+          "otherPlaceholder": "Что вы хотите создать?",
+          "video": "Видео",
           "workflows": "Пользовательские workflow или pipeline"
         },
         "source": {
-          "conference": "Конференция или мероприятие",
-          "discord": "Discord / сообщество",
+          "community": "Сообщество или форум",
           "friend": "Друг или коллега",
-          "github": "GitHub",
+          "other": "Другое",
+          "otherPlaceholder": "Где вы о нас узнали?",
+          "search": "Google / поиск",
+          "social": "Социальные сети"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Новостная рассылка или блог",
-          "other": "Другое",
           "reddit": "Reddit",
-          "search": "Google / поиск",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Образование (студент или преподаватель)",
-          "personal": "Личное использование",
-          "work": "Работа"
         }
       },
+      "otherPlaceholder": "Расскажите подробнее",
       "placeholder": "Вопросы для опроса",
-      "steps": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "intent": "Что вы хотите создавать с помощью ComfyUI?",
-        "source": "Где вы узнали о ComfyUI?",
-        "usage": "Как вы планируете использовать ComfyUI?"
-      },
       "title": "Облачный опрос"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "Узнать о Cloud",
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
-  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
+  "cloudSurvey_steps_experience": "Насколько хорошо вы знаете ComfyUI?",
+  "cloudSurvey_steps_focus": "Что вы создаёте?",
   "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
   "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
-  "cloudSurvey_steps_usage": "Как вы планируете использовать ComfyUI?",
+  "cloudSurvey_steps_source_social": "На какой платформе?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -957,6 +954,16 @@
       "message": "Был предоставлен неверный ID диалога.",
       "title": "Неверный диалог"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "Приложение ComfyUI для рабочего стола ожидает входа в ваш аккаунт. Продолжайте только если вы только что начали вход из приложения ComfyUI для рабочего стола.",
+    "confirmSummary": "Подтвердить вход на рабочем столе?",
+    "expiredDetail": "Запрос на вход истёк или уже был использован. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "expiredSummary": "Не удалось войти на рабочем столе",
+    "failedDetail": "Произошла ошибка при завершении входа на рабочем столе. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "failedSummary": "Не удалось войти на рабочем столе",
+    "successDetail": "Вы можете вернуться в приложение ComfyUI для рабочего стола.",
+    "successSummary": "Вход выполнен"
   },
   "desktopMenu": {
     "confirmQuit": "Открыты несохраненные рабочие процессы; все несохраненные изменения будут потеряны. Проигнорировать это и выйти?",
@@ -2858,6 +2865,8 @@
     "phantom subject": "фантомный объект",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "постпроцессоры",
+    "pre-processors": "препроцессоры",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
@@ -4127,6 +4136,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
+      "relevance": "Актуальность",
       "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",

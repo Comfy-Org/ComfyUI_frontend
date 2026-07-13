@@ -31,6 +31,26 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
+  test('NEW badge shows on Products and Community only', async ({ page }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+
+    for (const label of ['Products', 'Community']) {
+      await expect(
+        desktopLinks
+          .getByRole('button', { name: label })
+          .getByText('NEW', { exact: true })
+      ).toBeVisible()
+    }
+
+    await expect(
+      desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
+    ).toHaveCount(0)
+  })
+
   test('CTA buttons are visible', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopCTA = nav.getByTestId('desktop-nav-cta')
@@ -115,6 +135,27 @@ test.describe('Mobile menu @mobile', () => {
     for (const label of ['Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
+  })
+
+  test('NEW badge shows on Products and Community only', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+
+    for (const label of ['Products', 'Community']) {
+      await expect(
+        menu.getByRole('button', { name: label }).getByText('NEW', {
+          exact: true
+        })
+      ).toBeVisible()
+    }
+
+    await expect(
+      menu.getByRole('button', { name: 'Company' }).getByText('NEW')
+    ).toHaveCount(0)
+    await expect(
+      menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
+    ).toHaveCount(0)
   })
 
   test('clicking section with subitems drills down and back works', async ({

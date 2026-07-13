@@ -13,7 +13,7 @@
     </div>
 
     <div
-      class="overflow-hidden transition-[height] duration-300 ease-out"
+      class="max-h-[45vh] overflow-y-auto transition-[height] duration-300 ease-out sm:max-h-[55vh]"
       :style="animatedHeightStyle"
     >
       <div ref="questionContent" class="relative">

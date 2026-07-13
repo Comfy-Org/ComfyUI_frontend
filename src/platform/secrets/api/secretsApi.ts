@@ -9,6 +9,7 @@ import type {
   SecretCreateRequest,
   SecretErrorCode,
   SecretMetadata,
+  SecretProviderInfo,
   SecretUpdateRequest
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
@@ -57,10 +58,10 @@ export async function listSecrets(): Promise<SecretMetadata[]> {
   return data.data
 }
 
-export async function listSecretProviders(): Promise<string[]> {
+export async function listSecretProviders(): Promise<SecretProviderInfo[]> {
   const response = await api.fetchApi('/secrets/providers')
   const data = await handleResponse<SecretProvidersResponse>(response)
-  return (data.data ?? []).map((provider) => provider.id)
+  return data.data ?? []
 }
 
 export async function createSecret(

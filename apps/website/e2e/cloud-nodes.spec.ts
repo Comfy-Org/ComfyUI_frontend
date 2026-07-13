@@ -9,7 +9,7 @@ test.describe('Cloud nodes page @smoke', () => {
 
   test('has correct title', async ({ page }) => {
     await expect(page).toHaveTitle(
-      'Custom-node packs on Comfy Cloud — supported by default'
+      'Custom-node packs on Comfy Cloud - supported by default'
     )
   })
 

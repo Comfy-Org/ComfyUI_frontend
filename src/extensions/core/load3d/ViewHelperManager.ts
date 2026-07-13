@@ -15,6 +15,16 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   private getControls: () => OrbitControls
   private eventManager: EventManagerInterface
 
+  private readonly helperCamera = new THREE.OrthographicCamera(
+    -2,
+    2,
+    2,
+    -2,
+    0,
+    4
+  )
+  private readonly savedViewport = new THREE.Vector4()
+
   constructor(
     _renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
@@ -24,9 +34,24 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
     this.eventManager = eventManager
+    this.helperCamera.position.set(0, 0, 2)
   }
 
   init(): void {}
+
+  render(renderer: THREE.WebGLRenderer, size: number): void {
+    const helper = this.viewHelper
+    if (!helper.isViewHelper) return
+
+    helper.quaternion.copy(this.getActiveCamera().quaternion).invert()
+    helper.updateMatrixWorld()
+
+    renderer.clearDepth()
+    renderer.getViewport(this.savedViewport)
+    renderer.setViewport(0, 0, size, size)
+    renderer.render(helper, this.helperCamera)
+    renderer.setViewport(this.savedViewport)
+  }
 
   dispose(): void {
     if (this.viewHelper) {

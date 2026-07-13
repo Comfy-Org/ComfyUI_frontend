@@ -8,7 +8,7 @@ test.describe('Cloud page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy Cloud — AI in the Cloud')
+    await expect(page).toHaveTitle('Comfy Cloud - AI in the Cloud')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {

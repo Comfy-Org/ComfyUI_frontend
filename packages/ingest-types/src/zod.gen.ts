@@ -874,10 +874,12 @@ export const zTeamCreditStopSummary = z.object({
 })
 
 /**
- * A provider the user may configure a secret for. The shape is deliberately minimal (identifier only) and reserved for future per-provider fields such as sub-keys.
+ * A provider the user may configure a secret for.
  */
 export const zSecretProvider = z.object({
-  id: z.string()
+  id: z.string(),
+  input_type: z.enum(['text', 'json_file']).optional(),
+  label: z.string().optional()
 })
 
 /**

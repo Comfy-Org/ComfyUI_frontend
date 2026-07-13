@@ -13,7 +13,7 @@ test.describe('Learning page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Learning — Comfy')
+    await expect(page).toHaveTitle('Learning - Comfy')
   })
 
   test('hero headline references ComfyUI', async ({ page }) => {
@@ -137,7 +137,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
   test('renders localized title, headings, and tutorials', async ({ page }) => {
     await page.goto('/zh-CN/learning')
 
-    await expect(page).toHaveTitle('学习 — Comfy')
+    await expect(page).toHaveTitle('学习 - Comfy')
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       /[一-鿿]/
     )

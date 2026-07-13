@@ -49,6 +49,23 @@ describe('TelemetryRegistry', () => {
     expect(a.trackBeginCheckout).toHaveBeenCalledExactlyOnceWith(metadata)
   })
 
+  it('dispatches trackAuthFailed to every registered provider', () => {
+    const a: TelemetryProvider = { trackAuthFailed: vi.fn() }
+    const b: TelemetryProvider = { trackAuthFailed: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const payload = {
+      error_code: 'auth/user-not-found',
+      auth_action: 'email_sign_in' as const
+    }
+    registry.trackAuthFailed(payload)
+
+    expect(a.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
+  })
+
   it('dispatches trackAddApiCreditButtonClicked with its source', () => {
     const provider: TelemetryProvider = {
       trackAddApiCreditButtonClicked: vi.fn()

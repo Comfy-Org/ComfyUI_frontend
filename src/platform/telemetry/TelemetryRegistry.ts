@@ -3,6 +3,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 import type {
   AddCreditsClickMetadata,
   AuthClearedMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -78,6 +79,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthCleared(metadata: AuthClearedMetadata): void {
     this.dispatch((provider) => provider.trackAuthCleared?.(metadata))
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {

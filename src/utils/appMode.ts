@@ -5,6 +5,8 @@ export type AppMode =
   | 'builder:outputs'
   | 'builder:arrange'
 
+export type ViewMode = 'graph' | 'app'
+
 type WorkflowModeSource = {
   activeMode: AppMode | null
   initialMode: AppMode | null | undefined

@@ -19,10 +19,8 @@ import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import { zShareableAssetsResponse } from '@/schemas/apiSchema'
-import type { IFuseOptions } from 'fuse.js'
 import type {
   TemplateIncludeOnDistributionEnum,
-  TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type {
@@ -1544,24 +1542,6 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags.value }
-  }
-
-  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
-    try {
-      const res = await axios.get(
-        this.fileURL('/templates/fuse_options.json'),
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      const contentType = String(res.headers['content-type'] ?? '')
-      return contentType.includes('application/json') ? res.data : null
-    } catch (error) {
-      console.error('Error loading fuse options:', error)
-      return null
-    }
   }
 }
 

@@ -8,6 +8,7 @@ import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import NavLinkContent from './NavLinkContent.vue'
+import NewBadge from './NewBadge.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
@@ -96,7 +97,8 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  {{ item.label }}
+                  <span class="ppformula-text-center">{{ item.label }}</span>
+                  <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
                   <template #append>
                     <ChevronRight class="size-7" />
                   </template>

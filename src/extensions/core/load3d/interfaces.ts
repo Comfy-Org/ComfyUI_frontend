@@ -11,9 +11,11 @@ export type MaterialMode =
   | 'normal'
   | 'wireframe'
   | 'depth'
+  | 'clay'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
+export type LoadFolder = 'temp' | 'output'
 
 interface CameraQuaternion {
   x: number
