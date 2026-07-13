@@ -16,6 +16,7 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
@@ -118,6 +119,11 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
     keys: ['pricing']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+    keys: ['desktop_login_code'],
+    stripAfterCapture: true
   }
 ])
 
@@ -249,6 +255,8 @@ if (isCloud) {
     // User is logged in and accessing protected route
     return next()
   })
+
+  installDesktopLoginRedemption(router)
 }
 
 export default router
