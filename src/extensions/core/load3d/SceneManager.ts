@@ -2,6 +2,8 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+
 import Load3dUtils from './Load3dUtils'
 import {
   type BackgroundRenderModeType,
@@ -38,16 +40,18 @@ export class SceneManager implements SceneManagerInterface {
 
   private eventManager: EventManagerInterface
   private renderer: THREE.WebGLRenderer
+  private view: RendererView
 
   private getActiveCamera: () => THREE.Camera
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    view: RendererView,
     getActiveCamera: () => THREE.Camera,
     _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
+    this.view = view
+    this.renderer = view.renderer
     this.eventManager = eventManager
     this.scene = new THREE.Scene()
 
@@ -65,7 +69,7 @@ export class SceneManager implements SceneManagerInterface {
     // forceRender directly into onDirty caused a per-frame render-setDirty
     // cascade that made splats visibly "balloon" during camera interaction.
     this.sparkRenderer = new SparkRenderer({
-      renderer,
+      renderer: view.renderer,
       onDirty: () => {
         const resolve = this.nextSparkDirtyResolve
         this.nextSparkDirtyResolve = null
@@ -104,7 +108,8 @@ export class SceneManager implements SceneManagerInterface {
     this.backgroundMesh.position.set(0, 0, 0)
     this.backgroundScene.add(this.backgroundMesh)
 
-    this.renderer.setClearColor(0x000000, 0)
+    this.view.state.clearColor.set(0x000000)
+    this.view.state.clearAlpha = 0
   }
 
   init(): void {}
@@ -250,8 +255,8 @@ export class SceneManager implements SceneManagerInterface {
         this.updateBackgroundSize(
           this.backgroundTexture,
           this.backgroundMesh,
-          this.renderer.domElement.clientWidth,
-          this.renderer.domElement.clientHeight
+          this.view.canvas.clientWidth,
+          this.view.canvas.clientHeight
         )
       }
 
@@ -369,6 +374,8 @@ export class SceneManager implements SceneManagerInterface {
     width: number,
     height: number
   ): Promise<{ scene: string; mask: string; normal: string }> {
+    this.view.beginRender()
+
     const originalSize = new THREE.Vector2()
     this.renderer.getSize(originalSize)
     const originalPixelRatio = this.renderer.getPixelRatio()
@@ -495,7 +502,10 @@ export class SceneManager implements SceneManagerInterface {
       this.renderer.setPixelRatio(originalPixelRatio)
       this.renderer.setSize(originalSize.x, originalSize.y)
       this.renderer.outputColorSpace = originalOutputColorSpace
-      this.handleResize(originalSize.x, originalSize.y)
+      this.handleResize(
+        this.view.canvas.clientWidth,
+        this.view.canvas.clientHeight
+      )
     }
   }
 
