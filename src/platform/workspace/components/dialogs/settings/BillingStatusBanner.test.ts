@@ -9,39 +9,49 @@ import enMessages from '@/locales/en/main.json'
 import BillingStatusBanner from './BillingStatusBanner.vue'
 
 const mockManageSubscription = vi.fn()
+const mockShowTopUpCreditsDialog = vi.fn()
+const mockHandleResubscribe = vi.fn()
 const mockBillingStatus = ref<'payment_failed' | null>(null)
 const mockIsPaused = ref(true)
-const mockCanManageSubscription = ref(true)
+const mockIsActiveSubscription = ref(true)
+const mockSubscription = ref<{
+  hasFunds: boolean
+  isCancelled: boolean
+  endDate?: string
+}>({ hasFunds: true, isCancelled: false })
+const mockRenewalDate = ref<string | null>(null)
+const mockPermissions = ref({ canManageSubscription: true })
+const mockIsInPersonalWorkspace = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     billingStatus: mockBillingStatus,
     isPaused: mockIsPaused,
-    isActiveSubscription: ref(true),
-    subscription: ref({ hasFunds: true, isCancelled: false }),
-    renewalDate: ref(null),
+    isActiveSubscription: mockIsActiveSubscription,
+    subscription: mockSubscription,
+    renewalDate: mockRenewalDate,
     manageSubscription: mockManageSubscription
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: ref({
-      canManageSubscription: mockCanManageSubscription.value
-    }),
-    isInPersonalWorkspace: ref(false)
+    permissions: mockPermissions,
+    isInPersonalWorkspace: mockIsInPersonalWorkspace
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useResubscribe', () => ({
   useResubscribe: () => ({
     isResubscribing: ref(false),
-    handleResubscribe: vi.fn()
+    handleResubscribe: mockHandleResubscribe
   })
 }))
 
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showTopUpCreditsDialog: vi.fn() })
+  useDialogService: () => ({
+    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
+  })
 }))
 
 const i18n = createI18n({
@@ -59,15 +69,86 @@ describe('BillingStatusBanner', () => {
     vi.clearAllMocks()
     mockBillingStatus.value = null
     mockIsPaused.value = true
-    mockCanManageSubscription.value = true
+    mockIsActiveSubscription.value = true
+    mockSubscription.value = { hasFunds: true, isCancelled: false }
+    mockRenewalDate.value = null
+    mockPermissions.value = { canManageSubscription: true }
+    mockIsInPersonalWorkspace.value = false
   })
 
-  it('opens subscription management from the payment action', async () => {
+  it('prioritizes a paused subscription and opens payment management', async () => {
     const user = userEvent.setup()
+    mockBillingStatus.value = 'payment_failed'
     renderComponent()
 
+    expect(screen.getByText('Subscription paused')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Update payment' }))
 
     expect(mockManageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('shows paused members non-actionable guidance', () => {
+    mockPermissions.value = { canManageSubscription: false }
+
+    renderComponent()
+
+    expect(
+      screen.getByText(
+        "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('opens payment management for a failed payment', async () => {
+    const user = userEvent.setup()
+    mockIsPaused.value = false
+    mockBillingStatus.value = 'payment_failed'
+    mockRenewalDate.value = '2026-08-15T00:00:00Z'
+    renderComponent()
+
+    expect(screen.getByText('Payment declined')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Update payment' }))
+
+    expect(mockManageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('opens top-up and dismisses an out-of-credits banner', async () => {
+    const user = userEvent.setup()
+    mockIsPaused.value = false
+    mockSubscription.value = { hasFunds: false, isCancelled: false }
+    mockRenewalDate.value = '2026-08-15T00:00:00Z'
+    renderComponent()
+
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('reactivates a plan that is ending', async () => {
+    const user = userEvent.setup()
+    mockIsPaused.value = false
+    mockSubscription.value = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-31T00:00:00Z'
+    }
+    renderComponent()
+
+    expect(screen.getByText(/Your team plan ends on/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
+
+    expect(mockHandleResubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('hides billing banners in personal workspaces', () => {
+    mockIsInPersonalWorkspace.value = true
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
