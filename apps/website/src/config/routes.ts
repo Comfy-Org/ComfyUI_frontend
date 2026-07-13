@@ -15,6 +15,7 @@ const baseRoutes = {
   demos: '/demos/',
   learning: '/learning/',
   termsOfService: '/terms-of-service/',
+  enterpriseMsa: '/enterprise-msa/',
   privacyPolicy: '/privacy-policy/',
   affiliates: '/affiliates/',
   affiliateTerms: '/affiliates/terms/',
