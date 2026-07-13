@@ -359,6 +359,7 @@
     "colors": "پالت رنگ",
     "descLabel": "توضیحات",
     "descPlaceholder": "توضیحات این ناحیه",
+    "grid": "شبکه",
     "textLabel": "متن",
     "textPlaceholder": "متن برای نمایش (عیناً)",
     "typeObj": "obj",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "لطفاً پاسخ خود را کمتر از {max} نویسه نگه دارید.",
         "chooseAnOption": "لطفاً یک گزینه را انتخاب کنید.",
         "describeAnswer": "لطفاً پاسخ خود را توضیح دهید.",
         "selectAtLeastOne": "لطفاً حداقل یک گزینه را انتخاب کنید."
       },
       "intro": "به ما کمک کنید تا تجربه شما از ComfyUI را متناسب‌سازی کنیم.",
       "options": {
-        "familiarity": {
-          "advanced": "کاربر پیشرفته (جریان‌کارهای سفارشی)",
-          "basics": "آشنایی با مبانی",
-          "expert": "کاربر خبره (به دیگران کمک می‌کنم)",
-          "new": "جدید در ComfyUI (تا کنون استفاده نکرده‌ام)",
-          "starting": "تازه شروع کرده‌ام (در حال دنبال کردن آموزش‌ها)"
+        "experience": {
+          "new": "جدید در ComfyUI",
+          "pro": "کاربر حرفه‌ای هستم",
+          "some": "آشنایی نسبی دارم"
+        },
+        "focus": {
+          "custom_nodes": "Nodeهای سفارشی",
+          "pipelines": "پایپ‌لاین‌های خودکار",
+          "products": "محصولات برای دیگران"
         },
         "intent": {
-          "3d_game": "دارایی سه‌بعدی / دارایی بازی",
-          "api": "API endpoint برای اجرای workflow",
-          "apps": "اپلیکیشن ساده‌شده از workflow",
-          "audio": "صدا / موسیقی",
-          "custom_nodes": "node سفارشی",
+          "apps_api": "اپلیکیشن‌ها و APIها",
+          "exploring": "فقط در حال بررسی",
           "images": "تصویر",
-          "not_sure": "مطمئن نیستم",
-          "videos": "ویدیو",
+          "other": "چیز دیگری",
+          "otherPlaceholder": "چه چیزی می‌خواهید بسازید؟",
+          "video": "ویدیو",
           "workflows": "workflow یا pipeline سفارشی"
         },
         "source": {
-          "conference": "کنفرانس یا رویداد",
-          "discord": "Discord / انجمن",
+          "community": "انجمن یا فروم",
           "friend": "دوست یا همکار",
-          "github": "GitHub",
+          "other": "سایر",
+          "otherPlaceholder": "از کجا با ما آشنا شدید؟",
+          "search": "Google / جستجو",
+          "social": "رسانه‌های اجتماعی"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "خبرنامه یا وبلاگ",
-          "other": "سایر",
           "reddit": "Reddit",
-          "search": "Google / جستجو",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "آموزشی (دانشجو یا مدرس)",
-          "personal": "استفاده شخصی",
-          "work": "کاری"
         }
       },
+      "otherPlaceholder": "بیشتر توضیح دهید",
       "placeholder": "جای‌نگهدار سوالات نظرسنجی",
-      "steps": {
-        "familiarity": "تا چه حد با ComfyUI آشنایی دارید؟",
-        "intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
-        "source": "از کجا با ComfyUI آشنا شدید؟",
-        "usage": "برنامه شما برای استفاده از ComfyUI چیست؟"
-      },
       "title": "نظرسنجی ابری"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "درباره Cloud بیشتر بدانید",
   "cloudStart_title": "در چند ثانیه شروع به خلق کنید",
   "cloudStart_wantToRun": "مایلید ComfyUI را به صورت محلی اجرا کنید؟",
-  "cloudSurvey_steps_familiarity": "تا چه اندازه با ComfyUI آشنایی دارید؟",
+  "cloudSurvey_steps_experience": "تا چه حد با ComfyUI آشنایی دارید؟",
+  "cloudSurvey_steps_focus": "در حال ساخت چه چیزی هستید؟",
   "cloudSurvey_steps_intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
   "cloudSurvey_steps_source": "از کجا با ComfyUI آشنا شدید؟",
-  "cloudSurvey_steps_usage": "برنامه شما برای استفاده از ComfyUI چیست؟",
+  "cloudSurvey_steps_source_social": "کدام پلتفرم؟",
   "cloudWaitlist_contactLink": "اینجا",
   "cloudWaitlist_questionsText": "سؤالی دارید؟ با ما تماس بگیرید",
   "color": {
@@ -621,10 +618,13 @@
     "namePlaceholder": "نام خود را اینجا وارد کنید",
     "profileCreationNav": "ساخت پروفایل",
     "startPublishingButton": "شروع انتشار",
+    "startUpdatingButton": "به‌روزرسانی workflow",
     "successDescription": "اکنون می‌توانید جریان‌کار خود را در صفحه سازنده خود بارگذاری کنید",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "صفحه پروفایل شما فعال است در",
     "successTitle": "عالی به نظر می‌رسد، {'@'}{username}!",
+    "updateIntroDescription": "آخرین تغییرات خود را به ComfyHub ارسال کنید. لینک اشتراک‌گذاری و آمار شما بدون تغییر باقی می‌ماند.",
+    "updateIntroTitle": "به‌روزرسانی workflow شما در ComfyHub",
     "uploadCover": "+ بارگذاری کاور",
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
@@ -648,6 +648,8 @@
     "publishSuccessDescription": "گردش‌کار شما اکنون در ComfyHub فعال است.",
     "publishSuccessTitle": "با موفقیت منتشر شد",
     "removeExampleImage": "حذف تصویر نمونه",
+    "renameFailedDescription": "workflow شما با موفقیت منتشر شد، اما تغییر نام فایل محلی انجام نشد. لطفاً دوباره نام آن را مطابق‌سازی کنید.",
+    "renameFailedTitle": "تغییر نام ناموفق بود",
     "selectAThumbnail": "یک تصویر بندانگشتی انتخاب کنید",
     "shareAs": "اشتراک‌گذاری به عنوان",
     "showLessTags": "نمایش کمتر...",
@@ -665,6 +667,7 @@
     "thumbnailVideo": "ویدیو",
     "title": "انتشار در ComfyHub",
     "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در ComfyHub ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
+    "updateButton": "به‌روزرسانی workflow",
     "uploadAnImage": "برای انتخاب کلیک کنید یا تصویر را بکشید",
     "uploadComparison": "بارگذاری قبل و بعد",
     "uploadComparisonAfterPrompt": "بعد",
@@ -783,6 +786,8 @@
     "faqs": "سؤالات متداول",
     "invoiceHistory": "تاریخچه فاکتورها",
     "lastUpdated": "آخرین به‌روزرسانی",
+    "loadEventsError": "بارگذاری فعالیت ناموفق بود. لطفاً دوباره تلاش کنید.",
+    "loadEventsUnknownError": "هنگام بارگذاری فعالیت مشکلی پیش آمد. لطفاً صفحه را بازنشانی و دوباره تلاش کنید.",
     "messageSupport": "پشتیبانی پیامکی",
     "model": "مدل",
     "purchaseCredits": "خرید اعتبار",
@@ -949,6 +954,16 @@
       "message": "شناسه گفت‌وگوی نامعتبری ارائه شده است.",
       "title": "گفت‌وگوی نامعتبر"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "برنامه دسکتاپ ComfyUI در انتظار ورود به حساب شما است. فقط در صورتی ادامه دهید که همین حالا ورود را از برنامه دسکتاپ ComfyUI آغاز کرده‌اید.",
+    "confirmSummary": "تأیید ورود دسکتاپ",
+    "expiredDetail": "درخواست ورود منقضی شده یا قبلاً استفاده شده است. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "expiredSummary": "ورود دسکتاپ ناموفق بود",
+    "failedDetail": "در تکمیل ورود دسکتاپ مشکلی پیش آمد. ورود را دوباره از برنامه دسکتاپ ComfyUI آغاز کنید.",
+    "failedSummary": "ورود دسکتاپ ناموفق بود",
+    "successDetail": "می‌توانید به برنامه دسکتاپ ComfyUI بازگردید.",
+    "successSummary": "ورود انجام شد"
   },
   "desktopMenu": {
     "confirmQuit": "جریان‌های کاری ذخیره‌نشده باز هستند؛ هرگونه تغییر ذخیره‌نشده از بین خواهد رفت. آیا می‌خواهید بدون توجه به این موضوع خارج شوید؟",
@@ -1564,6 +1579,7 @@
     "extensions": "افزونه‌ها",
     "failed": "ناموفق",
     "failedToCopyJobId": "کپی شناسه وظیفه ناموفق بود",
+    "failedToDownloadFile": "دانلود فایل ناموفق بود",
     "failedToDownloadImage": "دانلود تصویر ناموفق بود",
     "failedToDownloadVideo": "دانلود ویدیو ناموفق بود",
     "favorites": "علاقه‌مندی‌ها",
@@ -1808,6 +1824,7 @@
     "systemStatsRAMTotal": "کل RAM",
     "systemStatsTemplatesVersion": "نسخه قالب‌ها",
     "terminal": "ترمینال",
+    "textFailedToLoad": "بارگذاری متن ناموفق بود",
     "title": "عنوان",
     "triggerPhrase": "عبارت trigger",
     "unknownError": "خطای ناشناخته",
@@ -2401,6 +2418,11 @@
       "pending": "در انتظار",
       "unknown": "نامشخص"
     },
+    "survey": {
+      "error": "امکان بارگذاری این نظرسنجی وجود ندارد. لطفاً بعداً دوباره تلاش کنید.",
+      "intro": "نصب nodeهای سفارشی به‌زودی در Comfy Cloud ارائه می‌شود. با پاسخ به چند سؤال کوتاه به لیست انتظار بپیوندید و در شکل‌گیری این قابلیت مشارکت کنید.",
+      "title": "پیوستن به لیست انتظار"
+    },
     "title": "مدیریت نودهای سفارشی",
     "toFinishSetup": "برای تکمیل راه‌اندازی",
     "totalNodes": "تعداد کل نودها",
@@ -2769,7 +2791,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2822,6 @@
     "cosmos": "cosmos",
     "create": "ایجاد",
     "custom": "سفارشی",
-    "custom_sampling": "نمونه‌گیری سفارشی",
     "dancer": "رقصنده",
     "debug": "اشکال‌زدایی",
     "detection": "شناسایی",
@@ -2845,6 +2865,8 @@
     "phantom subject": "موضوع فانتوم",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "پردازش‌گرهای پسین",
+    "pre-processors": "پردازش‌گرهای پیشین",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
@@ -2865,7 +2887,6 @@
     "stable video": "ویدیوی stable",
     "stable video 3d": "ویدیوی سه‌بعدی stable",
     "stable zero123": "stable zero123",
-    "stable_cascade": "stable cascade",
     "supir": "supir",
     "text": "متن",
     "training": "آموزش",
@@ -3102,8 +3123,11 @@
     "errorHelpGithub": "ثبت یک issue در GitHub",
     "errorHelpSupport": "تماس با پشتیبانی ما",
     "errorLog": "گزارش خطا",
+    "errorNodeSummary": "{nodes} node — {count} خطا | {nodes} node — {count} خطا",
+    "errorNodesSummary": "{nodes} node — {count} خطا | {nodes} node — {count} خطا",
     "errors": "خطاها",
     "errorsDetected": "خطا شناسایی شد | خطاها شناسایی شدند",
+    "errorsSummary": "{count} خطا | {count} خطا",
     "executionErrorOccurred": "خطایی در حین اجرا رخ داد. برای جزئیات به تب خطاها مراجعه کنید.",
     "expand": "باز کردن",
     "fallbackGroupTitle": "گروه",
@@ -3193,6 +3217,8 @@
     "resetToDefault": "بازنشانی به پیش‌فرض",
     "resolveBeforeRun": "لطفاً پیش از اجرای workflow خطاها را برطرف کنید",
     "seeError": "مشاهده خطا",
+    "selectedNodeErrors": "{node} — {count} خطا | {node} — {count} خطا",
+    "selectedNodesErrors": "{nodes} node انتخاب شده — {count} خطا | {nodes} node انتخاب شده — {count} خطا",
     "settings": "تنظیمات",
     "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
     "showAdvancedShort": "نمایش پیشرفته",
@@ -3223,6 +3249,10 @@
     "namePlaceholder": "مثلاً، کلید API من",
     "noSecrets": "هیچ کلید محرمانه‌ای ذخیره نشده است. اولین کلید API خود را برای شروع اضافه کنید.",
     "provider": "ارائه‌دهنده",
+    "providerHelp": {
+      "gemini": "کلید API مربوط به Google Gemini را وارد کنید. می‌توانید این کلید را در Google AI Studio ایجاد کنید.",
+      "runway": "کلید API مربوط به Runway را وارد کنید. این کلید را می‌توانید در تنظیمات حساب کاربری Runway خود در بخش کلیدهای API پیدا کنید."
+    },
     "providerHint": "اختیاری. انتخاب ارائه‌دهنده باعث فعال‌سازی استفاده خودکار از توکن می‌شود.",
     "secretValue": "مقدار کلید محرمانه",
     "secretValueHint": "این مقدار رمزگذاری می‌شود و دیگر قابل مشاهده نخواهد بود.",
@@ -4118,6 +4148,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
+      "relevance": "مرتبط‌ترین",
       "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
 import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuArrow,
@@ -12,11 +11,9 @@ import { computed, ref, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '../ui/button/button.variants'
-
-// Shared base for @primeuix's auto-incrementing 'modal' z-index counter.
-const MODAL_BASE_Z_INDEX = 1700
 
 defineOptions({
   inheritAttrs: false
@@ -46,15 +43,8 @@ const contentClass = computed(() =>
   )
 )
 
-// Body-portaled content keeps its static z-1700 unless a dialog that joined
-// @primeuix's auto-incrementing 'modal' counter is open above it; then lift
-// past that dialog so the menu isn't hidden behind it.
 const open = ref(false)
-const contentStyle = computed(() => {
-  if (!open.value) return undefined
-  const topZIndex = ZIndex.getCurrent('modal')
-  return topZIndex >= MODAL_BASE_Z_INDEX ? { zIndex: topZIndex + 1 } : undefined
-})
+const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
