@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  escapeVueI18nLinkedSyntax,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
   getFilePathSeparatorVariants,
@@ -475,6 +476,36 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('escapeVueI18nLinkedSyntax', () => {
+    it('escapes a literal @ that would break linked-message compilation', () => {
+      expect(
+        escapeVueI18nLinkedSyntax('clips (tagged @Audio1-3 in the prompt)')
+      ).toBe("clips (tagged {'@'}Audio1-3 in the prompt)")
+    })
+
+    it('escapes @ in an email address', () => {
+      expect(escapeVueI18nLinkedSyntax('support@comfy.org')).toBe(
+        "support{'@'}comfy.org"
+      )
+    })
+
+    it('escapes every occurrence', () => {
+      expect(escapeVueI18nLinkedSyntax('@a @b @c')).toBe("{'@'}a {'@'}b {'@'}c")
+    })
+
+    it('leaves strings without @ unchanged', () => {
+      expect(escapeVueI18nLinkedSyntax('no at sign here')).toBe(
+        'no at sign here'
+      )
+      expect(escapeVueI18nLinkedSyntax('')).toBe('')
+    })
+
+    it('is idempotent for already-escaped input', () => {
+      const once = escapeVueI18nLinkedSyntax('a@b')
+      expect(escapeVueI18nLinkedSyntax(once)).toBe(once)
     })
   })
 })

@@ -179,6 +179,21 @@ export function normalizeI18nKey(key: string) {
 }
 
 /**
+ * Escapes literal `@` characters so vue-i18n's message compiler treats them as
+ * text rather than the start of a linked-message reference (e.g. `@:other.key`).
+ * An unescaped `@` that isn't valid linked syntax makes the compiler throw
+ * `Invalid linked format`, which breaks every message compiled via `t()`/`st()`.
+ *
+ * Only apply to values read through the compiler. Values read raw via
+ * `tm()`/`stRaw()` (e.g. node tooltips) must be left untouched, or the literal
+ * `{'@'}` escape would surface to users. Idempotent: already-escaped `{'@'}`
+ * sequences are left as-is.
+ */
+export function escapeVueI18nLinkedSyntax(text: string): string {
+  return text.replace(/(?<!\{')@(?!'\})/g, "{'@'}")
+}
+
+/**
  * Takes a dynamic prompt in the format {opt1|opt2|{optA|optB}|} and randomly replaces groups. Supports C style comments.
  * @param input The dynamic prompt to process
  * @returns

@@ -83,6 +83,7 @@ export default defineConfig([
       'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
+      'scripts/*',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',

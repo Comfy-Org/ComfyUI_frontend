@@ -3,7 +3,10 @@ import * as fs from 'fs'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
+import {
+  escapeVueI18nLinkedSyntax,
+  normalizeI18nKey
+} from '../packages/shared-frontend-utils/src/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 
 const localePath = './src/locales/en/main.json'
@@ -60,7 +63,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         )
         return allDataTypes.map((dataType) => [
           normalizeI18nKey(dataType),
-          dataType
+          escapeVueI18nLinkedSyntax(dataType)
         ])
       })
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -98,7 +101,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const runtimeWidgets = Object.fromEntries(
           Object.entries(widgetsMappings)
             .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([key, value]) => [normalizeI18nKey(key), { name: value }])
+            .map(([key, value]) => [
+              normalizeI18nKey(key),
+              { name: value ? escapeVueI18nLinkedSyntax(value) : value }
+            ])
         )
 
         if (Object.keys(runtimeWidgets).length > 0) {
@@ -121,7 +127,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
       Object.values(nodeDef.inputs).flatMap((input) => {
-        const name = input.name
+        const name =
+          input.name === undefined
+            ? undefined
+            : escapeVueI18nLinkedSyntax(input.name)
         const tooltip = input.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -146,7 +155,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     const outputs = Object.fromEntries(
       nodeDef.outputs.flatMap((output, i) => {
         // Ignore data types if they are already translated in allDataTypesLocale.
-        const name = output.name in allDataTypesLocale ? undefined : output.name
+        const name =
+          output.name === undefined || output.name in allDataTypesLocale
+            ? undefined
+            : escapeVueI18nLinkedSyntax(output.name)
         const tooltip = output.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -179,8 +191,12 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         return [
           normalizeI18nKey(nodeDef.name),
           {
-            display_name: nodeDef.display_name ?? nodeDef.name,
-            description: nodeDef.description || undefined,
+            display_name: escapeVueI18nLinkedSyntax(
+              nodeDef.display_name ?? nodeDef.name
+            ),
+            description: nodeDef.description
+              ? escapeVueI18nLinkedSyntax(nodeDef.description)
+              : undefined,
             inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
             outputs: extractOutputs(nodeDef)
           }
@@ -192,7 +208,10 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     nodeDefs.flatMap((nodeDef) =>
       nodeDef.category
         .split('/')
-        .map((category) => [normalizeI18nKey(category), category])
+        .map((category) => [
+          normalizeI18nKey(category),
+          escapeVueI18nLinkedSyntax(category)
+        ])
     )
   )
 
