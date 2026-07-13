@@ -1163,6 +1163,7 @@
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
+      "relevance": "Relevance",
       "recommended": "Recommended",
       "popular": "Popular",
       "alphabetical": "A → Z",
@@ -1812,6 +1813,8 @@
     "Runway": "Runway",
     "scail": "scail",
     "stable diffusion upscaler": "stable diffusion upscaler",
+    "post-processors": "post-processors",
+    "pre-processors": "pre-processors",
     "clip": "clip",
     "Sonilo": "Sonilo",
     "stable zero123": "stable zero123",
@@ -2065,6 +2068,7 @@
     "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
+    "model3d": "3D Model",
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
@@ -2075,13 +2079,35 @@
     "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
+    "menuBar": {
+      "showGrid": "Show grid",
+      "bgColor": "BG Color",
+      "bgImage": "BG Image",
+      "panorama": "Panorama",
+      "removeBackground": "Remove BG",
+      "upDirection": "Up Direction",
+      "material": "Material",
+      "skeleton": "Skeleton",
+      "fov": "FOV",
+      "intensity": "Intensity",
+      "record": "Record",
+      "recording": "Recording",
+      "stopRecording": "Stop recording",
+      "downloadRecording": "Download Recording",
+      "startNewRecording": "Start New Recording",
+      "deleteRecording": "Delete Recording",
+      "videoRecordingTooltip": "Video recording of the scene [mp4]",
+      "switchProjection": "Switch projection",
+      "originalMaterialOnly": "Original material only"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
       "pointCloud": "Point Cloud",
       "depth": "Depth",
-      "lineart": "Lineart"
+      "lineart": "Lineart",
+      "clay": "Clay"
     },
     "upDirections": {
       "original": "Original"
@@ -2113,10 +2139,10 @@
     "uploadingModel": "Uploading 3D model...",
     "loadingHDRI": "Loading HDRI...",
     "hdri": {
-      "label": "HDRI Environment",
-      "uploadFile": "Upload HDRI (.hdr, .exr)",
-      "changeFile": "Change HDRI",
-      "removeFile": "Remove HDRI",
+      "label": "HDRI",
+      "uploadFile": "Upload",
+      "changeFile": "Change",
+      "removeFile": "Remove",
       "showAsBackground": "Show as Background",
       "intensity": "Intensity"
     },
@@ -2126,7 +2152,7 @@
       "translate": "Translate",
       "rotate": "Rotate",
       "scale": "Scale",
-      "reset": "Reset Transform"
+      "reset": "Reset"
     }
   },
   "imageCrop": {
@@ -2170,7 +2196,8 @@
     "descLabel": "description",
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
-    "colors": "color_palette"
+    "colors": "color_palette",
+    "grid": "Grid"
   },
   "palette": {
     "addColor": "Add a color",
@@ -2413,6 +2440,16 @@
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
     }
+  },
+  "desktopLogin": {
+    "confirmSummary": "Approve desktop sign-in?",
+    "confirmMessage": "The ComfyUI desktop app is waiting to sign in with your account. Only continue if you just started signing in from the ComfyUI desktop app.",
+    "successSummary": "Signed in",
+    "successDetail": "You can return to the ComfyUI desktop app.",
+    "expiredSummary": "Desktop sign-in failed",
+    "expiredDetail": "The sign-in request expired or was already used. Start signing in again from the ComfyUI desktop app.",
+    "failedSummary": "Desktop sign-in failed",
+    "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app."
   },
   "validation": {
     "invalidEmail": "Invalid email address",

@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
+
 import { HDRIManager } from './HDRIManager'
 import Load3dUtils from './Load3dUtils'
 
@@ -76,7 +78,12 @@ describe('HDRIManager', () => {
       dispose: vi.fn()
     })
 
-    manager = new HDRIManager(scene, {} as THREE.WebGLRenderer, eventManager)
+    manager = new HDRIManager(
+      scene,
+      {} as THREE.WebGLRenderer,
+      createRendererViewState(),
+      eventManager
+    )
   })
 
   afterEach(() => {
