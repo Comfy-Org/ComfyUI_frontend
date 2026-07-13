@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { shallowRef, toRaw } from 'vue'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -287,7 +288,20 @@ export class LGraph
     'extra'
   ])
 
-  id: UUID = zeroUuid
+  /**
+   * Ref-backed: {@link configure} reassigns the id in place on every workflow
+   * load, and reactive consumers (store buckets keyed by root graph id) must
+   * observe that change. `toRaw` keeps the accessor correct when the graph is
+   * read through a reactive proxy, which would otherwise auto-unwrap the ref.
+   */
+  private readonly _id = shallowRef<UUID>(zeroUuid)
+  get id(): UUID {
+    return toRaw(this)._id.value
+  }
+  set id(value: UUID) {
+    toRaw(this)._id.value = value
+  }
+
   revision: number = 0
 
   _version: number = -1

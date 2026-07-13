@@ -124,6 +124,25 @@ describe('useCanvasStore', () => {
     })
   })
 
+  describe('rootGraphId', () => {
+    it('tracks the graph id reassigned by a workflow load', async () => {
+      const graph = new LGraph()
+      const fakeCanvas = {
+        canvas: document.createElement('canvas'),
+        graph,
+        selectedItems: new Set()
+      }
+      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      await nextTick()
+      expect(store.rootGraphId).toBe(graph.id)
+
+      const workflowId = '11111111-1111-4111-8111-111111111111'
+      graph.configure({ ...graph.serialize(), id: workflowId })
+
+      expect(store.rootGraphId).toBe(workflowId)
+    })
+  })
+
   it('Does not include groups in selected nodeIds', async () => {
     store.selectedItems = [new LGraphGroup()]
 
