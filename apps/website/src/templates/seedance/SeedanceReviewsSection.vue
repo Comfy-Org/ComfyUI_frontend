@@ -41,7 +41,7 @@ function scroll(direction: -1 | 1) {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24">
+  <section class="max-w-9xl mx-auto px-6 pt-0 pb-16 lg:px-16 lg:pt-4 lg:pb-24">
     <!-- Comfy MCP highlight card -->
     <div
       class="rounded-5xl bg-primary-comfy-yellow flex flex-col gap-6 p-8 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-8"
