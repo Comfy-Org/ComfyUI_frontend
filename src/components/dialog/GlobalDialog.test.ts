@@ -398,6 +398,26 @@ describe('shouldPreventRekaDismiss', () => {
     overlay.remove()
   })
 
+  it.for(['menu', 'dialog', 'listbox'])(
+    'prevents dismiss when clicking an aria-haspopup="%s" trigger',
+    (popupType) => {
+      // Clicking an open popup's trigger to close it must not tear down the
+      // surrounding dialog: while the popup layer is open, the parent
+      // DismissableLayer classifies the trigger click as outside.
+      const trigger = document.createElement('button')
+      trigger.setAttribute('aria-haspopup', popupType)
+      const icon = document.createElement('i')
+      trigger.appendChild(icon)
+      document.body.appendChild(trigger)
+
+      const event = makeEvent(icon)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+      expect(event.defaultPrevented).toBe(true)
+      trigger.remove()
+    }
+  )
+
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)

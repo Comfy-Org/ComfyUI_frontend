@@ -9,10 +9,12 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
 // DismissableLayer sees the focus shift / pointer-down as "outside" and would
-// dismiss itself. These selectors cover the portaled roots so we can treat
-// interactions on them as inside.
+// dismiss itself. These selectors cover the portaled roots — and the
+// `aria-haspopup` triggers that toggle them, because while a popup is open the
+// parent layer classifies a click on the trigger (closing the popup) as
+// outside too — so we can treat interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"], [aria-haspopup="menu"], [aria-haspopup="dialog"], [aria-haspopup="listbox"]'
 
 const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
 
