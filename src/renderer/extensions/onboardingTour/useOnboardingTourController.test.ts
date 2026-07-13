@@ -44,8 +44,14 @@ const mocks = vi.hoisted(() => ({
     trackOnboardingTourStarted: vi.fn(),
     trackOnboardingTourStepViewed: vi.fn(),
     trackOnboardingTourSkipped: vi.fn(),
-    trackOnboardingTourCompleted: vi.fn()
-  }
+    trackOnboardingTourCompleted: vi.fn(),
+    trackOnboardingTourRunTriggered: vi.fn(),
+    trackOnboardingTourUpgradeShown: vi.fn()
+  },
+  hasFunds: true as boolean,
+  showSubscriptionDialog: vi.fn(),
+  storeMarkNudgePending: vi.fn(),
+  settingSet: vi.fn()
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -77,7 +83,19 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: (key: string) =>
-      key === 'Comfy.TutorialCompleted' ? mocks.tutorialCompleted : undefined
+      key === 'Comfy.TutorialCompleted' ? mocks.tutorialCompleted : undefined,
+    set: mocks.settingSet
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    subscription: {
+      get value() {
+        return { hasFunds: mocks.hasFunds }
+      }
+    },
+    showSubscriptionDialog: mocks.showSubscriptionDialog
   })
 }))
 
@@ -104,7 +122,9 @@ vi.mock('./onboardingTourStore', () => ({
   useOnboardingTourStore: () => ({
     start: mocks.storeStart,
     advance: mocks.storeAdvance,
+    back: vi.fn(),
     end: mocks.storeEnd,
+    markNudgePending: mocks.storeMarkNudgePending,
     get phase() {
       return mocks.phase.value
     },
@@ -208,6 +228,12 @@ describe('useOnboardingTourController.start', () => {
     mocks.phase.value = 'active'
     mocks.promptPortFallback.value = false
     mocks.resolvedRoles.value = imageEditRoles
+    mocks.hasFunds = true
+    mocks.showSubscriptionDialog.mockReset()
+    mocks.storeMarkNudgePending.mockReset()
+    mocks.settingSet.mockReset()
+    mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
+    mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
   })
 
   afterEach(() => {
@@ -352,5 +378,84 @@ describe('useOnboardingTourController.start', () => {
     await vi.advanceTimersByTimeAsync(8000)
 
     expect(mocks.storeAdvance).not.toHaveBeenCalled()
+  })
+
+  it('gates a no-funds user at the Run step: upgrade modal, nudge, end', async () => {
+    mocks.hasFunds = false
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start('image_z_image_turbo')
+
+    expect(mocks.showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'out_of_credits'
+    })
+    expect(
+      mocks.telemetry.trackOnboardingTourUpgradeShown
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ template_id: 'image_z_image_turbo' })
+    )
+    expect(mocks.storeMarkNudgePending).toHaveBeenCalledOnce()
+    expect(mocks.storeEnd).toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).not.toHaveBeenCalled()
+  })
+
+  it('gates via store.end without writing completion itself', async () => {
+    mocks.hasFunds = false
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start()
+
+    // Once-only rests on the load seam's Comfy.TutorialCompleted write; the
+    // controller ends the tour but never touches the setting itself.
+    expect(mocks.storeEnd).toHaveBeenCalled()
+    expect(mocks.settingSet).not.toHaveBeenCalled()
+  })
+
+  it('lets a funded user reach the Run step and reports it', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start()
+
+    expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.storeEnd).not.toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('only gates when the funds check reaches the Run step', async () => {
+    mocks.hasFunds = false
+    mocks.steps = [
+      { kind: 'prompt', nodeId: null, prompt: promptRole },
+      { kind: 'run', nodeId: null }
+    ]
+
+    await useOnboardingTourController().start()
+
+    // First step is Prompt, not Run — no gate yet.
+    expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
+  })
+
+  it('reports the run once even when the user navigates back into it', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    const controller = useOnboardingTourController()
+    await controller.start() // enters Run (step 0) → reports
+
+    mocks.stepIndex.value = 1
+    await controller.advance() // → Result
+    mocks.stepIndex.value = 0
+    await controller.back() // back into Run — must not re-report
+
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledOnce()
   })
 })

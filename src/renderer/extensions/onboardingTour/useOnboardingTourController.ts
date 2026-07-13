@@ -1,5 +1,6 @@
 import { createSharedComposable } from '@vueuse/core'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
@@ -26,6 +27,8 @@ function _useOnboardingTourController() {
   /** Retained from `start` so completion/skip telemetry carries the same tags. */
   let activeTemplateId: string | undefined
   let activeShape: OnboardingTourShape = 'other'
+  /** Guards RunTriggered against re-firing when the user navigates back into Run. */
+  let runReported = false
 
   function clearGrace() {
     if (graceTimer !== undefined) {
@@ -73,6 +76,7 @@ function _useOnboardingTourController() {
     store.start(workflow, templateId)
     activeTemplateId = templateId
     activeShape = shapeOf(store.resolvedRoles)
+    runReported = false
     useTelemetry()?.trackOnboardingTourStarted?.({
       template_id: activeTemplateId,
       shape: activeShape,
@@ -81,11 +85,44 @@ function _useOnboardingTourController() {
     await enterStep()
   }
 
+  /** UX-only paywall check; real enforcement is server-side. Never gate on signup method. */
+  function hasFunds(): boolean {
+    return useBillingContext().subscription.value?.hasFunds === true
+  }
+
+  /**
+   * Gate the Run step: funded users fire run telemetry and proceed; no-funds
+   * users get the upgrade modal, the nudge flag, and the tour ends. Completion
+   * is written by the load seam, not here. Returns true when gated.
+   */
+  function gateRunStep(): boolean {
+    if (hasFunds()) {
+      if (!runReported) {
+        runReported = true
+        useTelemetry()?.trackOnboardingTourRunTriggered?.({
+          template_id: activeTemplateId,
+          shape: activeShape
+        })
+      }
+      return false
+    }
+
+    useBillingContext().showSubscriptionDialog({ reason: 'out_of_credits' })
+    useTelemetry()?.trackOnboardingTourUpgradeShown?.({
+      template_id: activeTemplateId
+    })
+    store.markNudgePending()
+    end('done')
+    return true
+  }
+
   /** Set up the current step: focus the prompt (with port fallback) and arm the grace timer. */
   async function enterStep() {
     clearGrace()
     const step = store.currentStep
     if (!step) return
+
+    if (step.kind === 'run' && gateRunStep()) return
 
     if (step.kind === 'prompt' && step.prompt) {
       store.promptPortFallback = !(await focusPromptTarget(step.prompt))
