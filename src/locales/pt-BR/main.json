@@ -359,6 +359,7 @@
     "colors": "paleta_de_cores",
     "descLabel": "descrição",
     "descPlaceholder": "descrição desta região",
+    "grid": "Grade",
     "textLabel": "Texto",
     "textPlaceholder": "texto a ser exibido (literal)",
     "typeObj": "obj",
@@ -953,6 +954,16 @@
       "message": "ID de diálogo inválido fornecido.",
       "title": "Diálogo inválido"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "O aplicativo desktop do ComfyUI está aguardando para entrar com sua conta. Continue apenas se você acabou de iniciar o login pelo aplicativo desktop do ComfyUI.",
+    "confirmSummary": "Aprovar login no desktop?",
+    "expiredDetail": "A solicitação de login expirou ou já foi utilizada. Inicie o login novamente pelo aplicativo desktop do ComfyUI.",
+    "expiredSummary": "Falha no login do desktop",
+    "failedDetail": "Algo deu errado ao concluir o login no desktop. Inicie o login novamente pelo aplicativo desktop do ComfyUI.",
+    "failedSummary": "Falha no login do desktop",
+    "successDetail": "Você pode retornar ao aplicativo desktop do ComfyUI.",
+    "successSummary": "Login realizado"
   },
   "desktopMenu": {
     "confirmQuit": "Existem fluxos de trabalho não salvos abertos; quaisquer alterações não salvas serão perdidas. Ignorar isso e sair?",
@@ -2854,6 +2865,8 @@
     "phantom subject": "phantom subject",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "pós-processadores",
+    "pre-processors": "pré-processadores",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
@@ -4135,6 +4148,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
+      "relevance": "Relevância",
       "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",

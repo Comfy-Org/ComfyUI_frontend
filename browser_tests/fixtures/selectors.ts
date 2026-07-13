@@ -276,6 +276,7 @@ export const TestIds = {
     overlay: 'loading-overlay'
   },
   load3d: {
+    categoryMenu: 'load3d-category-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

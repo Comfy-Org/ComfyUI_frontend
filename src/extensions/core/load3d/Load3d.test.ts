@@ -334,7 +334,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
+        view: { canvas, setSize },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -361,26 +361,21 @@ describe('Load3d', () => {
       const updateAspectRatio = vi.fn()
       const renderBackground = vi.fn()
 
-      const canvas = document.createElement('canvas')
-      Object.defineProperty(canvas, 'clientWidth', {
-        value: 800,
-        configurable: true
-      })
-      Object.defineProperty(canvas, 'clientHeight', {
-        value: 600,
-        configurable: true
-      })
       const scene = {} as THREE.Scene
 
       Object.assign(ctx.load3d, {
-        renderer: {
-          domElement: canvas,
-          setViewport,
-          setScissor,
-          setScissorTest,
-          setClearColor,
-          clear,
-          render
+        view: {
+          width: 800,
+          height: 600,
+          state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+          renderer: {
+            setViewport,
+            setScissor,
+            setScissorTest,
+            setClearColor,
+            clear,
+            render
+          }
         },
         targetWidth: 400,
         targetHeight: 200,
@@ -415,7 +410,7 @@ describe('Load3d', () => {
       })
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas },
+        view: { canvas },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -438,7 +433,7 @@ describe('Load3d', () => {
       expect(args[3]).toBe(400)
     })
 
-    it('handleResize calls setPixelRatio with the value returned by getZoomScaleCallback', () => {
+    it('handleResize scales the view size by getZoomScaleCallback', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -453,10 +448,10 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
         getZoomScaleCallback: () => 2.5,
         targetWidth: 0,
         targetHeight: 0,
@@ -467,10 +462,10 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(2.5)
+      expect(setSize).toHaveBeenCalledWith(1000, 1000)
     })
 
-    it('handleResize defaults to pixelRatio 1 when no getZoomScaleCallback is provided', () => {
+    it('handleResize caps the zoom scale at 3', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -485,10 +480,42 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
+        getZoomScaleCallback: () => 10,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setSize).toHaveBeenCalledWith(1200, 1200)
+    })
+
+    it('handleResize defaults to scale 1 when no getZoomScaleCallback is provided', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setSize = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        view: { canvas, setSize },
         getZoomScaleCallback: undefined,
         targetWidth: 0,
         targetHeight: 0,
@@ -499,7 +526,7 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(1)
+      expect(setSize).toHaveBeenCalledWith(400, 400)
     })
   })
 
@@ -510,7 +537,8 @@ describe('Load3d', () => {
       const viewHelperRender = vi.fn()
       const controlsUpdate = vi.fn()
       const renderMainScene = vi.fn()
-      const resetViewport = vi.fn()
+      const beginRender = vi.fn()
+      const blit = vi.fn()
 
       Object.assign(ctx.load3d, {
         STATUS_MOUSE_ON_NODE: true,
@@ -525,13 +553,16 @@ describe('Load3d', () => {
         },
         viewHelperManager: {
           update: viewHelperUpdate,
-          viewHelper: { render: viewHelperRender }
+          render: viewHelperRender
         },
         controlsManager: { update: controlsUpdate },
         recordingManager: { getIsRecording: vi.fn(() => false) },
         renderMainScene,
-        resetViewport,
-        renderer: {}
+        view: {
+          beginRender,
+          blit,
+          renderer: { setScissorTest: vi.fn() }
+        }
       })
 
       ;(ctx.load3d as unknown as { startAnimation(): void }).startAnimation()
@@ -546,9 +577,10 @@ describe('Load3d', () => {
       expect(animationUpdate).toHaveBeenCalledOnce()
       expect(viewHelperUpdate).toHaveBeenCalledOnce()
       expect(controlsUpdate).toHaveBeenCalledOnce()
+      expect(beginRender).toHaveBeenCalledOnce()
       expect(renderMainScene).toHaveBeenCalledOnce()
-      expect(resetViewport).toHaveBeenCalledOnce()
       expect(viewHelperRender).toHaveBeenCalledOnce()
+      expect(blit).toHaveBeenCalledOnce()
 
       // Cancel the queued rAF so the test doesn't leak frames.
       loop.stop()
@@ -560,12 +592,10 @@ describe('Load3d', () => {
 
       Object.assign(ctx.load3d, {
         renderLoop: { stop },
-        resizeObserver: null,
         contextMenuAbortController: null,
-        renderer: {
-          forceContextLoss: vi.fn(),
-          dispose: vi.fn(),
-          domElement: canvas
+        view: {
+          canvas,
+          dispose: vi.fn()
         },
         sceneManager: { ...ctx.sceneManager, dispose: vi.fn() },
         cameraManager: { ...ctx.cameraManager, dispose: vi.fn() },
