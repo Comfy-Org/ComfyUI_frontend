@@ -9349,3 +9349,25 @@ export type GetLegacyViewMetadataErrors = {
    */
   404: unknown
 }
+
+// --- Backport-only addition (cloud/1.45) ---
+// SecretProvidersResponse/SecretProvider exist on main via #12777 (full ingest
+// types refresh, not backported). Grafted here so the #13494 BYOK backport
+// compiles; the next full types regen on this branch will supersede this block.
+
+/**
+ * The providers available to the authenticated user in the current workspace.
+ */
+export type SecretProvidersResponse = {
+  data: Array<SecretProvider>
+}
+
+/**
+ * A provider the user may configure a secret for. The shape is deliberately minimal (identifier only) and reserved for future per-provider fields such as sub-keys.
+ */
+export type SecretProvider = {
+  /**
+   * Provider identifier (e.g., huggingface, civitai, runway, gemini)
+   */
+  id: string
+}
