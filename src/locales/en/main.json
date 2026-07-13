@@ -2324,6 +2324,23 @@
           "body": "Your first video is ready."
         }
       }
+    },
+    "gettingStarted": {
+      "title": "Get started with Graph",
+      "subtitle": "Start a workflow from scratch or load one that's ready to go.",
+      "screenLabel": "Get started with Graph",
+      "tabsLabel": "Getting started options",
+      "tabs": {
+        "templates": "Templates",
+        "import": "Import workflow",
+        "tutorials": "Tutorials"
+      },
+      "startFromScratch": "Start from scratch",
+      "discoverAll": "Discover all templates",
+      "placeholder": {
+        "import": "Importing workflows is coming soon.",
+        "tutorials": "Tutorials are coming soon."
+      }
     }
   },
   "auth": {

@@ -5,6 +5,7 @@ import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useOnboardingEntryStore } from '../onboardingEntryStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
@@ -128,6 +129,27 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+const onboardingMocks = vi.hoisted(() => ({
+  onboardingTourEnabled: false,
+  isNewUser: null as boolean | null
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get onboardingTourEnabled() {
+        return onboardingMocks.onboardingTourEnabled
+      }
+    }
+  })
+}))
+
+vi.mock('@/services/useNewUserService', () => ({
+  useNewUserService: () => ({
+    isNewUser: () => onboardingMocks.isNewUser
+  })
+}))
+
 vi.mock('../migration/migrateV1toV2', () => ({
   migrateV1toV2: vi.fn()
 }))
@@ -206,6 +228,8 @@ describe('useWorkflowPersistenceV2', () => {
     commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
+    onboardingMocks.onboardingTourEnabled = false
+    onboardingMocks.isNewUser = null
   })
 
   afterEach(() => {
@@ -613,6 +637,64 @@ describe('useWorkflowPersistenceV2', () => {
       await initializeWorkflow()
 
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('shows Getting Started instead of the templates browser for a flagged new user', async () => {
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(entryStore.shouldShowGettingStarted).toBe(true)
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser when the flag is on but the user is not new', async () => {
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = false
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser when the flag is off', async () => {
+      onboardingMocks.onboardingTourEnabled = false
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not show Getting Started for a flagged new user arriving via a template URL', async () => {
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      routeMocks.query = { template: 'default-template-id' }
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
       expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
         'Comfy.BrowseTemplates'
       )
