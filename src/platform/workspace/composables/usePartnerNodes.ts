@@ -17,6 +17,7 @@ export interface PartnerGroup {
 
 type SortField = 'name' | 'lastModified'
 type SortDirection = 'asc' | 'desc'
+type NodeMutationState = Pick<PartnerNode, 'enabled' | 'last_modified'>
 
 function compareNodes(
   a: PartnerNode,
@@ -60,7 +61,39 @@ export function usePartnerNodes() {
   const sortDirection = ref<SortDirection>('asc')
   const selectedIds = ref<Set<string>>(new Set())
   const nodeMutationVersions = new Map<string, number>()
+  const confirmedNodeStates = new Map<string, NodeMutationState>()
+  const nodeMutationQueues = new Map<string, Promise<void>>()
   let autoEnableMutationVersion = 0
+  let confirmedAutoEnableNew = true
+  let autoEnableMutationQueue = Promise.resolve()
+
+  function enqueueNodeMutation(
+    ids: string[],
+    operation: () => Promise<void>
+  ): Promise<void> {
+    const pending = ids.map(
+      (id) => nodeMutationQueues.get(id) ?? Promise.resolve()
+    )
+    const result = Promise.all(pending).then(operation)
+    const queueTail = result.catch(() => {})
+    for (const id of ids) nodeMutationQueues.set(id, queueTail)
+    void queueTail.then(() => {
+      for (const id of ids) {
+        if (nodeMutationQueues.get(id) === queueTail) {
+          nodeMutationQueues.delete(id)
+        }
+      }
+    })
+    return result
+  }
+
+  function enqueueAutoEnableMutation(
+    operation: () => Promise<void>
+  ): Promise<void> {
+    const result = autoEnableMutationQueue.then(operation)
+    autoEnableMutationQueue = result.catch(() => {})
+    return result
+  }
 
   const filteredNodes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
@@ -159,6 +192,14 @@ export function usePartnerNodes() {
       const data = await partnerNodesApi.list()
       nodes.value = data.partner_nodes
       autoEnableNew.value = data.auto_enable_new
+      confirmedNodeStates.clear()
+      for (const node of data.partner_nodes) {
+        confirmedNodeStates.set(node.id, {
+          enabled: node.enabled,
+          last_modified: node.last_modified
+        })
+      }
+      confirmedAutoEnableNew = data.auto_enable_new
     } catch {
       loadError.value = true
       toast.add({
@@ -198,20 +239,30 @@ export function usePartnerNodes() {
     const { enabled: prevEnabled, last_modified: prevModified } = currentNode
     const mutationVersion = startNodeMutation(node.id)
     applyEnabled([node.id], enabled)
+    const appliedNode = nodes.value.find((n) => n.id === node.id)!
+    const appliedState = {
+      enabled: appliedNode.enabled,
+      last_modified: appliedNode.last_modified
+    }
     try {
-      await partnerNodesApi.setEnabled(node.id, enabled)
+      await enqueueNodeMutation([node.id], () =>
+        partnerNodesApi.setEnabled(node.id, enabled)
+      )
+      confirmedNodeStates.set(node.id, appliedState)
     } catch {
       if (nodeMutationVersions.get(node.id) === mutationVersion) {
+        const confirmedState = confirmedNodeStates.get(node.id) ?? {
+          enabled: prevEnabled,
+          last_modified: prevModified
+        }
         nodes.value = nodes.value.map((n) =>
-          n.id === node.id
-            ? { ...n, enabled: prevEnabled, last_modified: prevModified }
-            : n
+          n.id === node.id ? { ...n, ...confirmedState } : n
         )
+        toast.add({
+          severity: 'error',
+          summary: t('workspacePanel.partnerNodes.updateError')
+        })
       }
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.partnerNodes.updateError')
-      })
     }
   }
 
@@ -233,22 +284,42 @@ export function usePartnerNodes() {
       [...idSet].map((id) => [id, startNodeMutation(id)])
     )
     applyEnabled(ids, enabled)
+    const applied = new Map(
+      nodes.value
+        .filter((n) => idSet.has(n.id))
+        .map((n) => [
+          n.id,
+          { enabled: n.enabled, last_modified: n.last_modified }
+        ])
+    )
     try {
-      await partnerNodesApi.setEnabledBulk(ids, enabled)
+      await enqueueNodeMutation(ids, () =>
+        partnerNodesApi.setEnabledBulk(ids, enabled)
+      )
+      for (const [id, state] of applied) confirmedNodeStates.set(id, state)
       return true
     } catch {
-      nodes.value = nodes.value.map((n) => {
-        const previousNode = previous.get(n.id)
-        const mutationVersion = mutationVersions.get(n.id)
-        return previousNode &&
-          mutationVersion === nodeMutationVersions.get(n.id)
-          ? { ...n, ...previousNode }
-          : n
-      })
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.partnerNodes.updateError')
-      })
+      const currentIds = new Set(
+        [...mutationVersions]
+          .filter(
+            ([id, mutationVersion]) =>
+              mutationVersion === nodeMutationVersions.get(id)
+          )
+          .map(([id]) => id)
+      )
+      if (currentIds.size > 0) {
+        nodes.value = nodes.value.map((n) => {
+          const previousNode = previous.get(n.id)
+          const confirmedState = confirmedNodeStates.get(n.id) ?? previousNode
+          return confirmedState && currentIds.has(n.id)
+            ? { ...n, ...confirmedState }
+            : n
+        })
+        toast.add({
+          severity: 'error',
+          summary: t('workspacePanel.partnerNodes.updateError')
+        })
+      }
       return false
     }
   }
@@ -276,19 +347,21 @@ export function usePartnerNodes() {
   }
 
   async function setAutoEnableNew(value: boolean) {
-    const previous = autoEnableNew.value
     const mutationVersion = ++autoEnableMutationVersion
     autoEnableNew.value = value
     try {
-      await partnerNodesApi.setAutoEnableNew(value)
+      await enqueueAutoEnableMutation(() =>
+        partnerNodesApi.setAutoEnableNew(value)
+      )
+      confirmedAutoEnableNew = value
     } catch {
       if (autoEnableMutationVersion === mutationVersion) {
-        autoEnableNew.value = previous
+        autoEnableNew.value = confirmedAutoEnableNew
+        toast.add({
+          severity: 'error',
+          summary: t('workspacePanel.partnerNodes.updateError')
+        })
       }
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.partnerNodes.updateError')
-      })
     }
   }
 

@@ -354,7 +354,9 @@ export class AssetsSidebarTab extends SidebarTab {
     )
     this.selectionFooter = page.getByTestId('assets-selection-bar')
     this.selectionCountButton = page.getByText(/\d+ selected/)
-    this.deselectAllButton = page.getByTestId('assets-deselect-selected')
+    this.deselectAllButton = page.getByRole('button', {
+      name: 'Deselect all'
+    })
     this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
     this.downloadSelectedButton = page.getByTestId('assets-download-selected')
     this.backToAssetsButton = page.getByText('Back to all assets')
