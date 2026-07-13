@@ -4,6 +4,11 @@ import type { TranslationKey } from '../i18n/translations'
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 
+const dougHoman: Tutorial['author'] = {
+  name: 'Doug Homan',
+  avatarSrc: 'https://media.comfy.org/website/authors/doug-hogan.jpeg'
+}
+
 export const vfxTutorials: readonly Tutorial[] = [
   {
     id: 'skyreplacement_smaller_v06',
@@ -21,7 +26,8 @@ export const vfxTutorials: readonly Tutorial[] = [
         label: 'English'
       }
     ],
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   },
   {
     id: 'cleanplate_walkthrough_v03',
@@ -39,7 +45,8 @@ export const vfxTutorials: readonly Tutorial[] = [
       }
     ],
     href: 'https://comfy.org/workflows/8f2cf0df5da6-8f2cf0df5da6/',
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   },
   {
     id: 'deaging_workflow_v03',
@@ -56,7 +63,8 @@ export const vfxTutorials: readonly Tutorial[] = [
         label: 'English'
       }
     ],
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   },
   {
     id: 'frame_adjustments_demo_v03',
@@ -74,7 +82,8 @@ export const vfxTutorials: readonly Tutorial[] = [
         label: 'English'
       }
     ],
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   },
   {
     id: 'mattes_and_utilities_v03',
@@ -92,7 +101,8 @@ export const vfxTutorials: readonly Tutorial[] = [
         label: 'English'
       }
     ],
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   },
   {
     id: 'seedance_demo_comfyui_v03',
@@ -113,6 +123,7 @@ export const vfxTutorials: readonly Tutorial[] = [
         label: 'English'
       }
     ],
-    tags: [partnerNodesTag, imageToVideoTag]
+    tags: [partnerNodesTag, imageToVideoTag],
+    author: dougHoman
   }
 ] as const

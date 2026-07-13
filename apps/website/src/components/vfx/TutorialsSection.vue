@@ -36,7 +36,7 @@ const activeTutorial = () =>
         <TutorialCard
           :tutorial="tutorial"
           :locale="locale"
-          title-prefix-key="vfx.tutorials.titlePrefix"
+          variant="overlay"
           @play="activeTutorialId = tutorial.id"
         />
       </li>
@@ -46,7 +46,6 @@ const activeTutorial = () =>
       v-if="activeTutorial()"
       :tutorial="activeTutorial()!"
       :locale="locale"
-      title-prefix-key="vfx.tutorials.titlePrefix"
       @close="activeTutorialId = null"
     />
   </section>

@@ -1571,10 +1571,6 @@ const translations = {
     'zh-CN':
       '从概念设计、分镜脚本到纹理生成与合成参考——探索覆盖视觉特效制作各个环节的工作流。新工作流持续上新。'
   },
-  'vfx.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
-  },
 
   // VfxCallToActionSection
   'vfx.cta.heading': {

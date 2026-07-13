@@ -15,7 +15,7 @@ const {
 } = defineProps<{
   tutorial: Tutorial
   locale?: Locale
-  titlePrefixKey: TranslationKey
+  titlePrefixKey?: TranslationKey
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -78,7 +78,9 @@ onUnmounted(() => {
       <h2
         class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
       >
-        {{ t(titlePrefixKey, locale) }}
+        <template v-if="titlePrefixKey"
+          >{{ t(titlePrefixKey, locale) }}
+        </template>
         {{ tutorial.title[locale] }}
       </h2>
     </dialog>

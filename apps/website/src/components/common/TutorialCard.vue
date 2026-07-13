@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { VideoTrack } from './VideoPlayer.vue'
 import type {
   Locale,
@@ -19,6 +21,7 @@ export interface Tutorial {
   poster?: string
   caption?: readonly VideoTrack[]
   posterTime?: number
+  author?: { name: string; avatarSrc?: string }
 }
 
 const DEFAULT_POSTER_TIME_SECONDS = 1
@@ -31,14 +34,22 @@ const getTutorialPosterSrc = (tutorial: Tutorial): string =>
 const {
   tutorial,
   locale = 'en',
-  titlePrefixKey
+  titlePrefixKey,
+  variant = 'default'
 } = defineProps<{
   tutorial: Tutorial
   locale?: Locale
-  titlePrefixKey: TranslationKey
+  titlePrefixKey?: TranslationKey
+  variant?: 'default' | 'overlay'
 }>()
 
 const emit = defineEmits<{ play: [] }>()
+
+const accessibleTitle = computed(() =>
+  titlePrefixKey
+    ? `${t(titlePrefixKey, locale)} ${tutorial.title[locale]}`
+    : tutorial.title[locale]
+)
 </script>
 
 <template>
@@ -48,7 +59,7 @@ const emit = defineEmits<{ play: [] }>()
     <button
       type="button"
       class="group relative block aspect-video cursor-pointer overflow-hidden rounded-3xl"
-      :aria-label="`${t(titlePrefixKey, locale)} ${tutorial.title[locale]}`"
+      :aria-label="accessibleTitle"
       @click="emit('play')"
     >
       <video
@@ -59,6 +70,23 @@ const emit = defineEmits<{ play: [] }>()
         playsinline
         muted
       ></video>
+      <!-- Dim the thumbnail so the overlaid title stays legible. -->
+      <span
+        v-if="variant === 'overlay'"
+        class="absolute inset-0 bg-black/30"
+        aria-hidden="true"
+      />
+      <span
+        v-if="variant === 'overlay'"
+        class="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-black/60 to-transparent"
+        aria-hidden="true"
+      />
+      <span
+        v-if="variant === 'overlay'"
+        class="pointer-events-none absolute inset-x-0 top-0 p-6 text-left text-2xl font-light text-primary-comfy-canvas lg:p-8 lg:text-3xl"
+      >
+        {{ tutorial.title[locale] }}
+      </span>
       <span
         class="absolute inset-0 flex items-center justify-center"
         aria-hidden="true"
@@ -79,9 +107,41 @@ const emit = defineEmits<{ play: [] }>()
     </button>
 
     <div class="flex flex-col space-y-3 p-4">
-      <div class="flex items-center justify-between gap-4">
+      <div
+        v-if="variant === 'overlay'"
+        class="flex items-center justify-between gap-4"
+      >
+        <span
+          v-if="tutorial.author"
+          class="flex min-w-0 items-center gap-3 text-sm text-primary-comfy-canvas lg:text-base"
+        >
+          <img
+            v-if="tutorial.author.avatarSrc"
+            :src="tutorial.author.avatarSrc"
+            alt=""
+            class="size-10 shrink-0 rounded-full object-cover"
+          />
+          <span class="truncate">{{ tutorial.author.name }}</span>
+        </span>
+        <ButtonMask
+          v-if="tutorial.href"
+          as="a"
+          :href="tutorial.href"
+          icon-position="left"
+          :hide-label="false"
+          class="ml-auto shrink-0 ps-12"
+          variant="ghost"
+          size="default"
+        >
+          {{ t('cta.tryWorkflow', locale) }}
+        </ButtonMask>
+      </div>
+
+      <div v-else class="flex items-center justify-between gap-4">
         <h3 class="text-sm/snug text-primary-comfy-canvas lg:text-base/snug">
-          {{ t(titlePrefixKey, locale) }}<br />
+          <template v-if="titlePrefixKey"
+            >{{ t(titlePrefixKey, locale) }}<br
+          /></template>
           {{ tutorial.title[locale] }}
         </h3>
         <ButtonMask
