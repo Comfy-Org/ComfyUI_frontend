@@ -59,10 +59,11 @@ async function mockGraphBootExtras(page: Page) {
 async function setupCloudApp(
   page: Page,
   ws: WorkspaceWithRole,
-  members: Member[]
+  members: Member[],
+  features: RemoteConfig = BOOT_FEATURES
 ) {
   await mockCloudBoot(page, {
-    features: BOOT_FEATURES,
+    features,
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
@@ -94,6 +95,38 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await page.goto(`${APP_URL}/?topup=1`)
 
     await expect(topUpHeading(page)).toBeVisible({ timeout: 45_000 })
+  })
+
+  test('routes a lapsed subscriber to the subscription paywall', async ({
+    page
+  }) => {
+    test.slow()
+    // The paywall fallthrough only renders when the remote config enforces
+    // subscriptions, matching production cloud.
+    await setupCloudApp(page, workspace('personal', 'owner'), [], {
+      ...BOOT_FEATURES,
+      subscription_required: true
+    })
+    // Registered after mockBilling so this handler wins: the status fetch the
+    // loader awaits reports a canceled subscription.
+    await page.route('**/api/billing/status', (r) =>
+      r.fulfill(
+        jsonRoute({
+          is_active: false,
+          has_funds: false,
+          subscription_status: 'canceled',
+          billing_status: 'unpaid'
+        })
+      )
+    )
+
+    await page.goto(`${APP_URL}/?topup=1`)
+
+    await expect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeVisible({ timeout: 45_000 })
+    await expect(topUpHeading(page)).toBeHidden()
+    await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
   test('is a silent no-op for a team member', async ({ page }) => {
