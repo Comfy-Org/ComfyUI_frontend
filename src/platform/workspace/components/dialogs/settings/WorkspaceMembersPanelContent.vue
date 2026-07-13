@@ -12,10 +12,12 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const { workspaceRole } = useWorkspaceUI()
-const { fetchMembers, fetchPendingInvites } = useTeamWorkspaceStore()
+const { ensureMembersLoaded, fetchPendingInvites } = useTeamWorkspaceStore()
 
 onMounted(() => {
-  void fetchMembers()
-  void fetchPendingInvites()
+  void ensureMembersLoaded()
+  void fetchPendingInvites().catch((error: unknown) => {
+    console.error('Failed to load pending workspace invites', error)
+  })
 })
 </script>

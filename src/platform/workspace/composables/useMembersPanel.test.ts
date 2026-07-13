@@ -115,6 +115,23 @@ describe('sortMembers', () => {
     expect(members).toEqual(original)
   })
 
+  it('sorts the email column by email instead of display name', () => {
+    const first = createMember({
+      id: 'first',
+      name: 'Zulu',
+      email: 'alice@example.com'
+    })
+    const second = createMember({
+      id: 'second',
+      name: 'Alpha',
+      email: 'bob@example.com'
+    })
+
+    const result = sortMembers([second, first], null, 'asc', null, 'email')
+
+    expect(result.map((member) => member.id)).toEqual(['first', 'second'])
+  })
+
   it('pins the original owner first regardless of sort direction', () => {
     const creator = createMember({
       id: 'creator',

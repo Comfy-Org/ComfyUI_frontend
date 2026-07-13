@@ -40,7 +40,7 @@ export function sortMembers(
   const dir = sortDirection === 'asc' ? 1 : -1
 
   if (sortField === 'email') {
-    return [...members].sort((a, b) => dir * a.name.localeCompare(b.name))
+    return [...members].sort((a, b) => dir * a.email.localeCompare(b.email))
   }
   if (sortField === 'lastActivity') {
     const at = (m: WorkspaceMember) => m.lastActivity?.getTime() ?? 0

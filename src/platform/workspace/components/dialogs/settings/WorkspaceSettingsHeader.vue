@@ -28,6 +28,7 @@
       ref="inputRef"
       v-model="draftName"
       :maxlength="MAX_NAME_LENGTH"
+      :aria-label="$t('workspacePanel.editWorkspaceDialog.nameLabel')"
       class="min-w-0 flex-1 appearance-none border-none bg-transparent p-0 font-[inherit] text-2xl font-semibold text-base-foreground outline-none"
       @keydown.enter="commit"
       @keydown.esc="cancel"

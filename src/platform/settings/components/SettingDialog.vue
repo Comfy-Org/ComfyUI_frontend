@@ -191,7 +191,7 @@ const activePanel = computed(() => {
   return findPanelByKey(activeCategoryKey.value)
 })
 
-const WORKSPACE_PANEL_KEYS = [
+const WORKSPACE_PANEL_KEYS: SettingPanelType[] = [
   'workspace',
   'workspace-members',
   'workspace-partner-nodes'
@@ -199,7 +199,7 @@ const WORKSPACE_PANEL_KEYS = [
 const isWorkspacePanel = computed(
   () =>
     !!activeCategoryKey.value &&
-    WORKSPACE_PANEL_KEYS.includes(activeCategoryKey.value)
+    WORKSPACE_PANEL_KEYS.some((key) => key === activeCategoryKey.value)
 )
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>

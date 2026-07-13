@@ -35,6 +35,17 @@ describe('formatRelativeTime', () => {
     )
   })
 
+  it.for([
+    { elapsed: 60 * 1000, expected: '1 min ago' },
+    { elapsed: 60 * 60 * 1000, expected: '1 hr ago' },
+    { elapsed: 24 * 60 * 60 * 1000, expected: '1 days ago' }
+  ])(
+    'uses the next unit at the $elapsed ms boundary',
+    ({ elapsed, expected }) => {
+      expect(formatRelativeTime(ago(elapsed), now, labels)).toBe(expected)
+    }
+  )
+
   it('clamps future dates to "just now"', () => {
     expect(formatRelativeTime(ago(-5000), now, labels)).toBe('just now')
   })
