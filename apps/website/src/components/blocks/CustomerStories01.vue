@@ -11,11 +11,13 @@ import ScrollCarousel from '../ui/scroll-carousel/ScrollCarousel.vue'
 const {
   stories,
   heading,
+  subtitle,
   locale = 'en',
   class: className
 } = defineProps<{
   stories: StoryCardType[]
   heading?: string
+  subtitle?: string
   locale?: Locale
   class?: HTMLAttributes['class']
 }>()
@@ -27,6 +29,11 @@ const {
   >
     <SectionHeader v-if="heading" class="mb-12 lg:mb-16">
       {{ heading }}
+      <template v-if="subtitle" #subtitle>
+        <p class="mt-4 text-sm text-smoke-700 lg:text-base">
+          {{ subtitle }}
+        </p>
+      </template>
     </SectionHeader>
 
     <!-- Reuse the shared carousel shell; neutralise its outer chrome so the

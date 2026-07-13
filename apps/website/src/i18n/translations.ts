@@ -4534,6 +4534,10 @@ const translations = {
     en: 'Educators and students using ComfyUI',
     'zh-CN': '使用 ComfyUI 的教育者与学生'
   },
+  'education.customerStories.subheading': {
+    en: 'See how USC, CMU, and UAL bring ComfyUI into the classroom',
+    'zh-CN': '看看 USC、CMU 和 UAL 如何将 ComfyUI 带入课堂'
+  },
 
   // EducationFAQSection
   'education.faq.heading': {

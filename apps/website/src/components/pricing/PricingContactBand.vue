@@ -8,13 +8,14 @@ import Button from '../ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 
-const { locale = 'en' } = defineProps<{
+const { locale = 'en', href } = defineProps<{
   labelKey: TranslationKey
   descriptionKey: TranslationKey
   locale?: Locale
+  href?: string
 }>()
 
-const ctaHref = computed(() => getRoutes(locale).contact)
+const ctaHref = computed(() => href ?? getRoutes(locale).contact)
 </script>
 
 <template>
@@ -28,7 +29,12 @@ const ctaHref = computed(() => getRoutes(locale).contact)
           {{ t(descriptionKey, locale) }}
         </p>
       </div>
-      <Button :href="ctaHref" variant="outline">
+      <Button
+        :href="ctaHref"
+        :target="href ? '_blank' : undefined"
+        :rel="href ? 'noopener noreferrer' : undefined"
+        variant="outline"
+      >
         {{ t('pricing.enterprise.cta', locale) }}
       </Button>
     </div>

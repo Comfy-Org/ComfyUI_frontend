@@ -4,6 +4,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
+import { externalLinks } from '../../config/routes'
 import { planFeatures, pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
@@ -220,6 +221,9 @@ const planCards = computed(() =>
           education
             ? 'pricing.creativeCampus.description'
             : 'pricing.enterprise.description'
+        "
+        :href="
+          education ? externalLinks.creativeCampusApplicationForm : undefined
         "
         :locale
       />
