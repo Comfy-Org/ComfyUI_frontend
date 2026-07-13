@@ -28,7 +28,10 @@ const i18n = createI18n({
         editOrMaskImage: 'Edit or mask image',
         downloadImage: 'Download image',
         removeImage: 'Remove image',
+        previousImage: 'Previous image',
+        nextImage: 'Next image',
         viewImageOfTotal: 'View image {index} of {total}',
+        imageIndexOfTotal: '{index} / {total}',
         imagePreview:
           'Image preview - Use arrow keys to navigate between images',
         errorLoadingImage: 'Error loading image',
@@ -111,26 +114,30 @@ describe('ImagePreview', () => {
     screen.getByText('Calculating dimensions')
   })
 
-  it('shows navigation dots for multiple images in gallery mode', async () => {
+  it('shows prev/next navigation buttons for multiple images in gallery mode', async () => {
     renderImagePreview()
     const user = userEvent.setup()
     await switchToGallery(user)
 
-    const navigationDots = screen.getAllByRole('button', {
-      name: /View image/
-    })
-    expect(navigationDots).toHaveLength(2)
+    expect(
+      screen.getByRole('button', { name: 'Previous image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Next image' })
+    ).toBeInTheDocument()
   })
 
-  it('does not show navigation dots for single image', () => {
+  it('does not show prev/next navigation for a single image', () => {
     renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const navigationDots = screen.queryAllByRole('button', {
-      name: /View image/
-    })
-    expect(navigationDots).toHaveLength(0)
+    expect(
+      screen.queryByRole('button', { name: 'Previous image' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Next image' })
+    ).not.toBeInTheDocument()
   })
 
   it('does not show mask/edit button for multiple images in gallery mode', async () => {
@@ -188,7 +195,7 @@ describe('ImagePreview', () => {
     expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
   })
 
-  it('switches images when navigation dots are clicked', async () => {
+  it('switches images with the next button', async () => {
     renderImagePreview()
     const user = userEvent.setup()
     await switchToGallery(user)
@@ -199,11 +206,7 @@ describe('ImagePreview', () => {
       defaultProps.imageUrls[0]
     )
 
-    // Click second navigation dot
-    const navigationDots = screen.getAllByRole('button', {
-      name: /View image/
-    })
-    await user.click(navigationDots[1])
+    await user.click(screen.getByRole('button', { name: 'Next image' }))
     await nextTick()
 
     expect(screen.getByRole('img')).toHaveAttribute(
@@ -212,25 +215,31 @@ describe('ImagePreview', () => {
     )
   })
 
-  it('marks active navigation dot with aria-current', async () => {
+  it('wraps to the last image with the previous button', async () => {
     renderImagePreview()
     const user = userEvent.setup()
     await switchToGallery(user)
 
-    const navigationDots = screen.getAllByRole('button', {
-      name: /View image/
-    })
-
-    // First dot should be active
-    expect(navigationDots[0]).toHaveAttribute('aria-current', 'true')
-    expect(navigationDots[1]).not.toHaveAttribute('aria-current')
-
-    await user.click(navigationDots[1])
+    await user.click(screen.getByRole('button', { name: 'Previous image' }))
     await nextTick()
 
-    // Second dot should now be active
-    expect(navigationDots[0]).not.toHaveAttribute('aria-current')
-    expect(navigationDots[1]).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      defaultProps.imageUrls[1]
+    )
+  })
+
+  it('shows the current image position in the counter', async () => {
+    renderImagePreview()
+    const user = userEvent.setup()
+    await switchToGallery(user)
+
+    screen.getByText('1 / 2')
+
+    await user.click(screen.getByRole('button', { name: 'Next image' }))
+    await nextTick()
+
+    screen.getByText('2 / 2')
   })
 
   it('has proper accessibility attributes', () => {
@@ -248,11 +257,7 @@ describe('ImagePreview', () => {
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 2')
 
-    // Switch to second image
-    const navigationDots = screen.getAllByRole('button', {
-      name: /View image/
-    })
-    await user.click(navigationDots[1])
+    await user.click(screen.getByRole('button', { name: 'Next image' }))
     await nextTick()
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 2 of 2')
@@ -432,7 +437,7 @@ describe('ImagePreview', () => {
       expect(mainImg).toHaveAttribute('src', defaultProps.imageUrls[1])
     })
 
-    it('shows back-to-grid button next to navigation dots', async () => {
+    it('shows back-to-grid button in gallery mode', async () => {
       renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
@@ -502,9 +507,8 @@ describe('ImagePreview', () => {
           container.querySelector('[aria-busy="true"]')
         ).not.toBeInTheDocument()
 
-        // Click second navigation dot to cycle
-        const dots = screen.getAllByRole('button', { name: /View image/ })
-        await user.click(dots[1])
+        // Advance to the next (identical) image
+        await user.click(screen.getByRole('button', { name: 'Next image' }))
         await nextTick()
 
         // Advance past the delayed loader timeout

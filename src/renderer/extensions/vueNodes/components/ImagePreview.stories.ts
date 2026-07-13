@@ -17,7 +17,7 @@ const meta: Meta<typeof ImagePreview> = {
     docs: {
       description: {
         component:
-          'Node output image preview with navigation dots, keyboard controls, and hover action buttons (download, remove, edit/mask).'
+          'Node output image preview. Controls (download, edit/mask, prev/next navigation) sit in a row below the image, kept off the media itself; arrow keys also navigate between images.'
       }
     }
   },

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
+    class="image-preview relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Grid View -->
@@ -47,7 +47,7 @@
     <div
       v-if="viewMode === 'gallery'"
       ref="galleryPanelEl"
-      class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
+      class="relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
       role="region"
       :aria-roledescription="$t('g.imageGallery')"
@@ -101,44 +101,6 @@
         @load="handleImageLoad"
         @error="handleImageError"
       />
-
-      <!-- Floating Action Buttons (appear on hover and focus) -->
-      <div
-        class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
-      >
-        <!-- Mask/Edit Button -->
-        <button
-          v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
-          :class="actionButtonClass"
-          :title="$t('g.editOrMaskImage')"
-          :aria-label="$t('g.editOrMaskImage')"
-          @click="handleEditMask"
-        >
-          <i-comfy:mask class="size-4" />
-        </button>
-
-        <!-- Download Button -->
-        <button
-          v-if="!imageError"
-          :class="actionButtonClass"
-          :title="$t('g.downloadImage')"
-          :aria-label="$t('g.downloadImage')"
-          @click="handleDownload"
-        >
-          <i class="icon-[lucide--download] size-4" />
-        </button>
-
-        <!-- Back to Grid Button -->
-        <button
-          v-if="hasMultipleImages"
-          :class="actionButtonClass"
-          :title="$t('g.viewGrid')"
-          :aria-label="$t('g.viewGrid')"
-          @click="viewMode = 'grid'"
-        >
-          <i class="icon-[lucide--layout-grid] size-4" />
-        </button>
-      </div>
     </div>
 
     <!-- Image Dimensions (gallery mode only) -->
@@ -161,35 +123,71 @@
       </span>
     </div>
 
-    <!-- Multiple Images Navigation (gallery mode only) -->
+    <!-- Controls (below image, kept off the media) -->
     <div
-      v-if="viewMode === 'gallery' && hasMultipleImages"
-      class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      v-if="viewMode === 'gallery' && (hasMultipleImages || !imageError)"
+      class="flex items-center justify-between gap-2 pt-2"
     >
-      <!-- Back to Grid button -->
-      <button
-        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
-        :title="$t('g.viewGrid')"
-        :aria-label="$t('g.viewGrid')"
-        @click="viewMode = 'grid'"
-      >
-        <i class="icon-[lucide--layout-grid] size-3.5" />
-      </button>
+      <!-- Action buttons -->
+      <div class="flex items-center gap-1">
+        <button
+          v-if="hasMultipleImages"
+          :class="controlButtonClass"
+          :title="$t('g.viewGrid')"
+          :aria-label="$t('g.viewGrid')"
+          @click="viewMode = 'grid'"
+        >
+          <i class="icon-[lucide--layout-grid] size-4" />
+        </button>
+        <button
+          v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
+          :class="controlButtonClass"
+          :title="$t('g.editOrMaskImage')"
+          :aria-label="$t('g.editOrMaskImage')"
+          @click="handleEditMask"
+        >
+          <i-comfy:mask class="size-4" />
+        </button>
+        <button
+          v-if="!imageError"
+          :class="controlButtonClass"
+          :title="$t('g.downloadImage')"
+          :aria-label="$t('g.downloadImage')"
+          @click="handleDownload"
+        >
+          <i class="icon-[lucide--download] size-4" />
+        </button>
+      </div>
 
-      <!-- Navigation Dots -->
-      <button
-        v-for="(_, index) in imageUrls"
-        :key="index"
-        :class="getNavigationDotClass(index)"
-        :aria-current="index === currentIndex ? 'true' : undefined"
-        :aria-label="
-          $t('g.viewImageOfTotal', {
-            index: index + 1,
-            total: imageUrls.length
-          })
-        "
-        @click="setCurrentIndex(index)"
-      />
+      <!-- Previous / Next navigation -->
+      <div v-if="hasMultipleImages" class="flex items-center gap-1">
+        <button
+          :class="controlButtonClass"
+          :title="$t('g.previousImage')"
+          :aria-label="$t('g.previousImage')"
+          @click="goToPrevious"
+        >
+          <i class="icon-[lucide--chevron-left] size-4" />
+        </button>
+        <span
+          class="min-w-10 text-center text-xs text-base-foreground/70 tabular-nums"
+        >
+          {{
+            $t('g.imageIndexOfTotal', {
+              index: currentIndex + 1,
+              total: imageUrls.length
+            })
+          }}
+        </span>
+        <button
+          :class="controlButtonClass"
+          :title="$t('g.nextImage')"
+          :aria-label="$t('g.nextImage')"
+          @click="goToNext"
+        >
+          <i class="icon-[lucide--chevron-right] size-4" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -210,7 +208,6 @@ import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -226,8 +223,8 @@ const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
-const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
+const controlButtonClass =
+  'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-base-foreground/60 transition-colors duration-200 hover:bg-base-foreground/10 hover:text-base-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground'
 
 type ViewMode = 'gallery' | 'grid'
 
@@ -356,6 +353,18 @@ function setCurrentIndex(index: number) {
   }
 }
 
+function goToPrevious() {
+  setCurrentIndex(
+    currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+  )
+}
+
+function goToNext() {
+  setCurrentIndex(
+    currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
+  )
+}
+
 async function openImageInGallery(index: number) {
   setCurrentIndex(index)
   viewMode.value = 'gallery'
@@ -370,15 +379,6 @@ function handleGridClick(index: number) {
     return
   }
   void openImageInGallery(index)
-}
-
-function getNavigationDotClass(index: number) {
-  return cn(
-    'size-2 cursor-pointer rounded-full border-0 p-0 transition-all duration-200',
-    index === currentIndex.value
-      ? 'bg-base-foreground'
-      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
-  )
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -397,15 +397,11 @@ function handleKeyDown(event: KeyboardEvent) {
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
-      setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
-      )
+      goToPrevious()
       break
     case 'ArrowRight':
       event.preventDefault()
-      setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
-      )
+      goToNext()
       break
     case 'Home':
       event.preventDefault()
