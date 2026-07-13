@@ -126,6 +126,14 @@ export class TaskItemImpl {
     return this.job.execution_error ?? undefined
   }
 
+  get executionErrorCount(): number {
+    return this.job.execution_error_count ?? 0
+  }
+
+  get isPartialSuccess(): boolean {
+    return this.job.completion_status === 'partial_success'
+  }
+
   get workflowId(): string | undefined {
     return this.job.workflow_id ?? undefined
   }
@@ -363,7 +371,10 @@ export const useQueueStore = defineStore('queue', () => {
           if (
             existing.outputsCount !== (job.outputs_count ?? undefined) ||
             existing.previewableOutputsCount !==
-              (job.previewable_outputs_count ?? undefined)
+              (job.previewable_outputs_count ?? undefined) ||
+            existing.job.completion_status !== job.completion_status ||
+            existing.job.has_errors !== job.has_errors ||
+            existing.job.execution_error_count !== job.execution_error_count
           ) {
             return new TaskItemImpl(job)
           }

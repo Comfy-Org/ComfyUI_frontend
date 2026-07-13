@@ -8,6 +8,7 @@ import {
   renderMinimapToCanvas
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
@@ -18,6 +19,7 @@ import {
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { UUID } from '@/utils/uuid'
 
 vi.mock(import('@/utils/colorUtil'), () => ({
@@ -36,6 +38,8 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
+    Object.assign(useExecutionStore(), { nodeLocationProgressStates: {} })
+
     mockContext = {
       clearRect: vi.fn(),
       fillRect: vi.fn(),
@@ -219,6 +223,37 @@ describe('minimapCanvasRenderer', () => {
 
     // Should set stroke style for errors
     expect(mockContext.strokeStyle).toBe('#FF0000')
+    expect(mockContext.strokeRect).toHaveBeenCalled()
+  })
+
+  it('should render blocked execution state with amber outline', () => {
+    const node = mockGraph._nodes[0]
+    mockGraph._nodes = [node]
+    Object.assign(useExecutionStore(), {
+      nodeLocationProgressStates: {
+        [createNodeLocatorId(
+          mockGraph.isRootGraph ? null : mockGraph.id,
+          node.id
+        )]: { state: 'blocked' }
+      }
+    })
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200
+    }
+
+    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+
+    expect(mockContext.strokeStyle).toBe('#F59E0B')
     expect(mockContext.strokeRect).toHaveBeenCalled()
   })
 

@@ -31,6 +31,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
@@ -100,6 +101,27 @@ describe('setupAutoQueueHandler', () => {
     queueCountStore.count = 0
     await nextTick()
 
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('pauses instant mode after a partial success until a job runs clean', async () => {
+    useQueueSettingsStore().mode = 'instant-running'
+    setupAutoQueueHandler()
+    const queueCountStore = useQueuePendingTaskCountStore()
+    const executionStore = useExecutionStore()
+
+    executionStore.lastJobPartialSuccess = true
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    executionStore.lastJobPartialSuccess = false
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
 

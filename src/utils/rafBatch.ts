@@ -72,5 +72,5 @@ export function createRafCoalescer<T>(
     batch.cancel()
   }
 
-  return { push, cancel, isScheduled: batch.isScheduled }
+  return { push, cancel, flush: batch.flush, isScheduled: batch.isScheduled }
 }

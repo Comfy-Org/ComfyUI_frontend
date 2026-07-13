@@ -9,6 +9,7 @@ type FeatureFlags = ReturnType<typeof realUseFeatureFlags>['flags']
 
 const defaultFlags: FeatureFlags = {
   supportsPreviewMetadata: false,
+  supportsNodeFailurePolicy: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
   modelUploadButtonEnabled: false,
