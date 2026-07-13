@@ -50,9 +50,23 @@ const mocks = vi.hoisted(() => ({
   },
   hasFunds: true as boolean,
   showSubscriptionDialog: vi.fn(),
-  storeMarkNudgePending: vi.fn(),
+  storeArmNudge: vi.fn(),
+  storeShowNudge: vi.fn(),
   settingSet: vi.fn()
 }))
+
+const apiListeners = vi.hoisted(() => new Map<string, (e: Event) => void>())
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: (type: string, cb: (e: Event) => void) =>
+      apiListeners.set(type, cb),
+    removeEventListener: (type: string) => apiListeners.delete(type)
+  }
+}))
+
+function emitExecutionSuccess() {
+  apiListeners.get('execution_success')?.(new CustomEvent('execution_success'))
+}
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -124,7 +138,8 @@ vi.mock('./onboardingTourStore', () => ({
     advance: mocks.storeAdvance,
     back: vi.fn(),
     end: mocks.storeEnd,
-    markNudgePending: mocks.storeMarkNudgePending,
+    armNudge: mocks.storeArmNudge,
+    showNudge: mocks.storeShowNudge,
     get phase() {
       return mocks.phase.value
     },
@@ -230,10 +245,12 @@ describe('useOnboardingTourController.start', () => {
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
-    mocks.storeMarkNudgePending.mockReset()
+    mocks.storeArmNudge.mockReset()
+    mocks.storeShowNudge.mockReset()
     mocks.settingSet.mockReset()
     mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
     mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
+    apiListeners.clear()
   })
 
   afterEach(() => {
@@ -394,7 +411,7 @@ describe('useOnboardingTourController.start', () => {
     ).toHaveBeenCalledWith(
       expect.objectContaining({ template_id: 'image_z_image_turbo' })
     )
-    expect(mocks.storeMarkNudgePending).toHaveBeenCalledOnce()
+    expect(mocks.storeArmNudge).toHaveBeenCalledOnce()
     expect(mocks.storeEnd).toHaveBeenCalled()
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
@@ -457,5 +474,54 @@ describe('useOnboardingTourController.start', () => {
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('useOnboardingTourController post-run nudge', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mocks.isCloud = true
+    mocks.isSubscriptionEnabled.mockReturnValue(true)
+    mocks.isNewUser.mockReturnValue(true)
+    mocks.onboardingTourEnabled = true
+    mocks.activeWorkflowState = activeState
+    mocks.focusPromptTarget.mockResolvedValue(true)
+    mocks.storeStart.mockReset()
+    mocks.storeShowNudge.mockReset()
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+    mocks.stepIndex.value = 0
+    mocks.phase.value = 'active'
+    mocks.hasFunds = true
+    apiListeners.clear()
+  })
+
+  afterEach(() => {
+    useOnboardingTourController().end('skip')
+    vi.clearAllMocks()
+  })
+
+  it('surfaces the nudge on the first successful run after the tour starts', async () => {
+    await useOnboardingTourController().start('image_z_image_turbo')
+
+    emitExecutionSuccess()
+
+    expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
+  })
+
+  it('surfaces the nudge only once even across repeated successes', async () => {
+    await useOnboardingTourController().start('image_z_image_turbo')
+
+    emitExecutionSuccess()
+    emitExecutionSuccess()
+
+    expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
+  })
+
+  it('does not surface the nudge before any tour has started', () => {
+    // The shared controller registers its listener on init; a stray success
+    // with no active tour must not pop the nudge.
+    emitExecutionSuccess()
+
+    expect(mocks.storeShowNudge).not.toHaveBeenCalled()
   })
 })

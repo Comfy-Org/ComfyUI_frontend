@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, useEventListener } from '@vueuse/core'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -11,6 +11,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNewUserService } from '@/services/useNewUserService'
+import { api } from '@/scripts/api'
 
 import { useOnboardingTourStore } from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
@@ -29,12 +30,31 @@ function _useOnboardingTourController() {
   let activeShape: OnboardingTourShape = 'other'
   /** Guards RunTriggered against re-firing when the user navigates back into Run. */
   let runReported = false
+  /** Stops the per-tour `execution_success` listener; set while a tour is live. */
+  let stopRunListener: (() => void) | undefined
+  /** Guards the post-run nudge so only the first successful run surfaces it. */
+  let nudgeShownForRun = false
 
   function clearGrace() {
     if (graceTimer !== undefined) {
       clearTimeout(graceTimer)
       graceTimer = undefined
     }
+  }
+
+  /**
+   * Listen for the tour run's first success and surface the "explore templates"
+   * nudge. Registered per tour so a stray success outside a tour never fires it,
+   * and torn down on `end`.
+   */
+  function listenForFirstRun() {
+    stopRunListener?.()
+    nudgeShownForRun = false
+    stopRunListener = useEventListener(api, 'execution_success', () => {
+      if (nudgeShownForRun) return
+      nudgeShownForRun = true
+      store.showNudge()
+    })
   }
 
   /**
@@ -77,6 +97,7 @@ function _useOnboardingTourController() {
     activeTemplateId = templateId
     activeShape = shapeOf(store.resolvedRoles)
     runReported = false
+    listenForFirstRun()
     useTelemetry()?.trackOnboardingTourStarted?.({
       template_id: activeTemplateId,
       shape: activeShape,
@@ -111,7 +132,7 @@ function _useOnboardingTourController() {
     useTelemetry()?.trackOnboardingTourUpgradeShown?.({
       template_id: activeTemplateId
     })
-    store.markNudgePending()
+    store.armNudge()
     end('done')
     return true
   }
@@ -153,6 +174,8 @@ function _useOnboardingTourController() {
 
   function end(reason: TourEndReason) {
     clearGrace()
+    stopRunListener?.()
+    stopRunListener = undefined
     const telemetry = useTelemetry()
     if (reason === 'skip') {
       const step = store.currentStep

@@ -196,6 +196,10 @@ vi.mock(
   '@/renderer/extensions/onboardingTour/OnboardingTourOverlay.vue',
   () => stubModule
 )
+vi.mock(
+  '@/renderer/extensions/onboardingTour/OnboardingTourNudge.vue',
+  () => stubModule
+)
 vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
 vi.mock('@/components/MenuHamburger.vue', () => stubModule)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)

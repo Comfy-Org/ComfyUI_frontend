@@ -1,0 +1,158 @@
+import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json'
+
+const mocks = vi.hoisted(() => ({
+  show: vi.fn(),
+  trackExploreTemplatesClicked: vi.fn()
+}))
+
+// A reactive backing so the component's modal-close watch actually fires, the
+// same way the real store's `isDialogOpen` reads a reactive dialog stack.
+const openDialogs = ref<string[]>([])
+
+vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
+  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.show })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackOnboardingTourExploreTemplatesClicked:
+      mocks.trackExploreTemplatesClicked
+  })
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({
+    isDialogOpen: (key: string) => openDialogs.value.includes(key)
+  })
+}))
+
+import OnboardingTourNudge from './OnboardingTourNudge.vue'
+import { useOnboardingTourStore } from './onboardingTourStore'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
+function renderNudge() {
+  return render(OnboardingTourNudge, { global: { plugins: [i18n] } })
+}
+
+const nudgeTitle = enMessages.onboardingTour.nudge.title
+
+describe('OnboardingTourNudge', () => {
+  let store: ReturnType<typeof useOnboardingTourStore>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useOnboardingTourStore()
+    mocks.show.mockReset()
+    mocks.trackExploreTemplatesClicked.mockReset()
+    openDialogs.value = []
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders nothing until the nudge is requested', () => {
+    renderNudge()
+
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+  })
+
+  it('shows the post-run prompt once the store requests it', async () => {
+    renderNudge()
+    store.showNudge()
+
+    expect(await screen.findByText(nudgeTitle)).toBeInTheDocument()
+  })
+
+  it('opens the template library and reports the click on Explore templates', async () => {
+    renderNudge()
+    store.showNudge()
+    const user = userEvent.setup()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: enMessages.onboardingTour.nudge.explore
+      })
+    )
+
+    expect(mocks.show).toHaveBeenCalledOnce()
+    expect(mocks.trackExploreTemplatesClicked).toHaveBeenCalledOnce()
+  })
+
+  it('permanently dismisses on Not now and does not resurface', async () => {
+    renderNudge()
+    store.showNudge()
+    const user = userEvent.setup()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: enMessages.onboardingTour.nudge.dismiss
+      })
+    )
+
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+
+    // A later trigger must not bring it back this session.
+    store.showNudge()
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+  })
+
+  it('surfaces as the fallback when the upgrade modal closes after arming', async () => {
+    store.armNudge()
+    openDialogs.value = ['free-tier-info']
+    renderNudge()
+
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+
+    openDialogs.value = []
+
+    expect(await screen.findByText(nudgeTitle)).toBeInTheDocument()
+  })
+
+  it('stays hidden on modal close when the fallback was never armed', async () => {
+    openDialogs.value = ['subscription-required']
+    renderNudge()
+
+    openDialogs.value = []
+    await nextTick()
+
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+  })
+
+  it('surfaces the armed fallback only once across repeated modal cycles', async () => {
+    store.armNudge()
+    openDialogs.value = ['free-tier-info']
+    renderNudge()
+    const user = userEvent.setup()
+
+    openDialogs.value = []
+    await user.click(
+      await screen.findByRole('button', {
+        name: enMessages.onboardingTour.nudge.dismiss
+      })
+    )
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+
+    // A second upgrade-modal cycle must not resurface the dismissed nudge:
+    // the arm was consumed on the first surfacing and dismissal is permanent.
+    openDialogs.value = ['free-tier-info']
+    await nextTick()
+    openDialogs.value = []
+    await nextTick()
+
+    expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+  })
+})

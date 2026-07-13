@@ -2341,6 +2341,12 @@
         "import": "Importing workflows is coming soon.",
         "tutorials": "Tutorials are coming soon."
       }
+    },
+    "nudge": {
+      "title": "That was one of hundreds",
+      "body": "You just made your first. Explore what else you can build.",
+      "dismiss": "Not now",
+      "explore": "Explore templates"
     }
   },
   "auth": {

@@ -35,8 +35,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const runStatus = ref<RunStatus>('idle')
   /** Set when programmatic prompt focus failed and the port is spotlit instead. */
   const promptPortFallback = ref(false)
-  /** True once the tour ends into the post-run nudge (rendered by the nudge component). */
-  const nudgePending = ref(false)
+  /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
+  const shouldShowNudge = ref(false)
+  /** No-funds fallback: the gate arms this so the modal-close watch can surface the nudge. */
+  const nudgeArmed = ref(false)
+  /** "Not now" latches this so no later trigger can resurface the nudge this session. */
+  const nudgeDismissed = ref(false)
 
   const currentStep = computed<TourStep | null>(
     () => steps.value[stepIndex.value] ?? null
@@ -57,6 +61,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
 
   function start(workflow: ComfyWorkflowJSON, templateId?: string) {
     reset()
+    resetNudge()
     const roles = resolveRoles(workflow, templateId)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
@@ -100,8 +105,30 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     runStatus.value = 'completed'
   }
 
-  function markNudgePending() {
-    nudgePending.value = true
+  /** Arm the no-funds fallback so the modal-close watch can surface the nudge. */
+  function armNudge() {
+    nudgeArmed.value = true
+  }
+
+  /** Surface the bottom-right nudge, unless the user already dismissed it. */
+  function showNudge() {
+    // Consume the fallback arm so it fires at most once, regardless of dismissal.
+    nudgeArmed.value = false
+    if (nudgeDismissed.value) return
+    shouldShowNudge.value = true
+  }
+
+  /** "Not now": hide the nudge and block any later trigger this session. */
+  function dismissNudge() {
+    shouldShowNudge.value = false
+    nudgeDismissed.value = true
+  }
+
+  /** Nudge state outlives the tour, so only a fresh tour clears it. */
+  function resetNudge() {
+    shouldShowNudge.value = false
+    nudgeArmed.value = false
+    nudgeDismissed.value = false
   }
 
   function reset() {
@@ -113,7 +140,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia.value = null
     runStatus.value = 'idle'
     promptPortFallback.value = false
-    nudgePending.value = false
   }
 
   function end() {
@@ -132,12 +158,15 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia,
     runStatus,
     promptPortFallback,
-    nudgePending,
+    shouldShowNudge,
+    nudgeArmed,
     start,
     advance,
     back,
     captureResultMedia,
-    markNudgePending,
+    armNudge,
+    showNudge,
+    dismissNudge,
     end,
     reset
   }

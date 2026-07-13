@@ -79,7 +79,6 @@ describe('onboardingTourStore', () => {
     store.revealedNodeIds.add(toNodeId(42))
     store.resultMedia = { url: 'blob:x', kind: 'image' }
     store.runStatus = 'running'
-    store.nudgePending = true
 
     store.reset()
 
@@ -89,7 +88,6 @@ describe('onboardingTourStore', () => {
     expect(store.revealedNodeIds.size).toBe(0)
     expect(store.resultMedia).toBeNull()
     expect(store.runStatus).toBe('idle')
-    expect(store.nudgePending).toBe(false)
   })
 
   it('start() on I2V roles builds [Upload, Prompt, Run, Result] and reveals the source', () => {
@@ -248,14 +246,67 @@ describe('onboardingTourStore', () => {
     expect(store.resultMedia).toBeNull()
   })
 
-  it('markNudgePending() flags the post-tour nudge and end() clears it', () => {
+  it('showNudge() surfaces the post-run nudge', () => {
+    expect(store.shouldShowNudge).toBe(false)
+
+    store.showNudge()
+
+    expect(store.shouldShowNudge).toBe(true)
+  })
+
+  it('keeps the nudge visible after the tour ends so it outlives the run', () => {
     resolveRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
-
-    store.markNudgePending()
-    expect(store.nudgePending).toBe(true)
+    store.showNudge()
 
     store.end()
-    expect(store.nudgePending).toBe(false)
+
+    expect(store.shouldShowNudge).toBe(true)
+  })
+
+  it('arms the no-funds fallback so the modal-close watch can surface it', () => {
+    store.armNudge()
+    expect(store.nudgeArmed).toBe(true)
+
+    // The gate ends the tour right after arming; the flag must survive that.
+    store.end()
+    expect(store.nudgeArmed).toBe(true)
+  })
+
+  it('consumes the armed flag when the nudge surfaces so it fires at most once', () => {
+    store.armNudge()
+
+    store.showNudge()
+
+    // Consuming the arm makes the fallback strictly one-shot without leaning on
+    // the dismiss latch: a later modal cycle re-runs showNudge() but stays disarmed.
+    expect(store.nudgeArmed).toBe(false)
+  })
+
+  it('dismissNudge() hides it and blocks any later re-trigger this session', () => {
+    store.showNudge()
+    expect(store.shouldShowNudge).toBe(true)
+
+    store.dismissNudge()
+    expect(store.shouldShowNudge).toBe(false)
+
+    store.showNudge()
+    expect(store.shouldShowNudge).toBe(false)
+  })
+
+  it('start() resets the nudge lifecycle for a fresh tour', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.armNudge()
+    store.showNudge()
+    store.dismissNudge()
+
+    store.start(workflow)
+
+    expect(store.shouldShowNudge).toBe(false)
+    expect(store.nudgeArmed).toBe(false)
+
+    // Dismissal from the prior tour no longer blocks the new one.
+    store.showNudge()
+    expect(store.shouldShowNudge).toBe(true)
   })
 })
