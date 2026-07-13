@@ -343,6 +343,28 @@ describe('usePartnerNodes', () => {
     expect(mockToastAdd).toHaveBeenCalledTimes(1)
   })
 
+  it('restores the latest confirmed state when the newer write fails', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabled)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockRejectedValueOnce(new Error('newer update failed'))
+
+    const firstUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      false
+    )
+    const secondUpdate = pn.setEnabled(
+      pn.nodes.value.find((n) => n.id === 'a')!,
+      true
+    )
+    firstRequest.resolve()
+    await Promise.all([firstUpdate, secondUpdate])
+
+    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
+    expect(mockToastAdd).toHaveBeenCalledTimes(1)
+  })
+
   it('exposes loading and error state when the initial fetch fails', async () => {
     vi.mocked(partnerNodesApi.list).mockRejectedValueOnce(
       new Error('load failed')
