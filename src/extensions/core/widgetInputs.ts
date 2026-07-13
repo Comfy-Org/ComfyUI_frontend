@@ -3,6 +3,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
@@ -68,6 +69,14 @@ export class PrimitiveNode extends LGraphNode {
         widget.callback?.(widget.value)
       }
     }
+  }
+
+  override serialize(): ISerialisedNode {
+    const o = super.serialize()
+    if (!o.widgets_values && this.widgets_values) {
+      o.widgets_values = this.widgets_values
+    }
+    return o
   }
 
   override onAfterGraphConfigured() {
