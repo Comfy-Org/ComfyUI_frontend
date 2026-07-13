@@ -3111,6 +3111,7 @@
     "exitAppMode": "Exit app mode",
     "enterBuilderMode": "Build app",
     "editBuilderMode": "Edit app",
+    "enterApiBuilderMode": "Build API",
     "workflowActions": "Workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
@@ -3720,6 +3721,68 @@
       "dismiss": "Dismiss"
     }
   },
+  "apiBuilder": {
+    "pageSubtitle": "Call this workflow as an HTTP API. Submit a job and get back generated assets.",
+    "copySchema": "Schema",
+    "llmsLabel": "LLMs",
+    "llmsMenu": "LLMs options",
+    "openMarkdown": "Open Markdown",
+    "copyMarkdown": "Copy Markdown",
+    "editApi": "Edit API",
+    "apiDocs": "API Docs",
+    "logs": "Logs",
+    "endpointsTitle": "Endpoints",
+    "endpointsDescription": "Submitting returns a job_id — poll it until the job completes, or include a webhook_url to be called back. Authenticate every request with your API key.",
+    "submitEndpoint": "Submit a job",
+    "pollEndpoint": "Get status & outputs",
+    "parametersTitle": "Input parameters",
+    "parametersDescription": "Each parameter is a field in the JSON request body.",
+    "parametersEmpty": "No inputs yet. Edit the API and select the widgets to expose as parameters.",
+    "requiredLabel": "Required",
+    "acceptsLabel": "Accepts",
+    "mediaAccepts": "HTTPS URL or base64 data URI",
+    "defaultLabel": "Default",
+    "minLabel": "Min",
+    "maxLabel": "Max",
+    "optionsLabel": "Options",
+    "optionsOverflow": "{preview}, +{count} more",
+    "responseTitle": "Response",
+    "responseDescription": "When the job completes, each key in outputs holds a list of downloadable assets.",
+    "outputsLabel": "Outputs",
+    "exampleResponse": "Example response",
+    "snippetsTitle": "Client code",
+    "testTitle": "Test this API",
+    "testDescription": "Set the inputs and run to preview what the API returns.",
+    "testNoInputs": "No inputs yet. Edit the API to add parameters.",
+    "latestResult": "Latest result",
+    "noResults": "No runs yet. Results will appear here."
+  },
+  "apiLogs": {
+    "title": "API logs",
+    "subtitle": "Recent jobs across your workflow APIs, including errors.",
+    "viewMore": "View more",
+    "columns": {
+      "id": "ID",
+      "workflow": "Workflow",
+      "source": "Source",
+      "status": "Status",
+      "queued": "Queued",
+      "running": "Running",
+      "duration": "Total duration",
+      "cost": "Approximate cost",
+      "created": "Created"
+    },
+    "statuses": {
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "running": "Running",
+      "queued": "Queued"
+    },
+    "sources": {
+      "api": "API",
+      "playground": "Playground"
+    }
+  },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
     "button": "Switch back"
@@ -3761,6 +3824,7 @@
     },
     "appModeToolbar": {
       "appBuilder": "App builder",
+      "apiBuilder": "API builder",
       "apps": "Apps",
       "appsEmptyMessage": "Saved apps will show up here.",
       "appsEmptyMessageAction": "Click below to build your first app."
@@ -4496,6 +4560,7 @@
     "nodeGraph": "Node graph",
     "nodeGraphDescription": "Opens as node graph by default",
     "viewApp": "View app",
+    "viewApi": "View API",
     "saveAs": "Save as",
     "filename": "Filename",
     "emptyWorkflowTitle": "This workflow has no nodes",
@@ -4509,11 +4574,13 @@
     "successTitle": "Successfully saved",
     "successBody": "Would you like to view it now?",
     "successBodyApp": "This workflow will open in App Mode by default from now on.\n\nWould you like to view it now?",
-    "successBodyGraph": "This workflow will open as a node graph."
+    "successBodyGraph": "This workflow will open as a node graph.",
+    "successBodyApi": "Your API details are ready.\n\nWould you like to view them now?"
   },
   "builderMenu": {
     "enterAppMode": "Enter app mode",
-    "exitAppBuilder": "Exit app builder"
+    "exitAppBuilder": "Exit app builder",
+    "exitApiBuilder": "Exit API builder"
   },
   "cloudNotification": {
     "title": "Run ComfyUI in the Cloud",

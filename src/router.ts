@@ -81,6 +81,11 @@ const router = createRouter({
           path: 'user-select',
           name: 'UserSelectView',
           component: () => import('@/views/UserSelectView.vue')
+        },
+        {
+          path: 'api-logs',
+          name: 'ApiLogsView',
+          component: () => import('@/views/ApiLogsView.vue')
         }
       ]
     }

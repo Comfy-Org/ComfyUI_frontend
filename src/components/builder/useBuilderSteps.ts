@@ -1,21 +1,33 @@
 import type { Ref } from 'vue'
 
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
+import type { BuilderTarget } from '@/utils/appMode'
 
-const BUILDER_STEPS = [
+const APP_BUILDER_STEPS = [
   'builder:inputs',
   'builder:outputs',
   'builder:arrange'
 ] as const
 
-export type BuilderStepId = (typeof BUILDER_STEPS)[number]
+const API_BUILDER_STEPS = ['builder:inputs', 'builder:outputs'] as const
 
-const ARRANGE_INDEX = BUILDER_STEPS.indexOf('builder:arrange')
+export type BuilderStepId = (typeof APP_BUILDER_STEPS)[number]
+
+export function builderStepsForTarget(
+  target: BuilderTarget
+): readonly BuilderStepId[] {
+  return target === 'api' ? API_BUILDER_STEPS : APP_BUILDER_STEPS
+}
 
 export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
   const { mode, isBuilderMode, setMode } = useAppMode()
+  const { builderTarget } = storeToRefs(useAppModeStore())
+
+  const steps = computed(() => builderStepsForTarget(builderTarget.value))
 
   const activeStep = computed<BuilderStepId>(() => {
     if (isBuilderMode.value) {
@@ -24,16 +36,16 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
     return 'builder:inputs'
   })
 
-  const activeStepIndex = computed(() =>
-    BUILDER_STEPS.indexOf(activeStep.value)
-  )
+  const activeStepIndex = computed(() => steps.value.indexOf(activeStep.value))
 
   const isFirstStep = computed(() => activeStepIndex.value === 0)
 
   const isLastStep = computed(() => {
-    if (!options?.hasOutputs?.value)
-      return activeStepIndex.value >= ARRANGE_INDEX
-    return activeStepIndex.value >= BUILDER_STEPS.length - 1
+    if (builderTarget.value === 'app' && !options?.hasOutputs?.value)
+      return (
+        activeStepIndex.value >= APP_BUILDER_STEPS.indexOf('builder:arrange')
+      )
+    return activeStepIndex.value >= steps.value.length - 1
   })
 
   const isSelectStep = computed(
@@ -44,15 +56,16 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
 
   function goBack() {
     if (isFirstStep.value) return
-    setMode(BUILDER_STEPS[activeStepIndex.value - 1])
+    setMode(steps.value[activeStepIndex.value - 1])
   }
 
   function goNext() {
     if (isLastStep.value) return
-    setMode(BUILDER_STEPS[activeStepIndex.value + 1])
+    setMode(steps.value[activeStepIndex.value + 1])
   }
 
   return {
+    steps,
     activeStep,
     activeStepIndex,
     isFirstStep,

@@ -55,8 +55,17 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ showLayoutDialog: mockShowLayoutDialog })
 }))
 
+const mockBuilderTarget = vi.hoisted(() => ({
+  value: 'app' as 'app' | 'api'
+}))
+
 vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({ exitBuilder: mockExitBuilder })
+  useAppModeStore: () => ({
+    exitBuilder: mockExitBuilder,
+    get builderTarget() {
+      return mockBuilderTarget.value
+    }
+  })
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -85,6 +94,7 @@ describe('useBuilderSave', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockActiveWorkflow.value = null
+    mockBuilderTarget.value = 'app'
   })
 
   describe('save()', () => {
@@ -174,6 +184,28 @@ describe('useBuilderSave', () => {
       saveAs()
 
       const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(props.defaultOpenAsApp).toBe(false)
+    })
+
+    it('shows the default view choice for the app target', () => {
+      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      const { saveAs } = useBuilderSave()
+
+      saveAs()
+
+      const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(props.showDefaultViewChoice).toBe(true)
+    })
+
+    it('hides the default view choice and preserves the current view for the api target', () => {
+      mockBuilderTarget.value = 'api'
+      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: null }
+      const { saveAs } = useBuilderSave()
+
+      saveAs()
+
+      const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(props.showDefaultViewChoice).toBe(false)
       expect(props.defaultOpenAsApp).toBe(false)
     })
   })
@@ -280,6 +312,22 @@ describe('useBuilderSave', () => {
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: SAVE_DIALOG_KEY })
+    })
+
+    it('skips default view telemetry and shows the api success dialog for the api target', async () => {
+      mockBuilderTarget.value = 'api'
+      mockSaveWorkflowAs.mockResolvedValueOnce(true)
+      const { onSave } = getSaveDialogProps()
+
+      await onSave('new-name', true)
+
+      expect(mockTrackDefaultViewSet).not.toHaveBeenCalled()
+      const successCall = mockShowConfirmDialog.mock.calls[0][0]
+      expect(successCall.props.promptText).toBe('builderSave.successBodyApi')
+      expect(successCall.footerProps.confirmText).toBe('builderToolbar.viewApi')
+
+      successCall.footerProps.onConfirm()
+      expect(mockSetMode).toHaveBeenCalledWith('api')
     })
 
     it('prevents concurrent handleSaveAs calls', async () => {

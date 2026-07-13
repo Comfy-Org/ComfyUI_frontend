@@ -4,7 +4,7 @@
   >
     <!-- "Opens as" attachment tab -->
     <BuilderOpensAsPopover
-      v-if="isSaved"
+      v-if="isSaved && !isApiTarget"
       :is-app-mode="isAppMode"
       @select="onSetDefaultView"
     />
@@ -15,10 +15,18 @@
       class="flex items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
-        {{ t('builderMenu.exitAppBuilder') }}
+        {{
+          isApiTarget
+            ? t('builderMenu.exitApiBuilder')
+            : t('builderMenu.exitAppBuilder')
+        }}
       </Button>
-      <Button variant="secondary" size="lg" @click="onViewApp">
-        {{ t('builderToolbar.viewApp') }}
+      <Button variant="secondary" size="lg" @click="onViewResult">
+        {{
+          isApiTarget
+            ? t('builderToolbar.viewApi')
+            : t('builderToolbar.viewApp')
+        }}
       </Button>
       <Button
         variant="textonly"
@@ -152,7 +160,8 @@ const appModeStore = useAppModeStore()
 const dialogStore = useDialogStore()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode, setMode } = useAppMode()
-const { hasOutputs } = storeToRefs(appModeStore)
+const { hasOutputs, builderTarget } = storeToRefs(appModeStore)
+const isApiTarget = computed(() => builderTarget.value === 'api')
 const {
   isFirstStep,
   isLastStep,
@@ -201,8 +210,8 @@ function onExitBuilder() {
   appModeStore.exitBuilder()
 }
 
-function onViewApp() {
-  setMode('app')
+function onViewResult() {
+  setMode(isApiTarget.value ? 'api' : 'app')
 }
 
 function onSetDefaultView(openAsApp: boolean) {

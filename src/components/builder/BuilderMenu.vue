@@ -9,11 +9,11 @@
             'data-[state=open]:bg-secondary-background-hover'
           )
         "
-        :aria-label="t('linearMode.appModeToolbar.appBuilder')"
+        :aria-label="builderLabel"
       >
         <i class="icon-[lucide--hammer] size-4" />
         <span class="text-sm font-medium">
-          {{ t('linearMode.appModeToolbar.appBuilder') }}
+          {{ builderLabel }}
         </span>
         <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
       </button>
@@ -52,11 +52,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
-const { hasOutputs } = storeToRefs(appModeStore)
+const { hasOutputs, builderTarget } = storeToRefs(appModeStore)
 const { setMode } = useAppMode()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
+
+const isApiTarget = computed(() => builderTarget.value === 'api')
+const builderLabel = computed(() =>
+  isApiTarget.value
+    ? t('linearMode.appModeToolbar.apiBuilder')
+    : t('linearMode.appModeToolbar.appBuilder')
+)
 
 const menuItems = computed(() => [
   {
@@ -65,13 +72,21 @@ const menuItems = computed(() => [
     disabled: !hasOutputs.value,
     action: onSave
   },
+  isApiTarget.value
+    ? {
+        label: t('builderToolbar.viewApi'),
+        icon: 'icon-[lucide--braces]',
+        action: onEnterApiMode
+      }
+    : {
+        label: t('builderMenu.enterAppMode'),
+        icon: 'icon-[lucide--panels-top-left]',
+        action: onEnterAppMode
+      },
   {
-    label: t('builderMenu.enterAppMode'),
-    icon: 'icon-[lucide--panels-top-left]',
-    action: onEnterAppMode
-  },
-  {
-    label: t('builderMenu.exitAppBuilder'),
+    label: isApiTarget.value
+      ? t('builderMenu.exitApiBuilder')
+      : t('builderMenu.exitAppBuilder'),
     icon: 'icon-[lucide--x]',
     action: onExitBuilder
   }
@@ -90,6 +105,11 @@ async function onSave(close: () => void) {
 
 function onEnterAppMode(close: () => void) {
   setMode('app')
+  close()
+}
+
+function onEnterApiMode(close: () => void) {
+  setMode('api')
   close()
 }
 

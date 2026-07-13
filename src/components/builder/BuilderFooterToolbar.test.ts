@@ -27,11 +27,13 @@ vi.mock('@/composables/useAppMode', () => ({
 }))
 
 const mockHasOutputs = ref(true)
+const mockBuilderTarget = ref<'app' | 'api'>('app')
 
 vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({
     exitBuilder: mockExitBuilder,
     hasOutputs: mockHasOutputs,
+    builderTarget: mockBuilderTarget,
     $id: 'appMode'
   })
 }))
@@ -81,9 +83,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      builderMenu: { exitAppBuilder: 'Exit app builder' },
+      builderMenu: {
+        exitAppBuilder: 'Exit app builder',
+        exitApiBuilder: 'Exit API builder'
+      },
       builderToolbar: {
         viewApp: 'View app',
+        viewApi: 'View API',
         saveAs: 'Save as',
         app: 'App',
         nodeGraph: 'Node graph'
@@ -103,6 +109,7 @@ describe('BuilderFooterToolbar', () => {
     vi.clearAllMocks()
     mockState.mode = 'builder:inputs'
     mockHasOutputs.value = true
+    mockBuilderTarget.value = 'app'
     mockActiveWorkflow.value = { isTemporary: true, initialMode: 'app' }
   })
 
@@ -172,6 +179,20 @@ describe('BuilderFooterToolbar', () => {
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /view app/i }))
     expect(mockSetMode).toHaveBeenCalledWith('app')
+  })
+
+  it('calls setMode api on view API click for the api target', async () => {
+    mockBuilderTarget.value = 'api'
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /view api/i }))
+    expect(mockSetMode).toHaveBeenCalledWith('api')
+  })
+
+  it('disables next on the outputs step for the api target', () => {
+    mockBuilderTarget.value = 'api'
+    mockState.mode = 'builder:outputs'
+    renderComponent()
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 
   it('shows "Save as" when workflow is temporary', () => {

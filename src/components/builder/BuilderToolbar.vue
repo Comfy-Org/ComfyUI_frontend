@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -45,31 +46,34 @@ import type { BuilderStepId } from './useBuilderSteps'
 import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
-const { activeStep, navigateToStep } = useBuilderSteps()
+const { activeStep, navigateToStep, steps: targetSteps } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
 
-const selectInputsStep: BuilderToolbarStep<BuilderStepId> = {
-  id: 'builder:inputs',
-  title: t('builderToolbar.inputs'),
-  subtitle: t('builderToolbar.inputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
+const stepDefinitions: Record<
+  BuilderStepId,
+  BuilderToolbarStep<BuilderStepId>
+> = {
+  'builder:inputs': {
+    id: 'builder:inputs',
+    title: t('builderToolbar.inputs'),
+    subtitle: t('builderToolbar.inputsDescription'),
+    icon: 'icon-[lucide--mouse-pointer-click]'
+  },
+  'builder:outputs': {
+    id: 'builder:outputs',
+    title: t('builderToolbar.outputs'),
+    subtitle: t('builderToolbar.outputsDescription'),
+    icon: 'icon-[lucide--mouse-pointer-click]'
+  },
+  'builder:arrange': {
+    id: 'builder:arrange',
+    title: t('builderToolbar.arrange'),
+    subtitle: t('builderToolbar.arrangeDescription'),
+    icon: 'icon-[lucide--layout-panel-left]'
+  }
 }
 
-const selectOutputsStep: BuilderToolbarStep<BuilderStepId> = {
-  id: 'builder:outputs',
-  title: t('builderToolbar.outputs'),
-  subtitle: t('builderToolbar.outputsDescription'),
-  icon: 'icon-[lucide--mouse-pointer-click]'
-}
-
-const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
-  id: 'builder:arrange',
-  title: t('builderToolbar.arrange'),
-  subtitle: t('builderToolbar.arrangeDescription'),
-  icon: 'icon-[lucide--layout-panel-left]'
-}
-
-const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
+const steps = computed(() => targetSteps.value.map((id) => stepDefinitions[id]))
 </script>

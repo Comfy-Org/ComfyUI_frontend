@@ -50,12 +50,18 @@ export function useBuilderSave() {
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return
 
+    const isApiTarget = appModeStore.builderTarget === 'api'
     dialogService.showLayoutDialog({
       key: SAVE_DIALOG_KEY,
       component: BuilderSaveDialogContent,
       props: {
         defaultFilename: workflow.filename,
-        defaultOpenAsApp: workflow.initialMode !== 'graph',
+        // The API builder hides the choice and must not change how the
+        // workflow opens, so it preserves the current default view.
+        defaultOpenAsApp: isApiTarget
+          ? workflow.initialMode === 'app'
+          : workflow.initialMode !== 'graph',
+        showDefaultViewChoice: !isApiTarget,
         onSave: handleSaveAs,
         onClose: () => closeDialog(SAVE_DIALOG_KEY)
       }
@@ -75,10 +81,14 @@ export function useBuilderSave() {
       })
 
       if (!saved) return
+      closeDialog(SAVE_DIALOG_KEY)
+      if (appModeStore.builderTarget === 'api') {
+        showApiSuccessDialog()
+        return
+      }
       useTelemetry()?.trackDefaultViewSet({
         default_view: openAsApp ? 'app' : 'graph'
       })
-      closeDialog(SAVE_DIALOG_KEY)
       showSuccessDialog(openAsApp ? 'app' : 'graph')
     } catch (e) {
       toastErrorHandler(e)
@@ -86,6 +96,30 @@ export function useBuilderSave() {
     } finally {
       isSaving.value = false
     }
+  }
+
+  function showApiSuccessDialog() {
+    showConfirmDialog({
+      key: SUCCESS_DIALOG_KEY,
+      headerProps: {
+        title: t('builderSave.successTitle'),
+        icon: 'icon-[lucide--circle-check-big] text-green-500'
+      },
+      props: {
+        promptText: t('builderSave.successBodyApi'),
+        preserveNewlines: true
+      },
+      footerProps: {
+        cancelText: t('g.close'),
+        confirmText: t('builderToolbar.viewApi'),
+        confirmVariant: 'secondary' as const,
+        onCancel: () => closeDialog(SUCCESS_DIALOG_KEY),
+        onConfirm: () => {
+          closeDialog(SUCCESS_DIALOG_KEY)
+          setMode('api')
+        }
+      }
+    })
   }
 
   function showSuccessDialog(viewType: 'app' | 'graph') {

@@ -743,6 +743,7 @@ export type ExecutionTriggerSource =
   | 'legacy_ui'
   | 'unknown'
   | 'linear'
+  | 'api_builder'
 
 /**
  * Union type for all possible telemetry event properties

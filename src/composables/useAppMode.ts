@@ -20,6 +20,7 @@ export function useAppMode() {
   )
   const isArrangeMode = computed(() => mode.value === 'builder:arrange')
   const isAppMode = computed(() => isAppModeValue(mode.value))
+  const isApiMode = computed(() => mode.value === 'api')
   const isGraphMode = computed(
     () => mode.value === 'graph' || isSelectMode.value
   )
@@ -38,6 +39,7 @@ export function useAppMode() {
     isSelectOutputsMode,
     isArrangeMode,
     isAppMode,
+    isApiMode,
     isGraphMode,
     setMode
   }
