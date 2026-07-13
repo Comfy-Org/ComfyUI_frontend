@@ -4586,7 +4586,7 @@ const translations = {
     'zh-CN': '如需本规范之外的授权，请'
   },
   'brand.trademark.contact': {
-    en: 'contact us',
+    en: 'Contact Us',
     'zh-CN': '联系我们'
   },
   'brand.questions.heading': {
@@ -4598,7 +4598,7 @@ const translations = {
     'zh-CN': '如涉及媒体、合作，或本规范未涵盖的任何事宜，请'
   },
   'brand.questions.contact': {
-    en: 'contact us',
+    en: 'Contact Us',
     'zh-CN': '联系我们'
   }
 } as const satisfies Record<string, Record<Locale, string>>
