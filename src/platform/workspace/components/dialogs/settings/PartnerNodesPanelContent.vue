@@ -8,6 +8,7 @@
         <Button
           variant="muted-textonly"
           size="lg"
+          :disabled="controlsDisabled"
           @click="setAllFilteredEnabled(true)"
         >
           {{ $t('workspacePanel.allowlist.enableAll') }}
@@ -15,6 +16,7 @@
         <Button
           variant="muted-textonly"
           size="lg"
+          :disabled="controlsDisabled"
           @click="setAllFilteredEnabled(false)"
         >
           {{ $t('workspacePanel.allowlist.disableAll') }}
@@ -36,6 +38,7 @@
               <Checkbox
                 :model-value="allFilteredSelected"
                 :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
+                :disabled="controlsDisabled"
                 @update:model-value="toggleSelectAll"
               />
             </TableHead>
@@ -62,21 +65,33 @@
         </TableHeader>
         <TableBody>
           <template v-for="group in groups" :key="group.partner">
-            <!-- Provider row: click to expand/collapse its nodes -->
             <TableRow
-              class="cursor-pointer hover:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors"
-              :aria-expanded="group.expanded"
-              @click="togglePartnerCollapsed(group.partner)"
+              class="hover:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors"
             >
               <TableCell @click.stop>
                 <Checkbox
                   :model-value="groupSelectionState(group)"
                   :aria-label="group.partner"
+                  :disabled="controlsDisabled"
                   @update:model-value="toggleGroupSelection(group)"
                 />
               </TableCell>
               <TableCell>
-                <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  :aria-expanded="group.expanded"
+                  :aria-label="
+                    $t(
+                      group.expanded
+                        ? 'workspacePanel.partnerNodes.collapseProvider'
+                        : 'workspacePanel.partnerNodes.expandProvider',
+                      { partner: group.partner }
+                    )
+                  "
+                  :disabled="controlsDisabled"
+                  class="flex w-full items-center gap-2 border-none bg-transparent p-0 text-left disabled:cursor-not-allowed"
+                  @click="togglePartnerCollapsed(group.partner)"
+                >
                   <i
                     :class="
                       cn(
@@ -98,7 +113,7 @@
                       {{ group.partner }}
                     </span>
                   </div>
-                </div>
+                </button>
               </TableCell>
               <TableCell class="text-muted-foreground tabular-nums">
                 {{
@@ -116,6 +131,12 @@
                 carries the partial state. Off disables the whole group. -->
                 <Switch
                   :model-value="group.enabledCount > 0"
+                  :aria-label="
+                    $t('workspacePanel.partnerNodes.groupToggle', {
+                      partner: group.partner
+                    })
+                  "
+                  :disabled="controlsDisabled"
                   @update:model-value="
                     (v: boolean) => setGroupEnabled(group, v)
                   "
@@ -128,20 +149,20 @@
                 v-for="node in group.nodes"
                 :key="node.id"
                 :data-state="selectedIds.has(node.id) ? 'selected' : undefined"
-                class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
-                @click="toggleSelection(node.id)"
+                class="group hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
               >
-                <TableCell>
+                <TableCell @click.stop>
                   <Checkbox
                     :model-value="selectedIds.has(node.id)"
                     :aria-label="node.name"
+                    :disabled="controlsDisabled"
                     :class="
                       cn(
-                        'pointer-events-none',
                         !hasSelection &&
-                          'opacity-0 transition-opacity group-hover:opacity-100'
+                          'opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100'
                       )
                     "
+                    @update:model-value="toggleSelection(node.id)"
                   />
                 </TableCell>
                 <TableCell class="text-muted-foreground">
@@ -156,13 +177,42 @@
                 <TableCell class="text-right" @click.stop>
                   <Switch
                     :model-value="node.enabled"
+                    :aria-label="
+                      $t('workspacePanel.partnerNodes.nodeToggle', {
+                        name: node.name
+                      })
+                    "
+                    :disabled="controlsDisabled"
                     @update:model-value="(v: boolean) => setEnabled(node, v)"
                   />
                 </TableCell>
               </TableRow>
             </template>
           </template>
-          <TableRow v-if="groups.length === 0" class="hover:bg-transparent">
+          <TableRow v-if="isLoading" class="hover:bg-transparent">
+            <TableCell
+              :colspan="5"
+              class="py-6 text-center text-sm text-muted-foreground"
+            >
+              <span role="status">
+                {{ $t('workspacePanel.partnerNodes.loading') }}
+              </span>
+            </TableCell>
+          </TableRow>
+          <TableRow v-else-if="loadError" class="hover:bg-transparent">
+            <TableCell
+              :colspan="5"
+              class="py-6 text-center text-sm text-muted-foreground"
+            >
+              <span role="alert">
+                {{ $t('workspacePanel.partnerNodes.loadError') }}
+              </span>
+            </TableCell>
+          </TableRow>
+          <TableRow
+            v-else-if="groups.length === 0"
+            class="hover:bg-transparent"
+          >
             <TableCell
               :colspan="5"
               class="py-6 text-center text-sm text-muted-foreground"
@@ -178,6 +228,8 @@
     <div class="flex h-8 items-center gap-3 text-sm text-muted-foreground">
       <Switch
         :model-value="autoEnableNew"
+        :aria-label="$t('workspacePanel.partnerNodes.autoEnableLabel')"
+        :disabled="controlsDisabled"
         @update:model-value="setAutoEnableNew"
       />
       <!-- The sentence lights up with the toggle: foreground when the default
@@ -211,7 +263,12 @@
           :deselect-label="$t('workspacePanel.partnerNodes.clearSelection')"
           @deselect="clearSelection"
         >
-          <Switch :model-value="bulkEnabled" @update:model-value="applyBulk" />
+          <Switch
+            :model-value="selectedEnabled"
+            :aria-label="$t('workspacePanel.partnerNodes.bulkToggle')"
+            :disabled="controlsDisabled"
+            @update:model-value="applyBulk"
+          />
         </SelectionBar>
       </Transition>
     </div>
@@ -243,13 +300,15 @@ const { t } = useI18n()
 
 const {
   autoEnableNew,
+  isLoading,
+  loadError,
   searchQuery,
   sortField,
   sortDirection,
   selectedIds,
   selectedCount,
+  selectedEnabled,
   allFilteredSelected,
-  filteredNodes,
   groups,
   togglePartnerCollapsed,
   groupSelectionState,
@@ -275,6 +334,7 @@ watch(
 )
 
 const hasSelection = computed(() => selectedCount.value > 0)
+const controlsDisabled = computed(() => isLoading.value || loadError.value)
 
 const sortHeaderClass =
   'flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-left font-[inherit] text-sm text-muted-foreground'
@@ -292,14 +352,6 @@ function ariaSort(
   if (sortField.value !== field) return 'none'
   return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
-
-// When every selected node is enabled the bulk switch reads "on", so a toggle
-// disables the whole selection; otherwise it enables them.
-const bulkEnabled = computed(() =>
-  filteredNodes.value
-    .filter((n) => selectedIds.value.has(n.id))
-    .every((n) => n.enabled)
-)
 
 function applyBulk(value: boolean) {
   void setSelectedEnabled(value)

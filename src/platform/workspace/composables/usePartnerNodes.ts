@@ -8,13 +8,14 @@ import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 export interface PartnerGroup {
   partner: string
   nodes: PartnerNode[]
+  allNodes: PartnerNode[]
   enabledCount: number
   totalCount: number
   lastModified: string | null
   expanded: boolean
 }
 
-type SortField = 'name' | 'partner' | 'lastModified'
+type SortField = 'name' | 'lastModified'
 type SortDirection = 'asc' | 'desc'
 
 function compareNodes(
@@ -29,8 +30,20 @@ function compareNodes(
     const bv = b.last_modified ?? ''
     return av.localeCompare(bv) * dir
   }
-  const key = field === 'partner' ? 'partner' : 'name'
-  return a[key].localeCompare(b[key]) * dir
+  return a.name.localeCompare(b.name) * dir
+}
+
+function compareGroups(
+  a: PartnerGroup,
+  b: PartnerGroup,
+  field: SortField,
+  direction: SortDirection
+): number {
+  const dir = direction === 'asc' ? 1 : -1
+  if (field === 'lastModified') {
+    return (a.lastModified ?? '').localeCompare(b.lastModified ?? '') * dir
+  }
+  return a.partner.localeCompare(b.partner) * dir
 }
 
 export function usePartnerNodes() {
@@ -39,7 +52,8 @@ export function usePartnerNodes() {
 
   const nodes = ref<PartnerNode[]>([])
   const autoEnableNew = ref(true)
-  const isLoading = ref(false)
+  const isLoading = ref(true)
+  const loadError = ref(false)
 
   const searchQuery = ref('')
   const sortField = ref<SortField>('name')
@@ -59,35 +73,44 @@ export function usePartnerNodes() {
     )
   })
 
-  // Nodes grouped by provider; groups sort alphabetically, children follow the
-  // active column sort. Groups start collapsed; searching overrides collapse
-  // so matches are never hidden.
   const expandedPartners = ref<Set<string>>(new Set())
   const isSearching = computed(() => searchQuery.value.trim().length > 0)
 
   const groups = computed<PartnerGroup[]>(() => {
-    const byPartner = new Map<string, PartnerNode[]>()
-    for (const node of filteredNodes.value) {
-      const list = byPartner.get(node.partner)
+    const allByPartner = new Map<string, PartnerNode[]>()
+    for (const node of nodes.value) {
+      const list = allByPartner.get(node.partner)
       if (list) list.push(node)
-      else byPartner.set(node.partner, [node])
+      else allByPartner.set(node.partner, [node])
     }
-    return [...byPartner.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([partner, nodes]) => ({
-        partner,
-        nodes,
-        enabledCount: nodes.filter((n) => n.enabled).length,
-        totalCount: nodes.length,
-        lastModified: nodes.reduce<string | null>(
-          (latest, n) =>
-            n.last_modified && (!latest || n.last_modified > latest)
-              ? n.last_modified
-              : latest,
-          null
-        ),
-        expanded: isSearching.value || expandedPartners.value.has(partner)
-      }))
+
+    const visibleByPartner = new Map<string, PartnerNode[]>()
+    for (const node of filteredNodes.value) {
+      const list = visibleByPartner.get(node.partner)
+      if (list) list.push(node)
+      else visibleByPartner.set(node.partner, [node])
+    }
+
+    return [...visibleByPartner.entries()]
+      .map(([partner, visibleNodes]) => {
+        const allNodes = allByPartner.get(partner) ?? []
+        return {
+          partner,
+          nodes: visibleNodes,
+          allNodes,
+          enabledCount: allNodes.filter((n) => n.enabled).length,
+          totalCount: allNodes.length,
+          lastModified: allNodes.reduce<string | null>(
+            (latest, n) =>
+              n.last_modified && (!latest || n.last_modified > latest)
+                ? n.last_modified
+                : latest,
+            null
+          ),
+          expanded: isSearching.value || expandedPartners.value.has(partner)
+        }
+      })
+      .sort((a, b) => compareGroups(a, b, sortField.value, sortDirection.value))
   })
 
   function togglePartnerCollapsed(partner: string) {
@@ -118,6 +141,10 @@ export function usePartnerNodes() {
   }
 
   const selectedCount = computed(() => selectedIds.value.size)
+  const selectedEnabled = computed(() => {
+    const selected = nodes.value.filter((n) => selectedIds.value.has(n.id))
+    return selected.length > 0 && selected.every((n) => n.enabled)
+  })
   const allFilteredSelected = computed(
     () =>
       filteredNodes.value.length > 0 &&
@@ -125,11 +152,13 @@ export function usePartnerNodes() {
   )
   async function fetch() {
     isLoading.value = true
+    loadError.value = false
     try {
       const data = await partnerNodesApi.list()
       nodes.value = data.partner_nodes
       autoEnableNew.value = data.auto_enable_new
     } catch {
+      loadError.value = true
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.partnerNodes.loadError')
@@ -179,11 +208,14 @@ export function usePartnerNodes() {
     enabled: boolean
   ): Promise<boolean> {
     if (ids.length === 0) return false
+    const idSet = new Set(ids)
     const previous = new Map(
-      nodes.value.map((n) => [
-        n.id,
-        { enabled: n.enabled, last_modified: n.last_modified }
-      ])
+      nodes.value
+        .filter((n) => idSet.has(n.id))
+        .map((n) => [
+          n.id,
+          { enabled: n.enabled, last_modified: n.last_modified }
+        ])
     )
     applyEnabled(ids, enabled)
     try {
@@ -218,7 +250,7 @@ export function usePartnerNodes() {
 
   async function setGroupEnabled(group: PartnerGroup, enabled: boolean) {
     await setNodesEnabled(
-      group.nodes.map((n) => n.id),
+      group.allNodes.map((n) => n.id),
       enabled
     )
   }
@@ -260,11 +292,13 @@ export function usePartnerNodes() {
     nodes,
     autoEnableNew,
     isLoading,
+    loadError,
     searchQuery,
     sortField,
     sortDirection,
     selectedIds,
     selectedCount,
+    selectedEnabled,
     allFilteredSelected,
     filteredNodes,
     groups,
