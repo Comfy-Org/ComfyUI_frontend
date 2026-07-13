@@ -1546,6 +1546,42 @@ const translations = {
   },
   'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
+  // VfxHeroSection
+  'vfx.hero.title': {
+    en: 'ComfyUI for\nVisual Effects',
+    'zh-CN': '面向视觉特效的\nComfyUI'
+  },
+  'vfx.hero.subtitle': {
+    en: 'From ideation to production, ComfyUI gives VFX teams faster workflows and more controlled output — so what ships looks exactly like what you envisioned.',
+    'zh-CN':
+      '从创意到成片，ComfyUI 为视觉特效团队带来更快的工作流与更可控的产出——让最终交付与你的构想分毫不差。'
+  },
+  'vfx.hero.tryNow': {
+    en: 'Try Now',
+    'zh-CN': '立即体验'
+  },
+
+  // VfxTutorialsSection
+  'vfx.tutorials.heading': {
+    en: 'See What’s Possible',
+    'zh-CN': '见证无限可能'
+  },
+  'vfx.tutorials.description': {
+    en: 'From concept, storyboarding to texture generation and compositing references — discover workflows built for every stage of VFX production. New workflows added regularly.',
+    'zh-CN':
+      '从概念设计、分镜脚本到纹理生成与合成参考——探索覆盖视觉特效制作各个环节的工作流。新工作流持续上新。'
+  },
+
+  // VfxCallToActionSection
+  'vfx.cta.heading': {
+    en: 'Bring your ideas to life with ComfyUI, exactly as intended.',
+    'zh-CN': '用 ComfyUI 将创意变为现实，一切尽如所想。'
+  },
+  'vfx.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {

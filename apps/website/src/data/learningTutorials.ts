@@ -1,28 +1,10 @@
-import type { VideoTrack } from '../components/common/VideoPlayer.vue'
-import type { LocalizedText, TranslationKey } from '../i18n/translations'
-
-export interface LearningTutorial {
-  id: string
-  tags: readonly TranslationKey[]
-  title: LocalizedText
-  videoSrc: string
-  href?: string
-  poster?: string
-  caption?: readonly VideoTrack[]
-  posterTime?: number
-}
-
-const DEFAULT_POSTER_TIME_SECONDS = 1
+import type { Tutorial } from '../components/common/TutorialCard.vue'
+import type { TranslationKey } from '../i18n/translations'
 
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 
-export const getTutorialPosterSrc = (tutorial: LearningTutorial): string =>
-  tutorial.poster
-    ? tutorial.poster
-    : `${tutorial.videoSrc}#t=${tutorial.posterTime ?? DEFAULT_POSTER_TIME_SECONDS}`
-
-export const learningTutorials: readonly LearningTutorial[] = [
+export const learningTutorials: readonly Tutorial[] = [
   {
     id: 'cleanplate_walkthrough_v03',
     title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
