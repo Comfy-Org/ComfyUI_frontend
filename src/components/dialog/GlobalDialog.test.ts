@@ -404,6 +404,18 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 
+  it('allows dismiss when target is an outside popup trigger', () => {
+    const trigger = document.createElement('button')
+    trigger.setAttribute('aria-haspopup', 'menu')
+    document.body.appendChild(trigger)
+
+    const event = makeEvent(trigger)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+    trigger.remove()
+  })
+
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
     // A backgrounded dialog must never dismiss on an outside pointer — the
     // pointer belongs to the dialog stacked above it (e.g. Edit Keybinding

@@ -44,7 +44,7 @@
       >
         {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
       </Button>
-      <Button v-else variant="inverted" size="lg">
+      <Button v-else variant="inverted" size="lg" @click="manageSubscription">
         {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
     </div>
@@ -68,7 +68,8 @@ const {
   isPaused,
   isActiveSubscription,
   subscription,
-  renewalDate
+  renewalDate,
+  manageSubscription
 } = useBillingContext()
 const { permissions, isInPersonalWorkspace } = useWorkspaceUI()
 const dialogService = useDialogService()
