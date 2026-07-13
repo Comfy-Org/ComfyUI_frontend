@@ -97,10 +97,6 @@ function renderPanel() {
     props: { search: '' },
     global: {
       plugins: [i18n],
-      stubs: {
-        BillingStatusBanner: true,
-        PartnerBadge: true
-      },
       directives: { tooltip: () => {} }
     }
   })
@@ -176,12 +172,15 @@ describe('PartnerNodesPanelContent', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows a distinct load error instead of the search empty state', () => {
+  it('shows a distinct load error with a retry action', async () => {
+    const user = userEvent.setup()
     mock.loadError.value = true
     mock.groups.value = []
     renderPanel()
 
     expect(screen.getByText('Failed to load partner nodes')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(mock.fetch).toHaveBeenCalled()
     expect(
       screen.queryByText('No partner nodes match your search.')
     ).not.toBeInTheDocument()
