@@ -5,6 +5,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
@@ -80,6 +81,14 @@ export class PrimitiveNode extends LGraphNode {
       widget.value = newValues[0]
       widget.callback?.(widget.value)
     }
+  }
+
+  override serialize(): ISerialisedNode {
+    const serialized = super.serialize()
+    if (!serialized.widgets_values && this.widgets_values) {
+      serialized.widgets_values = this.widgets_values
+    }
+    return serialized
   }
 
   private _resolveComboValues(
