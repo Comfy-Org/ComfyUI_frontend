@@ -247,6 +247,18 @@ describe('usePartnerNodes', () => {
     expect(pn.allFilteredSelected.value).toBe(true)
   })
 
+  it('keeps selections outside the filtered set when toggling select-all', async () => {
+    const pn = await setupLoaded()
+    pn.toggleSelection('b')
+    pn.searchQuery.value = 'BFL'
+
+    pn.toggleSelectAll()
+    expect([...pn.selectedIds.value].sort()).toEqual(['a', 'b', 'c'])
+
+    pn.toggleSelectAll()
+    expect([...pn.selectedIds.value]).toEqual(['b'])
+  })
+
   it('bulk-toggles only the filtered set', async () => {
     const pn = await setupLoaded()
     pn.searchQuery.value = 'Zeta'

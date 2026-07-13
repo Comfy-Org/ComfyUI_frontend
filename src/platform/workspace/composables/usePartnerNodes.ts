@@ -373,11 +373,13 @@ export function usePartnerNodes() {
   }
 
   function toggleSelectAll() {
+    const next = new Set(selectedIds.value)
     if (allFilteredSelected.value) {
-      clearSelection()
-      return
+      for (const node of filteredNodes.value) next.delete(node.id)
+    } else {
+      for (const node of filteredNodes.value) next.add(node.id)
     }
-    selectedIds.value = new Set(filteredNodes.value.map((n) => n.id))
+    selectedIds.value = next
   }
 
   function clearSelection() {
