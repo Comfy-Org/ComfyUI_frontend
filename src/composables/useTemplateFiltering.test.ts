@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
@@ -24,11 +23,11 @@ const defaultSettingStore = {
 }
 
 const defaultRankingStore = {
-  computeDefaultScore: vi.fn(() => 0),
-  computePopularScore: vi.fn(() => 0),
-  getUsageScore: vi.fn(() => 0),
+  computeDefaultScore: vi.fn(
+    (_date?: string, _rank?: number, usage: number = 0) => usage
+  ),
   computeFreshness: vi.fn(() => 0.5),
-  isLoaded: { value: false }
+  largestUsageScore: 0
 }
 
 const mockSystemStatsStore = {
@@ -51,9 +50,10 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
 }))
 
+const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged: vi.fn(),
+    trackTemplateFilterChanged,
     trackSearchQuery: vi.fn()
   }))
 }))
@@ -62,20 +62,12 @@ vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
   useSearchQueryTracking: vi.fn()
 }))
 
-const mockGetFuseOptions = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getFuseOptions: mockGetFuseOptions
-  }
-}))
-
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     mockSystemStatsStore.systemStats.system.os = 'linux'
-    mockGetFuseOptions.mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -248,117 +240,423 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
-  describe('loadFuseOptions', () => {
-    it('updates fuseOptions when getFuseOptions returns valid options', async () => {
-      const templates = ref<TemplateInfo[]>([
-        {
-          name: 'test-template',
-          description: 'Test template',
-          mediaType: 'image',
-          mediaSubtype: 'png'
-        }
-      ])
-
-      const customFuseOptions: IFuseOptions<TemplateInfo> = {
-        keys: [
-          { name: 'name', weight: 0.5 },
-          { name: 'description', weight: 0.5 }
-        ],
-        threshold: 0.4,
-        includeScore: true
+  const usageRankedTemplates = () =>
+    ref<TemplateInfo[]>([
+      {
+        name: 'low',
+        title: 'Low',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        usage: 10
+      },
+      {
+        name: 'high',
+        title: 'High',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        usage: 900
       }
+    ])
 
-      mockGetFuseOptions.mockResolvedValueOnce(customFuseOptions)
+  it('ranks "recommended" via computeDefaultScore', async () => {
+    const { sortBy, filteredTemplates } = useTemplateFiltering(
+      usageRankedTemplates()
+    )
 
-      const { loadFuseOptions, filteredTemplates } =
-        useTemplateFiltering(templates)
+    sortBy.value = 'recommended'
+    await nextTick()
 
-      await loadFuseOptions()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'high',
+      'low'
+    ])
+    expect(defaultRankingStore.computeDefaultScore).toHaveBeenCalled()
+  })
 
-      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
-      expect(filteredTemplates.value).toBeDefined()
-    })
+  it('ranks "popular" by raw usage without the recommended score', async () => {
+    const { sortBy, filteredTemplates } = useTemplateFiltering(
+      usageRankedTemplates()
+    )
 
-    it('does not update fuseOptions when getFuseOptions returns null', async () => {
-      const templates = ref<TemplateInfo[]>([
-        {
-          name: 'test-template',
-          description: 'Test template',
-          mediaType: 'image',
-          mediaSubtype: 'png'
-        }
-      ])
+    sortBy.value = 'popular'
+    await nextTick()
 
-      mockGetFuseOptions.mockResolvedValueOnce(null)
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'high',
+      'low'
+    ])
+    expect(defaultRankingStore.computeDefaultScore).not.toHaveBeenCalled()
+  })
 
-      const { loadFuseOptions, filteredTemplates } =
-        useTemplateFiltering(templates)
-
-      const initialResults = filteredTemplates.value
-
-      await loadFuseOptions()
-
-      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
-      expect(filteredTemplates.value).toEqual(initialResults)
-    })
-
-    it('handles errors when getFuseOptions fails', async () => {
-      const templates = ref<TemplateInfo[]>([
-        {
-          name: 'test-template',
-          description: 'Test template',
-          mediaType: 'image',
-          mediaSubtype: 'png'
-        }
-      ])
-
-      mockGetFuseOptions.mockRejectedValueOnce(new Error('Network error'))
-
-      const { loadFuseOptions, filteredTemplates } =
-        useTemplateFiltering(templates)
-
-      const initialResults = filteredTemplates.value
-
-      await expect(loadFuseOptions()).rejects.toThrow('Network error')
-      expect(filteredTemplates.value).toEqual(initialResults)
-    })
-
-    it('recreates Fuse instance when fuseOptions change', async () => {
-      const templates = ref<TemplateInfo[]>([
-        {
-          name: 'searchable-template',
-          description: 'This is a searchable template',
-          mediaType: 'image',
-          mediaSubtype: 'png'
-        },
-        {
-          name: 'another-template',
-          description: 'Another template',
-          mediaType: 'image',
-          mediaSubtype: 'png'
-        }
-      ])
-
-      const { loadFuseOptions, searchQuery, filteredTemplates } =
-        useTemplateFiltering(templates)
-
-      const customFuseOptions = {
-        keys: [{ name: 'name', weight: 1.0 }],
-        threshold: 0.2,
-        includeScore: true,
-        includeMatches: true
+  it('filters to ComfyUI templates via the Runs On filter', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'open',
+        title: 'Open',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: true
+      },
+      {
+        name: 'partner',
+        title: 'Partner',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: false
       }
+    ])
 
-      mockGetFuseOptions.mockResolvedValueOnce(customFuseOptions)
+    const { selectedRunsOn, filteredTemplates } =
+      useTemplateFiltering(templates)
+    selectedRunsOn.value = ['ComfyUI']
+    await nextTick()
 
-      await loadFuseOptions()
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'open'
+    ])
+  })
+
+  it('sorts alphabetically by the localized title shown on the card', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'z-raw',
+        title: 'Apple', // raw title would sort first
+        localizedTitle: 'Zebra', // but the card shows this
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      },
+      {
+        name: 'a-raw',
+        title: 'Zulu',
+        localizedTitle: 'Ant',
+        description: '',
+        mediaType: 'image',
+        mediaSubtype: 'png'
+      }
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+    sortBy.value = 'alphabetical'
+    await nextTick()
+
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'a-raw', // Ant
+      'z-raw' // Zebra
+    ])
+  })
+
+  it('A-Z trims whitespace, groups numbers after letters, and orders them naturally', async () => {
+    const make = (name: string, title: string): TemplateInfo => ({
+      name,
+      title,
+      description: '',
+      mediaType: 'image',
+      mediaSubtype: 'png'
+    })
+    const templates = ref<TemplateInfo[]>([
+      make('ten', '1.10 Model'),
+      make('two', '1.2 Model'),
+      make('spaced', ' Apple'), // leading space must not jump to the top
+      make('zebra', 'Zebra')
+    ])
+
+    const { sortBy, filteredTemplates } = useTemplateFiltering(templates)
+    sortBy.value = 'alphabetical'
+    await nextTick()
+
+    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
+      'spaced', // " Apple" trimmed → sorts as a letter, first
+      'zebra',
+      'two', // numbers grouped after letters; 1.2 before 1.10 (numeric)
+      'ten'
+    ])
+  })
+
+  describe('Search relevance (MiniSearch)', () => {
+    const names = (templates: { name: string }[]) =>
+      templates.map((template) => template.name)
+
+    const buildTemplate = (
+      overrides: Partial<TemplateInfo> & { name: string }
+    ): TemplateInfo => ({
+      description: '',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      ...overrides
+    })
+
+    async function searchFor(templates: TemplateInfo[], query: string) {
+      const composable = useTemplateFiltering(ref(templates))
+      composable.searchQuery.value = query
+      await nextTick()
+      return composable
+    }
+
+    it('matches "img2img" via abbreviation expansion', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'z_image_t2i',
+          title: 'Z-Image: Text to Image',
+          tags: ['Text to Image']
+        }),
+        buildTemplate({ name: 'video_gen', title: 'LTX Text to Video' })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'img2img')
+
+      expect(names(filteredTemplates.value)).toContain('z_image_t2i')
+      expect(names(filteredTemplates.value)).not.toContain('video_gen')
+    })
+
+    it('matches multi-word cross-field queries like "flux upscale"', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'flux_upscale',
+          title: 'Flux.1 Creative Upscale',
+          models: ['Flux.1'],
+          tags: ['Image Upscale']
+        }),
+        buildTemplate({
+          name: 'flux_txt2img',
+          title: 'Flux.1 Text to Image',
+          models: ['Flux.1']
+        }),
+        buildTemplate({
+          name: 'seedvr_upscale',
+          title: 'SeedVR2 Upscale',
+          tags: ['Image Upscale']
+        })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'flux upscale')
+
+      expect(names(filteredTemplates.value)[0]).toBe('flux_upscale')
+    })
+
+    it('breaks near-tied relevance by usage, dampened so it cannot override a better match', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'low_usage_upscale',
+          title: 'Alpha Image Upscale',
+          tags: ['Image Upscale'],
+          usage: 5
+        }),
+        buildTemplate({
+          name: 'high_usage_upscale',
+          title: 'Beta Image Upscale',
+          tags: ['Image Upscale'],
+          usage: 5000
+        })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'upscale')
+
+      // Near-identical text scores → the far more used template ranks first.
+      expect(names(filteredTemplates.value)[0]).toBe('high_usage_upscale')
+    })
+
+    it('keeps relevance order even when a usage sort is persisted', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'exact_match',
+          title: 'Outpaint Studio',
+          tags: ['Outpaint'],
+          usage: 1
+        }),
+        buildTemplate({
+          name: 'popular_weak_match',
+          title: 'Portrait Generator',
+          description: 'supports outpaint as a minor feature',
+          usage: 9000
+        })
+      ]
+
+      const composable = useTemplateFiltering(ref(templates))
+      composable.sortBy.value = 'popular'
+      composable.searchQuery.value = 'outpaint'
       await nextTick()
 
-      searchQuery.value = 'searchable'
+      // Search defaults to relevance regardless of the persisted browse sort,
+      // so the exact title match wins over the high-usage weak match.
+      expect(composable.sortSelection.value).toBe('relevance')
+      expect(names(composable.filteredTemplates.value)[0]).toBe('exact_match')
+    })
+
+    it('lets the user override relevance with another sort while searching', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'exact_low_usage',
+          title: 'Outpaint Studio',
+          usage: 1
+        }),
+        buildTemplate({
+          name: 'weak_high_usage',
+          title: 'Portrait',
+          description: 'outpaint mentioned once',
+          usage: 9000
+        })
+      ]
+
+      const composable = useTemplateFiltering(ref(templates))
+      composable.searchQuery.value = 'outpaint'
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('relevance')
+      expect(names(composable.filteredTemplates.value)[0]).toBe(
+        'exact_low_usage'
+      )
+
+      composable.sortSelection.value = 'popular'
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('popular')
+      expect(names(composable.filteredTemplates.value)[0]).toBe(
+        'weak_high_usage'
+      )
+    })
+
+    it('restores the browse sort when the search is cleared and keeps relevance ephemeral', async () => {
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'popular'
+
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('relevance')
+
+      composable.searchQuery.value = ''
+      await nextTick()
+      // Browse sort is untouched by the search; relevance is never persisted.
+      expect(composable.sortSelection.value).toBe('popular')
+      expect(composable.sortBy.value).toBe('popular')
+    })
+
+    it('keeps a browse sort chosen mid-search ephemeral', async () => {
+      const composable = useTemplateFiltering(
+        ref([buildTemplate({ name: 'only', title: 'Only' })])
+      )
+      composable.sortBy.value = 'newest'
+
+      composable.searchQuery.value = 'only'
+      await nextTick()
+      // Simulates the nav coordinator picking Popular during a search.
+      composable.sortSelection.value = 'popular'
+      await nextTick()
+      expect(composable.sortBy.value).toBe('newest') // persisted sort untouched
+
+      composable.searchQuery.value = ''
+      await nextTick()
+      expect(composable.sortSelection.value).toBe('newest')
+    })
+
+    it('returns no results for a query that matches nothing', async () => {
+      const templates = [
+        buildTemplate({ name: 'flux_image', title: 'Flux Image' })
+      ]
+
+      const { filteredTemplates, filteredCount } = await searchFor(
+        templates,
+        'zzzznomatch'
+      )
+
+      expect(filteredTemplates.value).toEqual([])
+      expect(filteredCount.value).toBe(0)
+    })
+
+    it('matches the localized title the card displays', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'localized_only',
+          title: 'raw english',
+          localizedTitle: 'aquarela'
+        })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'aquarela')
+
+      expect(names(filteredTemplates.value)).toEqual(['localized_only'])
+    })
+
+    it('reports the visible sort to telemetry, not the persisted browse sort', async () => {
+      vi.useFakeTimers()
+      try {
+        const composable = useTemplateFiltering(
+          ref([buildTemplate({ name: 'only', title: 'Only' })])
+        )
+        composable.sortBy.value = 'popular'
+        composable.searchQuery.value = 'only'
+        await nextTick()
+        await vi.runOnlyPendingTimersAsync()
+
+        // Searching shows relevance, so telemetry must report relevance, not popular.
+        expect(trackTemplateFilterChanged).toHaveBeenLastCalledWith(
+          expect.objectContaining({ sort_by: 'relevance' })
+        )
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('preserves relevance order after a model filter narrows the results', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'strong',
+          title: 'Flux Upscale Pro',
+          models: ['Flux'],
+          tags: ['Upscale']
+        }),
+        buildTemplate({
+          name: 'weak',
+          title: 'Flux Portrait',
+          models: ['Flux'],
+          description: 'mentions upscale once'
+        })
+      ]
+
+      const composable = useTemplateFiltering(ref(templates))
+      composable.searchQuery.value = 'upscale'
+      composable.selectedModels.value = ['Flux']
       await nextTick()
 
-      expect(filteredTemplates.value.length).toBeGreaterThan(0)
-      expect(mockGetFuseOptions).toHaveBeenCalledTimes(1)
+      // The filter keeps the search order; the stronger match stays first.
+      expect(names(composable.filteredTemplates.value)).toEqual([
+        'strong',
+        'weak'
+      ])
+    })
+
+    it('narrows to the query then restores the full set when cleared', async () => {
+      const templates = [
+        buildTemplate({ name: 'alpha_one', title: 'Alpha' }),
+        buildTemplate({ name: 'beta_two', title: 'Beta' })
+      ]
+
+      const composable = useTemplateFiltering(ref(templates))
+      composable.searchQuery.value = 'alpha'
+      await nextTick()
+      expect(names(composable.filteredTemplates.value)).toEqual(['alpha_one'])
+
+      composable.searchQuery.value = ''
+      await nextTick()
+      expect(names(composable.filteredTemplates.value)).toHaveLength(2)
+    })
+
+    it('records a non-negative largest usage score after an empty-result search', async () => {
+      const templates = [
+        buildTemplate({ name: 'gamma', title: 'Gamma', usage: 3 }),
+        buildTemplate({ name: 'delta', title: 'Delta', usage: 7 })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'zzzznomatch')
+      expect(filteredTemplates.value).toEqual([])
+
+      // Empty results must yield 0, not -Infinity, which would corrupt
+      // usage-normalized ranking scores.
+      expect(defaultRankingStore.largestUsageScore).toBe(0)
     })
   })
 
