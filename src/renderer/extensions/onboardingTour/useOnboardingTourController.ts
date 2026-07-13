@@ -15,7 +15,7 @@ import { api } from '@/scripts/api'
 
 import { useOnboardingTourStore } from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
-import { focusPromptTarget } from './subgraphNavigation'
+import { focusPromptTarget, restoreView } from './subgraphNavigation'
 import type { ResolvedRoles } from './tourSequence'
 
 /** No auto-step may trap the user; advance after this grace period. */
@@ -28,7 +28,7 @@ function _useOnboardingTourController() {
   /** Retained from `start` so completion/skip telemetry carries the same tags. */
   let activeTemplateId: string | undefined
   let activeShape: OnboardingTourShape = 'other'
-  /** Guards RunTriggered against re-firing when the user navigates back into Run. */
+  /** Guards RunTriggered against re-firing on a second successful run. */
   let runReported = false
   /** Stops the per-tour `execution_success` listener; set while a tour is live. */
   let stopRunListener: (() => void) | undefined
@@ -43,17 +43,29 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Listen for the tour run's first success and surface the "explore templates"
-   * nudge. Registered per tour so a stray success outside a tour never fires it,
-   * and torn down on `end`.
+   * React to the tour run's first real success: capture the result media, report
+   * the run (this is the honest run signal — merely viewing the Run step is not),
+   * and surface the "explore templates" nudge. Registered per tour so a stray
+   * success outside a tour never fires it, and torn down on `end`.
    */
   function listenForFirstRun() {
     stopRunListener?.()
     nudgeShownForRun = false
     stopRunListener = useEventListener(api, 'execution_success', () => {
+      store.captureResultMedia()
       if (nudgeShownForRun) return
       nudgeShownForRun = true
+      reportRunTriggered()
       store.showNudge()
+    })
+  }
+
+  function reportRunTriggered() {
+    if (runReported) return
+    runReported = true
+    useTelemetry()?.trackOnboardingTourRunTriggered?.({
+      template_id: activeTemplateId,
+      shape: activeShape
     })
   }
 
@@ -112,21 +124,13 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Gate the Run step: funded users fire run telemetry and proceed; no-funds
-   * users get the upgrade modal, the nudge flag, and the tour ends. Completion
-   * is written by the load seam, not here. Returns true when gated.
+   * Gate the Run step: funded users just proceed (the run itself is reported when
+   * it actually succeeds, not on arrival here); no-funds users get the upgrade
+   * modal, the nudge flag, and the tour ends. Completion is written by the load
+   * seam, not here. Returns true when gated.
    */
   function gateRunStep(): boolean {
-    if (hasFunds()) {
-      if (!runReported) {
-        runReported = true
-        useTelemetry()?.trackOnboardingTourRunTriggered?.({
-          template_id: activeTemplateId,
-          shape: activeShape
-        })
-      }
-      return false
-    }
+    if (hasFunds()) return false
 
     useBillingContext().showSubscriptionDialog({ reason: 'out_of_credits' })
     useTelemetry()?.trackOnboardingTourUpgradeShown?.({
@@ -146,7 +150,13 @@ function _useOnboardingTourController() {
     if (step.kind === 'run' && gateRunStep()) return
 
     if (step.kind === 'prompt' && step.prompt) {
-      store.promptPortFallback = !(await focusPromptTarget(step.prompt))
+      const entered = await focusPromptTarget(step.prompt)
+      store.setPromptEntered(entered)
+      store.promptPortFallback = !entered
+    } else {
+      // Any non-prompt step spotlights top-level nodes, so leave the subgraph the
+      // prompt step may have entered — otherwise their ids don't resolve on-screen.
+      restoreView()
     }
 
     useTelemetry()?.trackOnboardingTourStepViewed?.({
@@ -155,11 +165,19 @@ function _useOnboardingTourController() {
       step_total: store.totalSteps
     })
 
-    if (store.phase === 'active' && store.stepIndex < store.totalSteps - 1) {
+    // Auto-advance guards only against a stalled purely-informational step; never
+    // skip the user past a step they must act on (Run) or the final Result.
+    if (store.phase === 'active' && autoAdvanceable()) {
       graceTimer = setTimeout(() => {
         void advance()
       }, AUTO_STEP_GRACE_MS)
     }
+  }
+
+  /** True when the next step exists and requires no user action to reach. */
+  function autoAdvanceable(): boolean {
+    const next = store.steps[store.stepIndex + 1]
+    return next !== undefined && next.kind !== 'run' && next.kind !== 'result'
   }
 
   async function advance() {

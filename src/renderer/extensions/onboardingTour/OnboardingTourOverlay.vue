@@ -116,12 +116,10 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useRafFn } from '@vueuse/core'
+import { useRafFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { api } from '@/scripts/api'
 
 import { maskRectsFor } from './canvasSpotlightAdapter'
 import type { ScreenRect } from './canvasSpotlightAdapter'
@@ -161,10 +159,6 @@ const resultVideoSrc = computed(() =>
     ? resultMedia.value.url
     : null
 )
-
-// The saved output arrives after the user's run completes; capture it so the
-// Result step can render the real image/video.
-useEventListener(api, 'execution_success', () => store.captureResultMedia())
 
 function stepCopyKey(step: TourStep): { title: string; body: string } {
   const base = 'onboardingTour.step'

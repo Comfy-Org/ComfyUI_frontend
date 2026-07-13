@@ -27,13 +27,8 @@ vi.mock('./useOnboardingTourController', () => ({
   useOnboardingTourController: () => mocks.controller
 }))
 
-const apiListeners = vi.hoisted(() => new Map<string, (e: Event) => void>())
 vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: (type: string, cb: (e: Event) => void) =>
-      apiListeners.set(type, cb),
-    removeEventListener: (type: string) => apiListeners.delete(type)
-  }
+  api: { addEventListener: vi.fn(), removeEventListener: vi.fn() }
 }))
 
 import OnboardingTourOverlay from './OnboardingTourOverlay.vue'
@@ -87,7 +82,6 @@ describe('OnboardingTourOverlay', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useOnboardingTourStore()
     mocks.maskRects = []
-    apiListeners.clear()
   })
 
   afterEach(() => {
@@ -177,22 +171,6 @@ describe('OnboardingTourOverlay', () => {
     const video = await screen.findByTestId('onboarding-result-video')
     expect(video).toHaveAttribute('src', 'blob:video-output')
     expect(screen.queryByRole('img')).toBeNull()
-  })
-
-  it('captures the sink output when the run finishes', async () => {
-    const captureResultMedia = vi.spyOn(store, 'captureResultMedia')
-    store.phase = 'active'
-    store.steps = [runStep, videoResultStep]
-
-    renderOverlay()
-    await vi.waitFor(() =>
-      expect(apiListeners.has('execution_success')).toBe(true)
-    )
-
-    apiListeners.get('execution_success')?.(
-      new CustomEvent('execution_success')
-    )
-    expect(captureResultMedia).toHaveBeenCalledOnce()
   })
 
   it('shows the port hint only when prompt focus fell back to the port', async () => {

@@ -52,6 +52,8 @@ const mocks = vi.hoisted(() => ({
   showSubscriptionDialog: vi.fn(),
   storeArmNudge: vi.fn(),
   storeShowNudge: vi.fn(),
+  storeSetPromptEntered: vi.fn(),
+  storeCaptureResultMedia: vi.fn(),
   settingSet: vi.fn()
 }))
 
@@ -140,6 +142,8 @@ vi.mock('./onboardingTourStore', () => ({
     end: mocks.storeEnd,
     armNudge: mocks.storeArmNudge,
     showNudge: mocks.storeShowNudge,
+    setPromptEntered: mocks.storeSetPromptEntered,
+    captureResultMedia: mocks.storeCaptureResultMedia,
     get phase() {
       return mocks.phase.value
     },
@@ -372,11 +376,13 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.promptPortFallback.value).toBe(true)
   })
 
-  it('advances a stalled auto-step after the grace period', async () => {
+  it('advances a stalled informational step after the grace period', async () => {
     vi.useFakeTimers()
+    // Upload → Prompt: the upload step needs no action, so a stalled user is
+    // nudged onward. (Prompt → Run is NOT auto-advanced — see the Run test.)
     mocks.steps = [
-      { kind: 'prompt', nodeId: null, prompt: promptRole },
-      { kind: 'run', nodeId: null }
+      { kind: 'upload', nodeId: toNodeId(1) },
+      { kind: 'prompt', nodeId: null, prompt: promptRole }
     ]
 
     await useOnboardingTourController().start()
@@ -430,7 +436,7 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.settingSet).not.toHaveBeenCalled()
   })
 
-  it('lets a funded user reach the Run step and reports it', async () => {
+  it('lets a funded user reach the Run step without reporting a run yet', async () => {
     mocks.hasFunds = true
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
@@ -438,9 +444,55 @@ describe('useOnboardingTourController.start', () => {
 
     expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.storeEnd).not.toHaveBeenCalled()
+    // Merely arriving at the Run step is not a run — telemetry waits for a real
+    // execution so the grace timer can't fabricate an activation event.
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).not.toHaveBeenCalled()
+  })
+
+  it('reports the run only when an execution actually succeeds', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).not.toHaveBeenCalled()
+
+    emitExecutionSuccess()
+
+    expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledOnce()
+  })
+
+  it('reports the run at most once across repeated successes', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start()
+    emitExecutionSuccess()
+    emitExecutionSuccess()
+
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('does not auto-advance from the prompt step into the Run step', async () => {
+    vi.useFakeTimers()
+    mocks.steps = [
+      { kind: 'prompt', nodeId: null, prompt: promptRole },
+      { kind: 'run', nodeId: null }
+    ]
+
+    await useOnboardingTourController().start()
+    await vi.advanceTimersByTimeAsync(8000)
+
+    // The user must click Run themselves; the grace timer never skips them past it.
+    expect(mocks.storeAdvance).not.toHaveBeenCalled()
   })
 
   it('only gates when the funds check reaches the Run step', async () => {
@@ -454,26 +506,6 @@ describe('useOnboardingTourController.start', () => {
 
     // First step is Prompt, not Run — no gate yet.
     expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
-  })
-
-  it('reports the run once even when the user navigates back into it', async () => {
-    mocks.hasFunds = true
-    mocks.steps = [
-      { kind: 'run', nodeId: null },
-      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
-    ]
-
-    const controller = useOnboardingTourController()
-    await controller.start() // enters Run (step 0) → reports
-
-    mocks.stepIndex.value = 1
-    await controller.advance() // → Result
-    mocks.stepIndex.value = 0
-    await controller.back() // back into Run — must not re-report
-
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledOnce()
   })
 })
 

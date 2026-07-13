@@ -35,6 +35,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const runStatus = ref<RunStatus>('idle')
   /** Set when programmatic prompt focus failed and the port is spotlit instead. */
   const promptPortFallback = ref(false)
+  /**
+   * Set when prompt focus entered the subgraph. While true, the prompt step
+   * spotlights the inner text node (now on-screen) instead of the collapsed
+   * host, which no longer resolves against the entered inner graph.
+   */
+  const promptEntered = ref(false)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
   /** No-funds fallback: the gate arms this so the modal-close watch can surface the nudge. */
@@ -50,13 +56,33 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   /** Reveal every node targeted by steps up to and including `stepIndex`. */
   function syncRevealed() {
     const revealed = new Set<NodeId>()
-    for (const step of steps.value.slice(0, stepIndex.value + 1)) {
+    for (const [index, step] of steps.value
+      .slice(0, stepIndex.value + 1)
+      .entries()) {
       if (step.nodeId !== null) revealed.add(step.nodeId)
-      // The prompt lives inside a subgraph; reveal its collapsed host node so
-      // the user sees where to type (or the port fallback lands).
-      if (step.prompt) revealed.add(step.prompt.subgraphNodeId)
+      // The prompt lives inside a subgraph. Once focus enters that subgraph the
+      // inner text node is on-screen and the collapsed host no longer resolves,
+      // so reveal the inner node then; otherwise reveal the host (or the port
+      // fallback lands there).
+      if (step.prompt) {
+        const isCurrent = index === stepIndex.value
+        revealed.add(
+          isCurrent && promptEntered.value
+            ? step.prompt.innerNodeId
+            : step.prompt.subgraphNodeId
+        )
+      }
     }
     revealedNodeIds.value = revealed
+  }
+
+  /**
+   * Record whether prompt focus entered the subgraph, then re-reveal so the
+   * spotlight targets the inner text node (entered) or the collapsed host (not).
+   */
+  function setPromptEntered(entered: boolean) {
+    promptEntered.value = entered
+    syncRevealed()
   }
 
   function start(workflow: ComfyWorkflowJSON, templateId?: string) {
@@ -73,6 +99,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (stepIndex.value >= steps.value.length - 1) return
     stepIndex.value += 1
     promptPortFallback.value = false
+    promptEntered.value = false
     syncRevealed()
   }
 
@@ -80,6 +107,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (stepIndex.value <= 0) return
     stepIndex.value -= 1
     promptPortFallback.value = false
+    promptEntered.value = false
     syncRevealed()
   }
 
@@ -140,6 +168,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia.value = null
     runStatus.value = 'idle'
     promptPortFallback.value = false
+    promptEntered.value = false
   }
 
   function end() {
@@ -163,6 +192,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     start,
     advance,
     back,
+    setPromptEntered,
     captureResultMedia,
     armNudge,
     showNudge,

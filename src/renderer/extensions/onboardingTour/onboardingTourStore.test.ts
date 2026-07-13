@@ -125,6 +125,41 @@ describe('onboardingTourStore', () => {
     expect([...store.revealedNodeIds]).toEqual([toNodeId(10)])
   })
 
+  it('reveals the inner text node once prompt focus enters the subgraph', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow) // opens on the prompt step (host 10 spotlit)
+
+    expect([...store.revealedNodeIds]).toEqual([toNodeId(10)])
+
+    store.setPromptEntered(true)
+
+    // Entering the subgraph switches the on-screen graph to the inner one, where
+    // the host id no longer resolves — so spotlight the inner text node (27).
+    expect([...store.revealedNodeIds]).toEqual([toNodeId(27)])
+  })
+
+  it('keeps spotlighting the collapsed host when prompt focus stays out (fallback)', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+
+    store.setPromptEntered(false)
+
+    expect([...store.revealedNodeIds]).toEqual([toNodeId(10)])
+  })
+
+  it('drops the entered state when advancing off the prompt step', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+    store.setPromptEntered(true)
+
+    store.advance() // → run
+
+    // Back-navigating to the prompt starts from the collapsed host again until
+    // focus re-enters; a prior entry must not leak the inner node forward.
+    store.back()
+    expect([...store.revealedNodeIds]).toEqual([toNodeId(10)])
+  })
+
   it('advance() accumulates revealed nodes so the graph builds up', () => {
     resolveRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
