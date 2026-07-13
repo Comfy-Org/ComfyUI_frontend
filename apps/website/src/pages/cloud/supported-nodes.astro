@@ -5,40 +5,45 @@ import PackGridSection from '../../components/cloud-nodes/PackGridSection.vue'
 import { t } from '../../i18n/translations'
 import { toGridPack } from '../../data/cloudNodes'
 import { loadPacksForBuild } from '../../utils/cloudNodes.build'
-import { escapeJsonLd } from '../../utils/escapeJsonLd'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext,
+} from '../../utils/jsonLd'
 
 const packs = await loadPacksForBuild()
 const gridPacks = packs.map(toGridPack)
 
-const siteBase = Astro.site ?? new URL('https://comfy.org')
-const pageUrl = new URL('/cloud/supported-nodes', siteBase).href
-
-const itemListJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: 'Custom-node packs supported on Comfy Cloud',
-  url: pageUrl,
-  numberOfItems: packs.length,
-  itemListElement: packs.map((pack, index) => ({
-    '@type': 'ListItem',
-    position: index + 1,
-    url: new URL(`/cloud/supported-nodes/${pack.id}`, siteBase).href,
+const title = t('cloudNodes.meta.title', 'en')
+const description = t('cloudNodes.meta.description', 'en')
+const { url, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const packList = itemListNode(
+  url,
+  title,
+  packs.map((pack) => ({
     name: pack.displayName,
-    image: pack.bannerUrl || pack.iconUrl
-  }))
-}
+    url: absoluteUrl(Astro.site, `/cloud/supported-nodes/${pack.id}`),
+  })),
+)
 ---
 
 <BaseLayout
-  title={t('cloudNodes.meta.title', 'en')}
-  description={t('cloudNodes.meta.description', 'en')}
+  title={title}
+  description={description}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.supportedNodes', locale) },
+  ]}
+  extraJsonLd={[packList]}
 >
-  <script
-    is:inline
-    slot="head"
-    type="application/ld+json"
-    set:html={escapeJsonLd(itemListJsonLd)}
-  />
   <HeroSection client:visible />
   <PackGridSection packs={gridPacks} client:visible />
 </BaseLayout>

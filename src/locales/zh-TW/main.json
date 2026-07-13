@@ -359,6 +359,7 @@
     "colors": "色彩調色盤",
     "descLabel": "描述",
     "descPlaceholder": "此區域的描述",
+    "grid": "網格",
     "textLabel": "文字",
     "textPlaceholder": "要呈現的文字（原文）",
     "typeObj": "物件",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "請將您的回答控制在 {max} 個字以內。",
         "chooseAnOption": "請選擇一個選項。",
         "describeAnswer": "請描述您的答案。",
         "selectAtLeastOne": "請至少選擇一個選項。"
       },
       "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
-        "familiarity": {
-          "advanced": "進階使用者（自訂工作流程）",
-          "basics": "熟悉基礎操作",
-          "expert": "專家（協助他人）",
-          "new": "ComfyUI 新手（從未使用過）",
-          "starting": "剛開始（正在跟隨教學）"
+        "experience": {
+          "new": "ComfyUI 新手",
+          "pro": "我是進階使用者",
+          "some": "我已經熟悉操作"
+        },
+        "focus": {
+          "custom_nodes": "自訂節點",
+          "pipelines": "自動化流程",
+          "products": "為他人打造產品"
         },
         "intent": {
-          "3d_game": "3D 素材／遊戲素材",
-          "api": "執行工作流程的 API 端點",
-          "apps": "由工作流程簡化的應用程式",
-          "audio": "音訊／音樂",
-          "custom_nodes": "自訂節點",
+          "apps_api": "應用程式與 API",
+          "exploring": "只是探索",
           "images": "圖像",
-          "not_sure": "尚未確定",
-          "videos": "影片",
+          "other": "其他",
+          "otherPlaceholder": "您想製作什麼？",
+          "video": "影片",
           "workflows": "自訂工作流程或管線"
         },
         "source": {
-          "conference": "研討會或活動",
-          "discord": "Discord／社群",
+          "community": "社群或論壇",
           "friend": "朋友或同事",
-          "github": "GitHub",
+          "other": "其他",
+          "otherPlaceholder": "您是在哪裡發現我們的？",
+          "search": "Google／搜尋引擎",
+          "social": "社群媒體"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "電子報或部落格",
-          "other": "其他",
           "reddit": "Reddit",
-          "search": "Google／搜尋引擎",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（Twitter）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育用途（學生或教育者）",
-          "personal": "個人用途",
-          "work": "工作用途"
         }
       },
+      "otherPlaceholder": "請告訴我們更多",
       "placeholder": "問卷問題佔位符",
-      "steps": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "intent": "您想用 ComfyUI 創作什麼？",
-        "source": "您是從哪裡得知 ComfyUI 的？",
-        "usage": "您打算如何使用 ComfyUI？"
-      },
       "title": "雲端問卷"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "了解雲端服務",
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
-  "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
+  "cloudSurvey_steps_experience": "您對 ComfyUI 的熟悉程度？",
+  "cloudSurvey_steps_focus": "您正在製作什麼？",
   "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
   "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
-  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
+  "cloudSurvey_steps_source_social": "哪個平台？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -957,6 +954,16 @@
       "message": "提供的對話框 ID 無效。",
       "title": "無效對話框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
+    "confirmSummary": "批准桌面端登入？",
+    "expiredDetail": "登入請求已過期或已被使用。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "expiredSummary": "桌面端登入失敗",
+    "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "failedSummary": "桌面端登入失敗",
+    "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
+    "successSummary": "登入成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未儲存的工作流程，任何未儲存的變更都將遺失。確定要退出嗎？",
@@ -2858,6 +2865,8 @@
     "phantom subject": "幻影主體",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "後處理器",
+    "pre-processors": "前處理器",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
@@ -4127,6 +4136,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
+      "relevance": "相關性",
       "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",
