@@ -1,5 +1,6 @@
 import type { LGraphCanvas } from './LGraphCanvas'
 import type { IContextMenuValue } from './interfaces'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 
 /**
  * Simple compatibility layer for legacy getCanvasMenuOptions and getNodeMenuOptions monkey patches.
@@ -86,13 +87,10 @@ class LegacyMenuCompat {
         if (!this.hasWarned.has(fnKey) && this.currentExtension) {
           this.hasWarned.add(fnKey)
 
-          console.warn(
-            `%c[DEPRECATED]%c Monkey-patching ${methodName as string} is deprecated. (Extension: "${this.currentExtension}")\n` +
-              `Please use the new context menu API instead.\n\n` +
-              `See: https://docs.comfy.org/custom-nodes/js/context-menu-migration`,
-            'color: orange; font-weight: bold',
-            'color: inherit'
-          )
+          warnDeprecated('litegraph.contextMenuMonkeyPatch', {
+            extension: this.currentExtension ?? undefined,
+            detail: methodName as string
+          })
         }
         currentImpl = newImpl
       }

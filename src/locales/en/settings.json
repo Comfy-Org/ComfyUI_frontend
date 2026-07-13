@@ -63,7 +63,8 @@
     "name": "Require confirmation when clearing workflow"
   },
   "Comfy_DevMode": {
-    "name": "Enable dev mode options (API save, etc.)"
+    "name": "Enable dev mode options (API save, etc.)",
+    "tooltip": "Enables the legacy \"Save (API Format)\" button, dev-only nodes in the node library, and a \"Deprecation Warnings\" sidebar tab that surfaces uses of removed/renamed APIs by custom nodes."
   },
   "Comfy_DisableFloatRounding": {
     "name": "Disable default float widget rounding.",

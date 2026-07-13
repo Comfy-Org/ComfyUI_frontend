@@ -5,12 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
+const {
+  mockGetSetting,
+  mockRegisterCommand,
+  mockRegisterCommands,
+  mockUnregisterCommand
+} = vi.hoisted(() => ({
+  mockGetSetting: vi.fn(),
+  mockRegisterCommand: vi.fn(),
+  mockRegisterCommands: vi.fn(),
+  mockUnregisterCommand: vi.fn()
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -21,6 +26,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
     registerCommand: mockRegisterCommand,
+    unregisterCommand: mockUnregisterCommand,
     commands: []
   })
 }))
@@ -49,6 +55,16 @@ vi.mock('@/composables/sidebarTabs/useJobHistorySidebarTab', () => ({
   useJobHistorySidebarTab: () => ({
     id: 'job-history',
     title: 'job-history',
+    type: 'vue',
+    component: {}
+  })
+}))
+
+vi.mock('@/composables/sidebarTabs/useDeprecationWarningsSidebarTab', () => ({
+  DEPRECATION_WARNINGS_TAB_ID: 'deprecation-warnings',
+  useDeprecationWarningsSidebarTab: () => ({
+    id: 'deprecation-warnings',
+    title: 'deprecation-warnings',
     type: 'vue',
     component: {}
   })
@@ -96,9 +112,7 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockGetSetting.mockReset()
-    mockRegisterCommand.mockClear()
-    mockRegisterCommands.mockClear()
+    vi.clearAllMocks()
   })
 
   it('registers the job history tab when QPO V2 is enabled', () => {
@@ -159,5 +173,83 @@ describe('useSidebarTabStore', () => {
       'apps'
     ])
     expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+  })
+
+  it('registers the deprecation warnings tab when DevMode is enabled at init', () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.DevMode' ? true : undefined
+    )
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain(
+      'deprecation-warnings'
+    )
+  })
+
+  it('does not register the deprecation warnings tab when DevMode is disabled', () => {
+    mockGetSetting.mockImplementation(() => false)
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'deprecation-warnings'
+    )
+  })
+
+  it('registers and unregisters the deprecation warnings tab when DevMode is toggled', async () => {
+    const devMode = ref(false)
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.DevMode' ? devMode.value : undefined
+    )
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'deprecation-warnings'
+    )
+
+    devMode.value = true
+    await nextTick()
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain(
+      'deprecation-warnings'
+    )
+
+    devMode.value = false
+    await nextTick()
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'deprecation-warnings'
+    )
+  })
+
+  it('unregisters the toggle command when DevMode flips off so re-enabling does not warn', async () => {
+    const devMode = ref(false)
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.DevMode' ? devMode.value : undefined
+    )
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    devMode.value = true
+    await nextTick()
+    devMode.value = false
+    await nextTick()
+    devMode.value = true
+    await nextTick()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain(
+      'deprecation-warnings'
+    )
+    expect(mockUnregisterCommand).toHaveBeenCalledWith(
+      'Workspace.ToggleSidebarTab.deprecation-warnings'
+    )
+    const deprecationRegistrations = mockRegisterCommand.mock.calls.filter(
+      ([cmd]) => cmd.id === 'Workspace.ToggleSidebarTab.deprecation-warnings'
+    )
+    expect(deprecationRegistrations).toHaveLength(2)
   })
 })

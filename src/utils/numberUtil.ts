@@ -44,3 +44,7 @@ export const formatUsdCents = (locale: string, cents: number): string => {
     maximumFractionDigits: hasFractionalCents ? 2 : 0
   }).format(cents / 100)
 }
+
+export function formatBadgeCount(count: number, max = 99): string {
+  return count > max ? `${max}+` : count.toString()
+}

@@ -1046,6 +1046,22 @@
       }
     }
   },
+  "deprecationWarnings": {
+    "title": "Deprecation Warnings",
+    "label": "Warnings",
+    "emptyTitle": "All clear",
+    "empty": "No deprecation warnings reported in this session.",
+    "clear": "Clear",
+    "clearAll": "Clear all",
+    "moreOptions": "More options",
+    "suggestionLabel": "Fix:",
+    "learnMore": "Migration guide",
+    "filterByExtension": "Extension",
+    "unknownExtension": "Unknown",
+    "noMatchesTitle": "No matches",
+    "noMatches": "No warnings match the selected filters.",
+    "occurrenceCount": "Reported {count} time | Reported {count} times"
+  },
   "helpCenter": {
     "feedback": "Give Feedback",
     "docs": "Docs",
@@ -1067,7 +1083,8 @@
     "updateComfyUIStartedDetail": "ComfyUI update has been queued. Please wait...",
     "updateComfyUISuccess": "Update Complete",
     "updateComfyUISuccessDetail": "ComfyUI has been updated. Rebooting...",
-    "updateComfyUIFailed": "Failed to update ComfyUI. Please try again."
+    "updateComfyUIFailed": "Failed to update ComfyUI. Please try again.",
+    "missingDate": "Date unavailable"
   },
   "releaseToast": {
     "newVersionAvailable": "New update is out!",

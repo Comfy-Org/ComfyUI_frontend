@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { defineDeprecatedProperty } from '@/platform/dev/warnDeprecated'
 import {
   bindMultilineTextareaWidget,
   createMultilineInputElement
@@ -45,12 +45,7 @@ function addMultilineWidget(
   widget.element = inputEl
 
   /** @deprecated Use {@link widget.element} instead (renamed in PR #8594). */
-  defineDeprecatedProperty(
-    widget,
-    'inputEl',
-    'element',
-    'widget.inputEl is deprecated. Use widget.element instead.'
-  )
+  defineDeprecatedProperty(widget, 'inputEl', 'element', 'widget.inputEl')
   widget.options.minNodeSize = [400, 200]
 
   bindMultilineTextareaWidget(widget, inputEl)

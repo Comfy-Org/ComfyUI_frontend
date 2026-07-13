@@ -42,6 +42,9 @@ declare global {
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
 
+    /** For use in tests to inject a synthetic deprecation warning. */
+    __reportDeprecation?: (message: string) => void
+
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.
      * @see browser_tests/fixtures/ws.ts

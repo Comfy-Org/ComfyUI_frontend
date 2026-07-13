@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,8 +9,9 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useDeprecationWarningsStore } from '@/platform/dev/deprecationWarningsStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -418,5 +419,69 @@ describe('useNodeDefStore', () => {
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
     })
+  })
+})
+
+describe('ComfyNodeDefImpl defaultInput deprecation', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    useDeprecationWarningsStore().clear()
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warnSpy.mockRestore()
+  })
+
+  it('reports a deprecation when defaultInput is set on a required input', () => {
+    new ComfyNodeDefImpl({
+      name: 'N',
+      display_name: 'N',
+      category: 'c',
+      python_module: 'm',
+      description: '',
+      input: { required: { x: ['INT', { defaultInput: true }] } },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false,
+      deprecated: false,
+      experimental: false
+    })
+
+    const store = useDeprecationWarningsStore()
+    expect(store.warnings).toHaveLength(1)
+    expect(store.warnings[0]).toMatchObject({
+      source: 'nodeDef',
+      extension: 'm',
+      detail: 'N.x'
+    })
+  })
+
+  it('reports a deprecation and migrates to forceInput on an optional input', () => {
+    const def = new ComfyNodeDefImpl({
+      name: 'N',
+      display_name: 'N',
+      category: 'c',
+      python_module: 'm',
+      description: '',
+      input: { optional: { y: ['INT', { defaultInput: true }] } },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false,
+      deprecated: false,
+      experimental: false
+    })
+
+    const store = useDeprecationWarningsStore()
+    expect(store.warnings[0]).toMatchObject({
+      source: 'nodeDef',
+      extension: 'm',
+      detail: 'N.y'
+    })
+    expect(def.inputs.y).toMatchObject({ forceInput: true })
   })
 })

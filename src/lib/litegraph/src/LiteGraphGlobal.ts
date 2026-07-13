@@ -28,7 +28,14 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { createUuidv4 } from '@/utils/uuid'
+
+/** Never read; unfrozen so legacy `.push()` callers do not throw. */
+const inertDeprecationListeners: ((
+  message: string,
+  source?: object
+) => void)[] = []
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -273,18 +280,31 @@ export class LiteGraphGlobal {
   context_menu_scaling = false
 
   /**
-   * Debugging flag. Repeats deprecation warnings every time they are reported.
-   * May impact performance.
+   * @deprecated Removed; has no effect. Deprecation warnings are now surfaced in
+   * the Dev Mode "Deprecation Warnings" sidebar panel rather than dispatched to
+   * listeners. Retained so existing `.push()` callers do not crash; the array is
+   * never read.
    */
-  alwaysRepeatWarnings: boolean = false
+  get onDeprecationWarning(): ((message: string, source?: object) => void)[] {
+    warnDeprecated('litegraph.onDeprecationWarning')
+    return inertDeprecationListeners
+  }
 
-  /**
-   * Array of callbacks to execute when Litegraph first reports a deprecated API being used.
-   * @see alwaysRepeatWarnings By default, will not repeat identical messages.
-   */
-  onDeprecationWarning: ((message: string, source?: object) => void)[] = [
-    console.warn
-  ]
+  set onDeprecationWarning(
+    _value: ((message: string, source?: object) => void)[]
+  ) {
+    warnDeprecated('litegraph.onDeprecationWarning')
+  }
+
+  /** @deprecated Removed; has no effect. */
+  get alwaysRepeatWarnings(): boolean {
+    warnDeprecated('litegraph.alwaysRepeatWarnings')
+    return false
+  }
+
+  set alwaysRepeatWarnings(_value: boolean) {
+    warnDeprecated('litegraph.alwaysRepeatWarnings')
+  }
 
   /**
    * @deprecated Removed; has no effect.

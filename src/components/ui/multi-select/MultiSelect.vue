@@ -47,6 +47,7 @@
 
     <ComboboxPortal>
       <ComboboxContent
+        ref="contentRef"
         position="popper"
         :side-offset="8"
         align="start"
@@ -136,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { useCurrentElement } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import type { FocusOutsideEvent } from 'reka-ui'
@@ -166,6 +168,7 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -220,6 +223,19 @@ const searchQuery = defineModel<string>('searchQuery', { default: '' })
 const { t } = useI18n()
 const isOpen = ref(false)
 const selectedCount = computed(() => selectedItems.value.length)
+
+const rootEl = useCurrentElement<HTMLElement>()
+const contentRef = ref<{ $el?: HTMLElement } | null>(null)
+
+useDismissableOverlay({
+  isOpen,
+  getOverlayEl: () => contentRef.value?.$el ?? null,
+  getTriggerEl: () =>
+    rootEl.value instanceof HTMLElement ? rootEl.value : null,
+  onDismiss: () => {
+    isOpen.value = false
+  }
+})
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

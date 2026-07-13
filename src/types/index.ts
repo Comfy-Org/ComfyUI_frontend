@@ -100,5 +100,8 @@ declare global {
     __appReadiness?: AppReadiness
 
     __comfyDesktop2?: ComfyDesktop2Bridge
+
+    /** Injects a synthetic deprecation warning; only installed in dev mode. */
+    __reportDeprecation?: (message: string) => void
   }
 }

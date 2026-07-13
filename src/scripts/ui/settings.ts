@@ -1,4 +1,5 @@
 import { t } from '@/i18n'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -55,9 +56,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     defaultValue?: Settings[K]
   ): Settings[K] {
     if (defaultValue !== undefined) {
-      console.warn(
-        `Parameter defaultValue is deprecated. The default value in settings definition will be used instead.`
-      )
+      warnDeprecated('comfySettings.getSettingValueDefault')
     }
     return useSettingStore().get(id)
   }

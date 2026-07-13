@@ -58,7 +58,7 @@ import {
   createBounds,
   snapPoint
 } from './measure'
-import { warnDeprecated } from './utils/feedback'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -1382,9 +1382,7 @@ export class LGraph
   // used for undo, called before any change is made to the graph
   beforeChange(info?: LGraphNode): void {
     if (this.onBeforeChange) {
-      warnDeprecated(
-        'LGraph.onBeforeChange is deprecated and will be removed in a future version. Assign a listener to LGraphCanvas.onBeforeChange instead.'
-      )
+      warnDeprecated('litegraph.onBeforeChange')
       this.onBeforeChange(this, info)
     }
     this.canvasAction((c) => c.onBeforeChange?.(this))
