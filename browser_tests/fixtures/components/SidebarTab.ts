@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-class SidebarTab {
+export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
 

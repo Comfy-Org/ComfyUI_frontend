@@ -67,7 +67,27 @@ export interface AuthClearedMetadata {
   visibility_state: DocumentVisibilityState
 }
 
-/** Survey field ids → answers. Fields are backend-overridable, so all optional. */
+export type AuthFlowAction =
+  | 'email_sign_in'
+  | 'email_sign_up'
+  | 'google_sign_in'
+  | 'google_sign_up'
+  | 'github_sign_in'
+  | 'github_sign_up'
+  | 'password_reset'
+
+/**
+ * Metadata for failed authentication attempts
+ */
+export interface AuthErrorMetadata {
+  error_code: string
+  auth_action: AuthFlowAction
+}
+
+/**
+ * Survey field ids mapped to answers. Fields are backend-overridable, so all
+ * are optional.
+ */
 export interface SurveyResponses {
   // Current default schema (see defaultSurveySchema.ts)
   intent?: string | string[]
@@ -376,6 +396,7 @@ export interface TemplateFilterMetadata {
   selected_use_cases: string[]
   selected_runs_on: string[]
   sort_by:
+    | 'relevance'
     | 'default'
     | 'recommended'
     | 'popular'
@@ -546,6 +567,7 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthCleared?(metadata: AuthClearedMetadata): void
+  trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -658,6 +680,7 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
@@ -765,6 +788,7 @@ export type ExecutionTriggerSource =
 export type TelemetryEventProperties =
   | AuthMetadata
   | AuthClearedMetadata
+  | AuthErrorMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
