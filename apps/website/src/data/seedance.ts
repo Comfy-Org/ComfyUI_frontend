@@ -302,3 +302,67 @@ export const seedanceFaqs: readonly SeedanceFaq[] = [
     }
   }
 ] as const
+
+export interface SeedanceReview {
+  id: string
+  // Optional headline shown above the body (title-style card). When absent the
+  // body renders as a larger pull quote (name + role card, e.g. Scott Belsky).
+  title?: LocalizedText
+  body: LocalizedText
+  name: string
+  role?: LocalizedText
+}
+
+// Customer reviews for the "4+ million Comfy creators say" carousel. The Scott
+// Belsky quote is curated and already in the Figma. The remaining three are
+// clearly-marked placeholders pending Nav's hand-curated 5-star picks from G2
+// (https://www.g2.com/products/comfyui/reviews) — Nav will exclude some, so
+// these are swapped one-for-one, same as the placeholder media above (CRE-145).
+export const seedanceReviews: readonly SeedanceReview[] = [
+  {
+    id: 'scott-belsky',
+    body: {
+      en: 'Comfy has innovated a new and powerful ecosystem for creativity without compromising creative control. It has been amazing to watch technical artists and curious creative minds leverage Comfy to explore the full surface area of their ideas.',
+      'zh-CN':
+        'Comfy 打造了一个全新而强大的创意生态，同时毫不牺牲创作掌控力。看着技术型艺术家和充满好奇的创意人借助 Comfy 探索创意的每一个维度，令人惊叹。'
+    },
+    name: 'Scott Belsky',
+    role: { en: 'Founder of Behance', 'zh-CN': 'Behance 创始人' }
+  },
+  {
+    id: 'placeholder-1',
+    title: {
+      en: 'Intuitive UI and powerful node-based workflows',
+      'zh-CN': '直观的界面与强大的节点式工作流'
+    },
+    body: {
+      en: 'Placeholder review — Nav to replace with a curated 5-star review from G2.',
+      'zh-CN': '占位评价 —— 待 Nav 从 G2 挑选并替换为 5 星好评。'
+    },
+    name: 'Customer Name'
+  },
+  {
+    id: 'placeholder-2',
+    title: {
+      en: 'The most flexible creative pipeline we run',
+      'zh-CN': '我们用过最灵活的创意流程'
+    },
+    body: {
+      en: 'Placeholder review — Nav to replace with a curated 5-star review from G2.',
+      'zh-CN': '占位评价 —— 待 Nav 从 G2 挑选并替换为 5 星好评。'
+    },
+    name: 'Customer Name'
+  },
+  {
+    id: 'placeholder-3',
+    title: {
+      en: 'From prompt to final cut without leaving the canvas',
+      'zh-CN': '从提示到成片，全程不离开画布'
+    },
+    body: {
+      en: 'Placeholder review — Nav to replace with a curated 5-star review from G2.',
+      'zh-CN': '占位评价 —— 待 Nav 从 G2 挑选并替换为 5 星好评。'
+    },
+    name: 'Customer Name'
+  }
+] as const

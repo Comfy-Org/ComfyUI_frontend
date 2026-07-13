@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { externalLinks, getRoutes } from '../src/config/routes'
-import { seedanceFaqs } from '../src/data/seedance'
+import { seedanceFaqs, seedanceReviews } from '../src/data/seedance'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -14,6 +14,10 @@ const CTA_PRIMARY = t('seedance.cta.primaryCta', 'en')
 const WORKFLOWS_URL = externalLinks.workflows
 const FAQ_COUNT = seedanceFaqs.length
 const FIRST_FAQ = seedanceFaqs[0]
+const REVIEWS_HEADING = t('seedance.reviews.heading', 'en')
+const HIGHLIGHT_CTA = t('seedance.reviews.highlightCta', 'en')
+const MCP_ROUTE = getRoutes('en').mcp
+const FIRST_REVIEW = seedanceReviews[0]
 
 test.describe('Seedance 2.5 page — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -36,6 +40,18 @@ test.describe('Seedance 2.5 page — desktop @smoke', () => {
     await heading.scrollIntoViewIfNeeded()
     await expect(heading).toBeVisible()
   })
+
+  test('renders the reviews section heading and first quote', async ({
+    page
+  }) => {
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: REVIEWS_HEADING
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+    await expect(page.getByText(FIRST_REVIEW.name)).toBeVisible()
+  })
 })
 
 test.describe('Seedance 2.5 page — link targets', () => {
@@ -46,7 +62,7 @@ test.describe('Seedance 2.5 page — link targets', () => {
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: 'Breadcrumb' })
-      .getByRole('link', { name: t('breadcrumb.models', 'en') })
+      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -59,6 +75,15 @@ test.describe('Seedance 2.5 page — link targets', () => {
     await expect(primary).toBeVisible()
     await expect(primary).toHaveAttribute('href', WORKFLOWS_URL)
     await expect(primary).toHaveAttribute('target', '_blank')
+  })
+
+  test('MCP highlight card CTA links to the MCP page', async ({ page }) => {
+    const reviewsSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })
+    })
+    const cta = reviewsSection.getByRole('link', { name: HIGHLIGHT_CTA })
+    await cta.scrollIntoViewIfNeeded()
+    await expect(cta).toHaveAttribute('href', MCP_ROUTE)
   })
 })
 
@@ -104,6 +129,21 @@ test.describe('Seedance 2.5 page — interactions', () => {
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('reviews carousel advances when Next is clicked', async ({ page }) => {
+    const reviewsSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: REVIEWS_HEADING })
+    })
+    const track = reviewsSection.getByRole('article').first().locator('..')
+    const nextButton = reviewsSection.getByRole('button', { name: 'Next' })
+    await nextButton.scrollIntoViewIfNeeded()
+
+    const startScroll = await track.evaluate((el) => el.scrollLeft)
+    await nextButton.click()
+    await expect
+      .poll(() => track.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(startScroll)
   })
 })
 

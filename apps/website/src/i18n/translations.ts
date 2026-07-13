@@ -4448,8 +4448,6 @@ const translations = {
     'zh-CN': '最新发布'
   },
 
-  'breadcrumb.models': { en: 'Models', 'zh-CN': '模型' },
-
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
   'seedance.meta.title': {
@@ -4537,16 +4535,6 @@ const translations = {
     en: 'RUN SEEDANCE 2.5',
     'zh-CN': '运行 Seedance 2.5'
   },
-  'seedance.cta.highlightTitle': {
-    en: 'Comfy MCP: now turn your agent into a creative technologist.',
-    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
-  },
-  'seedance.cta.highlightDescription': {
-    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
-    'zh-CN':
-      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
-  },
-  'seedance.cta.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'seedance.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'
@@ -4555,7 +4543,21 @@ const translations = {
     en: 'Run Seedance in the browser today. Batch campaigns with the API, or bring it in-house.',
     'zh-CN':
       '今天就在浏览器中运行 Seedance。用 API 批量制作，或部署到自有环境。'
-  }
+  },
+  'seedance.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'seedance.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'seedance.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations

@@ -6,6 +6,7 @@ import SeedanceCtaSection from '../../templates/seedance/SeedanceCtaSection.vue'
 import SeedanceFaqSection from '../../templates/seedance/SeedanceFaqSection.vue'
 import SeedanceHeroSection from '../../templates/seedance/SeedanceHeroSection.vue'
 import SeedanceModelsSection from '../../templates/seedance/SeedanceModelsSection.vue'
+import SeedanceReviewsSection from '../../templates/seedance/SeedanceReviewsSection.vue'
 import SeedanceRunOptionsSection from '../../templates/seedance/SeedanceRunOptionsSection.vue'
 import SeedanceShowcaseSection from '../../templates/seedance/SeedanceShowcaseSection.vue'
 import SeedanceStepsSection from '../../templates/seedance/SeedanceStepsSection.vue'
@@ -24,7 +25,7 @@ const routes = getRoutes(locale)
 
 const crumbs = [
   { label: t('breadcrumb.home', locale), href: routes.home },
-  { label: t('breadcrumb.models', locale), href: routes.models },
+  { label: t('models.breadcrumb.models', locale), href: routes.models },
   { label: t('seedance.breadcrumb.model', locale) },
 ]
 
@@ -65,4 +66,5 @@ const faqPage: JsonLdNode = {
   <SeedanceFaqSection client:visible locale="zh-CN" />
   <SeedanceCtaSection locale="zh-CN" />
   <SeedanceRunOptionsSection locale="zh-CN" />
+  <SeedanceReviewsSection client:visible locale="zh-CN" />
 </BaseLayout>
