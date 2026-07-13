@@ -731,6 +731,8 @@ export type {
   RevokeWorkspaceInviteResponse,
   RevokeWorkspaceInviteResponses,
   SecretListResponse,
+  SecretProvider,
+  SecretProvidersResponse,
   SecretResponse,
   SetReviewStatusData,
   SetReviewStatusError,
