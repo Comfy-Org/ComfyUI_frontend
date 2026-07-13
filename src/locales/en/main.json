@@ -3112,6 +3112,7 @@
     "enterBuilderMode": "Build app",
     "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
+    "activeModeWorkflowActions": "{mode} mode, workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
@@ -3729,8 +3730,6 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App mode in beta",
-    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3763,7 +3762,10 @@
       "appBuilder": "App builder",
       "apps": "Apps",
       "appsEmptyMessage": "Saved apps will show up here.",
-      "appsEmptyMessageAction": "Click below to build your first app."
+      "appsEmptyMessageAction": "Click below to build your first app.",
+      "buildAnApp": "Build an app",
+      "create": "Create",
+      "createApp": "Create app"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3806,6 +3808,7 @@
       "support": "contact our support",
       "promptShow": "Show error report"
     },
+    "feedbackLoadError": "Failed to load feedback form. Please try again later.",
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"
