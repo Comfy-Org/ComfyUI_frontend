@@ -35,7 +35,7 @@ const label = computed(() =>
 <template>
   <div
     v-if="quotaEnabled"
-    class="mt-2 w-full border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2"
+    class="mt-2 w-full cursor-pointer border-t border-border-subtle bg-comfy-menu-bg px-4 pt-2 select-none"
     @click="showSubscriptionDialog({ reason: 'free_tier_quota' })"
   >
     <div
