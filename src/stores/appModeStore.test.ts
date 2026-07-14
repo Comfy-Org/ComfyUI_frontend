@@ -580,6 +580,39 @@ describe('appModeStore', () => {
       expect(warnSpy).not.toHaveBeenCalled()
       warnSpy.mockRestore()
     })
+
+    it('does not warn while a graph is still loading', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      ChangeTracker.isLoadingGraph = true
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(undefined)
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when the graph has no nodes', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = []
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(undefined)
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
   })
 
   describe('pruneLinearData during graph loading', () => {
