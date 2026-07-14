@@ -1,11 +1,13 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
+import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 
 const {
   cloneSkinnedMock,
@@ -334,7 +336,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
+        view: { canvas, setSize },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -361,26 +363,21 @@ describe('Load3d', () => {
       const updateAspectRatio = vi.fn()
       const renderBackground = vi.fn()
 
-      const canvas = document.createElement('canvas')
-      Object.defineProperty(canvas, 'clientWidth', {
-        value: 800,
-        configurable: true
-      })
-      Object.defineProperty(canvas, 'clientHeight', {
-        value: 600,
-        configurable: true
-      })
       const scene = {} as THREE.Scene
 
       Object.assign(ctx.load3d, {
-        renderer: {
-          domElement: canvas,
-          setViewport,
-          setScissor,
-          setScissorTest,
-          setClearColor,
-          clear,
-          render
+        view: {
+          width: 800,
+          height: 600,
+          state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+          renderer: {
+            setViewport,
+            setScissor,
+            setScissorTest,
+            setClearColor,
+            clear,
+            render
+          }
         },
         targetWidth: 400,
         targetHeight: 200,
@@ -415,7 +412,7 @@ describe('Load3d', () => {
       })
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas },
+        view: { canvas },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -438,7 +435,7 @@ describe('Load3d', () => {
       expect(args[3]).toBe(400)
     })
 
-    it('handleResize calls setPixelRatio with the value returned by getZoomScaleCallback', () => {
+    it('handleResize scales the view size by getZoomScaleCallback', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -453,10 +450,10 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
         getZoomScaleCallback: () => 2.5,
         targetWidth: 0,
         targetHeight: 0,
@@ -467,10 +464,10 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(2.5)
+      expect(setSize).toHaveBeenCalledWith(1000, 1000)
     })
 
-    it('handleResize defaults to pixelRatio 1 when no getZoomScaleCallback is provided', () => {
+    it('handleResize caps the zoom scale at 3', () => {
       delete (ctx.load3d as { handleResize?: unknown }).handleResize
 
       const parent = document.createElement('div')
@@ -485,10 +482,42 @@ describe('Load3d', () => {
       const canvas = document.createElement('canvas')
       parent.appendChild(canvas)
 
-      const setPixelRatio = vi.fn()
+      const setSize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        view: { canvas, setSize },
+        getZoomScaleCallback: () => 10,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setSize).toHaveBeenCalledWith(1200, 1200)
+    })
+
+    it('handleResize defaults to scale 1 when no getZoomScaleCallback is provided', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setSize = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        view: { canvas, setSize },
         getZoomScaleCallback: undefined,
         targetWidth: 0,
         targetHeight: 0,
@@ -499,7 +528,7 @@ describe('Load3d', () => {
 
       ctx.load3d.handleResize()
 
-      expect(setPixelRatio).toHaveBeenCalledWith(1)
+      expect(setSize).toHaveBeenCalledWith(400, 400)
     })
   })
 
@@ -510,7 +539,8 @@ describe('Load3d', () => {
       const viewHelperRender = vi.fn()
       const controlsUpdate = vi.fn()
       const renderMainScene = vi.fn()
-      const resetViewport = vi.fn()
+      const beginRender = vi.fn()
+      const blit = vi.fn()
 
       Object.assign(ctx.load3d, {
         STATUS_MOUSE_ON_NODE: true,
@@ -525,13 +555,16 @@ describe('Load3d', () => {
         },
         viewHelperManager: {
           update: viewHelperUpdate,
-          viewHelper: { render: viewHelperRender }
+          render: viewHelperRender
         },
         controlsManager: { update: controlsUpdate },
         recordingManager: { getIsRecording: vi.fn(() => false) },
         renderMainScene,
-        resetViewport,
-        renderer: {}
+        view: {
+          beginRender,
+          blit,
+          renderer: { setScissorTest: vi.fn() }
+        }
       })
 
       ;(ctx.load3d as unknown as { startAnimation(): void }).startAnimation()
@@ -546,9 +579,10 @@ describe('Load3d', () => {
       expect(animationUpdate).toHaveBeenCalledOnce()
       expect(viewHelperUpdate).toHaveBeenCalledOnce()
       expect(controlsUpdate).toHaveBeenCalledOnce()
+      expect(beginRender).toHaveBeenCalledOnce()
       expect(renderMainScene).toHaveBeenCalledOnce()
-      expect(resetViewport).toHaveBeenCalledOnce()
       expect(viewHelperRender).toHaveBeenCalledOnce()
+      expect(blit).toHaveBeenCalledOnce()
 
       // Cancel the queued rAF so the test doesn't leak frames.
       loop.stop()
@@ -560,12 +594,10 @@ describe('Load3d', () => {
 
       Object.assign(ctx.load3d, {
         renderLoop: { stop },
-        resizeObserver: null,
         contextMenuAbortController: null,
-        renderer: {
-          forceContextLoss: vi.fn(),
-          dispose: vi.fn(),
-          domElement: canvas
+        view: {
+          canvas,
+          dispose: vi.fn()
         },
         sceneManager: { ...ctx.sceneManager, dispose: vi.fn() },
         cameraManager: { ...ctx.cameraManager, dispose: vi.fn() },
@@ -1228,6 +1260,104 @@ describe('Load3d', () => {
       expect(detectFormatFromURLMock).toHaveBeenCalledWith(
         'http://example.com/api/view?filename=scene.spz'
       )
+    })
+  })
+
+  describe('constructor wiring', () => {
+    function makeConstructorDeps() {
+      const container = document.createElement('div')
+      const canvas = document.createElement('canvas')
+      container.appendChild(canvas)
+
+      const view = {
+        canvas,
+        renderer: {
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          setScissorTest: vi.fn(),
+          setClearColor: vi.fn(),
+          clear: vi.fn(),
+          render: vi.fn()
+        },
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const gizmoManager = {
+        setPointerNdcSource: vi.fn(),
+        init: vi.fn(),
+        dispose: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        controlsManager: { init: vi.fn(), update: vi.fn(), dispose: vi.fn() },
+        lightingManager: { init: vi.fn(), dispose: vi.fn() },
+        viewHelperManager: {
+          createViewHelper: vi.fn(),
+          init: vi.fn(),
+          update: vi.fn(),
+          render: vi.fn(),
+          dispose: vi.fn()
+        },
+        hdriManager: { dispose: vi.fn() },
+        loaderManager: { init: vi.fn(), dispose: vi.fn() },
+        modelManager: { dispose: vi.fn() },
+        recordingManager: {
+          getIsRecording: vi.fn(() => false),
+          dispose: vi.fn()
+        },
+        animationManager: {
+          init: vi.fn(),
+          update: vi.fn(),
+          isAnimationPlaying: false,
+          dispose: vi.fn()
+        },
+        gizmoManager,
+        adapterRef: { current: null, capabilities: null }
+      }
+      return { container, deps: deps as unknown as Load3dDeps, gizmoManager }
+    }
+
+    it('wires the gizmo pointer NDC source to clientPointToNdc on every construction path', () => {
+      const { container, deps, gizmoManager } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+
+      expect(gizmoManager.setPointerNdcSource).toHaveBeenCalledOnce()
+
+      const ndc = { x: 0.25, y: -0.5, inside: true }
+      const clientPointToNdc = vi
+        .spyOn(load3d, 'clientPointToNdc')
+        .mockReturnValue(ndc)
+      const source = gizmoManager.setPointerNdcSource.mock
+        .calls[0][0] as PointerNdcSource
+
+      expect(source(12, 34)).toBe(ndc)
+      expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+
+      load3d.remove()
     })
   })
 })

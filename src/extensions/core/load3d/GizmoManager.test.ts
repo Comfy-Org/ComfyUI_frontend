@@ -3,23 +3,42 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
 
-const { mockSetMode, mockAttach, mockDetach, mockGetHelper, mockDispose } =
-  vi.hoisted(() => ({
-    mockSetMode: vi.fn(),
-    mockAttach: vi.fn(),
-    mockDetach: vi.fn(),
-    mockGetHelper: vi.fn(),
-    mockDispose: vi.fn()
-  }))
+const {
+  mockSetMode,
+  mockAttach,
+  mockDetach,
+  mockGetHelper,
+  mockDispose,
+  transformControlsInstances,
+  omitGetPointer
+} = vi.hoisted(() => ({
+  mockSetMode: vi.fn(),
+  mockAttach: vi.fn(),
+  mockDetach: vi.fn(),
+  mockGetHelper: vi.fn(),
+  mockDispose: vi.fn(),
+  transformControlsInstances: [] as unknown[],
+  omitGetPointer: { value: false }
+}))
 
 vi.mock('three/examples/jsm/controls/TransformControls', () => {
   class TransformControls {
     enabled = true
+    dragging = false
     camera: THREE.Camera
+    _getPointer?: (event: PointerEvent) => {
+      x: number
+      y: number
+      button: number
+    }
     private listeners = new Map<string, ((e: unknown) => void)[]>()
 
     constructor(camera: THREE.Camera) {
       this.camera = camera
+      if (!omitGetPointer.value) {
+        this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+      }
+      transformControlsInstances.push(this)
     }
 
     addEventListener(event: string, cb: (e: unknown) => void) {
@@ -55,7 +74,7 @@ function makeMockOrbitControls() {
 
 describe('GizmoManager', () => {
   let scene: THREE.Scene
-  let renderer: THREE.WebGLRenderer
+  let interactionElement: HTMLElement
   let camera: THREE.PerspectiveCamera
   let orbitControls: ReturnType<typeof makeMockOrbitControls>
   let manager: GizmoManager
@@ -64,11 +83,11 @@ describe('GizmoManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    transformControlsInstances.length = 0
+    omitGetPointer.value = false
 
     scene = new THREE.Scene()
-    renderer = {
-      domElement: document.createElement('canvas')
-    } as unknown as THREE.WebGLRenderer
+    interactionElement = document.createElement('div')
     camera = new THREE.PerspectiveCamera()
     orbitControls = makeMockOrbitControls()
     onTransformChange = vi.fn()
@@ -80,7 +99,7 @@ describe('GizmoManager', () => {
 
     manager = new GizmoManager(
       scene,
-      renderer,
+      interactionElement,
       orbitControls,
       () => camera,
       onTransformChange
@@ -89,6 +108,120 @@ describe('GizmoManager', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  describe('setPointerNdcSource', () => {
+    type PointerNdc = { x: number; y: number; button: number }
+    function lastControls() {
+      return transformControlsInstances.at(-1) as {
+        dragging: boolean
+        _getPointer?: (event: PointerEvent) => PointerNdc
+      }
+    }
+    function getPointerOverride() {
+      return lastControls()._getPointer
+    }
+
+    it('routes TransformControls pointer NDC through the injected source', () => {
+      manager.init()
+      manager.setPointerNdcSource((clientX, clientY) => ({
+        x: clientX / 100,
+        y: clientY / 100,
+        inside: true
+      }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 50,
+        clientY: -25,
+        button: 2
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('maps unmappable points to an off-screen pointer', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => null)
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('maps points outside the viewport to an off-screen pointer while not dragging', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('keeps the unclamped NDC for points outside the viewport mid-drag', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+      lastControls().dragging = true
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: -1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: -1.2, y: 0.4, button: -1 })
+    })
+
+    it('applies a source registered before init once init runs', () => {
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
+      manager.init()
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 0.5, y: 0.5, button: 1 })
+    })
+
+    it('delegates to the stock mapping until a source is registered', () => {
+      manager.init()
+
+      const stock = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(stock).toEqual({ x: 0, y: 0, button: 2 })
+
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: -0.25, inside: true }))
+
+      const mapped = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(mapped).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('warns and skips the override when _getPointer is missing at init', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      omitGetPointer.value = true
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
+
+      manager.init()
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('_getPointer'))
+      expect(lastControls()._getPointer).toBeUndefined()
+    })
   })
 
   describe('init', () => {

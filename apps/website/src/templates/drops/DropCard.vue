@@ -61,7 +61,12 @@ const { drop, locale } = defineProps<{
             class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
           />
         </div>
-        <Badge v-if="drop.badge" variant="accent" class="absolute top-6 left-8">
+        <Badge
+          v-if="drop.badge"
+          size="xs"
+          variant="accent"
+          class="absolute top-6 left-8"
+        >
           {{ drop.badge[locale] }}
         </Badge>
       </CardContent>
