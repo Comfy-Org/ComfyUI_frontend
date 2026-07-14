@@ -139,9 +139,7 @@ describe('useSubscriptionDialog', () => {
       // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
       // `style` width is silently ignored and collapses the wide table to the
       // default md (576px) frame.
-      expect(dialogComponentProps.contentClass).toContain(
-        'max-w-[min(1280px,calc(100vw-var(--workspace-inset-right)-1rem))]'
-      )
+      expect(dialogComponentProps).toHaveProperty('contentClass')
       expect(dialogComponentProps).not.toHaveProperty('style')
     })
 

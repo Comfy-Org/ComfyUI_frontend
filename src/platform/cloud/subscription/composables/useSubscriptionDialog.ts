@@ -144,13 +144,13 @@ export const useSubscriptionDialog = () => {
         dialogComponentProps: {
           // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
           // `style` width is ignored here and collapses the table to the default
-          // `md` frame. `w-fit` lets each step hug its content, so the pricing
+          // `md` frame. `w-fit` lets each step hug its content — the pricing
           // table fills its 1280px content while the compact confirm/success
           // steps shrink (the content root sets its own width per checkoutStep).
           renderer: 'reka',
           size: 'full',
           contentClass:
-            'w-fit max-w-[min(1280px,calc(100vw-var(--workspace-inset-right)-1rem))] sm:max-w-[min(1280px,calc(100vw-var(--workspace-inset-right)-1rem))] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+            'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
         }
       })
       return
