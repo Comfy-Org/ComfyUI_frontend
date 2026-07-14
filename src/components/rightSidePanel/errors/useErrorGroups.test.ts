@@ -128,6 +128,7 @@ vi.mock(
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -327,6 +328,39 @@ describe('useErrorGroups', () => {
     it('returns empty array when no errors', () => {
       const { groups } = createErrorGroups()
       expect(groups.allErrorGroups.value).toEqual([])
+    })
+
+    it('includes disabled nodes in the group and node summary', async () => {
+      const { groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_graph, nodeId) =>
+        fromAny<LGraphNode, unknown>({ id: nodeId })
+      )
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '7' }])
+      useDisabledPartnerNodesStore().offenders = [
+        {
+          nodeId: fromAny<NodeExecutionId, unknown>('7'),
+          displayName: 'Selected disabled partner node'
+        },
+        {
+          nodeId: fromAny<NodeExecutionId, unknown>('8'),
+          displayName: 'Other disabled partner node'
+        }
+      ]
+      await nextTick()
+
+      expect(groups.allErrorGroups.value).toEqual([
+        expect.objectContaining({ type: 'disabled_node', count: 2 })
+      ])
+      expect(groups.errorNodeCount.value).toBe(2)
+      expect(groups.selectionMatchedGroupKeys.value).toEqual(
+        new Set(['disabled_node'])
+      )
+      expect(groups.selectionErrorCount.value).toBe(1)
     })
 
     it('includes missing_node group when missing nodes exist', async () => {
