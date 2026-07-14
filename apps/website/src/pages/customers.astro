@@ -11,7 +11,7 @@ import { loadStories } from '../utils/loadStories'
 const stories = (await loadStories('en')).map(toCardProps)
 ---
 
-<BaseLayout title="Customer Stories — Comfy">
+<BaseLayout title="Customer Stories - Comfy">
   <HeroSection client:load />
   <StorySection stories={stories} />
   <FeedbackSection client:load />

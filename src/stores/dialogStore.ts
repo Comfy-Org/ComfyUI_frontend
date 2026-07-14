@@ -38,6 +38,14 @@ interface CustomDialogComponentProps {
   pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
+  /**
+   * When `false`, the Reka dialog does not dismiss when focus leaves its
+   * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
+   * where a nested dialog closing can move focus onto an ordinary app element
+   * — a programmatic shift that must not be read as a dismiss. Escape and
+   * outside-pointer dismissal are unaffected. Defaults to `true`.
+   */
+  dismissOnFocusOutside?: boolean
   unstyled?: boolean
   headless?: boolean
   renderer?: DialogRenderer
