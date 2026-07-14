@@ -131,9 +131,9 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -168,9 +168,9 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Required input is missing'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -207,9 +207,9 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Raw validation error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -248,7 +248,7 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastExecutionError = {
+    executionErrorStore.recordExecutionError({
       prompt_id: 'prompt',
       node_id: 1,
       node_type: 'KSampler',
@@ -257,7 +257,7 @@ describe('useErrorOverlayState', () => {
       exception_type: 'torch.OutOfMemoryError',
       traceback: [],
       timestamp: Date.now()
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -474,9 +474,9 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
+    executionErrorStore.recordNodeErrors({
       '1': makeNodeError(['Only error'])
-    }
+    })
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
