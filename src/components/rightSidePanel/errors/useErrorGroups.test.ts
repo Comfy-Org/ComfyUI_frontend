@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
@@ -131,6 +133,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
@@ -494,6 +498,47 @@ describe('useErrorGroups', () => {
       expect(error.toastTitle).toBe('Required input missing')
       expect(error.toastMessage).toBe(
         'KSampler is missing a required input: model'
+      )
+    })
+
+    it('groups lifted boundary errors under the host node card', async () => {
+      const { store, groups } = createErrorGroups()
+      const { rootGraph, host } = createBoundaryLinkedSubgraph({
+        interiorType: 'InteriorClass'
+      })
+      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
+        await vi.importActual<typeof GraphTraversalUtil>(
+          '@/utils/graphTraversalUtil'
+        )
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+      })
+      store.lastNodeErrors = {
+        '12:5': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'seed_input',
+              {},
+              'Required input is missing'
+            )
+          ],
+          'InteriorClass'
+        )
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      expect(card.nodeId).toBe('12')
+      expect(card.title).toBe(host.title)
+      expect(card.errors[0].displayDetails).toBe(
+        `${host.title} is missing a required input: seed`
       )
     })
 

@@ -390,10 +390,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     groupsMap: Map<string, GroupEntry>,
     filterBySelection = false
   ) {
-    if (!executionErrorStore.lastNodeErrors) return
+    if (!executionErrorStore.surfacedNodeErrors) return
 
     for (const [rawNodeId, nodeError] of Object.entries(
-      executionErrorStore.lastNodeErrors
+      executionErrorStore.surfacedNodeErrors
     )) {
       const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
       if (!nodeId) continue
