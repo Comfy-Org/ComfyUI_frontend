@@ -660,6 +660,21 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(nodeB.has_errors).toBeFalsy()
   })
 
+  it('preserves error flags owned by other systems', async () => {
+    const { nodeA, nodeB } = setupGraphWithStore()
+    const missingNodesStore = useMissingNodesErrorStore()
+    nodeB.has_errors = true
+    nodeB.inputs[0].hasErrors = true
+
+    missingNodesStore.setMissingNodeTypes([
+      { type: nodeA.type, nodeId: String(nodeA.id) }
+    ])
+    await nextTick()
+
+    expect(nodeB.has_errors).toBe(true)
+    expect(nodeB.inputs[0].hasErrors).toBe(true)
+  })
+
   it('clears has_errors when missing models are removed', async () => {
     const { nodeA } = setupGraphWithStore()
     const missingModelStore = useMissingModelStore()

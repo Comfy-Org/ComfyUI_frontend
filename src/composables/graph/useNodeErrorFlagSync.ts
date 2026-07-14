@@ -26,11 +26,8 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
 }
 
 /**
- * Single-pass reconciliation of node error flags.
- * Collects the set of nodes that should have errors, then walks all nodes
- * once, setting each flag exactly once. This avoids the redundant
- * true→false→true transition (and duplicate events) that a clear-then-apply
- * approach would cause.
+ * Single-pass reconciliation of node error flags owned by error stores.
+ * Flags set by other systems remain untouched.
  */
 function reconcileNodeErrorFlags(
   rootGraph: LGraph,
@@ -38,8 +35,13 @@ function reconcileNodeErrorFlags(
   missingNodeExecIds: Set<string>,
   missingModelExecIds: Set<string>,
   missingMediaExecIds: Set<string> = new Set(),
-  disabledNodeExecIds: Set<string> = new Set()
-): void {
+  disabledNodeExecIds: Set<string> = new Set(),
+  previouslyFlaggedNodes: Set<LGraphNode> = new Set(),
+  previouslyFlaggedSlots: Map<LGraphNode, Set<string>> = new Map()
+): {
+  flaggedNodes: Set<LGraphNode>
+  errorSlots: Map<LGraphNode, Set<string>>
+} {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
   const flaggedNodes = new Set<LGraphNode>()
@@ -86,15 +88,24 @@ function reconcileNodeErrorFlags(
   }
 
   forEachNode(rootGraph, (node) => {
-    setNodeHasErrors(node, flaggedNodes.has(node))
+    const isFlagged = flaggedNodes.has(node)
+    if (isFlagged || previouslyFlaggedNodes.has(node)) {
+      setNodeHasErrors(node, isFlagged)
+    }
 
     if (node.inputs) {
       const nodeSlotNames = errorSlots.get(node)
+      const previousSlotNames = previouslyFlaggedSlots.get(node)
       for (const slot of node.inputs) {
-        slot.hasErrors = !!nodeSlotNames?.has(slot.name)
+        const hasError = !!nodeSlotNames?.has(slot.name)
+        if (hasError || previousSlotNames?.has(slot.name) || !slot.hasErrors) {
+          slot.hasErrors = hasError
+        }
       }
     }
   })
+
+  return { flaggedNodes, errorSlots }
 }
 
 export function useNodeErrorFlagSync(
@@ -108,6 +119,8 @@ export function useNodeErrorFlagSync(
   const showErrorsTab = computed(() =>
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
   )
+  let flaggedNodes = new Set<LGraphNode>()
+  let errorSlots = new Map<LGraphNode, Set<string>>()
 
   const stop = watch(
     [
@@ -124,7 +137,7 @@ export function useNodeErrorFlagSync(
       // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
-      reconcileNodeErrorFlags(
+      const nextFlags = reconcileNodeErrorFlags(
         app.rootGraph,
         nodeErrors.value,
         missingNodesStore.missingAncestorExecutionIds,
@@ -136,8 +149,12 @@ export function useNodeErrorFlagSync(
           : new Set(),
         showErrorsTab.value
           ? disabledPartnerNodesStore.disabledAncestorExecutionIds
-          : new Set()
+          : new Set(),
+        flaggedNodes,
+        errorSlots
       )
+      flaggedNodes = nextFlags.flaggedNodes
+      errorSlots = nextFlags.errorSlots
     },
     { flush: 'post' }
   )
