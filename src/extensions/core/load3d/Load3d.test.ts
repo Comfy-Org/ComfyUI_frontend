@@ -1,11 +1,13 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
+import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 
 const {
   cloneSkinnedMock,
@@ -1258,6 +1260,104 @@ describe('Load3d', () => {
       expect(detectFormatFromURLMock).toHaveBeenCalledWith(
         'http://example.com/api/view?filename=scene.spz'
       )
+    })
+  })
+
+  describe('constructor wiring', () => {
+    function makeConstructorDeps() {
+      const container = document.createElement('div')
+      const canvas = document.createElement('canvas')
+      container.appendChild(canvas)
+
+      const view = {
+        canvas,
+        renderer: {
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          setScissorTest: vi.fn(),
+          setClearColor: vi.fn(),
+          clear: vi.fn(),
+          render: vi.fn()
+        },
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const gizmoManager = {
+        setPointerNdcSource: vi.fn(),
+        init: vi.fn(),
+        dispose: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        controlsManager: { init: vi.fn(), update: vi.fn(), dispose: vi.fn() },
+        lightingManager: { init: vi.fn(), dispose: vi.fn() },
+        viewHelperManager: {
+          createViewHelper: vi.fn(),
+          init: vi.fn(),
+          update: vi.fn(),
+          render: vi.fn(),
+          dispose: vi.fn()
+        },
+        hdriManager: { dispose: vi.fn() },
+        loaderManager: { init: vi.fn(), dispose: vi.fn() },
+        modelManager: { dispose: vi.fn() },
+        recordingManager: {
+          getIsRecording: vi.fn(() => false),
+          dispose: vi.fn()
+        },
+        animationManager: {
+          init: vi.fn(),
+          update: vi.fn(),
+          isAnimationPlaying: false,
+          dispose: vi.fn()
+        },
+        gizmoManager,
+        adapterRef: { current: null, capabilities: null }
+      }
+      return { container, deps: deps as unknown as Load3dDeps, gizmoManager }
+    }
+
+    it('wires the gizmo pointer NDC source to clientPointToNdc on every construction path', () => {
+      const { container, deps, gizmoManager } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+
+      expect(gizmoManager.setPointerNdcSource).toHaveBeenCalledOnce()
+
+      const ndc = { x: 0.25, y: -0.5, inside: true }
+      const clientPointToNdc = vi
+        .spyOn(load3d, 'clientPointToNdc')
+        .mockReturnValue(ndc)
+      const source = gizmoManager.setPointerNdcSource.mock
+        .calls[0][0] as PointerNdcSource
+
+      expect(source(12, 34)).toBe(ndc)
+      expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+
+      load3d.remove()
     })
   })
 })
