@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n, st, stRaw } from './i18n'
 
-describe('st', () => {
-  beforeEach(() => {
-    i18n.global.locale.value = 'en'
-  })
+const TEST_NAMESPACE = 'safeTranslationTest'
 
+beforeEach(() => {
+  i18n.global.locale.value = 'en'
+  const messages = i18n.global.getLocaleMessage('en')
+  delete (messages as Record<string, unknown>)[TEST_NAMESPACE]
+  i18n.global.setLocaleMessage('en', messages)
+})
+
+describe('st', () => {
   it('returns the fallback when the key is not found', () => {
     expect(st('safeTranslationTest.missing', 'Fallback value')).toBe(
       'Fallback value'
@@ -38,13 +43,23 @@ describe('st', () => {
       st('safeTranslationTest.invalidLinkedFormat', 'Fallback value')
     ).toBe(message)
   })
+
+  it('rethrows errors that are not vue-i18n compile errors', () => {
+    // A self-referential linked message compiles fine but recurses forever at
+    // resolution time, so t() throws a RangeError rather than a SyntaxError.
+    i18n.global.mergeLocaleMessage('en', {
+      safeTranslationTest: {
+        selfReferential: '@:safeTranslationTest.selfReferential'
+      }
+    })
+
+    expect(() =>
+      st('safeTranslationTest.selfReferential', 'Fallback value')
+    ).toThrow(RangeError)
+  })
 })
 
 describe('stRaw', () => {
-  beforeEach(() => {
-    i18n.global.locale.value = 'en'
-  })
-
   it('returns raw locale messages for valid keys', () => {
     i18n.global.mergeLocaleMessage('en', {
       safeTranslationTest: {
