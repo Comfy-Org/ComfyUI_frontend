@@ -151,6 +151,7 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
       hasMoreHistory.value = true
@@ -158,31 +159,38 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedIds.clear()
     }
 
+    // Fetch from server with offset
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
 
+    // Convert JobListItems to AssetItems
     const newAssets = mapHistoryToAssets(history)
 
     if (loadMore) {
+      // Filter out duplicates and insert in sorted order
       for (const asset of newAssets) {
         if (loadedIds.has(asset.id)) {
-          continue
+          continue // Skip duplicates
         }
         loadedIds.add(asset.id)
 
+        // Find insertion index to maintain sorted order (newest first)
         const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
           (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
+          // Asset is oldest, append to end
           allHistoryItems.value.push(asset)
         } else {
+          // Insert at the correct position
           allHistoryItems.value.splice(insertIndex, 0, asset)
         }
       }
     } else {
+      // Initial load: replace all
       allHistoryItems.value = newAssets
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
@@ -262,7 +270,9 @@ export const useAssetsStore = defineStore('assets', () => {
   let flatOutputNextCursor: string | undefined
   let flatOutputRefreshInFlight: Promise<AssetItem[]> | null = null
   let flatOutputLoadMoreInFlight: Promise<AssetItem[]> | null = null
-  let flatOutputGeneration = 0
+  // Incremented on each refresh; loadMore results captured from a prior epoch
+  // are discarded so a stale page can't append onto a freshly-refreshed list.
+  let flatOutputRefreshEpoch = 0
 
   async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
     if (loadMore) {
@@ -271,7 +281,7 @@ export const useAssetsStore = defineStore('assets', () => {
       flatOutputIsLoadingMore.value = true
     } else {
       if (flatOutputRefreshInFlight) return flatOutputRefreshInFlight
-      flatOutputGeneration++
+      flatOutputRefreshEpoch++
       flatOutputLoading.value = true
       flatOutputOffset.value = 0
       flatOutputNextCursor = undefined
@@ -280,7 +290,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     flatOutputError.value = null
 
-    const generation = flatOutputGeneration
+    const capturedEpoch = flatOutputRefreshEpoch
 
     const inFlight = (async () => {
       const requestedAfter = loadMore ? flatOutputNextCursor : undefined
@@ -291,7 +301,7 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
-        if (loadMore && generation !== flatOutputGeneration) {
+        if (loadMore && capturedEpoch !== flatOutputRefreshEpoch) {
           return flatOutputAssets.value
         }
         const batch = page.assets
@@ -325,6 +335,10 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     })()
 
+    // The in-flight promise is assigned synchronously here, before any await
+    // in inFlight can settle, so the loading flag set above and the guard below
+    // stay in lockstep. This relies on single-entry via updateFlatOutputs /
+    // loadMoreFlatOutputs; do not call fetchFlatOutputs directly.
     if (loadMore) {
       flatOutputLoadMoreInFlight = inFlight
     } else {

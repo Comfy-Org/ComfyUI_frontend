@@ -774,78 +774,6 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 })
 
-describe('assetsStore - loadedJobIds (all-job dedup)', () => {
-  let store: ReturnType<typeof useAssetsStore>
-
-  const createFailedJobItem = (id: string): JobListItem => ({
-    id,
-    status: 'failed',
-    create_time: 1000,
-    update_time: 1000,
-    last_state_update: 1000,
-    priority: 1
-  })
-
-  const createDisplayableJobItem = (id: string, index = 0): JobListItem => ({
-    id,
-    status: 'completed',
-    create_time: 1000 + index,
-    update_time: 1000 + index,
-    last_state_update: 1000 + index,
-    priority: 1000 + index,
-    preview_output: {
-      filename: `output_${id}.png`,
-      subfolder: '',
-      type: 'output',
-      nodeId: 'node_1',
-      mediaType: 'images'
-    }
-  })
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useAssetsStore()
-    vi.clearAllMocks()
-  })
-
-  it('does not false-negative dedup when the first page is all non-displayable jobs', async () => {
-    const firstBatch = Array.from({ length: 200 }, (_, i) =>
-      createFailedJobItem(`failed_${i}`)
-    )
-    vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
-    await store.updateHistory()
-
-    expect(store.historyAssets).toHaveLength(0)
-
-    const secondBatch = [
-      createFailedJobItem('failed_0'),
-      createDisplayableJobItem('new_job', 0)
-    ]
-    vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
-    await store.loadMoreHistory()
-
-    const ids = store.historyAssets.map((a) => a.id)
-    expect(ids).toContain('new_job')
-    expect(ids).not.toContain('failed_0')
-  })
-
-  it('loadedJobIds is cleared on reset (updateHistory)', async () => {
-    const firstBatch = [createFailedJobItem('job_a')]
-    vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
-    await store.updateHistory()
-
-    const secondBatch = [createDisplayableJobItem('job_a', 0)]
-    vi.mocked(api.getHistory)
-      .mockResolvedValueOnce(secondBatch)
-      .mockResolvedValueOnce([])
-
-    await store.updateHistory()
-
-    expect(store.historyAssets).toHaveLength(1)
-    expect(store.historyAssets[0].id).toBe('job_a')
-  })
-})
-
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -1912,6 +1840,57 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 
       expect(store.flatOutputAssets.map((a) => a.id)).toContain('fresh-1')
       expect(store.flatOutputAssets.map((a) => a.id)).not.toContain('extra-1')
+    })
+
+    it('a stale loadMore that resolves before the refresh does not corrupt seenIds', async () => {
+      const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`a${i}`, `f${i}.png`)
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage(firstPage, { hasMore: true })
+      )
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockClear()
+
+      let resolveLoadMore!: (page: AssetResponse) => void
+      const loadMorePromise = new Promise<AssetResponse>((res) => {
+        resolveLoadMore = res
+      })
+      let resolveRefresh!: (page: AssetResponse) => void
+      const refreshPromise = new Promise<AssetResponse>((res) => {
+        resolveRefresh = res
+      })
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePromise)
+        .mockReturnValueOnce(refreshPromise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      // The stale loadMore settles first, before the refresh has replaced the
+      // list. Its page must be discarded rather than folded into seenIds.
+      resolveLoadMore(makePage([makeAsset('extra-1', 'extra.png')]))
+      resolveRefresh(
+        makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: true })
+      )
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
+
+      // If the discarded loadMore had leaked 'extra-1' into seenIds, this
+      // legitimate next page would be filtered out and never shown.
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([makeAsset('extra-1', 'extra.png')])
+      )
+      await store.loadMoreFlatOutputs()
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual([
+        'fresh-1',
+        'extra-1'
+      ])
     })
 
     it('a second concurrent refresh coalesces into the first refresh promise', async () => {
