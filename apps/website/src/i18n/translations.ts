@@ -2310,7 +2310,7 @@ const translations = {
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
-  'nav.edu': { en: 'Edu', 'zh-CN': '教育' },
+  'nav.education': { en: 'Education', 'zh-CN': '教育' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
@@ -4485,7 +4485,7 @@ const translations = {
     'zh-CN': '阅读联盟计划条款'
   },
 
-  // Education page (/edu) — head metadata
+  // Education page (/education) — head metadata
   'education.page.title': {
     en: 'Comfy for Education — Student & Educator Discounts',
     'zh-CN': 'Comfy 教育版 — 学生与教育工作者优惠'

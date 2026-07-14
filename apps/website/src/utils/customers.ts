@@ -28,7 +28,7 @@ export function nextStory<T extends { id: string }>(
   return ordered[(index + 1) % ordered.length]
 }
 
-// Slugs of the Creative Campus stories featured on the /edu carousel. Selecting by
+// Slugs of the Creative Campus stories featured on the /education carousel. Selecting by
 // slug (rather than the localized `category` label, which differs per locale) keeps
 // the education set stable across locales.
 const EDUCATION_STORY_SLUGS = new Set([

@@ -131,7 +131,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               badge: 'new'
             },
             {
-              label: t('nav.edu', locale),
+              label: t('nav.education', locale),
               href: routes.education,
               badge: 'new'
             }

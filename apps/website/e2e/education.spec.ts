@@ -6,7 +6,7 @@ import { educationFaqs } from '../src/data/educationFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH = '/edu'
+const PATH = '/education'
 const LEARNING_PATH = '/learning'
 const PRICING_PATH = '/cloud/pricing'
 const STUDENT_AMBASSADOR_FORM = externalLinks.studentAmbassadorForm
@@ -321,7 +321,7 @@ test.describe('Education pricing — Student Ambassador band @smoke', () => {
 
 test.describe('Education landing — zh-CN @smoke', () => {
   test('CTA plan anchor resolves to the pricing section', async ({ page }) => {
-    await page.goto('/zh-CN/edu')
+    await page.goto('/zh-CN/education')
 
     const choosePlan = page.getByRole('link', {
       name: t('education.cta.choosePlan', 'zh-CN')
