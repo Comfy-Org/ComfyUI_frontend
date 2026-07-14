@@ -331,7 +331,15 @@ function getApiWebSocketHostOverride(): string {
     return ''
   }
   const override = window.__COMFY_API_WS_HOST__
-  return typeof override === 'string' ? override.trim() : ''
+  if (typeof override !== 'string') {
+    return ''
+  }
+  const trimmed = override.trim()
+  if (!trimmed) {
+    return ''
+  }
+  console.debug('[ComfyUI] WebSocket host override active:', trimmed)
+  return trimmed
 }
 
 export class ComfyApi extends EventTarget {
