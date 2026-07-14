@@ -68,6 +68,11 @@ interface CreateReportOptions {
   cwd?: string
 }
 
+interface IndexedBranch {
+  branch: CriticalBranchCoverage
+  mappedLocation: CriticalCoverageLocation | null
+}
+
 export function createCriticalCoverageReport({
   inputPath,
   sha,
@@ -124,6 +129,8 @@ export function compareCriticalCoverageReports(
   head: CriticalCoverageReport,
   mapBaseLocation: CriticalCoverageLocationMapper = identityLocationMapper
 ): CriticalCoverageComparison {
+  assertCriticalCoverageScopePreserved(base.criticalDirs, head.criticalDirs)
+
   const baseBranches = indexBranches(base.branches, mapBaseLocation, 'base')
   const headBranches = indexBranches(
     head.branches,
@@ -136,13 +143,29 @@ export function compareCriticalCoverageReports(
   let commonCoveredBranchesInHead = 0
   let baseOnlyBranches = 0
 
-  for (const [key, baseBranch] of baseBranches) {
-    const headBranch = headBranches.get(key)
+  for (const [key, indexedBaseBranch] of baseBranches) {
+    const indexedHeadBranch = headBranches.get(key)
+    const baseBranch = indexedBaseBranch.branch
 
-    if (!headBranch) {
+    if (!indexedHeadBranch) {
       baseOnlyBranches++
+
+      if (baseBranch.covered && indexedBaseBranch.mappedLocation) {
+        regressions.push({
+          ...baseBranch,
+          file: indexedBaseBranch.mappedLocation.file,
+          line: indexedBaseBranch.mappedLocation.line,
+          taken: null,
+          covered: false,
+          baseTaken: baseBranch.taken,
+          headTaken: null
+        })
+      }
+
       continue
     }
+
+    const headBranch = indexedHeadBranch.branch
 
     commonBranches++
 
@@ -281,8 +304,8 @@ function indexBranches(
   branches: CriticalBranchCoverage[],
   mapLocation: CriticalCoverageLocationMapper,
   unmappedPrefix: string
-): Map<string, CriticalBranchCoverage> {
-  const indexed = new Map<string, CriticalBranchCoverage>()
+): Map<string, IndexedBranch> {
+  const indexed = new Map<string, IndexedBranch>()
   const occurrences = new Map<string, number>()
 
   for (const branch of [...branches].sort(compareBranches)) {
@@ -295,10 +318,24 @@ function indexBranches(
         : `${mappedLocation.file}:${mappedLocation.line}:${occurrence}`
 
     occurrences.set(sourceLine, occurrence + 1)
-    indexed.set(identity, branch)
+    indexed.set(identity, { branch, mappedLocation })
   }
 
   return indexed
+}
+
+function assertCriticalCoverageScopePreserved(
+  baseDirs: readonly string[],
+  headDirs: readonly string[]
+): void {
+  const headScope = new Set(headDirs)
+  const removedDirs = baseDirs.filter((dir) => !headScope.has(dir))
+
+  if (removedDirs.length > 0) {
+    throw new Error(
+      `Critical coverage scope removed: ${removedDirs.join(', ')}`
+    )
+  }
 }
 
 function identityLocationMapper(

@@ -326,7 +326,7 @@ end_of_record
 })
 
 describe('compareCriticalCoverageReports', () => {
-  it('compares only shared branches and reports branch-universe drift', () => {
+  it('reports covered base-only branches as regressions', () => {
     const shared = createBranch('src/stores/shared.ts', true)
     const base = createReport(BASE_SHA, [
       shared,
@@ -343,7 +343,14 @@ describe('compareCriticalCoverageReports', () => {
       headOnlyBranches: 1,
       commonCoveredBranchesInBase: 1,
       commonCoveredBranchesInHead: 1,
-      coveredBranchDelta: 0
+      coveredBranchDelta: 0,
+      regressions: [
+        expect.objectContaining({
+          file: 'src/stores/base-only.ts',
+          baseTaken: 1,
+          headTaken: null
+        })
+      ]
     })
   })
 })
