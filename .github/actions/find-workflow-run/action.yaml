@@ -8,17 +8,25 @@ inputs:
   head-sha:
     description: The commit SHA to find runs for
     required: true
+  event:
+    description: Optional workflow event to match
+    required: false
+    default: ''
   not-found-status:
-    description: Status to output when no run exists
+    description: Status to output when no matching run exists after polling
     required: false
     default: pending
+  wait-seconds:
+    description: Maximum time to poll for a matching successful run
+    required: false
+    default: '0'
   token:
     description: GitHub token for API access
     required: true
 
 outputs:
   status:
-    description: One of 'ready', 'pending', 'failed', or the not-found-status value
+    description: One of 'ready', 'pending', 'failed', or the configured not-found status
     value: ${{ steps.find.outputs.status }}
   run-id:
     description: The workflow run ID (only set when status is 'ready')
@@ -33,33 +41,94 @@ runs:
       env:
         WORKFLOW_ID: ${{ inputs.workflow-id }}
         HEAD_SHA: ${{ inputs.head-sha }}
+        EVENT_NAME: ${{ inputs.event }}
         NOT_FOUND_STATUS: ${{ inputs.not-found-status }}
+        WAIT_SECONDS: ${{ inputs.wait-seconds }}
       with:
         github-token: ${{ inputs.token }}
         script: |
-          const { data: runs } = await github.rest.actions.listWorkflowRuns({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            workflow_id: process.env.WORKFLOW_ID,
-            head_sha: process.env.HEAD_SHA,
-            per_page: 1,
-          });
-
-          const run = runs.workflow_runs[0];
-          if (!run) {
-            core.setOutput('status', process.env.NOT_FOUND_STATUS);
+          const waitSeconds = Number(process.env.WAIT_SECONDS);
+          if (!Number.isSafeInteger(waitSeconds) || waitSeconds < 0) {
+            core.setFailed('wait-seconds must be a non-negative integer');
             return;
           }
 
-          if (run.status !== 'completed') {
-            core.setOutput('status', 'pending');
-            return;
-          }
+          const deadline = Date.now() + waitSeconds * 1000;
 
-          if (run.conclusion !== 'success') {
-            core.setOutput('status', 'failed');
-            return;
-          }
+          while (true) {
+            let run;
+            let response;
+            let requestFailed = false;
+            try {
+              response = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: process.env.WORKFLOW_ID,
+                head_sha: process.env.HEAD_SHA,
+                event: process.env.EVENT_NAME || undefined,
+                per_page: 10,
+              });
+            } catch (error) {
+              const status = error?.status;
+              const retryable =
+                typeof status !== 'number' ||
+                status === 408 ||
+                status === 429 ||
+                status >= 500;
 
-          core.setOutput('status', 'ready');
-          core.setOutput('run-id', String(run.id));
+              if (!retryable) {
+                core.setFailed(
+                  `listWorkflowRuns failed with status ${status}: ${String(error)}`
+                );
+                return;
+              }
+
+              requestFailed = true;
+              core.warning(`listWorkflowRuns failed: ${String(error)}`);
+            }
+
+            if (response) {
+              const workflowRuns = response.data.workflow_runs;
+              const successfulRun = workflowRuns.find(
+                ({ status, conclusion }) =>
+                  status === 'completed' && conclusion === 'success'
+              );
+
+              if (successfulRun) {
+                core.setOutput('status', 'ready');
+                core.setOutput('run-id', String(successfulRun.id));
+                return;
+              }
+
+              run =
+                workflowRuns.find(({ status }) => status !== 'completed') ??
+                workflowRuns[0];
+            }
+
+            if (run?.status === 'completed') {
+              if (run.conclusion === 'success') {
+                core.setOutput('status', 'ready');
+                core.setOutput('run-id', String(run.id));
+              } else {
+                core.setOutput('status', 'failed');
+              }
+              return;
+            }
+
+            const remainingMilliseconds = deadline - Date.now();
+            if (remainingMilliseconds <= 0) {
+              core.setOutput(
+                'status',
+                requestFailed
+                  ? 'failed'
+                  : run
+                    ? 'pending'
+                    : process.env.NOT_FOUND_STATUS
+              );
+              return;
+            }
+
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.min(15_000, remainingMilliseconds))
+            );
+          }
