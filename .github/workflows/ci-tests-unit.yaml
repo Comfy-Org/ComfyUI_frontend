@@ -9,8 +9,8 @@ on:
   merge_group:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   changes:
@@ -38,14 +38,19 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Extract critical unit coverage
+        run: pnpm coverage:critical:extract --sha="${{ github.sha }}"
+
       - name: Upload unit coverage artifact
-        if: always() && github.event_name == 'push'
+        if: always() && github.event_name != 'merge_group'
         uses: actions/upload-artifact@v6
         with:
           name: unit-coverage
-          path: coverage/lcov.info
+          path: |
+            coverage/lcov.info
+            coverage/critical-unit-coverage.json
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload coverage to Codecov
         if: always()
@@ -55,3 +60,111 @@ jobs:
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+  critical-unit-regression:
+    needs: test
+    if: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        needs.test.result == 'success' &&
+        (
+          github.base_ref == 'main' ||
+          github.base_ref == 'master' ||
+          startsWith(github.base_ref, 'dev') ||
+          startsWith(github.base_ref, 'core/') ||
+          startsWith(github.base_ref, 'desktop/')
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Resolve tested base commit
+        id: tested-base
+        run: echo "sha=$(git rev-parse HEAD^1)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download head unit coverage
+        uses: actions/download-artifact@v7
+        with:
+          name: unit-coverage
+          path: temp/head-unit-coverage
+
+      - name: Find base unit coverage run
+        id: find-base-unit
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-tests-unit.yaml
+          head-sha: ${{ steps.tested-base.outputs.sha }}
+          event: push
+          wait-seconds: 600
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download base unit coverage
+        id: download-base-unit
+        if: steps.find-base-unit.outputs.status == 'ready'
+        continue-on-error: true
+        uses: actions/download-artifact@v7
+        with:
+          name: unit-coverage
+          run-id: ${{ steps.find-base-unit.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: temp/base-unit-coverage
+
+      - name: Regenerate missing base unit coverage
+        if: steps.find-base-unit.outputs.status != 'ready' || steps.download-base-unit.outcome != 'success'
+        env:
+          BASE_SHA: ${{ steps.tested-base.outputs.sha }}
+        run: |
+          base_dir="$RUNNER_TEMP/coverage-base"
+          cleanup() {
+            git worktree remove --force "$base_dir" || true
+          }
+          trap cleanup EXIT
+          git worktree add "$base_dir" "$BASE_SHA"
+          (
+            cd "$base_dir"
+            pnpm install --frozen-lockfile
+            pnpm test:coverage
+            if [ -f scripts/critical-coverage/extractCriticalCoverage.ts ]; then
+              pnpm coverage:critical:extract --sha="$BASE_SHA"
+            fi
+          )
+          mkdir -p temp/base-unit-coverage
+          cp "$base_dir/coverage/lcov.info" temp/base-unit-coverage/lcov.info
+          if [ -f "$base_dir/coverage/critical-unit-coverage.json" ]; then
+            cp "$base_dir/coverage/critical-unit-coverage.json" \
+              temp/base-unit-coverage/
+          fi
+
+      - name: Prepare critical unit coverage reports
+        env:
+          BASE_SHA: ${{ steps.tested-base.outputs.sha }}
+        run: |
+          mkdir -p temp/base-critical-coverage temp/head-critical-coverage
+          if [ -f temp/base-unit-coverage/critical-unit-coverage.json ]; then
+            cp temp/base-unit-coverage/critical-unit-coverage.json \
+              temp/base-critical-coverage/
+          else
+            pnpm coverage:critical:extract \
+              --input temp/base-unit-coverage/lcov.info \
+              --output temp/base-critical-coverage/critical-unit-coverage.json \
+              --sha="$BASE_SHA"
+          fi
+          cp temp/head-unit-coverage/critical-unit-coverage.json \
+            temp/head-critical-coverage/
+
+      - name: Compare critical unit coverage
+        run: >
+          pnpm coverage:critical:compare
+          --base temp/base-critical-coverage/critical-unit-coverage.json
+          --head temp/head-critical-coverage/critical-unit-coverage.json
