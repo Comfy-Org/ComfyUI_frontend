@@ -1,5 +1,5 @@
 import { render, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
@@ -19,6 +19,10 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 }))
 
 describe('WorkspaceMembersPanelContent', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockEnsureMembersLoaded.mockResolvedValue(undefined)
@@ -49,7 +53,6 @@ describe('WorkspaceMembersPanelContent', () => {
         error
       )
     )
-    consoleError.mockRestore()
   })
 
   it('handles member load failures', async () => {
@@ -67,6 +70,5 @@ describe('WorkspaceMembersPanelContent', () => {
         error
       )
     )
-    consoleError.mockRestore()
   })
 })

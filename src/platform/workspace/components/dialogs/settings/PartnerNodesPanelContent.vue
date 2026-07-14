@@ -301,7 +301,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { search } = defineProps<{ search: string }>()
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 const {
   autoEnableNew,
@@ -335,7 +335,8 @@ watch(
   () => search,
   (value) => {
     searchQuery.value = value
-  }
+  },
+  { immediate: true }
 )
 
 const hasSelection = computed(() => selectedCount.value > 0)
@@ -364,7 +365,7 @@ function applyBulk(value: boolean) {
 
 function formatLastModified(iso: string | null): string {
   if (!iso) return t('workspacePanel.partnerNodes.neverModified')
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleDateString(locale.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

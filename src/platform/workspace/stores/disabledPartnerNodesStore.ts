@@ -3,11 +3,11 @@ import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { st, t } from '@/i18n'
+import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { showDisabledNodesToast } from '@/platform/workspace/utils/disabledPartnerNodesToast'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -122,13 +122,17 @@ export const useDisabledPartnerNodesStore = defineStore(
         policyWorkspaceId.value = workspaceId
         policyState.value = 'verified'
         return 'success'
-      } catch {
+      } catch (error) {
         if (
           version !== refreshVersion ||
           governedWorkspaceId.value !== workspaceId
         ) {
           return 'superseded'
         }
+        console.error('Failed to refresh partner node policy', {
+          workspaceId,
+          error
+        })
         enabledNodeIds.value = new Set()
         policyWorkspaceId.value = workspaceId
         policyState.value = 'failed'
@@ -197,19 +201,7 @@ export const useDisabledPartnerNodesStore = defineStore(
       scanGraph()
       if (result === 'superseded') return
       if (options.silent || offenders.value.length === 0) return
-      useToastStore().add({
-        severity: 'error',
-        group: 'disabled-nodes',
-        summary: t(
-          'rightSidePanel.disabledNodes.title',
-          offenders.value.length
-        ),
-        detail: t(
-          'rightSidePanel.disabledNodes.toastDetail',
-          offenders.value.length
-        ),
-        life: 10000
-      })
+      showDisabledNodesToast(offenders.value.length)
     }
 
     /** Settings-panel toggles call this so an open workflow updates live. */

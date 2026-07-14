@@ -59,7 +59,7 @@
     <!-- Credits Section -->
 
     <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--coins] text-sm text-amber-400" />
+      <i class="icon-[lucide--coins] size-4 text-amber-400" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -139,7 +139,7 @@
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--receipt-text] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
@@ -152,7 +152,7 @@
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--file-text] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
@@ -164,7 +164,7 @@
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
     >
-      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--tag] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.partnerNodesCredits')
       }}</span>
@@ -178,7 +178,7 @@
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
     >
-      <i class="icon-[lucide--users] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--users] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('userSettings.workspaceSettings')
       }}</span>
@@ -190,7 +190,7 @@
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--settings-2] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
@@ -204,7 +204,7 @@
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
-      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--log-out] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>

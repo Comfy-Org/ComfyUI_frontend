@@ -137,6 +137,7 @@ describe('disabledPartnerNodesStore', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.useRealTimers()
     if (LiteGraph.registered_node_types[devPartnerNodeType]) {
       LiteGraph.unregisterNodeType(devPartnerNodeType)
@@ -165,9 +166,9 @@ describe('disabledPartnerNodesStore', () => {
   })
 
   it('fails closed before and after policy verification fails', async () => {
-    vi.mocked(partnerNodesApi.list).mockRejectedValue(
-      new Error('policy unavailable')
-    )
+    const error = new Error('policy unavailable')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(partnerNodesApi.list).mockRejectedValue(error)
     const store = useDisabledPartnerNodesStore()
 
     expect(store.isNodeDefDisabled(nodeDef('PartnerNode'))).toBe(true)
@@ -178,6 +179,10 @@ describe('disabledPartnerNodesStore', () => {
 
     expect(store.policyState).toBe('failed')
     expect(store.isNodeDefDisabled(nodeDef('PartnerNode'))).toBe(true)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to refresh partner node policy',
+      { workspaceId: 'team-workspace', error }
+    )
   })
 
   it('fails closed during same-workspace policy refreshes', async () => {

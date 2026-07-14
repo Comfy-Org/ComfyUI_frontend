@@ -78,6 +78,14 @@ describe('NodeSearchContent', () => {
     return { user, onAddNode, onHoverNode, onRemoveFilter, onAddFilter }
   }
 
+  function registerDisabledNodeFilter() {
+    useNodeDefStore().registerNodeDefFilter({
+      id: 'test.disabled-partner-nodes',
+      name: 'Disabled partner nodes',
+      predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+    })
+  }
+
   function mockBookmarks(
     isBookmarked: boolean | ((node: ComfyNodeDefImpl) => boolean) = true,
     bookmarkList: string[] = []
@@ -337,11 +345,7 @@ describe('NodeSearchContent', () => {
         })
       ])
       mockIsNodeDefDisabled.mockReturnValue(true)
-      nodeDefStore.registerNodeDefFilter({
-        id: 'test.disabled-partner-nodes',
-        name: 'Disabled partner nodes',
-        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
-      })
+      registerDisabledNodeFilter()
 
       renderComponent()
 
@@ -363,11 +367,7 @@ describe('NodeSearchContent', () => {
       mockIsNodeDefDisabled.mockImplementation(
         (nodeDef: ComfyNodeDefImpl) => nodeDef.name === 'BlockedPartnerNode'
       )
-      nodeDefStore.registerNodeDefFilter({
-        id: 'test.disabled-partner-nodes',
-        name: 'Disabled partner nodes',
-        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
-      })
+      registerDisabledNodeFilter()
       const { user } = renderComponent()
 
       await user.type(screen.getByRole('combobox'), 'Blocked Partner')
@@ -398,11 +398,7 @@ describe('NodeSearchContent', () => {
       mockIsNodeDefDisabled.mockImplementation(
         (nodeDef: ComfyNodeDefImpl) => nodeDef.name === 'BlockedPartnerNode'
       )
-      nodeDefStore.registerNodeDefFilter({
-        id: 'test.disabled-partner-nodes',
-        name: 'Disabled partner nodes',
-        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
-      })
+      registerDisabledNodeFilter()
       const { user } = renderComponent()
       await user.click(await screen.findByTestId('category-sampling'))
 
@@ -879,11 +875,7 @@ describe('NodeSearchContent', () => {
       await user.click(await screen.findByTestId('category-custom/sampling'))
 
       mockIsNodeDefDisabled.mockReturnValue(true)
-      nodeDefStore.registerNodeDefFilter({
-        id: 'test.disabled-partner-nodes',
-        name: 'Disabled partner nodes',
-        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
-      })
+      registerDisabledNodeFilter()
       nodeDefStore.updateNodeDefs(nodeDefs)
 
       expect(
@@ -918,11 +910,7 @@ describe('NodeSearchContent', () => {
       mockIsNodeDefDisabled.mockImplementation(
         (nodeDef) => nodeDef.name === 'CustomLoader'
       )
-      nodeDefStore.registerNodeDefFilter({
-        id: 'test.disabled-partner-nodes',
-        name: 'Disabled partner nodes',
-        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
-      })
+      registerDisabledNodeFilter()
       nodeDefStore.updateNodeDefs(nodeDefs)
       await user.type(screen.getByRole('combobox'), 'Loader')
 

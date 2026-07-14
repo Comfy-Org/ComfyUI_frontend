@@ -24,15 +24,15 @@ describe('formatRelativeTime', () => {
   })
 
   it('floors to whole hours', () => {
-    expect(formatRelativeTime(ago(2 * 60 * 60 * 1000), now, labels)).toBe(
+    expect(formatRelativeTime(ago(2.9 * 60 * 60 * 1000), now, labels)).toBe(
       '2 hr ago'
     )
   })
 
   it('floors to whole days past 24h', () => {
-    expect(formatRelativeTime(ago(3 * 24 * 60 * 60 * 1000), now, labels)).toBe(
-      '3 days ago'
-    )
+    expect(
+      formatRelativeTime(ago(3.9 * 24 * 60 * 60 * 1000), now, labels)
+    ).toBe('3 days ago')
   })
 
   it.for([

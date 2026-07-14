@@ -108,6 +108,7 @@ import type { MissingModelPipelineResult } from '@/platform/missingModel/missing
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
+import { showDisabledNodesToast } from '@/platform/workspace/utils/disabledPartnerNodesToast'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
@@ -256,13 +257,7 @@ function surfaceDisabledPartnerNodeBlock(
   if (canOpenErrorsPanel) {
     useRightSidePanelStore().openPanel('errors')
   } else {
-    useToastStore().add({
-      severity: 'error',
-      group: 'disabled-nodes',
-      summary: t('rightSidePanel.disabledNodes.title', offenders.length),
-      detail: t('rightSidePanel.disabledNodes.toastDetail', offenders.length),
-      life: 10000
-    })
+    showDisabledNodesToast(offenders.length)
   }
   return true
 }

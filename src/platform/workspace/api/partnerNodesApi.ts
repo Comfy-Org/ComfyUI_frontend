@@ -52,16 +52,7 @@ export const partnerNodesApi = {
   },
 
   async setEnabled(nodeId: string, enabled: boolean): Promise<void> {
-    const headers = await authHeader()
-    const payload: BulkSetEnabledPayload = {
-      node_ids: [nodeId],
-      enabled
-    }
-    await partnerNodesApiClient.patch(
-      api.apiURL('/workspace/partner-nodes'),
-      payload,
-      { headers }
-    )
+    await partnerNodesApi.setEnabledBulk([nodeId], enabled)
   },
 
   async setEnabledBulk(nodeIds: string[], enabled: boolean): Promise<void> {

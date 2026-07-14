@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -139,6 +139,12 @@ describe('BillingStatusBanner', () => {
     unmount()
     renderComponent()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    mockSubscription.value = { hasFunds: true, isCancelled: false }
+    await nextTick()
+    mockSubscription.value = { hasFunds: false, isCancelled: false }
+
+    expect(await screen.findByText('Out of credits')).toBeInTheDocument()
   })
 
   it('reactivates a plan that is ending', async () => {

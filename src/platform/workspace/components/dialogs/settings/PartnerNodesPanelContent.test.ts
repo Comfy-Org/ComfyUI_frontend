@@ -185,4 +185,14 @@ describe('PartnerNodesPanelContent', () => {
       screen.queryByText('No partner nodes match your search.')
     ).not.toBeInTheDocument()
   })
+
+  it('shows the empty state when no partner nodes match', () => {
+    mock.groups.value = []
+
+    renderPanel()
+
+    expect(
+      screen.getByText('No partner nodes match your search.')
+    ).toBeInTheDocument()
+  })
 })

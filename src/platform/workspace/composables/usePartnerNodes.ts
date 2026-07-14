@@ -182,11 +182,11 @@ export function usePartnerNodes() {
     return selected.length > 0 && selected.every((n) => n.enabled)
   })
   const selectAllState = computed<boolean | 'indeterminate'>(() => {
-    const selectedCount = filteredNodes.value.filter((node) =>
+    const selectedInFilteredCount = filteredNodes.value.filter((node) =>
       selectedIds.value.has(node.id)
     ).length
-    if (selectedCount === 0) return false
-    if (selectedCount === filteredNodes.value.length) return true
+    if (selectedInFilteredCount === 0) return false
+    if (selectedInFilteredCount === filteredNodes.value.length) return true
     return 'indeterminate'
   })
   async function fetch() {

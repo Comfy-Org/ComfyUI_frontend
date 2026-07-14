@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { useSessionStorage } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -108,6 +108,21 @@ const isOutOfCredits = computed(
     isActiveSubscription.value &&
     !isPaused.value &&
     subscription.value?.hasFunds === false
+)
+
+watch(
+  isOutOfCredits,
+  (outOfCredits) => {
+    if (outOfCredits) return
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (!workspaceId || !dismissedWorkspaceIds.value.includes(workspaceId)) {
+      return
+    }
+    dismissedWorkspaceIds.value = dismissedWorkspaceIds.value.filter(
+      (id) => id !== workspaceId
+    )
+  },
+  { immediate: true }
 )
 
 // A cancelled-but-still-active plan is winding down to its end date. Unlike the

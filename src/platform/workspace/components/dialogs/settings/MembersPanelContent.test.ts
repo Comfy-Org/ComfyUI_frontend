@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -18,6 +18,10 @@ const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
 const mockFetchBalance = vi.fn()
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 const {
   mockMembers,
@@ -239,7 +243,6 @@ describe('MembersPanelContent', () => {
         error
       )
     )
-    consoleError.mockRestore()
   })
 
   describe('personal workspace', () => {
