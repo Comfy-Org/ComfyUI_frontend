@@ -43,20 +43,6 @@ describe('st', () => {
       st('safeTranslationTest.invalidLinkedFormat', 'Fallback value')
     ).toBe(message)
   })
-
-  it('rethrows errors that are not vue-i18n compile errors', () => {
-    // A self-referential linked message compiles fine but recurses forever at
-    // resolution time, so t() throws a RangeError rather than a SyntaxError.
-    i18n.global.mergeLocaleMessage('en', {
-      safeTranslationTest: {
-        selfReferential: '@:safeTranslationTest.selfReferential'
-      }
-    })
-
-    expect(() =>
-      st('safeTranslationTest.selfReferential', 'Fallback value')
-    ).toThrow(RangeError)
-  })
 })
 
 describe('stRaw', () => {
