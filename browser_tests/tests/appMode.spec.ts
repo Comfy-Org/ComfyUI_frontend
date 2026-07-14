@@ -1,8 +1,13 @@
+import { mergeTests } from '@playwright/test'
+
 import {
-  comfyPageFixture as test,
-  comfyExpect as expect
+  comfyExpect as expect,
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
 test.describe('App mode usage', () => {
   test('Drag and Drop @vue-nodes', async ({ comfyPage, comfyFiles }) => {
@@ -135,6 +140,117 @@ test.describe('App mode usage', () => {
     await expect(popover).toBeHidden()
     await expect(imageInput.selection).toHaveText(targetImage)
     await expect.poll(() => fileComboWidget.getValue()).toBe(targetImage)
+  })
+
+  test('Shows a single side toolbar per mode, filtered to assets + apps in app mode', async ({
+    comfyPage
+  }) => {
+    const { sideToolbar, nodeLibraryTab, assetsTab, appsTab } = comfyPage.menu
+
+    await test.step('Graph mode shows the full toolbar', async () => {
+      await expect(sideToolbar).toHaveCount(1)
+      await expect(nodeLibraryTab.tabButton).toBeVisible()
+    })
+
+    await test.step('App mode shows only assets + apps', async () => {
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(comfyPage.appMode.centerPanel).toBeVisible()
+
+      await expect(sideToolbar).toHaveCount(1)
+      await expect(assetsTab.tabButton).toBeVisible()
+      await expect(appsTab.tabButton).toBeVisible()
+      await expect(nodeLibraryTab.tabButton).toBeHidden()
+    })
+  })
+
+  test('Workflow actions menu keeps the same position across graph/app mode', async ({
+    comfyPage,
+    subgraphBreadcrumb
+  }) => {
+    const { workflowActions, centerPanel } = comfyPage.appMode
+
+    // Toggling graph<->app mode happens from this control, so it must not move
+    // out from under the cursor as the mode flips.
+    const graphActions = workflowActions.triggerIn(
+      subgraphBreadcrumb.panel.root
+    )
+    await expect(graphActions).toBeVisible()
+    const graphBox = await graphActions.boundingBox()
+
+    expect(graphBox).not.toBeNull()
+
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(centerPanel).toBeVisible()
+
+    const appActions = workflowActions.triggerIn(centerPanel)
+    await expect(appActions).toBeVisible()
+
+    // The toggle segments reorder (morph) as the mode flips, so poll until the
+    // active control settles at the same x it occupied in graph mode.
+    await expect
+      .poll(async () => {
+        const box = await appActions.boundingBox()
+        return box ? Math.abs(box.x - graphBox!.x) : Infinity
+      })
+      .toBeLessThanOrEqual(1)
+  })
+
+  test('Toggle segment flips mode without opening the menu', async ({
+    comfyPage
+  }) => {
+    const { workflowActions } = comfyPage.appMode
+    await expect(workflowActions.viewModeToggle).toBeVisible()
+
+    await workflowActions.enterAppModeSegment.click()
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    // The inactive segment switches mode; it must not also open the actions menu.
+    await expect(workflowActions.menu).toBeHidden()
+    await expect(workflowActions.viewModeToggle).toBeVisible()
+  })
+
+  test('Toggle segment flips mode via keyboard without opening the menu', async ({
+    comfyPage
+  }) => {
+    const { workflowActions } = comfyPage.appMode
+    await workflowActions.enterAppModeSegment.focus()
+    await workflowActions.enterAppModeSegment.press('Enter')
+
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    await expect(workflowActions.menu).toBeHidden()
+    await expect(workflowActions.trigger).toBeFocused()
+  })
+
+  test('Mode toggle re-appears after exiting the builder to graph mode', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.appMode.workflowActions.viewModeToggle
+    await comfyPage.appMode.enableLinearMode()
+    await expect(toggle).toBeVisible()
+
+    await comfyPage.appMode.enterBuilder()
+    await expect(toggle).toBeHidden()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
+
+    await comfyPage.appMode.footer.exitButton.click()
+    // Exiting the builder lands in graph mode: the app-mode-only center panel
+    // stays hidden while the graph-mode toggle host re-mounts and the toggle
+    // re-appears.
+    await expect(toggle).toBeVisible()
+    await expect(comfyPage.appMode.centerPanel).toBeHidden()
+  })
+
+  test('Mode toggle survives a sidebar tab remounting the app panel', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.appMode.workflowActions.viewModeToggle
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(comfyPage.appMode.centerPanel).toBeVisible()
+    await expect(toggle).toBeVisible()
+
+    // Opening a sidebar tab remounts the app panel; the toggle re-renders with it.
+    await comfyPage.menu.assetsTab.tabButton.click()
+    await expect(toggle).toBeVisible()
   })
 
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
