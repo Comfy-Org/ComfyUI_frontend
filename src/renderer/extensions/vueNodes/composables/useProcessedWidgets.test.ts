@@ -252,6 +252,41 @@ describe('hasWidgetError', () => {
     ).toBe(true)
     expect(spy).toHaveBeenCalledWith('1', 'display_slot')
   })
+
+  it('matches raw interior errors by the source widget name for promoted widgets', () => {
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId(65),
+      toNodeId(18)
+    ])
+    const widget = createMockWidget({
+      name: 'display_slot',
+      sourceExecutionId,
+      sourceWidgetName: 'ckpt_name'
+    })
+    executionErrorStore.lastNodeErrors = {
+      [sourceExecutionId]: {
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Invalid model',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ],
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: []
+      }
+    }
+    expect(
+      hasWidgetError(
+        widget,
+        createNodeExecutionId([toNodeId(1)]),
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+  })
 })
 
 const noopUi = {
@@ -665,6 +700,36 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       'real_model.safetensors',
       { min: undefined, max: undefined }
     )
+  })
+
+  it('clears raw interior errors through widget.sourceExecutionId, which boundary lift relies on', () => {
+    const sourceExecutionId = createNodeExecutionId([65, 18])
+    const widget = createMockWidget({
+      name: 'display_slot',
+      nodeId: NODE_ID,
+      sourceExecutionId,
+      sourceWidgetName: 'ckpt_name'
+    })
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      [sourceExecutionId]: {
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Invalid model',
+            details: '',
+            extra_info: { input_name: 'ckpt_name' }
+          }
+        ],
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: []
+      }
+    }
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler('real_model.safetensors')
+
+    expect(executionErrorStore.lastNodeErrors).toBeNull()
   })
 
   it('clears execution errors on update', () => {
