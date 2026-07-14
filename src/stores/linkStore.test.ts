@@ -145,8 +145,6 @@ describe('useLinkStore', () => {
     expect(store.deleteLink(graphA, second)).toBe(true)
   })
 
-  // Guards deep reactivity of targetIndex: a shallowRef would stop tracking
-  // reads of graph buckets and target keys that do not exist yet.
   it('re-evaluates connectedness when a graph gains its first link', () => {
     const store = useLinkStore()
     const connected = computed(() =>
