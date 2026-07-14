@@ -193,9 +193,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     resolvedOutputs: NodeId[]
   ) {
     if (ChangeTracker.isLoadingGraph) return
+
     if (!app.rootGraph?.nodes?.length) return
+
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
     if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
+
     console.warn(
       '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
       { inputs: data?.inputs, outputs: data?.outputs }
