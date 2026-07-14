@@ -7,6 +7,13 @@ import DemoTranscript from '../../components/demos/DemoTranscript.vue'
 import DemoNavSection from '../../components/demos/DemoNavSection.vue'
 import { demos, getDemoBySlug, getNextDemo } from '../../config/demos'
 import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  organizationId,
+  pageContext,
+} from '../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = () => {
   return demos.map((demo) => ({
@@ -19,94 +26,55 @@ const demo = getDemoBySlug(slug as string)!
 const nextDemo = getNextDemo(slug as string)
 const title = t(demo.title)
 const description = t(demo.description)
-const canonicalURL = new URL(`/demos/${demo.slug}`, Astro.site)
 
-const howToJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'HowTo',
-  name: title,
-  description,
-  image: new URL(demo.ogImage, Astro.site).href,
-  totalTime: demo.durationIso,
-  datePublished: demo.publishedDate,
-  dateModified: demo.modifiedDate,
-  author: {
-    '@type': 'Organization',
-    name: 'Comfy Org',
-    url: 'https://comfy.org'
-  }
-}
-
-const learningResourceJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'LearningResource',
-  name: title,
-  description,
-  learningResourceType: 'interactive tutorial',
-  interactivityType: 'active',
-  educationalLevel: demo.difficulty === 'beginner'
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const educationalLevel =
+  demo.difficulty === 'beginner'
     ? 'Beginner'
     : demo.difficulty === 'intermediate'
       ? 'Intermediate'
-      : 'Advanced',
-  url: canonicalURL.href,
+      : 'Advanced'
+const learningId = jsonLdId(url, 'learning')
+const learningResource: JsonLdNode = {
+  '@type': 'LearningResource',
+  '@id': learningId,
+  name: title,
+  description,
+  url,
+  image: new URL(demo.ogImage, Astro.site).href,
+  learningResourceType: 'interactive tutorial',
+  interactivityType: 'active',
+  educationalLevel,
+  timeRequired: demo.durationIso,
   datePublished: demo.publishedDate,
   dateModified: demo.modifiedDate,
-  author: {
-    '@type': 'Organization',
-    name: 'Comfy Org',
-    url: 'https://comfy.org'
-  }
-}
-
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: t('demos.breadcrumb.home'),
-      item: 'https://comfy.org'
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: t('demos.breadcrumb.demos'),
-      item: 'https://comfy.org/demos'
-    },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: title
-    }
-  ]
+  isPartOf: { '@id': jsonLdId(url, 'webpage') },
+  author: { '@id': organizationId(siteUrl) },
 }
 ---
 
 <BaseLayout
-  title={`${title} — Comfy`}
+  title={`${title} - Comfy`}
   description={description}
   ogImage={demo.ogImage}
+  mainEntityId={learningId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('demos.breadcrumb.demos', locale),
+      url: absoluteUrl(Astro.site, '/demos'),
+    },
+    { name: title },
+  ]}
+  extraJsonLd={[learningResource]}
 >
   <Fragment slot="head">
     <meta property="article:published_time" content={demo.publishedDate} />
     <meta property="article:modified_time" content={demo.modifiedDate} />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(howToJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(learningResourceJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(breadcrumbJsonLd)}
-    />
     <link rel="preconnect" href="https://demo.arcade.software" />
   </Fragment>
 
