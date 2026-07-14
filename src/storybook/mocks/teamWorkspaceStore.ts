@@ -12,6 +12,13 @@ import type {
  */
 export const MAX_WORKSPACE_MEMBERS = 30
 
+export class RateLimitError extends Error {
+  constructor(readonly retryAfter?: number) {
+    super('Rate limited')
+    this.name = 'RateLimitError'
+  }
+}
+
 export function useTeamWorkspaceStore() {
   return {
     members: [] as WorkspaceMember[],
