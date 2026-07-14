@@ -420,6 +420,16 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
+
+  // Generated shadcn-vue primitives forward props via useForwardProps(Emits),
+  // which vue/no-unused-properties cannot trace
+  {
+    files: ['apps/website/src/components/ui/**/*.vue'],
+    rules: {
+      'vue/no-unused-properties': 'off'
+    }
+  },
+
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
   // TypeScript resolver cannot see but are valid at build time.
   {

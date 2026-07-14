@@ -26,7 +26,6 @@ export function showConfirmDialog(
     props,
     footerProps,
     dialogComponentProps: {
-      renderer: 'reka',
       size: 'md',
       // Confirm sections carry their own padding — zero out the dialog
       // chrome padding, like the PrimeVue `pt` overrides did.

@@ -19,7 +19,6 @@ export function openHdrViewer(url: string) {
     component: HdrViewerContent,
     props: { imageUrl: fullResUrl },
     dialogComponentProps: {
-      renderer: 'reka',
       size: 'full',
       contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
       maximizable: true
