@@ -304,6 +304,8 @@ function handleContactUs() {
 }
 
 onMounted(() => {
-  void fetchBalance()
+  void fetchBalance().catch((error: unknown) => {
+    console.error('Failed to load workspace billing balance', error)
+  })
 })
 </script>

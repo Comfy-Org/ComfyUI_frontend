@@ -98,6 +98,7 @@ export interface ExecutionErrorDialogInput {
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
+  const { staticUrls } = useExternalLink()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
@@ -586,7 +587,6 @@ export const useDialogService = () => {
   async function showMemberLimitDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
-    const { staticUrls } = useExternalLink()
     return dialogStore.showDialog({
       key: 'member-limit',
       component,
@@ -608,7 +608,6 @@ export const useDialogService = () => {
   async function showWorkflowQueuedDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RequestMoreDialogContent.vue')
-    const { staticUrls } = useExternalLink()
     return dialogStore.showDialog({
       key: 'workflow-queued',
       component,

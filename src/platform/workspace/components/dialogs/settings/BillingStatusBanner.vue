@@ -52,13 +52,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useSessionStorage } from '@vueuse/core'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -74,6 +77,11 @@ const {
 const { permissions, isInPersonalWorkspace } = useWorkspaceUI()
 const dialogService = useDialogService()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const workspaceStore = useTeamWorkspaceStore()
+const dismissedWorkspaceIds = useSessionStorage<string[]>(
+  WORKSPACE_STORAGE_KEYS.DISMISSED_BILLING_BANNERS,
+  []
+)
 
 const canManage = computed(() => permissions.value.canManageSubscription)
 
@@ -91,7 +99,10 @@ const planEndDate = computed(() => {
 
 // Out of credits: an active, non-paused team that has exhausted its balance.
 // Paused takes over this slot (see priority below). Dismissible for the session.
-const dismissed = ref(false)
+const dismissed = computed(() => {
+  const workspaceId = workspaceStore.activeWorkspaceId
+  return !!workspaceId && dismissedWorkspaceIds.value.includes(workspaceId)
+})
 const isOutOfCredits = computed(
   () =>
     isActiveSubscription.value &&
@@ -166,7 +177,9 @@ const banner = computed(() => {
 })
 
 function dismiss() {
-  dismissed.value = true
+  const workspaceId = workspaceStore.activeWorkspaceId
+  if (!workspaceId || dismissed.value) return
+  dismissedWorkspaceIds.value = [...dismissedWorkspaceIds.value, workspaceId]
 }
 
 function handleAddCredits() {

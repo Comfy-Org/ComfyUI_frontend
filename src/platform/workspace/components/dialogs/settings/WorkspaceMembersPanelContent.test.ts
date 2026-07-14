@@ -51,4 +51,22 @@ describe('WorkspaceMembersPanelContent', () => {
     )
     consoleError.mockRestore()
   })
+
+  it('handles member load failures', async () => {
+    const error = new Error('network failure')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockEnsureMembersLoaded.mockRejectedValue(error)
+
+    render(WorkspaceMembersPanelContent, {
+      global: { stubs: { MembersPanelContent: true } }
+    })
+
+    await waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to load workspace members',
+        error
+      )
+    )
+    consoleError.mockRestore()
+  })
 })

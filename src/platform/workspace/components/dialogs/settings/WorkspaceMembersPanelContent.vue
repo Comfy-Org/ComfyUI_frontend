@@ -15,7 +15,9 @@ const { workspaceRole } = useWorkspaceUI()
 const { ensureMembersLoaded, fetchPendingInvites } = useTeamWorkspaceStore()
 
 onMounted(() => {
-  void ensureMembersLoaded()
+  void ensureMembersLoaded().catch((error: unknown) => {
+    console.error('Failed to load workspace members', error)
+  })
   void fetchPendingInvites().catch((error: unknown) => {
     console.error('Failed to load pending workspace invites', error)
   })

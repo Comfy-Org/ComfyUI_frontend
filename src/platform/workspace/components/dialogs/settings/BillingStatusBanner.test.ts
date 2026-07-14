@@ -22,6 +22,7 @@ const mockSubscription = ref<{
 const mockRenewalDate = ref<string | null>(null)
 const mockPermissions = ref({ canManageSubscription: true })
 const mockIsInPersonalWorkspace = ref(false)
+let mockActiveWorkspaceId: string | null = 'team-1'
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -38,6 +39,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: mockPermissions,
     isInPersonalWorkspace: mockIsInPersonalWorkspace
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    activeWorkspaceId: mockActiveWorkspaceId
   })
 }))
 
@@ -67,6 +74,7 @@ function renderComponent() {
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
     mockBillingStatus.value = null
     mockIsPaused.value = true
     mockIsActiveSubscription.value = true
@@ -74,6 +82,7 @@ describe('BillingStatusBanner', () => {
     mockRenewalDate.value = null
     mockPermissions.value = { canManageSubscription: true }
     mockIsInPersonalWorkspace.value = false
+    mockActiveWorkspaceId = 'team-1'
   })
 
   it('prioritizes a paused subscription and opens payment management', async () => {
@@ -118,13 +127,17 @@ describe('BillingStatusBanner', () => {
     mockIsPaused.value = false
     mockSubscription.value = { hasFunds: false, isCancelled: false }
     mockRenewalDate.value = '2026-08-15T00:00:00Z'
-    renderComponent()
+    const { unmount } = renderComponent()
 
     expect(screen.getByText('Out of credits')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    unmount()
+    renderComponent()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 

@@ -3,6 +3,7 @@ export const WORKSPACE_STORAGE_KEYS = {
   CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
   TOKEN: 'Comfy.Workspace.Token',
   EXPIRES_AT: 'Comfy.Workspace.ExpiresAt',
+  DISMISSED_BILLING_BANNERS: 'Comfy.Workspace.DismissedBillingBanners',
   // localStorage key (persists across browser sessions)
   LAST_WORKSPACE_ID: 'Comfy.Workspace.LastWorkspaceId'
 } as const

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -198,6 +198,7 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 describe('MembersPanelContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFetchBalance.mockResolvedValue(undefined)
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []
@@ -223,6 +224,22 @@ describe('MembersPanelContent', () => {
       showPendingTab: true,
       showSearch: true
     }
+  })
+
+  it('handles billing balance load failures', async () => {
+    const error = new Error('network failure')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockFetchBalance.mockRejectedValue(error)
+
+    renderComponent()
+
+    await waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to load workspace billing balance',
+        error
+      )
+    )
+    consoleError.mockRestore()
   })
 
   describe('personal workspace', () => {
