@@ -9,6 +9,7 @@ import {
   zAgentMessages,
   zAgentThreads,
   zAgentTurnAccepted,
+  zCloudWorkflowIndex,
   zUploadImageResult
 } from '../../schemas/agentApiSchema'
 import type {
@@ -17,8 +18,12 @@ import type {
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
+  CloudWorkflowEntry,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
+
+const CLOUD_WORKFLOW_PAGE_SIZE = 100
+const CLOUD_WORKFLOW_MAX_PAGES = 5
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -144,6 +149,26 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
+    const entries: CloudWorkflowEntry[] = []
+    let hasMore = false
+    for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+      const result = await request(
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        { method: 'GET' },
+        zCloudWorkflowIndex
+      )
+      entries.push(...result.data)
+      hasMore = result.pagination.has_more
+      if (!hasMore) break
+    }
+    if (hasMore)
+      console.warn(
+        `[agent] cloud workflow index truncated at ${entries.length} entries`
+      )
+    return entries
+  }
+
   async function cancelMessage(
     threadId: string,
     messageId: string
@@ -181,6 +206,7 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    listCloudWorkflows,
     cancelMessage,
     getDraft,
     uploadImage

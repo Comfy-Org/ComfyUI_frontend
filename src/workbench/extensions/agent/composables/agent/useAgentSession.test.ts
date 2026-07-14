@@ -32,6 +32,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     ),
@@ -387,6 +388,48 @@ describe('useAgentSession (v1 composition root)', () => {
       draft: { content: { nodes: [{ id: 1 }] }, version: null }
     })
     expect(adopted).toHaveBeenCalledWith('wf-1', undefined, true)
+  })
+
+  it('(h6) a 5xx draft rejection retries without the draft and reports uploaded=false', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValueOnce(
+        new AgentApiError('internal server error', 500, {
+          error: 'internal server error'
+        })
+      )
+      .mockResolvedValueOnce({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-1'
+      })
+    const rest = fakeRest({ postMessage })
+    const adopted = vi.fn()
+    const uploadSkipped = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted,
+        uploadSkipped,
+        snapshot: () => ({
+          content: { nodes: [{ id: 1 }] },
+          version: null
+        })
+      }
+    })
+    session.start()
+    const sent = await session.sendMessage('hi')
+
+    expect(sent).toBe(true)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(postMessage.mock.calls[0][1]).toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1].draft).toBeUndefined()
+    expect(uploadSkipped).toHaveBeenCalledTimes(1)
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, false)
   })
 
   it('(h5) a 409 draft conflict adopts the server version and retries once', async () => {

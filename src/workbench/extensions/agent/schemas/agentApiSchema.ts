@@ -1,3 +1,4 @@
+import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 const zTurnId = z.string().brand<'TurnId'>()
@@ -42,6 +43,17 @@ export type AgentThreadSummary = z.infer<typeof zAgentThreadSummary>
 export const zAgentThreads = z
   .object({ threads: z.array(zAgentThreadSummary) })
   .passthrough()
+
+export const zCloudWorkflowIndex = zWorkflowListResponse
+  .pick({ pagination: true })
+  .extend({
+    data: z.array(
+      z.object({ id: z.string(), name: z.string().optional() }).passthrough()
+    )
+  })
+export type CloudWorkflowEntry = z.infer<
+  typeof zCloudWorkflowIndex
+>['data'][number]
 
 export const zAgentCancelAccepted = z.object({
   status: z.literal('cancelling')

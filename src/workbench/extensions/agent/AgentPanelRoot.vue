@@ -98,6 +98,42 @@ function mentionableNodes(): SelectedNode[] {
   }))
 }
 
+let cloudIdsByName = new Map<string, string>()
+
+async function refreshCloudWorkflowIds(): Promise<void> {
+  try {
+    const workflows = await rest.listCloudWorkflows()
+    const nameCounts = new Map<string, number>()
+    for (const { name } of workflows) {
+      if (name !== undefined)
+        nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+    }
+    cloudIdsByName = new Map(
+      workflows.flatMap(({ id, name }) =>
+        name !== undefined && nameCounts.get(name) === 1
+          ? [[name, id] as const]
+          : []
+      )
+    )
+  } catch (error) {
+    console.warn('[agent] could not refresh cloud workflow ids', error)
+  }
+}
+
+function openSavedTabsNamed(filename: string): ComfyWorkflow[] {
+  return workflowStore.openWorkflows.filter(
+    (tab) => !tab.isTemporary && tab.filename === filename
+  )
+}
+
+function cloudIdFor(tab: ComfyWorkflow): string | undefined {
+  const saved =
+    !tab.isTemporary && openSavedTabsNamed(tab.filename).length === 1
+      ? cloudIdsByName.get(tab.filename)
+      : undefined
+  return saved ?? bindingStore.workflowIdFor(tab.path)
+}
+
 let lastKnownGraph: { serialized: string; workflowId: string } | null = null
 
 function reclaimMovedBinding(activePath: string): string | undefined {
@@ -114,8 +150,7 @@ function reclaimMovedBinding(activePath: string): string | undefined {
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
-  const bound =
-    bindingStore.workflowIdFor(active.path) ?? reclaimMovedBinding(active.path)
+  const bound = cloudIdFor(active) ?? reclaimMovedBinding(active.path)
   return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
@@ -147,19 +182,16 @@ function resetSnapshotGuard(): void {
 
 function openTabsSnapshot(): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
-    const workflowId = bindingStore.workflowIdFor(tab.path)
+    const workflowId = cloudIdFor(tab)
     return workflowId === undefined
       ? []
       : [{ workflow_id: workflowId, name: tab.filename }]
   })
   if (openTabs.length === 0) return undefined
-  const activePath = workflowStore.activeWorkflow?.path
+  const active = workflowStore.activeWorkflow
   return {
     open_tabs: openTabs,
-    current_tab:
-      activePath === undefined
-        ? undefined
-        : bindingStore.workflowIdFor(activePath)
+    current_tab: active ? cloudIdFor(active) : undefined
   }
 }
 
@@ -197,7 +229,9 @@ const {
   workflow: {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
+    prepare: refreshCloudWorkflowIds,
     snapshot: takeWorkflowSnapshot,
+    uploadSkipped: resetSnapshotGuard,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab
   }
@@ -244,7 +278,15 @@ let reapplyQueued = false
 
 function boundTabFor(workflowId: string): ComfyWorkflow | null {
   const path = bindingStore.tabPathFor(workflowId)
-  return path === undefined ? null : workflowStore.getWorkflowByPath(path)
+  const bound =
+    path === undefined ? null : workflowStore.getWorkflowByPath(path)
+  if (bound) return bound
+  for (const [name, id] of cloudIdsByName) {
+    if (id !== workflowId) continue
+    const matches = openSavedTabsNamed(name)
+    return matches.length === 1 ? matches[0] : null
+  }
+  return null
 }
 
 function unusedFilenameFor(tab: ComfyWorkflow): string {
@@ -533,6 +575,7 @@ function onResolveConflict(choice: ConflictChoice): void {
 }
 
 start()
+void refreshCloudWorkflowIds()
 onBeforeUnmount(stop)
 
 const history = useAgentChatHistoryStore()

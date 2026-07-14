@@ -1032,7 +1032,8 @@ describe('AgentPanelRoot workflow binding', () => {
     draft: { status: number; body: unknown } = {
       status: 200,
       body: { content: { version: 0.4, nodes: [{ id: 1 }] }, version: 3 }
-    }
+    },
+    cloudWorkflows: { id: string; name: string }[] = []
   ): unknown[] {
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -1060,6 +1061,20 @@ describe('AgentPanelRoot workflow binding', () => {
             status: draft.status,
             headers: { 'Content-Type': 'application/json' }
           })
+        }
+        if (url.includes('/workflows')) {
+          return new Response(
+            JSON.stringify({
+              data: cloudWorkflows,
+              pagination: {
+                offset: 0,
+                limit: 100,
+                total: cloudWorkflows.length,
+                has_more: false
+              }
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
         }
         return new Response('{}', { status: 200 })
       })
@@ -2219,6 +2234,296 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).not.toHaveProperty('current_tab')
   })
 
+  it('retries without the draft when the server rejects the upload, then re-arms it', async () => {
+    makeTab('wf-42')
+    appMock.graph.nodes = [{ id: 1 }]
+    const bodies: Record<string, unknown>[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (!url.includes('/messages'))
+          return new Response('{}', { status: 200 })
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+        bodies.push(body)
+        if (body.draft !== undefined) {
+          return new Response(
+            JSON.stringify({ error: 'internal server error' }),
+            {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          )
+        }
+        return new Response(
+          JSON.stringify({
+            thread_id: 'th-1',
+            message_id: `m-${bodies.length}`,
+            workflow_id: 'wf-42'
+          }),
+          { status: 202, headers: { 'Content-Type': 'application/json' } }
+        )
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies).toHaveLength(2)
+    expect(bodies[0]).toHaveProperty('draft')
+    expect(bodies[1]).not.toHaveProperty('draft')
+
+    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    await userEvent.type(screen.getByRole('textbox'), 'second message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[2]).toHaveProperty('draft')
+  })
+
+  it('refreshes the cloud index before each send, not just on mount', async () => {
+    makeTab()
+    const bodies: unknown[] = []
+    let workflowsCalls = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init?.body)))
+          return new Response(
+            JSON.stringify({
+              thread_id: 'th-1',
+              message_id: 'm-1',
+              workflow_id: 'wf-cloud-current'
+            }),
+            { status: 202, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        if (url.includes('/workflows')) {
+          workflowsCalls += 1
+          const data =
+            workflowsCalls === 1
+              ? []
+              : [{ id: 'wf-cloud-current', name: 'current' }]
+          return new Response(
+            JSON.stringify({
+              data,
+              pagination: {
+                offset: 0,
+                limit: 100,
+                total: data.length,
+                has_more: false
+              }
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
+  })
+
+  it('does not resolve two same-named open saved tabs to one cloud id', async () => {
+    makeTab()
+    const twin: FakeTab = {
+      path: 'workflows/archive/current.json',
+      directory: 'workflows/archive',
+      filename: 'current',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(twin.path, twin)
+    const bodies = mockMessagesEndpoint(
+      'wf-fresh',
+      { status: 404, body: { error: 'none' } },
+      [{ id: 'wf-cloud-current', name: 'current' }]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
+  })
+
+  it('excludes ambiguous and nameless cloud records from resolution', async () => {
+    makeTab()
+    const bodies = mockMessagesEndpoint(
+      'wf-fresh',
+      { status: 404, body: { error: 'none' } },
+      [
+        { id: 'wf-a', name: 'current' },
+        { id: 'wf-b', name: 'current' },
+        { id: 'wf-nameless' } as { id: string; name: string }
+      ]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
+  })
+
+  it('falls back to bindings when the cloud index request fails', async () => {
+    makeTab('wf-42')
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init?.body)))
+          return new Response(
+            JSON.stringify({
+              thread_id: 'th-1',
+              message_id: 'm-1',
+              workflow_id: 'wf-42'
+            }),
+            { status: 202, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        if (url.includes('/workflows')) {
+          return new Response(
+            JSON.stringify({ error: 'internal server error' }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
+  })
+
+  it('resolves saved tabs to their cloud workflow ids by name', async () => {
+    makeTab()
+    const scratch: FakeTab = {
+      path: 'workflows/side.json',
+      directory: 'workflows',
+      filename: 'side',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(scratch.path, scratch)
+    const bodies = mockMessagesEndpoint(
+      'wf-cloud-current',
+      { status: 404, body: { error: 'none' } },
+      [
+        { id: 'wf-cloud-current', name: 'current' },
+        { id: 'wf-cloud-side', name: 'side' }
+      ]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-cloud-current',
+      open_tabs: [
+        { workflow_id: 'wf-cloud-current', name: 'current' },
+        { workflow_id: 'wf-cloud-side', name: 'side' }
+      ],
+      current_tab: 'wf-cloud-current'
+    })
+  })
+
+  it('does not resolve temporary tabs through the cloud workflow index', async () => {
+    const tab = makeTab()
+    tab.isTemporary = true
+    const bodies = mockMessagesEndpoint(
+      'wf-fresh',
+      { status: 404, body: { error: 'none' } },
+      [{ id: 'wf-cloud-current', name: 'current' }]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
+  })
+
+  it('agent_active_tab with a cloud id activates the open saved tab without minting', async () => {
+    makeTab()
+    const tempDuck: FakeTab = {
+      path: 'workflows/temp/duck.json',
+      directory: 'workflows/temp',
+      filename: 'duck',
+      isTemporary: true,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(tempDuck.path, tempDuck)
+    const duck: FakeTab = {
+      path: 'workflows/duck.json',
+      directory: 'workflows',
+      filename: 'duck',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(duck.path, duck)
+    mockMessagesEndpoint(
+      'wf-cloud-current',
+      { status: 404, body: { error: 'none' } },
+      [
+        { id: 'wf-cloud-current', name: 'current' },
+        { id: 'wf-cloud-duck', name: 'duck' }
+      ]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-cloud-duck',
+      thread_id: 'th-1'
+    })
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(duck)
+    )
+    expect(hostStores.workflow.tabs.get('workflows/duck (2).json')).toBe(
+      undefined
+    )
+  })
+
   it('sends every open tab that has a cloud id with the message', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42', {
@@ -2856,7 +3161,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return new Response('{}', { status: 200 })
         calls += 1
         bodies.push(JSON.parse(String(init?.body)))
-        if (calls === 1) return new Response('{}', { status: 500 })
+        if (calls <= 2) return new Response('{}', { status: 500 })
         return new Response(
           JSON.stringify({
             thread_id: 'th-1',
@@ -2872,12 +3177,13 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await userEvent.type(screen.getByRole('textbox'), 'one')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    await vi.waitFor(() => expect(bodies).toHaveLength(2))
+    expect(bodies[0]).toHaveProperty('draft')
+    expect(bodies[1]).not.toHaveProperty('draft')
 
     await userEvent.type(screen.getByRole('textbox'), 'two')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await vi.waitFor(() => expect(bodies).toHaveLength(2))
-    expect(bodies[0]).toHaveProperty('draft')
-    expect(bodies[1]).toHaveProperty('draft')
+    await vi.waitFor(() => expect(bodies).toHaveLength(3))
+    expect(bodies[2]).toHaveProperty('draft')
   })
 })
