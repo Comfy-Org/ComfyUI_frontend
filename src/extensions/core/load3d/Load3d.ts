@@ -83,6 +83,9 @@ class Load3d extends Viewport3d {
 
     this.loaderManager.init()
     this.animationManager.init()
+    this.gizmoManager.setPointerNdcSource((clientX, clientY) =>
+      this.clientPointToNdc(clientX, clientY)
+    )
     this.gizmoManager.init()
 
     this.eventManager.addEventListener('modelReady', () => {

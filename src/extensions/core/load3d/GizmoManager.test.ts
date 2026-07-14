@@ -9,24 +9,35 @@ const {
   mockDetach,
   mockGetHelper,
   mockDispose,
-  transformControlsInstances
+  transformControlsInstances,
+  omitGetPointer
 } = vi.hoisted(() => ({
   mockSetMode: vi.fn(),
   mockAttach: vi.fn(),
   mockDetach: vi.fn(),
   mockGetHelper: vi.fn(),
   mockDispose: vi.fn(),
-  transformControlsInstances: [] as unknown[]
+  transformControlsInstances: [] as unknown[],
+  omitGetPointer: { value: false }
 }))
 
 vi.mock('three/examples/jsm/controls/TransformControls', () => {
   class TransformControls {
     enabled = true
+    dragging = false
     camera: THREE.Camera
+    _getPointer?: (event: PointerEvent) => {
+      x: number
+      y: number
+      button: number
+    }
     private listeners = new Map<string, ((e: unknown) => void)[]>()
 
     constructor(camera: THREE.Camera) {
       this.camera = camera
+      if (!omitGetPointer.value) {
+        this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+      }
       transformControlsInstances.push(this)
     }
 
@@ -73,6 +84,7 @@ describe('GizmoManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     transformControlsInstances.length = 0
+    omitGetPointer.value = false
 
     scene = new THREE.Scene()
     interactionElement = document.createElement('div')
@@ -100,18 +112,22 @@ describe('GizmoManager', () => {
 
   describe('setPointerNdcSource', () => {
     type PointerNdc = { x: number; y: number; button: number }
-    function getPointerOverride() {
-      const controls = transformControlsInstances.at(-1) as {
+    function lastControls() {
+      return transformControlsInstances.at(-1) as {
+        dragging: boolean
         _getPointer?: (event: PointerEvent) => PointerNdc
       }
-      return controls._getPointer
+    }
+    function getPointerOverride() {
+      return lastControls()._getPointer
     }
 
     it('routes TransformControls pointer NDC through the injected source', () => {
       manager.init()
       manager.setPointerNdcSource((clientX, clientY) => ({
         x: clientX / 100,
-        y: clientY / 100
+        y: clientY / 100,
+        inside: true
       }))
 
       const pointer = getPointerOverride()!({
@@ -123,7 +139,7 @@ describe('GizmoManager', () => {
       expect(pointer).toEqual({ x: 0.5, y: -0.25, button: 2 })
     })
 
-    it('maps points outside the viewport to an off-screen pointer', () => {
+    it('maps unmappable points to an off-screen pointer', () => {
       manager.init()
       manager.setPointerNdcSource(() => null)
 
@@ -136,8 +152,35 @@ describe('GizmoManager', () => {
       expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
     })
 
+    it('maps points outside the viewport to an off-screen pointer while not dragging', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: 0
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: 10, y: 10, button: 0 })
+    })
+
+    it('keeps the unclamped NDC for points outside the viewport mid-drag', () => {
+      manager.init()
+      manager.setPointerNdcSource(() => ({ x: -1.2, y: 0.4, inside: false }))
+      lastControls().dragging = true
+
+      const pointer = getPointerOverride()!({
+        clientX: 0,
+        clientY: 0,
+        button: -1
+      } as PointerEvent)
+
+      expect(pointer).toEqual({ x: -1.2, y: 0.4, button: -1 })
+    })
+
     it('applies a source registered before init once init runs', () => {
-      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5 }))
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
       manager.init()
 
       const pointer = getPointerOverride()!({
@@ -147,6 +190,37 @@ describe('GizmoManager', () => {
       } as PointerEvent)
 
       expect(pointer).toEqual({ x: 0.5, y: 0.5, button: 1 })
+    })
+
+    it('delegates to the stock mapping until a source is registered', () => {
+      manager.init()
+
+      const stock = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(stock).toEqual({ x: 0, y: 0, button: 2 })
+
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: -0.25, inside: true }))
+
+      const mapped = getPointerOverride()!({
+        clientX: 40,
+        clientY: 60,
+        button: 2
+      } as PointerEvent)
+      expect(mapped).toEqual({ x: 0.5, y: -0.25, button: 2 })
+    })
+
+    it('warns and skips the override when _getPointer is missing at init', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      omitGetPointer.value = true
+      manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
+
+      manager.init()
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('_getPointer'))
+      expect(lastControls()._getPointer).toBeUndefined()
     })
   })
 

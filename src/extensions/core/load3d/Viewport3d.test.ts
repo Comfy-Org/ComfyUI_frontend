@@ -405,16 +405,6 @@ describe('Viewport3d', () => {
       Object.assign(ctx.viewport, { view: { canvas } })
     }
 
-    function expectNdc(
-      actual: { x: number; y: number } | null,
-      x: number,
-      y: number
-    ): void {
-      expect(actual).not.toBeNull()
-      expect(actual!.x).toBeCloseTo(x)
-      expect(actual!.y).toBeCloseTo(y)
-    }
-
     beforeEach(() => {
       Object.assign(ctx.viewport, {
         targetWidth: 100,
@@ -424,19 +414,19 @@ describe('Viewport3d', () => {
       })
     })
 
-    it('maps pointer positions inside the letterboxed content to NDC', () => {
+    it('normalizes client coordinates against the canvas rect before letterbox mapping', () => {
       installCanvas({ left: 100, top: 50, width: 400, height: 200 })
 
-      expectNdc(ctx.viewport.clientPointToNdc(300, 150), 0, 0)
-      expectNdc(ctx.viewport.clientPointToNdc(200, 150), -1, 0)
-      expectNdc(ctx.viewport.clientPointToNdc(400, 50), 1, 1)
-    })
-
-    it('returns null on the letterbox bars', () => {
-      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
-
-      expect(ctx.viewport.clientPointToNdc(150, 150)).toBeNull()
-      expect(ctx.viewport.clientPointToNdc(450, 150)).toBeNull()
+      expect(ctx.viewport.clientPointToNdc(300, 150)).toEqual({
+        x: expect.closeTo(0),
+        y: expect.closeTo(0),
+        inside: true
+      })
+      expect(ctx.viewport.clientPointToNdc(150, 150)).toEqual({
+        x: expect.closeTo(-1.5),
+        y: expect.closeTo(0),
+        inside: false
+      })
     })
 
     it('returns null when the canvas has no layout size', () => {
@@ -449,8 +439,11 @@ describe('Viewport3d', () => {
       installCanvas({ left: 100, top: 50, width: 400, height: 200 })
       Object.assign(ctx.viewport, { targetWidth: 0, targetHeight: 0 })
 
-      expectNdc(ctx.viewport.clientPointToNdc(100, 50), -1, 1)
-      expectNdc(ctx.viewport.clientPointToNdc(500, 250), 1, -1)
+      expect(ctx.viewport.clientPointToNdc(100, 50)).toEqual({
+        x: expect.closeTo(-1),
+        y: expect.closeTo(1),
+        inside: true
+      })
     })
   })
 

@@ -118,7 +118,6 @@ vi.mock('./GizmoManager', () => ({
     getTransform = vi.fn(() => ({}))
     isEnabled = vi.fn(() => false)
     getMode = vi.fn(() => 'translate')
-    setPointerNdcSource = vi.fn()
   }
 }))
 
@@ -126,7 +125,6 @@ vi.mock('./Load3d', () => ({
   default: class {
     deps: unknown
     options: unknown
-    clientPointToNdc = vi.fn(() => ({ x: 0.25, y: -0.5 }))
     constructor(_container: unknown, deps: unknown, options: unknown) {
       this.deps = deps
       this.options = options
@@ -195,24 +193,6 @@ describe('createLoad3d', () => {
     const instance = createLoad3d(container, options) as unknown as FakeLoad3d
 
     expect(instance.options).toEqual(options)
-  })
-
-  it('wires the gizmo pointer NDC source to the letterbox-aware mapping', () => {
-    const instance = createLoad3d(
-      createContainer()
-    ) as unknown as FakeLoad3d & {
-      clientPointToNdc: ReturnType<typeof vi.fn>
-      deps: { gizmoManager: { setPointerNdcSource: ReturnType<typeof vi.fn> } }
-    }
-
-    const source = instance.deps.gizmoManager.setPointerNdcSource.mock
-      .calls[0][0] as (
-      clientX: number,
-      clientY: number
-    ) => { x: number; y: number } | null
-
-    expect(source(12, 34)).toEqual({ x: 0.25, y: -0.5 })
-    expect(instance.clientPointToNdc).toHaveBeenCalledWith(12, 34)
   })
 
   it('shares one AdapterRef between LoaderManager and SceneModelManager lambdas', () => {

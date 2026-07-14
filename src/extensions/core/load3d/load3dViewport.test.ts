@@ -112,46 +112,46 @@ describe('isLoad3dActive', () => {
 })
 
 describe('clientPointToLetterboxNdc', () => {
-  function expectNdc(
-    actual: { x: number; y: number } | null,
-    x: number,
-    y: number
-  ): void {
-    expect(actual).not.toBeNull()
-    expect(actual!.x).toBeCloseTo(x)
-    expect(actual!.y).toBeCloseTo(y)
+  function ndc(x: number, y: number, inside = true) {
+    return { x: expect.closeTo(x), y: expect.closeTo(y), inside }
   }
 
   it('maps the full canvas when no target aspect is set', () => {
-    expectNdc(
-      clientPointToLetterboxNdc(0.5, 0.5, { width: 400, height: 300 }, null),
-      0,
-      0
-    )
-    expectNdc(
-      clientPointToLetterboxNdc(0, 1, { width: 400, height: 300 }, null),
-      -1,
-      -1
-    )
+    expect(
+      clientPointToLetterboxNdc(0.5, 0.5, { width: 400, height: 300 }, null)
+    ).toEqual(ndc(0, 0))
+    expect(
+      clientPointToLetterboxNdc(0, 1, { width: 400, height: 300 }, null)
+    ).toEqual(ndc(-1, -1))
   })
 
   it('maps pillarboxed content edges to -1/1', () => {
     const container = { width: 400, height: 200 }
-    expectNdc(clientPointToLetterboxNdc(0.25, 0.5, container, 1), -1, 0)
-    expectNdc(clientPointToLetterboxNdc(0.75, 0, container, 1), 1, 1)
-    expectNdc(clientPointToLetterboxNdc(0.5, 0.5, container, 1), 0, 0)
+    expect(clientPointToLetterboxNdc(0.25, 0.5, container, 1)).toEqual(
+      ndc(-1, 0)
+    )
+    expect(clientPointToLetterboxNdc(0.75, 0, container, 1)).toEqual(ndc(1, 1))
+    expect(clientPointToLetterboxNdc(0.5, 0.5, container, 1)).toEqual(ndc(0, 0))
   })
 
-  it('returns null on the letterbox bars', () => {
+  it('extrapolates unclamped NDC marked outside on the letterbox bars', () => {
     const container = { width: 400, height: 200 }
-    expect(clientPointToLetterboxNdc(0.1, 0.5, container, 1)).toBeNull()
-    expect(clientPointToLetterboxNdc(0.9, 0.5, container, 1)).toBeNull()
+    expect(clientPointToLetterboxNdc(0.1, 0.5, container, 1)).toEqual(
+      ndc(-1.6, 0, false)
+    )
+    expect(clientPointToLetterboxNdc(0.9, 0.5, container, 1)).toEqual(
+      ndc(1.6, 0, false)
+    )
   })
 
   it('handles letterbox bars above/below wide content', () => {
     const container = { width: 200, height: 400 }
-    expectNdc(clientPointToLetterboxNdc(0.5, 0.375, container, 2), 0, 1)
-    expect(clientPointToLetterboxNdc(0.5, 0.1, container, 2)).toBeNull()
+    expect(clientPointToLetterboxNdc(0.5, 0.375, container, 2)).toEqual(
+      ndc(0, 1)
+    )
+    expect(clientPointToLetterboxNdc(0.5, 0.1, container, 2)).toEqual(
+      ndc(0, 3.2, false)
+    )
   })
 
   it('returns null instead of NaN for zero-size containers', () => {
