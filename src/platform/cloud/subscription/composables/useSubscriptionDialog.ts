@@ -76,7 +76,9 @@ export const useSubscriptionDialog = () => {
         dialogComponentProps: {
           style: 'width: min(360px, 95vw);',
           pt: {
-            root: { class: 'bg-transparent' },
+            root: {
+              class: 'bg-transparent border-none rounded-none shadow-none'
+            },
             content: { class: '!p-0 bg-transparent border-none shadow-none' }
           }
         }
