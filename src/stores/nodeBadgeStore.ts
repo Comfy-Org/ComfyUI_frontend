@@ -64,7 +64,7 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
     nodeId: NodeId,
     badge: BadgeData
   ): boolean {
-    const rows = buckets.value.get(graphId)?.get(nodeId)
+    const rows = registeredRows(graphId, nodeId)
     if (!rows) return false
     const index = rows.findIndex((row) => toRaw(row) === toRaw(badge))
     if (index === -1) return false
@@ -75,6 +75,9 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   /**
    * Replaces every row of one kind; the system's recompute write path.
    * Refused for unregistered nodes.
+   * @internal Not an extension API — replacing the `extension` kind
+   * wholesale stomps other writers' rows; extensions use
+   * {@link registerBadge}/{@link deleteBadge}.
    */
   function setBadgesOfKind(
     graphId: UUID,
@@ -90,7 +93,7 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
 
   /** A node's rows in kind display order (core, credits, extension). */
   function getBadges(graphId: UUID, nodeId: NodeId): readonly BadgeData[] {
-    const rows = buckets.value.get(graphId)?.get(nodeId)
+    const rows = registeredRows(graphId, nodeId)
     if (!rows) return EMPTY_BADGES
     return [...rows].sort((a, b) => kindRank(a.kind) - kindRank(b.kind))
   }

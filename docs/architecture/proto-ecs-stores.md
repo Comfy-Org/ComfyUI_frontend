@@ -6,7 +6,7 @@ For the full problem analysis, see [Entity Problems](entity-problems.md). For th
 
 ## 1. What's Already Extracted
 
-Eight dedicated stores extract entity state out of class instances into focused,
+Nine dedicated stores extract entity state out of class instances into focused,
 queryable registries, each owning one concern. Promoted value-widget topology is
 no longer a store; ADR 0009 represents it as ordinary linked `SubgraphInput`
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
@@ -22,6 +22,7 @@ state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 | PreviewExposureStore    | Subgraph host node           | host node locator | host locator + exposure name                              | Display-only preview state    |
 | LinkStore               | `LLink`                      | Root graph        | `` `${targetNodeId}:${targetSlot}` `` (target input slot) | Plain `LinkTopology` object   |
 | RerouteStore            | `Reroute`                    | Root graph        | `RerouteId`                                               | Plain `RerouteChain` object   |
+| NodeBadgeStore          | `LGraphNode.badges` closures | Root graph        | `NodeId`                                                  | Plain `BadgeData` rows        |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
@@ -30,6 +31,11 @@ their root's bucket). Floating links and links targeting subgraph outputs live
 in a per-graph unkeyed side set. Design records:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md).
+
+**Update (2026-07-14):** `NodeBadgeStore` (`src/stores/nodeBadgeStore.ts`,
+PR #13458) holds plain `BadgeData` rows keyed by `NodeId` in root-graph-scoped
+buckets, written by a reactive badge system rather than adopted class state.
+Design record: [Node Badge Store](node-badge-store.md).
 
 ADR 0009 refines promoted-widget identity: promoted value widgets are keyed by
 the host boundary (`host node locator + SubgraphInput.name`), while interior

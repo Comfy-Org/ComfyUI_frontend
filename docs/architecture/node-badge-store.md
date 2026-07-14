@@ -115,6 +115,10 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   closures; until then rows are written only under test. Row writes are
   refused for unregistered nodes so a late effect flush cannot
   resurrect a bucket key the chokepoints deleted.
+- Two write paths: `setBadgesOfKind` is the system's bulk
+  replace-one-kind recompute path (`@internal`); extension rows go
+  through `registerBadge`/`deleteBadge` per row, identity-checked, so
+  independent writers cannot stomp each other.
 - The shell still reads `node.constructor.nodeData` and `node.inputs`
   (untracked instance state) to map pricing input names to slot
   indices — parity with the legacy closures. Those reads become store
