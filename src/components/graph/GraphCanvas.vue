@@ -564,18 +564,18 @@ onMounted(async () => {
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   // A ?template=/?share= URL loads a workflow directly (Getting Started is
-  // skipped). Start the onboarding tour on it; start() self-gates and reads the
-  // now-loaded graph, so the loaders above must have finished first.
+  // skipped). Start the onboarding tour on it; beginTour() self-gates and reads
+  // the now-loaded graph, so the loaders above must have finished first.
   if (templateFromUrl.loaded) {
-    void useOnboardingTourController().start(
-      templateFromUrl.templateId,
-      'template_url'
-    )
+    void useOnboardingTourController().beginTour({
+      templateId: templateFromUrl.templateId,
+      entry: 'template_url'
+    })
   } else if (
     sharedFromUrl === 'loaded' ||
     sharedFromUrl === 'loaded-without-assets'
   ) {
-    void useOnboardingTourController().start(undefined, 'share_url')
+    void useOnboardingTourController().beginTour({ entry: 'share_url' })
   }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(

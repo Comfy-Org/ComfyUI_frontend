@@ -1,63 +1,119 @@
-import { createSharedComposable, useEventListener } from '@vueuse/core'
+import { createSharedComposable, until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useExecutionStore } from '@/stores/executionStore'
 import type {
   OnboardingTourEntry,
   OnboardingTourShape
 } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNewUserService } from '@/services/useNewUserService'
-import { api } from '@/scripts/api'
+import type { NodeId } from '@/types/nodeId'
 
+import {
+  RUN_BUTTON_SELECTOR,
+  canvasTransformValid,
+  nodesPresent
+} from './canvasSpotlightAdapter'
+import { resolveRoles } from './roleResolver'
 import { useOnboardingTourStore } from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
-import { focusPromptTarget, restoreView } from './subgraphNavigation'
+import { restoreView } from './subgraphNavigation'
 import type { ResolvedRoles } from './tourSequence'
 
-/** No auto-step may trap the user; advance after this grace period. */
-const AUTO_STEP_GRACE_MS = 8000
+/** Budget for the serialized snapshot to appear (guards the URL blank-load race). */
+const ACTIVE_STATE_TIMEOUT_MS = 1500
+/** Budget for the live canvas graph to contain the resolved role nodes. */
+const READY_TIMEOUT_MS = 3000
+
+/** Top-level nodes the sequence actually spotlights (upload, prompt host, sink). */
+function roleAnchorIds(roles: ResolvedRoles): NodeId[] {
+  return [
+    roles.source?.nodeId,
+    roles.prompt?.subgraphNodeId,
+    roles.sink?.nodeId
+  ].filter((id): id is NodeId => id != null)
+}
+
+/** The live graph holds the resolved anchors and the canvas has a usable transform. */
+function liveGraphReady(roles: ResolvedRoles): boolean {
+  return nodesPresent(roleAnchorIds(roles)) && canvasTransformValid()
+}
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()))
+}
+
+interface BeginTourOptions {
+  templateId?: string
+  entry?: OnboardingTourEntry
+}
 
 function _useOnboardingTourController() {
   const store = useOnboardingTourStore()
 
-  let graceTimer: ReturnType<typeof setTimeout> | undefined
+  /** True while the loader is up: template chosen, tour not yet started. */
+  const isPreparing = ref(false)
+
   /** Retained from `start` so completion/skip telemetry carries the same tags. */
   let activeTemplateId: string | undefined
   let activeShape: OnboardingTourShape = 'other'
   /** Guards RunTriggered against re-firing on a second successful run. */
   let runReported = false
-  /** Stops the per-tour `execution_success` listener; set while a tour is live. */
+  /** Stops the per-tour run watcher; set while a tour is live. */
   let stopRunListener: (() => void) | undefined
-  /** Guards the post-run nudge so only the first successful run surfaces it. */
+  /** Stops the Run-button click listener; set only while on the Run step. */
+  let stopRunClick: (() => void) | undefined
+  /** Guards the post-run nudge so only the first completed run surfaces it. */
   let nudgeShownForRun = false
 
-  function clearGrace() {
-    if (graceTimer !== undefined) {
-      clearTimeout(graceTimer)
-      graceTimer = undefined
-    }
-  }
-
   /**
-   * React to the tour run's first real success: capture the result media, report
-   * the run (this is the honest run signal — merely viewing the Run step is not),
-   * and surface the "explore templates" nudge. Registered per tour so a stray
-   * success outside a tour never fires it, and torn down on `end`.
+   * On the run's completion — the job's set→null transition, reliable across
+   * local, cloud, and interrupt/error paths — resolve the Result media, report the
+   * run, and surface the nudge. NOT the step advance: that fires on the Run click
+   * (see {@link listenForRunClick}). Owned by a detached scope because `start()`
+   * runs inside the Getting Started screen's setup, which unmounts right after — a
+   * component-scoped watch would be disposed before the user reaches Run.
    */
   function listenForFirstRun() {
     stopRunListener?.()
     nudgeShownForRun = false
-    stopRunListener = useEventListener(api, 'execution_success', () => {
-      store.captureResultMedia()
-      if (nudgeShownForRun) return
-      nudgeShownForRun = true
-      reportRunTriggered()
-      store.showNudge()
+    const scope = effectScope(true)
+    scope.run(() => {
+      const { activeJobId } = storeToRefs(useExecutionStore())
+      watch(activeJobId, (jobId, previousJobId) => {
+        // Fire on the run's set→null transition (the reliable "finished" signal).
+        if (jobId || !previousJobId) return
+        void store.captureResultMedia()
+        if (nudgeShownForRun) return
+        nudgeShownForRun = true
+        reportRunTriggered()
+        store.showNudge()
+      })
     })
+    stopRunListener = () => scope.stop()
+  }
+
+  /**
+   * The Run step advances the moment the user clicks the Run button — the click
+   * is the honest "they ran it" signal and keeps the coach-mark moving instantly
+   * (waiting for execution completion left it stuck on Run). Capture-phase so it
+   * fires even though the overlay scrim sits above the toolbar.
+   */
+  function listenForRunClick() {
+    stopRunClick?.()
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as Element | null
+      if (target?.closest(RUN_BUTTON_SELECTOR)) void advance()
+    }
+    document.addEventListener('click', onClick, true)
+    stopRunClick = () => document.removeEventListener('click', onClick, true)
   }
 
   function reportRunTriggered() {
@@ -118,6 +174,54 @@ function _useOnboardingTourController() {
     await enterStep()
   }
 
+  /**
+   * Shared entry point for both the Getting Started card and the URL loaders.
+   * Shows the loader, waits until the just-loaded template is actually present
+   * on the live canvas, then starts the tour — so the overlay never paints over
+   * a not-yet-rendered graph. Best-effort: on timeout it starts degraded rather
+   * than trapping, and the loader always clears.
+   */
+  async function beginTour({
+    templateId,
+    entry = 'getting_started'
+  }: BeginTourOptions = {}) {
+    if (!shouldStartTour()) return
+    if (isPreparing.value || store.phase === 'active') return
+
+    isPreparing.value = true
+    try {
+      const workflowStore = useWorkflowStore()
+
+      // Guards the URL path, where loadBlankWorkflow() precedes the template load.
+      await until(() => workflowStore.activeWorkflow?.activeState).toBeTruthy({
+        timeout: ACTIVE_STATE_TIMEOUT_MS,
+        throwOnTimeout: false
+      })
+      const workflow = workflowStore.activeWorkflow?.activeState
+      if (!workflow) return
+
+      // Resolve from the same snapshot start() uses, then hold until the live
+      // graph agrees — the spotlight reads the live graph, so they must match.
+      const roles = resolveRoles(workflow, templateId)
+      const ready = await until(() => liveGraphReady(roles)).toBe(true, {
+        timeout: READY_TIMEOUT_MS,
+        throwOnTimeout: false
+      })
+      if (!ready) {
+        console.warn(
+          '[onboardingTour] canvas readiness timed out; starting degraded',
+          { templateId }
+        )
+      }
+
+      await nextFrame()
+      await start(templateId, entry)
+      await nextFrame()
+    } finally {
+      isPreparing.value = false
+    }
+  }
+
   /** UX-only paywall check; real enforcement is server-side. Never gate on signup method. */
   function hasFunds(): boolean {
     return useBillingContext().subscription.value?.hasFunds === true
@@ -141,22 +245,26 @@ function _useOnboardingTourController() {
     return true
   }
 
-  /** Set up the current step: focus the prompt (with port fallback) and arm the grace timer. */
+  /** Set up the current step: gate the run, arm the run-click, spotlight the prompt. */
   async function enterStep() {
-    clearGrace()
+    stopRunClick?.()
+    stopRunClick = undefined
+
     const step = store.currentStep
     if (!step) return
 
-    if (step.kind === 'run' && gateRunStep()) return
+    if (step.kind === 'run') {
+      if (gateRunStep()) return
+      // Advance the instant the user clicks Run; the Result step's copy bridges
+      // the generating→ready gap.
+      listenForRunClick()
+    }
 
+    // Never enter the subgraph: spotlight the collapsed host's prompt port on the
+    // root graph. restoreView is defensive if the user opened one manually.
+    restoreView()
     if (step.kind === 'prompt' && step.prompt) {
-      const entered = await focusPromptTarget(step.prompt)
-      store.setPromptEntered(entered)
-      store.promptPortFallback = !entered
-    } else {
-      // Any non-prompt step spotlights top-level nodes, so leave the subgraph the
-      // prompt step may have entered — otherwise their ids don't resolve on-screen.
-      restoreView()
+      store.promptPortFallback = true
     }
 
     useTelemetry()?.trackOnboardingTourStepViewed?.({
@@ -164,20 +272,6 @@ function _useOnboardingTourController() {
       step_index: store.stepIndex,
       step_total: store.totalSteps
     })
-
-    // Auto-advance guards only against a stalled purely-informational step; never
-    // skip the user past a step they must act on (Run) or the final Result.
-    if (store.phase === 'active' && autoAdvanceable()) {
-      graceTimer = setTimeout(() => {
-        void advance()
-      }, AUTO_STEP_GRACE_MS)
-    }
-  }
-
-  /** True when the next step exists and requires no user action to reach. */
-  function autoAdvanceable(): boolean {
-    const next = store.steps[store.stepIndex + 1]
-    return next !== undefined && next.kind !== 'run' && next.kind !== 'result'
   }
 
   async function advance() {
@@ -191,9 +285,10 @@ function _useOnboardingTourController() {
   }
 
   function end(reason: TourEndReason) {
-    clearGrace()
     stopRunListener?.()
     stopRunListener = undefined
+    stopRunClick?.()
+    stopRunClick = undefined
     const telemetry = useTelemetry()
     if (reason === 'skip') {
       const step = store.currentStep
@@ -213,7 +308,7 @@ function _useOnboardingTourController() {
     store.end()
   }
 
-  return { shouldStartTour, start, advance, back, end }
+  return { shouldStartTour, beginTour, start, advance, back, end }
 }
 
 export const useOnboardingTourController = createSharedComposable(

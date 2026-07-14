@@ -1,10 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { effectScope, nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
+import type * as CanvasSpotlightAdapter from './canvasSpotlightAdapter'
 import type { PromptRole, ResolvedRoles, TourStep } from './tourSequence'
 
 const activeState = {} as ComfyWorkflowJSON
@@ -30,7 +32,9 @@ const mocks = vi.hoisted(() => ({
   isNewUser: vi.fn<() => boolean | null>(() => true),
   onboardingTourEnabled: true,
   tutorialCompleted: false as boolean,
-  focusPromptTarget: vi.fn(async () => true),
+  resolveRoles: vi.fn(),
+  nodesPresent: vi.fn(() => true),
+  canvasTransformValid: vi.fn(() => true),
   activeWorkflowState: {} as ComfyWorkflowJSON | null,
   storeStart: vi.fn(),
   storeAdvance: vi.fn(),
@@ -52,22 +56,56 @@ const mocks = vi.hoisted(() => ({
   showSubscriptionDialog: vi.fn(),
   storeArmNudge: vi.fn(),
   storeShowNudge: vi.fn(),
-  storeSetPromptEntered: vi.fn(),
   storeCaptureResultMedia: vi.fn(),
   settingSet: vi.fn()
 }))
 
-const apiListeners = vi.hoisted(() => new Map<string, (e: Event) => void>())
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: (type: string, cb: (e: Event) => void) =>
-      apiListeners.set(type, cb),
-    removeEventListener: (type: string) => apiListeners.delete(type)
-  }
+// The controller drives the Run step off the execution store's job lifecycle, so
+// the test drives the same reactive `activeJobId` the store exposes. Built via an
+// async hoisted block because `ref` must load after the vue import is available.
+const { activeJobId } = await vi.hoisted(async () => {
+  const { ref: hoistedRef } = await import('vue')
+  return { activeJobId: hoistedRef<string | null>(null) }
+})
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: () => ({ activeJobId })
 }))
 
-function emitExecutionSuccess() {
-  apiListeners.get('execution_success')?.(new CustomEvent('execution_success'))
+/** Simulate a full run: a job starts (start signal) then finishes (done signal). */
+async function runJob() {
+  activeJobId.value = 'job-1'
+  await nextTick()
+  activeJobId.value = null
+  await nextTick()
+}
+
+/** Simulate only the job starting (still generating). */
+async function startJob() {
+  activeJobId.value = 'job-1'
+  await nextTick()
+}
+
+/** Simulate only the job finishing. */
+async function finishJob() {
+  activeJobId.value = null
+  await nextTick()
+}
+
+/** Click the toolbar Run button (the Run step's advance trigger). */
+function clickRunButton() {
+  const button = document.createElement('button')
+  button.setAttribute('data-testid', 'queue-button')
+  document.body.append(button)
+  button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  button.remove()
+}
+
+/** Click an element that is not the Run button (must not advance the step). */
+function clickElsewhere() {
+  const el = document.createElement('div')
+  document.body.append(el)
+  el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  el.remove()
 }
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -126,8 +164,17 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('./subgraphNavigation', () => ({
-  focusPromptTarget: mocks.focusPromptTarget,
   restoreView: vi.fn()
+}))
+
+vi.mock('./roleResolver', () => ({
+  resolveRoles: mocks.resolveRoles
+}))
+
+vi.mock('./canvasSpotlightAdapter', async (importOriginal) => ({
+  ...(await importOriginal<typeof CanvasSpotlightAdapter>()),
+  nodesPresent: mocks.nodesPresent,
+  canvasTransformValid: mocks.canvasTransformValid
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -142,7 +189,6 @@ vi.mock('./onboardingTourStore', () => ({
     end: mocks.storeEnd,
     armNudge: mocks.storeArmNudge,
     showNudge: mocks.storeShowNudge,
-    setPromptEntered: mocks.storeSetPromptEntered,
     captureResultMedia: mocks.storeCaptureResultMedia,
     get phase() {
       return mocks.phase.value
@@ -182,7 +228,6 @@ describe('useOnboardingTourController.shouldStartTour', () => {
     mocks.onboardingTourEnabled = true
     mocks.tutorialCompleted = false
     mocks.activeWorkflowState = activeState
-    mocks.focusPromptTarget.mockResolvedValue(true)
     mocks.steps = []
     mocks.stepIndex.value = 0
     mocks.promptPortFallback.value = false
@@ -237,11 +282,9 @@ describe('useOnboardingTourController.start', () => {
     mocks.onboardingTourEnabled = true
     mocks.tutorialCompleted = false
     mocks.activeWorkflowState = activeState
-    mocks.focusPromptTarget.mockResolvedValue(true)
     mocks.storeStart.mockReset()
     mocks.storeEnd.mockReset()
     mocks.storeAdvance.mockReset()
-    mocks.focusPromptTarget.mockClear()
     mocks.steps = []
     mocks.stepIndex.value = 0
     mocks.phase.value = 'active'
@@ -254,7 +297,8 @@ describe('useOnboardingTourController.start', () => {
     mocks.settingSet.mockReset()
     mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
     mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
-    apiListeners.clear()
+    mocks.storeCaptureResultMedia.mockReset()
+    activeJobId.value = null
   })
 
   afterEach(() => {
@@ -358,47 +402,26 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalled()
   })
 
-  it('focuses the prompt when the first step is a prompt step', async () => {
+  it('spotlights the collapsed port on the prompt step without entering a subgraph', async () => {
     mocks.steps = [{ kind: 'prompt', nodeId: null, prompt: promptRole }]
 
     await useOnboardingTourController().start()
 
-    expect(mocks.focusPromptTarget).toHaveBeenCalledWith(promptRole)
-    expect(mocks.promptPortFallback.value).toBe(false)
-  })
-
-  it('spotlights the port when prompt focus fails', async () => {
-    mocks.steps = [{ kind: 'prompt', nodeId: null, prompt: promptRole }]
-    mocks.focusPromptTarget.mockResolvedValue(false)
-
-    await useOnboardingTourController().start()
-
+    // The tour never opens the subgraph; the prompt step always falls back to
+    // spotlighting the collapsed host's exposed port.
     expect(mocks.promptPortFallback.value).toBe(true)
   })
 
-  it('advances a stalled informational step after the grace period', async () => {
+  it('never auto-advances a step — the user always drives Next', async () => {
     vi.useFakeTimers()
-    // Upload → Prompt: the upload step needs no action, so a stalled user is
-    // nudged onward. (Prompt → Run is NOT auto-advanced — see the Run test.)
+    // Even a purely informational step (upload) must not advance on its own.
     mocks.steps = [
       { kind: 'upload', nodeId: toNodeId(1) },
       { kind: 'prompt', nodeId: null, prompt: promptRole }
     ]
 
     await useOnboardingTourController().start()
-    expect(mocks.storeAdvance).not.toHaveBeenCalled()
-
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(mocks.storeAdvance).toHaveBeenCalled()
-  })
-
-  it('does not arm a grace timer on the last step', async () => {
-    vi.useFakeTimers()
-    mocks.steps = [{ kind: 'run', nodeId: null }]
-
-    await useOnboardingTourController().start()
-    await vi.advanceTimersByTimeAsync(8000)
+    await vi.advanceTimersByTimeAsync(60000)
 
     expect(mocks.storeAdvance).not.toHaveBeenCalled()
   })
@@ -445,22 +468,24 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.storeEnd).not.toHaveBeenCalled()
     // Merely arriving at the Run step is not a run — telemetry waits for a real
-    // execution so the grace timer can't fabricate an activation event.
+    // execution so nothing can fabricate an activation event.
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).not.toHaveBeenCalled()
   })
 
-  it('reports the run only when an execution actually succeeds', async () => {
+  it('reports the run only when a run actually completes', async () => {
     mocks.hasFunds = true
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
     await useOnboardingTourController().start()
+    await startJob()
+    // Still generating — nothing reported yet.
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).not.toHaveBeenCalled()
 
-    emitExecutionSuccess()
+    await finishJob()
 
     expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
     expect(
@@ -468,30 +493,90 @@ describe('useOnboardingTourController.start', () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it('reports the run at most once across repeated successes', async () => {
+  it('reports the run at most once across repeated runs', async () => {
     mocks.hasFunds = true
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
     await useOnboardingTourController().start()
-    emitExecutionSuccess()
-    emitExecutionSuccess()
+    await runJob()
+    await runJob()
 
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledOnce()
   })
 
-  it('does not auto-advance from the prompt step into the Run step', async () => {
-    vi.useFakeTimers()
+  it('advances off the Run step the instant the Run button is clicked', async () => {
     mocks.steps = [
-      { kind: 'prompt', nodeId: null, prompt: promptRole },
-      { kind: 'run', nodeId: null }
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
     ]
 
     await useOnboardingTourController().start()
-    await vi.advanceTimersByTimeAsync(8000)
+    expect(mocks.storeAdvance).not.toHaveBeenCalled()
 
-    // The user must click Run themselves; the grace timer never skips them past it.
+    clickRunButton()
+
+    // The click alone advances — no waiting for the run to finish.
+    expect(mocks.storeAdvance).toHaveBeenCalledOnce()
+  })
+
+  it('does not advance when a click misses the Run button', async () => {
+    // The listener must discriminate on the selector, not advance on any click.
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    clickElsewhere()
+
+    expect(mocks.storeAdvance).not.toHaveBeenCalled()
+  })
+
+  it('captures the media when the run finishes (not the step advance)', async () => {
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    await runJob()
+
+    expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
+  })
+
+  it('still advances after the launching component unmounts', async () => {
+    // Regression: start() runs inside the Getting Started screen's setup, which
+    // unmounts right after. The Run-click listener must survive that teardown.
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    const launchingScope = effectScope()
+    await launchingScope.run(async () => {
+      await useOnboardingTourController().start()
+    })
+    launchingScope.stop() // the Getting Started screen unmounts
+
+    clickRunButton()
+
+    expect(mocks.storeAdvance).toHaveBeenCalledOnce()
+  })
+
+  it('does not advance on the Result step when a run completes', async () => {
+    // Started already on Result: no Run-click listener is bound, so a completing
+    // run resolves media but never advances the step.
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+    mocks.stepIndex.value = 1
+
+    await useOnboardingTourController().start()
+    await runJob()
+
     expect(mocks.storeAdvance).not.toHaveBeenCalled()
   })
 
@@ -517,14 +602,13 @@ describe('useOnboardingTourController post-run nudge', () => {
     mocks.isNewUser.mockReturnValue(true)
     mocks.onboardingTourEnabled = true
     mocks.activeWorkflowState = activeState
-    mocks.focusPromptTarget.mockResolvedValue(true)
     mocks.storeStart.mockReset()
     mocks.storeShowNudge.mockReset()
     mocks.steps = [{ kind: 'run', nodeId: null }]
     mocks.stepIndex.value = 0
     mocks.phase.value = 'active'
     mocks.hasFunds = true
-    apiListeners.clear()
+    activeJobId.value = null
   })
 
   afterEach(() => {
@@ -532,28 +616,115 @@ describe('useOnboardingTourController post-run nudge', () => {
     vi.clearAllMocks()
   })
 
-  it('surfaces the nudge on the first successful run after the tour starts', async () => {
+  it('surfaces the nudge on the first completed run after the tour starts', async () => {
     await useOnboardingTourController().start('image_z_image_turbo')
 
-    emitExecutionSuccess()
+    await runJob()
 
     expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
   })
 
-  it('surfaces the nudge only once even across repeated successes', async () => {
+  it('surfaces the nudge only once even across repeated runs', async () => {
     await useOnboardingTourController().start('image_z_image_turbo')
 
-    emitExecutionSuccess()
-    emitExecutionSuccess()
+    await runJob()
+    await runJob()
 
     expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
   })
 
-  it('does not surface the nudge before any tour has started', () => {
-    // The shared controller registers its listener on init; a stray success
-    // with no active tour must not pop the nudge.
-    emitExecutionSuccess()
+  it('does not surface the nudge before any tour has started', async () => {
+    // No tour is live, so no run watcher is registered; a stray job completion
+    // must not pop the nudge.
+    await runJob()
 
     expect(mocks.storeShowNudge).not.toHaveBeenCalled()
+  })
+})
+
+describe('useOnboardingTourController.beginTour', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mocks.isCloud = true
+    mocks.isSubscriptionEnabled.mockReturnValue(true)
+    mocks.isNewUser.mockReturnValue(true)
+    mocks.onboardingTourEnabled = true
+    mocks.activeWorkflowState = activeState
+    mocks.resolveRoles.mockReturnValue(imageEditRoles)
+    mocks.nodesPresent.mockReturnValue(true)
+    mocks.canvasTransformValid.mockReturnValue(true)
+    mocks.storeStart.mockReset()
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+    mocks.stepIndex.value = 0
+    mocks.phase.value = 'idle'
+    mocks.resolvedRoles.value = imageEditRoles
+    mocks.hasFunds = true
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0)
+      return 0
+    })
+    activeJobId.value = null
+  })
+
+  afterEach(() => {
+    useOnboardingTourController().end('skip')
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+
+  it('starts the tour once the live graph holds the resolved nodes', async () => {
+    await useOnboardingTourController().beginTour({
+      templateId: 'image_z_image_turbo'
+    })
+
+    expect(mocks.storeStart).toHaveBeenCalledWith(
+      activeState,
+      'image_z_image_turbo'
+    )
+    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        template_id: 'image_z_image_turbo',
+        entry: 'getting_started'
+      })
+    )
+  })
+
+  it('threads the share_url entry through when launched from a URL', async () => {
+    await useOnboardingTourController().beginTour({ entry: 'share_url' })
+
+    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ entry: 'share_url' })
+    )
+  })
+
+  it('does not start when gating fails', async () => {
+    mocks.isNewUser.mockReturnValue(false)
+
+    await useOnboardingTourController().beginTour({ templateId: 'x' })
+
+    expect(mocks.storeStart).not.toHaveBeenCalled()
+  })
+
+  it('does not start a second tour while one is already active', async () => {
+    mocks.phase.value = 'active'
+
+    await useOnboardingTourController().beginTour({ templateId: 'x' })
+
+    expect(mocks.storeStart).not.toHaveBeenCalled()
+  })
+
+  it('starts degraded rather than trapping when the graph never becomes ready', async () => {
+    vi.useFakeTimers()
+    mocks.nodesPresent.mockReturnValue(false)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const pending = useOnboardingTourController().beginTour({ templateId: 'x' })
+    await vi.runAllTimersAsync()
+    await pending
+
+    expect(mocks.storeStart).toHaveBeenCalled()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })
