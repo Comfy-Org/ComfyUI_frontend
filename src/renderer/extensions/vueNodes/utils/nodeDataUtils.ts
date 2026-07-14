@@ -28,10 +28,10 @@ export function nonWidgetedInputs(
 }
 
 export function linkedWidgetedInputs(
-  nodeData: Pick<VueNodeData, 'id' | 'inputs'> | undefined,
-  graphId: UUID | undefined
+  nodeData: Pick<VueNodeData, 'id' | 'inputs'>,
+  graphId: UUID
 ): INodeSlot[] {
-  if (!nodeData?.inputs || graphId === undefined) return []
+  if (!nodeData.inputs) return []
 
   const linkStore = useLinkStore()
   return nodeData.inputs

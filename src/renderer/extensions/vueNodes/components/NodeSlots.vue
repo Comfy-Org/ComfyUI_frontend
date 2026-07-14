@@ -64,7 +64,9 @@ const executionErrorStore = useExecutionErrorStore()
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 
 const linkedWidgetInputs = computed(() =>
-  unified ? linkedWidgetedInputs(nodeData, canvasStore.rootGraphId) : []
+  unified && canvasStore.rootGraphId
+    ? linkedWidgetedInputs(nodeData, canvasStore.rootGraphId)
+    : []
 )
 
 const filteredInputs = computed(() => [

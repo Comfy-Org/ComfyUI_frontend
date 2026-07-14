@@ -157,7 +157,7 @@ describe('Widget input link reactivity', () => {
 
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
     expect(
-      linkedWidgetedInputs(nodeData, subgraph.rootGraph.id).map((s) => s.name)
+      linkedWidgetedInputs(nodeData!, subgraph.rootGraph.id).map((s) => s.name)
     ).toEqual(['prompt'])
   })
 

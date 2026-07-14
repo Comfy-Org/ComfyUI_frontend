@@ -159,15 +159,5 @@ describe('nodeDataUtils', () => {
 
       expect(actual.map((slot) => slot.name)).toEqual(['second'])
     })
-
-    it('returns nothing without a graph id', () => {
-      const inputs: INodeInputSlot[] = [makeFakeInputSlot('first', true)]
-      const nodeData = makeFakeNodeData(inputs)
-      connectInputSlot(0)
-
-      const actual = linkedWidgetedInputs(nodeData, undefined)
-
-      expect(actual.length).toBe(0)
-    })
   })
 })
