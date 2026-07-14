@@ -12,6 +12,8 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { GET_CONFIG } from '@/services/litegraphService'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 type SlotWidget = IWidgetLocator & {
   [GET_CONFIG]: () => InputSpec | undefined
@@ -58,7 +60,7 @@ function createTargetNode(
   inputWidgetName: string | undefined = TARGET_INPUT_NAME
 ): TargetNode {
   return fromPartial<TargetNode>({
-    id: 7,
+    id: toNodeId(7),
     type: TARGET_NODE_TYPE,
     inputs: [
       fromPartial<INodeInputSlot>({
@@ -85,14 +87,14 @@ function createPrimitiveStub(options: {
     options.targetNode === undefined ? createTargetNode() : options.targetNode
   const link = hasLink
     ? fromPartial<LLink>({
-        target_id: targetNode?.id ?? 7,
+        target_id: targetNode?.id ?? toNodeId(7),
         target_slot: 0
       })
     : undefined
 
   const stub = Object.create(PrimitiveNode.prototype) as PrimitiveStub
   stub.graph = fromPartial<LGraph>({
-    links: link ? { 1: link } : {},
+    links: link ? { [toLinkId(1)]: link } : {},
     getNodeById: vi.fn(() => targetNode ?? null)
   })
   stub.outputs = [
@@ -236,7 +238,7 @@ describe('PrimitiveNode.refreshComboInNode', () => {
   it('falls back to input.name when the target input has no widget locator', () => {
     const widget = createComboWidget('euler', [])
     const targetNode = fromPartial<TargetNode>({
-      id: 9,
+      id: toNodeId(9),
       type: TARGET_NODE_TYPE,
       inputs: [
         fromPartial<INodeInputSlot>({
