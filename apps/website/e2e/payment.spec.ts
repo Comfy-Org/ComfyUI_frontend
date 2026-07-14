@@ -22,7 +22,7 @@ test.describe('Payment success page @smoke', () => {
   })
 
   test('has correct title and is noindex', async ({ page }) => {
-    await expect(page).toHaveTitle('Payment Successful — Comfy')
+    await expect(page).toHaveTitle('Payment Successful - Comfy')
     await expectNoIndex(page)
   })
 
@@ -54,7 +54,7 @@ test.describe('Payment failed page @smoke', () => {
   })
 
   test('has correct title and is noindex', async ({ page }) => {
-    await expect(page).toHaveTitle('Payment Failed — Comfy')
+    await expect(page).toHaveTitle('Payment Failed - Comfy')
     await expectNoIndex(page)
   })
 
@@ -84,7 +84,7 @@ test.describe('Payment failed page @smoke', () => {
 test.describe('Payment pages zh-CN @smoke', () => {
   test('zh-CN success page renders and links correctly', async ({ page }) => {
     await page.goto('/zh-CN/payment/success')
-    await expect(page).toHaveTitle('支付成功 — Comfy')
+    await expect(page).toHaveTitle('支付成功 - Comfy')
     await expectNoIndex(page)
     await expect(
       page.getByRole('heading', { name: '支付成功', level: 1 })
@@ -99,7 +99,7 @@ test.describe('Payment pages zh-CN @smoke', () => {
 
   test('zh-CN failed page renders and links correctly', async ({ page }) => {
     await page.goto('/zh-CN/payment/failed')
-    await expect(page).toHaveTitle('支付失败 — Comfy')
+    await expect(page).toHaveTitle('支付失败 - Comfy')
     await expectNoIndex(page)
     await expect(
       page.getByRole('heading', { name: '无法完成支付', level: 1 })
