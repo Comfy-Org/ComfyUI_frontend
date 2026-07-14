@@ -73,6 +73,7 @@ import {
   isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+import { setNodeTypeHidden } from '@/utils/litegraphNodeVisibility'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
@@ -501,7 +502,7 @@ export const useLitegraphService = () => {
     // Note: Do not following assignments before `LiteGraph.registerNodeType`
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
-    node.skip_list = true
+    setNodeTypeHidden(node, 'registration', true)
     node.title = nodeDef.display_name || nodeDef.name
   }
 
@@ -620,7 +621,7 @@ export const useLitegraphService = () => {
     // This ensures nodes registered after initial load respect the current setting
     if (nodeDef.dev_only) {
       const settingStore = useSettingStore()
-      node.skip_list = !settingStore.get('Comfy.DevMode')
+      setNodeTypeHidden(node, 'dev-only', !settingStore.get('Comfy.DevMode'))
     }
   }
 
