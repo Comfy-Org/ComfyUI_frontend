@@ -480,8 +480,6 @@ export class LGraph
       // bucket with other graphs, so unregister each link individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
-      // ponytail: no shared-definition guard; mirror remove()'s
-      // hasRemainingReferences if cross-instance badge loss ever matters
       forEachNode(this, (node) =>
         useNodeBadgeStore().unregisterNode(this.rootGraph.id, node.id)
       )

@@ -88,10 +88,7 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
 
 export interface BadgeSystemOptions {
   graphId: UUID
-  /**
-   * Registered ids include nodes nested in subgraphs, so this must search
-   * the whole hierarchy (`findNodeInHierarchy`), not `getNodeById`.
-   */
+  /** Must resolve ids anywhere in the subgraph hierarchy. */
   resolveNode: (nodeId: NodeId) => LGraphNode | undefined
 }
 
@@ -173,7 +170,7 @@ function gatherSources(
  * Starts the badge system for one root graph: every node registered in
  * {@link useNodeBadgeStore} gets an effect scope that recomputes its core
  * and credits rows whenever a badge source changes. At most one system per
- * graph — call the disposer before starting another.
+ * graph.
  * @returns A disposer stopping every scope the system created.
  */
 export function startBadgeSystem(options: BadgeSystemOptions): () => void {

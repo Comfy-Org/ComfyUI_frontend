@@ -75,9 +75,7 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   /**
    * Replaces every row of one kind; the system's recompute write path.
    * Refused for unregistered nodes.
-   * @internal Not an extension API — replacing the `extension` kind
-   * wholesale stomps other writers' rows; extensions use
-   * {@link registerBadge}/{@link deleteBadge}.
+   * @internal
    */
   function setBadgesOfKind(
     graphId: UUID,
