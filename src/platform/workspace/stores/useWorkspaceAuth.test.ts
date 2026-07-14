@@ -734,7 +734,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -777,7 +778,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       )
 
