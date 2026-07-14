@@ -1,12 +1,14 @@
 import { createSharedComposable, until, useEventListener } from '@vueuse/core'
-import { effectScope, ref } from 'vue'
+import { computed, effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
+import { useDialogStore } from '@/stores/dialogStore'
 import type {
   OnboardingTourEntry,
   OnboardingTourRunStatus,
@@ -117,6 +119,17 @@ function _useOnboardingTourController() {
       useEventListener(api, 'execution_interrupted', () =>
         handleRunOutcome('interrupted')
       )
+
+      // A no-subscription run is blocked by the paywall before it queues, so no
+      // execution event ever fires; end the tour when that modal opens so it
+      // doesn't hang on the Result step. The nudge defers itself until it closes.
+      const dialogStore = useDialogStore()
+      const upgradeModalOpen = computed(() =>
+        UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
+      )
+      watch(upgradeModalOpen, (open) => {
+        if (open && store.phase === 'active') end('done')
+      })
     })
     stopRunListener = () => scope.stop()
   }
@@ -303,6 +316,7 @@ function _useOnboardingTourController() {
   }
 
   function end(reason: TourEndReason) {
+    if (store.phase !== 'active') return
     stopRunListener?.()
     stopRunListener = undefined
     stopRunClick?.()

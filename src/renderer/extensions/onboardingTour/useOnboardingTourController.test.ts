@@ -59,6 +59,11 @@ const mocks = vi.hoisted(() => ({
   settingSet: vi.fn()
 }))
 
+const upgradeModalOpen = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return ref(false)
+})
+
 /** Captures the api-bus handlers the controller registers so tests can dispatch a specific run outcome. */
 type ApiEventHandler = (event: CustomEvent) => void
 const apiEventHandlers = vi.hoisted(() => new Map<string, ApiEventHandler>())
@@ -148,6 +153,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
       }
     },
     showSubscriptionDialog: mocks.showSubscriptionDialog
+  })
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({
+    isDialogOpen: () => upgradeModalOpen.value
   })
 }))
 
@@ -281,6 +292,7 @@ describe('useOnboardingTourController.start', () => {
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
+    upgradeModalOpen.value = false
     mocks.storeShowNudge.mockReset()
     mocks.settingSet.mockReset()
     mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
@@ -417,8 +429,14 @@ describe('useOnboardingTourController.start', () => {
   it('gates a no-funds user at the Run step: upgrade modal, nudge, end', async () => {
     mocks.hasFunds = false
     mocks.steps = [{ kind: 'run', nodeId: null }]
+    // The gate opens the real upgrade modal, so the paywall watcher fires too;
+    // ending must stay one-shot across both paths.
+    mocks.showSubscriptionDialog.mockImplementation(() => {
+      upgradeModalOpen.value = true
+    })
 
     await useOnboardingTourController().start('image_z_image_turbo')
+    await nextTick()
 
     expect(mocks.showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'out_of_credits'
@@ -428,8 +446,9 @@ describe('useOnboardingTourController.start', () => {
     ).toHaveBeenCalledWith(
       expect.objectContaining({ template_id: 'image_z_image_turbo' })
     )
-    expect(mocks.storeShowNudge).toHaveBeenCalled()
-    expect(mocks.storeEnd).toHaveBeenCalled()
+    expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
+    expect(mocks.storeEnd).toHaveBeenCalledOnce()
+    expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalledOnce()
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).not.toHaveBeenCalled()
@@ -460,6 +479,25 @@ describe('useOnboardingTourController.start', () => {
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).not.toHaveBeenCalled()
+  })
+
+  it('ends the tour when the upgrade modal opens mid-run so it never hangs', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    expect(mocks.storeEnd).not.toHaveBeenCalled()
+
+    // A no-subscription run is blocked by the paywall before it queues, so no
+    // execution event fires; the opening modal must end the tour on its own.
+    upgradeModalOpen.value = true
+    await nextTick()
+
+    expect(mocks.storeEnd).toHaveBeenCalled()
+    expect(mocks.storeShowNudge).toHaveBeenCalled()
   })
 
   it('reports the run only when a run actually completes', async () => {
