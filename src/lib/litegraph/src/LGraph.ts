@@ -289,10 +289,8 @@ export class LGraph
   ])
 
   /**
-   * Ref-backed: {@link configure} reassigns the id in place on every workflow
-   * load, and reactive consumers (store buckets keyed by root graph id) must
-   * observe that change. `toRaw` keeps the accessor correct when the graph is
-   * read through a reactive proxy, which would otherwise auto-unwrap the ref.
+   * Ref-backed so the id reassignment on every workflow load ({@link configure})
+   * propagates to reactive consumers keyed by root graph id.
    */
   private readonly _id = shallowRef<UUID>(zeroUuid)
   get id(): UUID {
