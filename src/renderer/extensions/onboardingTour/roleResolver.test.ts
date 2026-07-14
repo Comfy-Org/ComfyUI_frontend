@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
-import type { CuratedTemplateId } from './__fixtures__/loadTemplateWorkflow'
 import { loadTemplateWorkflow } from './__fixtures__/loadTemplateWorkflow'
 import {
   fromWorkflowJson,
   resolveRoles,
   templateOverrides
 } from './roleResolver'
+import type { CuratedTemplateId } from './roleResolver'
 
 interface CuratedExpectation {
   sourceId: number | null

@@ -103,7 +103,14 @@ interface TemplateOverride {
   mediaKind: MediaKind
 }
 
-export const templateOverrides: Record<string, TemplateOverride> = {
+export type CuratedTemplateId =
+  | 'image_krea2_turbo_t2i'
+  | 'image_z_image_turbo'
+  | 'video_ltx2_3_i2v'
+  | 'video_wan2_2_14B_i2v'
+  | 'flux_kontext_dev_basic'
+
+export const templateOverrides: Record<CuratedTemplateId, TemplateOverride> = {
   image_krea2_turbo_t2i: {
     promptNodeId: toNodeId(19),
     engineNodeId: toNodeId(3),
@@ -296,7 +303,7 @@ function toNodeRole(nodeId: NodeId): NodeRole {
  */
 function overrideFor(templateId: string | undefined): TemplateOverride | null {
   if (!templateId || !Object.hasOwn(templateOverrides, templateId)) return null
-  return templateOverrides[templateId]
+  return templateOverrides[templateId as CuratedTemplateId]
 }
 
 /**

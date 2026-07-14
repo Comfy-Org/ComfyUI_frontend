@@ -25,7 +25,7 @@ export interface ResultMedia {
 /** How long to wait for the sink's output URL after a run before giving up. */
 const RESULT_MEDIA_TIMEOUT_MS = 8000
 
-function isUpgradeModalOpen(): boolean {
+export function isUpgradeModalOpen(): boolean {
   const dialogStore = useDialogStore()
   return UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
 }

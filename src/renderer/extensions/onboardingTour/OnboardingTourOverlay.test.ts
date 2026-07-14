@@ -305,14 +305,16 @@ describe('OnboardingTourOverlay', () => {
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
 
-    renderOverlay()
+    try {
+      renderOverlay()
 
-    // Sink node ring + the progress-bar ring = two spotlights.
-    await vi.waitFor(() => {
-      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(2)
-    })
-
-    progress.remove()
+      // Sink node ring + the progress-bar ring = two spotlights.
+      await vi.waitFor(() => {
+        expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(2)
+      })
+    } finally {
+      progress.remove()
+    }
   })
 
   it('spotlights only the sink on the Result step when no run bar is present', async () => {
@@ -354,12 +356,14 @@ describe('OnboardingTourOverlay', () => {
     store.phase = 'active'
     store.steps = [runStep]
 
-    renderOverlay()
+    try {
+      renderOverlay()
 
-    await vi.waitFor(() => {
-      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
-    })
-
-    runButton.remove()
+      await vi.waitFor(() => {
+        expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
+      })
+    } finally {
+      runButton.remove()
+    }
   })
 })

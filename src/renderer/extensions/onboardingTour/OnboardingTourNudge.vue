@@ -72,17 +72,17 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogStore } from '@/stores/dialogStore'
 
-import { useOnboardingTourStore } from './onboardingTourStore'
+import {
+  isUpgradeModalOpen,
+  useOnboardingTourStore
+} from './onboardingTourStore'
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
 
 const { t } = useI18n()
 const store = useOnboardingTourStore()
-const dialogStore = useDialogStore()
 
 const { resultMedia: media } = storeToRefs(store)
 
@@ -90,9 +90,7 @@ const shouldShow = computed(() => store.shouldShowNudge)
 
 // No-funds fallback: the run-step gate opens the upgrade modal and arms the
 // nudge; surface it only once that modal has closed so the two never overlap.
-const upgradeModalOpen = computed(() =>
-  UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
-)
+const upgradeModalOpen = computed(() => isUpgradeModalOpen())
 
 watch(upgradeModalOpen, (open, wasOpen) => {
   if (wasOpen && !open && store.nudgeArmed) store.showNudge()

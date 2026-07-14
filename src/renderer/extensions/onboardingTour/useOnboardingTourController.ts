@@ -4,11 +4,9 @@ import { computed, effectScope, ref, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { useDialogStore } from '@/stores/dialogStore'
 import type {
   OnboardingTourEntry,
   OnboardingTourRunStatus,
@@ -24,7 +22,10 @@ import {
   nodesPresent
 } from './canvasSpotlightAdapter'
 import { resolveTourRoles } from './roleResolution'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import {
+  isUpgradeModalOpen,
+  useOnboardingTourStore
+} from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
 import { restoreView } from './subgraphNavigation'
 import type { ResolvedRoles } from './tourSequence'
@@ -87,6 +88,8 @@ function _useOnboardingTourController() {
    * tour so `Completed` fires — otherwise the Result step drives completion.
    */
   function handleRunOutcome(status: OnboardingTourRunStatus) {
+    // Armed in start(); ignore events before Run so they can't fire out of order.
+    if (store.currentStep?.kind !== 'run') return
     if (runOutcomeHandled) return
     runOutcomeHandled = true
     if (status === 'success') void store.captureResultMedia()
@@ -123,10 +126,7 @@ function _useOnboardingTourController() {
       // A no-subscription run is blocked by the paywall before it queues, so no
       // execution event ever fires; end the tour when that modal opens so it
       // doesn't hang on the Result step. The nudge defers itself until it closes.
-      const dialogStore = useDialogStore()
-      const upgradeModalOpen = computed(() =>
-        UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
-      )
+      const upgradeModalOpen = computed(() => isUpgradeModalOpen())
       watch(upgradeModalOpen, (open) => {
         if (open && store.phase === 'active') end('done')
       })

@@ -91,9 +91,10 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
+import type { CuratedTemplateId } from './roleResolver'
 import { useOnboardingTourController } from './useOnboardingTourController'
 
-const CURATED_TEMPLATE_IDS = [
+const CURATED_TEMPLATE_IDS: CuratedTemplateId[] = [
   'image_krea2_turbo_t2i',
   'image_z_image_turbo',
   'video_ltx2_3_i2v',
@@ -146,7 +147,11 @@ watch(
   visible,
   (isVisible) => {
     if (!isVisible) return
-    if (!templatesStore.isLoaded) void templatesStore.loadWorkflowTemplates()
+    if (!templatesStore.isLoaded) {
+      templatesStore.loadWorkflowTemplates().catch((error: unknown) => {
+        console.error('Failed to load onboarding templates:', error)
+      })
+    }
     void nextTick(() => screenRef.value?.focus())
   },
   { immediate: true }

@@ -191,6 +191,7 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 vi.mock('./onboardingTourStore', () => ({
+  isUpgradeModalOpen: () => upgradeModalOpen.value,
   useOnboardingTourStore: () => ({
     start: mocks.storeStart,
     advance: mocks.storeAdvance,
@@ -551,6 +552,39 @@ describe('useOnboardingTourController.start', () => {
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }))
+  })
+
+  it('reports the true status and skips media capture when a run is interrupted', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    await failJob('execution_interrupted')
+
+    expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'interrupted' }))
+  })
+
+  it('ignores execution events that arrive before the Run step', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'upload', nodeId: toNodeId(1) },
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    await runJob()
+
+    expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).not.toHaveBeenCalled()
   })
 
   it('completes the tour when a run finishes on the terminal Run step', async () => {

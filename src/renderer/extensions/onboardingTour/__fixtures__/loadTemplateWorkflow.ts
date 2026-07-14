@@ -3,13 +3,7 @@ import path from 'node:path'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-/** Ids of the curated templates whose real JSON is committed alongside this file. */
-export type CuratedTemplateId =
-  | 'image_krea2_turbo_t2i'
-  | 'image_z_image_turbo'
-  | 'video_ltx2_3_i2v'
-  | 'video_wan2_2_14B_i2v'
-  | 'flux_kontext_dev_basic'
+import type { CuratedTemplateId } from '../roleResolver'
 
 const TEMPLATES_DIR = path.join(import.meta.dirname, 'templates')
 
