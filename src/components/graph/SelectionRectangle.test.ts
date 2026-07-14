@@ -22,22 +22,21 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-function addCanvasPanelDom() {
+function createPanelEl() {
   const panel = document.createElement('div')
-  panel.className = 'graph-canvas-panel'
   vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
     fromPartial<DOMRect>({ left: 300, top: 0, right: 1000, bottom: 800 })
   )
-  const canvas = document.createElement('canvas')
-  canvas.id = 'graph-canvas'
-  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
-    fromPartial<DOMRect>({ left: 0, top: 0, right: 1000, bottom: 800 })
-  )
-  document.body.append(panel, canvas)
+  return panel
 }
 
 function dragRectangle(eDown: [number, number], eMove: [number, number]) {
+  const canvasEl = document.createElement('canvas')
+  vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
+    fromPartial<DOMRect>({ left: 0, top: 0, right: 1000, bottom: 800 })
+  )
   mockCanvas.value = {
+    canvas: canvasEl,
     dragging_rectangle: true,
     pointer: {
       eDown: { safeOffsetX: eDown[0], safeOffsetY: eDown[1] },
@@ -56,8 +55,7 @@ describe('SelectionRectangle', () => {
   })
 
   it('clips the rectangle to the canvas panel when dragged over the sidebar', async () => {
-    addCanvasPanelDom()
-    render(SelectionRectangle)
+    render(SelectionRectangle, { props: { panelEl: createPanelEl() } })
 
     dragRectangle([100, 100], [800, 400])
     await nextTick()
@@ -70,8 +68,7 @@ describe('SelectionRectangle', () => {
   })
 
   it('leaves a rectangle within the panel unchanged', async () => {
-    addCanvasPanelDom()
-    render(SelectionRectangle)
+    render(SelectionRectangle, { props: { panelEl: createPanelEl() } })
 
     dragRectangle([400, 100], [600, 300])
     await nextTick()
@@ -84,8 +81,7 @@ describe('SelectionRectangle', () => {
   })
 
   it('normalizes and clips a rectangle dragged up-and-left', async () => {
-    addCanvasPanelDom()
-    render(SelectionRectangle)
+    render(SelectionRectangle, { props: { panelEl: createPanelEl() } })
 
     dragRectangle([800, 400], [100, 100])
     await nextTick()

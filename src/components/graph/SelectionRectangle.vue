@@ -15,6 +15,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { clipRectToBounds } from '@/utils/mathUtil'
 import type { RectEdges } from '@/utils/mathUtil'
 
+const { panelEl } = defineProps<{
+  /** Clip surface owned by the caller; the rectangle renders unclipped when absent. */
+  panelEl?: HTMLElement
+}>()
+
 const canvasStore = useCanvasStore()
 
 const selectionRect = ref<{
@@ -33,7 +38,7 @@ useRafFn(() => {
 
   if (dragging_rectangle && pointer.eDown && pointer.eMove) {
     if (!selectionRect.value) {
-      panelBounds.value = getCanvasPanelBounds()
+      panelBounds.value = getCanvasPanelBounds(canvas.canvas)
     }
     const x = pointer.eDown.safeOffsetX
     const y = pointer.eDown.safeOffsetY
@@ -49,10 +54,10 @@ useRafFn(() => {
 
 const isVisible = computed(() => selectionRect.value !== null)
 
-function getCanvasPanelBounds(): RectEdges | undefined {
-  const panelEl = document.querySelector('.graph-canvas-panel')
-  const canvasEl = document.getElementById('graph-canvas')
-  if (!panelEl || !canvasEl) return undefined
+function getCanvasPanelBounds(
+  canvasEl: HTMLCanvasElement
+): RectEdges | undefined {
+  if (!panelEl) return undefined
 
   const panel = panelEl.getBoundingClientRect()
   const canvas = canvasEl.getBoundingClientRect()
