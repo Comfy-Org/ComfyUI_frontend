@@ -79,16 +79,13 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
-function expectPricingDialogFrame(
+function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
 ) {
   expect(dialogComponentProps).toMatchObject({
     renderer: 'reka',
     size: 'full'
   })
-  expect(dialogComponentProps.contentClass).toContain(
-    'max-w-[min(1280px,95vw)]'
-  )
   expect(dialogComponentProps).not.toHaveProperty('style')
   expect(dialogComponentProps).not.toHaveProperty('pt')
 }
@@ -150,7 +147,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectPricingDialogFrame(dialogComponentProps)
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -185,7 +182,7 @@ describe('useSubscriptionDialog', () => {
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props).toHaveProperty('onChooseTeam')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectPricingDialogFrame(dialogComponentProps)
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
@@ -218,7 +215,7 @@ describe('useSubscriptionDialog', () => {
       expect(dialogComponentProps).toMatchObject({
         modal: false
       })
-      expectPricingDialogFrame(dialogComponentProps)
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {

@@ -1,13 +1,6 @@
 <template>
   <div
-    data-testid="subscription-workspace-dialog-content"
-    :class="
-      cn(
-        'relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8',
-        checkoutStep === 'pricing' &&
-          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
-      )
-    "
+    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       v-if="checkoutStep === 'preview'"

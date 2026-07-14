@@ -12,8 +12,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
-const PRICING_DIALOG_CONTENT_CLASS =
-  'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
 
 export interface SubscriptionDialogOptions {
   reason?: PaymentIntentSource
@@ -82,11 +80,11 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
-    // Shared Reka dialog shell styling for all pricing-table variants.
-    const dialogComponentProps = {
+    const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
-      contentClass: PRICING_DIALOG_CONTENT_CLASS
+      contentClass:
+        'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
     } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
@@ -115,7 +113,10 @@ export const useSubscriptionDialog = () => {
           // The legacy table hosts a PrimeVue Popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
           // unclickable. The unified table has no such overlay.
-          dialogComponentProps: { ...dialogComponentProps, modal: false }
+          dialogComponentProps: {
+            ...legacyPricingDialogProps,
+            modal: false
+          }
         })
         return
       }
@@ -136,7 +137,17 @@ export const useSubscriptionDialog = () => {
             options?.planMode ??
             (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
         },
-        dialogComponentProps
+        dialogComponentProps: {
+          // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
+          // `style` width is ignored here and collapses the table to the default
+          // `md` frame. `w-fit` lets each step hug its content -- the pricing
+          // table fills its 1280px content while the compact confirm/success
+          // steps shrink (the content root sets its own width per checkoutStep).
+          renderer: 'reka',
+          size: 'full',
+          contentClass:
+            'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+        }
       })
       return
     }
@@ -152,7 +163,7 @@ export const useSubscriptionDialog = () => {
         reason: options?.reason,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
-      dialogComponentProps
+      dialogComponentProps: legacyPricingDialogProps
     })
   }
 
