@@ -42,6 +42,7 @@ export interface Member {
   // does not carry these fields yet.
   last_active_at?: string | null
   credits_used_this_month?: number
+  monthly_credit_limit?: number | null
 }
 
 interface PaginationInfo {

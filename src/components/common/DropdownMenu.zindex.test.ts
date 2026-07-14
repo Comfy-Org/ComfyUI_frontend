@@ -1,7 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import type { MenuItem } from 'primevue/menuitem'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -14,9 +15,9 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderMenu() {
+function renderMenu(entries: MenuItem[] = [{ label: 'Item A' }], modal = true) {
   return render(DropdownMenu, {
-    props: { entries: [{ label: 'Item A' }] },
+    props: { entries, modal },
     global: { plugins: [i18n], directives: { tooltip: {} } }
   })
 }
@@ -52,5 +53,34 @@ describe('DropdownMenu z-index', () => {
     const menu = await screen.findByRole('menu')
     expect(menu.style.zIndex).toBe('')
     expect(menu.className).toContain('z-1700')
+  })
+
+  it('shows submenu items above an open dialog when clicked', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 1700)
+    const dialogZ = Number(openModal.style.zIndex)
+    const command = vi.fn()
+    const user = userEvent.setup()
+    renderMenu(
+      [
+        {
+          label: 'Change role',
+          items: [
+            { label: 'Admin', command },
+            { label: 'Member', command }
+          ]
+        }
+      ],
+      false
+    )
+
+    await user.click(screen.getByRole('button'))
+    await user.click(screen.getByText('Change role'))
+
+    expect(screen.getByText('Admin')).toBeVisible()
+    expect(screen.getByText('Member')).toBeVisible()
+    expect(
+      Number(screen.getByRole('menu', { name: 'Change role' }).style.zIndex)
+    ).toBeGreaterThan(dialogZ)
   })
 })
