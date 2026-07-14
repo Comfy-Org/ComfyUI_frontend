@@ -179,18 +179,37 @@ export function normalizeI18nKey(key: string) {
 }
 
 /**
- * Escapes literal `@` characters so vue-i18n's message compiler treats them as
- * text rather than the start of a linked-message reference (e.g. `@:other.key`).
- * An unescaped `@` that isn't valid linked syntax makes the compiler throw
- * `Invalid linked format`, which breaks every message compiled via `t()`/`st()`.
+ * Characters that vue-i18n's message compiler treats as syntax in message text,
+ * so plain text has to escape them to render verbatim through `t()`/`st()`:
  *
- * Only apply to values read through the compiler. Values read raw via
- * `tm()`/`stRaw()` (e.g. node tooltips) must be left untouched, or the literal
- * `{'@'}` escape would surface to users. Idempotent: already-escaped `{'@'}`
- * sequences are left as-is.
+ * - `@` starts a linked-message reference (`@:key`); malformed usage throws
+ *   `Invalid linked format`.
+ * - `{` / `}` delimit interpolation (`{name}`, `{'literal'}`); an unbalanced
+ *   brace throws `Unterminated/Unbalanced closing brace`.
+ * - `|` separates plural branches, so `a | b` silently renders as one branch.
+ * - `%` forms modulo interpolation when immediately followed by `{` (`%{name}`);
+ *   it must be escaped too, otherwise escaping a following `{` re-forms `%{`.
+ *
+ * The set is a build-inlined `const enum` (`TokenChars`) in
+ * `@intlify/message-compiler` and is not exported, so it is hardcoded here.
+ *
+ * @see https://vue-i18n.intlify.dev/guide/essentials/syntax (Special Characters, Literal interpolation)
+ * @see https://vue-i18n.intlify.dev/guide/essentials/pluralization
  */
-export function escapeVueI18nLinkedSyntax(text: string): string {
-  return text.replace(/(?<!\{')@(?!'\})/g, "{'@'}")
+const VUE_I18N_SYNTAX_CHARS = /[@{}|%]/g
+
+/**
+ * Escapes vue-i18n message-syntax characters as literal interpolations (`{'x'}`)
+ * so arbitrary text renders verbatim instead of being parsed as syntax. This is
+ * the only escape vue-i18n supports; see {@link VUE_I18N_SYNTAX_CHARS}.
+ *
+ * Only apply to values read through the compiler (`t()`/`st()`). Values read raw
+ * via `tm()`/`stRaw()` (e.g. node tooltips) must be left untouched, or the
+ * literal `{'x'}` would surface to users. Apply exactly once to raw text: the
+ * escape output itself contains `{`/`}`, so it is not idempotent.
+ */
+export function escapeVueI18nMessageSyntax(text: string): string {
+  return text.replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
 }
 
 /**

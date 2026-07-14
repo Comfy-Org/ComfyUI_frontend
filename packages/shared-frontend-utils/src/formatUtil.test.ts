@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
-  escapeVueI18nLinkedSyntax,
+  escapeVueI18nMessageSyntax,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
   getFilePathSeparatorVariants,
@@ -479,33 +479,48 @@ describe('formatUtil', () => {
     })
   })
 
-  describe('escapeVueI18nLinkedSyntax', () => {
+  describe('escapeVueI18nMessageSyntax', () => {
     it('escapes a literal @ that would break linked-message compilation', () => {
       expect(
-        escapeVueI18nLinkedSyntax('clips (tagged @Audio1-3 in the prompt)')
+        escapeVueI18nMessageSyntax('clips (tagged @Audio1-3 in the prompt)')
       ).toBe("clips (tagged {'@'}Audio1-3 in the prompt)")
     })
 
     it('escapes @ in an email address', () => {
-      expect(escapeVueI18nLinkedSyntax('support@comfy.org')).toBe(
+      expect(escapeVueI18nMessageSyntax('support@comfy.org')).toBe(
         "support{'@'}comfy.org"
       )
     })
 
-    it('escapes every occurrence', () => {
-      expect(escapeVueI18nLinkedSyntax('@a @b @c')).toBe("{'@'}a {'@'}b {'@'}c")
-    })
-
-    it('leaves strings without @ unchanged', () => {
-      expect(escapeVueI18nLinkedSyntax('no at sign here')).toBe(
-        'no at sign here'
+    it('escapes interpolation braces', () => {
+      expect(escapeVueI18nMessageSyntax('size {w}x{h}')).toBe(
+        "size {'{'}w{'}'}x{'{'}h{'}'}"
       )
-      expect(escapeVueI18nLinkedSyntax('')).toBe('')
     })
 
-    it('is idempotent for already-escaped input', () => {
-      const once = escapeVueI18nLinkedSyntax('a@b')
-      expect(escapeVueI18nLinkedSyntax(once)).toBe(once)
+    it('escapes the plural pipe separator', () => {
+      expect(escapeVueI18nMessageSyntax('foreground | background')).toBe(
+        "foreground {'|'} background"
+      )
+    })
+
+    it('escapes the modulo percent so it cannot re-form %{', () => {
+      expect(escapeVueI18nMessageSyntax('50%{done}')).toBe(
+        "50{'%'}{'{'}done{'}'}"
+      )
+    })
+
+    it('escapes every occurrence in a single pass', () => {
+      expect(escapeVueI18nMessageSyntax('@a @b @c')).toBe(
+        "{'@'}a {'@'}b {'@'}c"
+      )
+    })
+
+    it('leaves strings without syntax characters unchanged', () => {
+      expect(escapeVueI18nMessageSyntax('no special chars here')).toBe(
+        'no special chars here'
+      )
+      expect(escapeVueI18nMessageSyntax('')).toBe('')
     })
   })
 })

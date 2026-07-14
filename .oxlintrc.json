@@ -9,7 +9,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/*",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -125,6 +124,12 @@
   "overrides": [
     {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
+      "files": ["scripts/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }

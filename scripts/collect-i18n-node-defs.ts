@@ -4,9 +4,9 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
-  escapeVueI18nLinkedSyntax,
+  escapeVueI18nMessageSyntax,
   normalizeI18nKey
-} from '../packages/shared-frontend-utils/src/formatUtil'
+} from '@/utils/formatUtil'
 import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 
 const localePath = './src/locales/en/main.json'
@@ -63,7 +63,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         )
         return allDataTypes.map((dataType) => [
           normalizeI18nKey(dataType),
-          escapeVueI18nLinkedSyntax(dataType)
+          escapeVueI18nMessageSyntax(dataType)
         ])
       })
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -103,7 +103,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([key, value]) => [
               normalizeI18nKey(key),
-              { name: value ? escapeVueI18nLinkedSyntax(value) : value }
+              { name: value ? escapeVueI18nMessageSyntax(value) : value }
             ])
         )
 
@@ -130,7 +130,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const name =
           input.name === undefined
             ? undefined
-            : escapeVueI18nLinkedSyntax(input.name)
+            : escapeVueI18nMessageSyntax(input.name)
         const tooltip = input.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -158,7 +158,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         const name =
           output.name === undefined || output.name in allDataTypesLocale
             ? undefined
-            : escapeVueI18nLinkedSyntax(output.name)
+            : escapeVueI18nMessageSyntax(output.name)
         const tooltip = output.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -191,11 +191,11 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         return [
           normalizeI18nKey(nodeDef.name),
           {
-            display_name: escapeVueI18nLinkedSyntax(
+            display_name: escapeVueI18nMessageSyntax(
               nodeDef.display_name ?? nodeDef.name
             ),
             description: nodeDef.description
-              ? escapeVueI18nLinkedSyntax(nodeDef.description)
+              ? escapeVueI18nMessageSyntax(nodeDef.description)
               : undefined,
             inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
             outputs: extractOutputs(nodeDef)
@@ -210,7 +210,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         .split('/')
         .map((category) => [
           normalizeI18nKey(category),
-          escapeVueI18nLinkedSyntax(category)
+          escapeVueI18nMessageSyntax(category)
         ])
     )
   )
