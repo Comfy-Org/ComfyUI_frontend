@@ -59,6 +59,7 @@ describe('usePackUpdateStatus', () => {
 
   it('reports no update when the pack is not installed', () => {
     mockIsPackInstalled.mockReturnValue(false)
+    mockGetInstalledPackVersion.mockReturnValue(undefined)
 
     const { isUpdateAvailable } = usePackUpdateStatus(makePack())
 

@@ -85,6 +85,15 @@ describe('getPackUpdateStatus', () => {
     expect(status.isUpdateAvailable).toBe(false)
   })
 
+  it('reports no update for an installed pack with no known version', () => {
+    const store = createStore({ 'pack-1': undefined })
+    const status = getPackUpdateStatus(createPack('pack-1', '2.0.0'), store)
+
+    expect(status.isInstalled).toBe(true)
+    expect(status.installedVersion).toBeUndefined()
+    expect(status.isUpdateAvailable).toBe(false)
+  })
+
   it('reports no update when the pack has no latest version', () => {
     const store = createStore({ 'pack-1': '1.0.0' })
     const status = getPackUpdateStatus(createPack('pack-1'), store)
