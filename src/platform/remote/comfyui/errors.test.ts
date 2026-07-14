@@ -91,6 +91,11 @@ describe('errorResponseFromBody', () => {
       'fallback'
     )
     expect('details' in arrayDetails).toBe(false)
+    const nullDetails = errorResponseFromBody(
+      { code: 'X', message: 'y', details: null },
+      'fallback'
+    )
+    expect('details' in nullDetails).toBe(false)
   })
 })
 

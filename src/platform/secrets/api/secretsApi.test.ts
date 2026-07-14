@@ -59,4 +59,20 @@ describe('listSecretProviders', () => {
       message: 'unavailable'
     })
   })
+
+  it('preserves a recognized error code on SecretsApiError', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse(
+        { code: 'DUPLICATE_NAME', message: 'exists' },
+        { ok: false, status: 409, statusText: 'Conflict' }
+      )
+    )
+
+    await expect(listSecretProviders()).rejects.toMatchObject({
+      name: 'SecretsApiError',
+      status: 409,
+      code: 'DUPLICATE_NAME',
+      message: 'exists'
+    })
+  })
 })
