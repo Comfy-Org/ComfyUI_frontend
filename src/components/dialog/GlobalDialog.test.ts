@@ -486,4 +486,19 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
     portal.remove()
   })
+
+  it('focus-outside on an aria-haspopup trigger still dismisses (triggers are pointer-only)', () => {
+    // Tab focus is not blocked by the non-modal scrim, so keyboard focus
+    // landing on an app-chrome popup trigger must dismiss like any other
+    // outside element.
+    const trigger = document.createElement('button')
+    trigger.setAttribute('aria-haspopup', 'menu')
+    document.body.appendChild(trigger)
+
+    const event = makeEvent(trigger)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(false)
+    trigger.remove()
+  })
 })
