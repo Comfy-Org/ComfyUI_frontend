@@ -2295,6 +2295,7 @@
   },
   "onboardingTour": {
     "overlayLabel": "Getting started tour",
+    "preparing": "Building your template…",
     "skip": "Skip",
     "back": "Back",
     "next": "Next",
@@ -2303,25 +2304,37 @@
     "step": {
       "upload": {
         "title": "Start with an image",
-        "body": "Upload the image you want to build from."
+        "body": "This is your raw material. We loaded one to get you going — you can swap it anytime."
       },
       "prompt": {
         "title": "Tell it what to make",
-        "body": "Describe what you want to create.",
+        "body": "This prompt is yours to change — describe what you want and it reshapes the result.",
         "portHint": "Click the prompt input to start typing."
       },
       "run": {
         "title": "Now run it and watch it come to life",
-        "body": "Press Run to generate your result."
+        "body": "Press Run and your result starts generating."
       },
       "result": {
         "image": {
-          "title": "And there it is",
-          "body": "Your first image is ready."
+          "ready": {
+            "title": "And there it is",
+            "body": "Your new image lands right here — ready to download or share."
+          },
+          "pending": {
+            "title": "Almost there",
+            "body": "Adding the final touches…"
+          }
         },
         "video": {
-          "title": "And there it is",
-          "body": "Your first video is ready."
+          "ready": {
+            "title": "And there it is",
+            "body": "Your new video lands right here — ready to download or share."
+          },
+          "pending": {
+            "title": "Almost there",
+            "body": "Adding the final touches…"
+          }
         }
       }
     },

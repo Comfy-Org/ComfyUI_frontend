@@ -56,6 +56,7 @@
                 v-for="template in cards"
                 :key="template.name"
                 :template
+                :loading="loadingTemplateId === template.name"
                 class="min-w-0"
                 @select="onSelectTemplate"
               />
@@ -129,6 +130,7 @@ const { loadWorkflowTemplate } = useTemplateWorkflows()
 const controller = useOnboardingTourController()
 
 const activeTab = ref<TabValue>('templates')
+const loadingTemplateId = ref<string | null>(null)
 
 const screenRef = useTemplateRef<HTMLElement>('screenRef')
 
@@ -157,16 +159,30 @@ const placeholderCopy = computed(() =>
 )
 
 async function onSelectTemplate(id: string) {
-  // Keep the screen up until the template loads, so a failed load leaves the
-  // user here to pick again rather than stranded on a blank canvas.
-  let loaded = false
+  if (loadingTemplateId.value) return
+  // Keep the screen up (the card shows a spinner) through the load and the
+  // tour's readiness gate: a failed load leaves the user here to pick again,
+  // and the tour overlay takes over on top before the screen is dismissed, so
+  // the canvas never flashes bare.
+  loadingTemplateId.value = id
   try {
-    loaded = await loadWorkflowTemplate(id, 'default')
-  } catch (error) {
-    console.error('Failed to load onboarding template:', error)
+    let loaded = false
+    try {
+      loaded = await loadWorkflowTemplate(id, 'default')
+    } catch (error) {
+      console.error('Failed to load onboarding template:', error)
+    }
+    if (!loaded) return
+    try {
+      await controller.beginTour({ templateId: id })
+      entryStore.dismissGettingStarted()
+    } catch (error) {
+      // Keep the screen up so the user can retry rather than landing on a
+      // half-started tour behind a dismissed takeover.
+      console.error('Failed to start onboarding tour:', error)
+    }
+  } finally {
+    loadingTemplateId.value = null
   }
-  if (!loaded) return
-  entryStore.dismissGettingStarted()
-  await controller.start(id)
 }
 </script>

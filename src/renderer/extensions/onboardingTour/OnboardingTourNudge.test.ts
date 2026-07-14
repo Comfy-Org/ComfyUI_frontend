@@ -34,6 +34,8 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
+vi.mock('@/scripts/app', () => ({ app: { canvas: null } }))
+
 import OnboardingTourNudge from './OnboardingTourNudge.vue'
 import { useOnboardingTourStore } from './onboardingTourStore'
 

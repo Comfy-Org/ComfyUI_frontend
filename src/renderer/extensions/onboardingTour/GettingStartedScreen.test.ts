@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   getTemplateTitle: vi.fn(
     (template: TemplateInfo) => template.title ?? template.name
   ),
-  controllerStart: vi.fn(async () => {}),
+  controllerBeginTour: vi.fn(async () => {}),
   templatesByName: new Map<string, TemplateInfo>(),
   templatesLoaded: true,
   loadWorkflowTemplates: vi.fn(async () => {})
@@ -61,7 +61,7 @@ vi.mock(
 )
 
 vi.mock('./useOnboardingTourController', () => ({
-  useOnboardingTourController: () => ({ start: mocks.controllerStart })
+  useOnboardingTourController: () => ({ beginTour: mocks.controllerBeginTour })
 }))
 
 import GettingStartedScreen from './GettingStartedScreen.vue'
@@ -88,7 +88,7 @@ describe('GettingStartedScreen', () => {
     store.showGettingStarted()
 
     mocks.loadWorkflowTemplate.mockClear()
-    mocks.controllerStart.mockClear()
+    mocks.controllerBeginTour.mockClear()
     mocks.loadWorkflowTemplates.mockClear()
     mocks.templatesLoaded = true
     mocks.templatesByName.clear()
@@ -139,11 +139,33 @@ describe('GettingStartedScreen', () => {
       'image_z_image_turbo',
       'default'
     )
-    expect(mocks.controllerStart).toHaveBeenCalledWith('image_z_image_turbo')
+    expect(mocks.controllerBeginTour).toHaveBeenCalledWith({
+      templateId: 'image_z_image_turbo'
+    })
     const loadOrder = mocks.loadWorkflowTemplate.mock.invocationCallOrder[0]
-    const startOrder = mocks.controllerStart.mock.invocationCallOrder[0]
+    const startOrder = mocks.controllerBeginTour.mock.invocationCallOrder[0]
     expect(loadOrder).toBeLessThan(startOrder)
     expect(store.shouldShowGettingStarted).toBe(false)
+  })
+
+  it('marks the picked card busy while the template loads and the tour prepares', async () => {
+    let resolveLoad: (loaded: boolean) => void = () => {}
+    mocks.loadWorkflowTemplate.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        resolveLoad = resolve
+      })
+    )
+    const user = userEvent.setup()
+    renderScreen()
+
+    const cardId = 'getting-started-card-image_z_image_turbo'
+    await user.click(screen.getByTestId(cardId))
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId(cardId)).toHaveAttribute('aria-busy', 'true')
+    )
+
+    resolveLoad(true)
   })
 
   it('keeps the screen up and does not start the tour when loading fails', async () => {
@@ -156,7 +178,7 @@ describe('GettingStartedScreen', () => {
     )
 
     expect(mocks.loadWorkflowTemplate).toHaveBeenCalled()
-    expect(mocks.controllerStart).not.toHaveBeenCalled()
+    expect(mocks.controllerBeginTour).not.toHaveBeenCalled()
     expect(store.shouldShowGettingStarted).toBe(true)
   })
 
@@ -169,7 +191,7 @@ describe('GettingStartedScreen', () => {
       screen.getByTestId('getting-started-card-video_wan2_2_14B_i2v')
     )
 
-    expect(mocks.controllerStart).not.toHaveBeenCalled()
+    expect(mocks.controllerBeginTour).not.toHaveBeenCalled()
     expect(store.shouldShowGettingStarted).toBe(true)
   })
 
