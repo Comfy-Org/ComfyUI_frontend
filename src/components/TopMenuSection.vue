@@ -34,61 +34,75 @@
             </Button>
           </div>
 
-          <div ref="actionbarContainerRef" :class="actionbarContainerClass">
-            <ActionBarButtons />
-            <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+          <div
+            class="pointer-events-auto flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg p-2 shadow-interface"
+          >
             <div
-              ref="legacyCommandsContainerRef"
-              data-testid="legacy-topbar-container"
-              class="[&:not(:has(*>*:not(:empty)))]:hidden"
-            ></div>
-
-            <ComfyActionbar
-              :top-menu-container="actionbarContainerRef"
-              :queue-overlay-expanded="isQueueOverlayExpanded"
-              @update:progress-target="updateProgressTarget"
-            />
-            <CurrentUserButton
-              v-if="isLoggedIn && !isIntegratedTabBar"
-              class="shrink-0"
-            />
-            <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
-            <Button
-              v-if="isCloud && flags.workflowSharingEnabled"
-              v-tooltip.bottom="shareTooltipConfig"
-              variant="secondary"
-              :aria-label="t('actionbar.shareTooltip')"
-              @click="() => openShareDialog().catch(toastErrorHandler)"
-              @pointerenter="prefetchShareDialog"
+              ref="actionbarContainerRef"
+              :class="
+                cn(
+                  'actionbar-container relative flex items-center gap-2',
+                  isActionbarContainerEmpty &&
+                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                )
+              "
             >
-              <i class="icon-[comfy--send] size-4" />
-              <span class="not-md:hidden">
-                {{ t('actionbar.share') }}
-              </span>
-            </Button>
-            <div v-if="!isRightSidePanelOpen" class="relative">
-              <Button
-                v-tooltip.bottom="rightSidePanelTooltipConfig"
-                :class="
-                  cn(
-                    showErrorIndicatorOnPanelButton &&
-                      'outline-1 outline-destructive-background'
-                  )
-                "
-                variant="secondary"
-                size="icon"
-                :aria-label="t('rightSidePanel.togglePanel')"
-                @click="openRightSidePanel"
-              >
-                <i class="icon-[lucide--panel-right] size-4" />
-              </Button>
-              <StatusBadge
-                v-if="showErrorIndicatorOnPanelButton"
-                variant="dot"
-                severity="danger"
-                class="absolute -top-1 -right-1"
+              <ActionBarButtons />
+              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+              <div
+                ref="legacyCommandsContainerRef"
+                data-testid="legacy-topbar-container"
+                class="[&:not(:has(*>*:not(:empty)))]:hidden"
+              ></div>
+
+              <ComfyActionbar
+                :top-menu-container="actionbarContainerRef"
+                :queue-overlay-expanded="isQueueOverlayExpanded"
+                @update:progress-target="updateProgressTarget"
               />
+              <CurrentUserButton
+                v-if="isLoggedIn && !isIntegratedTabBar"
+                class="shrink-0"
+              />
+              <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+              <Button
+                v-if="isCloud && flags.workflowSharingEnabled"
+                v-tooltip.bottom="shareTooltipConfig"
+                variant="secondary"
+                :aria-label="t('actionbar.shareTooltip')"
+                @click="() => openShareDialog().catch(toastErrorHandler)"
+                @pointerenter="prefetchShareDialog"
+              >
+                <i class="icon-[comfy--send] size-4" />
+                <span class="not-md:hidden">
+                  {{ t('actionbar.share') }}
+                </span>
+              </Button>
+              <div v-if="!isRightSidePanelOpen" class="relative">
+                <Button
+                  v-tooltip.bottom="rightSidePanelTooltipConfig"
+                  :class="
+                    cn(
+                      showErrorIndicatorOnPanelButton &&
+                        'outline-1 outline-destructive-background'
+                    )
+                  "
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="t('rightSidePanel.togglePanel')"
+                  @click="openRightSidePanel"
+                >
+                  <i class="icon-[lucide--panel-right] size-4" />
+                </Button>
+                <StatusBadge
+                  v-if="showErrorIndicatorOnPanelButton"
+                  variant="dot"
+                  severity="danger"
+                  class="absolute -top-1 -right-1"
+                />
+              </div>
             </div>
+            <FreeTierQuota v-if="!isActionbarFloating" />
           </div>
         </div>
         <ErrorOverlay />
@@ -147,6 +161,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
@@ -209,21 +224,6 @@ const hasDockedButtons = computed(() => {
 const isActionbarContainerEmpty = computed(
   () => isActionbarFloating.value && !hasDockedButtons.value
 )
-const actionbarContainerClass = computed(() => {
-  const base =
-    'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg shadow-interface'
-
-  if (isActionbarContainerEmpty.value) {
-    return cn(
-      base,
-      '-ml-2 w-0 min-w-0 border-transparent shadow-none',
-      'has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto',
-      'has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
-    )
-  }
-
-  return cn(base, 'px-2', 'border-interface-stroke')
-})
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )

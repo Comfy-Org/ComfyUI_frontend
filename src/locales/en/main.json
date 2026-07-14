@@ -3556,6 +3556,7 @@
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
