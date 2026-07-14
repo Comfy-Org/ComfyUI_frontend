@@ -194,6 +194,24 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
+    it('sizes the legacy workspace pricing dialog via Reka contentClass', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockIsLegacyTeamPlan.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(dialogComponentProps).toMatchObject({
+        renderer: 'reka',
+        size: 'full',
+        modal: false
+      })
+      expect(dialogComponentProps).toHaveProperty('contentClass')
+      expect(dialogComponentProps).not.toHaveProperty('style')
+    })
+
     it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = false

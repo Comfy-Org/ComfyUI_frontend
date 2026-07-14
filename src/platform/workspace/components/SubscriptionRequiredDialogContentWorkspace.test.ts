@@ -132,6 +132,9 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
     expect(screen.queryByTestId('add-payment-preview')).not.toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+    expect(
+      screen.getByTestId('subscription-workspace-dialog-content')
+    ).toHaveClass('xl:w-[min(1280px,95vw)]')
   })
 
   it('passes the reason into subscription checkout', () => {

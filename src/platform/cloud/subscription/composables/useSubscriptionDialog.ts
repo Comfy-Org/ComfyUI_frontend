@@ -117,10 +117,16 @@ export const useSubscriptionDialog = () => {
             onClose: hide,
             reason: options?.reason
           },
-          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
-          // modal mode traps focus and disables body pointer-events, making it
-          // unclickable. The unified table has no such overlay.
-          dialogComponentProps: { ...dialogComponentProps, modal: false }
+          dialogComponentProps: {
+            // The legacy table hosts a PrimeVue Popover teleported to body; Reka
+            // modal mode traps focus and disables body pointer-events, making it
+            // unclickable. The unified table has no such overlay.
+            modal: false,
+            renderer: 'reka',
+            size: 'full',
+            contentClass:
+              'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+          }
         })
         return
       }
