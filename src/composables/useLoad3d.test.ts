@@ -214,9 +214,7 @@ describe('useLoad3d', () => {
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
-      renderer: {
-        domElement: mockCanvas
-      } as Partial<Load3d['renderer']> as Load3d['renderer']
+      domElement: mockCanvas
     }
 
     vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
@@ -303,7 +301,7 @@ describe('useLoad3d', () => {
       mockNode.flags.collapsed = true
       mockNode.onDrawBackground?.({} as CanvasRenderingContext2D)
 
-      expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
+      expect(mockLoad3d.domElement!.hidden).toBe(true)
     })
 
     it('should initialize without loading model (model loading is handled by Load3DConfiguration)', async () => {
