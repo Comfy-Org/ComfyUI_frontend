@@ -2,6 +2,7 @@ import { ZIndex } from '@primeuix/utils/zindex'
 import { cleanup, render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
@@ -13,6 +14,10 @@ vi.mock('../composables/useSecretForm', () => ({
     loading: false,
     apiError: '',
     providerOptions: [],
+    providerHelp: '',
+    selectedInputType: ref('text'),
+    fileName: ref(''),
+    loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
   })
 }))

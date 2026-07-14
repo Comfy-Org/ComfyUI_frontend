@@ -17,18 +17,18 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       <div class="max-w-2xl">
         <h2
-          class="text-primary-comfy-ink text-2xl/tight font-medium lg:text-3xl/tight"
+          class="text-2xl/tight font-medium text-primary-comfy-ink lg:text-3xl/tight"
         >
           {{ t('cloud.pricing.title', locale) }}
         </h2>
 
-        <p class="text-primary-comfy-ink mt-4 text-base">
+        <p class="mt-4 text-base text-primary-comfy-ink">
           {{ t('cloud.pricing.description', locale) }}
         </p>
 
         <p
           v-if="SHOW_FREE_TIER"
-          class="text-primary-comfy-ink mt-4 text-base font-bold"
+          class="mt-4 text-base font-bold text-primary-comfy-ink"
         >
           {{ t('cloud.pricing.tagline', locale) }}
         </p>
@@ -36,7 +36,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
       <a
         :href="getRoutes(locale).cloudPricing"
-        class="bg-primary-comfy-ink text-primary-comfy-yellow shrink-0 rounded-2xl px-6 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-90"
+        class="text-primary-comfy-yellow shrink-0 rounded-2xl bg-primary-comfy-ink px-6 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-90"
       >
         {{ t('cloud.pricing.cta', locale) }}
       </a>

@@ -359,6 +359,7 @@
     "colors": "色彩調色盤",
     "descLabel": "描述",
     "descPlaceholder": "此區域的描述",
+    "grid": "網格",
     "textLabel": "文字",
     "textPlaceholder": "要呈現的文字（原文）",
     "typeObj": "物件",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "請將您的回答控制在 {max} 個字以內。",
         "chooseAnOption": "請選擇一個選項。",
         "describeAnswer": "請描述您的答案。",
         "selectAtLeastOne": "請至少選擇一個選項。"
       },
       "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
-        "familiarity": {
-          "advanced": "進階使用者（自訂工作流程）",
-          "basics": "熟悉基礎操作",
-          "expert": "專家（協助他人）",
-          "new": "ComfyUI 新手（從未使用過）",
-          "starting": "剛開始（正在跟隨教學）"
+        "experience": {
+          "new": "ComfyUI 新手",
+          "pro": "我是進階使用者",
+          "some": "我已經熟悉操作"
+        },
+        "focus": {
+          "custom_nodes": "自訂節點",
+          "pipelines": "自動化流程",
+          "products": "為他人打造產品"
         },
         "intent": {
-          "3d_game": "3D 素材／遊戲素材",
-          "api": "執行工作流程的 API 端點",
-          "apps": "由工作流程簡化的應用程式",
-          "audio": "音訊／音樂",
-          "custom_nodes": "自訂節點",
+          "apps_api": "應用程式與 API",
+          "exploring": "只是探索",
           "images": "圖像",
-          "not_sure": "尚未確定",
-          "videos": "影片",
+          "other": "其他",
+          "otherPlaceholder": "您想製作什麼？",
+          "video": "影片",
           "workflows": "自訂工作流程或管線"
         },
         "source": {
-          "conference": "研討會或活動",
-          "discord": "Discord／社群",
+          "community": "社群或論壇",
           "friend": "朋友或同事",
-          "github": "GitHub",
+          "other": "其他",
+          "otherPlaceholder": "您是在哪裡發現我們的？",
+          "search": "Google／搜尋引擎",
+          "social": "社群媒體"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "電子報或部落格",
-          "other": "其他",
           "reddit": "Reddit",
-          "search": "Google／搜尋引擎",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（Twitter）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育用途（學生或教育者）",
-          "personal": "個人用途",
-          "work": "工作用途"
         }
       },
+      "otherPlaceholder": "請告訴我們更多",
       "placeholder": "問卷問題佔位符",
-      "steps": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "intent": "您想用 ComfyUI 創作什麼？",
-        "source": "您是從哪裡得知 ComfyUI 的？",
-        "usage": "您打算如何使用 ComfyUI？"
-      },
       "title": "雲端問卷"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "了解雲端服務",
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
-  "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
+  "cloudSurvey_steps_experience": "您對 ComfyUI 的熟悉程度？",
+  "cloudSurvey_steps_focus": "您正在製作什麼？",
   "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
   "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
-  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
+  "cloudSurvey_steps_source_social": "哪個平台？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -621,10 +618,13 @@
     "namePlaceholder": "請在此輸入你的姓名",
     "profileCreationNav": "個人檔案建立",
     "startPublishingButton": "開始發佈",
+    "startUpdatingButton": "更新工作流程",
     "successDescription": "你現在可以將工作流程上傳到你的創作者頁面",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "你的個人頁面已上線於",
     "successTitle": "看起來不錯，{'@'}{username}！",
+    "updateIntroDescription": "將您的最新變更推送到 ComfyHub。您的分享連結與統計資料將保持不變。",
+    "updateIntroTitle": "更新您的 ComfyHub 工作流程",
     "uploadCover": "+ 上傳封面",
     "uploadProfilePicture": "+ 上傳大頭貼",
     "uploadWorkflowButton": "上傳我的工作流程",
@@ -648,6 +648,8 @@
     "publishSuccessDescription": "您的工作流程已在 ComfyHub 上上線。",
     "publishSuccessTitle": "發佈成功",
     "removeExampleImage": "移除範例圖片",
+    "renameFailedDescription": "您的工作流程已成功發佈，但本機檔案重新命名失敗。請再次重新命名以保持一致。",
+    "renameFailedTitle": "重新命名失敗",
     "selectAThumbnail": "選擇縮圖",
     "shareAs": "分享為",
     "showLessTags": "顯示較少...",
@@ -665,6 +667,7 @@
     "thumbnailVideo": "影片",
     "title": "發佈到 ComfyHub",
     "unsavedDescription": "您必須先儲存您的工作流程，才能發佈到 ComfyHub。請先儲存以繼續。",
+    "updateButton": "更新工作流程",
     "uploadAnImage": "點擊瀏覽或拖曳圖片",
     "uploadComparison": "上傳前後對比",
     "uploadComparisonAfterPrompt": "後",
@@ -783,6 +786,8 @@
     "faqs": "常見問題",
     "invoiceHistory": "發票紀錄",
     "lastUpdated": "最後更新",
+    "loadEventsError": "載入活動失敗。請再試一次。",
+    "loadEventsUnknownError": "載入活動時發生錯誤。請重新整理並再試一次。",
     "messageSupport": "聯絡客服",
     "model": "模型",
     "purchaseCredits": "購買點數",
@@ -949,6 +954,16 @@
       "message": "提供的對話框 ID 無效。",
       "title": "無效對話框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
+    "confirmSummary": "批准桌面端登入？",
+    "expiredDetail": "登入請求已過期或已被使用。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "expiredSummary": "桌面端登入失敗",
+    "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "failedSummary": "桌面端登入失敗",
+    "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
+    "successSummary": "登入成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未儲存的工作流程，任何未儲存的變更都將遺失。確定要退出嗎？",
@@ -1564,6 +1579,7 @@
     "extensions": "擴充功能",
     "failed": "失敗",
     "failedToCopyJobId": "複製工作 ID 失敗",
+    "failedToDownloadFile": "檔案下載失敗",
     "failedToDownloadImage": "下載圖片失敗",
     "failedToDownloadVideo": "下載影片失敗",
     "favorites": "我的最愛",
@@ -1808,6 +1824,7 @@
     "systemStatsRAMTotal": "總記憶體",
     "systemStatsTemplatesVersion": "範本版本",
     "terminal": "終端機",
+    "textFailedToLoad": "文字載入失敗",
     "title": "標題",
     "triggerPhrase": "觸發詞",
     "unknownError": "未知錯誤",
@@ -2401,6 +2418,11 @@
       "pending": "待處理",
       "unknown": "未知"
     },
+    "survey": {
+      "error": "無法載入此問卷。請稍後再試。",
+      "intro": "Comfy Cloud 即將支援安裝自訂節點。請回答幾個簡短問題，加入候補名單並協助完善此功能。",
+      "title": "加入候補名單"
+    },
     "title": "自訂節點管理器",
     "toFinishSetup": "完成設定",
     "totalNodes": "節點總數",
@@ -2769,7 +2791,6 @@
     "Runway": "跑道",
     "Sonilo": "Sonilo",
     "Sora": "蒼穹",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "三重奏",
@@ -2801,7 +2822,6 @@
     "cosmos": "cosmos",
     "create": "建立",
     "custom": "自訂",
-    "custom_sampling": "自訂取樣",
     "dancer": "舞者",
     "debug": "除錯",
     "detection": "偵測",
@@ -2845,6 +2865,8 @@
     "phantom subject": "幻影主體",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "後處理器",
+    "pre-processors": "前處理器",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
@@ -2865,7 +2887,6 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "stable_cascade",
     "supir": "supir",
     "text": "文字",
     "training": "訓練",
@@ -3102,8 +3123,11 @@
     "errorHelpGithub": "提交 GitHub 問題",
     "errorHelpSupport": "聯絡我們的客服",
     "errorLog": "錯誤日誌",
+    "errorNodeSummary": "{nodes} 個節點 — {count} 個錯誤 | {nodes} 個節點 — {count} 個錯誤",
+    "errorNodesSummary": "{nodes} 個節點 — {count} 個錯誤 | {nodes} 個節點 — {count} 個錯誤",
     "errors": "錯誤",
     "errorsDetected": "偵測到錯誤",
+    "errorsSummary": "{count} 個錯誤 | {count} 個錯誤",
     "executionErrorOccurred": "執行時發生錯誤。請查看「錯誤」分頁以取得詳細資訊。",
     "expand": "展開",
     "fallbackGroupTitle": "群組",
@@ -3193,6 +3217,8 @@
     "resetToDefault": "重設為預設值",
     "resolveBeforeRun": "請在執行工作流程前解決錯誤",
     "seeError": "查看錯誤",
+    "selectedNodeErrors": "{node} — {count} 個錯誤 | {node} — {count} 個錯誤",
+    "selectedNodesErrors": "{nodes} 個節點已選取 — {count} 個錯誤 | {nodes} 個節點已選取 — {count} 個錯誤",
     "settings": "設定",
     "showAdvancedInputsButton": "顯示進階輸入",
     "showAdvancedShort": "顯示進階",
@@ -3223,6 +3249,10 @@
     "namePlaceholder": "例如：我的 API 金鑰",
     "noSecrets": "尚未儲存任何機密。新增您的第一個 API 金鑰以開始使用。",
     "provider": "供應商",
+    "providerHelp": {
+      "gemini": "請輸入您的 Google Gemini API 金鑰。您可以在 Google AI Studio 產生一組。",
+      "runway": "請輸入您的 Runway API 金鑰。您可以在 Runway 帳戶設定的 API 金鑰區找到。"
+    },
     "providerHint": "選填。選擇供應商可自動啟用權杖使用。",
     "secretValue": "機密值",
     "secretValueHint": "此值將被加密，且無法再次查看。",
@@ -4106,6 +4136,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
+      "relevance": "相關性",
       "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",

@@ -359,6 +359,7 @@
     "colors": "palette_de_couleurs",
     "descLabel": "description",
     "descPlaceholder": "description de cette région",
+    "grid": "Grille",
     "textLabel": "Texte",
     "textPlaceholder": "texte à afficher (tel quel)",
     "typeObj": "objet",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Veuillez limiter votre réponse à {max} caractères.",
         "chooseAnOption": "Veuillez choisir une option.",
         "describeAnswer": "Veuillez décrire votre réponse.",
         "selectAtLeastOne": "Veuillez sélectionner au moins une option."
       },
       "intro": "Aidez-nous à personnaliser votre expérience ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Utilisateur avancé (workflows personnalisés)",
-          "basics": "À l'aise avec les bases",
-          "expert": "Expert (j'aide les autres)",
-          "new": "Nouveau sur ComfyUI (jamais utilisé auparavant)",
-          "starting": "Je débute (je suis des tutoriels)"
+        "experience": {
+          "new": "Nouveau sur ComfyUI",
+          "pro": "Utilisateur avancé",
+          "some": "Je me débrouille"
+        },
+        "focus": {
+          "custom_nodes": "Nœuds personnalisés",
+          "pipelines": "Pipelines automatisés",
+          "products": "Produits pour les autres"
         },
         "intent": {
-          "3d_game": "Assets 3D / assets de jeu",
-          "api": "Points de terminaison API pour exécuter des workflows",
-          "apps": "Applications simplifiées à partir de workflows",
-          "audio": "Audio / musique",
-          "custom_nodes": "Nœuds personnalisés",
+          "apps_api": "Applications et API",
+          "exploring": "Je découvre simplement",
           "images": "Images",
-          "not_sure": "Pas sûr",
-          "videos": "Vidéos",
+          "other": "Autre chose",
+          "otherPlaceholder": "Qu'aimeriez-vous créer ?",
+          "video": "Vidéo",
           "workflows": "Workflows ou pipelines personnalisés"
         },
         "source": {
-          "conference": "Conférence ou événement",
-          "discord": "Discord / communauté",
+          "community": "Une communauté ou un forum",
           "friend": "Ami ou collègue",
-          "github": "GitHub",
+          "other": "Autre",
+          "otherPlaceholder": "Où nous avez-vous trouvés ?",
+          "search": "Google / recherche",
+          "social": "Réseaux sociaux"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Newsletter ou blog",
-          "other": "Autre",
           "reddit": "Reddit",
-          "search": "Google / recherche",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Éducation (étudiant ou enseignant)",
-          "personal": "Usage personnel",
-          "work": "Travail"
         }
       },
+      "otherPlaceholder": "Dites-nous en plus",
       "placeholder": "Texte indicatif des questions de l'enquête",
-      "steps": {
-        "familiarity": "Quelle est votre familiarité avec ComfyUI ?",
-        "intent": "Que souhaitez-vous créer avec ComfyUI ?",
-        "source": "Où avez-vous entendu parler de ComfyUI ?",
-        "usage": "Comment prévoyez-vous d'utiliser ComfyUI ?"
-      },
       "title": "Enquête Cloud"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "En savoir plus sur Cloud",
   "cloudStart_title": "créez en quelques secondes",
   "cloudStart_wantToRun": "Vous préférez exécuter ComfyUI localement ?",
-  "cloudSurvey_steps_familiarity": "Quelle est votre familiarité avec ComfyUI ?",
+  "cloudSurvey_steps_experience": "Quel est votre niveau de connaissance de ComfyUI ?",
+  "cloudSurvey_steps_focus": "Qu'êtes-vous en train de créer ?",
   "cloudSurvey_steps_intent": "Que souhaitez-vous créer avec ComfyUI ?",
   "cloudSurvey_steps_source": "Où avez-vous entendu parler de ComfyUI ?",
-  "cloudSurvey_steps_usage": "Comment prévoyez-vous d'utiliser ComfyUI ?",
+  "cloudSurvey_steps_source_social": "Quelle plateforme ?",
   "cloudWaitlist_contactLink": "ici",
   "cloudWaitlist_questionsText": "Des questions ? Contactez-nous",
   "color": {
@@ -621,10 +618,13 @@
     "namePlaceholder": "Entrez votre nom ici",
     "profileCreationNav": "Création du profil",
     "startPublishingButton": "Commencer la publication",
+    "startUpdatingButton": "Mettre à jour le workflow",
     "successDescription": "Vous pouvez maintenant télécharger votre workflow sur votre page créateur",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Votre page de profil est en ligne sur",
     "successTitle": "Superbe, {'@'}{username} !",
+    "updateIntroDescription": "Poussez vos dernières modifications sur ComfyHub. Votre lien de partage et vos statistiques restent inchangés.",
+    "updateIntroTitle": "Mettez à jour votre workflow ComfyHub",
     "uploadCover": "+ Télécharger une couverture",
     "uploadProfilePicture": "+ Télécharger une photo de profil",
     "uploadWorkflowButton": "Télécharger mon workflow",
@@ -648,6 +648,8 @@
     "publishSuccessDescription": "Votre workflow est maintenant en ligne sur ComfyHub.",
     "publishSuccessTitle": "Publication réussie",
     "removeExampleImage": "Supprimer l’image d’exemple",
+    "renameFailedDescription": "Votre workflow a été publié avec succès, mais le renommage du fichier local a échoué. Renommez-le à nouveau pour correspondre.",
+    "renameFailedTitle": "Échec du renommage",
     "selectAThumbnail": "Sélectionner une miniature",
     "shareAs": "Partager en tant que",
     "showLessTags": "Afficher moins...",
@@ -665,6 +667,7 @@
     "thumbnailVideo": "Vidéo",
     "title": "Publier sur ComfyHub",
     "unsavedDescription": "Vous devez enregistrer votre workflow avant de le publier sur ComfyHub. Enregistrez-le maintenant pour continuer.",
+    "updateButton": "Mettre à jour le workflow",
     "uploadAnImage": "Cliquez pour parcourir ou faites glisser une image",
     "uploadComparison": "Télécharger avant et après",
     "uploadComparisonAfterPrompt": "Après",
@@ -783,6 +786,8 @@
     "faqs": "FAQ",
     "invoiceHistory": "Historique des factures",
     "lastUpdated": "Dernière mise à jour",
+    "loadEventsError": "Échec du chargement de l'activité. Veuillez réessayer.",
+    "loadEventsUnknownError": "Une erreur s'est produite lors du chargement de l'activité. Veuillez actualiser et réessayer.",
     "messageSupport": "Contacter le support",
     "model": "Modèle",
     "purchaseCredits": "Acheter des crédits",
@@ -949,6 +954,16 @@
       "message": "Un ID de dialogue invalide a été fourni.",
       "title": "Dialogue invalide"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "L’application de bureau ComfyUI attend de se connecter avec votre compte. Continuez uniquement si vous venez de lancer la connexion depuis l’application de bureau ComfyUI.",
+    "confirmSummary": "Approuver la connexion sur le bureau ?",
+    "expiredDetail": "La demande de connexion a expiré ou a déjà été utilisée. Relancez la connexion depuis l’application de bureau ComfyUI.",
+    "expiredSummary": "Échec de la connexion sur le bureau",
+    "failedDetail": "Une erreur est survenue lors de la connexion sur le bureau. Relancez la connexion depuis l’application de bureau ComfyUI.",
+    "failedSummary": "Échec de la connexion sur le bureau",
+    "successDetail": "Vous pouvez retourner sur l’application de bureau ComfyUI.",
+    "successSummary": "Connecté"
   },
   "desktopMenu": {
     "confirmQuit": "Il y a des flux de travail non enregistrés ouverts; toutes les modifications non enregistrées seront perdues. Ignorer cela et quitter?",
@@ -1564,6 +1579,7 @@
     "extensions": "Extensions",
     "failed": "Échec",
     "failedToCopyJobId": "Échec de la copie de l'ID du travail",
+    "failedToDownloadFile": "Échec du téléchargement du fichier",
     "failedToDownloadImage": "Échec du téléchargement de l'image",
     "failedToDownloadVideo": "Échec du téléchargement de la vidéo",
     "favorites": "Favoris",
@@ -1808,6 +1824,7 @@
     "systemStatsRAMTotal": "RAM totale",
     "systemStatsTemplatesVersion": "Version des modèles",
     "terminal": "Terminal",
+    "textFailedToLoad": "Échec du chargement du texte",
     "title": "Titre",
     "triggerPhrase": "Phrase déclencheuse",
     "unknownError": "Erreur inconnue",
@@ -2401,6 +2418,11 @@
       "pending": "En attente",
       "unknown": "Inconnu"
     },
+    "survey": {
+      "error": "Ce sondage n'a pas pu être chargé. Veuillez réessayer plus tard.",
+      "intro": "L'installation de nodes personnalisés arrive bientôt sur Comfy Cloud. Répondez à quelques questions rapides pour rejoindre la liste d'attente et contribuer à façonner cette fonctionnalité.",
+      "title": "Rejoignez la liste d'attente"
+    },
     "title": "Gestionnaire de Nœuds Personnalisés",
     "toFinishSetup": "pour terminer la configuration",
     "totalNodes": "Total de Nœuds",
@@ -2769,7 +2791,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2822,6 @@
     "cosmos": "cosmos",
     "create": "créer",
     "custom": "personnalisé",
-    "custom_sampling": "échantillonnage_personnalisé",
     "dancer": "danseur",
     "debug": "débogage",
     "detection": "détection",
@@ -2845,6 +2865,8 @@
     "phantom subject": "sujet fantôme",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "post-traitements",
+    "pre-processors": "pré-traitements",
     "preprocessors": "préprocesseurs",
     "primitive": "primitif",
     "qwen": "qwen",
@@ -2865,7 +2887,6 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "stable_cascade",
     "supir": "supir",
     "text": "texte",
     "training": "entraînement",
@@ -3102,8 +3123,11 @@
     "errorHelpGithub": "soumettre un ticket GitHub",
     "errorHelpSupport": "contacter notre support",
     "errorLog": "Journal des erreurs",
+    "errorNodeSummary": "{nodes} node — {count} erreur | {nodes} node — {count} erreurs",
+    "errorNodesSummary": "{nodes} nodes — {count} erreur | {nodes} nodes — {count} erreurs",
     "errors": "Erreurs",
     "errorsDetected": "Erreur détectée | Erreurs détectées",
+    "errorsSummary": "{count} erreur | {count} erreurs",
     "executionErrorOccurred": "Une erreur est survenue lors de l’exécution. Consultez l’onglet Erreurs pour plus de détails.",
     "expand": "Développer",
     "fallbackGroupTitle": "Groupe",
@@ -3193,6 +3217,8 @@
     "resetToDefault": "Réinitialiser par défaut",
     "resolveBeforeRun": "Résolvez avant d'exécuter le workflow",
     "seeError": "Voir l'erreur",
+    "selectedNodeErrors": "{node} — {count} erreur | {node} — {count} erreurs",
+    "selectedNodesErrors": "{nodes} nodes sélectionnés — {count} erreur | {nodes} nodes sélectionnés — {count} erreurs",
     "settings": "Paramètres",
     "showAdvancedInputsButton": "Afficher les entrées avancées",
     "showAdvancedShort": "Afficher les options avancées",
@@ -3223,6 +3249,10 @@
     "namePlaceholder": "ex. : Ma clé API",
     "noSecrets": "Aucun secret enregistré. Ajoutez votre première clé API pour commencer.",
     "provider": "Fournisseur",
+    "providerHelp": {
+      "gemini": "Saisissez votre clé API Google Gemini. Vous pouvez en générer une dans Google AI Studio.",
+      "runway": "Saisissez votre clé API Runway. Vous pouvez la trouver dans les paramètres de votre compte Runway sous Clés API."
+    },
     "providerHint": "Optionnel. Sélectionner un fournisseur permet l’utilisation automatique du jeton.",
     "secretValue": "Valeur du secret",
     "secretValueHint": "Cette valeur sera chiffrée et ne pourra plus être consultée.",
@@ -4106,6 +4136,7 @@
       "newest": "Plus récent",
       "popular": "Populaire",
       "recommended": "Recommandé",
+      "relevance": "Pertinence",
       "searchPlaceholder": "Rechercher..."
     },
     "sorting": "Trier par",
