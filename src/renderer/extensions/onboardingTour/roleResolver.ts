@@ -299,18 +299,58 @@ function overrideFor(templateId: string | undefined): TemplateOverride | null {
   return templateOverrides[templateId]
 }
 
+/**
+ * The root-graph node to spotlight for a prompt whose editable widget lives on
+ * `innerNodeId`: the node itself when it sits on the root graph, else the
+ * collapsed host of the subgraph that contains it. Null when the id belongs to
+ * no known node — the tour never enters a subgraph, so an inner id can't be a
+ * spotlight target.
+ */
+function promptHostId(
+  graph: WorkflowGraph,
+  innerNodeId: NodeId
+): NodeId | null {
+  if (graph.nodes.some((n) => n.id === innerNodeId)) return innerNodeId
+  for (const node of graph.nodes) {
+    if (!node.subgraphId) continue
+    const subgraph = graph.subgraphs.find((s) => s.id === node.subgraphId)
+    if (subgraph?.nodes.some((n) => n.id === innerNodeId)) return node.id
+  }
+  return null
+}
+
+/**
+ * Build the prompt role from the override's pinned inner node. `subgraphNodeId`
+ * (the spotlight target) is resolved to a root-graph node so it never points at
+ * a raw inner node; widget/port detail comes from the heuristic only when it
+ * resolved the same inner node. Prompt degrades to null if the inner id is
+ * unreachable.
+ */
+function overridePrompt(
+  graph: WorkflowGraph,
+  override: TemplateOverride,
+  heuristicPrompt: PromptRole | null
+): PromptRole | null {
+  const subgraphNodeId = promptHostId(graph, override.promptNodeId)
+  if (subgraphNodeId === null) return null
+
+  const sameInner = heuristicPrompt?.innerNodeId === override.promptNodeId
+  return {
+    subgraphNodeId,
+    innerNodeId: override.promptNodeId,
+    widgetName: sameInner ? heuristicPrompt.widgetName : 'text',
+    portFallback: sameInner ? heuristicPrompt.portFallback : null
+  }
+}
+
 function applyOverride(
+  graph: WorkflowGraph,
   override: TemplateOverride,
   heuristicPrompt: PromptRole | null
 ): ResolvedRoles {
   return {
     source: override.sourceNodeId ? toNodeRole(override.sourceNodeId) : null,
-    prompt: {
-      subgraphNodeId: heuristicPrompt?.subgraphNodeId ?? override.promptNodeId,
-      innerNodeId: override.promptNodeId,
-      widgetName: heuristicPrompt?.widgetName ?? 'text',
-      portFallback: heuristicPrompt?.portFallback ?? null
-    },
+    prompt: overridePrompt(graph, override, heuristicPrompt),
     engine: toNodeRole(override.engineNodeId),
     sink: toNodeRole(override.sinkNodeId),
     mediaKind: override.mediaKind
@@ -338,7 +378,7 @@ export function resolveRoles(
     : resolveTopLevelPrompt(graph)
 
   const override = overrideFor(templateId)
-  if (override) return applyOverride(override, prompt)
+  if (override) return applyOverride(graph, override, prompt)
 
   const sink = findSink(graph, nodeDefLookup)
   const source = findSource(graph)

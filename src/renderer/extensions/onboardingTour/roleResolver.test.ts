@@ -130,10 +130,7 @@ describe('templateOverrides pin the heuristic result', () => {
     }
   })
 
-  it('override ids win over what the heuristics resolve on the graph', () => {
-    // Feed a curated id against a graph whose own heuristics resolve to
-    // different ids (sink 900, no prompt) — the pinned override must win, and
-    // the null heuristic prompt exercises applyOverride's fallback branch.
+  it('override sink, engine, and media win over the heuristics on the graph', () => {
     const pin = templateOverrides.image_z_image_turbo
     const roles = resolveRoles(
       workflow([
@@ -147,10 +144,31 @@ describe('templateOverrides pin the heuristic result', () => {
     expect(roles.sink?.nodeId).toBe(pin.sinkNodeId)
     expect(roles.engine?.nodeId).toBe(pin.engineNodeId)
     expect(roles.mediaKind).toBe(pin.mediaKind)
-    expect(roles.prompt?.innerNodeId).toBe(pin.promptNodeId)
-    expect(roles.prompt?.widgetName).toBe('text')
     expect(roles.sink?.nodeId).not.toBe(toNodeId(900))
     expect(roles.mediaKind).not.toBe('video')
+  })
+
+  it('degrades the prompt to null when the pinned inner node is absent', () => {
+    const roles = resolveRoles(
+      workflow([
+        node(900, 'SaveImage', {
+          inputs: [{ name: 'images', type: 'IMAGE', link: 1 }]
+        })
+      ]),
+      'image_z_image_turbo'
+    )
+
+    expect(roles.prompt).toBeNull()
+  })
+
+  it('spotlights the subgraph host, not the pinned inner node, for a nested prompt', () => {
+    const roles = resolveRoles(
+      loadTemplateWorkflow('flux_kontext_dev_basic'),
+      'flux_kontext_dev_basic'
+    )
+
+    expect(roles.prompt?.innerNodeId).toBe(toNodeId(6))
+    expect(roles.prompt?.subgraphNodeId).toBe(toNodeId(192))
   })
 
   it('ignores an unknown template id and falls back to heuristics', () => {
