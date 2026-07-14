@@ -40,4 +40,10 @@ describe('reconcileDraftPatch', () => {
     )
     expect(result).toEqual({ kind: 'stale' })
   })
+
+  it('reports a gap when the agent advanced past the tab (missed patches)', () => {
+    // Tab holds v5; this patch is based on v7, so v6/v7 were dropped in transit.
+    const result = reconcileDraftPatch(patch({ baseVersion: 7, version: 8 }), 5)
+    expect(result).toEqual({ kind: 'gap' })
+  })
 })

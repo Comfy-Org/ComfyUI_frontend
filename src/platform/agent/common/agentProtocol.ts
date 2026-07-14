@@ -36,6 +36,34 @@ export interface AgentTurnRequest {
   baseVersion?: number
 }
 
+/** Wire body the backend `/api/agent/*` endpoints accept (snake_case). */
+export interface AgentTurnRequestBody {
+  content: string
+  selection?: NodeId[]
+  attachments?: string[]
+  target?: AgentWriteTarget
+  base_version?: number
+}
+
+/** Serialize a turn request to the snake_case body the backend expects. */
+export function serializeAgentTurnRequest(
+  request: AgentTurnRequest
+): AgentTurnRequestBody {
+  return {
+    content: request.content,
+    ...(request.selection !== undefined
+      ? { selection: request.selection }
+      : {}),
+    ...(request.attachments !== undefined
+      ? { attachments: request.attachments }
+      : {}),
+    ...(request.target !== undefined ? { target: request.target } : {}),
+    ...(request.baseVersion !== undefined
+      ? { base_version: request.baseVersion }
+      : {})
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Outbound: agent -> browser
 // ---------------------------------------------------------------------------
@@ -84,94 +112,147 @@ export type AgentEvent =
   | AgentMessageDoneEvent
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-type WithBase = Record<string, unknown> & {
-  threadId: string
-  messageId: string
+/** A finite number — rejects `NaN`/`Infinity`, which would wedge CAS version compares. */
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 
-function hasBase(value: Record<string, unknown>): value is WithBase {
-  return (
-    typeof value.threadId === 'string' && typeof value.messageId === 'string'
-  )
+/**
+ * A `version` watermark: a non-negative safe integer. Rejects negative,
+ * fractional, and unsafe (>2^53) values at the untrusted boundary — an unsafe
+ * integer can collapse two distinct server versions onto the same JS number and
+ * mask a real patch as `stale`.
+ */
+function isVersion(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0
+}
+
+/** The base identifiers, read from the snake_case envelope body. */
+function parseBase(data: Record<string, unknown>): AgentEventBase | null {
+  return typeof data.thread_id === 'string' &&
+    typeof data.message_id === 'string'
+    ? { threadId: data.thread_id, messageId: data.message_id }
+    : null
 }
 
 function isToolCallStatus(value: unknown): value is AgentToolCallStatus {
   return value === 'running' || value === 'success' || value === 'error'
 }
 
-function parseToolCall(raw: WithBase): AgentToolCallEvent | null {
+function parseToolCall(
+  data: Record<string, unknown>,
+  base: AgentEventBase
+): AgentToolCallEvent | null {
   if (
-    typeof raw.toolCallId !== 'string' ||
-    typeof raw.toolName !== 'string' ||
-    !isToolCallStatus(raw.status)
+    typeof data.tool_call_id !== 'string' ||
+    typeof data.tool_name !== 'string' ||
+    !isToolCallStatus(data.status)
   ) {
     return null
   }
   return {
     type: 'agent_tool_call',
-    threadId: raw.threadId,
-    messageId: raw.messageId,
-    toolCallId: raw.toolCallId,
-    toolName: raw.toolName,
-    status: raw.status,
-    ...(typeof raw.durationMs === 'number'
-      ? { durationMs: raw.durationMs }
+    ...base,
+    toolCallId: data.tool_call_id,
+    toolName: data.tool_name,
+    status: data.status,
+    ...(isFiniteNumber(data.duration_ms)
+      ? { durationMs: data.duration_ms }
       : {}),
-    ...(typeof raw.errorCode === 'string' ? { errorCode: raw.errorCode } : {})
+    ...(typeof data.error_code === 'string'
+      ? { errorCode: data.error_code }
+      : {})
   }
 }
 
-function parseDraftPatch(raw: WithBase): DraftPatchEvent | null {
+function parseDraftPatch(
+  data: Record<string, unknown>,
+  base: AgentEventBase
+): DraftPatchEvent | null {
   if (
-    typeof raw.workflowId !== 'string' ||
-    !isRecord(raw.content) ||
-    typeof raw.version !== 'number' ||
-    typeof raw.baseVersion !== 'number'
+    typeof data.workflow_id !== 'string' ||
+    !isRecord(data.content) ||
+    !isVersion(data.version) ||
+    !isVersion(data.base_version)
   ) {
     return null
   }
   return {
     type: 'draft_patch',
-    threadId: raw.threadId,
-    messageId: raw.messageId,
-    workflowId: raw.workflowId,
-    content: raw.content,
-    version: raw.version,
-    baseVersion: raw.baseVersion
+    ...base,
+    workflowId: data.workflow_id,
+    content: data.content,
+    version: data.version,
+    baseVersion: data.base_version
   }
+}
+
+function parseTokenUsage(
+  usage: unknown
+): { input: number; output: number } | undefined {
+  return isRecord(usage) &&
+    isFiniteNumber(usage.input) &&
+    isFiniteNumber(usage.output)
+    ? { input: usage.input, output: usage.output }
+    : undefined
 }
 
 /**
  * Decode an untrusted WebSocket payload into a typed `AgentEvent`, or `null` if
- * it is not a well-formed agent event. Keeps the transport boundary type-safe.
+ * it is not a well-formed agent event. The wire format is the canonical backend
+ * envelope `{ type, data: { …snake_case… } }`; the event body lives under
+ * `data`. Keeps the transport boundary type-safe.
  */
 export function parseAgentEvent(raw: unknown): AgentEvent | null {
-  if (!isRecord(raw) || !hasBase(raw)) return null
+  if (!isRecord(raw) || !isRecord(raw.data)) return null
+
+  const { data } = raw
+  const base = parseBase(data)
+  if (!base) return null
 
   switch (raw.type) {
     case 'agent_message_delta':
-      return typeof raw.delta === 'string'
-        ? {
-            type: 'agent_message_delta',
-            threadId: raw.threadId,
-            messageId: raw.messageId,
-            delta: raw.delta
-          }
+      return typeof data.delta === 'string'
+        ? { type: 'agent_message_delta', ...base, delta: data.delta }
         : null
     case 'agent_tool_call':
-      return parseToolCall(raw)
+      return parseToolCall(data, base)
     case 'draft_patch':
-      return parseDraftPatch(raw)
-    case 'agent_message_done':
+      return parseDraftPatch(data, base)
+    case 'agent_message_done': {
+      const tokenUsage = parseTokenUsage(data.usage)
       return {
         type: 'agent_message_done',
-        threadId: raw.threadId,
-        messageId: raw.messageId
+        ...base,
+        ...(tokenUsage ? { tokenUsage } : {})
       }
+    }
     default:
       return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// Draft snapshot: GET /api/agent/draft?workflow_id=... -> { content, version }
+// ---------------------------------------------------------------------------
+
+/**
+ * The authoritative server draft for a workflow (ADR-0011). Fetched on WS
+ * (re)connect and whenever a gap is suspected, to seed/reconcile the tab's base
+ * `version` without waiting for the agent to emit a new `draft_patch`.
+ */
+export interface DraftSnapshot {
+  content: WorkflowGraph
+  version: number
+}
+
+/** Decode an untrusted `GET /api/agent/draft` body, or `null` if malformed. */
+export function parseDraftSnapshot(raw: unknown): DraftSnapshot | null {
+  if (!isRecord(raw) || !isRecord(raw.content) || !isVersion(raw.version)) {
+    return null
+  }
+  return { content: raw.content, version: raw.version }
 }
