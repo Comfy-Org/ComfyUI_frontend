@@ -3,7 +3,7 @@
     <div
       v-if="importableModelRows.length > 0"
       data-testid="missing-model-importable-rows"
-      class="flex flex-col gap-1 overflow-hidden"
+      class="-mx-1.5 flex flex-col gap-1 overflow-hidden px-1.5"
     >
       <MissingModelRow
         v-for="row in importableModelRows"
@@ -12,6 +12,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="true"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -36,6 +37,7 @@
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
         :can-cloud-import="false"
+        :highlighted="isRowHighlighted(row)"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -86,8 +88,10 @@ const MODEL_TYPE_SORT_ORDER = [
   'diffusion_models'
 ] as const
 
-const { missingModelGroups } = defineProps<{
+const { missingModelGroups, highlightedNodeIds } = defineProps<{
   missingModelGroups: MissingModelGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -171,5 +175,12 @@ function getModelTypeSortIndex(directory: string | null) {
 
 function canCloudImport(row: MissingModelRowEntry) {
   return row.isAssetSupported && row.directory !== null
+}
+
+function isRowHighlighted(row: MissingModelRowEntry) {
+  if (!highlightedNodeIds?.size) return false
+  return row.model.referencingNodes.some((ref) =>
+    highlightedNodeIds.has(String(ref.nodeId))
+  )
 }
 </script>

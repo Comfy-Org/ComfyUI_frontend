@@ -9,9 +9,22 @@
         v-for="item in missingMediaItems"
         :key="item.key"
         data-testid="missing-media-row"
+        :aria-current="
+          highlightedNodeIds?.has(item.nodeId) ? 'true' : undefined
+        "
         class="min-w-0"
       >
-        <div class="flex min-w-0 items-center gap-2">
+        <!-- Emphasis lives on an inner element: the li is a TransitionGroup
+             child, and the emphasis transition-property would override the
+             list-scale move/enter/leave transitions. -->
+        <div
+          :class="
+            cn(
+              'flex min-w-0 items-center gap-2',
+              selectionEmphasisClass(highlightedNodeIds?.has(item.nodeId))
+            )
+          "
+        >
           <span class="flex min-w-0 flex-1">
             <button
               type="button"
@@ -44,8 +57,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
@@ -56,6 +71,8 @@ import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
 const { missingMediaGroups } = defineProps<{
   missingMediaGroups: MissingMediaGroup[]
+  /** Execution node ids to emphasize (current canvas selection). */
+  highlightedNodeIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
