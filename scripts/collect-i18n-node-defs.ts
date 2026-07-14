@@ -47,8 +47,6 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     }
   )
 
-  console.log(`Collected ${nodeDefs.length} node definitions`)
-
   const allDataTypesLocale = Object.fromEntries(
     nodeDefs
       .flatMap((nodeDef) => {
