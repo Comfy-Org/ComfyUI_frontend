@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => ({
   isNewUser: vi.fn<() => boolean | null>(() => true),
   onboardingTourEnabled: true,
   tutorialCompleted: false as boolean,
-  resolveRoles: vi.fn(),
+  resolveTourRoles: vi.fn(),
   restoreView: vi.fn(),
   nodesPresent: vi.fn(() => true),
   canvasTransformValid: vi.fn(() => true),
@@ -54,40 +54,38 @@ const mocks = vi.hoisted(() => ({
   },
   hasFunds: true as boolean,
   showSubscriptionDialog: vi.fn(),
-  storeArmNudge: vi.fn(),
   storeShowNudge: vi.fn(),
   storeCaptureResultMedia: vi.fn(),
   settingSet: vi.fn()
 }))
 
-// The controller drives the Run step off the execution store's job lifecycle, so
-// the test drives the same reactive `activeJobId` the store exposes. Built via an
-// async hoisted block because `ref` must load after the vue import is available.
-const { activeJobId } = await vi.hoisted(async () => {
-  const { ref: hoistedRef } = await import('vue')
-  return { activeJobId: hoistedRef<string | null>(null) }
-})
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: () => ({ activeJobId })
+/** Captures the api-bus handlers the controller registers so tests can dispatch a specific run outcome. */
+type ApiEventHandler = (event: CustomEvent) => void
+const apiEventHandlers = vi.hoisted(() => new Map<string, ApiEventHandler>())
+vi.mock('@/scripts/api', () => ({
+  api: {
+    addEventListener: vi.fn((event: string, handler: ApiEventHandler) => {
+      apiEventHandlers.set(event, handler)
+    }),
+    removeEventListener: vi.fn((event: string) => {
+      apiEventHandlers.delete(event)
+    })
+  }
 }))
 
-/** Simulate a full run: a job starts (start signal) then finishes (done signal). */
+function emitExecution(event: string) {
+  apiEventHandlers.get(event)?.(new CustomEvent(event, { detail: {} }))
+}
+
+/** Simulate a run finishing successfully. */
 async function runJob() {
-  activeJobId.value = 'job-1'
-  await nextTick()
-  activeJobId.value = null
+  emitExecution('execution_success')
   await nextTick()
 }
 
-/** Simulate only the job starting (still generating). */
-async function startJob() {
-  activeJobId.value = 'job-1'
-  await nextTick()
-}
-
-/** Simulate only the job finishing. */
-async function finishJob() {
-  activeJobId.value = null
+/** Simulate a run ending with a non-success outcome. */
+async function failJob(event: 'execution_error' | 'execution_interrupted') {
+  emitExecution(event)
   await nextTick()
 }
 
@@ -167,8 +165,8 @@ vi.mock('./subgraphNavigation', () => ({
   restoreView: mocks.restoreView
 }))
 
-vi.mock('./roleResolver', () => ({
-  resolveRoles: mocks.resolveRoles
+vi.mock('./roleResolution', () => ({
+  resolveTourRoles: mocks.resolveTourRoles
 }))
 
 vi.mock('./canvasSpotlightAdapter', async (importOriginal) => ({
@@ -187,7 +185,6 @@ vi.mock('./onboardingTourStore', () => ({
     advance: mocks.storeAdvance,
     back: vi.fn(),
     end: mocks.storeEnd,
-    armNudge: mocks.storeArmNudge,
     showNudge: mocks.storeShowNudge,
     captureResultMedia: mocks.storeCaptureResultMedia,
     get phase() {
@@ -284,13 +281,12 @@ describe('useOnboardingTourController.start', () => {
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
-    mocks.storeArmNudge.mockReset()
     mocks.storeShowNudge.mockReset()
     mocks.settingSet.mockReset()
     mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
     mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
     mocks.storeCaptureResultMedia.mockReset()
-    activeJobId.value = null
+    apiEventHandlers.clear()
   })
 
   afterEach(() => {
@@ -432,7 +428,7 @@ describe('useOnboardingTourController.start', () => {
     ).toHaveBeenCalledWith(
       expect.objectContaining({ template_id: 'image_z_image_turbo' })
     )
-    expect(mocks.storeArmNudge).toHaveBeenCalledOnce()
+    expect(mocks.storeShowNudge).toHaveBeenCalled()
     expect(mocks.storeEnd).toHaveBeenCalled()
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
@@ -468,34 +464,79 @@ describe('useOnboardingTourController.start', () => {
 
   it('reports the run only when a run actually completes', async () => {
     mocks.hasFunds = true
-    mocks.steps = [{ kind: 'run', nodeId: null }]
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
 
     await useOnboardingTourController().start()
-    await startJob()
-    // Still generating — nothing reported yet.
+    // Merely starting the tour reports nothing — the run must finish first.
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).not.toHaveBeenCalled()
 
-    await finishJob()
+    await runJob()
 
     expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+  })
+
+  it('reports the run at most once across repeated runs', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    await runJob()
+    await runJob()
+
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledOnce()
   })
 
-  it('reports the run at most once across repeated runs', async () => {
+  it('reports the true status and skips media capture when a run errors', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    await failJob('execution_error')
+
+    expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }))
+  })
+
+  it('completes the tour when a run finishes on the terminal Run step', async () => {
+    // No sink resolved → Run is the last step; a finished run must fire Completed.
     mocks.hasFunds = true
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
-    await useOnboardingTourController().start()
-    await runJob()
+    await useOnboardingTourController().start('image_z_image_turbo')
     await runJob()
 
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledOnce()
+    expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalledOnce()
+  })
+
+  it('does not complete on run when a Result step follows', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start('image_z_image_turbo')
+    await runJob()
+
+    expect(mocks.telemetry.trackOnboardingTourCompleted).not.toHaveBeenCalled()
   })
 
   it('advances off the Run step the instant the Run button is clicked', async () => {
@@ -600,7 +641,7 @@ describe('useOnboardingTourController post-run nudge', () => {
     mocks.stepIndex.value = 0
     mocks.phase.value = 'active'
     mocks.hasFunds = true
-    activeJobId.value = null
+    apiEventHandlers.clear()
   })
 
   afterEach(() => {
@@ -642,7 +683,7 @@ describe('useOnboardingTourController.beginTour', () => {
     mocks.isNewUser.mockReturnValue(true)
     mocks.onboardingTourEnabled = true
     mocks.activeWorkflowState = activeState
-    mocks.resolveRoles.mockReturnValue(imageEditRoles)
+    mocks.resolveTourRoles.mockReturnValue(imageEditRoles)
     mocks.nodesPresent.mockReturnValue(true)
     mocks.canvasTransformValid.mockReturnValue(true)
     mocks.storeStart.mockReset()
@@ -655,7 +696,7 @@ describe('useOnboardingTourController.beginTour', () => {
       cb(0)
       return 0
     })
-    activeJobId.value = null
+    apiEventHandlers.clear()
   })
 
   afterEach(() => {

@@ -549,9 +549,12 @@ export interface OnboardingTourStepViewedMetadata {
   step_total: number
 }
 
+export type OnboardingTourRunStatus = 'success' | 'error' | 'interrupted'
+
 export interface OnboardingTourRunTriggeredMetadata {
   template_id?: string
   shape: OnboardingTourShape
+  status: OnboardingTourRunStatus
 }
 
 export interface OnboardingTourCompletedMetadata {

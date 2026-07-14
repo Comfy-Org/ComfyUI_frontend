@@ -1,15 +1,15 @@
-import { createSharedComposable, until } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
-import { effectScope, ref, watch } from 'vue'
+import { createSharedComposable, until, useEventListener } from '@vueuse/core'
+import { effectScope, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useExecutionStore } from '@/stores/executionStore'
+import { api } from '@/scripts/api'
 import type {
   OnboardingTourEntry,
+  OnboardingTourRunStatus,
   OnboardingTourShape
 } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -21,7 +21,7 @@ import {
   canvasTransformValid,
   nodesPresent
 } from './canvasSpotlightAdapter'
-import { resolveRoles } from './roleResolver'
+import { resolveTourRoles } from './roleResolution'
 import { useOnboardingTourStore } from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
 import { restoreView } from './subgraphNavigation'
@@ -64,38 +64,59 @@ function _useOnboardingTourController() {
   /** Retained from `start` so completion/skip telemetry carries the same tags. */
   let activeTemplateId: string | undefined
   let activeShape: OnboardingTourShape = 'other'
-  /** Guards RunTriggered against re-firing on a second successful run. */
+  /** Guards RunTriggered against re-firing on a second run. */
   let runReported = false
   /** Stops the per-tour run watcher; set while a tour is live. */
   let stopRunListener: (() => void) | undefined
   /** Stops the Run-button click listener; set only while on the Run step. */
   let stopRunClick: (() => void) | undefined
-  /** Guards the post-run nudge so only the first completed run surfaces it. */
-  let nudgeShownForRun = false
+  /** Guards the post-run outcome so only the first finished run acts. */
+  let runOutcomeHandled = false
+
+  /** True when the sequence has no step after Run, so a finished run ends the tour. */
+  function runIsTerminalStep(): boolean {
+    return store.steps.at(-1)?.kind === 'run'
+  }
 
   /**
-   * On the run's completion — the job's set→null transition, reliable across
-   * local, cloud, and interrupt/error paths — resolve the Result media, report the
-   * run, and surface the nudge. NOT the step advance: that fires on the Run click
-   * (see {@link listenForRunClick}). Owned by a detached scope because `start()`
-   * runs inside the Getting Started screen's setup, which unmounts right after — a
-   * component-scoped watch would be disposed before the user reaches Run.
+   * Handle the run finishing. `execution_success` captures the Result media;
+   * every outcome reports the run with its real status and surfaces the nudge.
+   * When Run is the last step (no Result follows), a finished run completes the
+   * tour so `Completed` fires — otherwise the Result step drives completion.
+   */
+  function handleRunOutcome(status: OnboardingTourRunStatus) {
+    if (runOutcomeHandled) return
+    runOutcomeHandled = true
+    if (status === 'success') void store.captureResultMedia()
+    reportRunTriggered(status)
+    if (runIsTerminalStep()) {
+      end('done')
+    } else {
+      store.showNudge()
+    }
+  }
+
+  /**
+   * On the run's completion, resolve the Result media, report the run, and
+   * surface the nudge — keyed to the real execution outcome (success vs
+   * error/interrupt), NOT the ambiguous `activeJobId` reset which also fires on
+   * failures. NOT the step advance: that fires on the Run click (see
+   * {@link listenForRunClick}). Owned by a detached scope because `start()` runs
+   * inside the Getting Started screen's setup, which unmounts right after — a
+   * component-scoped listener would be disposed before the user reaches Run.
    */
   function listenForFirstRun() {
     stopRunListener?.()
-    nudgeShownForRun = false
+    runOutcomeHandled = false
     const scope = effectScope(true)
     scope.run(() => {
-      const { activeJobId } = storeToRefs(useExecutionStore())
-      watch(activeJobId, (jobId, previousJobId) => {
-        // Fire on the run's set→null transition (the reliable "finished" signal).
-        if (jobId || !previousJobId) return
-        void store.captureResultMedia()
-        if (nudgeShownForRun) return
-        nudgeShownForRun = true
-        reportRunTriggered()
-        store.showNudge()
-      })
+      useEventListener(api, 'execution_success', () =>
+        handleRunOutcome('success')
+      )
+      useEventListener(api, 'execution_error', () => handleRunOutcome('error'))
+      useEventListener(api, 'execution_interrupted', () =>
+        handleRunOutcome('interrupted')
+      )
     })
     stopRunListener = () => scope.stop()
   }
@@ -116,12 +137,13 @@ function _useOnboardingTourController() {
     stopRunClick = () => document.removeEventListener('click', onClick, true)
   }
 
-  function reportRunTriggered() {
+  function reportRunTriggered(status: OnboardingTourRunStatus) {
     if (runReported) return
     runReported = true
     useTelemetry()?.trackOnboardingTourRunTriggered?.({
       template_id: activeTemplateId,
-      shape: activeShape
+      shape: activeShape,
+      status
     })
   }
 
@@ -130,6 +152,10 @@ function _useOnboardingTourController() {
    * behind the feature flag and shown once per user via `isNewUser()`.
    */
   function shouldStartTour(): boolean {
+    // TEMP TEST — delete before commit. Bypasses the cloud/subscription/new-user
+    // gate so the tour runs on plain `pnpm dev` for manual frontend testing.
+    return true
+
     if (!isCloud) return false
     if (!useSubscription().isSubscriptionEnabled()) return false
     if (useNewUserService().isNewUser() !== true) return false
@@ -202,7 +228,7 @@ function _useOnboardingTourController() {
 
       // Resolve from the same snapshot start() uses, then hold until the live
       // graph agrees — the spotlight reads the live graph, so they must match.
-      const roles = resolveRoles(workflow, templateId)
+      const roles = resolveTourRoles(workflow, templateId)
       const ready = await until(() => liveGraphReady(roles)).toBe(true, {
         timeout: READY_TIMEOUT_MS,
         throwOnTimeout: false
@@ -230,8 +256,8 @@ function _useOnboardingTourController() {
   /**
    * Gate the Run step: funded users just proceed (the run itself is reported when
    * it actually succeeds, not on arrival here); no-funds users get the upgrade
-   * modal, the nudge flag, and the tour ends. Completion is written by the load
-   * seam, not here. Returns true when gated.
+   * modal and the tour ends. `end` surfaces the nudge, which defers itself while
+   * the modal is open and appears once it closes. Returns true when gated.
    */
   function gateRunStep(): boolean {
     if (hasFunds()) return false
@@ -240,7 +266,6 @@ function _useOnboardingTourController() {
     useTelemetry()?.trackOnboardingTourUpgradeShown?.({
       template_id: activeTemplateId
     })
-    store.armNudge()
     end('done')
     return true
   }
