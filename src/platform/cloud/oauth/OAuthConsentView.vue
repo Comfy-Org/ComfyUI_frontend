@@ -97,7 +97,9 @@
           <span class="text-xs text-muted">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
-          <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
+          <ul
+            class="m-0 flex scrollbar-custom max-h-72 list-none flex-col gap-1.5 overflow-y-auto p-0"
+          >
             <li
               v-for="scope in challenge.scopes"
               :key="scope"
@@ -130,7 +132,7 @@
       </section>
 
       <p
-        v-if="errorMessage"
+        v-show="errorMessage"
         role="alert"
         class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
       >
