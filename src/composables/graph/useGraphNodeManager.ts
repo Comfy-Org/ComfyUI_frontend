@@ -173,15 +173,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   const vueNodeData = reactive(new Map<NodeId, VueNodeData>())
   const nodeRefs = new Map<NodeId, LGraphNode>()
 
-  const refreshNodeInputs = (nodeId: NodeId) => {
-    const nodeRef = nodeRefs.get(nodeId)
-    const currentData = vueNodeData.get(nodeId)
-    if (!nodeRef?.inputs || !currentData) return
-
-    nodeRef.inputs = [...nodeRef.inputs]
-    vueNodeData.set(nodeId, { ...currentData, inputs: nodeRef.inputs })
-  }
-
   const getNode = (id: NodeId): LGraphNode | undefined => nodeRefs.get(id)
 
   const syncWithGraph = () => {
@@ -258,7 +249,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     setSource(LayoutSource.Canvas)
     deleteNode(id)
     dropNodeReferences(id)
-    for (const nodeId of nodeRefs.keys()) refreshNodeInputs(nodeId)
     originalCallback?.(node)
   }
 
@@ -405,15 +395,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
           }
         }
       },
-      'node:slot-errors:changed': (slotErrorsEvent) => {
-        refreshNodeInputs(toNodeId(slotErrorsEvent.nodeId))
-      },
-      // NodeSlots.linkedWidgetedInputs and usePartitionedBadges read vueNodeData.inputs[].link and need reprojection on link change; remove once those migrate to useLinkStore
-      'node:slot-links:changed': (slotLinksEvent) => {
-        if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
-          refreshNodeInputs(toNodeId(slotLinksEvent.nodeId))
-        }
-      },
       'node:slot-label:changed': (slotLabelEvent) => {
         const nodeId = toNodeId(slotLabelEvent.nodeId)
         const nodeRef = nodeRefs.get(nodeId)
@@ -432,12 +413,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       switch (event.type) {
         case 'node:property:changed':
           triggerHandlers['node:property:changed'](event)
-          break
-        case 'node:slot-errors:changed':
-          triggerHandlers['node:slot-errors:changed'](event)
-          break
-        case 'node:slot-links:changed':
-          triggerHandlers['node:slot-links:changed'](event)
           break
         case 'node:slot-label:changed':
           triggerHandlers['node:slot-label:changed'](event)

@@ -17,6 +17,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { linkedWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -84,10 +85,10 @@ describe('Node Reactivity', () => {
     const store = useWidgetValueStore()
     const onValueChange = vi.fn()
 
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT
-    })
+    const upstream = new LGraphNode('upstream')
+    upstream.addOutput('out', 'INT')
+    graph.add(upstream)
+    upstream.connect(0, node, 0)
     await nextTick()
 
     const state = store.getWidget(widgetId(graph.id, node.id, 'testnum'))
@@ -137,23 +138,6 @@ describe('Widget input link reactivity', () => {
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
   })
 
-  it('reprojects vueNodeData for the node when node:slot-links:changed fires for an input slot', () => {
-    const { graph, node } = createWidgetInputGraph()
-    const { vueNodeData } = useGraphNodeManager(graph)
-
-    const nodeDataBefore = vueNodeData.get(node.id)
-
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
-    })
-
-    expect(vueNodeData.get(node.id)).not.toBe(nodeDataBefore)
-  })
-
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'prompt', type: 'STRING' }]
@@ -172,6 +156,9 @@ describe('Widget input link reactivity', () => {
     const nodeData = vueNodeData.get(node.id)
 
     expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
+    expect(
+      linkedWidgetedInputs(nodeData!, subgraph.rootGraph.id).map((s) => s.name)
+    ).toEqual(['prompt'])
   })
 
   it('registers promoted widget render state separately from value state', () => {
@@ -205,39 +192,6 @@ describe('Widget input link reactivity', () => {
     })
     expect(renderState).not.toHaveProperty('sourceWidgetName')
     expect(subgraphNode.inputs[0].widget?.name).toBe('value')
-  })
-
-  it('reflects input/widget renames after link refresh', async () => {
-    const { graph, node } = createWidgetInputGraph()
-    const { vueNodeData } = useGraphNodeManager(graph)
-
-    const nodeData = vueNodeData.get(node.id)!
-
-    expect(
-      nodeData.inputs?.some(
-        (slot) => slot.name === 'prompt' && slot.widget?.name === 'prompt'
-      )
-    ).toBe(true)
-
-    node.inputs[0].name = 'other'
-    node.inputs[0].widget = { name: 'other' }
-    node.inputs[0].link = null
-
-    graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
-    })
-
-    await nextTick()
-
-    expect(
-      nodeData.inputs?.some(
-        (slot) => slot.name === 'prompt' && slot.widget?.name === 'prompt'
-      )
-    ).toBe(false)
   })
 })
 

@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { toLinkId } from '@/types/linkId'
@@ -142,6 +143,33 @@ describe('useLinkStore', () => {
 
     expect(store.deleteLink(graphA, first)).toBe(true)
     expect(store.deleteLink(graphA, second)).toBe(true)
+  })
+
+  it('re-evaluates connectedness when a graph gains its first link', () => {
+    const store = useLinkStore()
+    const connected = computed(() =>
+      store.isInputSlotConnected(graphA, toNodeId(9), 2)
+    )
+    expect(connected.value).toBe(false)
+
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+    expect(connected.value).toBe(true)
+
+    store.deleteLink(graphA, topology)
+    expect(connected.value).toBe(false)
+  })
+
+  it('re-evaluates connectedness when an existing bucket gains a new target key', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    const connected = computed(() =>
+      store.isInputSlotConnected(graphA, toNodeId(9), 3)
+    )
+    expect(connected.value).toBe(false)
+
+    store.registerLink(graphA, link(2, 5, 1, 9, 3))
+    expect(connected.value).toBe(true)
   })
 
   it('scopes by graph and does not clear on tab switch', () => {

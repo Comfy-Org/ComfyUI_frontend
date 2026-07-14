@@ -115,6 +115,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   }
 
   const currentGraph = shallowRef<LGraph | null>(null)
+  const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
 
@@ -190,6 +191,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     initScaleSync,
     cleanupScaleSync,
     currentGraph,
+    rootGraphId,
     isInSubgraph,
     isGhostPlacing
   }

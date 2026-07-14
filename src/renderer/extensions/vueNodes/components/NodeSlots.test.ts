@@ -1,4 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +11,9 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -422,6 +426,65 @@ describe('NodeSlots.vue', () => {
       { index: 3, name: 'ref_videos.vid0' },
       { index: 4, name: 'ref_videos.vid1' }
     ])
+  })
+
+  describe('unified mode', () => {
+    function renderUnified(
+      nodeData: VueNodeData,
+      pinia = createTestingPinia({ stubActions: false })
+    ) {
+      setActivePinia(pinia)
+      return render(NodeSlots, {
+        global: {
+          plugins: [i18n, pinia],
+          stubs: defaultSlotStubs
+        },
+        props: { nodeData, unified: true }
+      })
+    }
+
+    function createConnectedGraph() {
+      const pinia = createTestingPinia({ stubActions: false })
+      setActivePinia(pinia)
+
+      const graph = new LGraph()
+      useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
+
+      const upstream = new LGraphNode('Upstream')
+      upstream.id = toNodeId(1)
+      upstream.addOutput('out', 'FAKE')
+      graph.add(upstream)
+
+      const node = new LGraphNode('Target')
+      node.id = toNodeId(2)
+      node.addInput('plain', 'FAKE')
+      node.addInput('w', 'FAKE')
+      node.inputs[1].widget = { name: 'w' }
+      graph.add(node)
+
+      return { pinia, upstream, node }
+    }
+
+    it('reacts to connect and disconnect without a reprojection event', async () => {
+      const { pinia, upstream, node } = createConnectedGraph()
+      const nodeData = makeNodeData({
+        id: toVueNodeId(node.id),
+        inputs: node.inputs
+      })
+      const { container } = renderUnified(nodeData, pinia)
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[data-name="w"]')).toBeNull()
+
+      upstream.connect(0, node, 1)
+      await nextTick()
+      expect(getRenderedSlotIndex(container, 'w')).toBe(1)
+
+      node.disconnectInput(1)
+      await nextTick()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[data-name="w"]')).toBeNull()
+    })
   })
 
   it('remounts InputSlot when index shifts due to autogrow insertion', async () => {

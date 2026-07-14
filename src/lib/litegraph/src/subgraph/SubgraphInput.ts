@@ -124,13 +124,6 @@ export class SubgraphInput extends SubgraphSlot {
     anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()
 
-    subgraph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: inputIndex,
-      connected: true,
-      linkId: link.id
-    })
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 
     subgraph.afterChange()

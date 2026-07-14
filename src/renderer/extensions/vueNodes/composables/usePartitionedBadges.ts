@@ -8,13 +8,16 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
+import type { UUID } from '@/utils/uuid'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -27,7 +30,29 @@ type TrackableNode = {
   type: string
   inputs?: INodeInputSlot[]
 }
-//TODO deduplicate reactivity tracking once more thoroughly tested
+
+/**
+ * Reads pricing-relevant slot connectivity from the link store so the
+ * calling computed re-runs when one of those inputs connects or disconnects.
+ */
+function touchPricingInputConnectivity(
+  graphId: UUID | undefined,
+  nodeId: NodeId,
+  inputs: INodeInputSlot[] | undefined,
+  inputNames: string[],
+  groupPrefixes: string[]
+): void {
+  if (graphId === undefined || !inputs) return
+  if (inputNames.length === 0 && groupPrefixes.length === 0) return
+
+  const linkStore = useLinkStore()
+  inputs.forEach((inp, index) => {
+    const relevant =
+      (inp.name && inputNames.includes(inp.name)) ||
+      groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
+    if (relevant) void linkStore.isInputSlotConnected(graphId, nodeId, index)
+  })
+}
 export function trackNodePrice(node: TrackableNode) {
   const {
     getRelevantWidgetNames,
@@ -36,7 +61,8 @@ export function trackNodePrice(node: TrackableNode) {
     getInputNames,
     getNodeRevisionRef
   } = useNodePricing()
-  // Access per-node revision ref to establish dependency (each node has its own ref)
+  // Read the per-node revision ref even for static pricing: JSONata 2.x
+  // evaluation is async, so the badge must re-run when evaluation completes.
   const nodeId = toNodeId(node.id)
   void getNodeRevisionRef(nodeId).value
 
@@ -45,7 +71,7 @@ export function trackNodePrice(node: TrackableNode) {
   // Access only the widget values that affect pricing (from widgetValueStore)
   const relevantNames = getRelevantWidgetNames(node.type)
   const widgetStore = useWidgetValueStore()
-  const graphId = app.canvas?.graph?.rootGraph.id
+  const graphId = useCanvasStore().rootGraphId
   if (relevantNames.length > 0 && node.id != null) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
@@ -53,24 +79,13 @@ export function trackNodePrice(node: TrackableNode) {
       void widgetStore.getWidget(widgetId(graphId, nodeId, name))?.value
     }
   }
-  // Access input connections for regular inputs
-  const inputNames = getInputNames(node.type)
-  if (inputNames.length > 0) {
-    node?.inputs?.forEach((inp) => {
-      if (inp.name && inputNames.includes(inp.name)) {
-        void inp.link // Access link to create reactive dependency
-      }
-    })
-  }
-  // Access input connections for input_groups (e.g., autogrow inputs)
-  const groupPrefixes = getInputGroupPrefixes(node.type)
-  if (groupPrefixes.length > 0) {
-    node?.inputs?.forEach((inp) => {
-      if (groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))) {
-        void inp.link // Access link to create reactive dependency
-      }
-    })
-  }
+  touchPricingInputConnectivity(
+    graphId,
+    nodeId,
+    node.inputs,
+    getInputNames(node.type),
+    getInputGroupPrefixes(node.type)
+  )
 }
 
 /**
@@ -106,78 +121,15 @@ function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
 }
 
 export function usePartitionedBadges(nodeData: VueNodeData) {
-  // Use per-node pricing revision to re-compute badges only when this node's pricing updates
-  const {
-    getRelevantWidgetNames,
-    hasDynamicPricing,
-    getInputGroupPrefixes,
-    getInputNames,
-    getNodeRevisionRef
-  } = useNodePricing()
-
   const { isCreditsBadge } = usePriceBadge()
   const settingStore = useSettingStore()
 
-  // Cache pricing metadata (won't change during node lifetime)
-  const isDynamicPricing = computed(() =>
-    nodeData?.apiNode ? hasDynamicPricing(nodeData.type) : false
-  )
-  const relevantPricingWidgets = computed(() =>
-    nodeData?.apiNode ? getRelevantWidgetNames(nodeData.type) : []
-  )
-  const inputGroupPrefixes = computed(() =>
-    nodeData?.apiNode ? getInputGroupPrefixes(nodeData.type) : []
-  )
-  const relevantInputNames = computed(() =>
-    nodeData?.apiNode ? getInputNames(nodeData.type) : []
-  )
   const unpartitionedBadges = computed<NodeBadgeProps[]>(() => {
     if (nodeData?.id != null) {
       const wrapper = app.canvas?.graph?.getNodeById(nodeData.id)
       if (wrapper?.isSubgraphNode()) trackSubgraphInnerNodePrices(wrapper)
     }
-    // For ALL API nodes: access per-node revision ref to detect when async pricing evaluation completes
-    // This is needed even for static pricing because JSONata 2.x evaluation is async
-    if (nodeData?.apiNode && nodeData?.id != null) {
-      // Access per-node revision ref to establish dependency (each node has its own ref)
-      void getNodeRevisionRef(nodeData.id).value
-
-      // For dynamic pricing, also track widget values and input connections
-      if (isDynamicPricing.value) {
-        // Access only the widget values that affect pricing (from widgetValueStore)
-        const relevantNames = relevantPricingWidgets.value
-        const widgetStore = useWidgetValueStore()
-        const graphId = app.canvas?.graph?.rootGraph.id
-        if (relevantNames.length > 0 && nodeData?.id != null) {
-          for (const name of relevantNames) {
-            // Access value from store to create reactive dependency
-            if (!graphId) continue
-            void widgetStore.getWidget(widgetId(graphId, nodeData.id, name))
-              ?.value
-          }
-        }
-        // Access input connections for regular inputs
-        const inputNames = relevantInputNames.value
-        if (inputNames.length > 0) {
-          nodeData?.inputs?.forEach((inp) => {
-            if (inp.name && inputNames.includes(inp.name)) {
-              void inp.link // Access link to create reactive dependency
-            }
-          })
-        }
-        // Access input connections for input_groups (e.g., autogrow inputs)
-        const groupPrefixes = inputGroupPrefixes.value
-        if (groupPrefixes.length > 0) {
-          nodeData?.inputs?.forEach((inp) => {
-            if (
-              groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
-            ) {
-              void inp.link // Access link to create reactive dependency
-            }
-          })
-        }
-      }
-    }
+    if (nodeData?.apiNode && nodeData?.id != null) trackNodePrice(nodeData)
     return [...(nodeData?.badges ?? [])].map(toValue)
   })
   const nodeDef = useNodeDefStore().nodeDefsByName[nodeData.type]

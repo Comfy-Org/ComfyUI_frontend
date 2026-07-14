@@ -7,7 +7,24 @@ to grow into a proper reference document.
 Design records that rely on this vocabulary:
 [Link Topology Store](link-topology-store.md),
 [Reroute Chain Store](reroute-chain-store.md),
+[Node Badge Store](node-badge-store.md),
 [ADR 0008](../adr/0008-entity-component-system.md).
+
+## Badges
+
+- **Badge** — a small visual annotation rendered on a node: its numeric
+  id, lifecycle state, source pack, execution price, or an
+  extension-provided marker. Badges are presentation state; they never
+  affect execution and are never persisted with the workflow.
+- **Badge kind** — the category a badge belongs to: **core** (identity /
+  lifecycle / source, projected from the node's definition and user
+  settings), **credits** (price of executing an API node, including
+  aggregated prices of nodes inside a subgraph), or **extension**
+  (provided by third-party code).
+- **Badge source** — the domain state a badge's content is computed
+  from (settings, node definition, palette, pricing, widget values,
+  input connectivity). A badge is always a projection of its sources;
+  it is never authored directly by a user.
 
 ## Links & Reroutes
 

@@ -234,13 +234,6 @@ export class SubgraphInputNode
         link,
         subgraphInput
       )
-      subgraph.trigger('node:slot-links:changed', {
-        nodeId: node.id,
-        slotType: NodeSlotType.INPUT,
-        slotIndex: inputIndex,
-        connected: false,
-        linkId: link.id
-      })
     }
   }
 
