@@ -127,6 +127,13 @@ function computeTargetVersion(
 }
 
 /**
+ * Check whether a branch exists on origin in the given repo.
+ */
+function branchExists(branch: string, repoPath: string): boolean {
+  return Boolean(exec(`git rev-parse --verify origin/${branch}`, repoPath))
+}
+
+/**
  * Get the latest patch tag for a given major.minor version
  */
 function getLatestPatchTag(
@@ -209,12 +216,7 @@ function resolveRelease(
     targetMinor = parsed.minor
     targetBranch = parsed.branch
 
-    const branchExists = exec(
-      `git rev-parse --verify origin/${targetBranch}`,
-      frontendRepoPath
-    )
-
-    if (!branchExists) {
+    if (!branchExists(targetBranch, frontendRepoPath)) {
       console.error(
         `Manual override branch ${targetBranch} does not exist in frontend repo`
       )
@@ -242,12 +244,7 @@ function resolveRelease(
       targetMinor = currentMinor
       targetBranch = `core/${targetMajor}.${targetMinor}`
 
-      const branchExists = exec(
-        `git rev-parse --verify origin/${targetBranch}`,
-        frontendRepoPath
-      )
-
-      if (!branchExists) {
+      if (!branchExists(targetBranch, frontendRepoPath)) {
         console.error(
           `Patch release requested but branch ${targetBranch} does not exist`
         )
@@ -262,22 +259,12 @@ function resolveRelease(
       targetMinor = currentMinor + 1
       targetBranch = `core/${targetMajor}.${targetMinor}`
 
-      const nextMinorExists = exec(
-        `git rev-parse --verify origin/${targetBranch}`,
-        frontendRepoPath
-      )
-
-      if (!nextMinorExists) {
+      if (!branchExists(targetBranch, frontendRepoPath)) {
         // Fall back to current minor for minor release
         targetMinor = currentMinor
         targetBranch = `core/${targetMajor}.${targetMinor}`
 
-        const currentMinorExists = exec(
-          `git rev-parse --verify origin/${targetBranch}`,
-          frontendRepoPath
-        )
-
-        if (!currentMinorExists) {
+        if (!branchExists(targetBranch, frontendRepoPath)) {
           console.error(
             `Neither core/${targetMajor}.${currentMinor + 1} nor core/${targetMajor}.${currentMinor} branches exist in frontend repo`
           )

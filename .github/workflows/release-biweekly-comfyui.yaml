@@ -53,13 +53,15 @@ jobs:
           fi
 
       - name: Summary
+        env:
+          TARGET_BRANCH_OVERRIDE: ${{ inputs.target_branch }}
         run: |
           echo "## Release Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Is release week: ${{ steps.check.outputs.is_release_week }}" >> $GITHUB_STEP_SUMMARY
           echo "- Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Release type: ${{ inputs.release_type || 'minor (scheduled)' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Target branch override: ${{ inputs.target_branch || '(none — pin-derived)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target branch override: ${TARGET_BRANCH_OVERRIDE:-(none — pin-derived)}" >> $GITHUB_STEP_SUMMARY
 
   resolve-version:
     needs: check-release-week
