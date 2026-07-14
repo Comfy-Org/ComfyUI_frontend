@@ -23,6 +23,10 @@ on:
         required: false
         default: 'Comfy-Org/ComfyUI'
         type: string
+      target_branch:
+        description: 'Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release.'
+        required: false
+        type: string
 
 jobs:
   check-release-week:
@@ -55,6 +59,7 @@ jobs:
           echo "- Is release week: ${{ steps.check.outputs.is_release_week }}" >> $GITHUB_STEP_SUMMARY
           echo "- Manual trigger: ${{ github.event_name == 'workflow_dispatch' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Release type: ${{ inputs.release_type || 'minor (scheduled)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target branch override: ${{ inputs.target_branch || '(none — pin-derived)' }}" >> $GITHUB_STEP_SUMMARY
 
   resolve-version:
     needs: check-release-week
@@ -103,6 +108,7 @@ jobs:
         working-directory: frontend
         env:
           RELEASE_TYPE: ${{ inputs.release_type || 'minor' }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
         run: |
           set -euo pipefail
 
