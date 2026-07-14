@@ -50,7 +50,8 @@ const i18n = createI18n({
             'This consent request has expired or has already been used.',
           errorScopeBroadening:
             "The previously approved permissions don't cover this request.",
-          errorUnavailable: "This feature isn't available right now."
+          errorUnavailable: "This feature isn't available right now.",
+          sessionError: 'Failed to establish session. Please try again.'
         },
         scopes: {
           'mcp:tools:read': {
@@ -210,6 +211,22 @@ describe('OAuthConsentView', () => {
         screen.getByText(
           'This consent request has expired or has already been used.'
         )
+      ).toBeVisible()
+    })
+  })
+
+  it('maps OAuthApiError(401) to the session-expired message', async () => {
+    submitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('session expired', 401)
+    )
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to establish session. Please try again.')
       ).toBeVisible()
     })
   })
