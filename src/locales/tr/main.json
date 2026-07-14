@@ -2960,6 +2960,7 @@
       "loading": "Yetkilendirme isteği yükleniyor…",
       "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
       "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "detailsHeader": "Detaylar",
       "permissionsHeader": "İzinler",
       "redirectNotice": "Yönlendirileceksiniz:",
       "resourceFallback": "bu uygulama",

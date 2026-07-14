@@ -2960,6 +2960,7 @@
       "loading": "جارٍ تحميل طلب التفويض…",
       "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
       "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "detailsHeader": "التفاصيل",
       "permissionsHeader": "الأذونات",
       "redirectNotice": "سيتم إعادة توجيهك إلى",
       "resourceFallback": "هذا التطبيق",

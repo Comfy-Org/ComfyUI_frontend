@@ -2960,6 +2960,7 @@
       "loading": "正在加载授权请求…",
       "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
       "noWorkspaces": "此请求没有可用的工作区。",
+      "detailsHeader": "详情",
       "permissionsHeader": "权限",
       "redirectNotice": "您将被重定向到",
       "resourceFallback": "此应用",
