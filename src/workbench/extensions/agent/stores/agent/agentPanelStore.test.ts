@@ -70,4 +70,17 @@ describe('agentPanelStore engagement telemetry', () => {
     store.close('flag_disabled')
     expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
   })
+
+  it('can attribute closes to a dialog opening over the docked panel', () => {
+    const store = useAgentPanelStore()
+
+    store.toggle()
+    vi.advanceTimersByTime(1000)
+    store.close('dialog_opened')
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'dialog_opened',
+      open_duration_ms: 1000
+    })
+  })
 })

@@ -148,7 +148,7 @@ import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -159,6 +159,7 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -170,6 +171,7 @@ const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
 const agentPanelStore = useAgentPanelStore()
+const dialogStore = useDialogStore()
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -193,6 +195,16 @@ const {
 const agentPanelDocked = computed(
   () => agentPanelEnabled.value && agentPanelOpen.value
 )
+const subscriptionDialogOpen = computed(() =>
+  dialogStore.dialogStack.some(
+    ({ key, visible }) =>
+      visible && (key === 'subscription-required' || key === 'free-tier-info')
+  )
+)
+
+watch([subscriptionDialogOpen, agentPanelDocked], ([dialogOpen, docked]) => {
+  if (dialogOpen && docked) agentPanelStore.close('dialog_opened')
+})
 
 const isAgentResizing = ref(false)
 let agentResizeStartX = 0
