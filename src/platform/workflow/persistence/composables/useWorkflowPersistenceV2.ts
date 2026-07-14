@@ -22,6 +22,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -178,9 +179,12 @@ export function useWorkflowPersistenceV2() {
   const hasTemplateUrlIntent = () =>
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
+  // Must match the tour's gate (shouldStartTour); the screen dismisses even when
+  // the tour then declines, so a looser gate strands the user on a bare canvas.
   const shouldShowGettingStarted = () =>
-    useFeatureFlags().flags.onboardingTourEnabled &&
-    useNewUserService().isNewUser() === true
+    useSubscription().isSubscriptionEnabled() &&
+    useNewUserService().isNewUser() === true &&
+    useFeatureFlags().flags.onboardingTourEnabled
 
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {

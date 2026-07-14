@@ -137,7 +137,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const onboardingMocks = vi.hoisted(() => ({
   onboardingTourEnabled: false,
-  isNewUser: null as boolean | null
+  isNewUser: null as boolean | null,
+  isSubscriptionEnabled: true
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -153,6 +154,12 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 vi.mock('@/services/useNewUserService', () => ({
   useNewUserService: () => ({
     isNewUser: () => onboardingMocks.isNewUser
+  })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    isSubscriptionEnabled: () => onboardingMocks.isSubscriptionEnabled
   })
 }))
 
@@ -236,6 +243,7 @@ describe('useWorkflowPersistenceV2', () => {
     preservedQueryMocks.payloads = {}
     onboardingMocks.onboardingTourEnabled = false
     onboardingMocks.isNewUser = null
+    onboardingMocks.isSubscriptionEnabled = true
     templateLoaderMocks.loadTemplateFromUrl.mockReset()
     templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({ loaded: false })
   })
@@ -682,6 +690,23 @@ describe('useWorkflowPersistenceV2', () => {
     it('opens the templates browser when the flag is off', async () => {
       onboardingMocks.onboardingTourEnabled = false
       onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser, not Getting Started, when subscriptions are disabled', async () => {
+      // The tour refuses when subscriptions are off, so the takeover must not show
+      // — otherwise it would dismiss into a bare canvas with no tour.
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      onboardingMocks.isSubscriptionEnabled = false
       const entryStore = useOnboardingEntryStore()
 
       const { initializeWorkflow } = mountWorkflowPersistence()
