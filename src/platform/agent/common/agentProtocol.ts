@@ -51,9 +51,13 @@ export function serializeAgentTurnRequest(
 ): AgentTurnRequestBody {
   return {
     content: request.content,
-    ...(request.selection ? { selection: request.selection } : {}),
-    ...(request.attachments ? { attachments: request.attachments } : {}),
-    ...(request.target ? { target: request.target } : {}),
+    ...(request.selection !== undefined
+      ? { selection: request.selection }
+      : {}),
+    ...(request.attachments !== undefined
+      ? { attachments: request.attachments }
+      : {}),
+    ...(request.target !== undefined ? { target: request.target } : {}),
     ...(request.baseVersion !== undefined
       ? { base_version: request.baseVersion }
       : {})

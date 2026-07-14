@@ -120,13 +120,16 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   }
 
   async function runResync(workflowId: WorkflowId): Promise<ResyncOutcome> {
-    const wasTracked = baseVersions.value.has(workflowId)
+    const versionBeforeFetch = baseVersions.value.get(workflowId)
     const snapshot = await ports.fetchSnapshot(workflowId)
     const current = baseVersions.value.get(workflowId)
 
     // The tab was closed mid-fetch (`forgetWorkflow`). Don't resurrect tracking
-    // or apply to a tab that no longer exists.
-    if (wasTracked && current === undefined) return 'up-to-date'
+    // or apply to a tab that no longer exists. An untracked-before-and-after
+    // resync instead seeds the tab on demand (bootstrapping a first snapshot).
+    if (versionBeforeFetch !== undefined && current === undefined) {
+      return 'up-to-date'
+    }
     if (current !== undefined && snapshot.version <= current) {
       return 'up-to-date'
     }
@@ -143,6 +146,9 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
    * Fetch the authoritative snapshot and reconcile it against the watermark.
    * Call on WS (re)connect to restore the draft without waiting for a patch.
    * Concurrent calls for the same workflow share one in-flight request.
+   * Register-on-demand: a resync for a workflow with no tracked version seeds
+   * the tab from the snapshot (bootstrapping), rather than requiring a prior
+   * `registerWorkflow`.
    */
   function resync(workflowId: WorkflowId): Promise<ResyncOutcome> {
     const existing = inFlightResyncs.get(workflowId)
@@ -154,7 +160,13 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
     return run
   }
 
-  /** In-flight resync for a workflow, if any (lets callers await self-heal). */
+  /**
+   * In-flight resync for a workflow, if any (lets callers await self-heal).
+   * @internal Test-coordination surface — the returned promise rejects if the
+   * underlying `fetchSnapshot` fails, so production call sites should not await
+   * it without a `.catch`; the self-heal itself is fire-and-forget via
+   * `scheduleResync`.
+   */
   function pendingResync(
     workflowId: WorkflowId
   ): Promise<ResyncOutcome> | undefined {

@@ -324,6 +324,27 @@ describe('useAgentDraftSync', () => {
       expect(sync.baseVersions.value.get('wf1')).toBe(SNAPSHOT.version)
       expect(sync.pendingConflict.value).toBeNull()
     })
+
+    it('coalesces a gap and a concurrent version tip onto one fetch', async () => {
+      const ports = makePorts()
+      let resolveFetch!: (snapshot: typeof SNAPSHOT) => void
+      vi.mocked(ports.fetchSnapshot).mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+      const sync = useAgentDraftSync(ports)
+      sync.registerWorkflow('wf1', 5)
+
+      expect(sync.handlePatch(patch({ baseVersion: 7, version: 8 }))).toBe(
+        'gap'
+      )
+      expect(sync.handleVersionTip('wf1', 9)).toBe('resyncing')
+      resolveFetch(SNAPSHOT)
+      await sync.pendingResync('wf1')
+
+      expect(ports.fetchSnapshot).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('handleVersionTip (trailing lost patch)', () => {
