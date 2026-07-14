@@ -39,6 +39,7 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
+        v-model:date-filter="dateFilter"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
@@ -85,6 +86,7 @@
       </div>
       <div
         v-else
+        ref="assetPaneRef"
         class="relative size-full py-2"
         @click="handleEmptySpaceClick"
       >
@@ -106,6 +108,7 @@
           :is-selected="isSelected"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
+          :grid-mode="viewMode"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
@@ -180,9 +183,13 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
+import type { MediaAssetViewMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
-import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import {
+  shouldInterceptSelectAll,
+  useAssetSelection
+} from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
@@ -215,11 +222,16 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
-const viewMode = useStorage<'list' | 'grid'>(
+const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
-  'grid'
+  'grid-small'
 )
+// Migrate the pre-split legacy 'grid' value to the dense grid.
+if (!['list', 'grid-small', 'grid-large'].includes(viewMode.value)) {
+  viewMode.value = 'grid-small'
+}
 const isListView = computed(() => viewMode.value === 'list')
+const assetPaneRef = ref<HTMLElement>()
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -260,6 +272,7 @@ const outputAssets = useAssetsApi('output')
 const {
   isSelected,
   handleAssetClick,
+  selectAll,
   hasSelection,
   clearSelection,
   getSelectedAssets,
@@ -316,7 +329,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+const { searchQuery, sortBy, mediaTypeFilters, dateFilter, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
@@ -418,8 +431,10 @@ watch(
   activeTab,
   () => {
     clearSelection()
-    // Clear search when switching tabs
+    // Clear search + filters when switching tabs so no stale filter hides results.
     searchQuery.value = ''
+    mediaTypeFilters.value = []
+    dateFilter.value = ''
     // Reset pagination state when tab changes
     void refreshAssets()
   },
@@ -562,12 +577,27 @@ const exitFolderView = () => {
   searchQuery.value = ''
 }
 
+function handleSelectAllKeydown(event: KeyboardEvent) {
+  if (!shouldInterceptSelectAll(event, assetPaneRef.value)) return
+  // Stop the event before the canvas keybinding handler runs: it is a
+  // bubble-phase window listener whose Comfy.Canvas.SelectAll is scoped to
+  // graph-canvas-container, which the asset pane lives inside — so without this
+  // it would also select every node. Capture phase beats the bubble listener.
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  selectAll(visibleAssets.value)
+}
+
 onMounted(() => {
   activateSelection()
+  window.addEventListener('keydown', handleSelectAllKeydown, { capture: true })
 })
 
 onUnmounted(() => {
   deactivateSelection()
+  window.removeEventListener('keydown', handleSelectAllKeydown, {
+    capture: true
+  })
 })
 
 const handleDeselectAll = () => {

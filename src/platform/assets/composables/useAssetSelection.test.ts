@@ -22,7 +22,10 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-import { useAssetSelection } from './useAssetSelection'
+import {
+  shouldInterceptSelectAll,
+  useAssetSelection
+} from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
@@ -130,6 +133,51 @@ describe('useAssetSelection', () => {
       handleAssetClick(assets[1], 1, assets)
       expect(isSelected('asset-0')).toBe(false)
       expect(isSelected('asset-1')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('deselects when clicking the only selected asset again', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      expect(selectedCount.value).toBe(1)
+
+      handleAssetClick(assets[0], 0, assets)
+      expect(isSelected('asset-0')).toBe(false)
+      expect(selectedCount.value).toBe(0)
+    })
+
+    it('starts a new selection after deselecting the anchor', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      handleAssetClick(assets[0], 0, assets)
+      mockShiftKey.value = true
+      handleAssetClick(assets[2], 2, assets)
+
+      expect(isSelected('asset-0')).toBe(false)
+      expect(isSelected('asset-2')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('collapses a multi-selection to the clicked asset rather than deselecting', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      mockCtrlKey.value = true
+      handleAssetClick(assets[1], 1, assets)
+      mockCtrlKey.value = false
+      expect(selectedCount.value).toBe(2)
+
+      handleAssetClick(assets[0], 0, assets)
+      expect(isSelected('asset-0')).toBe(true)
+      expect(isSelected('asset-1')).toBe(false)
       expect(selectedCount.value).toBe(1)
     })
   })
@@ -271,5 +319,63 @@ describe('useAssetSelection', () => {
       expect(selected).toHaveLength(1)
       expect(selected[0].id).toBe('asset-1')
     })
+  })
+})
+
+describe('shouldInterceptSelectAll', () => {
+  function interceptsOn(
+    focusedTag: string,
+    init: KeyboardEventInit = { key: 'a', metaKey: true },
+    { insidePane = true, contentEditable = false } = {}
+  ): boolean {
+    const pane = document.createElement('div')
+    document.body.append(pane)
+    const focused = document.createElement(focusedTag)
+    if (contentEditable) {
+      Object.defineProperty(focused, 'isContentEditable', { value: true })
+    }
+    ;(insidePane ? pane : document.body).append(focused)
+
+    let result = false
+    const record = (event: Event) => {
+      result = shouldInterceptSelectAll(event as KeyboardEvent, pane)
+    }
+    window.addEventListener('keydown', record, { capture: true })
+    focused.dispatchEvent(
+      new KeyboardEvent('keydown', { ...init, bubbles: true })
+    )
+    window.removeEventListener('keydown', record, { capture: true })
+    pane.remove()
+    focused.remove()
+    return result
+  }
+
+  it('intercepts Cmd+A and Ctrl+A on non-text elements inside the pane', () => {
+    expect(interceptsOn('div', { key: 'a', metaKey: true })).toBe(true)
+    expect(interceptsOn('div', { key: 'A', ctrlKey: true })).toBe(true)
+  })
+
+  it('requires the select-all chord', () => {
+    expect(interceptsOn('div', { key: 'a' })).toBe(false)
+    expect(interceptsOn('div', { key: 'b', metaKey: true })).toBe(false)
+  })
+
+  it('leaves native select-all to text-entry elements', () => {
+    for (const tag of ['input', 'textarea', 'select']) {
+      expect(interceptsOn(tag, { key: 'a', metaKey: true })).toBe(false)
+    }
+    expect(
+      interceptsOn(
+        'div',
+        { key: 'a', metaKey: true },
+        { contentEditable: true }
+      )
+    ).toBe(false)
+  })
+
+  it('ignores the chord when focus is outside the pane', () => {
+    expect(
+      interceptsOn('div', { key: 'a', metaKey: true }, { insidePane: false })
+    ).toBe(false)
   })
 })

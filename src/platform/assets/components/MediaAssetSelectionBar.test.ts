@@ -12,7 +12,7 @@ const i18n = createI18n({
     en: {
       mediaAsset: {
         selection: {
-          deselectAll: 'Deselect all',
+          unselectCount: 'Unselect {count}',
           downloadSelected: 'Download',
           deleteSelected: 'Delete',
           selectedCount: '{count} selected'
@@ -39,7 +39,7 @@ describe('MediaAssetSelectionBar', () => {
 
   it('emits deselect when the close button is clicked', async () => {
     const { emitted } = renderBar({ count: 2 })
-    await userEvent.click(screen.getByRole('button', { name: 'Deselect all' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Unselect 2' }))
     expect(emitted().deselect).toHaveLength(1)
   })
 

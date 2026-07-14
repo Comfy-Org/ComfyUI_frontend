@@ -1,8 +1,5 @@
 <template>
-  <p
-    class="m-0 line-clamp-2 text-sm/tight break-all text-base-foreground"
-    :title="fileName"
-  >
+  <p class="m-0 truncate text-sm/tight text-base-foreground" :title="fileName">
     {{ fileName }}
   </p>
 </template>
