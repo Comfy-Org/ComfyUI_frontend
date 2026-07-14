@@ -82,6 +82,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   isInstantMode,
@@ -98,6 +99,10 @@ const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
   graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+)
+const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
+const hasDisabledNodes = computed(
+  () => disabledPartnerNodesStore.offenders.length > 0
 )
 
 const { t } = useI18n()
@@ -190,7 +195,7 @@ const iconClass = computed(() => {
   if (isStopInstantAction.value) {
     return 'icon-[lucide--square]'
   }
-  if (hasMissingNodes.value) {
+  if (hasMissingNodes.value || hasDisabledNodes.value) {
     return 'icon-[lucide--triangle-alert]'
   }
   if (workspaceStore.shiftDown) {
@@ -215,6 +220,9 @@ const queueButtonTooltip = computed(() => {
   if (hasMissingNodes.value) {
     return t('menu.runWorkflowDisabled')
   }
+  if (hasDisabledNodes.value) {
+    return t('menu.runWorkflowDisabledNodes')
+  }
   if (workspaceStore.shiftDown) {
     return t('menu.runWorkflowFront')
   }
@@ -233,7 +241,8 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (isInstantMode(queueMode.value)) {
+  disabledPartnerNodesStore.scanGraph()
+  if (!hasDisabledNodes.value && isInstantMode(queueMode.value)) {
     queueMode.value = 'instant-running'
   }
 

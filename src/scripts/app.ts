@@ -92,6 +92,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -106,6 +107,7 @@ import {
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
@@ -218,6 +220,55 @@ type Clipspace = {
   img_paste_mode: string
   paintedIndex: number
   combinedIndex: number
+}
+
+function collectPartialExecutionNodeIds(
+  prompt: ComfyApiWorkflow,
+  targets: NodeExecutionId[]
+): Set<NodeExecutionId> {
+  const executionNodeIds = new Set<NodeExecutionId>()
+  const pending = [...targets]
+  while (pending.length > 0) {
+    const nodeId = pending.pop()!
+    if (executionNodeIds.has(nodeId)) continue
+    const node = prompt[nodeId]
+    if (!node) continue
+    executionNodeIds.add(nodeId)
+    for (const input of Object.values(node.inputs)) {
+      if (!Array.isArray(input) || input.length !== 2) continue
+      const sourceId = String(input[0]) as NodeExecutionId
+      if (prompt[sourceId]) pending.push(sourceId)
+    }
+  }
+  return executionNodeIds
+}
+
+function surfaceDisabledPartnerNodeBlock(
+  executionNodeIds?: ReadonlySet<NodeExecutionId>
+): boolean {
+  const store = useDisabledPartnerNodesStore()
+  store.scanGraph()
+  const offenders = executionNodeIds
+    ? store.offenders.filter(({ nodeId }) => executionNodeIds.has(nodeId))
+    : store.offenders
+  if (offenders.length === 0) return false
+
+  const settingStore = useSettingStore()
+  const canOpenErrorsPanel =
+    settingStore.get('Comfy.UseNewMenu') !== 'Disabled' &&
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+  if (canOpenErrorsPanel) {
+    useRightSidePanelStore().openPanel('errors')
+  } else {
+    useToastStore().add({
+      severity: 'error',
+      group: 'disabled-nodes',
+      summary: t('rightSidePanel.disabledNodes.title', offenders.length),
+      detail: t('rightSidePanel.disabledNodes.toastDetail', offenders.length),
+      life: 10000
+    })
+  }
+  return true
 }
 
 export class ComfyApp {
@@ -1511,6 +1562,15 @@ export class ComfyApp {
         await this.runMissingMediaPipeline(silentAssetErrors)
       }
 
+      void useDisabledPartnerNodesStore()
+        .surfaceDisabledNodes({ silent: silentAssetErrors })
+        .catch((error) => {
+          console.warn(
+            '[Partner Node Governance] Failed to surface disabled nodes:',
+            error
+          )
+        })
+
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings(undefined, {
           silent: silentAssetErrors
@@ -1615,6 +1675,8 @@ export class ComfyApp {
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
+    if (!queueNodeIds?.length && surfaceDisabledPartnerNodeBlock()) return false
+
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
     api.dispatchCustomEvent('promptQueueing', {
@@ -1658,11 +1720,25 @@ export class ComfyApp {
             })
           })
 
+          if (!isPartialExecution && surfaceDisabledPartnerNodeBlock()) {
+            this.queueItems.length = 0
+            return false
+          }
+
           // Capture workflow before await — activeWorkflow may change if the
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const p = await this.graphToPrompt(this.rootGraph)
+          if (
+            queueNodeIds?.length &&
+            surfaceDisabledPartnerNodeBlock(
+              collectPartialExecutionNodeIds(p.output, queueNodeIds)
+            )
+          ) {
+            this.queueItems.length = 0
+            return false
+          }
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
             api.authToken = comfyOrgAuthToken
