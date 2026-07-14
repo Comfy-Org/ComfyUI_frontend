@@ -215,7 +215,9 @@ function renderComponent() {
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
-        Popover: { template: '<div><slot /></div>' }
+        Popover: { template: '<div><slot /></div>' },
+        PopoverTrigger: { template: '<div><slot /></div>' },
+        PopoverContent: { template: '<div><slot /></div>' }
       }
     }
   })
