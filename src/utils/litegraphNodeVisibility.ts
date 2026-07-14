@@ -1,14 +1,16 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-type NodeTypeHiddenReason =
-  | 'external'
-  | 'registration'
-  | 'dev-only'
-  | 'workspace-governance'
+type NodeTypeHiddenReason = 'registration' | 'dev-only' | 'workspace-governance'
 
-const hiddenReasons = new WeakMap<
+type NodeTypeVisibilityState = {
+  externalHidden: boolean
+  lastAppliedHidden: boolean
+  reasons: Set<NodeTypeHiddenReason>
+}
+
+const visibilityStates = new WeakMap<
   typeof LGraphNode,
-  Set<NodeTypeHiddenReason>
+  NodeTypeVisibilityState
 >()
 
 export function setNodeTypeHidden(
@@ -16,13 +18,23 @@ export function setNodeTypeHidden(
   reason: NodeTypeHiddenReason,
   hidden: boolean
 ): void {
-  let reasons = hiddenReasons.get(nodeType)
-  if (!reasons) {
-    reasons = new Set<NodeTypeHiddenReason>()
-    if (nodeType.skip_list) reasons.add('external')
+  let state = visibilityStates.get(nodeType)
+  if (!state) {
+    const externalHidden = Boolean(nodeType.skip_list)
+    state = {
+      externalHidden,
+      lastAppliedHidden: externalHidden,
+      reasons: new Set<NodeTypeHiddenReason>()
+    }
+    visibilityStates.set(nodeType, state)
+  } else if (Boolean(nodeType.skip_list) !== state.lastAppliedHidden) {
+    state.externalHidden = Boolean(nodeType.skip_list)
   }
-  if (hidden) reasons.add(reason)
-  else reasons.delete(reason)
-  hiddenReasons.set(nodeType, reasons)
-  nodeType.skip_list = reasons.size > 0
+
+  if (hidden) state.reasons.add(reason)
+  else state.reasons.delete(reason)
+
+  const nextHidden = state.externalHidden || state.reasons.size > 0
+  nodeType.skip_list = nextHidden
+  state.lastAppliedHidden = nextHidden
 }

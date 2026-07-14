@@ -99,7 +99,11 @@
             data-testid="no-results"
             class="px-4 py-8 text-center text-muted-foreground"
           >
-            {{ $t('g.noResults') }}
+            {{
+              disabledMatchCount > 0
+                ? $t('nodeSearch.disabledByTeamAdmin', disabledMatchCount)
+                : $t('g.noResults')
+            }}
           </div>
         </div>
       </div>
@@ -121,11 +125,12 @@ import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import { useDisabledNodeSearch } from '@/composables/node/useDisabledNodeSearch'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
@@ -158,6 +163,7 @@ const { flags } = useFeatureFlags()
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
+const { disabledNodeDefs, disabledSearchService } = useDisabledNodeSearch()
 
 const nodeAvailability = computed(() => {
   let essential = false
@@ -216,21 +222,28 @@ const rootFilterLabel = computed(() => {
   }
 })
 
+function rootFilterPredicate(
+  root: RootCategoryId
+): (n: ComfyNodeDefImpl) => boolean {
+  const sourceFilter = sourceCategoryFilters[root]
+  if (sourceFilter) return sourceFilter
+  switch (root) {
+    case RootCategory.Favorites:
+      return (n) => nodeBookmarkStore.isBookmarked(n)
+    case RootCategory.Blueprint:
+      return (n) => n.category.startsWith(BLUEPRINT_CATEGORY)
+    case RootCategory.PartnerNodes:
+      return (n) => n.api_node
+    default:
+      return () => true
+  }
+}
+
 const rootFilteredNodeDefs = computed(() => {
   if (!rootFilter.value) return nodeDefStore.visibleNodeDefs
-  const allNodes = nodeDefStore.visibleNodeDefs
-  const sourceFilter = sourceCategoryFilters[rootFilter.value]
-  if (sourceFilter) return allNodes.filter(sourceFilter)
-  switch (rootFilter.value) {
-    case RootCategory.Favorites:
-      return allNodes.filter((n) => nodeBookmarkStore.isBookmarked(n))
-    case RootCategory.Blueprint:
-      return allNodes.filter((n) => n.category.startsWith(BLUEPRINT_CATEGORY))
-    case RootCategory.PartnerNodes:
-      return allNodes.filter((n) => n.api_node)
-    default:
-      return allNodes
-  }
+  return nodeDefStore.visibleNodeDefs.filter(
+    rootFilterPredicate(rootFilter.value)
+  )
 })
 
 function onToggleFilter(
@@ -311,6 +324,15 @@ function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
   })
 }
 
+function filterBySelectedCategory(baseNodes: ComfyNodeDefImpl[]) {
+  const category = selectedCategory.value
+  if (category === DEFAULT_CATEGORY) return baseNodes
+  const sourceFilter = sourceCategoryFilters[category]
+  return sourceFilter
+    ? baseNodes.filter(sourceFilter)
+    : getCategoryResults(baseNodes, category)
+}
+
 const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   const baseNodes = rootFilteredNodeDefs.value
   const category = selectedCategory.value
@@ -330,10 +352,31 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   } else {
     source = baseNodes
   }
+  return filterBySelectedCategory(source)
+})
 
-  const sourceFilter = sourceCategoryFilters[category]
-  if (sourceFilter) return source.filter(sourceFilter)
-  return getCategoryResults(source, category)
+const disabledMatchCount = computed(() => {
+  if (displayedResults.value.length > 0) return 0
+  if (disabledNodeDefs.value.length === 0) return 0
+  const inRoot = rootFilter.value
+    ? disabledNodeDefs.value.filter(rootFilterPredicate(rootFilter.value))
+    : disabledNodeDefs.value
+  if (!searchQuery.value && filters.length === 0) {
+    if (!rootFilter.value && selectedCategory.value === DEFAULT_CATEGORY) {
+      return 0
+    }
+    return filterBySelectedCategory(inRoot).length
+  }
+  const matched = disabledSearchService.value.searchNode(
+    searchQuery.value,
+    filters,
+    { limit: 64 }
+  )
+  if (!rootFilter.value) return filterBySelectedCategory(matched).length
+  const inRootNames = new Set(inRoot.map((n) => n.name))
+  return filterBySelectedCategory(
+    matched.filter((n) => inRootNames.has(n.name))
+  ).length
 })
 
 const hoveredNodeDef = computed(

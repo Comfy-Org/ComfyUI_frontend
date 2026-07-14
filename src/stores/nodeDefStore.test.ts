@@ -1,6 +1,7 @@
+import axios from 'axios'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,7 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -335,6 +336,31 @@ describe('useNodeDefStore', () => {
       // allNodeDefsByName includes all
       expect(store.allNodeDefsByName).toHaveProperty('Normal')
       expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+  })
+
+  describe('node frequency', () => {
+    it('excludes filtered nodes from frequency rankings', async () => {
+      store.updateNodeDefs([
+        createMockNodeDef({ name: 'HiddenNode' }),
+        createMockNodeDef({ name: 'VisibleNode' })
+      ])
+      store.registerNodeDefFilter({
+        id: 'test.hide-node',
+        name: 'Hide node',
+        predicate: (node) => node.name !== 'HiddenNode'
+      })
+      const getSpy = vi.spyOn(axios, 'get').mockResolvedValue({
+        data: { HiddenNode: 2, VisibleNode: 1 }
+      })
+      const frequencyStore = useNodeFrequencyStore()
+
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(frequencyStore.topNodeDefs.map((node) => node.name)).toEqual([
+        'VisibleNode'
+      ])
+      getSpy.mockRestore()
     })
   })
 

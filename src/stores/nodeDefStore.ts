@@ -563,9 +563,12 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
 
   const nodeDefStore = useNodeDefStore()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
+    const visibleNodeDefsByName = new Map(
+      nodeDefStore.visibleNodeDefs.map((nodeDef) => [nodeDef.name, nodeDef])
+    )
     return nodeNamesByFrequency.value
-      .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
-      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
+      .map((nodeName: string) => visibleNodeDefsByName.get(nodeName))
+      .filter((nodeDef): nodeDef is ComfyNodeDefImpl => nodeDef !== undefined)
       .slice(0, topNodeDefLimit.value)
   })
 

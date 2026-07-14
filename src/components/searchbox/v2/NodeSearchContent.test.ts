@@ -2,6 +2,16 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockIsNodeDefDisabled = vi.hoisted(() =>
+  vi.fn<(nodeDef: ComfyNodeDefImpl) => boolean>(() => false)
+)
+
+vi.mock('@/platform/workspace/stores/disabledPartnerNodesStore', () => ({
+  useDisabledPartnerNodesStore: () => ({
+    isNodeDefDisabled: mockIsNodeDefDisabled
+  })
+}))
+
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
@@ -24,6 +34,8 @@ describe('NodeSearchContent', () => {
   beforeEach(() => {
     setupTestPinia()
     vi.restoreAllMocks()
+    mockIsNodeDefDisabled.mockReset()
+    mockIsNodeDefDisabled.mockReturnValue(false)
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
@@ -315,6 +327,93 @@ describe('NodeSearchContent', () => {
   })
 
   describe('search and category interaction', () => {
+    it('does not report disabled matches in the default empty state', async () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.updateNodeDefs([
+        createMockNodeDef({
+          name: 'BlockedPartnerNode',
+          display_name: 'Blocked Partner Node',
+          api_node: true
+        })
+      ])
+      mockIsNodeDefDisabled.mockReturnValue(true)
+      nodeDefStore.registerNodeDefFilter({
+        id: 'test.disabled-partner-nodes',
+        name: 'Disabled partner nodes',
+        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+      })
+
+      renderComponent()
+
+      expect(await screen.findByText('No Results')).toBeInTheDocument()
+      expect(
+        screen.queryByText('This node has been disabled by your team admin.')
+      ).not.toBeInTheDocument()
+    })
+
+    it('explains when a query only matches an admin-disabled node', async () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.updateNodeDefs([
+        createMockNodeDef({
+          name: 'BlockedPartnerNode',
+          display_name: 'Blocked Partner Node',
+          api_node: true
+        })
+      ])
+      mockIsNodeDefDisabled.mockImplementation(
+        (nodeDef: ComfyNodeDefImpl) => nodeDef.name === 'BlockedPartnerNode'
+      )
+      nodeDefStore.registerNodeDefFilter({
+        id: 'test.disabled-partner-nodes',
+        name: 'Disabled partner nodes',
+        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+      })
+      const { user } = renderComponent()
+
+      await user.type(screen.getByRole('combobox'), 'Blocked Partner')
+
+      expect(
+        await screen.findByText(
+          'This node has been disabled by your team admin.'
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('option')).not.toBeInTheDocument()
+    })
+
+    it('does not report a disabled match outside the selected category', async () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.updateNodeDefs([
+        createMockNodeDef({
+          name: 'BlockedPartnerNode',
+          display_name: 'Blocked Partner Node',
+          category: 'loaders',
+          api_node: true
+        }),
+        createMockNodeDef({
+          name: 'SamplerNode',
+          display_name: 'Sampler Node',
+          category: 'sampling'
+        })
+      ])
+      mockIsNodeDefDisabled.mockImplementation(
+        (nodeDef: ComfyNodeDefImpl) => nodeDef.name === 'BlockedPartnerNode'
+      )
+      nodeDefStore.registerNodeDefFilter({
+        id: 'test.disabled-partner-nodes',
+        name: 'Disabled partner nodes',
+        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+      })
+      const { user } = renderComponent()
+      await user.click(await screen.findByTestId('category-sampling'))
+
+      await user.type(screen.getByRole('combobox'), 'Blocked Partner')
+
+      expect(await screen.findByText('No Results')).toBeInTheDocument()
+      expect(
+        screen.queryByText('This node has been disabled by your team admin.')
+      ).not.toBeInTheDocument()
+    })
+
     it('should search within selected category', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
@@ -757,6 +856,82 @@ describe('NodeSearchContent', () => {
   })
 
   describe('rootFilter + category + search combination', () => {
+    it('counts disabled nodes only in the selected category without a query', async () => {
+      const nodeDefStore = useNodeDefStore()
+      const nodeDefs = [
+        createMockNodeDef({
+          name: 'CustomSampler',
+          display_name: 'Custom Sampler',
+          category: 'sampling',
+          python_module: 'custom_nodes.my_extension'
+        }),
+        createMockNodeDef({
+          name: 'CustomLoader',
+          display_name: 'Custom Loader',
+          category: 'loaders',
+          python_module: 'custom_nodes.my_extension'
+        })
+      ]
+      nodeDefStore.updateNodeDefs(nodeDefs)
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Extensions')
+      await user.click(await screen.findByTestId('category-custom/sampling'))
+
+      mockIsNodeDefDisabled.mockReturnValue(true)
+      nodeDefStore.registerNodeDefFilter({
+        id: 'test.disabled-partner-nodes',
+        name: 'Disabled partner nodes',
+        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+      })
+      nodeDefStore.updateNodeDefs(nodeDefs)
+
+      expect(
+        await screen.findByText(
+          'This node has been disabled by your team admin.'
+        )
+      ).toBeInTheDocument()
+    })
+
+    it('ignores disabled matches outside the selected category', async () => {
+      const nodeDefStore = useNodeDefStore()
+      const nodeDefs = [
+        createMockNodeDef({
+          name: 'CustomSampler',
+          display_name: 'Custom Sampler',
+          category: 'sampling',
+          python_module: 'custom_nodes.my_extension'
+        }),
+        createMockNodeDef({
+          name: 'CustomLoader',
+          display_name: 'Custom Loader',
+          category: 'loaders',
+          python_module: 'custom_nodes.my_extension'
+        })
+      ]
+      nodeDefStore.updateNodeDefs(nodeDefs)
+
+      const { user } = renderComponent()
+      await clickFilterBarButton(user, 'Extensions')
+      await user.click(await screen.findByTestId('category-custom/sampling'))
+
+      mockIsNodeDefDisabled.mockImplementation(
+        (nodeDef) => nodeDef.name === 'CustomLoader'
+      )
+      nodeDefStore.registerNodeDefFilter({
+        id: 'test.disabled-partner-nodes',
+        name: 'Disabled partner nodes',
+        predicate: (nodeDef) => !mockIsNodeDefDisabled(nodeDef)
+      })
+      nodeDefStore.updateNodeDefs(nodeDefs)
+      await user.type(screen.getByRole('combobox'), 'Loader')
+
+      expect(await screen.findByText('No Results')).toBeInTheDocument()
+      expect(
+        screen.queryByText('This node has been disabled by your team admin.')
+      ).not.toBeInTheDocument()
+    })
+
     it('should intersect rootFilter, selected category, and search query', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({

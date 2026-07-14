@@ -297,6 +297,29 @@ describe('disabledPartnerNodesStore', () => {
     expect(ExtensionHiddenPartnerNode.skip_list).toBe(true)
   })
 
+  it('preserves extension visibility changes made after governance sync', async () => {
+    vi.mocked(partnerNodesApi.list).mockResolvedValue({
+      partner_nodes: [partnerNode({ id: extensionHiddenNodeType })],
+      auto_enable_new: false
+    })
+    const nodeDefStore = useNodeDefStore()
+    nodeDefStore.updateNodeDefs([completeNodeDef(extensionHiddenNodeType)])
+    class ExtensionHiddenPartnerNode extends LGraphNode {}
+    ExtensionHiddenPartnerNode.nodeData =
+      nodeDefStore.nodeDefsByName[extensionHiddenNodeType]
+    LiteGraph.registerNodeType(
+      extensionHiddenNodeType,
+      ExtensionHiddenPartnerNode
+    )
+    const store = useDisabledPartnerNodesStore()
+
+    await store.applyGovernanceChange()
+    ExtensionHiddenPartnerNode.skip_list = true
+    await store.applyGovernanceChange()
+
+    expect(ExtensionHiddenPartnerNode.skip_list).toBe(true)
+  })
+
   it('surfaces disabled canvas nodes as policy offenders', async () => {
     vi.mocked(partnerNodesApi.list).mockResolvedValue({
       partner_nodes: [partnerNode({ id: 'AllowedNode', enabled: true })],
