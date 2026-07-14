@@ -22,6 +22,13 @@ vi.mock('@/platform/workspace/api/partnerNodesApi', () => ({
   }
 }))
 
+const mockApplyGovernanceChange = vi.fn()
+vi.mock('@/platform/workspace/stores/disabledPartnerNodesStore', () => ({
+  useDisabledPartnerNodesStore: () => ({
+    applyGovernanceChange: mockApplyGovernanceChange
+  })
+}))
+
 function node(overrides: Partial<PartnerNode> = {}): PartnerNode {
   return {
     id: 'pn-1',
@@ -68,6 +75,7 @@ async function setupLoaded() {
 describe('usePartnerNodes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockApplyGovernanceChange.mockResolvedValue(undefined)
   })
 
   it('loads nodes and the auto-enable default', async () => {
@@ -136,6 +144,24 @@ describe('usePartnerNodes', () => {
     await pn.setEnabled(target, true)
     expect(pn.nodes.value.find((n) => n.id === 'b')!.enabled).toBe(true)
     expect(partnerNodesApi.setEnabled).toHaveBeenCalledWith('b', true)
+  })
+
+  it('reports governance refresh failures after a successful toggle', async () => {
+    mockApplyGovernanceChange.mockRejectedValueOnce(
+      new Error('policy unavailable')
+    )
+    const pn = await setupLoaded()
+    const target = pn.nodes.value.find((n) => n.id === 'b')!
+
+    await pn.setEnabled(target, true)
+
+    await vi.waitFor(() =>
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'workspacePanel.partnerNodes.updateError'
+      })
+    )
+    expect(pn.nodes.value.find((n) => n.id === 'b')!.enabled).toBe(true)
   })
 
   it('reverts and toasts when a toggle fails', async () => {
@@ -242,9 +268,12 @@ describe('usePartnerNodes', () => {
   it('select-all reflects the filtered set', async () => {
     const pn = await setupLoaded()
     pn.searchQuery.value = 'BFL'
+    expect(pn.selectAllState.value).toBe(false)
+    pn.toggleSelection('a')
+    expect(pn.selectAllState.value).toBe('indeterminate')
     pn.toggleSelectAll()
     expect(pn.selectedCount.value).toBe(2)
-    expect(pn.allFilteredSelected.value).toBe(true)
+    expect(pn.selectAllState.value).toBe(true)
   })
 
   it('keeps selections outside the filtered set when toggling select-all', async () => {
@@ -331,6 +360,56 @@ describe('usePartnerNodes', () => {
       ['a', true]
     ])
     expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(true)
+  })
+
+  it('refreshes governance only after the latest node write settles', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    const secondRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabled)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise)
+    const target = pn.nodes.value.find((n) => n.id === 'b')!
+
+    const firstUpdate = pn.setEnabled(target, true)
+    const secondUpdate = pn.setEnabled(target, false)
+    firstRequest.resolve()
+    await firstUpdate
+    await vi.waitFor(() =>
+      expect(partnerNodesApi.setEnabled).toHaveBeenCalledTimes(2)
+    )
+
+    expect(mockApplyGovernanceChange).not.toHaveBeenCalled()
+
+    secondRequest.resolve()
+    await secondUpdate
+
+    expect(mockApplyGovernanceChange).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes governance only after the latest bulk write settles', async () => {
+    const pn = await setupLoaded()
+    const firstRequest = createDeferred<void>()
+    const secondRequest = createDeferred<void>()
+    vi.mocked(partnerNodesApi.setEnabledBulk)
+      .mockReturnValueOnce(firstRequest.promise)
+      .mockReturnValueOnce(secondRequest.promise)
+    const group = pn.groups.value.find((item) => item.partner === 'BFL')!
+
+    const firstUpdate = pn.setGroupEnabled(group, false)
+    const secondUpdate = pn.setGroupEnabled(group, true)
+    firstRequest.resolve()
+    await firstUpdate
+    await vi.waitFor(() =>
+      expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledTimes(2)
+    )
+
+    expect(mockApplyGovernanceChange).not.toHaveBeenCalled()
+
+    secondRequest.resolve()
+    await secondUpdate
+
+    expect(mockApplyGovernanceChange).toHaveBeenCalledOnce()
   })
 
   it('restores confirmed state when overlapping writes both fail', async () => {

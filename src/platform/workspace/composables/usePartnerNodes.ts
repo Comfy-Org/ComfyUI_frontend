@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { PartnerNode } from '@/platform/workspace/api/partnerNodesApi'
 import { partnerNodesApi } from '@/platform/workspace/api/partnerNodesApi'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 
 export interface PartnerGroup {
   partner: string
@@ -180,11 +181,14 @@ export function usePartnerNodes() {
     const selected = nodes.value.filter((n) => selectedIds.value.has(n.id))
     return selected.length > 0 && selected.every((n) => n.enabled)
   })
-  const allFilteredSelected = computed(
-    () =>
-      filteredNodes.value.length > 0 &&
-      filteredNodes.value.every((n) => selectedIds.value.has(n.id))
-  )
+  const selectAllState = computed<boolean | 'indeterminate'>(() => {
+    const selectedCount = filteredNodes.value.filter((node) =>
+      selectedIds.value.has(node.id)
+    ).length
+    if (selectedCount === 0) return false
+    if (selectedCount === filteredNodes.value.length) return true
+    return 'indeterminate'
+  })
   async function fetch() {
     isLoading.value = true
     loadError.value = false
@@ -234,6 +238,17 @@ export function usePartnerNodes() {
     return version
   }
 
+  function refreshGovernanceState() {
+    void useDisabledPartnerNodesStore()
+      .applyGovernanceChange()
+      .catch(() => {
+        toast.add({
+          severity: 'error',
+          summary: t('workspacePanel.partnerNodes.updateError')
+        })
+      })
+  }
+
   async function setEnabled(node: PartnerNode, enabled: boolean) {
     const currentNode = nodes.value.find((n) => n.id === node.id) ?? node
     const { enabled: prevEnabled, last_modified: prevModified } = currentNode
@@ -249,6 +264,9 @@ export function usePartnerNodes() {
         partnerNodesApi.setEnabled(node.id, enabled)
       )
       confirmedNodeStates.set(node.id, appliedState)
+      if (nodeMutationVersions.get(node.id) === mutationVersion) {
+        refreshGovernanceState()
+      }
     } catch {
       if (nodeMutationVersions.get(node.id) === mutationVersion) {
         const confirmedState = confirmedNodeStates.get(node.id) ?? {
@@ -262,6 +280,7 @@ export function usePartnerNodes() {
           severity: 'error',
           summary: t('workspacePanel.partnerNodes.updateError')
         })
+        refreshGovernanceState()
       }
     }
   }
@@ -297,6 +316,13 @@ export function usePartnerNodes() {
         partnerNodesApi.setEnabledBulk(ids, enabled)
       )
       for (const [id, state] of applied) confirmedNodeStates.set(id, state)
+      if (
+        [...mutationVersions].every(
+          ([id, version]) => nodeMutationVersions.get(id) === version
+        )
+      ) {
+        refreshGovernanceState()
+      }
       return true
     } catch {
       const currentIds = new Set(
@@ -319,6 +345,9 @@ export function usePartnerNodes() {
           severity: 'error',
           summary: t('workspacePanel.partnerNodes.updateError')
         })
+        if (currentIds.size === mutationVersions.size) {
+          refreshGovernanceState()
+        }
       }
       return false
     }
@@ -374,7 +403,7 @@ export function usePartnerNodes() {
 
   function toggleSelectAll() {
     const next = new Set(selectedIds.value)
-    if (allFilteredSelected.value) {
+    if (selectAllState.value === true) {
       for (const node of filteredNodes.value) next.delete(node.id)
     } else {
       for (const node of filteredNodes.value) next.add(node.id)
@@ -397,7 +426,7 @@ export function usePartnerNodes() {
     selectedIds,
     selectedCount,
     selectedEnabled,
-    allFilteredSelected,
+    selectAllState,
     filteredNodes,
     groups,
     togglePartnerCollapsed,
