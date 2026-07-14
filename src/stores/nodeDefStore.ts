@@ -29,6 +29,7 @@ import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
+import { setNodeTypeHidden } from '@/utils/litegraphNodeVisibility'
 import { buildTree } from '@/utils/treeUtil'
 
 export class ComfyNodeDefImpl
@@ -342,7 +343,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     const devModeEnabled = showDevOnly.value
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
       if (nodeType.nodeData?.dev_only) {
-        nodeType.skip_list = !devModeEnabled
+        setNodeTypeHidden(nodeType, 'dev-only', !devModeEnabled)
       }
     }
   })
