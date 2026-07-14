@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { PartState } from '../../../services/agent/agentMessageParts'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -15,6 +16,23 @@ const {
   ok?: boolean
   count?: number
 }>()
+
+const { t } = useI18n()
+
+const FRIENDLY_TOOL_KEYS: Record<string, string> = {
+  new_tab: 'agent.toolOpenedNewTab',
+  switch_tab: 'agent.toolSwitchedTabs',
+  remember: 'agent.toolSavedPreference',
+  forget: 'agent.toolForgotPreference'
+}
+
+const friendlyKey = computed(() =>
+  Object.hasOwn(FRIENDLY_TOOL_KEYS, name) ? FRIENDLY_TOOL_KEYS[name] : undefined
+)
+
+const label = computed(() =>
+  friendlyKey.value === undefined ? name : t(friendlyKey.value)
+)
 
 const glyph = computed(() => {
   if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
@@ -32,7 +50,10 @@ const glyphColor = computed(() => {
 <template>
   <div class="text-agent-fg flex items-center gap-2 px-3 py-1.5 text-sm">
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
-    <span class="truncate font-mono text-xs">{{ name }}</span>
+    <span
+      :class="cn('truncate text-xs', friendlyKey === undefined && 'font-mono')"
+      >{{ label }}</span
+    >
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
       >×{{ count }}</span
     >

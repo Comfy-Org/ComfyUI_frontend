@@ -129,9 +129,10 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.success).toBe(true)
   })
 
-  it('exposes exactly the six agent event types', () => {
+  it('exposes exactly the seven agent event types', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
+        'agent_active_tab',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
@@ -140,6 +141,20 @@ describe('agentApiSchema contract subtleties', () => {
         'draft_version'
       ].sort()
     )
+  })
+
+  it('parses agent_active_tab with an optional name and rejects a missing workflow_id', () => {
+    const parsed = zAgentWsEvent.safeParse({
+      type: 'agent_active_tab',
+      data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+    })
+    expect(parsed.success).toBe(true)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { thread_id: 'th-1' }
+      }).success
+    ).toBe(false)
   })
 
   it('accepts an AgentMessage with status interrupted', () => {

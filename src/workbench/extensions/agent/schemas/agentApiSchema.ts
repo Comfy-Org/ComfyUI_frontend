@@ -1,3 +1,4 @@
+import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 const zTurnId = z.string().brand<'TurnId'>()
@@ -42,6 +43,17 @@ export type AgentThreadSummary = z.infer<typeof zAgentThreadSummary>
 export const zAgentThreads = z
   .object({ threads: z.array(zAgentThreadSummary) })
   .passthrough()
+
+export const zCloudWorkflowIndex = zWorkflowListResponse
+  .pick({ pagination: true })
+  .extend({
+    data: z.array(
+      z.object({ id: z.string(), name: z.string().optional() }).passthrough()
+    )
+  })
+export type CloudWorkflowEntry = z.infer<
+  typeof zCloudWorkflowIndex
+>['data'][number]
 
 export const zAgentCancelAccepted = z.object({
   status: z.literal('cancelling')
@@ -119,6 +131,16 @@ const zDraftVersionData = z
   .passthrough()
 export type DraftVersionData = z.infer<typeof zDraftVersionData>
 
+const zAgentActiveTabData = z
+  .object({
+    workflow_id: z.string(),
+    name: z.string().optional(),
+    thread_id: z.string().optional(),
+    message_id: z.string().optional()
+  })
+  .passthrough()
+export type AgentActiveTabData = z.infer<typeof zAgentActiveTabData>
+
 const zAgentThinkingEvent = z.object({
   type: z.literal('agent_thinking'),
   data: zAgentThinkingData
@@ -149,13 +171,19 @@ const zDraftVersionEvent = z.object({
   data: zDraftVersionData
 })
 
+const zAgentActiveTabEvent = z.object({
+  type: z.literal('agent_active_tab'),
+  data: zAgentActiveTabData
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zDraftPatchEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
-  zDraftVersionEvent
+  zDraftVersionEvent,
+  zAgentActiveTabEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
@@ -165,7 +193,8 @@ export const AGENT_WS_EVENT_TYPES: ReadonlySet<string> = new Set([
   'draft_patch',
   'agent_message_delta',
   'agent_message_done',
-  'draft_version'
+  'draft_version',
+  'agent_active_tab'
 ])
 
 export function isAgentEvent(type: string): boolean {

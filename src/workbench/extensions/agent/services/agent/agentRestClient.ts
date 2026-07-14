@@ -9,6 +9,7 @@ import {
   zAgentMessages,
   zAgentThreads,
   zAgentTurnAccepted,
+  zCloudWorkflowIndex,
   zUploadImageResult
 } from '../../schemas/agentApiSchema'
 import type {
@@ -17,8 +18,12 @@ import type {
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
+  CloudWorkflowEntry,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
+
+const CLOUD_WORKFLOW_PAGE_SIZE = 100
+const CLOUD_WORKFLOW_MAX_PAGES = 5
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -37,12 +42,23 @@ export interface DraftUpload {
   version: number | null
 }
 
+interface OpenTabEntry {
+  workflow_id: string
+  name: string
+}
+
+export interface OpenTabsSnapshot {
+  open_tabs: OpenTabEntry[]
+  current_tab?: string
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
   draft?: DraftUpload
+  tabs?: OpenTabsSnapshot
 }
 
 interface IngestErrorBody {
@@ -101,6 +117,11 @@ export function createAgentRestClient() {
   ): Promise<AgentTurnAccepted> {
     const body: Record<string, unknown> = { content: req.content }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
+    if (req.tabs !== undefined) {
+      body.open_tabs = req.tabs.open_tabs
+      if (req.tabs.current_tab !== undefined)
+        body.current_tab = req.tabs.current_tab
+    }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
@@ -126,6 +147,26 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
+    const entries: CloudWorkflowEntry[] = []
+    let hasMore = false
+    for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+      const result = await request(
+        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}&offset=${page * CLOUD_WORKFLOW_PAGE_SIZE}`,
+        { method: 'GET' },
+        zCloudWorkflowIndex
+      )
+      entries.push(...result.data)
+      hasMore = result.pagination.has_more
+      if (!hasMore) break
+    }
+    if (hasMore)
+      console.warn(
+        `[agent] cloud workflow index truncated at ${entries.length} entries`
+      )
+    return entries
   }
 
   async function cancelMessage(
@@ -165,6 +206,7 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    listCloudWorkflows,
     cancelMessage,
     getDraft,
     uploadImage

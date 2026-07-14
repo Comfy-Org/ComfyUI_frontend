@@ -22,6 +22,29 @@ function tool(
 }
 
 describe('ToolCallGroup', () => {
+  it('maps tab tools to friendly labels and renders unknown tools by raw name', () => {
+    render(ToolCallGroup, {
+      props: {
+        tools: [
+          tool('c1', 'new_tab', 'done', true),
+          tool('c2', 'switch_tab', 'done', true),
+          tool('c3', 'add_node', 'streaming'),
+          tool('c4', 'constructor', 'done', true),
+          tool('c5', 'remember', 'done', true),
+          tool('c6', 'forget', 'done', true)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
+    expect(screen.getByText('Switched tabs')).toBeInTheDocument()
+    expect(screen.getByText('add_node')).toBeInTheDocument()
+    expect(screen.getByText('constructor')).toBeInTheDocument()
+    expect(screen.getByText('Saved a preference')).toBeInTheDocument()
+    expect(screen.getByText('Forgot a preference')).toBeInTheDocument()
+  })
+
   it('renders open with the row visible while a call streams', () => {
     render(ToolCallGroup, {
       props: { tools: [tool('c1', 'add_node', 'streaming')] },

@@ -1,12 +1,13 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  DraftUpload
+  DraftUpload,
+  OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
@@ -34,7 +35,6 @@ interface SentTag {
 
 export interface WorkflowTurnContext {
   id: string
-  speculative: boolean
   tabPath: string
 }
 
@@ -48,11 +48,16 @@ export interface AgentSessionDeps {
       sent: WorkflowTurnContext | undefined,
       uploaded: boolean
     ): void
+    prepare?(): Promise<void>
     snapshot?(): DraftUpload | undefined
+    uploadSkipped?(): void
+    tabs?(): OpenTabsSnapshot | undefined
+    activeTab?(data: AgentActiveTabData): void
   }
 }
 
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
+const PREPARE_TIMEOUT_MS = 3000
 
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
@@ -159,11 +164,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     sending.value = true
+    if (workflow?.prepare)
+      await Promise.race([
+        workflow.prepare().catch(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
+      ])
     const wfContext = workflow?.current()
     const upload = workflow?.snapshot?.()
+    const tabs = workflow?.tabs?.()
     function buildInput(draft: DraftUpload | undefined) {
       return {
         content: text,
+        tabs,
         selection:
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
@@ -179,15 +191,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext ? { ...input, workflowId: wfContext.id } : input
       )
     }
+    let uploaded = upload !== undefined
     async function postTurn(threadId: string) {
       try {
         return await post(threadId, upload)
       } catch (error) {
         if (!(error instanceof AgentApiError)) throw error
-        if (wfContext?.speculative === true && error.status === 403) {
-          const input = buildInput(upload)
-          return await rest.postMessage(threadId, input)
-        }
         const serverVersion = (error.body as { version?: unknown } | null)
           ?.version
         if (
@@ -196,6 +205,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
           typeof serverVersion === 'number'
         ) {
           return await post(threadId, { ...upload, version: serverVersion })
+        }
+        if (upload !== undefined && error.status >= 500) {
+          console.warn(
+            '[agent] draft upload rejected by the server, sending without it',
+            error.message
+          )
+          const ack = await post(threadId, undefined)
+          uploaded = false
+          workflow?.uploadSkipped?.()
+          return ack
         }
         throw error
       }
@@ -206,7 +225,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
         draftStore.bind(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext, upload !== undefined)
+        workflow?.adopted(ack.workflow_id, wfContext, uploaded)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
@@ -313,6 +332,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       case 'draft_version':
         if (draftStore.checkHeartbeat(event.data) === 'behind')
           void resyncDraft()
+        return
+      case 'agent_active_tab':
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          workflow?.activeTab?.(event.data)
         return
       default:
         conversationStore.ingest(event)
