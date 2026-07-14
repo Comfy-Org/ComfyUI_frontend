@@ -1559,6 +1559,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Members": "Members",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2881,9 +2882,33 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "activity": {
+      "columns": {
+        "creditsUsed": "Credits",
+        "date": "Date",
+        "eventDetails": "Event details",
+        "eventType": "Event type",
+        "user": "User"
+      },
+      "empty": "No activity yet.",
+      "fullActivity": "Full activity",
+      "hoverCard": {
+        "lastActivity": "Last activity",
+        "partnerNodeUsed": "Partner node used",
+        "totalCreditsUsed": "Total credits used"
+      },
+      "perUserHint": "Looking for total usage per user?",
+      "seeMembers": "See Members"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
+    "planCredits": {
+      "tabs": {
+        "activity": "Activity",
+        "overview": "Credits"
+      }
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
@@ -2893,6 +2918,12 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
+      "activity": {
+        "daysAgo": "{count} day ago | {count} days ago",
+        "hoursAgo": "{n} hr ago",
+        "justNow": "just now",
+        "minutesAgo": "{n} min ago"
+      },
       "header": "Members",
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
