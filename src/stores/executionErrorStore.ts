@@ -526,6 +526,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   useNodeErrorFlagSync(
     surfacedNodeErrors,
+    missingNodesStore,
     missingModelStore,
     missingMediaStore,
     disabledPartnerNodesStore

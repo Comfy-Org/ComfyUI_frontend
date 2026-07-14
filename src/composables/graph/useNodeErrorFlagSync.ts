@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
@@ -34,6 +35,7 @@ function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
 function reconcileNodeErrorFlags(
   rootGraph: LGraph,
   nodeErrors: Record<string, NodeError> | null,
+  missingNodeExecIds: Set<string>,
   missingModelExecIds: Set<string>,
   missingMediaExecIds: Set<string> = new Set(),
   disabledNodeExecIds: Set<string> = new Set()
@@ -61,6 +63,11 @@ function reconcileNodeErrorFlags(
         if (parentNode) flaggedNodes.add(parentNode)
       }
     }
+  }
+
+  for (const execId of missingNodeExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
   }
 
   for (const execId of missingModelExecIds) {
@@ -92,6 +99,7 @@ function reconcileNodeErrorFlags(
 
 export function useNodeErrorFlagSync(
   nodeErrors: Ref<Record<string, NodeError> | null>,
+  missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>,
   missingModelStore: ReturnType<typeof useMissingModelStore>,
   missingMediaStore: ReturnType<typeof useMissingMediaStore>,
   disabledPartnerNodesStore: ReturnType<typeof useDisabledPartnerNodesStore>
@@ -104,6 +112,7 @@ export function useNodeErrorFlagSync(
   const stop = watch(
     [
       nodeErrors,
+      () => missingNodesStore.missingAncestorExecutionIds,
       () => missingModelStore.missingModelNodeIds,
       () => missingMediaStore.missingMediaNodeIds,
       () => disabledPartnerNodesStore.disabledAncestorExecutionIds,
@@ -118,6 +127,7 @@ export function useNodeErrorFlagSync(
       reconcileNodeErrorFlags(
         app.rootGraph,
         nodeErrors.value,
+        missingNodesStore.missingAncestorExecutionIds,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
           : new Set(),

@@ -12,6 +12,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -639,6 +640,19 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         name: 'missing.safetensors',
         isMissing: true
       }
+    ])
+    await nextTick()
+
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeB.has_errors).toBeFalsy()
+  })
+
+  it('preserves has_errors on missing nodes during reconciliation', async () => {
+    const { nodeA, nodeB } = setupGraphWithStore()
+    const missingNodesStore = useMissingNodesErrorStore()
+
+    missingNodesStore.setMissingNodeTypes([
+      { type: nodeA.type, nodeId: String(nodeA.id) }
     ])
     await nextTick()
 
