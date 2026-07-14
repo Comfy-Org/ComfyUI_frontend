@@ -1,31 +1,46 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
+import { onMounted, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import LottieVideoPlayer from '../common/LottieVideoPlayer.vue'
 import NodeBadge from '../common/NodeBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const features = [
+const SHOWCASE_CDN = 'https://media.comfy.org/website/homepage/showcase'
+
+type LottieConfig = { src: string; assetsPath: string; poster: string }
+
+const lottieScene = (scene: string): LottieConfig => ({
+  src: `/animations/${scene}.json`,
+  assetsPath: `${SHOWCASE_CDN}/${scene}/`,
+  poster: `${SHOWCASE_CDN}/${scene}/poster.webp`
+})
+
+type Feature = {
+  title: string
+  description: string
+  lottie: LottieConfig
+}
+
+const features: Feature[] = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
+    lottie: lottieScene('scene1')
   },
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
+    lottie: lottieScene('scene2')
   },
   {
     title: t('showcase.feature3.title', locale),
     description: t('showcase.feature3.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/video-showcase.webm'
+    lottie: lottieScene('scene3')
   }
 ]
 
@@ -36,21 +51,24 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-const videoRefs = useTemplateRefsList<HTMLVideoElement>()
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
+// Stays false until onMounted so SSR and client both render desktop layout
+// initially, avoiding a structural hydration mismatch (useMediaQuery is false
+// on the server but reflects the real viewport on the client).
+const isMobile = ref(false)
+const mqMobile = useMediaQuery('(max-width: 1023px)')
+let stopMqWatch: (() => void) | null = null
+onMounted(() => {
+  isMobile.value = mqMobile.value
+  stopMqWatch = watch(mqMobile, (v) => {
+    isMobile.value = v
+  })
+})
+onBeforeUnmount(() => stopMqWatch?.())
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
-})
-
-watch(activeIndex, (current, previous) => {
-  videoRefs.value[previous]?.pause()
-  const active = videoRefs.value[current]
-  if (active) {
-    active.currentTime = 0
-    active.play().catch(() => {})
-  }
 })
 </script>
 
@@ -62,46 +80,49 @@ watch(activeIndex, (current, previous) => {
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
-      <p class="text-primary-comfy-canvas mt-12 max-w-xl text-sm/relaxed">
+      <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle1', locale) }}
       </p>
-      <p class="text-primary-comfy-canvas mt-4 max-w-xl text-sm/relaxed">
+      <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle2', locale) }}
       </p>
     </div>
 
     <!-- Content area -->
     <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
-      <!-- Video area (desktop only) -->
-      <div class="hidden flex-1 lg:flex">
+      <!-- Lottie area (desktop only) -->
+      <div v-if="!isMobile" class="flex-1">
         <div
           :class="
             cn(
-              'rounded-5xl relative flex w-full items-center justify-center overflow-hidden p-0.5',
+              'rounded-5xl relative aspect-1056/784 max-h-160 w-full overflow-hidden p-0.5',
               isVisible && 'animate-border-spin'
             )
           "
         >
           <div
-            class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
           >
-            <video
+            <div
               v-for="(feature, i) in features"
-              :ref="videoRefs.set"
+              v-show="isVisible"
               :key="feature.title"
-              :src="feature.video"
-              :autoplay="i === 0"
-              :preload="i === 0 ? 'metadata' : 'none'"
-              loop
-              muted
-              playsinline
               :class="
                 cn(
-                  'absolute inset-0 size-full object-cover transition-opacity duration-300 will-change-[opacity]',
+                  'absolute inset-0 transition-opacity duration-300',
                   activeIndex === i ? 'opacity-100' : 'opacity-0'
                 )
               "
-            />
+            >
+              <LottieVideoPlayer
+                :src="feature.lottie.src"
+                :assets-path="feature.lottie.assetsPath"
+                :poster="feature.lottie.poster"
+                :playing="activeIndex === i"
+                poster-class="bg-transparency-white-t4"
+                class="bg-transparency-white-t4 size-full"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -109,24 +130,29 @@ watch(activeIndex, (current, previous) => {
       <!-- Feature accordion -->
       <div class="flex w-full flex-col lg:w-85 lg:gap-4">
         <template v-for="(feature, i) in features" :key="feature.title">
-          <!-- Video area (mobile, rendered before active item) -->
+          <!-- Lottie area (mobile, rendered before active item) -->
           <div
-            v-if="activeIndex === i"
-            :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
+            v-if="isMobile && activeIndex === i"
+            :class="cn('aspect-video', i !== 0 && 'mt-4')"
           >
             <div
-              class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
+              :class="
+                cn(
+                  'size-full overflow-hidden rounded-4xl p-0.5',
+                  isVisible && 'animate-border-spin'
+                )
+              "
             >
               <div
-                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
-                <video
-                  :src="feature.video"
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  class="size-full object-cover"
+                <LottieVideoPlayer
+                  :src="feature.lottie.src"
+                  :assets-path="feature.lottie.assetsPath"
+                  :poster="feature.lottie.poster"
+                  :playing="activeIndex === i"
+                  poster-class="bg-transparency-white-t4"
+                  class="bg-transparency-white-t4 size-full"
                 />
               </div>
             </div>
@@ -134,8 +160,8 @@ watch(activeIndex, (current, previous) => {
 
           <!-- Connector (mobile) -->
           <div
-            v-if="activeIndex === i"
-            class="flex h-5 items-center overflow-visible lg:hidden"
+            v-if="isMobile && activeIndex === i"
+            class="flex h-5 items-center overflow-visible"
           >
             <img
               src="/icons/node-link.svg"
@@ -148,7 +174,11 @@ watch(activeIndex, (current, previous) => {
           <!-- Accordion item with connector -->
           <div
             :class="
-              cn('flex items-stretch', activeIndex !== i && 'mt-4 lg:mt-0')
+              cn(
+                'flex items-stretch',
+                activeIndex !== i && 'mt-4 lg:mt-0',
+                activeIndex === i && 'lg:flex-1'
+              )
             "
           >
             <img
@@ -162,9 +192,9 @@ watch(activeIndex, (current, previous) => {
               type="button"
               :class="
                 cn(
-                  'rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300',
+                  'rounded-5xl flex w-full cursor-pointer flex-col justify-between p-8 text-left transition-colors duration-300',
                   activeIndex === i
-                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink lg:h-full'
                     : 'bg-transparency-white-t4 text-primary-comfy-canvas lg:ml-5'
                 )
               "
