@@ -4,33 +4,17 @@ import {
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { app } from '@/scripts/app'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
 defineProps<{ mobile?: boolean }>()
 
-const { isCreditsBadge } = usePriceBadge()
+const { creditsBadges } = usePriceBadge()
 const { t } = useI18n()
-
-const creditsBadges = computed(() =>
-  mapAllNodes(app.graph, (node) => {
-    if (node.isSubgraphNode()) return
-
-    const priceBadge = node.badges.find(isCreditsBadge)
-    if (!priceBadge) return
-
-    trackNodePrice(node)
-    return [node.title, toValue(priceBadge).text, node.id] as const
-  })
-)
 </script>
 <template>
   <Popover v-if="mobile && creditsBadges.length" side="top">
