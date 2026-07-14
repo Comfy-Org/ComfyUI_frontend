@@ -81,15 +81,72 @@ function isValidSemver(version: string): boolean {
 }
 
 /**
- * Get the latest patch tag for a given minor version
+ * Parse a target branch override of the form `core/<major>.<minor>`.
+ * Returns the parsed major/minor and normalized branch, or null if malformed.
  */
-function getLatestPatchTag(repoPath: string, minor: number): string | null {
+function parseTargetBranchOverride(
+  branch: string
+): { major: number; minor: number; branch: string } | null {
+  const match = branch.match(/^core\/(\d+)\.(\d+)$/)
+  if (!match) {
+    return null
+  }
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    branch
+  }
+}
+
+/**
+ * Compute the next release version for a target major.minor line.
+ *
+ * With no prior tag, the line starts at `.0`. With a prior tag, the patch is
+ * bumped when there are pending commits, otherwise the tagged version stands.
+ * Returns null if the tag is not valid semver.
+ */
+function computeTargetVersion(
+  targetMajor: number,
+  targetMinor: number,
+  latestPatchTag: string | null,
+  hasPendingCommits: boolean
+): string | null {
+  if (!latestPatchTag) {
+    return `${targetMajor}.${targetMinor}.0`
+  }
+
+  const tagVersion = latestPatchTag.replace('v', '')
+  if (!isValidSemver(tagVersion)) {
+    return null
+  }
+
+  const existingPatch = Number(tagVersion.split('.')[2])
+  return hasPendingCommits
+    ? `${targetMajor}.${targetMinor}.${existingPatch + 1}`
+    : tagVersion
+}
+
+/**
+ * Check whether a branch exists on origin in the given repo.
+ */
+function branchExists(branch: string, repoPath: string): boolean {
+  return Boolean(exec(`git rev-parse --verify origin/${branch}`, repoPath))
+}
+
+/**
+ * Get the latest patch tag for a given major.minor version
+ */
+function getLatestPatchTag(
+  repoPath: string,
+  major: number,
+  minor: number
+): string | null {
   // Fetch all tags
   exec('git fetch --tags', repoPath)
 
   // Use git's native version sorting to get the latest tag
   const latestTag = exec(
-    `git tag -l 'v1.${minor}.*' --sort=-version:refname | head -n 1`,
+    `git tag -l 'v${major}.${minor}.*' --sort=-version:refname | head -n 1`,
     repoPath
   )
 
@@ -101,7 +158,7 @@ function getLatestPatchTag(repoPath: string, minor: number): string | null {
   const validTagRegex = /^v\d+\.\d+\.\d+$/
   if (!validTagRegex.test(latestTag)) {
     console.error(
-      `Latest tag for minor version ${minor} is not valid semver: ${latestTag}`
+      `Latest tag for version ${major}.${minor} is not valid semver: ${latestTag}`
     )
     return null
   }
@@ -132,85 +189,106 @@ function resolveRelease(
     return null
   }
 
-  const [major, currentMinor, patch] = currentVersion.split('.').map(Number)
+  const [currentMajor, currentMinor] = currentVersion.split('.').map(Number)
 
   // Fetch all branches
   exec('git fetch origin', frontendRepoPath)
 
-  // Determine target branch based on release type:
-  //   'patch' → target current minor (hotfix for production version)
-  //   'minor' → try next minor, fall back to current minor (bi-weekly cadence)
-  const releaseTypeInput =
-    process.env.RELEASE_TYPE?.trim().toLowerCase() || 'minor'
-  if (releaseTypeInput !== 'minor' && releaseTypeInput !== 'patch') {
-    console.error(
-      `Invalid RELEASE_TYPE: "${releaseTypeInput}". Expected "minor" or "patch"`
-    )
-    return null
-  }
-  const releaseType: 'minor' | 'patch' = releaseTypeInput
+  // Target major defaults to the current pin's major, but a TARGET_BRANCH
+  // override (below) can retarget both major and minor.
+  let targetMajor = currentMajor
   let targetMinor: number
   let targetBranch: string
 
-  if (releaseType === 'patch') {
-    targetMinor = currentMinor
-    targetBranch = `core/1.${targetMinor}`
+  const targetBranchOverride = process.env.TARGET_BRANCH?.trim()
 
-    const branchExists = exec(
-      `git rev-parse --verify origin/${targetBranch}`,
-      frontendRepoPath
-    )
-
-    if (!branchExists) {
+  if (targetBranchOverride) {
+    // Manual override takes precedence over RELEASE_TYPE / pin-derived selection.
+    const parsed = parseTargetBranchOverride(targetBranchOverride)
+    if (!parsed) {
       console.error(
-        `Patch release requested but branch ${targetBranch} does not exist`
+        `Invalid TARGET_BRANCH: "${targetBranchOverride}". Expected format: core/<major>.<minor> (e.g. core/1.47 or core/2.0)`
+      )
+      return null
+    }
+
+    targetMajor = parsed.major
+    targetMinor = parsed.minor
+    targetBranch = parsed.branch
+
+    if (!branchExists(targetBranch, frontendRepoPath)) {
+      console.error(
+        `Manual override branch ${targetBranch} does not exist in frontend repo`
       )
       return null
     }
 
     console.error(
-      `Patch release: targeting current production branch ${targetBranch}`
+      `Manual override: targeting ${targetBranch} (ignoring release_type)`
     )
   } else {
-    // Try next minor first, fall back to current minor if not available
-    targetMinor = currentMinor + 1
-    targetBranch = `core/1.${targetMinor}`
-
-    const nextMinorExists = exec(
-      `git rev-parse --verify origin/${targetBranch}`,
-      frontendRepoPath
-    )
-
-    if (!nextMinorExists) {
-      // Fall back to current minor for minor release
-      targetMinor = currentMinor
-      targetBranch = `core/1.${targetMinor}`
-
-      const currentMinorExists = exec(
-        `git rev-parse --verify origin/${targetBranch}`,
-        frontendRepoPath
+    // Determine target branch based on release type:
+    //   'patch' → target current minor (hotfix for production version)
+    //   'minor' → try next minor, fall back to current minor (bi-weekly cadence)
+    const releaseTypeInput =
+      process.env.RELEASE_TYPE?.trim().toLowerCase() || 'minor'
+    if (releaseTypeInput !== 'minor' && releaseTypeInput !== 'patch') {
+      console.error(
+        `Invalid RELEASE_TYPE: "${releaseTypeInput}". Expected "minor" or "patch"`
       )
+      return null
+    }
+    const releaseType: 'minor' | 'patch' = releaseTypeInput
 
-      if (!currentMinorExists) {
+    if (releaseType === 'patch') {
+      targetMinor = currentMinor
+      targetBranch = `core/${targetMajor}.${targetMinor}`
+
+      if (!branchExists(targetBranch, frontendRepoPath)) {
         console.error(
-          `Neither core/1.${currentMinor + 1} nor core/1.${currentMinor} branches exist in frontend repo`
+          `Patch release requested but branch ${targetBranch} does not exist`
         )
         return null
       }
 
       console.error(
-        `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for minor release`
+        `Patch release: targeting current production branch ${targetBranch}`
       )
+    } else {
+      // Try next minor first, fall back to current minor if not available
+      targetMinor = currentMinor + 1
+      targetBranch = `core/${targetMajor}.${targetMinor}`
+
+      if (!branchExists(targetBranch, frontendRepoPath)) {
+        // Fall back to current minor for minor release
+        targetMinor = currentMinor
+        targetBranch = `core/${targetMajor}.${targetMinor}`
+
+        if (!branchExists(targetBranch, frontendRepoPath)) {
+          console.error(
+            `Neither core/${targetMajor}.${currentMinor + 1} nor core/${targetMajor}.${currentMinor} branches exist in frontend repo`
+          )
+          return null
+        }
+
+        console.error(
+          `Next minor branch core/${targetMajor}.${currentMinor + 1} not found, falling back to core/${targetMajor}.${currentMinor} for minor release`
+        )
+      }
     }
   }
 
-  // Get latest patch tag for target minor
-  const latestPatchTag = getLatestPatchTag(frontendRepoPath, targetMinor)
+  // Get latest patch tag for target major.minor
+  const latestPatchTag = getLatestPatchTag(
+    frontendRepoPath,
+    targetMajor,
+    targetMinor
+  )
 
-  let needsRelease = false
-  let branchHeadSha: string | null = null
+  let needsRelease: boolean
+  let branchHeadSha: string | null
   let tagCommitSha: string | null = null
-  let targetVersion = currentVersion
+  let targetVersion: string
 
   if (latestPatchTag) {
     // Get commit SHA for the tag
@@ -231,34 +309,23 @@ function resolveRelease(
     const commitCount = parseInt(commitsBetween, 10)
     needsRelease = !isNaN(commitCount) && commitCount > 0
 
-    // Parse existing patch number and increment if needed
-    const tagVersion = latestPatchTag.replace('v', '')
-
-    // Validate tag version format
-    if (!isValidSemver(tagVersion)) {
+    const nextVersion = computeTargetVersion(
+      targetMajor,
+      targetMinor,
+      latestPatchTag,
+      needsRelease
+    )
+    if (!nextVersion) {
       console.error(
-        `Invalid tag version format: ${tagVersion}. Expected format: X.Y.Z`
+        `Invalid tag version format: ${latestPatchTag}. Expected format: vX.Y.Z`
       )
       return null
     }
-
-    const [, , existingPatch] = tagVersion.split('.').map(Number)
-
-    // Validate existingPatch is a valid number
-    if (!Number.isFinite(existingPatch) || existingPatch < 0) {
-      console.error(`Invalid patch number in tag: ${existingPatch}`)
-      return null
-    }
-
-    if (needsRelease) {
-      targetVersion = `1.${targetMinor}.${existingPatch + 1}`
-    } else {
-      targetVersion = tagVersion
-    }
+    targetVersion = nextVersion
   } else {
-    // No tags exist for this minor version, need to create v1.{targetMinor}.0
+    // No tags exist for this major.minor version, need to create the .0 patch
     needsRelease = true
-    targetVersion = `1.${targetMinor}.0`
+    targetVersion = `${targetMajor}.${targetMinor}.0`
     branchHeadSha = exec(
       `git rev-parse origin/${targetBranch}`,
       frontendRepoPath
@@ -281,26 +348,41 @@ function resolveRelease(
   }
 }
 
-// Main execution
-const comfyuiRepoPath = process.argv[2]
-const frontendRepoPath = process.argv[3] || process.cwd()
+/**
+ * Main execution: parse args, resolve, and print the JSON result.
+ */
+function main(): void {
+  const comfyuiRepoPath = process.argv[2]
+  const frontendRepoPath = process.argv[3] || process.cwd()
 
-if (!comfyuiRepoPath) {
-  console.error(
-    'Usage: resolve-comfyui-release.ts <comfyui-repo-path> [frontend-repo-path]'
-  )
-  process.exit(1)
+  if (!comfyuiRepoPath) {
+    console.error(
+      'Usage: resolve-comfyui-release.ts <comfyui-repo-path> [frontend-repo-path]'
+    )
+    process.exit(1)
+  }
+
+  const releaseInfo = resolveRelease(comfyuiRepoPath, frontendRepoPath)
+
+  if (!releaseInfo) {
+    console.error('Failed to resolve release information')
+    process.exit(1)
+  }
+
+  // Output as JSON for GitHub Actions
+  // oxlint-disable-next-line no-console -- stdout is captured by the workflow
+  console.log(JSON.stringify(releaseInfo, null, 2))
 }
 
-const releaseInfo = resolveRelease(comfyuiRepoPath, frontendRepoPath)
-
-if (!releaseInfo) {
-  console.error('Failed to resolve release information')
-  process.exit(1)
+// Only run when invoked directly, not when imported by tests.
+if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+  main()
 }
 
-// Output as JSON for GitHub Actions
-// oxlint-disable-next-line no-console -- stdout is captured by the workflow
-console.log(JSON.stringify(releaseInfo, null, 2))
-
-export { resolveRelease }
+export {
+  computeTargetVersion,
+  isValidSemver,
+  parseRequirementsVersion,
+  parseTargetBranchOverride,
+  resolveRelease
+}
