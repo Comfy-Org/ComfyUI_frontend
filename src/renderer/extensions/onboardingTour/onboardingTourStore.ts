@@ -66,8 +66,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const resolvedRoles = ref<ResolvedRoles | null>(null)
   const revealedNodeIds = ref<Set<NodeId>>(new Set())
   const resultMedia = ref<ResultMedia | null>(null)
-  /** Set on the prompt step: the collapsed host's exposed prompt port is spotlit. */
-  const promptPortFallback = ref(false)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
   /** No-funds fallback: the gate arms this so the modal-close watch can surface the nudge. */
@@ -117,14 +115,12 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   function advance() {
     if (stepIndex.value >= steps.value.length - 1) return
     stepIndex.value += 1
-    promptPortFallback.value = false
     syncRevealed()
   }
 
   function back() {
     if (stepIndex.value <= 0) return
     stepIndex.value -= 1
-    promptPortFallback.value = false
     syncRevealed()
   }
 
@@ -181,6 +177,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     shouldShowNudge.value = false
     nudgeArmed.value = false
     nudgeDismissed.value = false
+    resultMedia.value = null
   }
 
   function reset() {
@@ -189,8 +186,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     steps.value = []
     resolvedRoles.value = null
     revealedNodeIds.value = new Set()
-    resultMedia.value = null
-    promptPortFallback.value = false
   }
 
   function end() {
@@ -208,7 +203,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     revealedNodeIds,
     spotlitNodeIds,
     resultMedia,
-    promptPortFallback,
     shouldShowNudge,
     nudgeArmed,
     start,

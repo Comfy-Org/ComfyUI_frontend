@@ -263,9 +263,6 @@ function _useOnboardingTourController() {
     // Never enter the subgraph: spotlight the collapsed host's prompt port on the
     // root graph. restoreView is defensive if the user opened one manually.
     restoreView()
-    if (step.kind === 'prompt' && step.prompt) {
-      store.promptPortFallback = true
-    }
 
     useTelemetry()?.trackOnboardingTourStepViewed?.({
       step_key: step.kind,
@@ -305,6 +302,7 @@ function _useOnboardingTourController() {
         shape: activeShape
       })
     }
+    store.showNudge()
     store.end()
   }
 

@@ -87,7 +87,6 @@ describe('onboardingTourStore', () => {
       mediaKind: 'video'
     }
     store.revealedNodeIds.add(toNodeId(42))
-    store.resultMedia = { url: 'blob:x', kind: 'image' }
 
     store.reset()
 
@@ -95,7 +94,6 @@ describe('onboardingTourStore', () => {
     expect(store.stepIndex).toBe(0)
     expect(store.resolvedRoles).toBeNull()
     expect(store.revealedNodeIds.size).toBe(0)
-    expect(store.resultMedia).toBeNull()
   })
 
   it('start() on I2V roles builds [Upload, Prompt, Run, Result] and reveals the source', () => {
@@ -373,6 +371,17 @@ describe('onboardingTourStore', () => {
     expect(store.shouldShowNudge).toBe(true)
   })
 
+  it('keeps the captured media after the tour ends so the nudge still shows it', () => {
+    resolveRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+    store.resultMedia = { url: 'blob:first-run', kind: 'image' }
+    store.showNudge()
+
+    store.end()
+
+    expect(store.resultMedia).toEqual({ url: 'blob:first-run', kind: 'image' })
+  })
+
   it('arms the no-funds fallback so the modal-close watch can surface it', () => {
     store.armNudge()
     expect(store.nudgeArmed).toBe(true)
@@ -408,11 +417,14 @@ describe('onboardingTourStore', () => {
     store.armNudge()
     store.showNudge()
     store.dismissNudge()
+    store.resultMedia = { url: 'blob:prior-run', kind: 'image' }
 
     store.start(workflow)
 
     expect(store.shouldShowNudge).toBe(false)
     expect(store.nudgeArmed).toBe(false)
+    // The prior run's media is cleared with the rest of the nudge lifecycle.
+    expect(store.resultMedia).toBeNull()
 
     // Dismissal from the prior tour no longer blocks the new one.
     store.showNudge()

@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   onboardingTourEnabled: true,
   tutorialCompleted: false as boolean,
   resolveRoles: vi.fn(),
+  restoreView: vi.fn(),
   nodesPresent: vi.fn(() => true),
   canvasTransformValid: vi.fn(() => true),
   activeWorkflowState: {} as ComfyWorkflowJSON | null,
@@ -42,7 +43,6 @@ const mocks = vi.hoisted(() => ({
   steps: [] as TourStep[],
   stepIndex: { value: 0 },
   phase: { value: 'active' as 'idle' | 'active' },
-  promptPortFallback: { value: false },
   resolvedRoles: { value: null as ResolvedRoles | null },
   telemetry: {
     trackOnboardingTourStarted: vi.fn(),
@@ -164,7 +164,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('./subgraphNavigation', () => ({
-  restoreView: vi.fn()
+  restoreView: mocks.restoreView
 }))
 
 vi.mock('./roleResolver', () => ({
@@ -207,12 +207,6 @@ vi.mock('./onboardingTourStore', () => ({
     },
     get resolvedRoles() {
       return mocks.resolvedRoles.value
-    },
-    get promptPortFallback() {
-      return mocks.promptPortFallback.value
-    },
-    set promptPortFallback(v: boolean) {
-      mocks.promptPortFallback.value = v
     }
   })
 }))
@@ -230,7 +224,6 @@ describe('useOnboardingTourController.shouldStartTour', () => {
     mocks.activeWorkflowState = activeState
     mocks.steps = []
     mocks.stepIndex.value = 0
-    mocks.promptPortFallback.value = false
   })
 
   afterEach(() => {
@@ -288,7 +281,6 @@ describe('useOnboardingTourController.start', () => {
     mocks.steps = []
     mocks.stepIndex.value = 0
     mocks.phase.value = 'active'
-    mocks.promptPortFallback.value = false
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
@@ -407,9 +399,9 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start()
 
-    // The tour never opens the subgraph; the prompt step always falls back to
-    // spotlighting the collapsed host's exposed port.
-    expect(mocks.promptPortFallback.value).toBe(true)
+    // The tour never opens the subgraph; the prompt step restores the root view
+    // so the collapsed host's exposed port stays spotlit.
+    expect(mocks.restoreView).toHaveBeenCalled()
   })
 
   it('never auto-advances a step — the user always drives Next', async () => {
