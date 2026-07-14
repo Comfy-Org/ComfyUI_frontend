@@ -1,8 +1,10 @@
-import { computed, toValue } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
+import { computed, ref, toValue } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -149,8 +151,26 @@ export const usePriceBadge = () => {
         : '#8D6932'
     })
   }
-  const creditsBadges = computed(() =>
-    mapAllNodes(app.graph, (node) => {
+  return {
+    getCreditsBadge,
+    isCreditsBadge,
+    updateSubgraphCredits
+  }
+}
+export const useCreditsBadgesInGraph = createSharedComposable(() => {
+  const { isCreditsBadge } = usePriceBadge()
+  const nodeTrigger = ref(0)
+  app.graph.onNodeAdded = useChainCallback(
+    app.graph.onNodeAdded,
+    () => nodeTrigger.value++
+  )
+  app.graph.onNodeRemoved = useChainCallback(
+    app.graph.onNodeRemoved,
+    () => nodeTrigger.value++
+  )
+  return computed(() => {
+    void nodeTrigger.value
+    return mapAllNodes(app.graph, (node) => {
       if (node.isSubgraphNode()) return
 
       const priceBadge = node.badges.find(isCreditsBadge)
@@ -159,11 +179,5 @@ export const usePriceBadge = () => {
       trackNodePrice(node)
       return [node.title, toValue(priceBadge).text, node.id] as const
     })
-  )
-  return {
-    creditsBadges,
-    getCreditsBadge,
-    isCreditsBadge,
-    updateSubgraphCredits
-  }
-}
+  })
+})

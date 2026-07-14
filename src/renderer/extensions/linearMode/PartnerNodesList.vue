@@ -8,12 +8,12 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import { usePriceBadge } from '@/composables/node/usePriceBadge'
+import { useCreditsBadgesInGraph } from '@/composables/node/usePriceBadge'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 
 defineProps<{ mobile?: boolean }>()
 
-const { creditsBadges } = usePriceBadge()
+const creditsBadges = useCreditsBadgesInGraph()
 const { t } = useI18n()
 </script>
 <template>
