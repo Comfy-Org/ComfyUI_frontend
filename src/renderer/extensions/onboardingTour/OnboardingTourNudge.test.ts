@@ -131,9 +131,10 @@ describe('OnboardingTourNudge', () => {
     expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
   })
 
-  it('surfaces as the fallback when the upgrade modal closes after arming', async () => {
-    store.armNudge()
+  it('defers past the open upgrade modal and surfaces once it closes', async () => {
     openDialogs.value = ['free-tier-info']
+    // showNudge while the modal is open must defer, not overlap the paywall.
+    store.showNudge()
     renderNudge()
 
     expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
@@ -143,7 +144,7 @@ describe('OnboardingTourNudge', () => {
     expect(await screen.findByText(nudgeTitle)).toBeInTheDocument()
   })
 
-  it('stays hidden on modal close when the fallback was never armed', async () => {
+  it('stays hidden on modal close when the nudge was never requested', async () => {
     openDialogs.value = ['subscription-required']
     renderNudge()
 
@@ -153,9 +154,9 @@ describe('OnboardingTourNudge', () => {
     expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
   })
 
-  it('surfaces the armed fallback only once across repeated modal cycles', async () => {
-    store.armNudge()
+  it('surfaces the deferred nudge only once across repeated modal cycles', async () => {
     openDialogs.value = ['free-tier-info']
+    store.showNudge()
     renderNudge()
     const user = userEvent.setup()
 

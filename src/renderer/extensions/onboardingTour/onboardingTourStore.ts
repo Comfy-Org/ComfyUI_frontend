@@ -2,14 +2,14 @@ import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
-import { resolveRoles } from './roleResolver'
-import type { NodeDefLookup } from './roleResolver'
+import { resolveTourRoles } from './roleResolution'
 import { restoreView } from './subgraphNavigation'
 import { sequenceBuilder } from './tourSequence'
 import type { MediaKind, ResolvedRoles, TourStep } from './tourSequence'
@@ -25,20 +25,9 @@ export interface ResultMedia {
 /** How long to wait for the sink's output URL after a run before giving up. */
 const RESULT_MEDIA_TIMEOUT_MS = 8000
 
-/** Output types that mark a registry sink as producing video rather than an image. */
-const VIDEO_OUTPUT_TYPES = new Set(['VIDEO', 'VHS_VIDEOINFO'])
-
-/** Reads the node registry so the resolver can widen sink detection to custom output nodes. */
-const nodeDefLookup: NodeDefLookup = (type) => {
-  const defs = useNodeDefStore().nodeDefsByName
-  if (!Object.hasOwn(defs, type)) return null
-  const def = defs[type]
-  return {
-    isOutputNode: def.output_node,
-    producesVideo: def.outputs.some((output) =>
-      VIDEO_OUTPUT_TYPES.has(output.type)
-    )
-  }
+function isUpgradeModalOpen(): boolean {
+  const dialogStore = useDialogStore()
+  return UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
 }
 
 /**
@@ -68,7 +57,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const resultMedia = ref<ResultMedia | null>(null)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
-  /** No-funds fallback: the gate arms this so the modal-close watch can surface the nudge. */
+  /** Set when `showNudge` defers because the upgrade modal is open; the modal-close watch drains it. */
   const nudgeArmed = ref(false)
   /** "Not now" latches this so no later trigger can resurface the nudge this session. */
   const nudgeDismissed = ref(false)
@@ -105,7 +94,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   function start(workflow: ComfyWorkflowJSON, templateId?: string) {
     reset()
     resetNudge()
-    const roles = resolveRoles(workflow, templateId, nodeDefLookup)
+    const roles = resolveTourRoles(workflow, templateId)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
     phase.value = 'active'
@@ -153,16 +142,18 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resultMedia.value = { url, kind: resolvedRoles.value?.mediaKind ?? 'image' }
   }
 
-  /** Arm the no-funds fallback so the modal-close watch can surface the nudge. */
-  function armNudge() {
-    nudgeArmed.value = true
-  }
-
-  /** Surface the bottom-right nudge, unless the user already dismissed it. */
+  /**
+   * Surface the bottom-right nudge once the tour ends — on every outcome. If the
+   * upgrade modal is open, defer instead (arm it) so the two never overlap; the
+   * modal-close watch re-runs this once the modal clears. Dismissal wins over both.
+   */
   function showNudge() {
-    // Consume the fallback arm so it fires at most once, regardless of dismissal.
-    nudgeArmed.value = false
     if (nudgeDismissed.value) return
+    if (isUpgradeModalOpen()) {
+      nudgeArmed.value = true
+      return
+    }
+    nudgeArmed.value = false
     shouldShowNudge.value = true
   }
 
@@ -209,7 +200,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     advance,
     back,
     captureResultMedia,
-    armNudge,
     showNudge,
     dismissNudge,
     end,

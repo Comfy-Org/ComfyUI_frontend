@@ -72,13 +72,13 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
-const UPGRADE_DIALOG_KEYS = ['free-tier-info', 'subscription-required'] as const
 
 const { t } = useI18n()
 const store = useOnboardingTourStore()

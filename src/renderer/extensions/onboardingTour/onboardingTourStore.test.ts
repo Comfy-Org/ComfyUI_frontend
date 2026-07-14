@@ -7,8 +7,8 @@ import { toNodeId } from '@/types/nodeId'
 const restoreView = vi.hoisted(() => vi.fn())
 vi.mock('./subgraphNavigation', () => ({ restoreView }))
 
-const resolveRoles = vi.hoisted(() => vi.fn())
-vi.mock('./roleResolver', () => ({ resolveRoles }))
+const resolveTourRoles = vi.hoisted(() => vi.fn())
+vi.mock('./roleResolution', () => ({ resolveTourRoles }))
 
 const sinkNode = vi.hoisted(() => ({}) as object)
 const resolveNode = vi.hoisted(() => vi.fn())
@@ -19,13 +19,9 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls })
 }))
 
-interface FakeNodeDef {
-  output_node: boolean
-  outputs: { type: string }[]
-}
-const nodeDefsByName = vi.hoisted(() => ({}) as Record<string, FakeNodeDef>)
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({ nodeDefsByName })
+const isDialogOpen = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({ isDialogOpen })
 }))
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -67,13 +63,14 @@ describe('onboardingTourStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useOnboardingTourStore()
-    resolveRoles.mockReset()
+    resolveTourRoles.mockReset()
     restoreView.mockReset()
     resolveNode.mockReset()
     getNodeImageUrls.mockReset()
     resolveNode.mockReturnValue(sinkNode)
     getNodeImageUrls.mockReturnValue(['blob:sink-output'])
-    for (const key of Object.keys(nodeDefsByName)) delete nodeDefsByName[key]
+    isDialogOpen.mockReset()
+    isDialogOpen.mockReturnValue(false)
   })
 
   it('reset() clears all state back to idle', () => {
@@ -97,15 +94,11 @@ describe('onboardingTourStore', () => {
   })
 
   it('start() on I2V roles builds [Upload, Prompt, Run, Result] and reveals the source', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
 
     store.start(workflow)
 
-    expect(resolveRoles).toHaveBeenCalledWith(
-      workflow,
-      undefined,
-      expect.any(Function)
-    )
+    expect(resolveTourRoles).toHaveBeenCalledWith(workflow, undefined)
     expect(store.phase).toBe('active')
     expect(store.stepIndex).toBe(0)
     expect(store.steps.map((s) => s.kind)).toEqual([
@@ -118,50 +111,18 @@ describe('onboardingTourStore', () => {
   })
 
   it('start() passes the templateId through to the resolver', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
 
     store.start(workflow, 'image_z_image_turbo')
 
-    expect(resolveRoles).toHaveBeenCalledWith(
+    expect(resolveTourRoles).toHaveBeenCalledWith(
       workflow,
-      'image_z_image_turbo',
-      expect.any(Function)
+      'image_z_image_turbo'
     )
   })
 
-  it('the resolver lookup guards prototype keys and maps registry defs', () => {
-    // The lookup indexes `nodeDefsByName` by an attacker-craftable node type, so
-    // it must reject prototype members and only report real registry defs.
-    nodeDefsByName.SaveVideo = {
-      output_node: true,
-      outputs: [{ type: 'VIDEO' }]
-    }
-    nodeDefsByName.SaveImage = {
-      output_node: true,
-      outputs: [{ type: 'IMAGE' }]
-    }
-    resolveRoles.mockReturnValue(t2iRoles)
-
-    store.start(workflow)
-    const lookup = resolveRoles.mock.calls[0][2] as (
-      type: string
-    ) => { isOutputNode: boolean; producesVideo: boolean } | null
-
-    expect(lookup('toString')).toBeNull()
-    expect(lookup('constructor')).toBeNull()
-    expect(lookup('unregistered')).toBeNull()
-    expect(lookup('SaveVideo')).toEqual({
-      isOutputNode: true,
-      producesVideo: true
-    })
-    expect(lookup('SaveImage')).toEqual({
-      isOutputNode: true,
-      producesVideo: false
-    })
-  })
-
   it('start() on T2I roles omits the Upload step', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
 
     store.start(workflow)
 
@@ -171,7 +132,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('advance() accumulates revealed nodes so the graph builds up', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
 
     store.advance() // → prompt (nodeId null, reveals the subgraph host)
@@ -183,7 +144,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('collapses to only the sink on the Result step', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
     store.advance() // prompt
     store.advance() // run
@@ -194,7 +155,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('spotlitNodeIds tracks only the current step while reveals accumulate', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
 
     // Upload step: source revealed and spotlit.
@@ -216,7 +177,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('advance() does not run past the last step', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
 
     store.advance()
@@ -228,7 +189,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('back() restores the prior reveal set', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
     store.advance()
 
@@ -239,7 +200,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('back() does not run before the first step', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
 
     store.back()
@@ -248,7 +209,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('end() restores the view and resets to idle', () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
     store.advance()
 
@@ -263,7 +224,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('degrades to a lone Run step when prompt and sink are unresolved', () => {
-    resolveRoles.mockReturnValue({ ...t2iRoles, prompt: null, sink: null })
+    resolveTourRoles.mockReturnValue({ ...t2iRoles, prompt: null, sink: null })
 
     store.start(workflow)
 
@@ -274,7 +235,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('captureResultMedia() records the sink output URL with the resolved media kind', async () => {
-    resolveRoles.mockReturnValue(i2vRoles)
+    resolveTourRoles.mockReturnValue(i2vRoles)
     store.start(workflow)
 
     await store.captureResultMedia()
@@ -288,7 +249,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('captureResultMedia() waits for the URL to appear before recording it', async () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     // The cloud queue refresh fills the output just after execution_success.
     getNodeImageUrls.mockReturnValueOnce(undefined)
@@ -310,7 +271,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('captureResultMedia() discards the URL if the tour ends mid-wait', async () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     getNodeImageUrls.mockReturnValueOnce(undefined)
     getNodeImageUrls.mockReturnValue(['blob:late-output'])
@@ -325,7 +286,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('captureResultMedia() is idempotent once the media is set', async () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     await store.captureResultMedia()
     getNodeImageUrls.mockReturnValue(['blob:second-run'])
@@ -341,7 +302,7 @@ describe('onboardingTourStore', () => {
 
   it('captureResultMedia() gives up after the timeout without recording', async () => {
     vi.useFakeTimers()
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     getNodeImageUrls.mockReturnValue(undefined)
 
@@ -362,7 +323,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('keeps the nudge visible after the tour ends so it outlives the run', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     store.showNudge()
 
@@ -372,7 +333,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('keeps the captured media after the tour ends so the nudge still shows it', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.start(workflow)
     store.resultMedia = { url: 'blob:first-run', kind: 'image' }
     store.showNudge()
@@ -382,22 +343,23 @@ describe('onboardingTourStore', () => {
     expect(store.resultMedia).toEqual({ url: 'blob:first-run', kind: 'image' })
   })
 
-  it('arms the no-funds fallback so the modal-close watch can surface it', () => {
-    store.armNudge()
-    expect(store.nudgeArmed).toBe(true)
-
-    // The gate ends the tour right after arming; the flag must survive that.
-    store.end()
-    expect(store.nudgeArmed).toBe(true)
-  })
-
-  it('consumes the armed flag when the nudge surfaces so it fires at most once', () => {
-    store.armNudge()
+  it('defers the nudge while the upgrade modal is open, then surfaces it on close', () => {
+    isDialogOpen.mockReturnValue(true)
 
     store.showNudge()
 
-    // Consuming the arm makes the fallback strictly one-shot without leaning on
-    // the dismiss latch: a later modal cycle re-runs showNudge() but stays disarmed.
+    // Held back so it never overlaps the paywall; the arm flag drives the retry.
+    expect(store.shouldShowNudge).toBe(false)
+    expect(store.nudgeArmed).toBe(true)
+
+    // The end of the tour must not lose the deferred nudge.
+    store.end()
+    expect(store.nudgeArmed).toBe(true)
+
+    isDialogOpen.mockReturnValue(false)
+    store.showNudge()
+
+    expect(store.shouldShowNudge).toBe(true)
     expect(store.nudgeArmed).toBe(false)
   })
 
@@ -413,8 +375,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('start() resets the nudge lifecycle for a fresh tour', () => {
-    resolveRoles.mockReturnValue(t2iRoles)
-    store.armNudge()
+    resolveTourRoles.mockReturnValue(t2iRoles)
     store.showNudge()
     store.dismissNudge()
     store.resultMedia = { url: 'blob:prior-run', kind: 'image' }

@@ -13,6 +13,9 @@ const DIALOG_KEY = 'subscription-required'
 const FREE_TIER_DIALOG_KEY = 'free-tier-info'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
+/** Dialog keys the subscription/upgrade flow opens; callers gate around these. */
+export const UPGRADE_DIALOG_KEYS = [FREE_TIER_DIALOG_KEY, DIALOG_KEY] as const
+
 export interface SubscriptionDialogOptions {
   reason?: PaymentIntentSource
   /**
