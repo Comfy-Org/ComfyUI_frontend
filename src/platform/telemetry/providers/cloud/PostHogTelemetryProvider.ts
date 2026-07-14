@@ -18,6 +18,7 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -360,6 +361,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       this.setFirstAuthAt(metadata.user_id)
     }
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {

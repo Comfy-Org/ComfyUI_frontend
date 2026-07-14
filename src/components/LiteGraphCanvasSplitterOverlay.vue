@@ -193,7 +193,6 @@ const {
 const agentPanelDocked = computed(
   () => agentPanelEnabled.value && agentPanelOpen.value
 )
-
 const isAgentResizing = ref(false)
 let agentResizeStartX = 0
 let agentResizeStartWidth = 0

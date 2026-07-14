@@ -9,6 +9,7 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -80,6 +81,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuth(metadata: AuthMetadata): void {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {

@@ -64,16 +64,16 @@ function makeStream(): MediaStream {
   } as unknown as MediaStream
 }
 
-function makeRenderer(): THREE.WebGLRenderer {
+function makeSourceCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = 800
   canvas.height = 600
-  return { domElement: canvas } as unknown as THREE.WebGLRenderer
+  return canvas
 }
 
 describe('RecordingManager', () => {
   let scene: THREE.Scene
-  let renderer: THREE.WebGLRenderer
+  let sourceCanvas: HTMLCanvasElement
   let events: ReturnType<typeof makeMockEventManager>
   let manager: RecordingManager
   let rafSpy: ReturnType<typeof vi.spyOn>
@@ -104,9 +104,9 @@ describe('RecordingManager', () => {
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
 
     scene = new THREE.Scene()
-    renderer = makeRenderer()
+    sourceCanvas = makeSourceCanvas()
     events = makeMockEventManager()
-    manager = new RecordingManager(scene, renderer, events)
+    manager = new RecordingManager(scene, sourceCanvas, events)
   })
 
   afterEach(() => {

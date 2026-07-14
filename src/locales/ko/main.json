@@ -359,6 +359,7 @@
     "colors": "색상 팔레트",
     "descLabel": "설명",
     "descPlaceholder": "이 영역에 대한 설명",
+    "grid": "그리드",
     "textLabel": "텍스트",
     "textPlaceholder": "표시할 텍스트 (원문 그대로)",
     "typeObj": "obj",
@@ -515,57 +516,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "답변은 {max}자 이내로 작성해 주세요.",
         "chooseAnOption": "옵션을 선택해 주세요.",
         "describeAnswer": "답변을 설명해 주세요.",
         "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
       },
       "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
-        "familiarity": {
-          "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
-          "basics": "기본 기능에 익숙함",
-          "expert": "전문가 (다른 사용자 도움)",
-          "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
-          "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
+        "experience": {
+          "new": "ComfyUI가 처음이에요",
+          "pro": "전문 사용자입니다",
+          "some": "기본적인 사용법을 알아요"
+        },
+        "focus": {
+          "custom_nodes": "커스텀 노드",
+          "pipelines": "자동화 파이프라인",
+          "products": "타인을 위한 제품"
         },
         "intent": {
-          "3d_game": "3D 에셋 / 게임 에셋",
-          "api": "워크플로우 실행용 API 엔드포인트",
-          "apps": "워크플로우 기반 간소화 앱",
-          "audio": "오디오 / 음악",
-          "custom_nodes": "커스텀 노드",
+          "apps_api": "앱 및 API",
+          "exploring": "그냥 둘러보는 중",
           "images": "이미지",
-          "not_sure": "잘 모르겠음",
-          "videos": "비디오",
+          "other": "기타",
+          "otherPlaceholder": "무엇을 만들고 싶으신가요?",
+          "video": "비디오",
           "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
         "source": {
-          "conference": "컨퍼런스 또는 이벤트",
-          "discord": "Discord / 커뮤니티",
+          "community": "커뮤니티 또는 포럼",
           "friend": "친구 또는 동료",
-          "github": "GitHub",
+          "other": "기타",
+          "otherPlaceholder": "어디서 저희를 알게 되셨나요?",
+          "search": "Google / 검색",
+          "social": "소셜 미디어"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "뉴스레터 또는 블로그",
-          "other": "기타",
           "reddit": "Reddit",
-          "search": "Google / 검색",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "교육용(학생 또는 교육자)",
-          "personal": "개인용",
-          "work": "업무용"
         }
       },
+      "otherPlaceholder": "자세히 알려주세요",
       "placeholder": "설문 질문 자리표시자",
-      "steps": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
-        "source": "ComfyUI를 어디에서 알게 되셨나요?",
-        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
-      },
       "title": "클라우드 설문"
     }
   },
@@ -578,10 +574,11 @@
   "cloudStart_learnAboutButton": "클라우드 알아보기",
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
-  "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+  "cloudSurvey_steps_experience": "ComfyUI를 얼마나 잘 알고 계신가요?",
+  "cloudSurvey_steps_focus": "무엇을 만들고 계신가요?",
   "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
   "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
-  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
+  "cloudSurvey_steps_source_social": "어떤 플랫폼에서 알게 되셨나요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {
@@ -621,10 +618,13 @@
     "namePlaceholder": "여기에 이름을 입력하세요",
     "profileCreationNav": "프로필 생성",
     "startPublishingButton": "게시 시작하기",
+    "startUpdatingButton": "워크플로우 업데이트",
     "successDescription": "이제 크리에이터 페이지에 워크플로우를 업로드할 수 있습니다",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "프로필 페이지가 다음 위치에 생성되었습니다",
     "successTitle": "멋져요, {'@'}{username}!",
+    "updateIntroDescription": "최신 변경 사항을 ComfyHub에 푸시하세요. 공유 링크와 통계는 그대로 유지됩니다.",
+    "updateIntroTitle": "ComfyHub 워크플로우 업데이트",
     "uploadCover": "+ 커버 업로드",
     "uploadProfilePicture": "+ 프로필 사진 업로드",
     "uploadWorkflowButton": "내 워크플로우 업로드하기",
@@ -648,6 +648,8 @@
     "publishSuccessDescription": "워크플로우가 이제 ComfyHub에 공개되었습니다.",
     "publishSuccessTitle": "성공적으로 게시됨",
     "removeExampleImage": "예시 이미지 제거",
+    "renameFailedDescription": "워크플로우가 성공적으로 게시되었지만, 로컬 파일 이름 변경에 실패했습니다. 다시 이름을 변경해 일치시켜 주세요.",
+    "renameFailedTitle": "이름 변경 실패",
     "selectAThumbnail": "썸네일 선택",
     "shareAs": "다음으로 공유",
     "showLessTags": "간단히 보기...",
@@ -665,6 +667,7 @@
     "thumbnailVideo": "비디오",
     "title": "ComfyHub에 게시하기",
     "unsavedDescription": "워크플로우를 ComfyHub에 게시하기 전에 저장해야 합니다. 계속하려면 지금 저장하세요.",
+    "updateButton": "워크플로우 업데이트",
     "uploadAnImage": "클릭하여 탐색하거나 이미지를 드래그하세요",
     "uploadComparison": "비교 이미지 업로드",
     "uploadComparisonAfterPrompt": "이후",
@@ -783,6 +786,8 @@
     "faqs": "자주 묻는 질문",
     "invoiceHistory": "청구서 내역",
     "lastUpdated": "마지막 업데이트",
+    "loadEventsError": "활동을 불러오지 못했습니다. 다시 시도해 주세요.",
+    "loadEventsUnknownError": "활동을 불러오는 중 문제가 발생했습니다. 새로고침 후 다시 시도해 주세요.",
     "messageSupport": "지원 문의",
     "model": "모델",
     "purchaseCredits": "크레딧 구매",
@@ -949,6 +954,16 @@
       "message": "잘못된 대화상자 ID가 제공되었습니다.",
       "title": "잘못된 대화상자"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 데스크톱 앱이 귀하의 계정으로 로그인 대기 중입니다. ComfyUI 데스크톱 앱에서 로그인을 시작한 경우에만 계속 진행하세요.",
+    "confirmSummary": "데스크톱 로그인 승인하시겠습니까?",
+    "expiredDetail": "로그인 요청이 만료되었거나 이미 사용되었습니다. ComfyUI 데스크톱 앱에서 다시 로그인을 시작하세요.",
+    "expiredSummary": "데스크톱 로그인 실패",
+    "failedDetail": "데스크톱 로그인 완료 중 오류가 발생했습니다. ComfyUI 데스크톱 앱에서 다시 로그인을 시작하세요.",
+    "failedSummary": "데스크톱 로그인 실패",
+    "successDetail": "ComfyUI 데스크톱 앱으로 돌아가실 수 있습니다.",
+    "successSummary": "로그인 완료"
   },
   "desktopMenu": {
     "confirmQuit": "저장되지 않은 워크플로가 열려 있습니다. 저장되지 않은 변경 사항은 모두 손실됩니다. 이를 무시하고 종료하시겠습니까?",
@@ -1564,6 +1579,7 @@
     "extensions": "확장 프로그램",
     "failed": "실패",
     "failedToCopyJobId": "작업 ID 복사 실패",
+    "failedToDownloadFile": "파일 다운로드에 실패했습니다",
     "failedToDownloadImage": "이미지 다운로드 실패",
     "failedToDownloadVideo": "비디오 다운로드 실패",
     "favorites": "즐겨찾기",
@@ -1808,6 +1824,7 @@
     "systemStatsRAMTotal": "총 RAM",
     "systemStatsTemplatesVersion": "템플릿 버전",
     "terminal": "터미널",
+    "textFailedToLoad": "텍스트를 불러오지 못했습니다",
     "title": "제목",
     "triggerPhrase": "트리거 문구",
     "unknownError": "알 수 없는 오류",
@@ -2401,6 +2418,11 @@
       "pending": "대기 중",
       "unknown": "알 수 없음"
     },
+    "survey": {
+      "error": "설문조사를 불러올 수 없습니다. 나중에 다시 시도해 주세요.",
+      "intro": "커스텀 노드 설치 기능이 곧 Comfy Cloud에 도입됩니다. 몇 가지 간단한 질문에 답하고 웨이팅 리스트에 참여하여 이 기능 개발에 도움을 주세요.",
+      "title": "웨이팅 리스트에 참여하기"
+    },
     "title": "커스텀 노드 관리자",
     "toFinishSetup": "하여 설정 완료",
     "totalNodes": "총 노드",
@@ -2769,7 +2791,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2822,6 @@
     "cosmos": "cosmos",
     "create": "생성",
     "custom": "커스텀",
-    "custom_sampling": "사용자 정의 샘플링",
     "dancer": "댄서",
     "debug": "디버그",
     "detection": "감지",
@@ -2845,6 +2865,8 @@
     "phantom subject": "팬텀 서브젝트",
     "photomaker": "포토메이커",
     "pixart": "pixart",
+    "post-processors": "후처리기",
+    "pre-processors": "전처리기",
     "preprocessors": "전처리기",
     "primitive": "기본 입력",
     "qwen": "qwen",
@@ -2865,7 +2887,6 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3D",
     "stable zero123": "stable zero123",
-    "stable_cascade": "Stable Cascade",
     "supir": "supir",
     "text": "텍스트",
     "training": "학습",
@@ -3102,8 +3123,11 @@
     "errorHelpGithub": "GitHub 이슈 제출",
     "errorHelpSupport": "고객 지원팀에 문의",
     "errorLog": "오류 로그",
+    "errorNodeSummary": "{nodes}개 노드 — {count}개 오류 | {nodes}개 노드 — {count}개 오류",
+    "errorNodesSummary": "{nodes}개 노드 — {count}개 오류 | {nodes}개 노드 — {count}개 오류",
     "errors": "오류",
     "errorsDetected": "오류 감지됨 | 여러 오류 감지됨",
+    "errorsSummary": "{count}개 오류 | {count}개 오류",
     "executionErrorOccurred": "실행 중 오류가 발생했습니다. 자세한 내용은 오류 탭을 확인하세요.",
     "expand": "확장",
     "fallbackGroupTitle": "그룹",
@@ -3193,6 +3217,8 @@
     "resetToDefault": "기본값으로 재설정",
     "resolveBeforeRun": "워크플로를 실행하기 전에 해결하세요",
     "seeError": "오류 보기",
+    "selectedNodeErrors": "{node} — {count}개 오류 | {node} — {count}개 오류",
+    "selectedNodesErrors": "{nodes}개 노드 선택됨 — {count}개 오류 | {nodes}개 노드 선택됨 — {count}개 오류",
     "settings": "설정",
     "showAdvancedInputsButton": "고급 입력 표시",
     "showAdvancedShort": "고급 설정 보기",
@@ -3223,6 +3249,10 @@
     "namePlaceholder": "예: My API Key",
     "noSecrets": "저장된 시크릿이 없습니다. 첫 번째 API 키를 추가하여 시작하세요.",
     "provider": "공급자",
+    "providerHelp": {
+      "gemini": "Google Gemini API 키를 입력하세요. Google AI Studio에서 생성할 수 있습니다.",
+      "runway": "Runway API 키를 입력하세요. Runway 계정 설정의 API 키 항목에서 확인할 수 있습니다."
+    },
     "providerHint": "선택 사항입니다. 공급자를 선택하면 토큰이 자동으로 사용됩니다.",
     "secretValue": "시크릿 값",
     "secretValueHint": "이 값은 암호화되며 다시 볼 수 없습니다.",
@@ -4106,6 +4136,7 @@
       "newest": "최신순",
       "popular": "인기",
       "recommended": "권장",
+      "relevance": "관련성",
       "searchPlaceholder": "검색..."
     },
     "sorting": "정렬 기준",

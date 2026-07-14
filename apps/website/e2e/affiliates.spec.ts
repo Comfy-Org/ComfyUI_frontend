@@ -76,10 +76,14 @@ test.describe('Affiliates landing — desktop interactions', () => {
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
-    const parsed = JSON.parse(faqJsonLd!)
-    expect(parsed['@type']).toBe('FAQPage')
-    expect(Array.isArray(parsed.mainEntity)).toBe(true)
-    expect(parsed.mainEntity.length).toBe(FAQ_COUNT)
+    const graph = JSON.parse(faqJsonLd!)['@graph'] as {
+      '@type': string
+      mainEntity?: unknown[]
+    }[]
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
+    expect(faqPage, 'FAQPage node in @graph').toBeDefined()
+    expect(Array.isArray(faqPage!.mainEntity)).toBe(true)
+    expect(faqPage!.mainEntity!.length).toBe(FAQ_COUNT)
   })
 
   test('Apply Now CTA opens the application form in a new tab', async ({
