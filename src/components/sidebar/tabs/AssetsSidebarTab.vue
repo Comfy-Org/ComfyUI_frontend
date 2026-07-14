@@ -182,6 +182,7 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useFlatOutputAssetsGrouped } from '@/platform/assets/composables/media/useFlatOutputAssetsGrouped'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -254,7 +255,7 @@ const formattedExecutionTime = computed(() => {
 const toast = useToast()
 
 const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+const outputAssets = useFlatOutputAssetsGrouped()
 
 // Asset selection
 const {
