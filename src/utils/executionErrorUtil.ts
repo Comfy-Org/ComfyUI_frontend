@@ -1,6 +1,10 @@
 import type { NodeError, PromptError } from '@/schemas/apiSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 
+type RawPromptError =
+  | string
+  | { type?: string; message?: string; details?: string }
+
 /**
  * The standard prompt validation response shape (`{ error, node_errors }`).
  * In cloud, this is embedded as JSON inside `execution_error.exception_message`
@@ -8,7 +12,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
  * rather than as direct HTTP responses.
  */
 interface CloudValidationError {
-  error?: { type?: string; message?: string; details?: string } | string
+  error?: RawPromptError
   node_errors?: Record<SerializedNodeId, NodeError>
 }
 
@@ -51,6 +55,22 @@ type CloudValidationResult =
   | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
   | { kind: 'promptError'; promptError: PromptError }
 
+export function normalizePromptError(
+  error: RawPromptError | undefined
+): PromptError | null {
+  if (error && typeof error === 'object') {
+    return {
+      type: error.type ?? 'error',
+      message: error.message ?? '',
+      details: error.details ?? ''
+    }
+  }
+
+  return typeof error === 'string'
+    ? { type: 'error', message: error, details: '' }
+    : null
+}
+
 /**
  * Classifies an embedded cloud validation error from `exception_message`
  * as either node-level errors or a prompt-level error.
@@ -70,25 +90,22 @@ export function classifyCloudValidationError(
     return { kind: 'nodeErrors', nodeErrors: node_errors }
   }
 
-  if (error && typeof error === 'object') {
-    return {
-      kind: 'promptError',
-      promptError: {
-        type: error.type ?? 'error',
-        message: error.message ?? '',
-        details: error.details ?? ''
-      }
-    }
-  }
+  const promptError = normalizePromptError(error)
+  return promptError ? { kind: 'promptError', promptError } : null
+}
 
-  if (typeof error === 'string') {
-    return {
-      kind: 'promptError',
-      promptError: { type: 'error', message: error, details: '' }
-    }
-  }
+export function errorsForSlot(
+  errors: NodeError['errors'],
+  slotName: string
+): NodeError['errors'] {
+  return errors.filter((error) => error.extra_info?.input_name === slotName)
+}
 
-  return null
+export function hasErrorForSlot(
+  errors: NodeError['errors'],
+  slotName: string
+): boolean {
+  return errors.some((error) => error.extra_info?.input_name === slotName)
 }
 
 /**

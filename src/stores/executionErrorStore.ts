@@ -32,6 +32,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   SIMPLE_ERROR_TYPES,
+  errorsForSlot,
+  hasErrorForSlot,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -54,6 +56,20 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = ref<PromptError | null>(null)
 
   const isErrorOverlayOpen = ref(false)
+
+  /** Replaces the full record; empty or null means the run produced no errors. */
+  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
+    lastNodeErrors.value =
+      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+  }
+
+  function recordExecutionError(detail: ExecutionErrorWsMessage) {
+    lastExecutionError.value = detail
+  }
+
+  function recordPromptError(promptError: PromptError) {
+    lastPromptError.value = promptError
+  }
 
   function showErrorOverlay() {
     isErrorOverlayOpen.value = true
@@ -78,10 +94,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function clearExecutionStartErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
-    if (
-      !lastNodeErrors.value ||
-      Object.keys(lastNodeErrors.value).length === 0
-    ) {
+    if (!lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
   }
@@ -101,7 +114,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     const isSlotScoped = slotName !== undefined
     const relevantErrors = isSlotScoped
-      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      ? errorsForSlot(nodeError.errors, slotName)
       : nodeError.errors
 
     if (relevantErrors.length === 0) return null
@@ -113,7 +126,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     if (isSlotScoped) {
       const remainingErrors = nodeError.errors.filter(
-        (e) => e.extra_info?.input_name !== slotName
+        (error) => !relevantErrors.includes(error)
       )
       if (remainingErrors.length === 0) {
         delete updated[executionId]
@@ -195,9 +208,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = nodeErrors[executionId]
     if (!nodeError) return false
 
-    const errors = nodeError.errors.filter(
-      (error) => error.extra_info?.input_name === slotName
-    )
+    const errors = errorsForSlot(nodeError.errors, slotName)
 
     return isValueStillOutOfRange(
       value,
@@ -352,9 +363,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const hasPromptError = computed(() => !!lastPromptError.value)
 
-  const hasNodeError = computed(
-    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
-  )
+  const hasNodeError = computed(() => lastNodeErrors.value !== null)
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
   const surfacedNodeErrors = computed(() =>
@@ -473,7 +482,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = getNodeErrors(nodeLocatorId)
     if (!nodeError) return false
 
-    return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
+    return hasErrorForSlot(nodeError.errors, slotName)
   }
 
   /**
@@ -503,10 +512,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
 
   return {
-    // Raw state
-    lastNodeErrors,
-    lastExecutionError,
-    lastPromptError,
+    // Read-only state
+    lastNodeErrors: computed(() => lastNodeErrors.value),
+    lastExecutionError: computed(() => lastExecutionError.value),
+    lastPromptError: computed(() => lastPromptError.value),
+
+    // Recording
+    recordNodeErrors,
+    recordExecutionError,
+    recordPromptError,
 
     // Clearing
     clearAllErrors,
