@@ -324,16 +324,25 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
+interface WorkspaceApiErrorOptions {
+  code?: string
+  /** Seconds to wait before retrying, parsed from a 429 `Retry-After` header. */
+  retryAfter?: number
+}
+
 export class WorkspaceApiError extends Error {
+  readonly code?: string
+  readonly retryAfter?: number
+
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly code?: string,
-    /** Seconds to wait before retrying, parsed from a 429 `Retry-After` header. */
-    public readonly retryAfter?: number
+    { code, retryAfter }: WorkspaceApiErrorOptions = {}
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
+    this.code = code
+    this.retryAfter = retryAfter
   }
 }
 
@@ -350,10 +359,14 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
+// Over an hour signals a server bug, not a real wait, so drop it rather than clamp.
+const MAX_RETRY_AFTER_SECONDS = 3600
+
 function parseRetryAfterSeconds(value: unknown): number | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
   const seconds = Number(value)
-  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined
+  if (!Number.isFinite(seconds) || seconds <= 0) return undefined
+  return seconds <= MAX_RETRY_AFTER_SECONDS ? seconds : undefined
 }
 
 function handleAxiosError(err: unknown): never {
@@ -364,7 +377,7 @@ function handleAxiosError(err: unknown): never {
       status === 429
         ? parseRetryAfterSeconds(err.response?.headers?.['retry-after'])
         : undefined
-    throw new WorkspaceApiError(message, status, undefined, retryAfter)
+    throw new WorkspaceApiError(message, status, { retryAfter })
   }
   throw err
 }
@@ -569,7 +582,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<PendingInvite>(
-        api.apiURL(`/workspace/invites/${inviteId}/resend`),
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
         null,
         { headers }
       )

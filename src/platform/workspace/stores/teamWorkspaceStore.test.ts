@@ -2,7 +2,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
+import {
+  RateLimitError,
+  sortWorkspaces,
+  useTeamWorkspaceStore
+} from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
 const mockWorkspaceAuthStore = vi.hoisted(() => ({
@@ -59,13 +63,15 @@ const mockWorkspaceApi = vi.hoisted(() => ({
 const mockWorkspaceApiError = vi.hoisted(
   () =>
     class WorkspaceApiError extends Error {
+      readonly retryAfter?: number
       constructor(
         message: string,
         public readonly status?: number,
-        public readonly code?: string
+        options: { code?: string; retryAfter?: number } = {}
       ) {
         super(message)
         this.name = 'WorkspaceApiError'
+        this.retryAfter = options.retryAfter
       }
     }
 )
@@ -1301,6 +1307,72 @@ describe('useTeamWorkspaceStore', () => {
 
       await expect(store.resendInvite('inv-1')).rejects.toThrow('not found')
 
+      expect(store.pendingInvites).toHaveLength(1)
+      expect(store.pendingInvites[0].expiryDate).toEqual(
+        new Date('2024-01-08T00:00:00Z')
+      )
+    })
+
+    it('resendInvite maps a 429 to a RateLimitError carrying the cooldown', async () => {
+      mockWorkspaceApi.listInvites.mockResolvedValue({
+        invites: [
+          {
+            id: 'inv-1',
+            email: 'one@test.com',
+            token: 'token-1',
+            invited_at: '2024-01-01T00:00:00Z',
+            expires_at: '2024-01-08T00:00:00Z'
+          }
+        ]
+      })
+      mockWorkspaceApi.resendInvite.mockRejectedValue(
+        new mockWorkspaceApiError('Too Many Requests', 429, { retryAfter: 30 })
+      )
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchPendingInvites()
+
+      await expect(store.resendInvite('inv-1')).rejects.toMatchObject({
+        name: 'RateLimitError',
+        retryAfter: 30
+      })
+      await expect(store.resendInvite('inv-1')).rejects.toBeInstanceOf(
+        RateLimitError
+      )
+      expect(store.pendingInvites[0].expiryDate).toEqual(
+        new Date('2024-01-08T00:00:00Z')
+      )
+    })
+
+    it('resendInvite propagates a non-429 WorkspaceApiError untouched', async () => {
+      mockWorkspaceApi.listInvites.mockResolvedValue({
+        invites: [
+          {
+            id: 'inv-1',
+            email: 'one@test.com',
+            token: 'token-1',
+            invited_at: '2024-01-01T00:00:00Z',
+            expires_at: '2024-01-08T00:00:00Z'
+          }
+        ]
+      })
+      mockWorkspaceApi.resendInvite.mockRejectedValue(
+        new mockWorkspaceApiError('Not Found', 404)
+      )
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchPendingInvites()
+
+      await expect(store.resendInvite('inv-1')).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 404
+      })
       expect(store.pendingInvites).toHaveLength(1)
       expect(store.pendingInvites[0].expiryDate).toEqual(
         new Date('2024-01-08T00:00:00Z')

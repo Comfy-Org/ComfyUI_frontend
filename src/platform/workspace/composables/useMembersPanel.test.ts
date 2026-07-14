@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   PendingInvite,
   WorkspaceMember
@@ -256,6 +255,15 @@ const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
 
+const { RateLimitError } = vi.hoisted(() => ({
+  RateLimitError: class RateLimitError extends Error {
+    constructor(readonly retryAfter?: number) {
+      super('Rate limited')
+      this.name = 'RateLimitError'
+    }
+  }
+}))
+
 const {
   mockMembers,
   mockPendingInvites,
@@ -319,20 +327,6 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public status?: number,
-      public code?: string,
-      public retryAfter?: number
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-}))
-
 vi.mock('pinia', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -343,6 +337,7 @@ vi.mock('pinia', async (importOriginal) => {
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   MAX_WORKSPACE_MEMBERS: 30,
+  RateLimitError,
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites,
@@ -533,8 +528,12 @@ describe('useMembersPanel', () => {
       )
     })
 
-    it('shows error toast on failure', async () => {
-      mockResendInvite.mockRejectedValue(new Error('fail'))
+    it('shows error toast and logs on failure', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const failure = new Error('fail')
+      mockResendInvite.mockRejectedValue(failure)
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -543,12 +542,15 @@ describe('useMembersPanel', () => {
           summary: 'workspacePanel.toast.inviteResendFailed'
         })
       )
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to resend invite',
+        failure
+      )
+      consoleError.mockRestore()
     })
 
-    it('shows only the cooldown toast with retry detail when rate limited (429)', async () => {
-      mockResendInvite.mockRejectedValue(
-        new WorkspaceApiError('Too Many Requests', 429, undefined, 30)
-      )
+    it('shows only the cooldown toast with retry detail when rate limited', async () => {
+      mockResendInvite.mockRejectedValue(new RateLimitError(30))
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledTimes(1)
@@ -561,10 +563,8 @@ describe('useMembersPanel', () => {
       )
     })
 
-    it('omits the cooldown detail when the 429 carries no Retry-After', async () => {
-      mockResendInvite.mockRejectedValue(
-        new WorkspaceApiError('Too Many Requests', 429)
-      )
+    it('omits the cooldown detail when the rate limit carries no cooldown', async () => {
+      mockResendInvite.mockRejectedValue(new RateLimitError())
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(

@@ -332,6 +332,24 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('resendInvite() drops an implausibly large Retry-After cooldown', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
+        isAxiosError: true,
+        message: 'Too Many Requests',
+        response: {
+          status: 429,
+          headers: { 'retry-after': '99999' },
+          data: {}
+        }
+      })
+
+      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 429,
+        retryAfter: undefined
+      })
+    })
+
     it('acceptInvite() uses firebase auth and POST /invites/:token/accept', async () => {
       const data = { workspace_id: 'ws-1', workspace_name: 'Team' }
       mockAxiosInstance.post.mockResolvedValue({ data })

@@ -14,7 +14,19 @@ import type {
   SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi } from '../api/workspaceApi'
+import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
+
+/**
+ * Thrown when a rate-limited operation (HTTP 429) must not be retried yet.
+ * Carries the server's cooldown so the presentation layer can tell the user
+ * when to try again without depending on the API client's error types.
+ */
+export class RateLimitError extends Error {
+  constructor(readonly retryAfter?: number) {
+    super('Rate limited')
+    this.name = 'RateLimitError'
+  }
+}
 
 export interface WorkspaceMember {
   id: string
@@ -688,6 +700,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         })
       }
       return refreshed
+    } catch (err) {
+      if (err instanceof WorkspaceApiError && err.status === 429) {
+        throw new RateLimitError(err.retryAfter)
+      }
+      throw err
     } finally {
       resendingInviteIds.delete(inviteId)
     }

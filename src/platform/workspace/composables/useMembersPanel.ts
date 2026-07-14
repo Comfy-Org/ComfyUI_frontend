@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -16,6 +15,7 @@ import type {
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   MAX_WORKSPACE_MEMBERS,
+  RateLimitError,
   useTeamWorkspaceStore
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -250,7 +250,7 @@ export function useMembersPanel() {
         life: 2000
       })
     } catch (err) {
-      if (err instanceof WorkspaceApiError && err.status === 429) {
+      if (err instanceof RateLimitError) {
         const retryAfter = err.retryAfter
         toast.add({
           severity: 'warn',
@@ -266,6 +266,7 @@ export function useMembersPanel() {
         })
         return
       }
+      console.error('Failed to resend invite', err)
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.toast.inviteResendFailed')
