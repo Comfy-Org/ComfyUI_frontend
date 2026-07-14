@@ -28,6 +28,7 @@ describe('createSocket WebSocket host', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     delete window.__COMFY_API_WS_HOST__
+    window.name = ''
     api.socket = null
   })
 
@@ -48,7 +49,6 @@ describe('createSocket WebSocket host', () => {
     api.init()
 
     expect(socketUrls[0]).toContain('clientId=session-123')
-    window.name = ''
   })
 
   it('falls back to api_host when the override is unset', () => {
@@ -93,6 +93,16 @@ describe('createSocket WebSocket host', () => {
       throw new DOMException('invalid url', 'SyntaxError')
     })
     window.__COMFY_API_WS_HOST__ = 'https://not a host'
+
+    expect(() => api.init()).not.toThrow()
+    expect(api.socket).toBeNull()
+  })
+
+  it('falls back to polling when the override includes a scheme prefix', () => {
+    vi.stubGlobal('WebSocket', function () {
+      throw new DOMException('invalid url', 'SyntaxError')
+    })
+    window.__COMFY_API_WS_HOST__ = 'wss://ws.example.com'
 
     expect(() => api.init()).not.toThrow()
     expect(api.socket).toBeNull()
