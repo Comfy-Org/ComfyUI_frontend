@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  escapeVueI18nMessageSyntax,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
   getFilePathSeparatorVariants,
@@ -474,6 +475,51 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('escapeVueI18nMessageSyntax', () => {
+    it('escapes a literal @ that would break linked-message compilation', () => {
+      expect(
+        escapeVueI18nMessageSyntax('clips (tagged @Audio1-3 in the prompt)')
+      ).toBe("clips (tagged {'@'}Audio1-3 in the prompt)")
+    })
+
+    it('escapes @ in an email address', () => {
+      expect(escapeVueI18nMessageSyntax('support@comfy.org')).toBe(
+        "support{'@'}comfy.org"
+      )
+    })
+
+    it('escapes interpolation braces', () => {
+      expect(escapeVueI18nMessageSyntax('size {w}x{h}')).toBe(
+        "size {'{'}w{'}'}x{'{'}h{'}'}"
+      )
+    })
+
+    it('escapes the plural pipe separator', () => {
+      expect(escapeVueI18nMessageSyntax('foreground | background')).toBe(
+        "foreground {'|'} background"
+      )
+    })
+
+    it('escapes the modulo percent so it cannot re-form %{', () => {
+      expect(escapeVueI18nMessageSyntax('50%{done}')).toBe(
+        "50{'%'}{'{'}done{'}'}"
+      )
+    })
+
+    it('escapes every occurrence in a single pass', () => {
+      expect(escapeVueI18nMessageSyntax('@a @b @c')).toBe(
+        "{'@'}a {'@'}b {'@'}c"
+      )
+    })
+
+    it('leaves strings without syntax characters unchanged', () => {
+      expect(escapeVueI18nMessageSyntax('no special chars here')).toBe(
+        'no special chars here'
+      )
+      expect(escapeVueI18nMessageSyntax('')).toBe('')
     })
   })
 })
