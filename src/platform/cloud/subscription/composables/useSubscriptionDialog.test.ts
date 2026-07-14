@@ -79,6 +79,20 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+function expectPricingDialogFrame(
+  dialogComponentProps: Record<string, unknown>
+) {
+  expect(dialogComponentProps).toMatchObject({
+    renderer: 'reka',
+    size: 'full'
+  })
+  expect(dialogComponentProps.contentClass).toContain(
+    'max-w-[min(1280px,95vw)]'
+  )
+  expect(dialogComponentProps).not.toHaveProperty('style')
+  expect(dialogComponentProps).not.toHaveProperty('pt')
+}
+
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -136,11 +150,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
-      // `style` width is silently ignored and collapses the wide table to the
-      // default md (576px) frame.
-      expect(dialogComponentProps).toHaveProperty('contentClass')
-      expect(dialogComponentProps).not.toHaveProperty('style')
+      expectPricingDialogFrame(dialogComponentProps)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -174,6 +184,8 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props).toHaveProperty('onChooseTeam')
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      expectPricingDialogFrame(dialogComponentProps)
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
@@ -204,12 +216,9 @@ describe('useSubscriptionDialog', () => {
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
       expect(dialogComponentProps).toMatchObject({
-        renderer: 'reka',
-        size: 'full',
         modal: false
       })
-      expect(dialogComponentProps).toHaveProperty('contentClass')
-      expect(dialogComponentProps).not.toHaveProperty('style')
+      expectPricingDialogFrame(dialogComponentProps)
     })
 
     it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {
