@@ -1,5 +1,6 @@
 <template>
   <CheckboxRoot
+    v-bind="forwardedProps"
     v-model="checked"
     :class="
       cn(
@@ -21,11 +22,17 @@
 </template>
 
 <script setup lang="ts">
-import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import type { CheckboxRootProps } from 'reka-ui'
+import { CheckboxIndicator, CheckboxRoot, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className } = defineProps<{ class?: HTMLAttributes['class'] }>()
+type Props = Omit<CheckboxRootProps, 'defaultValue' | 'modelValue'> & {
+  class?: HTMLAttributes['class']
+}
+
+const { class: className, ...restProps } = defineProps<Props>()
+const forwardedProps = useForwardProps(restProps)
 const checked = defineModel<boolean | 'indeterminate'>({ default: false })
 </script>

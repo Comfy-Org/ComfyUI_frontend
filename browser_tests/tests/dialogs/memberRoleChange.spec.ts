@@ -120,7 +120,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       .getByRole('menuitemradio', { name: 'Member', exact: true })
       .press('Enter')
 
-    await expect(page.getByRole('heading', { name: /an owner\?/ })).toHaveCount(
+    await expect(page.getByRole('heading', { name: /an admin\?/ })).toHaveCount(
       0
     )
     expect(state.patches).toHaveLength(0)
@@ -140,7 +140,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       .press('Enter')
 
     await expect(
-      page.getByRole('heading', { name: 'Make Jane an owner?' })
+      page.getByRole('heading', { name: 'Make Jane an admin?' })
     ).toBeVisible()
     await expect(page.getByText("They'll be able to:")).toBeVisible()
     await expect(page.getByText('Add additional credits')).toBeVisible()
@@ -149,7 +149,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await expect(
       page.getByText(
-        'Promote and demote other owners (except the workspace creator).'
+        'Promote and demote other admins (except the workspace creator).'
       )
     ).toBeVisible()
 
@@ -181,7 +181,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await page
       .getByRole('menuitemradio', { name: 'Admin', exact: true })
       .press('Enter')
-    await page.getByRole('button', { name: 'Make owner' }).click()
+    await page.getByRole('button', { name: 'Make admin' }).click()
 
     await expect(page.getByText('Role updated')).toBeVisible()
     await expect(janeRow.getByText('Admin', { exact: true })).toBeVisible()
@@ -253,12 +253,12 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await page
       .getByRole('menuitemradio', { name: 'Admin', exact: true })
       .press('Enter')
-    await page.getByRole('button', { name: 'Make owner' }).click()
+    await page.getByRole('button', { name: 'Make admin' }).click()
 
     // US10 — error toast, dialog stays open, role unchanged.
     await expect(page.getByText('Failed to update role')).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'Make Jane an owner?' })
+      page.getByRole('heading', { name: 'Make Jane an admin?' })
     ).toBeVisible()
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(janeRow.getByText('Member', { exact: true })).toBeVisible()

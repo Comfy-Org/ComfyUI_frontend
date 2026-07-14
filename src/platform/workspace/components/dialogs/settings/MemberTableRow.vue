@@ -102,7 +102,7 @@ const showMenu = computed(
 )
 
 const lastActivityLabel = computed(() => {
-  if (!member.lastActivity) return '—'
+  if (!member.lastActivity) return t('workspacePanel.members.activity.never')
   return formatRelativeTime(member.lastActivity, new Date(), {
     justNow: t('workspacePanel.members.activity.justNow'),
     minutesAgo: (n) => t('workspacePanel.members.activity.minutesAgo', { n }),

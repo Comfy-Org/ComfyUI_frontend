@@ -52,8 +52,8 @@ describe('WorkspaceSettingsHeader', () => {
       }
     })
 
-    expect(
-      screen.getByRole('textbox', { name: 'Workspace name' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Workspace name' })).toHaveValue(
+      'Acme Team'
+    )
   })
 })
