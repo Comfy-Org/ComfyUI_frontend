@@ -5,6 +5,7 @@ import type { IFuseOptions } from 'fuse.js'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -20,7 +21,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { shouldRenderExecutionItemList } from './executionItemList'
@@ -236,6 +237,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const missingNodesStore = useMissingNodesErrorStore()
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
+  const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
@@ -647,6 +649,31 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groups.sort((a, b) => a.priority - b.priority)
   }
 
+  const filteredDisabledNodes = computed(() => {
+    const all = disabledPartnerNodesStore.offenders
+    if (!selectedNodeInfo.value.nodeIds) return all
+    return all.filter((offender) => isAssetErrorInSelection(offender.nodeId))
+  })
+
+  function buildDisabledNodeGroups(
+    offenders: typeof disabledPartnerNodesStore.offenders
+  ): ErrorGroup[] {
+    if (!offenders.length) return []
+    return [
+      {
+        type: 'disabled_node' as const,
+        groupKey: 'disabled_node',
+        count: offenders.length,
+        priority: 0,
+        displayTitle: t('rightSidePanel.disabledNodes.title', offenders.length),
+        displayMessage: t(
+          'rightSidePanel.disabledNodes.message',
+          offenders.length
+        )
+      }
+    ]
+  }
+
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
     return groupMissingModelCandidates(
       missingModelStore.missingModelCandidates,
@@ -797,6 +824,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap)
 
     return [
+      ...buildDisabledNodeGroups(disabledPartnerNodesStore.offenders),
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
       ...buildMissingMediaGroups(),
@@ -819,6 +847,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processExecutionError(groupsMap, true)
 
     return [
+      ...buildDisabledNodeGroups(filteredDisabledNodes.value),
       ...buildMissingNodeGroups((nodeTypes) =>
         someNodeTypeInSelection(nodeTypes, selectionMatchedAssetNodeIds.value)
       ),
@@ -886,7 +915,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       .flatMap((group) => (group.type === 'execution' ? group.cards : []))
       .map((card) => card.nodeId)
       .filter((nodeId) => nodeId != null)
-    return new Set([...executionNodeIds, ...assetNodeIdsWithError.value]).size
+    const disabledNodeIds = disabledPartnerNodesStore.offenders.map(
+      (offender) => offender.nodeId
+    )
+    return new Set([
+      ...executionNodeIds,
+      ...assetNodeIdsWithError.value,
+      ...disabledNodeIds
+    ]).size
   })
 
   const filteredGroups = computed<ErrorGroup[]>(() => {

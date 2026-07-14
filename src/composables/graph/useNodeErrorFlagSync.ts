@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -34,7 +35,8 @@ function reconcileNodeErrorFlags(
   rootGraph: LGraph,
   nodeErrors: Record<string, NodeError> | null,
   missingModelExecIds: Set<string>,
-  missingMediaExecIds: Set<string> = new Set()
+  missingMediaExecIds: Set<string> = new Set(),
+  disabledNodeExecIds: Set<string> = new Set()
 ): void {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
@@ -71,6 +73,11 @@ function reconcileNodeErrorFlags(
     if (node) flaggedNodes.add(node)
   }
 
+  for (const execId of disabledNodeExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
+  }
+
   forEachNode(rootGraph, (node) => {
     setNodeHasErrors(node, flaggedNodes.has(node))
 
@@ -86,7 +93,8 @@ function reconcileNodeErrorFlags(
 export function useNodeErrorFlagSync(
   nodeErrors: Ref<Record<string, NodeError> | null>,
   missingModelStore: ReturnType<typeof useMissingModelStore>,
-  missingMediaStore: ReturnType<typeof useMissingMediaStore>
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>,
+  disabledPartnerNodesStore: ReturnType<typeof useDisabledPartnerNodesStore>
 ): () => void {
   const settingStore = useSettingStore()
   const showErrorsTab = computed(() =>
@@ -98,6 +106,7 @@ export function useNodeErrorFlagSync(
       nodeErrors,
       () => missingModelStore.missingModelNodeIds,
       () => missingMediaStore.missingMediaNodeIds,
+      () => disabledPartnerNodesStore.disabledAncestorExecutionIds,
       showErrorsTab
     ],
     () => {
@@ -114,6 +123,9 @@ export function useNodeErrorFlagSync(
           : new Set(),
         showErrorsTab.value
           ? missingMediaStore.missingMediaAncestorExecutionIds
+          : new Set(),
+        showErrorsTab.value
+          ? disabledPartnerNodesStore.disabledAncestorExecutionIds
           : new Set()
       )
     },

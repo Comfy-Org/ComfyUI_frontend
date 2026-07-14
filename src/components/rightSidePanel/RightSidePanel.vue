@@ -38,6 +38,7 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -157,14 +158,33 @@ const hasMissingMediaSelected = computed(
     )
 )
 
+const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
+const activeDisabledGraphNodeIds = computed<Set<string>>(() => {
+  if (!app.isGraphReady) return new Set()
+  return getActiveGraphNodeIds(
+    app.rootGraph,
+    canvasStore.currentGraph ?? app.rootGraph,
+    disabledPartnerNodesStore.disabledAncestorExecutionIds
+  )
+})
+const hasDisabledNodeSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeDisabledGraphNodeIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
-  if (!hasSelection.value) return hasAnyError.value
+  if (!hasSelection.value)
+    return hasAnyError.value || disabledPartnerNodesStore.offenders.length > 0
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
     hasMissingNodeSelected.value ||
     hasMissingModelSelected.value ||
-    hasMissingMediaSelected.value
+    hasMissingMediaSelected.value ||
+    hasDisabledNodeSelected.value
   )
 })
 

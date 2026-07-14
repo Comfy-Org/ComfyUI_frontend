@@ -11,7 +11,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
 
 const apiMock = vi.hoisted(() => ({
+  addEventListener: vi.fn(),
   getSettings: vi.fn(),
+  removeEventListener: vi.fn(),
   storeSetting: vi.fn(),
   storeSettings: vi.fn()
 }))

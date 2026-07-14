@@ -10,6 +10,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -50,6 +51,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const missingModelStore = useMissingModelStore()
+  const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
   const missingNodesStore = useMissingNodesErrorStore()
   const missingMediaStore = useMissingMediaStore()
 
@@ -522,7 +524,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return errorAncestorExecutionIds.value.has(execId)
   }
 
-  useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
+  useNodeErrorFlagSync(
+    surfacedNodeErrors,
+    missingModelStore,
+    missingMediaStore,
+    disabledPartnerNodesStore
+  )
 
   return {
     // Raw state
