@@ -9,11 +9,12 @@ export const dialogContentVariants = cva({
       md: 'sm:max-w-xl',
       lg: 'sm:max-w-3xl',
       xl: 'sm:max-w-5xl',
-      full: 'sm:max-w-[calc(100vw-1rem)]'
+      full: 'sm:max-w-[calc(100vw-var(--workspace-inset-right)-1rem)]'
     },
     maximized: {
       true: 'inset-2 top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none',
-      false: 'top-1/2 left-1/2 max-h-[85vh] w-[calc(100vw-1rem)] -translate-1/2'
+      false:
+        'top-1/2 left-[calc(50%-var(--workspace-inset-right)/2)] max-h-[85vh] w-[calc(100vw-var(--workspace-inset-right)-1rem)] -translate-1/2'
     }
   },
   defaultVariants: {

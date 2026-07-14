@@ -101,6 +101,35 @@ describe('GlobalDialog renderer branching', () => {
     expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
   })
 
+  it('centers full Reka dialogs inside the visible workspace', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'visible-workspace',
+      title: 'Visible workspace dialog',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka', size: 'full' }
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      dialog.classList.contains(
+        'left-[calc(50%-var(--workspace-inset-right)/2)]'
+      )
+    ).toBe(true)
+    expect(
+      dialog.classList.contains(
+        'w-[calc(100vw-var(--workspace-inset-right)-1rem)]'
+      )
+    ).toBe(true)
+    expect(
+      dialog.classList.contains(
+        'sm:max-w-[calc(100vw-var(--workspace-inset-right)-1rem)]'
+      )
+    ).toBe(true)
+  })
+
   it('preserves the renderer flag on the dialog stack item', async () => {
     mountDialog()
     const store = useDialogStore()
