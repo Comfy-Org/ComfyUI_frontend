@@ -442,3 +442,105 @@ describe('resolveRoles — hostile node types do not match prototype members', (
     }
   })
 })
+
+describe('resolveRoles — registry-backed sink fallback', () => {
+  // A custom save node outside the hardcoded SINK_MEDIA list, only recognizable
+  // as a sink through the injected registry lookup.
+  const customSinkGraph = workflow([
+    node(9, 'MyCustomVideoSave', {
+      inputs: [{ name: 'video', type: 'VIDEO', link: 1 }]
+    })
+  ])
+
+  const lookup = (type: string) =>
+    type === 'MyCustomVideoSave'
+      ? { isOutputNode: true, producesVideo: true }
+      : null
+
+  it('resolves a custom output node as the sink when the type list misses', () => {
+    const roles = resolveRoles(customSinkGraph, undefined, lookup)
+
+    expect(roles.sink?.nodeId).toBe(toNodeId(9))
+    expect(roles.mediaKind).toBe('video')
+  })
+
+  it('leaves the sink null for the same graph without a registry lookup', () => {
+    const roles = resolveRoles(customSinkGraph)
+
+    expect(roles.sink).toBeNull()
+    expect(roles.mediaKind).toBe('image')
+  })
+
+  it('does not use the fallback when a known sink type already matches', () => {
+    // A registry that would (wrongly) label the KSampler an output node must not
+    // steal the sink from the real SaveImage.
+    const greedyLookup = () => ({ isOutputNode: true, producesVideo: false })
+    const roles = resolveRoles(
+      workflow(
+        [
+          node(3, 'KSampler', {
+            outputs: [{ name: 'LATENT', type: 'LATENT', links: [8] }]
+          }),
+          node(9, 'SaveImage', {
+            inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+          })
+        ],
+        [[8, 3, 0, 9, 0, 'IMAGE']]
+      ),
+      undefined,
+      greedyLookup
+    )
+
+    expect(roles.sink?.nodeId).toBe(toNodeId(9))
+  })
+
+  it('ignores a registry output node that still feeds downstream', () => {
+    // Only terminal output nodes are sinks; one with outgoing links is not.
+    const roles = resolveRoles(
+      workflow(
+        [
+          node(9, 'MyCustomVideoSave', {
+            inputs: [{ name: 'video', type: 'VIDEO', link: 1 }],
+            outputs: [{ name: 'VIDEO', type: 'VIDEO', links: [2] }]
+          }),
+          node(10, 'MyCustomVideoSave', {
+            inputs: [{ name: 'video', type: 'VIDEO', link: 2 }]
+          })
+        ],
+        [[2, 9, 0, 10, 0, 'VIDEO']]
+      ),
+      undefined,
+      lookup
+    )
+
+    expect(roles.sink?.nodeId).toBe(toNodeId(10))
+  })
+
+  it('does not treat a non-output registry node as a sink', () => {
+    const roles = resolveRoles(
+      workflow([node(9, 'MyCustomImageSave', { inputs: [] })]),
+      undefined,
+      (type: string) =>
+        type === 'MyCustomImageSave'
+          ? { isOutputNode: false, producesVideo: false }
+          : null
+    )
+
+    // isOutputNode:false → not a sink at all, so it stays null.
+    expect(roles.sink).toBeNull()
+  })
+
+  it('infers image media for an accepted output node with no video output', () => {
+    const roles = resolveRoles(
+      workflow([node(9, 'MyCustomImageSave', { inputs: [] })]),
+      undefined,
+      (type: string) =>
+        type === 'MyCustomImageSave'
+          ? { isOutputNode: true, producesVideo: false }
+          : null
+    )
+
+    expect(roles.sink?.nodeId).toBe(toNodeId(9))
+    expect(roles.mediaKind).toBe('image')
+  })
+})

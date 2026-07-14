@@ -80,6 +80,14 @@ const SAMPLER_TYPES = new Set([
   'SamplerCustomAdvanced'
 ])
 
+/**
+ * A read of the node registry, injected so the resolver stays pure and testable
+ * without a live `nodeDefStore`. Returns null for unknown types.
+ */
+export type NodeDefLookup = (
+  type: string
+) => { isOutputNode: boolean; producesVideo: boolean } | null
+
 /** Exposed-port names/labels that mark the editable prompt boundary. */
 const PROMPT_PORT_NAMES = new Set(['prompt', 'text', 'value'])
 
@@ -136,12 +144,15 @@ interface SinkMatch {
   mediaKind: MediaKind
 }
 
-function findSink(graph: WorkflowGraph): SinkMatch | null {
+function findSink(
+  graph: WorkflowGraph,
+  nodeDefLookup: NodeDefLookup
+): SinkMatch | null {
   const candidates = graph.nodes.flatMap((node) => {
     const mediaKind = SINK_MEDIA.get(node.type)
     return mediaKind ? [{ node, mediaKind }] : []
   })
-  if (candidates.length === 0) return null
+  if (candidates.length === 0) return findRegistrySink(graph, nodeDefLookup)
 
   const isSave = (match: SinkMatch) => match.node.type.startsWith('Save')
   const [best] = candidates.sort((a, b) => {
@@ -153,6 +164,24 @@ function findSink(graph: WorkflowGraph): SinkMatch | null {
   })
 
   return best
+}
+
+/**
+ * Fallback when no known save/preview type matches: a terminal node the registry
+ * marks as an output node. Widens sink detection to custom save nodes on
+ * arbitrary share/`?template=` workflows, where the hardcoded type list misses.
+ */
+function findRegistrySink(
+  graph: WorkflowGraph,
+  nodeDefLookup: NodeDefLookup
+): SinkMatch | null {
+  const node = graph.nodes.find((n) => {
+    if (n.hasOutgoingLinks) return false
+    return nodeDefLookup(n.type)?.isOutputNode === true
+  })
+  if (!node) return null
+  const producesVideo = nodeDefLookup(node.type)?.producesVideo === true
+  return { node, mediaKind: producesVideo ? 'video' : 'image' }
 }
 
 function findSource(graph: WorkflowGraph): WorkflowGraphNode | null {
@@ -298,7 +327,8 @@ function applyOverride(
  */
 export function resolveRoles(
   workflow: ComfyWorkflowJSON,
-  templateId?: string
+  templateId?: string,
+  nodeDefLookup: NodeDefLookup = () => null
 ): ResolvedRoles {
   const graph = fromWorkflowJson(workflow)
   const host = subgraphHost(graph)
@@ -310,7 +340,7 @@ export function resolveRoles(
   const override = overrideFor(templateId)
   if (override) return applyOverride(override, prompt)
 
-  const sink = findSink(graph)
+  const sink = findSink(graph, nodeDefLookup)
   const source = findSource(graph)
   const engine = firstSampler(host ? host.subgraph.nodes : graph.nodes)
 
