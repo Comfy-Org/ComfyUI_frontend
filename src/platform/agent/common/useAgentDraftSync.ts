@@ -64,6 +64,7 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   const baseVersions = ref(new Map<WorkflowId, number>())
   const pendingConflict = ref<PendingConflict | null>(null)
   const inFlightResyncs = new Map<WorkflowId, Promise<ResyncOutcome>>()
+  const abortedResyncs = new Set<WorkflowId>()
 
   /** Call when a draft tab opens, adopting its known version. */
   function registerWorkflow(workflowId: WorkflowId, version: number): void {
@@ -79,6 +80,7 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   function forgetWorkflow(workflowId: WorkflowId): void {
     baseVersions.value.delete(workflowId)
     clearConflictFor(workflowId)
+    if (inFlightResyncs.has(workflowId)) abortedResyncs.add(workflowId)
   }
 
   /** Call after a local autosave returns a new server version. */
@@ -120,16 +122,15 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
   }
 
   async function runResync(workflowId: WorkflowId): Promise<ResyncOutcome> {
-    const versionBeforeFetch = baseVersions.value.get(workflowId)
     const snapshot = await ports.fetchSnapshot(workflowId)
-    const current = baseVersions.value.get(workflowId)
 
     // The tab was closed mid-fetch (`forgetWorkflow`). Don't resurrect tracking
-    // or apply to a tab that no longer exists. An untracked-before-and-after
-    // resync instead seeds the tab on demand (bootstrapping a first snapshot).
-    if (versionBeforeFetch !== undefined && current === undefined) {
-      return 'up-to-date'
-    }
+    // or apply to a tab that no longer exists — this covers both a tab that was
+    // tracked and one still bootstrapping its first snapshot, since either is
+    // `undefined` after the close.
+    if (abortedResyncs.has(workflowId)) return 'up-to-date'
+
+    const current = baseVersions.value.get(workflowId)
     if (current !== undefined && snapshot.version <= current) {
       return 'up-to-date'
     }
@@ -155,6 +156,7 @@ export function useAgentDraftSync(ports: AgentDraftPorts) {
     if (existing) return existing
     const run = runResync(workflowId).finally(() => {
       inFlightResyncs.delete(workflowId)
+      abortedResyncs.delete(workflowId)
     })
     inFlightResyncs.set(workflowId, run)
     return run

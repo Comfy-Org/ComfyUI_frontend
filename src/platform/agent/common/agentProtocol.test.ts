@@ -186,6 +186,22 @@ describe('parseAgentEvent', () => {
     }
   })
 
+  it('rejects a draft_patch whose version is not a non-negative safe integer', () => {
+    for (const version of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+      const event = parseAgentEvent({
+        type: 'draft_patch',
+        data: {
+          ...data,
+          workflow_id: 'wf1',
+          content: {},
+          version,
+          base_version: 7
+        }
+      })
+      expect(event).toBeNull()
+    }
+  })
+
   it('rejects a draft_patch whose content is an array', () => {
     const event = parseAgentEvent({
       type: 'draft_patch',
@@ -269,5 +285,11 @@ describe('parseDraftSnapshot', () => {
     expect(parseDraftSnapshot({ content: [], version: 3 })).toBeNull()
     expect(parseDraftSnapshot({ content: {}, version: '3' })).toBeNull()
     expect(parseDraftSnapshot({ content: {}, version: Number.NaN })).toBeNull()
+  })
+
+  it('rejects a version that is not a non-negative safe integer', () => {
+    for (const version of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(parseDraftSnapshot({ content: {}, version })).toBeNull()
+    }
   })
 })

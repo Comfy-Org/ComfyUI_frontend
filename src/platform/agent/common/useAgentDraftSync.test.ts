@@ -302,6 +302,25 @@ describe('useAgentDraftSync', () => {
       expect(ports.applyToTab).not.toHaveBeenCalled()
       expect(sync.baseVersions.value.has('wf1')).toBe(false)
     })
+
+    it('does not seed a never-registered tab closed mid-bootstrap-fetch', async () => {
+      const ports = makePorts()
+      let resolveFetch!: (snapshot: typeof SNAPSHOT) => void
+      vi.mocked(ports.fetchSnapshot).mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+      const sync = useAgentDraftSync(ports)
+
+      const pending = sync.resync('wf1')
+      sync.forgetWorkflow('wf1')
+      resolveFetch(SNAPSHOT)
+
+      expect(await pending).toBe('up-to-date')
+      expect(ports.applyToTab).not.toHaveBeenCalled()
+      expect(sync.baseVersions.value.has('wf1')).toBe(false)
+    })
   })
 
   describe('gap detection', () => {

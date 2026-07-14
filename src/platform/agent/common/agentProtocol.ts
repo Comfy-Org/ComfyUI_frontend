@@ -120,6 +120,16 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+/**
+ * A `version` watermark: a non-negative safe integer. Rejects negative,
+ * fractional, and unsafe (>2^53) values at the untrusted boundary — an unsafe
+ * integer can collapse two distinct server versions onto the same JS number and
+ * mask a real patch as `stale`.
+ */
+function isVersion(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0
+}
+
 /** The base identifiers, read from the snake_case envelope body. */
 function parseBase(data: Record<string, unknown>): AgentEventBase | null {
   return typeof data.thread_id === 'string' &&
@@ -165,8 +175,8 @@ function parseDraftPatch(
   if (
     typeof data.workflow_id !== 'string' ||
     !isRecord(data.content) ||
-    !isFiniteNumber(data.version) ||
-    !isFiniteNumber(data.base_version)
+    !isVersion(data.version) ||
+    !isVersion(data.base_version)
   ) {
     return null
   }
@@ -241,11 +251,7 @@ export interface DraftSnapshot {
 
 /** Decode an untrusted `GET /api/agent/draft` body, or `null` if malformed. */
 export function parseDraftSnapshot(raw: unknown): DraftSnapshot | null {
-  if (
-    !isRecord(raw) ||
-    !isRecord(raw.content) ||
-    !isFiniteNumber(raw.version)
-  ) {
+  if (!isRecord(raw) || !isRecord(raw.content) || !isVersion(raw.version)) {
     return null
   }
   return { content: raw.content, version: raw.version }
