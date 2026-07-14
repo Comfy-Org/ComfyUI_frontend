@@ -566,8 +566,19 @@ onMounted(async () => {
   // A ?template=/?share= URL loads a workflow directly (Getting Started is
   // skipped). Start the onboarding tour on it; beginTour() self-gates and reads
   // the now-loaded graph, so the loaders above must have finished first.
+  const startTourFromUrl = (
+    options?: Parameters<
+      ReturnType<typeof useOnboardingTourController>['beginTour']
+    >[0]
+  ) =>
+    useOnboardingTourController()
+      .beginTour(options)
+      .catch((error: unknown) => {
+        console.error('[onboardingTour] failed to start from URL', error)
+      })
+
   if (templateFromUrl.loaded) {
-    void useOnboardingTourController().beginTour({
+    void startTourFromUrl({
       templateId: templateFromUrl.templateId,
       entry: 'template_url'
     })
@@ -575,7 +586,7 @@ onMounted(async () => {
     sharedFromUrl === 'loaded' ||
     sharedFromUrl === 'loaded-without-assets'
   ) {
-    void useOnboardingTourController().beginTour({ entry: 'share_url' })
+    void startTourFromUrl({ entry: 'share_url' })
   }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
