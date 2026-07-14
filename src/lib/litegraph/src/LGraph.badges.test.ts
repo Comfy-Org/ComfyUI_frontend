@@ -51,6 +51,24 @@ describe('LGraph node badge registration', () => {
     ).toContainEqual(inner.id)
   })
 
+  it('unregisters nodes at every nesting depth when a subgraph is cleared', () => {
+    const rootGraph = new LGraph()
+    const keeper = new LGraphNode('keeper')
+    rootGraph.add(keeper)
+
+    const outer = rootGraph.createSubgraph(createTestSubgraphData())
+    outer.add(new LGraphNode('direct'))
+    const nested = rootGraph.createSubgraph(createTestSubgraphData())
+    nested.add(new LGraphNode('deep'))
+    outer.add(createTestSubgraphNode(nested, { parentGraph: outer }))
+
+    outer.clear()
+
+    expect(
+      useNodeBadgeStore().registeredNodeIds(rootGraph.rootGraph.id)
+    ).toEqual([keeper.id])
+  })
+
   it('unregisters inner nodes when the subgraph definition is collected', () => {
     const rootGraph = new LGraph()
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
