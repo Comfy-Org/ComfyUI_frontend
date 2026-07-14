@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockNodeDefinitions } from '@e2e/fixtures/data/nodeDefinitions'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 function buildMockApiNode(
@@ -52,14 +51,13 @@ const MOCK_API_NODES: Record<string, ComfyNodeDef> = {
 const testWithMockedObjectInfo = test.extend<{ mockApiNodes: void }>({
   mockApiNodes: [
     async ({ page }, use) => {
-      const nodeDefs = createMockNodeDefinitions(MOCK_API_NODES)
       const pattern = '**/api/object_info'
 
       await page.route(pattern, (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(nodeDefs)
+          body: JSON.stringify(MOCK_API_NODES)
         })
       )
 
