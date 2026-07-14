@@ -7,7 +7,7 @@ import {
   normalizeMarqueeRect,
   selectMarqueeIds
 } from '@/platform/assets/utils/marqueeSelectionUtil'
-import { clampRectToBounds } from '@/utils/mathUtil'
+import { clipRectToBounds } from '@/utils/mathUtil'
 import type { RectEdges } from '@/utils/mathUtil'
 
 const DRAG_THRESHOLD_PX = 4
@@ -80,7 +80,7 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
 
   function applyMarquee(clientX: number, clientY: number) {
     if (!dragBounds) return
-    const rect = clampRectToBounds(
+    const rect = clipRectToBounds(
       normalizeMarqueeRect(
         { x: startX, y: startY },
         { x: clientX, y: clientY }

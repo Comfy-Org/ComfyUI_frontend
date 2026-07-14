@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
-  clampRectToBounds,
+  clipRectToBounds,
   computeUnionBounds,
   denormalize,
   gcd,
@@ -139,18 +139,18 @@ describe('mathUtil', () => {
     })
   })
 
-  describe('clampRectToBounds', () => {
+  describe('clipRectToBounds', () => {
     const bounds = { left: 0, top: 0, right: 100, bottom: 100 }
 
     it('returns the rect unchanged when fully inside the bounds', () => {
       expect(
-        clampRectToBounds({ left: 10, top: 10, right: 40, bottom: 40 }, bounds)
+        clipRectToBounds({ left: 10, top: 10, right: 40, bottom: 40 }, bounds)
       ).toEqual({ left: 10, top: 10, right: 40, bottom: 40 })
     })
 
     it('clamps every edge that extends past the bounds', () => {
       expect(
-        clampRectToBounds(
+        clipRectToBounds(
           { left: -20, top: -10, right: 150, bottom: 130 },
           bounds
         )
@@ -159,7 +159,7 @@ describe('mathUtil', () => {
 
     it('clamps only the overflowing side', () => {
       expect(
-        clampRectToBounds({ left: 10, top: 10, right: 200, bottom: 40 }, bounds)
+        clipRectToBounds({ left: 10, top: 10, right: 200, bottom: 40 }, bounds)
       ).toEqual({ left: 10, top: 10, right: 100, bottom: 40 })
     })
   })

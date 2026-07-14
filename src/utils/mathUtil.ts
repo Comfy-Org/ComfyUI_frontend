@@ -7,10 +7,13 @@ import type { Bounds } from '@/renderer/core/layout/types'
 export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
 
 /**
- * Clamps a rectangle so every edge stays within `bounds`. Both the rect and the
- * bounds use viewport-style edges (left/top/right/bottom), e.g. a DOMRect.
+ * Clips a rectangle to `bounds`: each edge is limited independently, so the
+ * rect shrinks to the overlapping region rather than being moved to fit.
+ * Keeps an interaction rectangle (the canvas selection box, the assets
+ * marquee) inside its own surface. Both the rect and the bounds use
+ * viewport-style edges (left/top/right/bottom), e.g. a DOMRect.
  */
-export function clampRectToBounds(
+export function clipRectToBounds(
   rect: RectEdges,
   bounds: RectEdges
 ): RectEdges {

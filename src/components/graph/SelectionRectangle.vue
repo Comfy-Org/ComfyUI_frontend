@@ -12,7 +12,7 @@ import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { clampRectToBounds } from '@/utils/mathUtil'
+import { clipRectToBounds } from '@/utils/mathUtil'
 import type { RectEdges } from '@/utils/mathUtil'
 
 const canvasStore = useCanvasStore()
@@ -76,7 +76,7 @@ const rectangleStyle = computed(() => {
   }
   const bounds = panelBounds.value
   const { left, top, right, bottom } = bounds
-    ? clampRectToBounds(edges, bounds)
+    ? clipRectToBounds(edges, bounds)
     : edges
 
   return {
