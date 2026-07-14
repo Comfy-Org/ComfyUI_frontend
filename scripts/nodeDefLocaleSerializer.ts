@@ -26,7 +26,7 @@ export type WidgetLabels = Record<
   Record<string, { name: string | undefined }>
 >
 
-const VUE_I18N_SYNTAX_CHARS = /[@{}|%]/g
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
 
 function escapeMessage(text: string): string {
   return text.replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)

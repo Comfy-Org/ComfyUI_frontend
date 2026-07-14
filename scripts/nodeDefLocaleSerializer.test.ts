@@ -14,7 +14,7 @@ function render(message: string): string {
 
 describe('serializeNodeDefLocales', () => {
   it('escapes compiled fields and preserves raw tooltips', () => {
-    const syntax = '@ {value} | 50%{done}'
+    const syntax = '@ $ {value} | 50%{done}'
     const inputName = `Input ${syntax}`
     const outputName = `Output ${syntax}`
     const dataType = `TYPE ${syntax}`
@@ -47,7 +47,8 @@ describe('serializeNodeDefLocales', () => {
         }
       })
     const serializedNode = nodeDefinitions.Test_Node
-    const serializedInput = serializedNode.inputs['Input @ {value} | 50%{done}']
+    const serializedInput =
+      serializedNode.inputs['Input @ $ {value} | 50%{done}']
     const serializedOutput = serializedNode.outputs['0']
 
     expect(render(serializedNode.display_name)).toBe(nodeDef.display_name)
