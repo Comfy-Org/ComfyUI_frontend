@@ -67,6 +67,27 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
     expect(init.body).toBe('{}')
   })
+
+  it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
+    const page = (data: unknown[], hasMore: boolean) =>
+      jsonResponse(200, {
+        data,
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: data.length,
+          has_more: hasMore
+        }
+      })
+    respond(page([{ id: 'wf-1', name: 'one' }], true))
+    respond(page([{ id: 'wf-2', name: 'two' }], false))
+
+    const workflows = await makeClient().listCloudWorkflows()
+
+    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100&offset=0')
+    expect(fetchApi.mock.calls[1][0]).toBe('/workflows?limit=100&offset=100')
+    expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
+  })
 })
 
 describe('getDraft query encoding', () => {

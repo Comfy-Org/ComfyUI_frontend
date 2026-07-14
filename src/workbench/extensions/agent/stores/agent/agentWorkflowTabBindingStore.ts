@@ -1,24 +1,36 @@
+import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+
+const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
 
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
-    const tabByWorkflow = reactive(new Map<string, string>())
+    const tabByWorkflow = useLocalStorage<Record<string, string>>(
+      STORAGE_KEY,
+      {}
+    )
 
     function bind(workflowId: string, tabPath: string): void {
-      for (const [boundId, boundPath] of tabByWorkflow) {
-        if (boundPath === tabPath) tabByWorkflow.delete(boundId)
-      }
-      tabByWorkflow.set(workflowId, tabPath)
+      const next = Object.fromEntries(
+        Object.entries(tabByWorkflow.value).filter(
+          ([, boundPath]) => boundPath !== tabPath
+        )
+      )
+      next[workflowId] = tabPath
+      tabByWorkflow.value = next
     }
 
     function tabPathFor(workflowId: string): string | undefined {
-      return tabByWorkflow.get(workflowId)
+      return Object.hasOwn(tabByWorkflow.value, workflowId)
+        ? tabByWorkflow.value[workflowId]
+        : undefined
     }
 
     function workflowIdFor(tabPath: string): string | undefined {
-      for (const [workflowId, boundPath] of tabByWorkflow) {
+      for (const [workflowId, boundPath] of Object.entries(
+        tabByWorkflow.value
+      )) {
         if (boundPath === tabPath) return workflowId
       }
       return undefined
