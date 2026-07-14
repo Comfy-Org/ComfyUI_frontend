@@ -156,7 +156,11 @@
       </div>
       <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        :label="t('rightSidePanel.locateNode')"
+        :label="
+          t('rightSidePanel.locateNodeFor', {
+            item: getLabel(primaryLocatableNodeType)
+          })
+        "
         @locate="handleLocateNode(primaryLocatableNodeType)"
       />
     </div>
@@ -200,7 +204,9 @@
             </span>
             <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
-              :label="t('rightSidePanel.locateNode')"
+              :label="
+                t('rightSidePanel.locateNodeFor', { item: getLabel(nodeType) })
+              "
               @locate="handleLocateNode(nodeType)"
             />
           </div>

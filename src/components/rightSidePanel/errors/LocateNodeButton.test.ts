@@ -1,16 +1,16 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 
 describe('LocateNodeButton', () => {
-  it('exposes the aria-label as the button accessible name', () => {
+  it('exposes the label as the button aria-label', () => {
     render(LocateNodeButton, { props: { label: 'Locate node on canvas' } })
 
     expect(
       screen.getByRole('button', { name: 'Locate node on canvas' })
-    ).toBeInTheDocument()
+    ).toHaveAttribute('aria-label', 'Locate node on canvas')
   })
 
   it('emits locate when clicked', async () => {
@@ -19,30 +19,39 @@ describe('LocateNodeButton', () => {
       props: { label: 'Locate node on canvas' }
     })
 
-    await user.click(screen.getByRole('button'))
+    await user.click(
+      screen.getByRole('button', { name: 'Locate node on canvas' })
+    )
+
+    expect(emitted().locate).toHaveLength(1)
+  })
+
+  it('emits locate on keyboard activation', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(LocateNodeButton, {
+      props: { label: 'Locate node on canvas' }
+    })
+
+    await user.tab()
+    await user.keyboard('{Enter}')
 
     expect(emitted().locate).toHaveLength(1)
   })
 
   it('stops click propagation so an ancestor handler does not also fire', async () => {
     const user = userEvent.setup()
-    let ancestorClicks = 0
-    render(
-      {
-        components: { LocateNodeButton },
-        template:
-          '<div @click="onAncestorClick"><LocateNodeButton label="Locate node on canvas" /></div>',
-        methods: {
-          onAncestorClick() {
-            ancestorClicks++
-          }
-        }
-      },
-      {}
+    const onAncestorClick = vi.fn()
+    render({
+      components: { LocateNodeButton },
+      setup: () => ({ onAncestorClick }),
+      template:
+        '<div @click="onAncestorClick"><LocateNodeButton label="Locate node on canvas" /></div>'
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Locate node on canvas' })
     )
 
-    await user.click(screen.getByRole('button'))
-
-    expect(ancestorClicks).toBe(0)
+    expect(onAncestorClick).not.toHaveBeenCalled()
   })
 })
