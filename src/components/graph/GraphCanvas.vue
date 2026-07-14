@@ -153,6 +153,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
+import { useCanvasSearchBoxMenu } from '@/composables/useCanvasSearchBoxMenu'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
@@ -460,6 +461,7 @@ useLitegraphSettings()
 useNodeBadge()
 
 useGlobalLitegraph()
+useCanvasSearchBoxMenu()
 useContextMenuTranslation()
 useGroupContextMenu()
 useCopy()
