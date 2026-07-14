@@ -417,7 +417,7 @@ export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
 
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
-  target: 'new_tab' | 'existing_tab'
+  target: 'new_tab' | 'existing_tab' | 'active_tab_open' | 'active_tab_switch'
 }
 
 /**

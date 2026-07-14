@@ -1,12 +1,13 @@
 import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  DraftUpload
+  DraftUpload,
+  OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
@@ -49,6 +50,8 @@ export interface AgentSessionDeps {
       uploaded: boolean
     ): void
     snapshot?(): DraftUpload | undefined
+    tabs?(): OpenTabsSnapshot | undefined
+    activeTab?(data: AgentActiveTabData): void
   }
 }
 
@@ -161,9 +164,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     const wfContext = workflow?.current()
     const upload = workflow?.snapshot?.()
+    const tabs = workflow?.tabs?.()
     function buildInput(draft: DraftUpload | undefined) {
       return {
         content: text,
+        tabs,
         selection:
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
@@ -313,6 +318,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       case 'draft_version':
         if (draftStore.checkHeartbeat(event.data) === 'behind')
           void resyncDraft()
+        return
+      case 'agent_active_tab':
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          workflow?.activeTab?.(event.data)
         return
       default:
         conversationStore.ingest(event)

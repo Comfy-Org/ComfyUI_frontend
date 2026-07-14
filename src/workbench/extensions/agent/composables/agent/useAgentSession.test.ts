@@ -1050,6 +1050,47 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(second.isStreaming.value).toBe(false)
   })
 
+  it('(l18) agent_active_tab routes to the workflow dep only for the displayed thread', async () => {
+    const activeTab = vi.fn()
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: { current: () => undefined, adopted: vi.fn(), activeTab }
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-9', name: 'Video test', thread_id: 'th-OTHER' }
+      })
+    )
+    expect(activeTab).not.toHaveBeenCalled()
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-9', name: 'Video test', thread_id: 'th-1' }
+      })
+    )
+    expect(activeTab).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_id: 'wf-9', name: 'Video test' })
+    )
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-10' }
+      })
+    )
+    expect(activeTab).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_id: 'wf-10' })
+    )
+  })
+
   it('(l12) draft patches from a backgrounded thread cannot drive the displayed draft', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()

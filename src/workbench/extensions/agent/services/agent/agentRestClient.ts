@@ -37,12 +37,23 @@ export interface DraftUpload {
   version: number | null
 }
 
+interface OpenTabEntry {
+  workflow_id: string
+  name: string
+}
+
+export interface OpenTabsSnapshot {
+  open_tabs: OpenTabEntry[]
+  current_tab?: string
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
   draft?: DraftUpload
+  tabs?: OpenTabsSnapshot
 }
 
 interface IngestErrorBody {
@@ -101,6 +112,11 @@ export function createAgentRestClient() {
   ): Promise<AgentTurnAccepted> {
     const body: Record<string, unknown> = { content: req.content }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
+    if (req.tabs !== undefined) {
+      body.open_tabs = req.tabs.open_tabs
+      if (req.tabs.current_tab !== undefined)
+        body.current_tab = req.tabs.current_tab
+    }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft

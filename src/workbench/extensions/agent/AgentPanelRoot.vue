@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -27,15 +27,25 @@ import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import { useCanvasSelection } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
-import type { AgentThreadSummary } from './schemas/agentApiSchema'
+import type {
+  AgentActiveTabData,
+  AgentDraftSnapshot,
+  AgentThreadSummary
+} from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftStore } from './stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { DraftUpload } from './services/agent/agentRestClient'
+import {
+  AgentApiError,
+  createAgentRestClient
+} from './services/agent/agentRestClient'
+import type {
+  DraftUpload,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -121,6 +131,28 @@ function resetSnapshotGuard(): void {
   snapshotTabPath = null
 }
 
+function cloudIdFor(tab: ComfyWorkflow): string | undefined {
+  const bound = bindingStore.workflowIdFor(tab.path)
+  if (bound !== undefined) return bound
+  const savedId = tab.activeState?.id
+  return typeof savedId === 'string' ? savedId : undefined
+}
+
+function openTabsSnapshot(): OpenTabsSnapshot | undefined {
+  const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
+    const workflowId = cloudIdFor(tab)
+    return workflowId === undefined
+      ? []
+      : [{ workflow_id: workflowId, name: tab.filename }]
+  })
+  if (openTabs.length === 0) return undefined
+  const active = workflowStore.activeWorkflow
+  return {
+    open_tabs: openTabs,
+    current_tab: active ? cloudIdFor(active) : undefined
+  }
+}
+
 function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined,
@@ -153,7 +185,9 @@ const {
   workflow: {
     current: activeWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    snapshot: takeWorkflowSnapshot
+    snapshot: takeWorkflowSnapshot,
+    tabs: openTabsSnapshot,
+    activeTab: enqueueActiveTab
   }
 })
 
@@ -230,6 +264,137 @@ async function autosaveAppliedDraft(
     console.error(`Agent draft autosave failed for ${tab.path}:`, error)
   } finally {
     bindingStore.bind(workflowId, tab.path)
+  }
+}
+
+let activeTabGeneration = 0
+let activeTabChain: Promise<void> = Promise.resolve()
+const lastRenderedVersions = new Map<string, number>()
+
+function enqueueActiveTab(data: AgentActiveTabData): void {
+  const generation = ++activeTabGeneration
+  activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+}
+
+function agentTabFilename(name: string | undefined): string | undefined {
+  const cleaned = [
+    ...(name ?? '')
+      .replace(/[/\\\p{Cc}]/gu, '-')
+      .replace(/\.json$/i, '')
+      .trim()
+      .replace(/^\.+/, '')
+  ]
+    .slice(0, 80)
+    .join('')
+    .replace(/^[\s.]+/u, '')
+    .trim()
+  return cleaned.length === 0 ? undefined : `${cleaned}.json`
+}
+
+async function fetchDraftSnapshot(
+  workflowId: string
+): Promise<AgentDraftSnapshot | null> {
+  try {
+    return await rest.getDraft(workflowId)
+  } catch (error) {
+    if (error instanceof AgentApiError && error.status === 404) return null
+    throw error
+  }
+}
+
+function recordRenderedVersion(nextWorkflowId: string): void {
+  const leaving = draftStore.workflowId
+  if (leaving === null || leaving === nextWorkflowId) return
+  if (lastApplied?.workflowId === leaving)
+    lastRenderedVersions.set(leaving, lastApplied.version)
+  else lastRenderedVersions.delete(leaving)
+}
+
+async function adoptDraftBase(
+  workflowId: string,
+  snapshot: AgentDraftSnapshot,
+  armVersion: number = snapshot.version
+): Promise<void> {
+  draftStore.bind(workflowId)
+  await nextTick()
+  if (
+    !(
+      lastApplied?.workflowId === workflowId && lastApplied.version > armVersion
+    )
+  )
+    lastApplied = { workflowId, version: armVersion }
+  draftStore.adoptSnapshot(snapshot)
+}
+
+async function onAgentActiveTab(
+  data: AgentActiveTabData,
+  generation: number
+): Promise<void> {
+  const stale = () => generation !== activeTabGeneration
+  if (stale()) return
+  try {
+    recordRenderedVersion(data.workflow_id)
+    const bound = boundTabFor(data.workflow_id)
+    if (bound) {
+      const alreadyCurrent =
+        draftStore.workflowId === data.workflow_id &&
+        draftStore.version !== null
+      await workflowService.openWorkflow(bound)
+      if (stale()) return
+      draftStore.bind(data.workflow_id)
+      const snapshot = await fetchDraftSnapshot(data.workflow_id)
+      if (stale()) return
+      if (
+        snapshot !== null &&
+        !(alreadyCurrent && (draftStore.version ?? -1) >= snapshot.version)
+      )
+        await adoptDraftBase(
+          data.workflow_id,
+          snapshot,
+          lastRenderedVersions.get(data.workflow_id) ?? -1
+        )
+      useTelemetry()?.trackAgentWorkflowApplied({
+        workflow_id: data.workflow_id,
+        target: 'active_tab_switch'
+      })
+      return
+    }
+    const snapshot = await fetchDraftSnapshot(data.workflow_id)
+    if (stale()) return
+    let validationError = ''
+    const workflow =
+      snapshot === null
+        ? null
+        : await validateComfyWorkflow(snapshot.content, (error) => {
+            validationError = error
+          })
+    if (stale()) return
+    if (snapshot !== null && !workflow) {
+      surfaceDraftApplyFailure(validationError)
+      draftStore.bind(data.workflow_id)
+      return
+    }
+    const tab = workflowStore.createTemporary(
+      agentTabFilename(data.name),
+      workflow ?? undefined
+    )
+    await workflowService.openWorkflow(tab)
+    if (stale()) return
+    await autosaveAppliedDraft(data.workflow_id, tab)
+    if (stale()) return
+    if (snapshot === null) draftStore.bind(data.workflow_id)
+    else await adoptDraftBase(data.workflow_id, snapshot)
+    useTelemetry()?.trackAgentWorkflowApplied({
+      workflow_id: data.workflow_id,
+      target: 'active_tab_open'
+    })
+  } catch (error) {
+    if (stale()) return
+    draftStore.bind(data.workflow_id)
+    surfaceAgentError(
+      'agent_api_failed',
+      error instanceof Error ? error.message : String(error)
+    )
   }
 }
 

@@ -4568,6 +4568,10 @@
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs."
+    "coachBody": "Ask it to build or edit graphs.",
+    "toolOpenedNewTab": "Opened a new tab",
+    "toolSwitchedTabs": "Switched tabs",
+    "toolSavedPreference": "Saved a preference",
+    "toolForgotPreference": "Forgot a preference"
   }
 }
