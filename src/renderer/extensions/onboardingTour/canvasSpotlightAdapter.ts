@@ -5,12 +5,119 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 
+/** The toolbar Run button (queue on desktop, subscribe-to-run on cloud). */
+export const RUN_BUTTON_SELECTOR =
+  '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
+
 /** A rectangle in client (viewport) coordinates. */
 export interface ScreenRect {
   left: number
   top: number
   width: number
   height: number
+}
+
+/** The box edge the cursor sits on, pointing back at the target. */
+export type CoachMarkEdge = 'top' | 'bottom' | 'left' | 'right'
+
+/** A viewport-space position for the coach-mark plus the edge that points at the target. */
+export interface CoachMarkPosition {
+  left: number
+  top: number
+  pointerEdge: CoachMarkEdge
+}
+
+interface Size {
+  width: number
+  height: number
+}
+
+const COACH_MARK_GAP = 20
+const VIEWPORT_PADDING = 12
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max)
+}
+
+function fitsViewport(pos: CoachMarkPosition, bubble: Size, viewport: Size) {
+  return (
+    pos.left >= VIEWPORT_PADDING &&
+    pos.top >= VIEWPORT_PADDING &&
+    pos.left + bubble.width <= viewport.width - VIEWPORT_PADDING &&
+    pos.top + bubble.height <= viewport.height - VIEWPORT_PADDING
+  )
+}
+
+function overlaps(pos: CoachMarkPosition, bubble: Size, target: ScreenRect) {
+  return (
+    pos.left < target.left + target.width &&
+    pos.left + bubble.width > target.left &&
+    pos.top < target.top + target.height &&
+    pos.top + bubble.height > target.top
+  )
+}
+
+/**
+ * Place the coach-mark near `target` without covering it: try below, above,
+ * right, then left, and take the first placement that fits the viewport and does
+ * not overlap the target. Falls back to a clamped below-position when the node is
+ * so large none fit. Pure so it is testable across screen sizes without layout.
+ */
+export function coachMarkPosition(
+  target: ScreenRect,
+  bubble: Size,
+  viewport: Size
+): CoachMarkPosition {
+  const centerX = target.left + target.width / 2 - bubble.width / 2
+  const centerY = target.top + target.height / 2 - bubble.height / 2
+  const candidates: CoachMarkPosition[] = [
+    {
+      left: centerX,
+      top: target.top + target.height + COACH_MARK_GAP,
+      pointerEdge: 'top'
+    },
+    {
+      left: centerX,
+      top: target.top - bubble.height - COACH_MARK_GAP,
+      pointerEdge: 'bottom'
+    },
+    {
+      left: target.left + target.width + COACH_MARK_GAP,
+      top: centerY,
+      pointerEdge: 'left'
+    },
+    {
+      left: target.left - bubble.width - COACH_MARK_GAP,
+      top: centerY,
+      pointerEdge: 'right'
+    }
+  ]
+
+  const placed = candidates.find(
+    (pos) =>
+      fitsViewport(pos, bubble, viewport) && !overlaps(pos, bubble, target)
+  )
+  if (placed) return placed
+
+  return {
+    left: clamp(
+      centerX,
+      VIEWPORT_PADDING,
+      Math.max(
+        VIEWPORT_PADDING,
+        viewport.width - bubble.width - VIEWPORT_PADDING
+      )
+    ),
+    top: clamp(
+      target.top + target.height + COACH_MARK_GAP,
+      VIEWPORT_PADDING,
+      Math.max(
+        VIEWPORT_PADDING,
+        viewport.height - bubble.height - VIEWPORT_PADDING
+      )
+    ),
+    pointerEdge: 'top'
+  }
 }
 
 /** Padding (client px, constant across zoom) added around each spotlit node. */
@@ -39,6 +146,22 @@ function toClient(frame: CanvasFrame, [x, y]: Point): Point {
   ]
 }
 
+/**
+ * Whether the canvas has a usable transform yet — a finite positive scale and
+ * finite offset. Used to gate the tour start until the just-loaded graph has
+ * actually laid out, so the spotlight never paints against a stale/absent frame.
+ */
+export function canvasTransformValid(): boolean {
+  const frame = canvasFrame()
+  return (
+    frame !== null &&
+    Number.isFinite(frame.scale) &&
+    frame.scale > 0 &&
+    Number.isFinite(frame.offset[0]) &&
+    Number.isFinite(frame.offset[1])
+  )
+}
+
 /** A node's bounding box in client coordinates, or null if the canvas is absent. */
 export function nodeClientRect(node: LGraphNode): ScreenRect | null {
   const frame = canvasFrame()
@@ -48,24 +171,17 @@ export function nodeClientRect(node: LGraphNode): ScreenRect | null {
   return { left, top, width: bw * frame.scale, height: bh * frame.scale }
 }
 
-/** Position of a node's input/output slot in client coordinates. */
-export function portClientPos(
-  node: LGraphNode,
-  slot: number,
-  isInput: boolean
-): Point | null {
-  const frame = canvasFrame()
-  if (!frame) return null
-  const pos = isInput ? node.getInputPos(slot) : node.getOutputPos(slot)
-  return toClient(frame, pos)
-}
-
 function resolveNodes(nodeIds: NodeId[]): LGraphNode[] {
   const graph = useCanvasStore().currentGraph
   if (!graph) return []
   return nodeIds
     .map((id) => graph.getNodeById(id))
-    .filter((node): node is LGraphNode => node !== null)
+    .filter((node): node is LGraphNode => node != null)
+}
+
+/** Whether every id resolves to a node on the live graph (vacuously true if none). */
+export function nodesPresent(nodeIds: NodeId[]): boolean {
+  return resolveNodes(nodeIds).length === nodeIds.length
 }
 
 function padRect(rect: ScreenRect): ScreenRect {
@@ -85,11 +201,15 @@ export function maskRectsFor(nodeIds: NodeId[]): ScreenRect[] {
     .map(padRect)
 }
 
-/** Frame the view around the revealed nodes; no-op when none resolve. */
-export function fitToBounds(nodeIds: NodeId[], zoom: number): void {
+/**
+ * Smoothly frame the view around the given nodes. `zoom` is the fill fraction of
+ * the viewport (not a scale). Uses the animated focus path (marks the canvas
+ * dirty for us); no-op when none resolve.
+ */
+export function focusNodes(nodeIds: NodeId[], zoom = 0.4): void {
   const nodes = resolveNodes(nodeIds)
   if (nodes.length === 0) return
   const bounds = createBounds(nodes)
   if (!bounds) return
-  app.canvas?.ds.fitToBounds(bounds, { zoom })
+  app.canvas?.animateToBounds(bounds, { zoom })
 }

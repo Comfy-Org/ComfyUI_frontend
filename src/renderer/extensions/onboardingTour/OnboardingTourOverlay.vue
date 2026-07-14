@@ -17,7 +17,7 @@
           <mask id="onboarding-tour-spotlight">
             <rect width="100%" height="100%" fill="white" />
             <rect
-              v-for="(hole, i) in litRects"
+              v-for="(hole, i) in holeRects"
               :key="i"
               :x="hole.left"
               :y="hole.top"
@@ -37,7 +37,7 @@
       </svg>
 
       <div
-        v-for="(hole, i) in litRects"
+        v-for="(hole, i) in spotRects"
         :key="i"
         data-testid="onboarding-spotlight"
         class="absolute rounded-lg border border-border-default transition-all duration-500 ease-out"
@@ -46,46 +46,44 @@
 
       <div
         ref="bubbleRef"
-        class="pointer-events-auto absolute flex w-72 flex-col gap-2 rounded-lg border border-border-default bg-base-background p-4 shadow-interface transition-all duration-500 ease-out"
+        class="pointer-events-auto absolute flex w-80 flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface transition-all duration-500 ease-out"
         :style="bubbleStyle"
         tabindex="-1"
         aria-live="polite"
       >
-        <span class="text-xs text-muted-foreground">
-          {{
-            t('onboardingTour.stepCounter', {
-              current: stepIndex + 1,
-              total: totalSteps
-            })
-          }}
-        </span>
-
-        <h2 class="text-base font-semibold text-base-foreground">
-          {{ t(copy.title) }}
-        </h2>
-        <p class="text-xs text-muted-foreground">{{ t(copy.body) }}</p>
-        <p v-if="showPortHint" class="text-xs text-muted-foreground">
-          {{ t('onboardingTour.step.prompt.portHint') }}
-        </p>
-
-        <img
-          v-if="resultImageSrc"
-          :src="resultImageSrc"
-          :alt="t(copy.body)"
-          class="max-w-full rounded-md"
+        <i
+          v-if="placement"
+          data-testid="onboarding-cursor"
+          :class="
+            cn(
+              'absolute icon-[lucide--lasso-select] size-4 text-base-foreground drop-shadow-md',
+              cursorEdgeClass
+            )
+          "
+          aria-hidden="true"
         />
-        <video
-          v-else-if="resultVideoSrc"
-          data-testid="onboarding-result-video"
-          :src="resultVideoSrc"
-          controls
-          class="max-w-full rounded-md"
-        />
+        <div class="flex flex-col gap-2">
+          <span class="text-xs text-base-foreground opacity-50">
+            {{
+              t('onboardingTour.stepCounter', {
+                current: stepIndex + 1,
+                total: totalSteps
+              })
+            }}
+          </span>
+          <h2 class="text-base font-semibold text-base-foreground">
+            {{ t(copy.title) }}
+          </h2>
+          <p class="text-sm text-muted-foreground">{{ t(copy.body) }}</p>
+          <p v-if="showPortHint" class="text-sm text-muted-foreground">
+            {{ t('onboardingTour.step.prompt.portHint') }}
+          </p>
+        </div>
 
         <div class="flex items-center justify-between">
           <button
             type="button"
-            class="text-xs text-muted-foreground transition-colors hover:text-base-foreground"
+            class="text-xs text-base-foreground transition-opacity hover:opacity-70"
             @click="controller.end('skip')"
           >
             {{ t('onboardingTour.skip') }}
@@ -94,19 +92,26 @@
             <button
               v-if="stepIndex > 0"
               type="button"
-              class="rounded-md px-3 py-1 text-xs text-base-foreground transition-colors hover:bg-node-component-surface"
+              class="flex items-center gap-1 rounded-lg border border-muted-background bg-secondary-background px-3 py-2 text-xs text-base-foreground transition-colors hover:bg-secondary-background-hover"
               @click="controller.back()"
             >
+              <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
               {{ t('onboardingTour.back') }}
             </button>
             <button
+              v-if="showNextButton"
               type="button"
-              class="rounded-md bg-primary-background px-3 py-1 text-xs text-base-foreground transition-colors hover:bg-primary-background-hover"
+              class="flex items-center gap-1 rounded-lg bg-base-foreground px-3 py-2 text-xs text-base-background transition-opacity hover:opacity-90"
               @click="onNext"
             >
               {{
                 isLastStep ? t('onboardingTour.done') : t('onboardingTour.next')
               }}
+              <i
+                v-if="!isLastStep"
+                class="icon-[lucide--arrow-right] size-4"
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>
@@ -116,13 +121,20 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
+import { useElementBounding, useRafFn, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { maskRectsFor } from './canvasSpotlightAdapter'
-import type { ScreenRect } from './canvasSpotlightAdapter'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import {
+  RUN_BUTTON_SELECTOR,
+  coachMarkPosition,
+  focusNodes,
+  maskRectsFor
+} from './canvasSpotlightAdapter'
+import type { CoachMarkEdge, ScreenRect } from './canvasSpotlightAdapter'
 import { useOnboardingTourController } from './useOnboardingTourController'
 import { useOnboardingTourStore } from './onboardingTourStore'
 import type { TourStep } from './tourSequence'
@@ -135,6 +147,7 @@ const {
   phase,
   stepIndex,
   revealedNodeIds,
+  spotlitNodeIds,
   currentStep,
   totalSteps,
   promptPortFallback,
@@ -144,20 +157,14 @@ const {
 const isActive = computed(() => phase.value === 'active')
 const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
 
+const isRunStep = computed(() => currentStep.value?.kind === 'run')
+const isResultStep = computed(() => currentStep.value?.kind === 'result')
+
+// The Run step advances on click (no Next escape); every later step keeps Next.
+const showNextButton = computed(() => !isRunStep.value)
+
 const showPortHint = computed(
   () => currentStep.value?.kind === 'prompt' && promptPortFallback.value
-)
-
-const onResultStep = computed(() => currentStep.value?.kind === 'result')
-const resultImageSrc = computed(() =>
-  onResultStep.value && resultMedia.value?.kind === 'image'
-    ? resultMedia.value.url
-    : null
-)
-const resultVideoSrc = computed(() =>
-  onResultStep.value && resultMedia.value?.kind === 'video'
-    ? resultMedia.value.url
-    : null
 )
 
 function stepCopyKey(step: TourStep): { title: string; body: string } {
@@ -171,9 +178,11 @@ function stepCopyKey(step: TourStep): { title: string; body: string } {
       return { title: `${base}.run.title`, body: `${base}.run.body` }
     case 'result': {
       const media = step.mediaKind ?? 'image'
+      // Bridge the generating gap: pending until the media lands, then ready.
+      const state = resultMedia.value ? 'ready' : 'pending'
       return {
-        title: `${base}.result.${media}.title`,
-        body: `${base}.result.${media}.body`
+        title: `${base}.result.${media}.${state}.title`,
+        body: `${base}.result.${media}.${state}.body`
       }
     }
   }
@@ -191,28 +200,67 @@ function onNext() {
   }
 }
 
-const litRects = ref<ScreenRect[]>([])
+// The run progress UI varies by queue-panel flag; match whichever is mounted.
+const RUN_PROGRESS_SELECTOR =
+  '[data-testid="queue-progress-overlay"], [data-testid="queue-inline-progress"]'
 
-const focusRect = computed(() => litRects.value[0] ?? null)
+const holeRects = ref<ScreenRect[]>([])
+const spotRects = ref<ScreenRect[]>([])
+
+const focusRect = computed(() => spotRects.value[0] ?? null)
 
 const bubbleRef = useTemplateRef<HTMLElement>('bubbleRef')
 
+/** Client rect of the first element matching `selector`, or null if absent. */
+function domClientRect(selector: string): ScreenRect | null {
+  const el = document.querySelector(selector)
+  if (!el) return null
+  const { left, top, width, height } = el.getBoundingClientRect()
+  return { left, top, width, height }
+}
+
+// Run step spotlights the toolbar button; Result also spotlights the run progress
+// bar (while it's on screen) so progress shows where it happens.
 function recompute() {
-  litRects.value = maskRectsFor([...revealedNodeIds.value])
+  if (isRunStep.value) {
+    const rect = domClientRect(RUN_BUTTON_SELECTOR)
+    const rects = rect ? [rect] : []
+    holeRects.value = rects
+    spotRects.value = rects
+    return
+  }
+
+  const revealed = maskRectsFor([...revealedNodeIds.value])
+  const spotlit = maskRectsFor([...spotlitNodeIds.value])
+  const progressRect = isResultStep.value
+    ? domClientRect(RUN_PROGRESS_SELECTOR)
+    : null
+  if (progressRect) {
+    revealed.push(progressRect)
+    spotlit.push(progressRect)
+  }
+  holeRects.value = revealed
+  spotRects.value = spotlit
 }
 
 // RAF keeps the rects aligned while the user pans/zooms the canvas.
 const { pause, resume } = useRafFn(recompute, { immediate: false })
 
+function focusCurrentStep() {
+  if (!isRunStep.value) focusNodes([...spotlitNodeIds.value])
+}
+
 watch(
-  [isActive, revealedNodeIds],
+  [isActive, revealedNodeIds, spotlitNodeIds, currentStep],
   ([active]) => {
     if (active) {
       recompute()
+      focusCurrentStep()
       resume()
     } else {
       pause()
-      litRects.value = []
+      holeRects.value = []
+      spotRects.value = []
     }
   },
   { immediate: true }
@@ -239,11 +287,40 @@ function ringStyle(rect: ScreenRect) {
   }
 }
 
-const bubbleStyle = computed(() => {
+const { width: bubbleWidth, height: bubbleHeight } =
+  useElementBounding(bubbleRef)
+const { width: windowWidth, height: windowHeight } = useWindowSize()
+
+// The coach-mark sits beside the target and never covers it; the cursor rides on
+// the box edge nearest the target, so the card reads as pointing at the node.
+const placement = computed(() => {
   const rect = focusRect.value
-  if (!rect) {
-    return { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }
-  }
-  return { left: `${rect.left}px`, top: `${rect.top + rect.height + 12}px` }
+  if (!rect) return null
+  return coachMarkPosition(
+    rect,
+    { width: bubbleWidth.value, height: bubbleHeight.value },
+    { width: windowWidth.value, height: windowHeight.value }
+  )
 })
+
+const bubbleStyle = computed(() =>
+  placement.value
+    ? {
+        position: 'fixed' as const,
+        top: `${placement.value.top}px`,
+        left: `${placement.value.left}px`
+      }
+    : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+)
+
+// Pin the cursor to the box edge facing the target (centered on that edge).
+const CURSOR_EDGE_CLASS: Record<CoachMarkEdge, string> = {
+  top: '-top-3 left-1/2 -translate-x-1/2',
+  bottom: '-bottom-3 left-1/2 -translate-x-1/2',
+  left: '-left-3 top-1/2 -translate-y-1/2',
+  right: '-right-3 top-1/2 -translate-y-1/2'
+}
+const cursorEdgeClass = computed(() =>
+  placement.value ? CURSOR_EDGE_CLASS[placement.value.pointerEdge] : ''
+)
 </script>
