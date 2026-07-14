@@ -28,21 +28,12 @@ export type SubscriptionOperator = (
   config: SubscriptionConfig
 ) => SubscriptionConfig
 
-export function withSubscriptionStatus(
+function withSubscriptionStatus(
   overrides: Partial<SubscriptionStatusResponse>
 ): SubscriptionOperator {
   return (config) => ({
     ...config,
     status: { ...config.status, ...overrides }
-  })
-}
-
-export function withBalance(
-  overrides: Partial<BalanceResponse>
-): SubscriptionOperator {
-  return (config) => ({
-    ...config,
-    balance: { ...config.balance, ...overrides }
   })
 }
 
@@ -65,27 +56,12 @@ export function withFreeTier(): SubscriptionOperator {
   })
 }
 
-export function withCancelledSubscription(): SubscriptionOperator {
-  return withSubscriptionStatus({
-    is_active: true,
-    subscription_tier: 'CREATOR',
-    end_date: '2099-12-31T00:00:00.000Z'
-  })
-}
-
 export function withUnsubscribed(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: false,
     subscription_tier: 'FREE',
     end_date: null,
     renewal_date: null
-  })
-}
-
-export function withCredits(amountMicros: number): SubscriptionOperator {
-  return withBalance({
-    amount_micros: amountMicros,
-    effective_balance_micros: amountMicros
   })
 }
 
