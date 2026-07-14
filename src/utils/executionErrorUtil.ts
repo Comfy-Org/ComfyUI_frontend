@@ -124,6 +124,21 @@ export const NODE_LEVEL_VALIDATION_ERROR_TYPES = new Set([
   'dependency_cycle'
 ])
 
+/** Decodes the `[type, { min, max, ... }]` tuple the backend attaches to range errors. */
+export function getInputConfigBounds(error: NodeValidationError): {
+  min?: unknown
+  max?: unknown
+} {
+  const config = error.extra_info?.input_config
+  if (!Array.isArray(config)) return {}
+
+  const bounds = config[1]
+  if (!bounds || typeof bounds !== 'object') return {}
+
+  const { min, max } = bounds as { min?: unknown; max?: unknown }
+  return { min, max }
+}
+
 export function isImageNotLoadedValidationError(
   error: NodeValidationError
 ): boolean {

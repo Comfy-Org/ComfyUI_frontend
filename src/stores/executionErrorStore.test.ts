@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import {
@@ -355,6 +360,54 @@ describe('executionErrorStore — node error operations', () => {
       expect(store.lastNodeErrors).toHaveProperty('12:5')
       expect(store.lastNodeErrors?.['12:5'].errors).toHaveLength(1)
     })
+
+    it('clears a nested lifted error fixed at an intermediate host level', () => {
+      const rootGraph = createTestRootGraph()
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const outerHost = createTestSubgraphNode(outerSubgraph, { id: 1 })
+      rootGraph.add(outerHost)
+
+      const middleSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const middleHost = createTestSubgraphNode(middleSubgraph, {
+        id: 2,
+        parentGraph: outerSubgraph
+      })
+      outerSubgraph.add(middleHost)
+      outerSubgraph.inputNode.slots[0].connect(middleHost.inputs[0], middleHost)
+
+      const leaf = new LGraphNode('LeafNode')
+      leaf.id = toNodeId(3)
+      const leafInput = leaf.addInput('seed_input', '*')
+      middleSubgraph.add(leaf)
+      middleSubgraph.inputNode.slots[0].connect(leafInput, leaf)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '1:2:3': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      }
+
+      expect(store.surfacedNodeErrors).toHaveProperty('1')
+
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(1), toNodeId(2)]),
+        'seed'
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a fix at the intermediate host clears the raw interior error'
+      ).toBeNull()
+      expect(store.surfacedNodeErrors).toBeNull()
+    })
   })
 
   describe('clearWidgetRelatedErrors', () => {
@@ -446,6 +499,30 @@ describe('executionErrorStore — node error operations', () => {
 
       expect(store.lastNodeErrors).not.toBeNull()
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('validates the base target against live widget bounds, not recorded ones', () => {
+      const store = useExecutionErrorStore()
+      store.lastNodeErrors = {
+        '123': nodeError([
+          validationError('value_bigger_than_max', 'testWidget', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ])
+      }
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testWidget',
+        'testWidget',
+        150,
+        { max: 200 }
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a value within the refreshed widget bounds clears despite stale recorded bounds'
+      ).toBeNull()
     })
 
     it('does not clear lifted range errors until the host value is in range', () => {

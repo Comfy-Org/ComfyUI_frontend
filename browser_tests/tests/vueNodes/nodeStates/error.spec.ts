@@ -23,6 +23,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const ERROR_CLASS = /ring-destructive-background/
+const SLOT_ERROR_CLASS = /before:ring-error/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
 const KSAMPLER_MODEL_INPUT_NAME = 'model'
@@ -78,8 +79,7 @@ async function getInputSlotIndexByName(
     ({ inputName, nodeId }) => {
       const graph = window.app!.canvas.graph ?? window.app!.graph
       const node = graph.getNodeById(nodeId)
-      const index =
-        node?.inputs?.findIndex((input) => input.name === inputName) ?? -1
+      const index = node?.findInputSlot(inputName) ?? -1
       if (index < 0) {
         throw new Error(`Input slot "${inputName}" not found`)
       }
@@ -188,7 +188,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
         await expect(modelInputSlotRow).toBeVisible()
         await expect(modelInputSlotRow).toBeInViewport()
-        await expect(modelInputSlotHighlight).toHaveClass(/before:ring-error/)
+        await expect(modelInputSlotHighlight).toHaveClass(SLOT_ERROR_CLASS)
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)
@@ -461,7 +461,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await dismissErrorOverlay(comfyPage)
 
         await expect(innerWrapper).toHaveClass(ERROR_CLASS)
-        await expect(hostInputSlotHighlight).toHaveClass(/before:ring-error/)
+        await expect(hostInputSlotHighlight).toHaveClass(SLOT_ERROR_CLASS)
       })
 
       await test.step('confirm the interior node does not show the surfaced ring', async () => {
@@ -487,7 +487,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await expect(interiorInnerWrapper).not.toHaveClass(ERROR_CLASS)
         await expect(interiorPositiveSlotHighlight).toBeVisible()
         await expect(interiorPositiveSlotHighlight).not.toHaveClass(
-          /before:ring-error/
+          SLOT_ERROR_CLASS
         )
       })
     })

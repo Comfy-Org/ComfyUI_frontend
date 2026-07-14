@@ -4,7 +4,8 @@ import { computed, ref } from 'vue'
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
   getLiftedErrorSource,
-  liftNodeErrorsToBoundary
+  liftNodeErrorsToBoundary,
+  resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -32,6 +33,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   SIMPLE_ERROR_TYPES,
+  getInputConfigBounds,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -39,6 +41,8 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
   slotName: string
+  /** Interior targets validate against the bounds recorded on their errors. */
+  useRecordedBounds?: boolean
 }
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
@@ -130,29 +134,47 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return updated
   }
 
+  /**
+   * Raw interior sources of lifted errors whose boundary chain passes through
+   * `(executionId, slotName)`, so a fix at any host level — final surface or
+   * intermediate — clears the error at its raw key.
+   */
   function getLiftedErrorSourceTargets(
     executionId: NodeExecutionId,
     slotName: string
   ): SlotNodeErrorClearTarget[] {
-    const surface = surfacedNodeErrors.value?.[executionId]
-    if (!surface) return []
+    const surfaced = surfacedNodeErrors.value
+    if (!surfaced || !app.isGraphReady) return []
 
-    return surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
-      const source = getLiftedErrorSource(error)
-      if (!source || source.input_name !== slotName) return []
+    return Object.values(surfaced).flatMap((surface) =>
+      surface.errors.flatMap((error): SlotNodeErrorClearTarget[] => {
+        const source = getLiftedErrorSource(error)
+        if (!source) return []
 
-      const normalizedExecutionId = tryNormalizeNodeExecutionId(
-        source.source_execution_id
-      )
-      return normalizedExecutionId
-        ? [
-            {
-              executionId: normalizedExecutionId,
-              slotName: source.source_input_name
-            }
-          ]
-        : []
-    })
+        const sourceExecutionId = tryNormalizeNodeExecutionId(
+          source.source_execution_id
+        )
+        if (!sourceExecutionId) return []
+
+        const clearsThisError = resolveLiftChain(
+          app.rootGraph,
+          sourceExecutionId,
+          source.source_input_name
+        ).some(
+          (level) =>
+            level.hostExecId === executionId && level.hostInputName === slotName
+        )
+        return clearsThisError
+          ? [
+              {
+                executionId: sourceExecutionId,
+                slotName: source.source_input_name,
+                useRecordedBounds: true
+              }
+            ]
+          : []
+      })
+    )
   }
 
   /** Raw targets are keys into lastNodeErrors, not surfacedNodeErrors. */
@@ -166,17 +188,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     ]
   }
 
-  /** Range bounds recorded on the error itself win over the caller's widget bounds. */
+  /**
+   * Bounds recorded on the error win only for interior lifted targets, where
+   * the caller's options describe the host widget rather than the interior
+   * input. The base target keeps the caller's live widget bounds, which stay
+   * authoritative when node definitions change after validation.
+   */
   function getTargetRangeOptions(
     errors: NodeError['errors'],
     fallback: { min?: number; max?: number }
   ): { min?: number; max?: number } {
     for (const error of errors) {
-      const config = error.extra_info?.input_config
-      if (!Array.isArray(config)) continue
-      const bounds = config[1]
-      if (!bounds || typeof bounds !== 'object') continue
-      const { min, max } = bounds as { min?: unknown; max?: unknown }
+      const { min, max } = getInputConfigBounds(error)
+      if (min === undefined && max === undefined) continue
       return {
         min: typeof min === 'number' ? min : fallback.min,
         max: typeof max === 'number' ? max : fallback.max
@@ -187,23 +211,21 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   function isTargetStillOutOfRange(
     nodeErrors: Record<string, NodeError>,
-    executionId: NodeExecutionId,
-    slotName: string,
+    target: SlotNodeErrorClearTarget,
     value: number,
-    fallbackOptions: { min?: number; max?: number }
+    callerOptions: { min?: number; max?: number }
   ): boolean {
-    const nodeError = nodeErrors[executionId]
+    const nodeError = nodeErrors[target.executionId]
     if (!nodeError) return false
 
     const errors = nodeError.errors.filter(
-      (error) => error.extra_info?.input_name === slotName
+      (error) => error.extra_info?.input_name === target.slotName
     )
+    const options = target.useRecordedBounds
+      ? getTargetRangeOptions(errors, callerOptions)
+      : callerOptions
 
-    return isValueStillOutOfRange(
-      value,
-      errors,
-      getTargetRangeOptions(errors, fallbackOptions)
-    )
+    return isValueStillOutOfRange(value, errors, options)
   }
 
   function clearTargets(
@@ -246,7 +268,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   /**
    * Attempts to clear an error for a given widget, but avoids clearing it if
    * the error is a range violation and the new value is still out of bounds.
-   * Each clear target is checked against its own recorded bounds, so a
+   * The base target validates against the caller's live widget bounds; each
+   * interior lifted target validates against its own recorded bounds, so a
    * boundary input fanning out to inputs with different constraints clears
    * only the targets the new value satisfies.
    *
@@ -271,8 +294,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
             (target) =>
               !isTargetStillOutOfRange(
                 nodeErrors,
-                target.executionId,
-                target.slotName,
+                target,
                 newValue,
                 options ?? {}
               )

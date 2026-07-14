@@ -14,6 +14,7 @@ import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
 import {
   INPUT_LEVEL_VALIDATION_ERROR_TYPES,
   NODE_LEVEL_VALIDATION_ERROR_TYPES,
+  getInputConfigBounds,
   isImageNotLoadedValidationError
 } from '@/utils/executionErrorUtil'
 
@@ -144,13 +145,7 @@ function getInputConfigValue(
   error: NodeValidationError,
   key: 'min' | 'max'
 ): string | undefined {
-  const inputConfig = error.extra_info?.input_config
-  if (!Array.isArray(inputConfig)) return undefined
-
-  const config = inputConfig[1]
-  if (!config || typeof config !== 'object') return undefined
-
-  return formatCatalogValue((config as Record<string, unknown>)[key])
+  return formatCatalogValue(getInputConfigBounds(error)[key])
 }
 
 function getInputConfigType(error: NodeValidationError): string | undefined {

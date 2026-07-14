@@ -2,7 +2,7 @@ import { groupBy, partition } from 'es-toolkit'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeError } from '@/schemas/apiSchema'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { isNodeLevelValidationError } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
@@ -15,26 +15,16 @@ export interface LiftedErrorExtraInfo {
   source_input_name: string
 }
 
-interface LiftedSurface {
+export interface LiftedSurface {
   hostExecId: NodeExecutionId
   hostInputName: string
-  hostTitle: string
 }
 
-interface OwnErrorPlacement {
-  kind: 'own'
+interface ErrorPlacement {
+  kind: 'own' | 'lifted'
   targetExecId: string
   error: NodeValidationError
 }
-
-interface LiftedErrorPlacement {
-  kind: 'lifted'
-  targetExecId: string
-  targetTitle: string
-  error: NodeValidationError
-}
-
-type ErrorPlacement = OwnErrorPlacement | LiftedErrorPlacement
 
 export function getLiftedErrorSource(
   error: NodeValidationError
@@ -55,42 +45,47 @@ export function getLiftedErrorSource(
 }
 
 function getHostExecutionId(executionId: string): NodeExecutionId | null {
-  return getParentExecutionIds(executionId).at(-1) ?? null
+  const separatorIndex = executionId.lastIndexOf(':')
+  if (separatorIndex <= 0) return null
+  return tryNormalizeNodeExecutionId(executionId.slice(0, separatorIndex))
 }
 
-function resolveLiftedSurface(
+/**
+ * Boundary surfaces that expose `(executionId, inputName)`, innermost first.
+ * Walks one host per level and stops at the last resolvable surface, so an
+ * unresolvable deeper host falls back to the shallower one (fail-open).
+ */
+export function resolveLiftChain(
   rootGraph: LGraph,
   executionId: string,
   inputName: string
-): LiftedSurface | null {
-  const node = getNodeByExecutionId(rootGraph, executionId)
-  const graph = node?.graph
-  if (!node || !graph || !isSubgraph(graph)) return null
+): LiftedSurface[] {
+  const chain: LiftedSurface[] = []
+  let currentExecId = executionId
+  let currentInputName = inputName
 
-  const slot = node.inputs?.find((input) => input.name === inputName)
-  if (!slot || slot.link == null) return null
+  for (;;) {
+    const node = getNodeByExecutionId(rootGraph, currentExecId)
+    const graph = node?.graph
+    if (!node || !graph || !isSubgraph(graph)) break
 
-  const link = graph.getLink(slot.link)
-  if (!link?.originIsIoNode) return null
+    const slot = node.inputs?.find((input) => input.name === currentInputName)
+    if (slot?.link == null) break
 
-  const subgraphInput = graph.inputNode.slots[link.origin_slot]
-  if (!subgraphInput) return null
+    const subgraphInput = graph
+      .getLink(slot.link)
+      ?.resolve(graph)?.subgraphInput
+    if (!subgraphInput) break
 
-  const hostExecId = getHostExecutionId(executionId)
-  if (!hostExecId) return null
+    const hostExecId = getHostExecutionId(currentExecId)
+    if (!hostExecId || !getNodeByExecutionId(rootGraph, hostExecId)) break
 
-  const hostInputName = subgraphInput.name
-  const deeperSurface = resolveLiftedSurface(
-    rootGraph,
-    hostExecId,
-    hostInputName
-  )
-  if (deeperSurface) return deeperSurface
+    chain.push({ hostExecId, hostInputName: subgraphInput.name })
+    currentExecId = hostExecId
+    currentInputName = subgraphInput.name
+  }
 
-  const hostNode = getNodeByExecutionId(rootGraph, hostExecId)
-  if (!hostNode) return null
-
-  return { hostExecId, hostInputName, hostTitle: hostNode.title }
+  return chain
 }
 
 function createEmptyNodeError(nodeError: NodeError): NodeError {
@@ -101,9 +96,13 @@ function createEmptyNodeError(nodeError: NodeError): NodeError {
 }
 
 // Lifted host entries use the host title for display; SubgraphNode.type is a UUID.
-function createLiftedHostEntry(hostTitle: string): NodeError {
+function createLiftedHostEntry(
+  rootGraph: LGraph,
+  hostExecId: string
+): NodeError {
   return {
-    class_type: hostTitle,
+    class_type:
+      getNodeByExecutionId(rootGraph, hostExecId)?.title ?? hostExecId,
     dependent_outputs: [],
     errors: []
   }
@@ -117,8 +116,8 @@ function toErrorPlacement(
   const inputName = error.extra_info?.input_name
   const surface =
     inputName && !isNodeLevelValidationError(error)
-      ? resolveLiftedSurface(rootGraph, executionId, inputName)
-      : null
+      ? resolveLiftChain(rootGraph, executionId, inputName).at(-1)
+      : undefined
 
   if (!inputName || !surface) {
     return {
@@ -137,7 +136,6 @@ function toErrorPlacement(
   return {
     kind: 'lifted',
     targetExecId: surface.hostExecId,
-    targetTitle: surface.hostTitle,
     error: {
       ...error,
       extra_info: {
@@ -146,17 +144,6 @@ function toErrorPlacement(
       }
     }
   }
-}
-
-function getLiftedTargetTitle(placements: ErrorPlacement[]): string {
-  const liftedPlacement = placements.find(
-    (placement): placement is LiftedErrorPlacement =>
-      placement.kind === 'lifted'
-  )
-  if (!liftedPlacement) {
-    throw new Error('Expected lifted placement to provide a target title')
-  }
-  return liftedPlacement.targetTitle
 }
 
 export function liftNodeErrorsToBoundary(
@@ -187,7 +174,7 @@ export function liftNodeErrorsToBoundary(
   )) {
     const baseEntry = nodeErrors[targetExecId]
       ? createEmptyNodeError(nodeErrors[targetExecId])
-      : createLiftedHostEntry(getLiftedTargetTitle(targetPlacements))
+      : createLiftedHostEntry(rootGraph, targetExecId)
 
     const [ownErrors, liftedErrors] = partition(
       targetPlacements,
