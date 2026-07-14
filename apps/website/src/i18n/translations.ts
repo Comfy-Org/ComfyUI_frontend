@@ -4487,8 +4487,8 @@ const translations = {
 
   // Education page (/education) — head metadata
   'education.page.title': {
-    en: 'Comfy for Education — Student & Educator Discounts',
-    'zh-CN': 'Comfy 教育版 — 学生与教育工作者优惠'
+    en: 'Comfy for Education - Student & Educator Discounts',
+    'zh-CN': 'Comfy 教育版 - 学生与教育工作者优惠'
   },
   'education.page.description': {
     en: 'Up to 25% off Comfy Cloud for every student and educator. Sign up with your academic email for discounted access to cloud-powered ComfyUI workflows.',
