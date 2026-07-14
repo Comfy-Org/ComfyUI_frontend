@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -63,6 +63,10 @@ describe('CustomerIoTelemetryProvider', () => {
     window.__CONFIG__ = {} as typeof window.__CONFIG__
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('loads the client and registers the in-app plugin with the site id', async () => {
     createProvider()
     await vi.dynamicImportSettled()
@@ -82,6 +86,26 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.page).toHaveBeenCalledWith()
     expect(hoisted.analytics.register.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.analytics.page.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('queues page views until the in-app plugin is registered', async () => {
+    let resolveRegistration: (() => void) | undefined
+    const registration = new Promise<void>((resolve) => {
+      resolveRegistration = resolve
+    })
+    hoisted.analytics.register.mockReturnValue(registration)
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+    expect(hoisted.analytics.page).not.toHaveBeenCalled()
+
+    resolveRegistration?.()
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.page).toHaveBeenCalledOnce()
     )
   })
 

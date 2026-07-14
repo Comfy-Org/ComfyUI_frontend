@@ -32,6 +32,7 @@ interface QueuedEvent {
 export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private analytics: AnalyticsBrowser | null = null
   private isEnabled = true
+  private isInAppPluginReady = false
   private eventQueue: QueuedEvent[] = []
   private pageViewQueued = true
 
@@ -71,7 +72,10 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
         this.flushQueue()
         void inAppRegistration
-          .then(() => this.flushPageView())
+          .then(() => {
+            this.isInAppPluginReady = true
+            this.flushPageView()
+          })
           .catch((error) => {
             console.error(
               'Failed to initialize Customer.io in-app plugin:',
@@ -117,14 +121,16 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private flushPageView(): void {
-    if (!this.analytics || !this.pageViewQueued) return
+    if (!this.analytics || !this.isInAppPluginReady || !this.pageViewQueued) {
+      return
+    }
     this.pageViewQueued = false
     this.sendPageView()
   }
 
   trackPageView(_pageName: string, _properties?: PageViewMetadata): void {
     if (!this.isEnabled) return
-    if (!this.analytics) {
+    if (!this.analytics || !this.isInAppPluginReady) {
       this.pageViewQueued = true
       return
     }
