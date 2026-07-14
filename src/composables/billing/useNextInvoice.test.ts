@@ -7,7 +7,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import type { NextInvoiceInputs } from './useNextInvoice'
-import { deriveNextInvoiceCents } from './useNextInvoice'
+import { deriveNextInvoice } from './useNextInvoice'
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -43,20 +43,23 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
   }
 }
 
+// Both stop prices are per-month figures; price_cents is the discounted
+// figure, kept distinct from list_price_cents and credits so a regression to
+// either fails the amount assertions.
 const teamCreditStops: TeamCreditStops = {
   default_stop_index: 0,
   stops: [
     {
       id: 'stop-320',
-      credits: 32000,
-      monthly: { list_price_cents: 32000, price_cents: 32000 },
-      yearly: { list_price_cents: 384000, price_cents: 345600 }
+      credits: 67520,
+      monthly: { list_price_cents: 32000, price_cents: 30400 },
+      yearly: { list_price_cents: 32000, price_cents: 28800 }
     },
     {
       id: 'stop-640',
-      credits: 64000,
-      monthly: { list_price_cents: 64000, price_cents: 64000 },
-      yearly: { list_price_cents: 768000, price_cents: 691200 }
+      credits: 135040,
+      monthly: { list_price_cents: 64000, price_cents: 60800 },
+      yearly: { list_price_cents: 64000, price_cents: 57600 }
     }
   ]
 }
@@ -74,9 +77,13 @@ function makeInputs(
   }
 }
 
-describe(deriveNextInvoiceCents, () => {
-  it('resolves the current plan price by slug', () => {
-    expect(deriveNextInvoiceCents(makeInputs())).toBe(2000)
+describe(deriveNextInvoice, () => {
+  it('resolves a monthly invoice from the current plan price by slug', () => {
+    expect(deriveNextInvoice(makeInputs())).toEqual({
+      amountCents: 2000,
+      renewalDate: '2026-08-01T00:00:00Z',
+      duration: 'MONTHLY'
+    })
   })
 
   it('prefers the subscribed team credit stop over the plan price', () => {
@@ -92,10 +99,10 @@ describe(deriveNextInvoiceCents, () => {
       }
     })
 
-    expect(deriveNextInvoiceCents(inputs)).toBe(32000)
+    expect(deriveNextInvoice(inputs)?.amountCents).toBe(30400)
   })
 
-  it('hides the banner for annual subscriptions (no monthly invoice, DES-469)', () => {
+  it('multiplies the per-month yearly stop price by 12 for annual subs', () => {
     const inputs = makeInputs({
       subscription: makeSubscription({ duration: 'ANNUAL' }),
       teamCreditStops,
@@ -106,7 +113,42 @@ describe(deriveNextInvoiceCents, () => {
       }
     })
 
-    expect(deriveNextInvoiceCents(inputs)).toBeNull()
+    expect(deriveNextInvoice(inputs)).toEqual({
+      amountCents: 57600 * 12,
+      renewalDate: '2026-08-01T00:00:00Z',
+      duration: 'ANNUAL'
+    })
+  })
+
+  it('uses the annual plan price_cents as the yearly total, unscaled', () => {
+    const inputs = makeInputs({
+      subscription: makeSubscription({
+        duration: 'ANNUAL',
+        planSlug: 'standard-yearly'
+      }),
+      planSlug: 'standard-yearly',
+      plans: [
+        makePlan({
+          slug: 'standard-yearly',
+          duration: 'ANNUAL',
+          price_cents: 21600
+        })
+      ]
+    })
+
+    expect(deriveNextInvoice(inputs)).toEqual({
+      amountCents: 21600,
+      renewalDate: '2026-08-01T00:00:00Z',
+      duration: 'ANNUAL'
+    })
+  })
+
+  it('passes a null renewalDate through (scheduled-cancellation window)', () => {
+    const inputs = makeInputs({
+      subscription: makeSubscription({ renewalDate: null })
+    })
+
+    expect(deriveNextInvoice(inputs)?.renewalDate).toBeNull()
   })
 
   it('falls back to the plan price when the stop is not in the ladder', () => {
@@ -119,7 +161,7 @@ describe(deriveNextInvoiceCents, () => {
       }
     })
 
-    expect(deriveNextInvoiceCents(inputs)).toBe(2000)
+    expect(deriveNextInvoice(inputs)?.amountCents).toBe(2000)
   })
 
   it.for([
@@ -133,11 +175,16 @@ describe(deriveNextInvoiceCents, () => {
       { subscription: makeSubscription({ isCancelled: true }) }
     ],
     ['unresolvable plan slug', { planSlug: 'unknown-plan' }],
-    ['empty plan list (legacy billing)', { plans: [] }]
+    [
+      'annual sub whose slug resolves only to a monthly plan',
+      { subscription: makeSubscription({ duration: 'ANNUAL' }) }
+    ],
+    ['empty plan list (legacy billing)', { plans: [] }],
+    ['zero-price plan (free tier)', { plans: [makePlan({ price_cents: 0 })] }]
   ] satisfies [string, Partial<NextInvoiceInputs>][])(
     'returns null for %s',
     ([, overrides]) => {
-      expect(deriveNextInvoiceCents(makeInputs(overrides))).toBeNull()
+      expect(deriveNextInvoice(makeInputs(overrides))).toBeNull()
     }
   )
 })
