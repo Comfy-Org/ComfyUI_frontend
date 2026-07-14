@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 /** A partner (paid-API) node the workspace can allow or block. */
 export interface PartnerNode {
+  /** Canonical Comfy node type ID; matches the /object_info object key. */
   id: string
   name: string
   partner: string
@@ -18,10 +19,6 @@ export interface PartnerNodesResponse {
   partner_nodes: PartnerNode[]
   /** Workspace default applied to newly added partner nodes. */
   auto_enable_new: boolean
-}
-
-interface SetEnabledPayload {
-  enabled: boolean
 }
 
 interface BulkSetEnabledPayload {
@@ -44,7 +41,7 @@ async function authHeader() {
 }
 
 export const partnerNodesApi = {
-  /** GET /api/workspace/partner-nodes */
+  /** Readable by every active workspace member. */
   async list(): Promise<PartnerNodesResponse> {
     const headers = await authHeader()
     const response = await partnerNodesApiClient.get<PartnerNodesResponse>(
@@ -54,18 +51,19 @@ export const partnerNodesApi = {
     return response.data
   },
 
-  /** PATCH /api/workspace/partner-nodes/:id */
   async setEnabled(nodeId: string, enabled: boolean): Promise<void> {
     const headers = await authHeader()
-    const payload: SetEnabledPayload = { enabled }
+    const payload: BulkSetEnabledPayload = {
+      node_ids: [nodeId],
+      enabled
+    }
     await partnerNodesApiClient.patch(
-      api.apiURL(`/workspace/partner-nodes/${nodeId}`),
+      api.apiURL('/workspace/partner-nodes'),
       payload,
       { headers }
     )
   },
 
-  /** PATCH /api/workspace/partner-nodes (bulk) */
   async setEnabledBulk(nodeIds: string[], enabled: boolean): Promise<void> {
     const headers = await authHeader()
     const payload: BulkSetEnabledPayload = { node_ids: nodeIds, enabled }
@@ -76,12 +74,11 @@ export const partnerNodesApi = {
     )
   },
 
-  /** PUT /api/workspace/partner-nodes/settings */
   async setAutoEnableNew(autoEnableNew: boolean): Promise<void> {
     const headers = await authHeader()
     const payload: SetAutoEnablePayload = { auto_enable_new: autoEnableNew }
-    await partnerNodesApiClient.put(
-      api.apiURL('/workspace/partner-nodes/settings'),
+    await partnerNodesApiClient.patch(
+      api.apiURL('/workspace/partner-nodes'),
       payload,
       { headers }
     )
