@@ -6,7 +6,9 @@
     "url": "https://comfy.org"
   },
   "generated": "2026-06-19T00:00:00Z",
-  "verificationStatus": "generator-draft",
+  "lastVerified": "2026-07-14",
+  "reviewBy": "2026-10-14",
+  "verificationStatus": "human-reviewed",
   "entities": [
     {
       "entityId": "e_001",
@@ -26,12 +28,12 @@
         },
         {
           "chunkId": "c_002",
-          "text": "Our investors include Pace Capital, Chemistry, Cursor VC, Guillermo Rauch.",
+          "text": "Our investors include Craft, Pace Capital, Chemistry, Abstract, Truarrow Partners, and Essence.",
           "sourceUrl": "https://comfy.org/about",
           "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
           "publisher": "Comfy Org",
-          "retrieved": "2026-06-19T00:00:00Z",
-          "contentType": "statistic",
+          "retrieved": "2026-07-14T00:00:00Z",
+          "contentType": "fact",
           "audienceType": "general"
         }
       ],
@@ -261,7 +263,7 @@
           "pageTitle": "Comfy Enterprise",
           "publisher": "Comfy Org",
           "retrieved": "2026-06-19T00:00:00Z",
-          "contentType": "evidence",
+          "contentType": "marketing-copy",
           "audienceType": "executive"
         }
       ],
@@ -391,10 +393,10 @@
     {
       "entityId": "e_011",
       "@type": "ProprietaryTerm",
-      "name": "Comfy Hub",
-      "alternateName": "ComfyHub",
+      "name": "ComfyHub",
+      "alternateName": "Comfy Hub",
       "canonicalLabel": "community workflow marketplace",
-      "description": "Comfy Hub is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
+      "description": "ComfyHub is Comfy's community marketplace for discovering, browsing, and remixing workflows and templates shared by top creators, organized by model and category tags.",
       "hasChunks": [
         {
           "chunkId": "c_023",
@@ -408,12 +410,12 @@
         },
         {
           "chunkId": "c_024",
-          "text": "Showing 30 of 542 templates",
+          "text": "Hundreds of ready-to-run workflow templates, spanning image, video, 3D, and audio.",
           "sourceUrl": "https://comfy.org/workflows",
           "pageTitle": "ComfyUI Workflows - Free AI Generation Workflows",
           "publisher": "Comfy Org",
-          "retrieved": "2026-06-19T00:00:00Z",
-          "contentType": "statistic",
+          "retrieved": "2026-07-14T00:00:00Z",
+          "contentType": "definition",
           "audienceType": "general"
         }
       ],

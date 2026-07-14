@@ -45,13 +45,13 @@ The full ComfyUI engine — open source, fast, extensible, and yours to run howe
 ## Why professionals choose Desktop
 
 - **Unlimited customization.** Install any of 5,000+ community extensions, totaling 60,000+ nodes. Build your own custom nodes. Integrate with Photoshop, Nuke, Blender, Houdini, and any tool in your existing pipeline.
-- **Any model. No exceptions.** Run every open-source model — Wan 2.2, Flux, LTX, Qwen, and more. Finetune, customize, and control the full inference process. Or use partner models like Nano Banana and Grok.
+- **Any model. No exceptions.** Run every open-source model — Wan 2.2, Flux, LTX, Qwen, and more. Finetune, customize, and control the full inference process. Or use partner models like Nano Banana (Google) and Grok (xAI).
 - **Your machine. Your data. Your terms.** Run entirely offline. No internet connection required after setup.
 - **Free. Open source. No ceiling.** No feature gates, no trial periods, no "pro" tier for core functionality. GPL-3.0.
 
 ## An ecosystem that moves faster than any company could
 
-Over 5,000 community-built extensions plug into ComfyUI. When a new open model launches, ComfyUI implements it and the community builds it into workflows immediately. When a research paper drops a new technique, an extension appears within days.
+Over 5,000 community-built extensions plug into ComfyUI. New open models are typically supported same-day (see Supported models below). Novel techniques from research papers are a separate case — the community usually ships a custom-node implementation within days of the paper.
 
 ## Desktop FAQ
 
@@ -258,7 +258,7 @@ New models are added as they launch — often same-day.
 - **Open-source (free to run):** Wan 2.2 and 2.1, Flux and Flux.2 (including Klein), LTX-2.3, Qwen Image and Qwen Image Edit, Z-Image Turbo, Anima, ACE-Step 1.5, SeedVR2, Hunyuan Video, SD3.5, PixelDiT, BiRefNet, and more.
 - **Partner models (per-use credits, commercial use cleared):** Nano Banana and Nano Banana Pro (Google), Seedance 2.0 and Seedream (ByteDance), Kling, Veo, GPT Image 2 and Sora (OpenAI), Grok Image and Grok Video (xAI), Hunyuan 3D (Tencent), Tripo, Meshy, Rodin, Topaz, Ideogram, Recraft, Bria, ElevenLabs, and more.
 
-The same credit balance pays for open-source GPU time and partner-model calls, on both Cloud and Desktop.
+Open-source models are always free to run on Desktop. On Comfy Cloud, the same credit balance pays for GPU time on open-source models and per-use calls to Partner Nodes; Partner Nodes carry the same per-use credit pricing on both Cloud and Desktop.
 
 ---
 
