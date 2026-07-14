@@ -196,18 +196,6 @@ describe('OnboardingTourOverlay', () => {
     expect(screen.queryByTestId('onboarding-result-video')).toBeNull()
   })
 
-  it('shows the port hint only when prompt focus fell back to the port', async () => {
-    store.phase = 'active'
-    store.steps = [promptStep, runStep]
-    store.promptPortFallback = true
-
-    renderOverlay()
-
-    expect(
-      await screen.findByText('Click the prompt input to start typing.')
-    ).toBeInTheDocument()
-  })
-
   it('ends the tour with skip when the Skip control is pressed', async () => {
     store.phase = 'active'
     store.steps = [promptStep, runStep]
@@ -340,7 +328,7 @@ describe('OnboardingTourOverlay', () => {
     })
   })
 
-  it('shows pending result copy when the run produced no media', async () => {
+  it('keeps the result copy and shows a generating indicator until media lands', async () => {
     store.phase = 'active'
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
@@ -349,9 +337,11 @@ describe('OnboardingTourOverlay', () => {
     renderOverlay()
 
     expect(
-      await screen.findByText('Adding the final touches…')
+      await screen.findByText(
+        'Your new image lands right here — ready to download or share.'
+      )
     ).toBeInTheDocument()
-    expect(screen.queryByRole('img')).toBeNull()
+    expect(await screen.findByText('Generating…')).toBeInTheDocument()
   })
 
   it('spotlights the toolbar Run button on the Run step', async () => {

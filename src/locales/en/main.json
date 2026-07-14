@@ -2308,8 +2308,7 @@
       },
       "prompt": {
         "title": "Tell it what to make",
-        "body": "This prompt is yours to change — describe what you want and it reshapes the result.",
-        "portHint": "Click the prompt input to start typing."
+        "body": "This prompt reshapes the image: same style, new subject. This line is yours to change."
       },
       "run": {
         "title": "Now run it and watch it come to life",
@@ -2317,27 +2316,16 @@
       },
       "result": {
         "image": {
-          "ready": {
-            "title": "And there it is",
-            "body": "Your new image lands right here — ready to download or share."
-          },
-          "pending": {
-            "title": "Almost there",
-            "body": "Adding the final touches…"
-          }
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
         },
         "video": {
-          "ready": {
-            "title": "And there it is",
-            "body": "Your new video lands right here — ready to download or share."
-          },
-          "pending": {
-            "title": "Almost there",
-            "body": "Adding the final touches…"
-          }
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
         }
       }
     },
+    "generating": "Generating…",
     "gettingStarted": {
       "title": "Get started with Graph",
       "subtitle": "Start a workflow from scratch or load one that's ready to go.",

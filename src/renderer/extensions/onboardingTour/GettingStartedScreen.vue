@@ -8,26 +8,26 @@
   <Teleport v-if="visible" to="body">
     <div
       ref="screenRef"
-      class="fixed inset-0 z-2000 flex flex-col items-center justify-center bg-base-background px-8"
+      class="fixed inset-0 z-2000 flex flex-col items-center justify-center bg-base-background px-8 focus:outline-none"
       role="dialog"
       :aria-label="t('onboardingTour.gettingStarted.screenLabel')"
       tabindex="-1"
     >
-      <div class="flex w-full max-w-5xl flex-col items-center">
+      <div class="flex w-full max-w-5xl flex-col items-center gap-8">
         <div class="flex flex-col items-center gap-3">
           <h1
-            class="text-center text-[2.5rem]/11 font-medium text-base-foreground"
+            class="m-0 text-center text-[2.5rem]/11 font-medium text-base-foreground"
           >
             {{ t('onboardingTour.gettingStarted.title') }}
           </h1>
-          <p class="text-center text-base/5 text-muted-foreground">
+          <p class="m-0 text-center text-base/5 text-muted-foreground">
             {{ t('onboardingTour.gettingStarted.subtitle') }}
           </p>
         </div>
 
         <TabList
           v-model="activeTab"
-          class="mt-8 w-auto gap-1 rounded-full border border-white/10 p-0.5"
+          class="w-auto gap-1 rounded-full border border-white/10 p-0.5"
           :aria-label="t('onboardingTour.gettingStarted.tabsLabel')"
         >
           <Tab
@@ -41,7 +41,7 @@
           </Tab>
         </TabList>
 
-        <div class="mt-6 w-full">
+        <div class="w-full">
           <TabPanel
             v-for="tab in tabs"
             :key="tab.value"

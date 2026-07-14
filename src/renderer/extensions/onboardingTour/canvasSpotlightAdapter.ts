@@ -32,7 +32,7 @@ interface Size {
   height: number
 }
 
-const COACH_MARK_GAP = 20
+const COACH_MARK_GAP = 40
 const VIEWPORT_PADDING = 12
 
 function clamp(value: number, min: number, max: number): number {
@@ -120,9 +120,6 @@ export function coachMarkPosition(
   }
 }
 
-/** Padding (client px, constant across zoom) added around each spotlit node. */
-const MASK_PADDING = 10
-
 interface CanvasFrame {
   left: number
   top: number
@@ -184,21 +181,11 @@ export function nodesPresent(nodeIds: NodeId[]): boolean {
   return resolveNodes(nodeIds).length === nodeIds.length
 }
 
-function padRect(rect: ScreenRect): ScreenRect {
-  return {
-    left: rect.left - MASK_PADDING,
-    top: rect.top - MASK_PADDING,
-    width: rect.width + MASK_PADDING * 2,
-    height: rect.height + MASK_PADDING * 2
-  }
-}
-
-/** Padded client rects for the revealed nodes; unresolvable ids are dropped. */
+/** Client rects for the revealed nodes, hugging each node box; unresolvable ids are dropped. */
 export function maskRectsFor(nodeIds: NodeId[]): ScreenRect[] {
   return resolveNodes(nodeIds)
     .map((node) => nodeClientRect(node))
     .filter((rect): rect is ScreenRect => rect !== null)
-    .map(padRect)
 }
 
 /**

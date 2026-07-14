@@ -1,60 +1,46 @@
 <template>
-  <CardContainer
-    variant="ghost"
-    rounded="lg"
+  <div
     role="button"
     :tabindex="loading ? -1 : 0"
     :data-testid="`getting-started-card-${template.name}`"
     :aria-label="title"
     :aria-busy="loading"
-    class="group/card focus-visible:ring-ring hover:bg-node-component-surface focus-visible:ring-1 focus-visible:outline-none"
+    class="group/card focus-visible:ring-ring relative aspect-square cursor-pointer overflow-hidden rounded-2xl focus-visible:ring-1 focus-visible:outline-none"
     @click="onSelect"
     @keydown.enter.prevent="onSelect"
     @keydown.space.prevent="onSelect"
   >
-    <template #top>
-      <CardTop ratio="square">
-        <div class="relative size-full overflow-hidden rounded-lg">
-          <LazyImage
-            :src="thumbnailSrc"
-            :alt="title"
-            image-class="size-full object-cover transition-transform duration-300 ease-out group-hover/card:scale-105"
-          />
-          <div
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/40 to-transparent"
-          />
-          <div
-            v-if="loading"
-            class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-base-background/80 backdrop-blur-sm"
-          >
-            <DotSpinner :size="28" />
-            <span class="text-xs text-muted-foreground">
-              {{ t('onboardingTour.preparing') }}
-            </span>
-          </div>
-        </div>
-      </CardTop>
-    </template>
-    <template #bottom>
-      <CardBottom>
-        <h3
-          class="m-0 truncate pt-2 text-sm font-semibold text-base-foreground"
-          :title
-        >
-          {{ title }}
-        </h3>
-      </CardBottom>
-    </template>
-  </CardContainer>
+    <LazyImage
+      :src="thumbnailSrc"
+      :alt="title"
+      image-class="size-full object-cover opacity-60 transition-all duration-300 ease-out group-hover/card:scale-105 group-hover/card:opacity-100"
+    />
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/40 via-transparent via-50% to-black/40 transition-opacity duration-300 ease-out group-hover/card:opacity-60"
+    />
+    <h3
+      class="absolute inset-x-0 bottom-0 m-0 truncate p-4 text-sm font-semibold text-base-foreground drop-shadow-md"
+      :title
+    >
+      {{ title }}
+    </h3>
+    <div
+      v-if="loading"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-base-background/70 backdrop-blur-md"
+    >
+      <DotSpinner :size="24" />
+      <span class="text-xs font-medium text-base-foreground/80">
+        {{ t('onboardingTour.preparing') }}
+      </span>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'

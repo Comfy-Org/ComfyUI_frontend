@@ -23,7 +23,7 @@
               :y="hole.top"
               :width="hole.width"
               :height="hole.height"
-              rx="8"
+              rx="12"
               fill="black"
             />
           </mask>
@@ -40,13 +40,20 @@
         v-for="(hole, i) in spotRects"
         :key="i"
         data-testid="onboarding-spotlight"
-        class="absolute rounded-lg border border-border-default transition-all duration-500 ease-out"
+        :class="
+          cn(
+            'absolute transition-all duration-500 ease-out',
+            isRunStep
+              ? 'rounded-lg border border-node-component-outline'
+              : 'rounded-xl border-3 border-node-component-outline'
+          )
+        "
         :style="ringStyle(hole)"
       />
 
       <div
         ref="bubbleRef"
-        class="pointer-events-auto absolute flex w-80 flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface transition-all duration-500 ease-out"
+        class="pointer-events-auto absolute flex h-fit w-full max-w-xs flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface transition-[top,left] duration-500 ease-out"
         :style="bubbleStyle"
         tabindex="-1"
         aria-live="polite"
@@ -56,52 +63,61 @@
           data-testid="onboarding-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--lasso-select] size-4 text-base-foreground drop-shadow-md',
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
               cursorEdgeClass
             )
           "
           aria-hidden="true"
         />
         <div class="flex flex-col gap-2">
-          <span class="text-xs text-base-foreground opacity-50">
-            {{
-              t('onboardingTour.stepCounter', {
-                current: stepIndex + 1,
-                total: totalSteps
-              })
-            }}
-          </span>
-          <h2 class="text-base font-semibold text-base-foreground">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-base-foreground opacity-50">
+              {{
+                t('onboardingTour.stepCounter', {
+                  current: stepIndex + 1,
+                  total: totalSteps
+                })
+              }}
+            </span>
+            <span
+              v-if="isGenerating"
+              class="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <DotSpinner :size="12" />
+              {{ t('onboardingTour.generating') }}
+            </span>
+          </div>
+          <h2 class="m-0 text-base font-semibold text-base-foreground">
             {{ t(copy.title) }}
           </h2>
-          <p class="text-sm text-muted-foreground">{{ t(copy.body) }}</p>
-          <p v-if="showPortHint" class="text-sm text-muted-foreground">
-            {{ t('onboardingTour.step.prompt.portHint') }}
-          </p>
+          <p class="m-0 text-sm text-muted-foreground">{{ t(copy.body) }}</p>
         </div>
 
         <div class="flex items-center justify-between">
-          <button
-            type="button"
-            class="text-xs text-base-foreground transition-opacity hover:opacity-70"
+          <Button
+            variant="textonly"
+            size="md"
+            class="font-normal"
             @click="controller.end('skip')"
           >
             {{ t('onboardingTour.skip') }}
-          </button>
+          </Button>
           <div class="flex items-center gap-2">
-            <button
+            <Button
               v-if="stepIndex > 0"
-              type="button"
-              class="flex items-center gap-1 rounded-lg border border-muted-background bg-secondary-background px-3 py-2 text-xs text-base-foreground transition-colors hover:bg-secondary-background-hover"
+              variant="secondary"
+              size="md"
+              class="gap-1 border border-muted-background px-3 py-2 font-normal"
               @click="controller.back()"
             >
               <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
               {{ t('onboardingTour.back') }}
-            </button>
-            <button
+            </Button>
+            <Button
               v-if="showNextButton"
-              type="button"
-              class="flex items-center gap-1 rounded-lg bg-base-foreground px-3 py-2 text-xs text-base-background transition-opacity hover:opacity-90"
+              variant="inverted"
+              size="md"
+              class="gap-1 px-3 py-2 font-normal"
               @click="onNext"
             >
               {{
@@ -112,7 +128,7 @@
                 class="icon-[lucide--arrow-right] size-4"
                 aria-hidden="true"
               />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -127,6 +143,9 @@ import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
 
 import {
   RUN_BUTTON_SELECTOR,
@@ -150,7 +169,6 @@ const {
   spotlitNodeIds,
   currentStep,
   totalSteps,
-  promptPortFallback,
   resultMedia
 } = storeToRefs(store)
 
@@ -159,13 +177,10 @@ const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
 
 const isRunStep = computed(() => currentStep.value?.kind === 'run')
 const isResultStep = computed(() => currentStep.value?.kind === 'result')
+const isGenerating = computed(() => isResultStep.value && !resultMedia.value)
 
 // The Run step advances on click (no Next escape); every later step keeps Next.
 const showNextButton = computed(() => !isRunStep.value)
-
-const showPortHint = computed(
-  () => currentStep.value?.kind === 'prompt' && promptPortFallback.value
-)
 
 function stepCopyKey(step: TourStep): { title: string; body: string } {
   const base = 'onboardingTour.step'
@@ -178,11 +193,9 @@ function stepCopyKey(step: TourStep): { title: string; body: string } {
       return { title: `${base}.run.title`, body: `${base}.run.body` }
     case 'result': {
       const media = step.mediaKind ?? 'image'
-      // Bridge the generating gap: pending until the media lands, then ready.
-      const state = resultMedia.value ? 'ready' : 'pending'
       return {
-        title: `${base}.result.${media}.${state}.title`,
-        body: `${base}.result.${media}.${state}.body`
+        title: `${base}.result.${media}.title`,
+        body: `${base}.result.${media}.body`
       }
     }
   }
@@ -278,12 +291,17 @@ onUnmounted(() => {
   if (isActive.value) controller.end('skip')
 })
 
+/** Px the node ring sits outside the box, mirroring litegraph's selection overlay (inset -3px). */
+const NODE_RING_OFFSET = 3
+
+// The node ring frames the box from just outside; the Run button ring hugs it tightly.
 function ringStyle(rect: ScreenRect) {
+  const offset = isRunStep.value ? 0 : NODE_RING_OFFSET
   return {
-    left: `${rect.left}px`,
-    top: `${rect.top}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`
+    left: `${rect.left - offset}px`,
+    top: `${rect.top - offset}px`,
+    width: `${rect.width + offset * 2}px`,
+    height: `${rect.height + offset * 2}px`
   }
 }
 
@@ -313,12 +331,12 @@ const bubbleStyle = computed(() =>
     : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
 )
 
-// Pin the cursor to the box edge facing the target (centered on that edge).
+/** Floats the cursor mid-gap on the target-facing edge, tip rotated toward the node. */
 const CURSOR_EDGE_CLASS: Record<CoachMarkEdge, string> = {
-  top: '-top-3 left-1/2 -translate-x-1/2',
-  bottom: '-bottom-3 left-1/2 -translate-x-1/2',
-  left: '-left-3 top-1/2 -translate-y-1/2',
-  right: '-right-3 top-1/2 -translate-y-1/2'
+  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
+  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
+  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
+  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
 }
 const cursorEdgeClass = computed(() =>
   placement.value ? CURSOR_EDGE_CLASS[placement.value.pointerEdge] : ''

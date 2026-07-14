@@ -107,7 +107,7 @@ describe('canvasSpotlightAdapter', () => {
   })
 
   describe('maskRectsFor', () => {
-    it('resolves node ids through the current graph and pads each rect', () => {
+    it('resolves node ids through the current graph, hugging each node box', () => {
       const node = fakeNode(7, [0, 0, 100, 50])
       mocks.currentGraph = fromPartial<LGraph>({
         getNodeById: (id: NodeId) => (id === toNodeId(7) ? node : null)
@@ -116,8 +116,7 @@ describe('canvasSpotlightAdapter', () => {
       const rects = maskRectsFor([toNodeId(7)])
 
       expect(rects).toHaveLength(1)
-      // rect padded outward by 10 on every side
-      expect(rects[0]).toEqual({ left: -10, top: -10, width: 120, height: 70 })
+      expect(rects[0]).toEqual({ left: 0, top: 0, width: 100, height: 50 })
     })
 
     it('drops ids that do not resolve, never throwing', () => {
@@ -193,10 +192,10 @@ describe('canvasSpotlightAdapter', () => {
     it('centers below the target with room on all sides', () => {
       const target = { left: 600, top: 300, width: 100, height: 60 }
 
-      // left = 600 + 50 - 160 = 490; top = 300 + 60 + 20 = 380
+      // left = 600 + 50 - 160 = 490; top = 300 + 60 + 40 = 400
       expect(coachMarkPosition(target, bubble, viewport)).toEqual({
         left: 490,
-        top: 380,
+        top: 400,
         pointerEdge: 'top'
       })
     })
@@ -204,8 +203,8 @@ describe('canvasSpotlightAdapter', () => {
     it('flips above when it would overflow the bottom edge', () => {
       const target = { left: 600, top: 800, width: 100, height: 60 }
 
-      // below (880) + 200 overflows 900; flip above: 800 - 200 - 20 = 580
-      expect(coachMarkPosition(target, bubble, viewport).top).toBe(580)
+      // below (900) + 200 overflows 900; flip above: 800 - 200 - 40 = 560
+      expect(coachMarkPosition(target, bubble, viewport).top).toBe(560)
     })
 
     it('places to the right when below/above would clip the left edge', () => {
@@ -214,7 +213,7 @@ describe('canvasSpotlightAdapter', () => {
       // centered-below/above overflow the left edge; the right placement fits.
       // The card sits to the right, so the cursor points off its left edge.
       expect(coachMarkPosition(target, bubble, viewport)).toEqual({
-        left: 0 + 40 + 20,
+        left: 0 + 40 + 40,
         top: 300 + 20 - 100,
         pointerEdge: 'left'
       })
@@ -225,7 +224,7 @@ describe('canvasSpotlightAdapter', () => {
 
       // right placement would overflow; the left placement fits.
       expect(coachMarkPosition(target, bubble, viewport)).toEqual({
-        left: 1400 - 320 - 20,
+        left: 1400 - 320 - 40,
         top: 300 + 20 - 100,
         pointerEdge: 'right'
       })

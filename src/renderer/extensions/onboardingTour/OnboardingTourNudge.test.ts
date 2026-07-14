@@ -79,6 +79,25 @@ describe('OnboardingTourNudge', () => {
     expect(await screen.findByText(nudgeTitle)).toBeInTheDocument()
   })
 
+  it('leads with the generated image when the result media is an image', async () => {
+    renderNudge()
+    store.resultMedia = { url: 'result.png', kind: 'image' }
+    store.showNudge()
+
+    const image = await screen.findByRole('img', { name: nudgeTitle })
+    expect(image).toHaveAttribute('src', 'result.png')
+  })
+
+  it('leads with a looping video when the result media is a video', async () => {
+    renderNudge()
+    store.resultMedia = { url: 'result.mp4', kind: 'video' }
+    store.showNudge()
+
+    const video = await screen.findByTestId('onboarding-nudge-video')
+    expect(video).toHaveAttribute('src', 'result.mp4')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
   it('opens the template library and reports the click on Explore templates', async () => {
     renderNudge()
     store.showNudge()
