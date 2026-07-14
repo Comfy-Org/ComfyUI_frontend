@@ -32,6 +32,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const {
   mockApiKeyAuthStore,
@@ -41,7 +43,8 @@ const {
   mockExtensionService,
   mockNodeOutputStore,
   mockWorkspaceWorkflow,
-  mockRefreshMissingModelPipeline
+  mockRefreshMissingModelPipeline,
+  mockDisabledPartnerNodesStore
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
     getApiKey: vi.fn()
@@ -50,7 +53,8 @@ const {
     getAuthToken: vi.fn()
   },
   mockSettingStore: {
-    get: vi.fn()
+    get: vi.fn(),
+    set: vi.fn()
   },
   mockToastStore: {
     addAlert: vi.fn(),
@@ -67,7 +71,16 @@ const {
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null
   },
-  mockRefreshMissingModelPipeline: vi.fn()
+  mockRefreshMissingModelPipeline: vi.fn(),
+  mockDisabledPartnerNodesStore: {
+    offenders: [] as Array<{
+      nodeId: string
+      displayName: string
+    }>,
+    disabledAncestorExecutionIds: new Set<string>(),
+    scanGraph: vi.fn(),
+    surfaceDisabledNodes: vi.fn().mockResolvedValue(undefined)
+  }
 }))
 
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -127,6 +140,10 @@ vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
   runMissingModelPipeline: vi.fn()
 }))
 
+vi.mock('@/platform/workspace/stores/disabledPartnerNodesStore', () => ({
+  useDisabledPartnerNodesStore: () => mockDisabledPartnerNodesStore
+}))
+
 function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
   return {
     id: 1,
@@ -179,6 +196,7 @@ describe('ComfyApp', () => {
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
     mockWorkspaceWorkflow.activeWorkflow = null
+    mockDisabledPartnerNodesStore.offenders = []
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
@@ -189,6 +207,168 @@ describe('ComfyApp', () => {
   })
 
   describe('queuePrompt', () => {
+    it('opens workflow errors without queueing disabled nodes', async () => {
+      mockDisabledPartnerNodesStore.offenders = [
+        {
+          nodeId: '1',
+          displayName: 'Disabled partner node'
+        }
+      ]
+      const queueSpy = vi.spyOn(api, 'queuePrompt')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(mockDisabledPartnerNodesStore.scanGraph).toHaveBeenCalledOnce()
+      expect(useRightSidePanelStore().activeTab).toBe('errors')
+      expect(queueSpy).not.toHaveBeenCalled()
+    })
+
+    it('shows a toast when legacy mode cannot open workflow errors', async () => {
+      mockSettingStore.get.mockImplementation((key: string) => {
+        if (key === 'Comfy.UseNewMenu') return 'Disabled'
+        if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+      })
+      mockDisabledPartnerNodesStore.offenders = [
+        {
+          nodeId: '1',
+          displayName: 'Disabled partner node'
+        }
+      ]
+      const queueSpy = vi.spyOn(api, 'queuePrompt')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          group: 'disabled-nodes'
+        })
+      )
+      expect(queueSpy).not.toHaveBeenCalled()
+    })
+
+    it('rechecks governance after deferred authentication', async () => {
+      let resolveAuth!: (token: string | undefined) => void
+      mockAuthStore.getAuthToken.mockReturnValue(
+        new Promise((resolve) => {
+          resolveAuth = resolve
+        })
+      )
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const graphToPromptSpy = vi.spyOn(app, 'graphToPrompt')
+      const queueSpy = vi.spyOn(api, 'queuePrompt')
+
+      const queued = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(mockAuthStore.getAuthToken).toHaveBeenCalledOnce()
+      )
+      mockDisabledPartnerNodesStore.offenders = [
+        {
+          nodeId: '1',
+          displayName: 'Disabled partner node'
+        }
+      ]
+      resolveAuth(undefined)
+
+      await expect(queued).resolves.toBe(false)
+      expect(mockDisabledPartnerNodesStore.scanGraph).toHaveBeenCalledTimes(2)
+      expect(useRightSidePanelStore().activeTab).toBe('errors')
+      expect(graphToPromptSpy).not.toHaveBeenCalled()
+      expect(queueSpy).not.toHaveBeenCalled()
+    })
+
+    it('allows partial execution outside disabled-node branches', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = new ComfyWorkflow({
+        path: 'workflows/partial.json',
+        modified: 0,
+        size: 0
+      })
+      mockDisabledPartnerNodesStore.offenders = [
+        {
+          nodeId: '1',
+          displayName: 'Unrelated disabled node'
+        }
+      ]
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'DisabledPartnerNode',
+            inputs: {},
+            _meta: { title: 'Unrelated disabled node' }
+          },
+          '2': {
+            class_type: 'SaveImage',
+            inputs: { literal_pair: ['1', 0] },
+            _meta: { title: 'Selected output' }
+          }
+        },
+        workflow: createWorkflowGraphData(),
+        nodeDependencies: new Map([
+          ['1', new Set<string>()],
+          ['2', new Set<string>()]
+        ])
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      const queueSpy = vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: '',
+        node_errors: {},
+        error: ''
+      })
+      const target = createNodeExecutionId([2])
+
+      await expect(app.queuePrompt(0, 1, [target])).resolves.toBe(true)
+
+      expect(queueSpy).toHaveBeenCalledWith(
+        0,
+        expect.anything(),
+        expect.objectContaining({ partialExecutionTargets: [target] })
+      )
+    })
+
+    it('blocks partial execution through disabled-node dependencies', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = new ComfyWorkflow({
+        path: 'workflows/partial.json',
+        modified: 0,
+        size: 0
+      })
+      mockDisabledPartnerNodesStore.offenders = [
+        {
+          nodeId: '1',
+          displayName: 'Disabled dependency'
+        }
+      ]
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'DisabledPartnerNode',
+            inputs: {},
+            _meta: { title: 'Disabled dependency' }
+          },
+          '2': {
+            class_type: 'SaveImage',
+            inputs: { image: ['1', 0] },
+            _meta: { title: 'Selected output' }
+          }
+        },
+        workflow: createWorkflowGraphData(),
+        nodeDependencies: new Map([
+          ['1', new Set<string>()],
+          ['2', new Set(['1'])]
+        ])
+      })
+      const queueSpy = vi.spyOn(api, 'queuePrompt')
+      const target = createNodeExecutionId([2])
+
+      await expect(app.queuePrompt(0, 1, [target])).resolves.toBe(false)
+
+      expect(queueSpy).not.toHaveBeenCalled()
+      expect(useRightSidePanelStore().activeTab).toBe('errors')
+    })
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({
@@ -221,7 +401,8 @@ describe('ComfyApp', () => {
       mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
-        workflow: createWorkflowGraphData()
+        workflow: createWorkflowGraphData(),
+        nodeDependencies: new Map([['1', new Set<string>()]])
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({

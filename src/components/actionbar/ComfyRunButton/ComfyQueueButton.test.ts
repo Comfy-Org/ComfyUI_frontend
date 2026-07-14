@@ -7,12 +7,14 @@ import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { useCommandStore } from '@/stores/commandStore'
 import {
   TaskItemImpl,
   useQueueSettingsStore,
   useQueueStore
 } from '@/stores/queueStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
@@ -62,7 +64,8 @@ const i18n = createI18n({
         stopRunInstantTooltip: 'Stop running',
         runWorkflow: 'Run workflow',
         runWorkflowFront: 'Run workflow front',
-        runWorkflowDisabled: 'Run workflow disabled'
+        runWorkflowDisabled: 'Run workflow disabled',
+        runWorkflowDisabledNodes: 'Run workflow disabled nodes'
       }
     }
   }
@@ -175,6 +178,34 @@ describe('ComfyQueueButton', () => {
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-running')
+    expect(commandStore.execute).toHaveBeenCalledWith('Comfy.QueuePrompt', {
+      metadata: {
+        subscribe_to_run: false,
+        trigger_source: 'button'
+      }
+    })
+  })
+
+  it('keeps instant mode idle while dispatching a disabled-node queue command', async () => {
+    const { user } = renderQueueButton()
+    const queueSettingsStore = useQueueSettingsStore()
+    const commandStore = useCommandStore()
+    const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
+    disabledPartnerNodesStore.offenders = [
+      {
+        nodeId: createNodeExecutionId([1]),
+        displayName: 'Blocked Partner Node'
+      }
+    ]
+
+    queueSettingsStore.mode = 'instant-idle'
+    await nextTick()
+
+    await user.click(screen.getByTestId('queue-button'))
+    await nextTick()
+
+    expect(queueSettingsStore.mode).toBe('instant-idle')
+    expect(disabledPartnerNodesStore.scanGraph).toHaveBeenCalledOnce()
     expect(commandStore.execute).toHaveBeenCalledWith('Comfy.QueuePrompt', {
       metadata: {
         subscribe_to_run: false,

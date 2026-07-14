@@ -26,7 +26,11 @@ import { compressWidgetInputSlots } from './litegraphUtil'
 export const graphToPrompt = async (
   graph: LGraph,
   options: { sortNodes?: boolean } = {}
-): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
+): Promise<{
+  workflow: ComfyWorkflowJSON
+  output: ComfyApiWorkflow
+  nodeDependencies: Map<string, Set<string>>
+}> => {
   const { sortNodes = false } = options
 
   for (const node of graph.computeExecutionOrder(false)) {
@@ -79,6 +83,7 @@ export const graphToPrompt = async (
   }
 
   const output: ComfyApiWorkflow = {}
+  const nodeDependencies = new Map<string, Set<string>>()
   // Process nodes in order of execution
   for (const node of nodeDtoMap.values()) {
     // Don't serialize muted nodes
@@ -91,6 +96,7 @@ export const graphToPrompt = async (
     }
 
     const inputs: ComfyApiWorkflow[string]['inputs'] = {}
+    const dependencies = new Set<string>()
     const { widgets } = node
 
     // Store all widget values in the API prompt.
@@ -133,9 +139,11 @@ export const graphToPrompt = async (
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]
+      dependencies.add(String(resolvedInput.origin_id))
     }
 
-    output[String(node.id)] = {
+    const nodeId = String(node.id)
+    output[nodeId] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
@@ -145,6 +153,7 @@ export const graphToPrompt = async (
         title: node.title
       }
     }
+    nodeDependencies.set(nodeId, dependencies)
   }
 
   // Remove inputs connected to removed nodes
@@ -156,5 +165,5 @@ export const graphToPrompt = async (
     }
   }
 
-  return { workflow: workflow as ComfyWorkflowJSON, output }
+  return { workflow: workflow as ComfyWorkflowJSON, output, nodeDependencies }
 }
