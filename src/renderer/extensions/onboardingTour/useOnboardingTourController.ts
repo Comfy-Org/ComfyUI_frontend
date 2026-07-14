@@ -152,10 +152,6 @@ function _useOnboardingTourController() {
    * behind the feature flag and shown once per user via `isNewUser()`.
    */
   function shouldStartTour(): boolean {
-    // TEMP TEST — delete before commit. Bypasses the cloud/subscription/new-user
-    // gate so the tour runs on plain `pnpm dev` for manual frontend testing.
-    return true
-
     if (!isCloud) return false
     if (!useSubscription().isSubscriptionEnabled()) return false
     if (useNewUserService().isNewUser() !== true) return false
