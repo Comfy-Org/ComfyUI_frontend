@@ -731,7 +731,7 @@ test.describe('Assets sidebar - bulk actions', () => {
 
 cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
   cloudTest(
-    'Single job selection uses preserve naming strategy',
+    'Single job selection uses flat naming strategy',
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
@@ -749,12 +749,12 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       const payload = exportRequests[0]
       expect(payload.job_ids).toEqual(['job-gamma'])
       expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('preserve')
+      expect(payload.naming_strategy).toBe('flat')
     }
   )
 
   cloudTest(
-    'Multiple selected assets from one job use preserve naming strategy',
+    'Multiple selected assets from one job keep name filters with flat naming strategy',
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
@@ -785,12 +785,12 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       expect(payload.job_asset_name_filters?.['job-gamma']?.toSorted()).toEqual(
         ['abstract_art.png', 'abstract_art_alt.png']
       )
-      expect(payload.naming_strategy).toBe('preserve')
+      expect(payload.naming_strategy).toBe('flat')
     }
   )
 
   cloudTest(
-    'Multiple selected jobs use job-time naming strategy',
+    'Multiple selected jobs use flat naming strategy',
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
@@ -811,7 +811,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       const payload = exportRequests[0]
       expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])
       expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('group_by_job_time')
+      expect(payload.naming_strategy).toBe('flat')
     }
   )
 })
