@@ -2047,6 +2047,27 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     )
   })
 
+  it('threads an empty-string cursor into after instead of falling back to offset', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: ''
+        })
+      )
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, after: '' }
+    )
+  })
+
   it('falls back to offset paging when the server mints no cursor', async () => {
     vi.mocked(assetService.getAssetsPageByTag)
       .mockResolvedValueOnce(

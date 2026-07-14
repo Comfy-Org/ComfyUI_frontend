@@ -291,7 +291,7 @@ export const useAssetsStore = defineStore('assets', () => {
       try {
         const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
-          ...(requestedAfter
+          ...(requestedAfter !== undefined
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
@@ -304,7 +304,7 @@ export const useAssetsStore = defineStore('assets', () => {
           ? [...flatOutputAssets.value, ...fresh]
           : batch
         flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor || undefined
+        const nextCursor = page.next_cursor
         const cursorStuck =
           nextCursor !== undefined && nextCursor === requestedAfter
         flatOutputNextCursor = cursorStuck ? undefined : nextCursor
@@ -645,7 +645,10 @@ export const useAssetsStore = defineStore('assets', () => {
                 await delay(50, { signal: controller.signal })
               }
             } catch (err) {
-              if (controller.signal.aborted) return
+              if (controller.signal.aborted) {
+                if (isFirstBatch) state.isLoading = false
+                return
+              }
               if (isStale(category, state)) return
               console.error(`Error loading batch for ${category}:`, err)
 

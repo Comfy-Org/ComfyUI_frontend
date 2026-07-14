@@ -192,6 +192,7 @@ export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
+const EMPTY_PAGE: AssetResponse = { assets: [], total: 0, has_more: false }
 
 const uploadedAssetResponseSchema = assetItemSchema.extend({
   created_new: z.boolean()
@@ -461,7 +462,7 @@ function createAssetService() {
     }: AssetPaginationOptions = {}
   ): Promise<AssetResponse> {
     if (!nodeType || typeof nodeType !== 'string') {
-      return { assets: [], total: 0, has_more: false }
+      return EMPTY_PAGE
     }
 
     // Find the category for this node type using efficient O(1) lookup
@@ -469,7 +470,7 @@ function createAssetService() {
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
     if (!category) {
-      return { assets: [], total: 0, has_more: false }
+      return EMPTY_PAGE
     }
 
     // Fetch assets for this category using same API pattern as getAssetModels
