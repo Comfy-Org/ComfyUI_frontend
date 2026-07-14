@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import './agentPanel.css'
+
 import { useClipboard } from '@vueuse/core'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -96,16 +98,25 @@ function mentionableNodes(): SelectedNode[] {
   }))
 }
 
+let lastKnownGraph: { serialized: string; workflowId: string } | null = null
+
+function reclaimMovedBinding(activePath: string): string | undefined {
+  if (lastKnownGraph === null) return undefined
+  const graph = app.graph?.serialize()
+  if (!graph || JSON.stringify(graph) !== lastKnownGraph.serialized)
+    return undefined
+  const { workflowId } = lastKnownGraph
+  bindingStore.bind(workflowId, activePath)
+  lastKnownGraph = null
+  return workflowId
+}
+
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
-  const bound = bindingStore.workflowIdFor(active.path)
-  if (bound !== undefined)
-    return { id: bound, speculative: false, tabPath: active.path }
-  const savedId = active.activeState?.id
-  return typeof savedId === 'string'
-    ? { id: savedId, speculative: true, tabPath: active.path }
-    : undefined
+  const bound =
+    bindingStore.workflowIdFor(active.path) ?? reclaimMovedBinding(active.path)
+  return bound === undefined ? undefined : { id: bound, tabPath: active.path }
 }
 
 const activeTab = computed<ActiveTab | null>(() => {
@@ -120,36 +131,35 @@ function takeWorkflowSnapshot(): DraftUpload | undefined {
   const graph = app.graph?.serialize()
   if (!graph?.nodes?.length) return undefined
   const serialized = JSON.stringify(graph)
-  if (serialized === lastSentGraph) return undefined
+  const activePath = workflowStore.activeWorkflow?.path ?? null
+  if (serialized === lastSentGraph && activePath === snapshotTabPath)
+    return undefined
   lastSentGraph = serialized
-  snapshotTabPath = workflowStore.activeWorkflow?.path ?? null
+  snapshotTabPath = activePath
   return { content: graph, version: draftStore.version }
 }
 
 function resetSnapshotGuard(): void {
   lastSentGraph = null
   snapshotTabPath = null
-}
-
-function cloudIdFor(tab: ComfyWorkflow): string | undefined {
-  const bound = bindingStore.workflowIdFor(tab.path)
-  if (bound !== undefined) return bound
-  const savedId = tab.activeState?.id
-  return typeof savedId === 'string' ? savedId : undefined
+  lastKnownGraph = null
 }
 
 function openTabsSnapshot(): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
-    const workflowId = cloudIdFor(tab)
+    const workflowId = bindingStore.workflowIdFor(tab.path)
     return workflowId === undefined
       ? []
       : [{ workflow_id: workflowId, name: tab.filename }]
   })
   if (openTabs.length === 0) return undefined
-  const active = workflowStore.activeWorkflow
+  const activePath = workflowStore.activeWorkflow?.path
   return {
     open_tabs: openTabs,
-    current_tab: active ? cloudIdFor(active) : undefined
+    current_tab:
+      activePath === undefined
+        ? undefined
+        : bindingStore.workflowIdFor(activePath)
   }
 }
 
@@ -158,6 +168,8 @@ function onWorkflowAdopted(
   sent: WorkflowTurnContext | undefined,
   uploaded: boolean
 ): void {
+  if (uploaded && lastSentGraph !== null)
+    lastKnownGraph = { serialized: lastSentGraph, workflowId }
   if (sent !== undefined && sent.id === workflowId) {
     bindingStore.bind(workflowId, sent.tabPath)
     return
@@ -413,6 +425,9 @@ async function loadDraft(
     await app.loadGraphData(workflow, true, true, tab)
     draftRejectionNotified = false
     lastApplied = { workflowId, version }
+    const rendered = app.graph?.serialize()
+    if (rendered)
+      lastKnownGraph = { serialized: JSON.stringify(rendered), workflowId }
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: workflowId,
       target: tab === null ? 'new_tab' : 'existing_tab'

@@ -1023,6 +1023,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
     hostStores.workflow.tabs.set(tab.path, tab)
     hostStores.workflow.activeWorkflow = tab
+    if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
   }
 
@@ -2109,6 +2110,115 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentDraftStore().version).toBe(null)
   })
 
+  it('reports only the bound tab in the snapshot when a second tab is unbound', async () => {
+    makeTab('wf-42')
+    const unbound: FakeTab = {
+      path: 'workflows/scratch.json',
+      directory: 'workflows',
+      filename: 'scratch',
+      isTemporary: false,
+      isModified: false,
+      activeState: { id: 'graph-internal-id-not-a-cloud-id' }
+    }
+    hostStores.workflow.tabs.set(unbound.path, unbound)
+    const bodies = mockMessagesEndpoint('wf-42', {
+      status: 404,
+      body: { error: 'none' }
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[0]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
+      current_tab: 'wf-42'
+    })
+  })
+
+  it('a bound workflow follows its unchanged content to a renamed tab', async () => {
+    makeTab('wf-42')
+    appMock.graph.nodes = [{ id: 1 }]
+    const bodies = mockMessagesEndpoint('wf-42', {
+      status: 404,
+      body: { error: 'none' }
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const duck: FakeTab = {
+      path: 'workflows/duck.json',
+      directory: 'workflows',
+      filename: 'duck',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(duck.path, duck)
+    hostStores.workflow.activeWorkflow = duck
+
+    await userEvent.type(screen.getByRole('textbox'), 'second message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[1]).toMatchObject({
+      workflow_id: 'wf-42',
+      open_tabs: [{ workflow_id: 'wf-42', name: 'duck' }],
+      current_tab: 'wf-42'
+    })
+    expect(bodies[1]).toHaveProperty('draft')
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      'workflows/duck.json'
+    )
+  })
+
+  it('a changed graph does not reclaim the binding for a new tab', async () => {
+    makeTab('wf-42')
+    appMock.graph.nodes = [{ id: 1 }]
+    const bodies = mockMessagesEndpoint('wf-42', {
+      status: 404,
+      body: { error: 'none' }
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const scratch: FakeTab = {
+      path: 'workflows/scratch.json',
+      directory: 'workflows',
+      filename: 'scratch',
+      isTemporary: false,
+      isModified: false,
+      activeState: null
+    }
+    hostStores.workflow.tabs.set(scratch.path, scratch)
+    hostStores.workflow.activeWorkflow = scratch
+    appMock.graph.nodes = [{ id: 2 }]
+
+    await userEvent.type(screen.getByRole('textbox'), 'second message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(bodies[1]).toMatchObject({
+      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
+    })
+    expect(bodies[1]).not.toHaveProperty('current_tab')
+  })
+
   it('sends every open tab that has a cloud id with the message', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42', {
@@ -2129,6 +2239,10 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
+    )
     makeTab('wf-42')
     const mountain: FakeTab = {
       path: 'workflows/mountain.json',
@@ -2139,10 +2253,6 @@ describe('AgentPanelRoot workflow binding', () => {
       activeState: null
     }
     hostStores.workflow.tabs.set(mountain.path, mountain)
-    localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
-      JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
-    )
     const bodies = mockMessagesEndpoint('wf-42', {
       status: 404,
       body: { error: 'none' }
@@ -2257,8 +2367,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(telemetry.trackAgentNodeTagged).not.toHaveBeenCalled()
   })
 
-  it('retries once without the speculative id when the server rejects it', async () => {
-    const tab = makeTab('someone-elses-uuid')
+  it('sends no workflow id for an unbound tab and posts exactly once', async () => {
+    const tab = makeTab()
+    tab.activeState = { id: 'graph-internal-id-not-a-cloud-id' }
     appMock.graph.nodes = [{ id: 1 }]
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -2291,13 +2402,10 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    expect(bodies).toHaveLength(2)
-    expect(bodies[0]).toMatchObject({ workflow_id: 'someone-elses-uuid' })
-    expect(bodies[1]).not.toHaveProperty('workflow_id')
-    expect(bodies[1]).toMatchObject({
-      open_tabs: [{ workflow_id: 'someone-elses-uuid', name: 'current' }],
-      current_tab: 'someone-elses-uuid'
-    })
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies[0]).not.toHaveProperty('current_tab')
 
     const graph = { version: 0.4, nodes: [{ id: 9 }] }
     ws.emit('draft_patch', {

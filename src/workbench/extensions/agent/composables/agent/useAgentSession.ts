@@ -35,7 +35,6 @@ interface SentTag {
 
 export interface WorkflowTurnContext {
   id: string
-  speculative: boolean
   tabPath: string
 }
 
@@ -189,10 +188,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return await post(threadId, upload)
       } catch (error) {
         if (!(error instanceof AgentApiError)) throw error
-        if (wfContext?.speculative === true && error.status === 403) {
-          const input = buildInput(upload)
-          return await rest.postMessage(threadId, input)
-        }
         const serverVersion = (error.body as { version?: unknown } | null)
           ?.version
         if (
