@@ -414,7 +414,6 @@ export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
 export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'close_button'
-  | 'dialog_opened'
   | 'flag_disabled'
 
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {

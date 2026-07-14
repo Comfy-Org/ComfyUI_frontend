@@ -25,13 +25,4 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       /class="[^"]*graph-canvas-panel[^"]*overflow-visible/
     )
   })
-
-  it('closes the docked agent panel while subscription dialogs are open', () => {
-    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
-    const source = readFileSync(filePath, 'utf-8')
-
-    expect(source).toContain("key === 'subscription-required'")
-    expect(source).toContain("key === 'free-tier-info'")
-    expect(source).toContain("agentPanelStore.close('dialog_opened')")
-  })
 })
