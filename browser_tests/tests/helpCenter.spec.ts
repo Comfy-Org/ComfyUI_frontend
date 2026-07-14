@@ -138,6 +138,10 @@ test.describe('Help Center', () => {
       )
 
       await helpCenter.mockReleases(releases)
+      await comfyPage.settings.setSetting(
+        'Comfy.Notification.ShowVersionUpdates',
+        true
+      )
       await comfyPage.setup({ mockReleases: false })
       await helpCenter.open()
 
@@ -157,6 +161,10 @@ test.describe('Help Center', () => {
 
       await helpCenter.mockReleases([release])
       await helpCenter.stubDocsPage()
+      await comfyPage.settings.setSetting(
+        'Comfy.Notification.ShowVersionUpdates',
+        true
+      )
       await comfyPage.setup({ mockReleases: false })
       await helpCenter.open()
 

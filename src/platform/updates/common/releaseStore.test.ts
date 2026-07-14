@@ -18,13 +18,13 @@ vi.mock('semver', () => ({
   valid: vi.fn(() => '1.0.0')
 }))
 
-const mockData = vi.hoisted(() => ({ isDesktop: true }))
+const mockData = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  get isDesktop() {
-    return mockData.isDesktop
-  },
-  isCloud: false
+  isDesktop: false,
+  get isCloud() {
+    return mockData.isCloud
+  }
 }))
 
 vi.mock('@/platform/updates/common/releaseService', () => {
@@ -39,6 +39,14 @@ vi.mock('@/platform/updates/common/releaseService', () => {
     })
   }
 })
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    // Non-empty => feature flags already received, so fetchReleases' gate
+    // resolves immediately instead of waiting on the websocket.
+    serverFeatureFlags: ref<Record<string, unknown>>({ ready: true })
+  }
+}))
 
 vi.mock('@/platform/settings/settingStore', () => {
   const get = vi.fn((key: string) => {
@@ -95,7 +103,12 @@ vi.mock('@/stores/systemStatsStore', () => {
   }
 })
 vi.mock('@vueuse/core', () => ({
-  until: vi.fn(() => Promise.resolve()),
+  // until() is awaited directly in some call sites and chained as
+  // until(...).toBe(...) in others; support both shapes.
+  until: vi.fn(() => {
+    const resolved = Promise.resolve()
+    return Object.assign(resolved, { toBe: vi.fn(() => Promise.resolve()) })
+  }),
   useStorage: vi.fn(() => ({ value: {} })),
   createSharedComposable: vi.fn((fn) => fn)
 }))
@@ -115,6 +128,7 @@ describe('useReleaseStore', () => {
 
     vi.resetAllMocks()
     mockSystemStatsState.reset()
+    mockData.isCloud = false
   })
 
   describe('initial state', () => {
@@ -442,11 +456,11 @@ describe('useReleaseStore', () => {
 
       vi.mocked(releaseService.getReleases).mockReturnValue(promise)
 
-      const initPromise = store.initialize()
+      const fetchPromise = store.fetchReleases()
       expect(store.isLoading).toBe(true)
 
       resolvePromise!([mockRelease])
-      await initPromise
+      await fetchPromise
 
       expect(store.isLoading).toBe(false)
     })
@@ -681,102 +695,40 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('isDesktop environment checks', () => {
-    describe('when running on desktop', () => {
-      beforeEach(() => {
-        mockData.isDesktop = true
-      })
-
-      it('should show toast when conditions are met', () => {
-        const store = useReleaseStore()
-        store.releases = [mockRelease]
-        vi.mocked(compare).mockReturnValue(1)
-
-        expect(store.shouldShowToast).toBe(true)
-      })
-
-      it('should show red dot when new version available', () => {
-        const store = useReleaseStore()
-        store.releases = [mockRelease]
-        vi.mocked(compare).mockReturnValue(1)
-
-        expect(store.shouldShowRedDot).toBe(true)
-      })
-
-      it('should show popup for latest version', () => {
-        const store = useReleaseStore()
-        store.releases = [mockRelease]
-        const systemStatsStore = useSystemStatsStore()
-        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
-
-        vi.mocked(compare).mockReturnValue(0)
-
-        expect(store.shouldShowPopup).toBe(true)
+  describe('cloud distribution', () => {
+    beforeEach(() => {
+      mockData.isCloud = true
+      const settingStore = useSettingStore()
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
       })
     })
 
-    describe('when NOT running on desktop (web)', () => {
-      beforeEach(() => {
-        mockData.isDesktop = false
-      })
+    it('suppresses the toast even when a new version is available', () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      vi.mocked(compare).mockReturnValue(1)
 
-      it('should NOT show toast even when all other conditions are met', () => {
-        const store = useReleaseStore()
-        vi.mocked(compare).mockReturnValue(1)
+      expect(store.shouldShowToast).toBe(false)
+    })
 
-        // Set up all conditions that would normally show toast
-        store.releases = [mockRelease]
+    it('suppresses the red dot even when a new version is available', () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      vi.mocked(compare).mockReturnValue(1)
 
-        expect(store.shouldShowToast).toBe(false)
-      })
+      expect(store.shouldShowRedDot).toBe(false)
+    })
 
-      it('should NOT show red dot even when new version available', () => {
-        const store = useReleaseStore()
-        store.releases = [mockRelease]
-        vi.mocked(compare).mockReturnValue(1)
+    it("still shows the what's-new popup for the latest version", () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(compare).mockReturnValue(0)
 
-        expect(store.shouldShowRedDot).toBe(false)
-      })
-
-      it('should NOT show toast regardless of attention level', () => {
-        const store = useReleaseStore()
-        vi.mocked(compare).mockReturnValue(1)
-
-        // Test with high attention releases
-        const highRelease = {
-          ...mockRelease,
-          id: 2,
-          attention: 'high' as const
-        }
-        const mediumRelease = {
-          ...mockRelease,
-          id: 3,
-          attention: 'medium' as const
-        }
-        store.releases = [highRelease, mediumRelease]
-
-        expect(store.shouldShowToast).toBe(false)
-      })
-
-      it('should NOT show red dot even with high attention release', () => {
-        const store = useReleaseStore()
-        vi.mocked(compare).mockReturnValue(1)
-
-        store.releases = [{ ...mockRelease, attention: 'high' as const }]
-
-        expect(store.shouldShowRedDot).toBe(false)
-      })
-
-      it('should NOT show popup even for latest version', () => {
-        const store = useReleaseStore()
-        store.releases = [mockRelease]
-        const systemStatsStore = useSystemStatsStore()
-        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
-
-        vi.mocked(compare).mockReturnValue(0)
-
-        expect(store.shouldShowPopup).toBe(false)
-      })
+      expect(store.shouldShowPopup).toBe(true)
     })
   })
 })

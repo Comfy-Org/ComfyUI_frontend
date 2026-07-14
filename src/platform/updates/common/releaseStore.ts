@@ -3,8 +3,9 @@ import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { computed, ref } from 'vue'
 
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { stringToLocale } from '@/utils/formatUtil'
 
@@ -93,8 +94,8 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    // Cloud has its own update surface; the toast is for local installs.
+    if (isCloud) {
       return false
     }
 
@@ -125,8 +126,8 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    // Cloud has its own update surface; the red dot is for local installs.
+    if (isCloud) {
       return false
     }
 
@@ -171,10 +172,8 @@ export const useReleaseStore = defineStore('release', () => {
   })
 
   const shouldShowPopup = computed(() => {
-    if (!isDesktop && !isCloud) {
-      return false
-    }
-
+    // Gated purely by the setting: off by default on local installs,
+    // on by default on Cloud (seeded by the server feature flag fallback).
     if (!showVersionUpdates.value) {
       return false
     }
@@ -294,6 +293,16 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Initialize store
   async function initialize(): Promise<void> {
+    // showVersionUpdates' default is seeded by the show_version_updates server
+    // feature flag, which arrives over the websocket shortly after connect. Wait
+    // for the flags (non-empty once received) so a host that disabled updates
+    // isn't briefly treated as enabled on first load; fall back after a timeout
+    // so a missing/late flag message can't block fetching forever.
+    if (!isCloud) {
+      await until(
+        () => Object.keys(api.serverFeatureFlags.value).length > 0
+      ).toBe(true, { timeout: 3000 })
+    }
     await fetchReleases()
   }
 
