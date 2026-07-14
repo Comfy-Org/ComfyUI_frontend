@@ -1565,6 +1565,7 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
+    "Members": "Members",
     "PartnerNodes": "Allowlist",
     "Error System": "Error System",
     "Other": "Other",
@@ -2933,7 +2934,8 @@
         "daysAgo": "{count} day ago | {count} days ago",
         "hoursAgo": "{n} hr ago",
         "justNow": "just now",
-        "minutesAgo": "{n} min ago"
+        "minutesAgo": "{n} min ago",
+        "never": "—"
       },
       "membersUsage": "{count} of {max} total members."
     },
@@ -2968,12 +2970,12 @@
       "error": "Failed to remove member"
     },
     "changeRoleDialog": {
-      "promoteTitle": "Make {name} an owner?",
+      "promoteTitle": "Make {name} an admin?",
       "promoteIntro": "They'll be able to:",
       "promotePermissionCredits": "Add additional credits",
       "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
-      "promoteConfirm": "Make owner",
+      "promotePermissionRoles": "Promote and demote other admins (except the workspace creator).",
+      "promoteConfirm": "Make admin",
       "demoteTitle": "Demote {name} to member?",
       "demoteMessage": "They'll lose admin access.",
       "demoteConfirm": "Demote to member",
@@ -3083,7 +3085,7 @@
       "messageSupport": "Message support",
       "paused": "Paused",
       "perMonth": "mo",
-      "pricingTable": "Partner Nodes pricing table",
+      "pricingTable": "Partner Node pricing table",
       "renewsOn": "Renews on {date}",
       "seeMore": "See more",
       "snapshot": {

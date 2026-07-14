@@ -85,14 +85,18 @@ const inputRef = ref<HTMLInputElement | null>(null)
 
 // A single entry point (double-click here or the "Rename" menu item) flips
 // `isRenaming`; seed the draft and focus the field once the input mounts.
-watch(isRenaming, (renaming) => {
-  if (!renaming) return
-  draftName.value = workspaceName.value
-  void nextTick(() => {
-    inputRef.value?.focus()
-    inputRef.value?.select()
-  })
-})
+watch(
+  isRenaming,
+  (renaming) => {
+    if (!renaming) return
+    draftName.value = workspaceName.value
+    void nextTick(() => {
+      inputRef.value?.focus()
+      inputRef.value?.select()
+    })
+  },
+  { immediate: true }
+)
 
 // Surface the limit only as the user approaches it, to keep the header quiet.
 const remaining = computed(() => MAX_NAME_LENGTH - draftName.value.length)

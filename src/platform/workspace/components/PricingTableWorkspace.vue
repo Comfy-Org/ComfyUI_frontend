@@ -129,7 +129,7 @@
                 {{ t('subscription.monthlyCreditsPerMemberLabel') }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--coins] text-sm text-amber-400" />
+                <i class="icon-[lucide--coins] size-4 text-amber-400" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >

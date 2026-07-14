@@ -51,6 +51,7 @@
         </div>
         <div
           role="progressbar"
+          :aria-label="cycleLabel"
           :aria-valuenow="usage.used"
           :aria-valuemin="0"
           :aria-valuemax="allowanceTotalCredits ?? 0"
