@@ -115,6 +115,15 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     )
   })
 
+  it('publishes the docked agent panel width as a workspace right inset', () => {
+    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
+    const source = readFileSync(filePath, 'utf-8')
+
+    expect(source).toContain('--workspace-inset-right')
+    expect(source).toContain('document.documentElement.style.setProperty')
+    expect(source).toContain('document.documentElement.style.removeProperty')
+  })
+
   it('updates and removes the workspace right inset with the docked agent panel', async () => {
     const { unmount } = render(LiteGraphCanvasSplitterOverlay, {
       global: {

@@ -148,7 +148,7 @@ import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -193,15 +193,21 @@ const {
 const agentPanelDocked = computed(
   () => agentPanelEnabled.value && agentPanelOpen.value
 )
+const WORKSPACE_INSET_RIGHT_VAR = '--workspace-inset-right'
+const workspaceInsetRight = computed(() =>
+  agentPanelDocked.value ? `${agentPanelWidth.value}px` : '0px'
+)
 
-watchEffect((onCleanup) => {
-  document.documentElement.style.setProperty(
-    '--workspace-inset-right',
-    agentPanelDocked.value ? `${agentPanelWidth.value}px` : '0px'
-  )
-  onCleanup(() => {
-    document.documentElement.style.removeProperty('--workspace-inset-right')
-  })
+watch(
+  workspaceInsetRight,
+  (value) => {
+    document.documentElement.style.setProperty(WORKSPACE_INSET_RIGHT_VAR, value)
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  document.documentElement.style.removeProperty(WORKSPACE_INSET_RIGHT_VAR)
 })
 
 const isAgentResizing = ref(false)
