@@ -147,9 +147,7 @@ export function useNodeErrorFlagSync(
         showErrorsTab.value
           ? missingMediaStore.missingMediaAncestorExecutionIds
           : new Set(),
-        showErrorsTab.value
-          ? disabledPartnerNodesStore.disabledAncestorExecutionIds
-          : new Set(),
+        disabledPartnerNodesStore.disabledAncestorExecutionIds,
         flaggedNodes,
         errorSlots
       )

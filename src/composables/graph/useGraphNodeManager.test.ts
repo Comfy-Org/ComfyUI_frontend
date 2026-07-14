@@ -14,8 +14,10 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDisabledPartnerNodesStore } from '@/platform/workspace/stores/disabledPartnerNodesStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('Node Reactivity', () => {
@@ -673,6 +675,23 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(nodeB.has_errors).toBe(true)
     expect(nodeB.inputs[0].hasErrors).toBe(true)
+  })
+
+  it('flags disabled nodes when the Errors tab is hidden', async () => {
+    const { nodeA } = setupGraphWithStore()
+    const settingStore = useSettingStore()
+    const disabledPartnerNodesStore = useDisabledPartnerNodesStore()
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = false
+    disabledPartnerNodesStore.offenders = [
+      {
+        nodeId: createNodeExecutionId([nodeA.id]),
+        displayName: nodeA.title
+      }
+    ]
+
+    await nextTick()
+
+    expect(nodeA.has_errors).toBe(true)
   })
 
   it('clears has_errors when missing models are removed', async () => {
