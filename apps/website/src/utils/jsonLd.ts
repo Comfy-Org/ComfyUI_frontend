@@ -146,6 +146,33 @@ export function itemListNode(
   }
 }
 
+interface ArticleInput {
+  siteUrl: string
+  pageUrl: string
+  title: string
+  description?: string
+  imageUrl?: string
+  locale: Locale
+}
+
+export function articleNode(input: ArticleInput): JsonLdNode {
+  const webPageRef = { '@id': jsonLdId(input.pageUrl, 'webpage') }
+  const orgRef = { '@id': organizationId(input.siteUrl) }
+  return {
+    '@type': 'Article',
+    '@id': jsonLdId(input.pageUrl, 'article'),
+    headline: input.title,
+    name: input.title,
+    description: input.description,
+    image: input.imageUrl,
+    inLanguage: input.locale,
+    isPartOf: webPageRef,
+    mainEntityOfPage: webPageRef,
+    author: orgRef,
+    publisher: orgRef
+  }
+}
+
 interface WebPageInput {
   siteUrl: string
   locale: Locale

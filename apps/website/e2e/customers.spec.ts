@@ -30,4 +30,37 @@ test.describe('Customers @smoke', () => {
     expect(heightWhileUnloaded).not.toBeNull()
     expect(heightWhileUnloaded!).toBeGreaterThan(100)
   })
+
+  test('emits one connected JSON-LD graph describing the story collection', async ({
+    page
+  }) => {
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    const types = graph.map((node) => node['@type'])
+    expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
+    expect(types).toContain('CollectionPage')
+    expect(types).toContain('BreadcrumbList')
+
+    // Tie the list length to the story cards actually rendered, so the test
+    // tracks real content rather than a hardcoded count.
+    const cardSlugs = await page
+      .locator('a[href^="/customers/"]')
+      .evaluateAll((links) => [
+        ...new Set(
+          links
+            .map((link) => link.getAttribute('href'))
+            .filter((href): href is string =>
+              /^\/customers\/[a-z0-9-]+$/.test(href ?? '')
+            )
+        )
+      ])
+    expect(cardSlugs.length).toBeGreaterThan(0)
+
+    const list = graph.find((node) => node['@type'] === 'ItemList')
+    expect(list?.itemListElement as unknown[]).toHaveLength(cardSlugs.length)
+  })
 })
