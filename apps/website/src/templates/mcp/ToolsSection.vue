@@ -16,7 +16,11 @@ type ToolMedia =
       hideControls?: boolean
     }
 
-const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
+const tools: {
+  n: 1 | 2 | 3 | 4 | 5 | 6
+  media: ToolMedia
+  altKey?: TranslationKey
+}[] = [
   {
     n: 1,
     media: {
@@ -24,6 +28,22 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
       src: 'https://media.comfy.org/website/mcp/generate-everything.gif'
     },
     altKey: 'mcp.tools.1.alt'
+  },
+  {
+    n: 4,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/direct-any-model.png'
+    },
+    altKey: 'mcp.tools.4.alt'
+  },
+  {
+    n: 5,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png'
+    },
+    altKey: 'mcp.tools.5.alt'
   },
   {
     n: 2,
@@ -43,6 +63,14 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
       hideControls: true
     },
     altKey: 'mcp.tools.3.alt'
+  },
+  {
+    n: 6,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/ship-it-as-an-app.png'
+    },
+    altKey: 'mcp.tools.6.alt'
   }
 ]
 

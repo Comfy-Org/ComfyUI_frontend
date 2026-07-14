@@ -2037,13 +2037,52 @@ const translations = {
     'zh-CN': '运行真实工作流'
   },
   'mcp.tools.3.description': {
-    en: 'Turn any ComfyUI workflow into a callable tool. The full power of the engine, driven by your agent.',
+    en: 'Submit graphs, track jobs, and pull outputs back. Save and share workflows, reuse a saved one, or open any run on the ComfyUI canvas — the full engine, driven by tool calls.',
     'zh-CN':
-      '将任何 ComfyUI 工作流转换为可调用的工具。由你的智能体驱动完整的引擎能力。'
+      '提交计算图、跟踪任务并取回输出。保存和分享工作流，复用已保存的工作流，或在 ComfyUI 画布上打开任意运行——完整的引擎，由工具调用驱动。'
   },
   'mcp.tools.3.alt': {
     en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
     'zh-CN': 'Comfy MCP 在对话中将 ComfyUI 工作流作为可调用工具运行'
+  },
+  'mcp.tools.4.title': {
+    en: 'Direct any model',
+    'zh-CN': '直接调用任意模型'
+  },
+  'mcp.tools.4.description': {
+    en: 'Kling, Veo, Seedance, Flux, GPT-Image, Nano Banana, and ElevenLabs. Closed partner APIs and open-source models, reached through one set of tools.',
+    'zh-CN':
+      'Kling、Veo、Seedance、Flux、GPT-Image、Nano Banana 和 ElevenLabs。封闭的合作伙伴 API 与开源模型，通过同一套工具即可调用。'
+  },
+  'mcp.tools.4.alt': {
+    en: 'Comfy MCP directing closed partner APIs and open-source models through one set of tools',
+    'zh-CN': 'Comfy MCP 通过同一套工具调用封闭合作伙伴 API 和开源模型'
+  },
+  'mcp.tools.5.title': {
+    en: 'Generate in batches',
+    'zh-CN': '批量生成'
+  },
+  'mcp.tools.5.description': {
+    en: 'Stack a batch on the Queue, track it, and pull back every output. Dozens of runs from a single call.',
+    'zh-CN':
+      '将一批任务加入队列，跟踪进度，并取回每一个输出。一次调用即可完成数十次运行。'
+  },
+  'mcp.tools.5.alt': {
+    en: 'Comfy MCP stacking a batch on the Queue and pulling back every output',
+    'zh-CN': 'Comfy MCP 将一批任务加入队列并取回每个输出'
+  },
+  'mcp.tools.6.title': {
+    en: 'Ship it as an app',
+    'zh-CN': '作为应用发布'
+  },
+  'mcp.tools.6.description': {
+    en: 'Turn any workflow into an app with a shareable URL. Collaborators run it in the browser — only the inputs you expose, nothing to install.',
+    'zh-CN':
+      '将任意工作流变成带可分享链接的应用。协作者在浏览器中运行——只暴露你开放的输入，无需安装任何东西。'
+  },
+  'mcp.tools.6.alt': {
+    en: 'Comfy MCP turning a workflow into a shareable browser app',
+    'zh-CN': 'Comfy MCP 将工作流变成可在浏览器中分享的应用'
   },
 
   // MCP – HowItWorksSection
