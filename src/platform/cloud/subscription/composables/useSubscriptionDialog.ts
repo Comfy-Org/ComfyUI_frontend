@@ -2,7 +2,7 @@ import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -24,7 +24,7 @@ export interface SubscriptionDialogOptions {
 }
 
 export const useSubscriptionDialog = () => {
-  const { flags } = useFeatureFlags()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -57,7 +57,7 @@ export const useSubscriptionDialog = () => {
     // small read-only "ask your owner to reactivate" modal instead of the
     // pricing table. Out-of-credits still routes everyone to the credits flow.
     if (
-      flags.teamWorkspacesEnabled &&
+      shouldUseWorkspaceBilling.value &&
       !workspaceStore.isInPersonalWorkspace &&
       !permissions.value.canManageSubscription &&
       options?.reason !== 'out_of_credits'
@@ -95,9 +95,10 @@ export const useSubscriptionDialog = () => {
     }
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) when team workspaces are enabled. Replaces the old
-    // personal-vs-team workspace fork. Flag-off keeps the legacy table.
-    if (flags.teamWorkspacesEnabled) {
+    // one workspace) for workspaces on the consolidated billing flow. Replaces
+    // the old personal-vs-team workspace fork. Personal workspaces still on the
+    // legacy flow (consolidated billing disabled) get the legacy table.
+    if (shouldUseWorkspaceBilling.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
       // Resolved lazily (not at composable setup): these three composables form

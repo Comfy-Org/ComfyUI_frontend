@@ -3,7 +3,6 @@ import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import { isCanvasGestureWheel } from '@/base/wheelGestures'
 
 import type {
   FilterOption,
@@ -109,12 +108,17 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 /**
  * The dropdown content is teleported to `document.body` by PrimeVue Popover,
  * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
- * Suppress only the destructive browser defaults (page zoom on pinch and
- * back/forward on horizontal swipe); regular vertical scrolling still
- * scrolls the dropdown's own content.
+ * Pinch-zoom (`ctrl/meta + wheel`) would otherwise trigger page-level zoom and
+ * push fixed UI off-screen, so it must be suppressed locally. Horizontal
+ * swipe-to-navigate is already blocked at the page boundary by
+ * `overscroll-behavior: none` on `html, body`, so we deliberately do NOT
+ * preventDefault on horizontal-dominant wheels here — doing so cancels the
+ * trackpad's native momentum on slow vertical scrolls (where stray horizontal
+ * jitter frames satisfy `|deltaX| > |deltaY|`), starving the VirtualGrid's
+ * `useScroll` and leaving rows blank until a fast scroll re-pumps samples.
  */
 const onWheel = (event: WheelEvent) => {
-  if (isCanvasGestureWheel(event)) event.preventDefault()
+  if (event.ctrlKey || event.metaKey) event.preventDefault()
 }
 </script>
 

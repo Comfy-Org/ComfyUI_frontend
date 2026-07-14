@@ -8,6 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -118,7 +119,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
-    backgroundColor: '#000000',
+    backgroundColor: getActivePinia()
+      ? '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+      : '#282828',
     backgroundImage: '',
     backgroundRenderMode: 'tiled'
   })
@@ -177,6 +180,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const canExport = ref(true)
   const materialModes = ref<readonly MaterialMode[]>([
     'original',
+    'clay',
     'normal',
     'wireframe'
   ])
@@ -192,6 +196,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
       if (
+        isLoad3dResultViewerNode(node.constructor.comfyClass ?? '') ||
         node.constructor.comfyClass?.startsWith('Preview') ||
         !(widthWidget && heightWidget)
       ) {
@@ -239,7 +244,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         node.onDrawBackground,
         function (this: LGraphNode) {
           if (load3d) {
-            load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+            load3d.domElement.hidden = this.flags.collapsed ?? false
           }
         }
       )
@@ -247,6 +252,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       ensureNodeCleanupChained(node)
 
       nodeToLoad3dMap.set(node, load3d)
+
+      handleEvents('add')
 
       const callbacks = pendingCallbacks.get(node)
 
@@ -263,8 +270,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           if (load3d) invokeReadyCallback(callback, load3d)
         })
       }
-
-      handleEvents('add')
     } catch (error) {
       console.error('Error initializing Load3d:', error)
       useToastStore().addAlert(
