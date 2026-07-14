@@ -8,7 +8,7 @@
   "generated": "2026-06-19T00:00:00Z",
   "lastVerified": "2026-07-14",
   "reviewBy": "2026-10-14",
-  "verificationStatus": "human-reviewed",
+  "verificationStatus": "self-declared",
   "entities": [
     {
       "entityId": "e_001",
@@ -33,7 +33,7 @@
           "pageTitle": "About Comfy Org | Powering Visual AI for Millions of Creators Worldwide",
           "publisher": "Comfy Org",
           "retrieved": "2026-07-14T00:00:00Z",
-          "contentType": "fact",
+          "contentType": "definition",
           "audienceType": "general"
         }
       ],
@@ -263,7 +263,7 @@
           "pageTitle": "Comfy Enterprise",
           "publisher": "Comfy Org",
           "retrieved": "2026-06-19T00:00:00Z",
-          "contentType": "marketing-copy",
+          "contentType": "example",
           "audienceType": "executive"
         }
       ],
