@@ -55,6 +55,14 @@ describe('errorResponseFromBody', () => {
     })
   })
 
+  it('falls back for an oversized raw body instead of dumping it', () => {
+    const htmlPage = `<!DOCTYPE html>${'<p>Bad Gateway</p>'.repeat(100)}`
+    expect(errorResponseFromBody(htmlPage, 'Bad Gateway')).toEqual({
+      code: 'UNKNOWN_ERROR',
+      message: 'Bad Gateway'
+    })
+  })
+
   it('falls back for a blank-string body', () => {
     expect(errorResponseFromBody('   ', 'fallback')).toEqual({
       code: 'UNKNOWN_ERROR',

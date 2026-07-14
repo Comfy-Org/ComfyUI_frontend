@@ -6,6 +6,14 @@ import type { ErrorResponse } from '@comfyorg/ingest-types'
 const UNKNOWN_ERROR_CODE = 'UNKNOWN_ERROR'
 
 /**
+ * Upper bound on a raw non-JSON body surfaced as the user-facing message.
+ * Short text/plain proxy errors (e.g. "upstream connect error") stay useful;
+ * oversized bodies (e.g. a full HTML gateway page) degrade to the clean
+ * status-derived fallback instead of dumping markup into a toast.
+ */
+const MAX_RAW_MESSAGE_LENGTH = 500
+
+/**
  * Coerce an already-parsed error body into the canonical
  * `ErrorResponse { code, message, details? }` shape.
  *
@@ -23,9 +31,11 @@ export function errorResponseFromBody(
   fallbackMessage: string
 ): ErrorResponse {
   if (typeof body === 'string') {
+    const trimmed = body.trim()
+    const usable = trimmed !== '' && trimmed.length <= MAX_RAW_MESSAGE_LENGTH
     return {
       code: UNKNOWN_ERROR_CODE,
-      message: body.trim() !== '' ? body : fallbackMessage
+      message: usable ? body : fallbackMessage
     }
   }
   const record: Record<PropertyKey, unknown> = isPlainObject(body) ? body : {}
