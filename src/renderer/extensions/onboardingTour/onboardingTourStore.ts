@@ -1,23 +1,57 @@
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import { resolveRoles } from './roleResolver'
+import type { NodeDefLookup } from './roleResolver'
 import { restoreView } from './subgraphNavigation'
 import { sequenceBuilder } from './tourSequence'
 import type { MediaKind, ResolvedRoles, TourStep } from './tourSequence'
 
 export type TourPhase = 'idle' | 'active'
-export type RunStatus = 'idle' | 'running' | 'completed'
 export type TourEndReason = 'done' | 'skip' | 'error'
 
 export interface ResultMedia {
   url: string
   kind: MediaKind
+}
+
+/** How long to wait for the sink's output URL after a run before giving up. */
+const RESULT_MEDIA_TIMEOUT_MS = 8000
+
+/** Output types that mark a registry sink as producing video rather than an image. */
+const VIDEO_OUTPUT_TYPES = new Set(['VIDEO', 'VHS_VIDEOINFO'])
+
+/** Reads the node registry so the resolver can widen sink detection to custom output nodes. */
+const nodeDefLookup: NodeDefLookup = (type) => {
+  const defs = useNodeDefStore().nodeDefsByName
+  if (!Object.hasOwn(defs, type)) return null
+  const def = defs[type]
+  return {
+    isOutputNode: def.output_node,
+    producesVideo: def.outputs.some((output) =>
+      VIDEO_OUTPUT_TYPES.has(output.type)
+    )
+  }
+}
+
+/**
+ * The graph nodes a single step points at: its own target, plus the prompt's
+ * collapsed host (the subgraph is never entered, so its exposed port is the
+ * spotlight target). Shared by the spotlight and reveal derivations so they
+ * can't drift.
+ */
+function stepTargets(step: TourStep): NodeId[] {
+  const ids: NodeId[] = []
+  if (step.nodeId !== null) ids.push(step.nodeId)
+  if (step.prompt) ids.push(step.prompt.subgraphNodeId)
+  return ids
 }
 
 /**
@@ -32,15 +66,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const resolvedRoles = ref<ResolvedRoles | null>(null)
   const revealedNodeIds = ref<Set<NodeId>>(new Set())
   const resultMedia = ref<ResultMedia | null>(null)
-  const runStatus = ref<RunStatus>('idle')
-  /** Set when programmatic prompt focus failed and the port is spotlit instead. */
+  /** Set on the prompt step: the collapsed host's exposed prompt port is spotlit. */
   const promptPortFallback = ref(false)
-  /**
-   * Set when prompt focus entered the subgraph. While true, the prompt step
-   * spotlights the inner text node (now on-screen) instead of the collapsed
-   * host, which no longer resolves against the entered inner graph.
-   */
-  const promptEntered = ref(false)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
   /** No-funds fallback: the gate arms this so the modal-close watch can surface the nudge. */
@@ -53,42 +80,34 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   )
   const totalSteps = computed(() => steps.value.length)
 
-  /** Reveal every node targeted by steps up to and including `stepIndex`. */
-  function syncRevealed() {
-    const revealed = new Set<NodeId>()
-    for (const [index, step] of steps.value
-      .slice(0, stepIndex.value + 1)
-      .entries()) {
-      if (step.nodeId !== null) revealed.add(step.nodeId)
-      // The prompt lives inside a subgraph. Once focus enters that subgraph the
-      // inner text node is on-screen and the collapsed host no longer resolves,
-      // so reveal the inner node then; otherwise reveal the host (or the port
-      // fallback lands there).
-      if (step.prompt) {
-        const isCurrent = index === stepIndex.value
-        revealed.add(
-          isCurrent && promptEntered.value
-            ? step.prompt.innerNodeId
-            : step.prompt.subgraphNodeId
-        )
-      }
-    }
-    revealedNodeIds.value = revealed
-  }
+  /** Nodes the current step targets, spotlit brightly while prior reveals stay dim. */
+  const spotlitNodeIds = computed<Set<NodeId>>(() => {
+    const step = currentStep.value
+    return step ? new Set(stepTargets(step)) : new Set()
+  })
 
   /**
-   * Record whether prompt focus entered the subgraph, then re-reveal so the
-   * spotlight targets the inner text node (entered) or the collapsed host (not).
+   * Reveal every node targeted by steps up to and including `stepIndex` so the
+   * graph builds up — except the final Result step, which collapses back to just
+   * the sink so the generated output is the sole focus.
    */
-  function setPromptEntered(entered: boolean) {
-    promptEntered.value = entered
-    syncRevealed()
+  function syncRevealed() {
+    const step = currentStep.value
+    if (step?.kind === 'result' && step.nodeId !== null) {
+      revealedNodeIds.value = new Set([step.nodeId])
+      return
+    }
+    const revealed = new Set<NodeId>()
+    for (const prior of steps.value.slice(0, stepIndex.value + 1)) {
+      for (const id of stepTargets(prior)) revealed.add(id)
+    }
+    revealedNodeIds.value = revealed
   }
 
   function start(workflow: ComfyWorkflowJSON, templateId?: string) {
     reset()
     resetNudge()
-    const roles = resolveRoles(workflow, templateId)
+    const roles = resolveRoles(workflow, templateId, nodeDefLookup)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
     phase.value = 'active'
@@ -99,7 +118,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (stepIndex.value >= steps.value.length - 1) return
     stepIndex.value += 1
     promptPortFallback.value = false
-    promptEntered.value = false
     syncRevealed()
   }
 
@@ -107,30 +125,36 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     if (stepIndex.value <= 0) return
     stepIndex.value -= 1
     promptPortFallback.value = false
-    promptEntered.value = false
     syncRevealed()
   }
 
   /**
-   * Record the sink's generated output as the Result step's media. The URL is
-   * server-built (`/view?...`) and rendered via a bound `:src`; the media kind
-   * comes from the resolved sink, not the output MIME, so a restored-from-URL
-   * result still picks the right renderer. No-op unless the tour is active and
-   * the sink both resolves and has an output.
+   * Record the sink's generated output as the Result step's media. The output URL
+   * is not ready synchronously when the run finishes (the cloud queue refresh
+   * fetches it just after), so wait for it to appear rather than dropping the
+   * first run. The media kind comes from the resolved sink, not the output MIME,
+   * so a restored-from-URL result still picks the right renderer. Idempotent and
+   * bails if the tour ends mid-wait.
    */
-  function captureResultMedia() {
-    if (phase.value !== 'active') return
+  async function captureResultMedia() {
+    if (phase.value !== 'active' || resultMedia.value) return
     const sink = resolvedRoles.value?.sink
     if (!sink) return
 
-    const node = resolveNode(sink.nodeId)
-    if (!node) return
+    const sinkUrl = () => {
+      const node = resolveNode(sink.nodeId)
+      return node
+        ? (useNodeOutputStore().getNodeImageUrls(node)?.[0] ?? '')
+        : ''
+    }
 
-    const [url] = useNodeOutputStore().getNodeImageUrls(node) ?? []
-    if (!url) return
+    const url = await until(sinkUrl).toMatch((value) => value.length > 0, {
+      timeout: RESULT_MEDIA_TIMEOUT_MS,
+      throwOnTimeout: false
+    })
+    if (!url || phase.value !== 'active') return
 
     resultMedia.value = { url, kind: resolvedRoles.value?.mediaKind ?? 'image' }
-    runStatus.value = 'completed'
   }
 
   /** Arm the no-funds fallback so the modal-close watch can surface the nudge. */
@@ -166,9 +190,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     resolvedRoles.value = null
     revealedNodeIds.value = new Set()
     resultMedia.value = null
-    runStatus.value = 'idle'
     promptPortFallback.value = false
-    promptEntered.value = false
   }
 
   function end() {
@@ -184,15 +206,14 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     totalSteps,
     resolvedRoles,
     revealedNodeIds,
+    spotlitNodeIds,
     resultMedia,
-    runStatus,
     promptPortFallback,
     shouldShowNudge,
     nudgeArmed,
     start,
     advance,
     back,
-    setPromptEntered,
     captureResultMedia,
     armNudge,
     showNudge,
