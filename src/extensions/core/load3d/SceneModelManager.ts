@@ -2,6 +2,8 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
+import type { RendererViewState } from '@/renderer/three/sharedWebGLRenderer'
+
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'
 import { buildPointCloudForMaterialMode } from './PointCloudModelAdapter'
@@ -38,7 +40,7 @@ export class SceneModelManager implements ModelManagerInterface {
   showSkeleton: boolean = false
 
   private scene: THREE.Scene
-  private renderer: THREE.WebGLRenderer
+  private viewState: RendererViewState
   private eventManager: EventManagerInterface
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void
@@ -53,7 +55,7 @@ export class SceneModelManager implements ModelManagerInterface {
 
   constructor(
     scene: THREE.Scene,
-    renderer: THREE.WebGLRenderer,
+    viewState: RendererViewState,
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
     setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void,
@@ -69,7 +71,7 @@ export class SceneModelManager implements ModelManagerInterface {
     } | null = () => null
   ) {
     this.scene = scene
-    this.renderer = renderer
+    this.viewState = viewState
     this.eventManager = eventManager
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
@@ -234,9 +236,9 @@ export class SceneModelManager implements ModelManagerInterface {
     }
 
     if (mode === 'depth') {
-      this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace
+      this.viewState.outputColorSpace = THREE.LinearSRGBColorSpace
     } else {
-      this.renderer.outputColorSpace = THREE.SRGBColorSpace
+      this.viewState.outputColorSpace = THREE.SRGBColorSpace
     }
 
     if (this.currentModel) {
