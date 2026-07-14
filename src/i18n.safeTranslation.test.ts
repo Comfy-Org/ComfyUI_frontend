@@ -26,8 +26,7 @@ describe('st', () => {
   })
 
   it('returns raw locale messages when vue-i18n compilation fails', () => {
-    const message =
-      'Provided by @acme/model with JSON such as {"mode":"fast"}'
+    const message = 'Provided by @acme/model with JSON such as {"mode":"fast"}'
 
     i18n.global.mergeLocaleMessage('en', {
       safeTranslationTest: {
@@ -35,9 +34,9 @@ describe('st', () => {
       }
     })
 
-    expect(st('safeTranslationTest.invalidLinkedFormat', 'Fallback value')).toBe(
-      message
-    )
+    expect(
+      st('safeTranslationTest.invalidLinkedFormat', 'Fallback value')
+    ).toBe(message)
   })
 })
 
@@ -59,8 +58,7 @@ describe('stRaw', () => {
   })
 
   it('returns raw messages containing vue-i18n syntax', () => {
-    const message =
-      'Provided by @acme/model with JSON such as {"mode":"fast"}'
+    const message = 'Provided by @acme/model with JSON such as {"mode":"fast"}'
 
     i18n.global.mergeLocaleMessage('en', {
       safeTranslationTest: {
