@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import type { RendererView } from '@/renderer/three/RendererView'
+import { normalize } from '@/utils/mathUtil'
 
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
@@ -17,7 +18,12 @@ import type {
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
-import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import type { LetterboxNdc } from './load3dViewport'
+import {
+  clientPointToLetterboxNdc,
+  computeLetterboxedViewport,
+  isLoad3dActive
+} from './load3dViewport'
 
 const VIEW_HELPER_SIZE = 128
 
@@ -274,6 +280,17 @@ export class Viewport3d {
 
     this.sceneManager.renderBackground()
     this.renderer.render(this.sceneManager.scene, this.getRenderCamera())
+  }
+
+  clientPointToNdc(clientX: number, clientY: number): LetterboxNdc | null {
+    const rect = this.domElement.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return null
+    return clientPointToLetterboxNdc(
+      normalize(clientX, rect.left, rect.right),
+      normalize(clientY, rect.top, rect.bottom),
+      { width: rect.width, height: rect.height },
+      this.shouldMaintainAspectRatio() ? this.targetAspectRatio : null
+    )
   }
 
   protected startAnimation(): void {

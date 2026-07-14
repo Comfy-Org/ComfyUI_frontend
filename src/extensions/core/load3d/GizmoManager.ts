@@ -4,6 +4,9 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { GizmoMode, Model3DTransform } from './interfaces'
+import type { PointerNdcSource } from './load3dViewport'
+
+const OFF_SCREEN_POINTER_NDC = { x: 10, y: 10 }
 
 export class GizmoManager {
   private transformControls: TransformControls | null = null
@@ -18,6 +21,7 @@ export class GizmoManager {
   private interactionElement: HTMLElement
   private orbitControls: OrbitControls
   private onTransformChange?: () => void
+  private getPointerNdc?: PointerNdcSource
 
   constructor(
     scene: THREE.Scene,
@@ -46,10 +50,43 @@ export class GizmoManager {
       }
     })
 
+    this.installPointerNdcOverride()
+
     const helper = this.transformControls.getHelper()
     helper.name = 'GizmoTransformControls'
     helper.renderOrder = 999
     this.scene.add(helper)
+  }
+
+  setPointerNdcSource(getPointerNdc: PointerNdcSource): void {
+    this.getPointerNdc = getPointerNdc
+  }
+
+  private installPointerNdcOverride(): void {
+    if (!this.transformControls) return
+    const transformControls = this.transformControls
+    const controls = transformControls as unknown as {
+      _getPointer?: (event: PointerEvent) => {
+        x: number
+        y: number
+        button: number
+      }
+    }
+    const original = controls._getPointer
+    if (typeof original !== 'function') {
+      console.warn(
+        'TransformControls no longer exposes _getPointer; letterbox-aware gizmo pointer mapping is disabled.'
+      )
+      return
+    }
+    controls._getPointer = (event: PointerEvent) => {
+      if (!this.getPointerNdc) return original.call(transformControls, event)
+      const ndc = this.getPointerNdc(event.clientX, event.clientY)
+      if (!ndc || (!ndc.inside && !transformControls.dragging)) {
+        return { ...OFF_SCREEN_POINTER_NDC, button: event.button }
+      }
+      return { x: ndc.x, y: ndc.y, button: event.button }
+    }
   }
 
   setupForModel(model: THREE.Object3D): void {
