@@ -202,6 +202,22 @@ function isBoundingBox(b: unknown): b is BoundingBox {
   )
 }
 
+function normalizeHexColor(color: unknown): string | null {
+  if (typeof color !== 'string') return null
+  const hex = color.trim().toLowerCase()
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(hex)
+  if (short) {
+    return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
+  }
+  return /^#([0-9a-f]{6}|[0-9a-f]{8})$/.test(hex) ? hex : null
+}
+
+function normalizePalette(palette: unknown): string[] {
+  return Array.isArray(palette)
+    ? palette.map(normalizeHexColor).filter((c): c is string => c !== null)
+    : []
+}
+
 export function fromBoundingBoxes(
   boxes: readonly BoundingBox[],
   width: number,
@@ -219,9 +235,7 @@ export function fromBoundingBoxes(
       type: meta.type === 'text' ? 'text' : 'obj',
       text: typeof meta.text === 'string' ? meta.text : '',
       desc: typeof meta.desc === 'string' ? meta.desc : '',
-      palette: Array.isArray(meta.palette)
-        ? meta.palette.filter((c): c is string => typeof c === 'string')
-        : []
+      palette: normalizePalette(meta.palette)
     }
   })
 }

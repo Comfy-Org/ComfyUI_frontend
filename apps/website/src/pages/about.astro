@@ -5,9 +5,25 @@ import StorySection from '../components/about/StorySection.vue'
 import OurValuesSection from '../components/about/OurValuesSection.vue'
 import ValuesSection from '../components/about/ValuesSection.vue'
 import CareersSection from '../components/about/CareersSection.vue'
+import { t } from '../i18n/translations'
+import { absoluteUrl, organizationId, pageContext } from '../utils/jsonLd'
+
+const { siteUrl, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
-<BaseLayout title="About Us — Comfy">
+<BaseLayout
+  title="About Us - Comfy"
+  pageType="AboutPage"
+  mainEntityId={organizationId(siteUrl)}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.about', locale) },
+  ]}
+>
   <HeroSection client:load />
   <StorySection />
   <OurValuesSection />

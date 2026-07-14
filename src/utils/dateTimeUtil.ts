@@ -84,17 +84,27 @@ export const formatShortMonthDay = (ts: number, locale: string): string => {
 }
 
 /**
- * Localized clock time, e.g. "10:05:06" with locale defaults for 12/24 hour.
+ * Localized clock time, e.g. "10:05:06" with the app locale for language and
+ * the browser/system locale preference for 12/24-hour formatting.
  *
  * @param ts Unix timestamp in milliseconds
  * @param locale BCP-47 locale string
+ * @param clockPreferenceLocale Optional locale source for hour-cycle preference
  * @returns Localized time string
  */
-export const formatClockTime = (ts: number, locale: string): string => {
+export const formatClockTime = (
+  ts: number,
+  locale: string,
+  clockPreferenceLocale?: string
+): string => {
   const d = new Date(ts)
+  const { hourCycle } = new Intl.DateTimeFormat(clockPreferenceLocale, {
+    hour: 'numeric'
+  }).resolvedOptions()
   return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    hourCycle
   }).format(d)
 }
