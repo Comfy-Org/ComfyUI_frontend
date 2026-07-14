@@ -36,7 +36,7 @@
           >
             <TableHead class="w-6">
               <Checkbox
-                :model-value="allFilteredSelected"
+                :model-value="selectAllState"
                 :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
                 :disabled="controlsDisabled"
                 @update:model-value="toggleSelectAll"
@@ -313,7 +313,7 @@ const {
   selectedIds,
   selectedCount,
   selectedEnabled,
-  allFilteredSelected,
+  selectAllState,
   groups,
   togglePartnerCollapsed,
   groupSelectionState,

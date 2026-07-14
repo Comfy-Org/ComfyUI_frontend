@@ -53,7 +53,7 @@ const mock = vi.hoisted(() => {
         .filter((node) => selectedIds.value.has(node.id))
         .every((node) => node.enabled)
     ),
-    allFilteredSelected: ref(false),
+    selectAllState: ref<'indeterminate'>('indeterminate'),
     filteredNodes,
     groups: ref([
       {
