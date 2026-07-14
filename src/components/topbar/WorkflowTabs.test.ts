@@ -14,8 +14,6 @@ const distribution = vi.hoisted(() => ({
   isNightly: false
 }))
 
-const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
-
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return distribution.isCloud
@@ -26,13 +24,6 @@ vi.mock('@/platform/distribution/types', () => ({
   get isNightly() {
     return distribution.isNightly
   }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.UI.TabBarLayout' ? tabBarLayout.value : undefined
-  })
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -138,7 +129,6 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
-    tabBarLayout.value = 'Default'
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
@@ -173,15 +163,6 @@ describe('WorkflowTabs feedback button', () => {
   })
 
   it('does not render the feedback button on non-Cloud/non-Nightly builds', () => {
-    renderComponent()
-    expect(
-      screen.queryByRole('button', { name: 'Feedback' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('does not render the feedback button when the legacy tab bar is active', () => {
-    distribution.isCloud = true
-    tabBarLayout.value = 'Legacy'
     renderComponent()
     expect(
       screen.queryByRole('button', { name: 'Feedback' })

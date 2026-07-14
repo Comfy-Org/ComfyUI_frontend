@@ -47,6 +47,19 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
         comfyPage.page.getByTestId(TestIds.topbar.loginButton)
       ).toBeVisible()
     })
+
+    test('button falls back to TopMenuSection when workflow tabs are in sidebar', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await enableLoginButtonFlag(comfyPage.page)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.topbar.loginButton)
+      ).toBeVisible()
+    })
   })
 
   test.describe('ARIA', () => {
