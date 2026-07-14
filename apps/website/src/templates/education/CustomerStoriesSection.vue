@@ -15,6 +15,7 @@ const { stories, locale = 'en' } = defineProps<{
 <template>
   <CustomerStories01
     :heading="t('education.customerStories.heading', locale)"
+    :subtitle="t('education.customerStories.subheading', locale)"
     :stories="stories"
     :locale="locale"
   />

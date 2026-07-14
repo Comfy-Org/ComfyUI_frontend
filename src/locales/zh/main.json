@@ -359,6 +359,7 @@
     "colors": "调色板",
     "descLabel": "描述",
     "descPlaceholder": "该区域的描述",
+    "grid": "网格",
     "textLabel": "文本",
     "textPlaceholder": "要渲染的文本（原文）",
     "typeObj": "obj",
@@ -953,6 +954,16 @@
       "message": "提供的对话 ID 无效。",
       "title": "无效对话框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
+    "confirmSummary": "批准桌面端登录？",
+    "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
+    "expiredSummary": "桌面端登录失败",
+    "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
+    "failedSummary": "桌面端登录失败",
+    "successDetail": "您可以返回 ComfyUI 桌面应用。",
+    "successSummary": "登录成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
@@ -2854,6 +2865,8 @@
     "phantom subject": "幻影主体",
     "photomaker": "PhotoMaker",
     "pixart": "pixart",
+    "post-processors": "后处理器",
+    "pre-processors": "预处理器",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
@@ -4135,6 +4148,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
+      "relevance": "相关性",
       "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",

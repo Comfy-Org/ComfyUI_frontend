@@ -6,12 +6,12 @@ import { educationFaqs } from '../src/data/educationFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH = '/edu'
+const PATH = '/education'
 const LEARNING_PATH = '/learning'
 const PRICING_PATH = '/cloud/pricing'
 const STUDENT_AMBASSADOR_FORM = externalLinks.studentAmbassadorForm
 
-const MONTHLY_LABEL = t('pricing.period.monthly', 'en')
+const MONTHLY_LABEL = t('pricing.period.monthly.edu', 'en')
 const EDU_YEARLY_TOGGLE = t('pricing.period.yearly.edu', 'en')
 const eduTeamSaving = (pct: number, amount: string) =>
   t('pricing.team.educationalSaving', 'en')
@@ -275,13 +275,19 @@ test.describe('Education pricing — Creative Campus band @smoke', () => {
     await expect(section.getByText(CAMPUS_DESC)).toBeVisible()
   })
 
-  test('Contact Us CTA routes to /contact', async ({ page }) => {
+  test('Contact Us CTA opens the Creative Campus application form', async ({
+    page
+  }) => {
     const section = pricingSection(page)
     await section.scrollIntoViewIfNeeded()
 
     const contact = section.getByRole('link', { name: CONTACT_CTA })
     await expect(contact).toBeVisible()
-    await expect(contact).toHaveAttribute('href', '/contact')
+    await expect(contact).toHaveAttribute(
+      'href',
+      externalLinks.creativeCampusApplicationForm
+    )
+    await expect(contact).toHaveAttribute('target', '_blank')
   })
 })
 
@@ -315,7 +321,7 @@ test.describe('Education pricing — Student Ambassador band @smoke', () => {
 
 test.describe('Education landing — zh-CN @smoke', () => {
   test('CTA plan anchor resolves to the pricing section', async ({ page }) => {
-    await page.goto('/zh-CN/edu')
+    await page.goto('/zh-CN/education')
 
     const choosePlan = page.getByRole('link', {
       name: t('education.cta.choosePlan', 'zh-CN')

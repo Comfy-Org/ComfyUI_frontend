@@ -4,6 +4,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
+import { externalLinks } from '../../config/routes'
 import { planFeatures, pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
@@ -30,7 +31,18 @@ const {
   headingLevel?: 'h1' | 'h2'
 }>()
 
-const billingPeriod = ref<BillingCycle>('yearly')
+const selectedBillingPeriod = ref<BillingCycle>('yearly')
+
+// reka-ui's single toggle group emits undefined when the active item is
+// clicked again; exactly one billing cycle must stay selected, so ignore it.
+const billingPeriod = computed({
+  get: () => selectedBillingPeriod.value,
+  set: (value: BillingCycle | undefined) => {
+    if (value) {
+      selectedBillingPeriod.value = value
+    }
+  }
+})
 
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (education) {
@@ -106,25 +118,25 @@ const planCards = computed(() =>
           value="monthly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          {{
+          <span class="ppformula-text-center">{{
             t(
               education
                 ? 'pricing.period.monthly.edu'
                 : 'pricing.period.monthly',
               locale
             )
-          }}
+          }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
           value="yearly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          {{
+          <span class="ppformula-text-center">{{
             t(
               education ? 'pricing.period.yearly.edu' : 'pricing.period.yearly',
               locale
             )
-          }}
+          }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -155,7 +167,7 @@ const planCards = computed(() =>
             :label="t(plan.labelKey, locale)"
             class="ppformula-text-center text-base uppercase"
           />
-          <Badge v-if="plan.isPopular" variant="callout">
+          <Badge v-if="plan.isPopular" variant="callout" size="xs">
             {{ t('pricing.badge.popular', locale) }}</Badge
           >
         </div>
@@ -209,6 +221,9 @@ const planCards = computed(() =>
           education
             ? 'pricing.creativeCampus.description'
             : 'pricing.enterprise.description'
+        "
+        :href="
+          education ? externalLinks.creativeCampusApplicationForm : undefined
         "
         :locale
       />
