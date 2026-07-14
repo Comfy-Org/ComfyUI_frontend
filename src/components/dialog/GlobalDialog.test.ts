@@ -418,6 +418,23 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
+  it.for(['true', 'grid', 'tree'])(
+    'allows dismiss for unsupported aria-haspopup="%s" values',
+    (popupType) => {
+      // Only the values Reka trigger primitives emit are allowlisted; other
+      // ARIA values stay ordinary outside elements.
+      const trigger = document.createElement('button')
+      trigger.setAttribute('aria-haspopup', popupType)
+      document.body.appendChild(trigger)
+
+      const event = makeEvent(trigger)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+      expect(event.defaultPrevented).toBe(false)
+      trigger.remove()
+    }
+  )
+
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
