@@ -5,29 +5,18 @@ import { useCreditsBadgesInGraph } from '@/composables/node/usePriceBadge'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-type FreeTierBalance = {
-  allowance: number
-  used: number
-  remaining: number
-}
-
 export const useFreeTierQuota = createSharedComposable(function () {
   const { flags } = useFeatureFlags()
   const creditsBadges = useCreditsBadgesInGraph()
 
-  const freeTierBalance = computed(() => {
-    return (remoteConfig.value as { free_tier_balance?: FreeTierBalance })
-      ?.free_tier_balance
-  })
-
   const available = ref(0)
   const maxAvailable = ref(0)
   watch(
-    () => freeTierBalance.value?.remaining,
+    () => remoteConfig.value.free_tier_balance?.remaining,
     (val) => (available.value = val ?? 0)
   )
   watch(
-    () => freeTierBalance.value?.allowance,
+    () => remoteConfig.value.free_tier_balance?.allowance,
     (val) => (maxAvailable.value = val ?? 0)
   )
 
