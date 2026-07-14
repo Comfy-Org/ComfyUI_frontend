@@ -96,9 +96,11 @@
               class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
             >
               {{
-                $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
-                  query: searchQuery
-                })
+                disabledMatchCount > 0
+                  ? $t('nodeSearch.disabledByTeamAdmin', disabledMatchCount)
+                  : $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+                      query: searchQuery
+                    })
               }}
             </div>
             <AllNodesPanel
@@ -139,6 +141,7 @@ import TabPanel from '@/components/tab/TabPanel.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDisabledNodeSearch } from '@/composables/node/useDisabledNodeSearch'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
 import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
@@ -276,6 +279,17 @@ useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const hasNoMatches = computed(
   () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0
 )
+
+const { disabledNodeDefs, disabledSearchService } = useDisabledNodeSearch()
+const disabledMatchCount = computed(() => {
+  if (!hasNoMatches.value || disabledNodeDefs.value.length === 0) return 0
+  return disabledSearchService.value.searchNode(
+    searchQuery.value,
+    [],
+    { limit: 64 },
+    { matchWildcards: false }
+  ).length
+})
 
 const sections = computed(() => {
   return nodeOrganizationService.organizeNodesTab(activeNodes.value)
