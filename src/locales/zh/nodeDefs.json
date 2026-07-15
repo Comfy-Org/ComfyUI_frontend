@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "负向坐标",
-        "tooltip": "负向点提示，JSON 格式 [{\"x\": int, \"y\": int}, ...]（像素坐标）"
+        "tooltip": "负向点提示，JSON 格式 [{'{'}\"x\": int, \"y\": int{'}'}, ...]（像素坐标）"
       },
       "positive_coords": {
         "name": "正向坐标",
-        "tooltip": "正向点提示，JSON 格式 [{\"x\": int, \"y\": int}, ...]（像素坐标）"
+        "tooltip": "正向点提示，JSON 格式 [{'{'}\"x\": int, \"y\": int{'}'}, ...]（像素坐标）"
       },
       "refine_iterations": {
         "name": "细化迭代次数",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀",
-        "tooltip": "保存文件的文件名的前缀。可使用格式信息如 %date:yyyy-MM-dd% 或 %空Latent.width%，以包含来自工作流内的信息。"
+        "tooltip": "保存文件的文件名的前缀。可使用格式信息如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}空Latent.width{'%'}，以包含来自工作流内的信息。"
       },
       "images": {
         "name": "图片",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀",
-        "tooltip": "保存文件的前缀。可包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width% 以包含节点中的值。"
+        "tooltip": "保存文件的前缀。可包含格式化信息，如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}Empty Latent Image.width{'%'} 以包含节点中的值。"
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "文件名前缀",
-        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以包含来自节点的值。"
+        "tooltip": "要保存文件的前缀。可以包含格式化信息，如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}Empty Latent Image.width{'%'}，以包含来自节点的值。"
       },
       "format": {
         "name": "格式",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 @subject{subject_id} 在提示中引用。"
+        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 {'@'}subject{'{'}subject_id{'}'} 在提示中引用。"
       }
     },
     "outputs": {

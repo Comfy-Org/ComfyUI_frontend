@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "負向座標",
-        "tooltip": "負向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+        "tooltip": "負向點提示，格式為 JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...]（像素座標）"
       },
       "positive_coords": {
         "name": "正向座標",
-        "tooltip": "正向點提示，格式為 JSON [{\"x\": int, \"y\": int}, ...]（像素座標）"
+        "tooltip": "正向點提示，格式為 JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...]（像素座標）"
       },
       "refine_iterations": {
         "name": "細化次數",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "檔名前綴",
-        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
+        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}Empty Latent Image.width{'%'}，以便從節點中包含數值。"
       },
       "images": {
         "name": "影像",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "檔案名稱前綴",
-        "tooltip": "要儲存檔案的前綴。可包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width% 以包含來自節點的值。"
+        "tooltip": "要儲存檔案的前綴。可包含格式化資訊，例如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}Empty Latent Image.width{'%'} 以包含來自節點的值。"
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "檔名前綴",
-        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%，以便從節點中包含數值。"
+        "tooltip": "要儲存檔案的字首。這可以包含格式化資訊，例如 {'%'}date:yyyy-MM-dd{'%'} 或 {'%'}Empty Latent Image.width{'%'}，以便從節點中包含數值。"
       },
       "format": {
         "name": "格式",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "每個主體最多可提供 3 張參考圖像（所有主體合計最多 7 張）。可在提示詞中以 @subject{subject_id} 參照。"
+        "tooltip": "每個主體最多可提供 3 張參考圖像（所有主體合計最多 7 張）。可在提示詞中以 {'@'}subject{'{'}subject_id{'}'} 參照。"
       }
     },
     "outputs": {

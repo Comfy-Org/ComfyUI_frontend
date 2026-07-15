@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "coordenadas_negativas",
-        "tooltip": "Pontos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+        "tooltip": "Pontos negativos como JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordenadas de pixels)"
       },
       "positive_coords": {
         "name": "coordenadas_positivas",
-        "tooltip": "Pontos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+        "tooltip": "Pontos positivos como JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordenadas de pixels)"
       },
       "refine_iterations": {
         "name": "iterações_de_refino",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefixo_do_arquivo",
-        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como %date:yyyy-MM-dd% ou %Empty Latent Image.width% para incluir valores de nós."
+        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} para incluir valores de nós."
       },
       "images": {
         "name": "imagens",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefixo_do_arquivo",
-        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como %date:yyyy-MM-dd% ou %Empty Latent Image.width% para incluir valores de nós."
+        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} para incluir valores de nós."
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "prefixo_do_arquivo",
-        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como %date:yyyy-MM-dd% ou %Empty Latent Image.width% para incluir valores de nós."
+        "tooltip": "O prefixo para o arquivo a ser salvo. Isso pode incluir informações de formatação como {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} para incluir valores de nós."
       },
       "format": {
         "name": "formato",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "sujeitos",
-        "tooltip": "Para cada sujeito, forneça até 3 imagens de referência (7 imagens no total entre todos os sujeitos). Referencie-os nos prompts via @subject{subject_id}."
+        "tooltip": "Para cada sujeito, forneça até 3 imagens de referência (7 imagens no total entre todos os sujeitos). Referencie-os nos prompts via {'@'}subject{'{'}subject_id{'}'}."
       }
     },
     "outputs": {

@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "negative_coords",
-        "tooltip": "JSON形式のネガティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+        "tooltip": "JSON形式のネガティブポイントプロンプト [{'{'}\"x\": int, \"y\": int{'}'}, ...]（ピクセル座標）"
       },
       "positive_coords": {
         "name": "positive_coords",
-        "tooltip": "JSON形式のポジティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+        "tooltip": "JSON形式のポジティブポイントプロンプト [{'{'}\"x\": int, \"y\": int{'}'}, ...]（ピクセル座標）"
       },
       "refine_iterations": {
         "name": "refine_iterations",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名_プレフィックス",
-        "tooltip": "保存するファイルのプレフィックス。この中には、ノードからの値を含めるために、%date:yyyy-MM-dd%や%Empty Latent Image.width%などのフォーマット情報が含まれる場合があります。"
+        "tooltip": "保存するファイルのプレフィックス。この中には、ノードからの値を含めるために、{'%'}date:yyyy-MM-dd{'%'}や{'%'}Empty Latent Image.width{'%'}などのフォーマット情報が含まれる場合があります。"
       },
       "images": {
         "name": "画像",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
-        "tooltip": "保存するファイルのプレフィックス。%date:yyyy-MM-dd%や%Empty Latent Image.width%などのノードからの値を含むフォーマット情報を含めることができます。"
+        "tooltip": "保存するファイルのプレフィックス。{'%'}date:yyyy-MM-dd{'%'}や{'%'}Empty Latent Image.width{'%'}などのノードからの値を含むフォーマット情報を含めることができます。"
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
-        "tooltip": "保存するファイルのプレフィックス。%date:yyyy-MM-dd% や %Empty Latent Image.width% など、ノードからの値を含める書式情報を含めることができます。"
+        "tooltip": "保存するファイルのプレフィックス。{'%'}date:yyyy-MM-dd{'%'} や {'%'}Empty Latent Image.width{'%'} など、ノードからの値を含める書式情報を含めることができます。"
       },
       "format": {
         "name": "フォーマット",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "各被写体ごとに最大3枚の参照画像を指定してください（全被写体で合計7枚まで）。プロンプト内で@subject{subject_id}で参照できます。"
+        "tooltip": "各被写体ごとに最大3枚の参照画像を指定してください（全被写体で合計7枚まで）。プロンプト内で{'@'}subject{'{'}subject_id{'}'}で参照できます。"
       }
     },
     "outputs": {

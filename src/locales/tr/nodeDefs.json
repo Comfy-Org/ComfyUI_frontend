@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "negatif_koordinatlar",
-        "tooltip": "JSON olarak negatif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+        "tooltip": "JSON olarak negatif nokta istemleri [{'{'}\"x\": int, \"y\": int{'}'}, ...] (piksel koordinatları)"
       },
       "positive_coords": {
         "name": "pozitif_koordinatlar",
-        "tooltip": "JSON olarak pozitif nokta istemleri [{\"x\": int, \"y\": int}, ...] (piksel koordinatları)"
+        "tooltip": "JSON olarak pozitif nokta istemleri [{'{'}\"x\": int, \"y\": int{'}'}, ...] (piksel koordinatları)"
       },
       "refine_iterations": {
         "name": "iyileştirme_iterasyonları",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "dosyaadı_öneki",
-        "tooltip": "Kaydedilecek dosyanın öneki. Bu, düğümlerden değerleri dahil etmek için %date:yyyy-MM-dd% veya %Empty Latent Image.width% gibi biçimlendirme bilgileri içerebilir."
+        "tooltip": "Kaydedilecek dosyanın öneki. Bu, düğümlerden değerleri dahil etmek için {'%'}date:yyyy-MM-dd{'%'} veya {'%'}Empty Latent Image.width{'%'} gibi biçimlendirme bilgileri içerebilir."
       },
       "images": {
         "name": "görüntüler",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "dosya_adı_ön_eki",
-        "tooltip": "Kaydedilecek dosya için ön ek. Bu, düğümlerden gelen değerleri eklemek için %tarih:yyyy-MM-dd% veya %Boş Gizli Görüntü.genişlik% gibi biçimlendirme bilgileri içerebilir."
+        "tooltip": "Kaydedilecek dosya için ön ek. Bu, düğümlerden gelen değerleri eklemek için {'%'}tarih:yyyy-MM-dd{'%'} veya {'%'}Boş Gizli Görüntü.genişlik{'%'} gibi biçimlendirme bilgileri içerebilir."
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "dosyaadı_öneki",
-        "tooltip": "Kaydedilecek dosyanın öneki. Bu, düğümlerden değerleri dahil etmek için %date:yyyy-MM-dd% veya %Empty Latent Image.width% gibi biçimlendirme bilgileri içerebilir."
+        "tooltip": "Kaydedilecek dosyanın öneki. Bu, düğümlerden değerleri dahil etmek için {'%'}date:yyyy-MM-dd{'%'} veya {'%'}Empty Latent Image.width{'%'} gibi biçimlendirme bilgileri içerebilir."
       },
       "format": {
         "name": "format",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "konular",
-        "tooltip": "Her konu için en fazla 3 referans görüntü sağlayın (tüm konular için toplam 7 görüntü). İstemlerde @subject{subject_id} ile referans verin."
+        "tooltip": "Her konu için en fazla 3 referans görüntü sağlayın (tüm konular için toplam 7 görüntü). İstemlerde {'@'}subject{'{'}subject_id{'}'} ile referans verin."
       }
     },
     "outputs": {

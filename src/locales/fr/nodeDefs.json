@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "coords_négatives",
-        "tooltip": "Points négatifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+        "tooltip": "Points négatifs comme JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordonnées pixels)"
       },
       "positive_coords": {
         "name": "coords_positives",
-        "tooltip": "Points positifs comme JSON [{\"x\": int, \"y\": int}, ...] (coordonnées pixels)"
+        "tooltip": "Points positifs comme JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordonnées pixels)"
       },
       "refine_iterations": {
         "name": "itérations_affinage",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "préfixe_du_nom_de_fichier",
-        "tooltip": "Le préfixe pour le fichier à enregistrer. Cela peut inclure des informations de formatage telles que %date:yyyy-MM-dd% ou %Empty Latent Image.width% pour inclure des valeurs à partir de nœuds."
+        "tooltip": "Le préfixe pour le fichier à enregistrer. Cela peut inclure des informations de formatage telles que {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} pour inclure des valeurs à partir de nœuds."
       },
       "images": {
         "name": "images",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "préfixe_nom_fichier",
-        "tooltip": "Le préfixe pour le fichier à enregistrer. Peut inclure des informations de formatage telles que %date:yyyy-MM-dd% ou %Empty Latent Image.width% pour inclure des valeurs des nœuds."
+        "tooltip": "Le préfixe pour le fichier à enregistrer. Peut inclure des informations de formatage telles que {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} pour inclure des valeurs des nœuds."
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "préfixe_nom_fichier",
-        "tooltip": "Le préfixe du fichier à enregistrer. Cela peut inclure des informations de formatage telles que %date:yyyy-MM-dd% ou %Empty Latent Image.width% pour inclure des valeurs provenant des nœuds."
+        "tooltip": "Le préfixe du fichier à enregistrer. Cela peut inclure des informations de formatage telles que {'%'}date:yyyy-MM-dd{'%'} ou {'%'}Empty Latent Image.width{'%'} pour inclure des valeurs provenant des nœuds."
       },
       "format": {
         "name": "format",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "sujets",
-        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via @subject{subject_id}."
+        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via {'@'}subject{'{'}subject_id{'}'}."
       }
     },
     "outputs": {

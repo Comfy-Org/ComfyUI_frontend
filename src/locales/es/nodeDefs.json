@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "coordenadas_negativas",
-        "tooltip": "Puntos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+        "tooltip": "Puntos negativos como JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordenadas de píxeles)"
       },
       "positive_coords": {
         "name": "coordenadas_positivas",
-        "tooltip": "Puntos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de píxeles)"
+        "tooltip": "Puntos positivos como JSON [{'{'}\"x\": int, \"y\": int{'}'}, ...] (coordenadas de píxeles)"
       },
       "refine_iterations": {
         "name": "iteraciones_de_refinamiento",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefijo_nombre_archivo",
-        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width% para incluir valores de los nodos."
+        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como {'%'}date:yyyy-MM-dd{'%'} o {'%'}Empty Latent Image.width{'%'} para incluir valores de los nodos."
       },
       "images": {
         "name": "imágenes",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "prefijo_nombre_archivo",
-        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width% para incluir valores de nodos."
+        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como {'%'}date:yyyy-MM-dd{'%'} o {'%'}Empty Latent Image.width{'%'} para incluir valores de nodos."
       },
       "svg": {
         "name": "svg"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "prefijo_nombre_archivo",
-        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width% para incluir valores de los nodos."
+        "tooltip": "El prefijo para el archivo a guardar. Esto puede incluir información de formato como {'%'}date:yyyy-MM-dd{'%'} o {'%'}Empty Latent Image.width{'%'} para incluir valores de los nodos."
       },
       "format": {
         "name": "formato",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "sujetos",
-        "tooltip": "Para cada sujeto, proporciona hasta 3 imágenes de referencia (7 imágenes en total entre todos los sujetos). Haz referencia a ellos en los prompts usando @subject{subject_id}."
+        "tooltip": "Para cada sujeto, proporciona hasta 3 imágenes de referencia (7 imágenes en total entre todos los sujetos). Haz referencia a ellos en los prompts usando {'@'}subject{'{'}subject_id{'}'}."
       }
     },
     "outputs": {

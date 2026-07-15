@@ -15024,11 +15024,11 @@
       },
       "negative_coords": {
         "name": "negative_coords",
-        "tooltip": "음성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+        "tooltip": "음성 포인트 프롬프트(JSON 형식: [{'{'}\"x\": int, \"y\": int{'}'}, ...], 픽셀 좌표)"
       },
       "positive_coords": {
         "name": "positive_coords",
-        "tooltip": "양성 포인트 프롬프트(JSON 형식: [{\"x\": int, \"y\": int}, ...], 픽셀 좌표)"
+        "tooltip": "양성 포인트 프롬프트(JSON 형식: [{'{'}\"x\": int, \"y\": int{'}'}, ...], 픽셀 좌표)"
       },
       "refine_iterations": {
         "name": "refine_iterations",
@@ -15904,7 +15904,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사입니다. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
+        "tooltip": "저장할 파일의 접두사입니다. 여기에는 {'%'}date:yyyy-MM-dd{'%'} 또는 {'%'}Empty Latent Image.width{'%'}와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
       },
       "images": {
         "name": "이미지",
@@ -15994,7 +15994,7 @@
     "inputs": {
       "filename_prefix": {
         "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 노드의 값을 포함하는 형식 정보가 포함될 수 있습니다."
+        "tooltip": "저장할 파일의 접두사. 여기에는 {'%'}date:yyyy-MM-dd{'%'} 또는 {'%'}Empty Latent Image.width{'%'}와 같은 노드의 값을 포함하는 형식 정보가 포함될 수 있습니다."
       },
       "svg": {
         "name": "SVG"
@@ -16033,7 +16033,7 @@
       },
       "filename_prefix": {
         "name": "파일명 접두사",
-        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같이 노드의 값을 포함하는 포맷 정보를 사용할 수 있습니다."
+        "tooltip": "저장할 파일의 접두사입니다. {'%'}date:yyyy-MM-dd{'%'} 또는 {'%'}Empty Latent Image.width{'%'}와 같이 노드의 값을 포함하는 포맷 정보를 사용할 수 있습니다."
       },
       "format": {
         "name": "포맷",
@@ -19254,7 +19254,7 @@
       },
       "subjects": {
         "name": "subjects",
-        "tooltip": "각 subject마다 최대 3개의 참조 이미지를 제공합니다 (전체 subject 합계 7장). 프롬프트에서 @subject{subject_id}로 참조하세요."
+        "tooltip": "각 subject마다 최대 3개의 참조 이미지를 제공합니다 (전체 subject 합계 7장). 프롬프트에서 {'@'}subject{'{'}subject_id{'}'}로 참조하세요."
       }
     },
     "outputs": {
