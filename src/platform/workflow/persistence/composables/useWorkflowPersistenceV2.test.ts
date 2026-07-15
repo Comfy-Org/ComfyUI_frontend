@@ -141,8 +141,18 @@ const onboardingMocks = vi.hoisted(() => ({
   isCloud: false,
   onboardingTourEnabled: false,
   isNewUser: null as boolean | null,
-  isSubscriptionEnabled: true
+  isSubscriptionEnabled: true,
+  loadWorkflowTemplates: vi.fn(async () => {})
 }))
+
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => ({
+      loadWorkflowTemplates: onboardingMocks.loadWorkflowTemplates
+    })
+  })
+)
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -691,6 +701,17 @@ describe('useWorkflowPersistenceV2', () => {
       expect(commandStoreMocks.execute).toHaveBeenCalledWith(
         'Comfy.BrowseTemplates'
       )
+    })
+
+    it('prefetches templates when Getting Started is shown so its cards are ready', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(onboardingMocks.loadWorkflowTemplates).toHaveBeenCalled()
     })
 
     it('opens the templates browser when the flag is on but the user is not new', async () => {

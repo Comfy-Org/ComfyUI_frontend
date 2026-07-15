@@ -28,6 +28,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import { clearAllV2Storage } from '../base/storageIO'
@@ -185,6 +186,7 @@ export function useWorkflowPersistenceV2() {
       await useWorkflowService().loadBlankWorkflow()
       if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
         if (isOnboardingCandidate()) {
+          void useWorkflowTemplatesStore().loadWorkflowTemplates()
           useOnboardingEntryStore().showGettingStarted()
         } else {
           await useCommandStore().execute('Comfy.BrowseTemplates')
