@@ -45,38 +45,39 @@
 
     <template #contentFilter>
       <div
-        class="relative flex flex-wrap items-center justify-between gap-2 px-6 pt-2 pb-4"
+        class="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 pt-2 pb-4"
       >
         <!-- Type tabs -->
-        <ToggleGroup
-          :model-value="selectedType"
-          type="single"
-          class="rounded-lg"
-          @update:model-value="onSelectType"
-        >
-          <ToggleGroupItem value="all" class="flex-none">
-            {{ $t('templateWorkflows.type.all', 'All') }}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="nodeGraph" class="flex-none gap-1.5">
-            <i class="icon-[lucide--workflow] size-4" />
-            {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="apps" class="flex-none gap-1.5">
-            <i class="icon-[lucide--panels-top-left] size-4" />
-            {{ $t('builderToolbar.app', 'Apps') }}
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            v-for="tab in typeTabs"
+            :key="tab.value"
+            type="button"
+            :aria-pressed="selectedType === tab.value"
+            class="flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg text-xs whitespace-nowrap transition-colors"
+            :class="
+              selectedType === tab.value
+                ? 'bg-base-foreground px-4 font-bold text-base-background'
+                : 'bg-secondary-background px-3 font-medium text-white opacity-70 hover:opacity-100'
+            "
+            @click="selectedType = tab.value"
+          >
+            <i v-if="tab.icon" :class="tab.icon" class="size-3.5" />
+            {{ tab.label }}
+          </button>
+        </div>
 
-        <!-- Filters + Sort -->
+        <!-- Filters + Sort (stay on one line; the whole row drops below the
+             tabs when it no longer fits) -->
         <div
           :ref="primeVueOverlay.overlayScopeRef"
-          class="flex flex-wrap items-center gap-2"
+          class="flex flex-1 items-center justify-end gap-2"
         >
           <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
             v-model:search-query="modelSearchText"
-            class="w-[250px]"
+            class="w-[250px] min-w-28"
             :label="modelFilterLabel"
             :options="modelOptions"
             :content-style="selectContentStyle"
@@ -92,6 +93,7 @@
           <!-- Use Case Filter -->
           <MultiSelect
             v-model="selectedUseCaseObjects"
+            class="min-w-28"
             :label="useCaseFilterLabel"
             :options="useCaseOptions"
             :content-style="selectContentStyle"
@@ -107,6 +109,7 @@
           <!-- Runs On Filter -->
           <MultiSelect
             v-model="selectedRunsOnObjects"
+            class="min-w-28"
             :label="runsOnFilterLabel"
             :options="runsOnOptions"
             :content-style="selectContentStyle"
@@ -125,7 +128,7 @@
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
             :content-style="selectContentStyle"
-            class="w-62.5"
+            class="w-62.5 min-w-32"
           >
             <template #icon>
               <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
@@ -290,8 +293,8 @@
                     <i
                       :class="
                         isAppTemplate(template)
-                          ? 'icon-[lucide--panels-top-left]'
-                          : 'icon-[lucide--workflow]'
+                          ? 'icon-[lucide--app-window]'
+                          : 'icon-[comfy--workflow]'
                       "
                       class="size-4 text-white"
                     />
@@ -494,8 +497,6 @@ import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSli
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import Button from '@/components/ui/button/Button.vue'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -779,10 +780,21 @@ const navigationFilteredTemplates = computed(() => {
 type TemplateType = 'all' | 'nodeGraph' | 'apps'
 const selectedType = ref<TemplateType>('all')
 
-/** Keep one tab always selected (reka-ui would otherwise allow deselecting). */
-const onSelectType = (value: string) => {
-  if (value) selectedType.value = value as TemplateType
-}
+const typeTabs = computed<
+  { value: TemplateType; label: string; icon: string | null }[]
+>(() => [
+  { value: 'all', label: t('templateWorkflows.type.all', 'All'), icon: null },
+  {
+    value: 'nodeGraph',
+    label: t('builderToolbar.nodeGraph', 'Node Graph'),
+    icon: 'icon-[comfy--workflow]'
+  },
+  {
+    value: 'apps',
+    label: t('builderToolbar.app', 'Apps'),
+    icon: 'icon-[lucide--app-window]'
+  }
+])
 
 const typeFilteredTemplates = computed(() => {
   const base = navigationFilteredTemplates.value
