@@ -103,7 +103,10 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   }
 
   function unregisterNode(graphId: UUID, nodeId: NodeId): void {
-    buckets.value.get(graphId)?.delete(nodeId)
+    const bucket = buckets.value.get(graphId)
+    if (!bucket) return
+    bucket.delete(nodeId)
+    if (bucket.size === 0) buckets.value.delete(graphId)
   }
 
   /** The registered nodes of a graph bucket; reads are tracked. */
@@ -112,7 +115,9 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
   }
 
   function clearGraph(graphId: UUID): void {
-    buckets.value.delete(graphId)
+    for (const nodeId of registeredNodeIds(graphId)) {
+      unregisterNode(graphId, nodeId)
+    }
   }
 
   return {
