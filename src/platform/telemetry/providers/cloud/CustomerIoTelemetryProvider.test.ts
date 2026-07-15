@@ -94,6 +94,7 @@ describe('CustomerIoTelemetryProvider', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.useRealTimers()
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {
@@ -550,6 +551,49 @@ describe('CustomerIoTelemetryProvider', () => {
     )
     expect(hoisted.analytics.track.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.analytics.identify.mock.invocationCallOrder[1]
+    )
+  })
+
+  it('does not reset identity when login resolution follows auth tracking', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({ user_id: 'uid-1', email: 'person@example.com' })
+    hoisted.userEmail.value = 'person@example.com'
+    hoisted.resolveUser('uid-1')
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track).toHaveBeenCalledWith(
+        'app:user_auth_completed',
+        { ...SOURCE, user_id: 'uid-1' }
+      )
+    )
+    expect(hoisted.analytics.identify).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.reset).not.toHaveBeenCalled()
+  })
+
+  it('does not stall later events when identification never settles', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({ user_id: 'uid-1', email: 'person@example.com' })
+    provider.trackWorkflowExecution()
+    expect(hoisted.analytics.track).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track.mock.calls).toEqual([
+        ['app:user_auth_completed', { ...SOURCE, user_id: 'uid-1' }],
+        ['execution_start', SOURCE]
+      ])
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to identify Customer.io user:',
+      expect.any(Error)
     )
   })
 
