@@ -10,6 +10,7 @@ import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { BADGE_KIND_ORDER } from '@/types/badgeData'
 import type { BadgeData } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -93,6 +94,10 @@ export interface BadgeSystemOptions {
 }
 
 const CREDITS_BASE_BG_COLOR = '#8D6932'
+
+const SYSTEM_BADGE_KINDS = BADGE_KIND_ORDER.filter(
+  (kind) => kind !== 'extension'
+)
 
 /**
  * Reads the pricing-relevant store state so the calling effect re-runs when
@@ -189,7 +194,7 @@ export function startBadgeSystem(options: BadgeSystemOptions): () => void {
     scope.run(() => {
       watchEffect(() => {
         const rows = computeBadges(gatherSources(options, nodeId))
-        for (const kind of ['core', 'credits'] as const) {
+        for (const kind of SYSTEM_BADGE_KINDS) {
           badgeStore.setBadgesOfKind(
             options.graphId,
             nodeId,
