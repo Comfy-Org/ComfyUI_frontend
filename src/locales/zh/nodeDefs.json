@@ -1325,6 +1325,10 @@
         "name": "种子",
         "tooltip": "用于生成的种子。"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "启用模型的提示优化推理（“thinking”），以更好地遵循提示。可能会显著增加生成时间——在 Seedream 5.0 Pro 上尤为明显。仅在文本转图像时可关闭（提供参考图像时无法关闭）。"
+      },
       "watermark": {
         "name": "水印",
         "tooltip": "是否在图像上添加“AI生成”水印。"
@@ -2831,6 +2835,10 @@
         "name": "背景",
         "tooltip": "在画布和预览中用作背景的可选图像。"
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "用于初始化画布的边界框、元素或 JSON 字符串。新的上游值会初始化画布；在画布上的编辑优先生效，并会一直保留，直到上游值再次变化。"
+      },
       "editor_state": {
         "name": "编辑器状态",
         "tooltip": "绘制边界框并设置每个框的类型、文本、描述、色板。先添加背景元素，最后添加前景元素。"
@@ -2838,6 +2846,10 @@
       "height": {
         "name": "高度",
         "tooltip": "画布及边界框像素网格的高度。"
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "由画布管理的内部状态：上次用于初始化画布的上游 bboxes 值。留空将在下次运行时根据 bboxes 输入重新初始化画布。"
       },
       "width": {
         "name": "宽度",
@@ -10565,6 +10577,12 @@
       "mask": {
         "name": "遮罩"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14573,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "预览 3D 模型文件，无需将其保存到 ComfyUI 输出目录。",
     "display_name": "预览3D",
     "inputs": {
       "bg_image": {
@@ -14591,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "预览 3D 模型文件，无需将其保存到 ComfyUI 输出目录。",
     "display_name": "3D 预览（高级）",
     "inputs": {
       "camera_info": {
@@ -14637,6 +14657,7 @@
     }
   },
   "PreviewAny": {
+    "description": "将任意输入值以文本形式预览。",
     "display_name": "预览任意",
     "inputs": {
       "preview_mode": "预览模式",
@@ -14647,6 +14668,7 @@
     }
   },
   "PreviewAudio": {
+    "description": "预览音频，无需将其保存到 ComfyUI 输出目录。",
     "display_name": "预览音频",
     "inputs": {
       "audio": {
@@ -14664,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "预览高斯点云 3D 文件，无需将其保存到 ComfyUI 输出目录。",
     "display_name": "预览 Splat",
     "inputs": {
       "camera_info": {
@@ -14724,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "预览点云 3D 文件，无需将其保存到 ComfyUI 输出目录。",
     "display_name": "预览点云",
     "inputs": {
       "camera_info": {
@@ -17501,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "保存 3D（高级）",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "来自上游 3D 节点的 3D 模型文件。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "保存动画（APNG）",
     "inputs": {
@@ -17661,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "保存 Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "高斯 Splat 3D 文件。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "将输入图像保存到您的ComfyUI输出目录。",
     "display_name": "保存图像",
@@ -17799,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "保存点云",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "点云文件（.ply）"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "在磁盘上保存 SVG 文件。",
     "display_name": "保存SVG",
@@ -17814,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "将文本内容保存到输出目录中的文件。",
+    "display_name": "保存文本",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17942,6 +18136,117 @@
       "0": {
         "name": "种子",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "从 VAE latent 构建 SeedVR2 正/负条件。",
+    "display_name": "应用 SeedVR2 条件",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "SeedVR2 模型。"
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "用于采样的正向条件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "用于采样的负向条件。"
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "将生成的图像与原始调整尺寸后的图像对齐，并应用颜色校正。",
+    "display_name": "后处理 SeedVR2 输出",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "将生成图像颜色与原始图像匹配的方法。lab：在 CIELAB 空间中转移颜色，保留细节（最忠实）。wavelet：转移低频颜色，保留高分辨率细节。adain：匹配每通道均值/标准差（最快，整体色调）。none：跳过颜色转移（仅几何对齐）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要处理的生成图像。"
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "预处理前的原始调整尺寸图像，作为参考。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "对齐并颜色校正后的图像。"
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "为 SeedVR2 模型填充调整尺寸后的图像。Alpha 通道会被移除。节点“后处理 SeedVR2 输出”会从原始调整尺寸图像重新应用 Alpha 通道。",
+    "display_name": "预处理 SeedVR2 输入",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "要处理的调整尺寸图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "用于 VAE 编码的填充图像。"
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "将 SeedVR2 视频 latent 分割为重叠的时间块，每次采样一个块以适应 VRAM，将 latent 输出分别连接到“应用 SeedVR2 条件”和采样器 latent 输入，最后通过“合并 SeedVR2 latent”重新组合。",
+    "display_name": "分割 SeedVR2 latent",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = 精确使用 frames_per_chunk；auto = 预测可适应空闲 VRAM 的最大块。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "要分割的 VAE 编码 SeedVR2 latent。"
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "相邻块之间共享的 latent 帧，在合并时进行交叉淡入；0 = 无重叠。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "按顺序排列的时间块。"
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "相邻块之间实际的 latent 帧重叠量，用于“合并 SeedVR2 latent”。"
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "将采样后的 SeedVR2 latent 时间块重新组合为一个 latent，使用 Hann 窗对每个重叠部分进行交叉淡入，窗口大小由“分割 SeedVR2 latent”传入的 temporal_overlap 决定。",
+    "display_name": "合并 SeedVR2 latent",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "按顺序排列的采样时间块。"
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "“分割 SeedVR2 latent”的 temporal_overlap 输出。0 = 直接拼接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "重新组合后的完整 latent。"
       }
     }
   },
@@ -18827,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "风格模型名称"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "使用 sync.so 重新同步视频中嘴部动作与新的语音音频。可自动处理特写、侧脸和遮挡，同时保留说话者的表情。费用随输出时长增加。",
+    "display_name": "sync.so 唇形同步",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "用于同步嘴部动作的语音音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "sync.so 生成模型。"
+      },
+      "model_speaker_frame": {
+        "name": "说话者帧"
+      },
+      "model_speaker_selection": {
+        "name": "说话者选择"
+      },
+      "model_speaker_x": {
+        "name": "说话者 X"
+      },
+      "model_speaker_y": {
+        "name": "说话者 Y"
+      },
+      "model_sync_mode": {
+        "name": "同步模式"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "需要重新同步的说话者视频素材。支持最高 4K (4096x2160)；建议使用恒定帧率 24/25/30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "使用 sync.so 的 sync-3 模型，将静态肖像动画化为由语音音频驱动的说话视频。输出时长与音频一致。费用随输出时长增加。",
+    "display_name": "sync.so 说话图像",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "驱动说话视频的语音音频；输出时长与其一致。可在此连接任意 TTS 节点，实现文本驱动动画。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "包含清晰可见人脸的单张图片，支持最高 4K (4096x2160)。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "sync.so 生成模型。图像输入仅支持 sync-3。"
+      },
+      "model_auto_downscale": {
+        "name": "自动降采样"
+      },
+      "model_speaker_selection": {
+        "name": "说话者选择"
+      },
+      "model_speaker_x": {
+        "name": "说话者 X"
+      },
+      "model_speaker_y": {
+        "name": "说话者 Y"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "可选，用于指导肖像如何生动起来，例如“让人物微笑并看向镜头”。留空则为自然说话动作。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
