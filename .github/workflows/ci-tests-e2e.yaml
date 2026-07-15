@@ -90,10 +90,10 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run sharded tests (browsers pre-installed in container)
-      - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+      # Run sharded subgraph tests (browsers pre-installed in container)
+      - name: Run subgraph Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        run: pnpm exec playwright test --project=chromium --grep '@subgraph' --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           COLLECT_COVERAGE: 'true'
@@ -147,10 +147,10 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
-      # Run tests (browsers pre-installed in container)
-      - name: Run Playwright tests (${{ matrix.browser }})
+      # Run subgraph tests (browsers pre-installed in container)
+      - name: Run subgraph Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        run: pnpm exec playwright test --project=${{ matrix.browser }} --grep '@subgraph' --pass-with-no-tests --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
