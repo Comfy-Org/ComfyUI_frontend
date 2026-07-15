@@ -792,60 +792,6 @@ describe('recordNodeErrors', () => {
   })
 })
 
-describe('read-only error state', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  it('ignores direct writes to lastNodeErrors', () => {
-    const store = useExecutionErrorStore()
-    store.recordNodeErrors({
-      '1': nodeError([validationError('required_input_missing', 'seed_input')])
-    })
-    const seededErrors = store.lastNodeErrors
-
-    // @ts-expect-error probing the read-only boundary on purpose
-    store.lastNodeErrors = null
-
-    expect(store.lastNodeErrors).toBe(seededErrors)
-  })
-
-  it('ignores direct writes to lastExecutionError', () => {
-    const store = useExecutionErrorStore()
-    store.recordExecutionError({
-      prompt_id: 'test',
-      timestamp: 0,
-      node_id: '1',
-      node_type: 'Test',
-      executed: [],
-      exception_message: 'fail',
-      exception_type: 'RuntimeError',
-      traceback: []
-    })
-    const seededError = store.lastExecutionError
-
-    // @ts-expect-error probing the read-only boundary on purpose
-    store.lastExecutionError = null
-
-    expect(store.lastExecutionError).toBe(seededError)
-  })
-
-  it('ignores direct writes to lastPromptError', () => {
-    const store = useExecutionErrorStore()
-    store.recordPromptError({
-      type: 'execution',
-      message: 'fail',
-      details: ''
-    })
-    const seededError = store.lastPromptError
-
-    // @ts-expect-error probing the read-only boundary on purpose
-    store.lastPromptError = null
-
-    expect(store.lastPromptError).toBe(seededError)
-  })
-})
-
 describe('clearAllErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>

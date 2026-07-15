@@ -48,7 +48,10 @@ function reconcileNodeErrorFlags(
       if (!node) continue
 
       flaggedNodes.add(node)
-      errorsByNode.set(node, nodeError.errors)
+      errorsByNode.set(node, [
+        ...(errorsByNode.get(node) ?? []),
+        ...nodeError.errors
+      ])
 
       for (const parentId of getParentExecutionIds(executionId)) {
         const parentNode = getNodeByExecutionId(rootGraph, parentId)

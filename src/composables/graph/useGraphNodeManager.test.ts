@@ -626,6 +626,56 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 
+  it('merges slot errors when execution IDs resolve to the same node', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InnerNode')
+    interiorNode.addInput('first', 'INT')
+    interiorNode.addInput('second', 'INT')
+    subgraph.add(interiorNode)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { id: 50 })
+    const secondInstance = createTestSubgraphNode(subgraph, { id: 51 })
+    const graph = firstInstance.graph as LGraph
+    graph.add(firstInstance)
+    graph.add(secondInstance)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+    store.recordNodeErrors({
+      [`${firstInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing first',
+            details: '',
+            extra_info: { input_name: 'first' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      },
+      [`${secondInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing second',
+            details: '',
+            extra_info: { input_name: 'second' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      }
+    })
+    await nextTick()
+
+    expect(interiorNode.inputs[0].hasErrors).toBe(true)
+    expect(interiorNode.inputs[1].hasErrors).toBe(true)
+  })
+
   it('sets has_errors on nodes with missing models', async () => {
     const { nodeA, nodeB } = setupGraphWithStore()
     const missingModelStore = useMissingModelStore()
