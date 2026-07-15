@@ -152,7 +152,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     event: string,
     properties: Record<string, unknown>,
     identity?: CustomerIoIdentity,
-    restoreIdentity?: CustomerIoIdentity
+    restoreIdentity?: CustomerIoIdentity | null
   ): Promise<void> {
     const analytics = this.analytics
     if (!analytics) return
@@ -163,14 +163,18 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       console.error('Failed to track Customer.io event:', error)
     })
 
-    if (restoreIdentity) await this.identify(restoreIdentity)
+    if (restoreIdentity) {
+      await this.identify(restoreIdentity)
+    } else if (restoreIdentity === null) {
+      await this.resetIdentity()
+    }
   }
 
   private track(
     event: string,
     metadata?: TelemetryEventProperties,
     identity?: CustomerIoIdentity,
-    restoreIdentity?: CustomerIoIdentity
+    restoreIdentity?: CustomerIoIdentity | null
   ): void {
     if (!this.isEnabled) return
     const properties = { ...metadata, event_source: EVENT_SOURCE }
@@ -206,7 +210,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       TelemetryEvents.USER_AUTH_COMPLETED,
       omit(metadata, ['email', 'share_id']),
       identity,
-      identity ? this.sessionIdentity || undefined : undefined
+      identity ? this.sessionIdentity : undefined
     )
   }
 

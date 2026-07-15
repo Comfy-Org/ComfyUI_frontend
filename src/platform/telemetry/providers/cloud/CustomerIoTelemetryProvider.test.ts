@@ -487,6 +487,45 @@ describe('CustomerIoTelemetryProvider', () => {
     trackResult.resolve()
   })
 
+  it('restores signed-out identity when auth delivery follows logout', async () => {
+    let activeUser: string | null = null
+    let trackedUser: string | null = null
+    hoisted.analytics.identify.mockImplementation((userId: string) => {
+      activeUser = userId
+      return Promise.resolve()
+    })
+    hoisted.analytics.track.mockImplementation(() => {
+      trackedUser = activeUser
+      return Promise.resolve()
+    })
+    hoisted.analytics.reset.mockImplementation(() => {
+      activeUser = null
+    })
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    hoisted.userEmail.value = 'person@example.com'
+    hoisted.resolveUser('uid-1')
+    hoisted.logoutUser()
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.reset).toHaveBeenCalledOnce()
+    )
+
+    provider.trackAuth({
+      user_id: 'uid-1',
+      email: 'person@example.com'
+    })
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.reset).toHaveBeenCalledTimes(2)
+    )
+    expect(trackedUser).toBe('uid-1')
+    expect(activeUser).toBeNull()
+    expect(hoisted.analytics.track.mock.invocationCallOrder[0]).toBeLessThan(
+      hoisted.analytics.reset.mock.invocationCallOrder[1]
+    )
+  })
+
   it('restores a configured identity after tracking auth with the Firebase uid', async () => {
     const provider = createProvider({
       customer_io: {
