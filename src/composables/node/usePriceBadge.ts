@@ -160,14 +160,16 @@ export const usePriceBadge = () => {
 export const useCreditsBadgesInGraph = createSharedComposable(() => {
   const { isCreditsBadge } = usePriceBadge()
   const nodeTrigger = ref(0)
-  app.graph.onNodeAdded = useChainCallback(
-    app.graph.onNodeAdded,
-    () => nodeTrigger.value++
-  )
-  app.graph.onNodeRemoved = useChainCallback(
-    app.graph.onNodeRemoved,
-    () => nodeTrigger.value++
-  )
+  if (app.graph) {
+    app.graph.onNodeAdded = useChainCallback(
+      app.graph.onNodeAdded,
+      () => nodeTrigger.value++
+    )
+    app.graph.onNodeRemoved = useChainCallback(
+      app.graph.onNodeRemoved,
+      () => nodeTrigger.value++
+    )
+  }
   return computed(() => {
     void nodeTrigger.value
     return mapAllNodes(app.graph, (node) => {
