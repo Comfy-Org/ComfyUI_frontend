@@ -208,7 +208,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     captureResultMedia,
     showNudge,
     dismissNudge,
-    end,
-    reset
+    end
   }
 })

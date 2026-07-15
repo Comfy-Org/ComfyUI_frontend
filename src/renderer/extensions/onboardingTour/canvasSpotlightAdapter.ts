@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit/math'
+
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -29,7 +31,7 @@ interface Size {
 }
 
 /** A viewport-space position for the coach-mark plus the edge that points at the target. */
-export interface CoachMarkPosition {
+interface CoachMarkPosition {
   left: number
   top: number
   pointerEdge: CoachMarkEdge
@@ -51,10 +53,6 @@ export function rectIntersectsViewport(
 /** Space between the coach-mark and the target it points at. */
 export const COACH_MARK_GAP = 40
 const VIEWPORT_PADDING = 12
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
 
 function fitsViewport(
   pos: CoachMarkPosition,

@@ -73,26 +73,6 @@ describe('onboardingTourStore', () => {
     isDialogOpen.mockReturnValue(false)
   })
 
-  it('reset() clears all state back to idle', () => {
-    store.phase = 'active'
-    store.stepIndex = 3
-    store.resolvedRoles = {
-      source: null,
-      prompt: null,
-      engine: null,
-      sink: null,
-      mediaKind: 'video'
-    }
-    store.revealedNodeIds.add(toNodeId(42))
-
-    store.reset()
-
-    expect(store.phase).toBe('idle')
-    expect(store.stepIndex).toBe(0)
-    expect(store.resolvedRoles).toBeNull()
-    expect(store.revealedNodeIds.size).toBe(0)
-  })
-
   it('start() on I2V roles builds [Upload, Prompt, Run, Result] and reveals the source', () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
 
