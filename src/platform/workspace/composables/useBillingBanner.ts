@@ -25,9 +25,10 @@ export interface BillingBannerInputs {
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Gated on the team PLAN, not the workspace type: a team
-// workspace can sit on a personal-tier legacy plan, and a personal workspace can
-// hold a team plan.
+// outOfCredits > ending. Gated on the team PLAN, because plan and workspace type
+// are independent axes: a team workspace can sit on a personal-tier legacy plan
+// today, and personal workspaces are due to gain team plans (BE-1526), at which
+// point a workspace-type gate would hide the banner from real team subscribers.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
