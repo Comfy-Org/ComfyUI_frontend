@@ -1,5 +1,5 @@
 <template>
-  <div v-if="banner" class="@container px-2 pt-2">
+  <div v-if="banner" class="@container">
     <div
       role="status"
       class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"

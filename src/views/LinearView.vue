@@ -14,7 +14,6 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import BillingStatusBanner from '@/platform/workspace/components/BillingStatusBanner.vue'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
@@ -98,7 +97,6 @@ function dragDrop(e: DragEvent) {
 <template>
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
-    <BillingStatusBanner v-if="!isBuilderMode" />
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >

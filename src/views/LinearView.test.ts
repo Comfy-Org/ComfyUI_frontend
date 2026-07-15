@@ -83,7 +83,6 @@ const baseStubs = {
   Splitter: passthroughStub,
   SplitterPanel: passthroughStub,
   MobileDisplay: leafStub('mobile-display'),
-  BillingStatusBanner: leafStub('billing-status-banner'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
   ExtensionSlot: leafStub('extension-slot'),
@@ -145,20 +144,6 @@ describe('LinearView', () => {
     expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('linear-header-progress-bar')).toBeInTheDocument()
     expect(screen.getByTestId('linear-preview')).toBeInTheDocument()
-  })
-
-  it('hosts the credit-exhaustion banner in the linear shell (graph shell suppresses its own in this mode)', () => {
-    renderView()
-
-    expect(screen.getByTestId('billing-status-banner')).toBeInTheDocument()
-  })
-
-  it('omits the credit-exhaustion banner in builder mode, where the builder chrome overlays the shell', () => {
-    renderView({ isBuilderMode: true })
-
-    expect(
-      screen.queryByTestId('billing-status-banner')
-    ).not.toBeInTheDocument()
   })
 
   it('shows the toolbar and puts the active tab before the controls for a left sidebar', () => {

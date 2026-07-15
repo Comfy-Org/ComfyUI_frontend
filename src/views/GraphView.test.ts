@@ -1,8 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -163,9 +163,6 @@ vi.mock('@/utils/envUtil', () => ({
 // Module-mock heavy child components so we don't pay their import cost.
 const stubModule = { default: { template: '<div />' } }
 vi.mock('@/components/graph/GraphCanvas.vue', () => stubModule)
-vi.mock('@/platform/workspace/components/BillingStatusBanner.vue', () => ({
-  default: { template: '<div data-testid="billing-banner" />' }
-}))
 vi.mock('@/views/LinearView.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderToolbar.vue', () => stubModule)
 vi.mock('@/components/builder/BuilderMenu.vue', () => stubModule)
@@ -213,19 +210,5 @@ describe('GraphView - reconnect wiring', () => {
       expect(onReconnected).toHaveBeenCalledTimes(1)
       expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
     })
-  })
-
-  it('suppresses its own billing banner in linear mode so LinearView owns the slot', async () => {
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    const GraphView = (await import('./GraphView.vue')).default
-    render(GraphView)
-
-    expect(screen.getByTestId('billing-banner')).toBeVisible()
-
-    useCanvasStore().linearMode = true
-    await nextTick()
-
-    expect(screen.getByTestId('billing-banner')).not.toBeVisible()
   })
 })

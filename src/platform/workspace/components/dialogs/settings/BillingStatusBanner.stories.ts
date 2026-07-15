@@ -18,6 +18,10 @@ import BillingStatusBanner from './BillingStatusBanner.vue'
  *
  * The amber triangle-alert marks action-needed states; the muted circle-alert is
  * reserved for the informational "plan ends" notice (DES-380 severity rule).
+ *
+ * RUN WITH `DISTRIBUTION=cloud pnpm storybook`. The banner is cloud-only, and
+ * `isCloud` is compile-time, so under a plain `pnpm storybook` every story below
+ * renders empty.
  */
 const meta: Meta<typeof BillingStatusBanner> = {
   title: 'Platform/Workspace/BillingStatusBanner',

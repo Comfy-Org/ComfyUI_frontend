@@ -8,7 +8,7 @@ import type {
   BillingStatus,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
-import BillingStatusBanner from '@/platform/workspace/components/BillingStatusBanner.vue'
+import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 
 interface Subscription {
   hasFunds: boolean
