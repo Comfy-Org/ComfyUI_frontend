@@ -46,7 +46,10 @@ const i18n = createI18n({
 })
 
 function renderNudge() {
-  return render(OnboardingTourNudge, { global: { plugins: [i18n] } })
+  return render(OnboardingTourNudge, {
+    props: { appearDelayMs: 0 },
+    global: { plugins: [i18n] }
+  })
 }
 
 const nudgeTitle = enMessages.onboardingTour.nudge.title

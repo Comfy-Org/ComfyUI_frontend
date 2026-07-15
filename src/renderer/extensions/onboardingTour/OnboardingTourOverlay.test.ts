@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('./canvasSpotlightAdapter', () => ({
   RUN_BUTTON_SELECTOR:
     '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]',
+  TOUR_FOCUS_DURATION_MS: 0,
   // Return a fresh array (like prod) so a caller pushing to it can't grow the mock.
   maskRectsFor: (ids: unknown[]) =>
     mocks.rectsById === null
@@ -283,7 +284,7 @@ describe('OnboardingTourOverlay', () => {
 
     renderOverlay()
 
-    await screen.findByText('Press Run and your result starts generating.')
+    await screen.findByText('Press Run to start generating your result')
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull()
     // Skip and Back remain so the user is never trapped.

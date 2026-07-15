@@ -28,6 +28,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 }))
 
 import {
+  TOUR_FOCUS_DURATION_MS,
+  TOUR_ZOOM_FILL,
   canvasTransformValid,
   coachMarkPosition,
   focusNodes,
@@ -154,7 +156,26 @@ describe('canvasSpotlightAdapter', () => {
       focusNodes([toNodeId(3)])
 
       // createBounds pads the [0,0,100,100] node by 10 on every side.
-      expect(animate).toHaveBeenCalledWith([-10, -10, 120, 120], { zoom: 0.4 })
+      expect(animate).toHaveBeenCalledWith([-10, -10, 120, 120], {
+        zoom: TOUR_ZOOM_FILL,
+        duration: TOUR_FOCUS_DURATION_MS
+      })
+    })
+
+    it('pans without re-zooming when zoom is 0', () => {
+      const animate = vi.fn()
+      const node = fakeNode(3, [0, 0, 100, 100])
+      mocks.canvas = { ...fakeCanvas({}), animateToBounds: animate }
+      mocks.currentGraph = fromPartial<LGraph>({
+        getNodeById: (id: NodeId) => (id === toNodeId(3) ? node : null)
+      })
+
+      focusNodes([toNodeId(3)], 0)
+
+      expect(animate).toHaveBeenCalledWith([-10, -10, 120, 120], {
+        zoom: 0,
+        duration: TOUR_FOCUS_DURATION_MS
+      })
     })
 
     it('does nothing when no nodes resolve', () => {

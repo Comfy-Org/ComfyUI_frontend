@@ -17,7 +17,7 @@
           <mask id="onboarding-tour-spotlight">
             <rect width="100%" height="100%" fill="white" />
             <rect
-              v-for="(hole, i) in holeRects"
+              v-for="(hole, i) in visibleHoleRects"
               :key="i"
               :x="hole.left"
               :y="hole.top"
@@ -31,7 +31,12 @@
         <rect
           width="100%"
           height="100%"
-          class="fill-base-background/95"
+          :class="
+            cn(
+              'fill-base-background/95 transition-opacity duration-500 ease-out',
+              revealed ? 'opacity-100' : 'opacity-0'
+            )
+          "
           mask="url(#onboarding-tour-spotlight)"
         />
       </svg>
@@ -42,10 +47,9 @@
         data-testid="onboarding-spotlight"
         :class="
           cn(
-            'absolute transition-all duration-500 ease-out',
-            isRunStep
-              ? 'rounded-lg border border-node-component-outline'
-              : 'rounded-xl border-3 border-node-component-outline'
+            'absolute border border-node-component-outline/30 transition-opacity duration-300 ease-out',
+            revealed ? 'opacity-100' : 'opacity-0',
+            isRunStep ? 'rounded-lg' : 'rounded-xl'
           )
         "
         :style="ringStyle(hole)"
@@ -53,7 +57,14 @@
 
       <div
         ref="bubbleRef"
-        class="pointer-events-auto absolute flex h-fit w-full max-w-xs flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface transition-[top,left] duration-500 ease-out"
+        :class="
+          cn(
+            'absolute flex h-fit w-full max-w-xs flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface',
+            bubbleVisible
+              ? 'pointer-events-auto opacity-100 transition-[top,left,opacity] duration-500 ease-out'
+              : 'pointer-events-none opacity-0 transition-opacity duration-200 ease-out'
+          )
+        "
         :style="bubbleStyle"
         tabindex="-1"
         aria-live="polite"
@@ -149,6 +160,8 @@ import DotSpinner from '@/components/common/DotSpinner.vue'
 
 import {
   RUN_BUTTON_SELECTOR,
+  TOUR_FOCUS_DURATION_MS,
+  TOUR_ZOOM_FILL,
   coachMarkPosition,
   focusNodes,
   maskRectsFor
@@ -205,6 +218,80 @@ const copy = computed(() =>
   currentStep.value ? stepCopyKey(currentStep.value) : { title: '', body: '' }
 )
 
+// When the tour opens, hold on the whole workflow undimmed for a beat so the
+// user gets the lay of the land, THEN start the guided steps. Per step, let the
+// camera finish framing the target before the highlight lights up (so it lands
+// on an element already in position, not mid-zoom), then a beat later show the
+// coach-mark copy. The Run step has no camera move, so its highlight is instant.
+const INTRO_PREVIEW_MS = 1000
+const CAMERA_SETTLE_MS = TOUR_FOCUS_DURATION_MS + 60
+const MESSAGE_AFTER_SETTLE_MS = 140
+const revealed = ref(false)
+const bubbleVisible = ref(false)
+// True once the tour has zoomed in on its first target; later steps only pan.
+let framedOnce = false
+let introTimer: ReturnType<typeof setTimeout> | null = null
+let highlightTimer: ReturnType<typeof setTimeout> | null = null
+let messageTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearStepTimers() {
+  for (const timer of [introTimer, highlightTimer, messageTimer]) {
+    if (timer !== null) clearTimeout(timer)
+  }
+  introTimer = highlightTimer = messageTimer = null
+}
+
+// Reveal the spotlight and frame the target. The highlight stays lit through the
+// whole tour and simply glides to each new target as the camera moves (rects
+// track the node every frame, in sync with the eased camera), so the scrim never
+// blacks out or pulses between steps. The copy is held back until the camera
+// settles so the text doesn't slide across the screen mid-move.
+function beginStepReveal() {
+  // The first step stays at the workflow's default framing — no camera move, no
+  // zoom; the highlight just lands where the first target already sits. A later
+  // step that hasn't zoomed yet zooms in (its highlight appears only once the
+  // camera settles, at final size); pan steps keep the highlight lit and glide
+  // it over.
+  const isFirstStep = stepIndex.value === 0
+  const zoomsIn = !isFirstStep && !framedOnce && !isRunStep.value
+  if (!isFirstStep) focusCurrentStep()
+  const settle = isFirstStep || isRunStep.value ? 0 : CAMERA_SETTLE_MS
+  if (zoomsIn) {
+    highlightTimer = setTimeout(() => {
+      revealed.value = true
+    }, settle)
+  } else {
+    revealed.value = true
+  }
+  messageTimer = setTimeout(() => {
+    bubbleVisible.value = true
+  }, settle + MESSAGE_AFTER_SETTLE_MS)
+}
+
+watch(
+  [isActive, stepIndex],
+  ([active], oldValues) => {
+    clearStepTimers()
+    bubbleVisible.value = false
+    if (!active) {
+      revealed.value = false
+      framedOnce = false
+      return
+    }
+    // Fresh open (idle→active): hold on the undimmed full-flow preview, then
+    // reveal and begin the guided steps. Between steps the spotlight stays lit
+    // and glides to the next target.
+    if (oldValues?.[0] !== true) {
+      revealed.value = false
+      framedOnce = false
+      introTimer = setTimeout(beginStepReveal, INTRO_PREVIEW_MS)
+      return
+    }
+    beginStepReveal()
+  },
+  { immediate: true }
+)
+
 function onNext() {
   if (isLastStep.value) {
     controller.end('done')
@@ -220,7 +307,22 @@ const RUN_PROGRESS_SELECTOR =
 const holeRects = ref<ScreenRect[]>([])
 const spotRects = ref<ScreenRect[]>([])
 
-const focusRect = computed(() => spotRects.value[0] ?? null)
+// The hole is cut only while the guided steps are showing (not during the
+// intro preview); it tracks the target node every frame as the camera moves.
+const visibleHoleRects = computed(() => (revealed.value ? holeRects.value : []))
+
+// Keep the last valid focus rect: during a transition the RAF can momentarily
+// resolve no rects (the new target isn't ready for a frame), and letting this
+// fall to null would snap the coach-mark to screen center and back — the flicker
+// where the tooltip appears, vanishes, then reappears. Retaining the last rect
+// holds it in place until the new target resolves.
+const focusRect = ref<ScreenRect | null>(null)
+watch(
+  () => spotRects.value[0] ?? null,
+  (rect) => {
+    if (rect) focusRect.value = rect
+  }
+)
 
 const bubbleRef = useTemplateRef<HTMLElement>('bubbleRef')
 
@@ -259,8 +361,12 @@ function recompute() {
 // RAF keeps the rects aligned while the user pans/zooms the canvas.
 const { pause, resume } = useRafFn(recompute, { immediate: false })
 
+// Zoom in only on the first framed step; every later step pans at that same
+// scale (zoom 0), so the view never zooms back out and in again between steps.
 function focusCurrentStep() {
-  if (!isRunStep.value) focusNodes([...spotlitNodeIds.value])
+  if (isRunStep.value) return
+  focusNodes([...spotlitNodeIds.value], framedOnce ? 0 : TOUR_ZOOM_FILL)
+  framedOnce = true
 }
 
 watch(
@@ -268,7 +374,6 @@ watch(
   ([active]) => {
     if (active) {
       recompute()
-      focusCurrentStep()
       resume()
     } else {
       pause()
@@ -288,6 +393,7 @@ watch(isActive, (active) => {
 // Tearing down the overlay (e.g. route away mid-tour) must end the tour so the
 // controller's grace timer can't outlive the UI it drives.
 onUnmounted(() => {
+  clearStepTimers()
   if (isActive.value) controller.end('skip')
 })
 
