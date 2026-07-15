@@ -133,20 +133,19 @@
               class="gap-1 px-3 py-2 font-normal"
               @click="onNext"
             >
+              <i
+                v-if="isLastStep"
+                class="icon-[lucide--check] size-4"
+                aria-hidden="true"
+              />
               {{
                 isLastStep
                   ? t('onboardingTour.complete')
                   : t('onboardingTour.next')
               }}
               <i
-                :class="
-                  cn(
-                    'size-4',
-                    isLastStep
-                      ? 'icon-[lucide--check]'
-                      : 'icon-[lucide--arrow-right]'
-                  )
-                "
+                v-if="!isLastStep"
+                class="icon-[lucide--arrow-right] size-4"
                 aria-hidden="true"
               />
             </Button>

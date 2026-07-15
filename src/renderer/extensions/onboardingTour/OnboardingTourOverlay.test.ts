@@ -171,13 +171,59 @@ describe('OnboardingTourOverlay', () => {
     expect(await screen.findByText('2 of 3')).toBeInTheDocument()
   })
 
-  it('renders the copy for the active step', async () => {
+  it.for([
+    {
+      name: 'renders the t2i prompt copy',
+      shape: 't2i',
+      body: 'Your image gets built from this description. Try anything you like.'
+    },
+    {
+      name: 'renders the i2v prompt copy',
+      shape: 'i2v',
+      body: 'The image sets the scene. This tells it what happens next.'
+    },
+    {
+      name: 'renders the image-edit prompt copy',
+      shape: 'image-edit',
+      body: 'Your image stays as it is. Describe what you want different.'
+    },
+    {
+      name: 'renders the other prompt copy',
+      shape: 'other',
+      body: 'This is your prompt. Change it to change your result.'
+    }
+  ] as const)('$name', async ({ shape, body }) => {
     store.phase = 'active'
-    store.steps = [promptStep, runStep]
+    store.steps = [{ ...promptStep, shape }, runStep]
 
     renderOverlay()
 
-    expect(await screen.findByText('Tell it what to make')).toBeInTheDocument()
+    expect(await screen.findByText(body)).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'renders the i2v upload copy',
+      shape: 'i2v',
+      body: 'This picture is your first frame. Swap in your own whenever you like.'
+    },
+    {
+      name: 'renders the image-edit upload copy',
+      shape: 'image-edit',
+      body: "This is the picture you'll edit. Swap in your own whenever you like."
+    },
+    {
+      name: 'renders the other upload copy',
+      shape: 'other',
+      body: 'This image feeds the workflow. Swap in your own whenever you like.'
+    }
+  ] as const)('$name', async ({ shape, body }) => {
+    store.phase = 'active'
+    store.steps = [{ kind: 'upload', nodeId: toNodeId(1), shape }, runStep]
+
+    renderOverlay()
+
+    expect(await screen.findByText(body)).toBeInTheDocument()
   })
 
   it('renders video result copy for a video sink once the media is captured', async () => {
@@ -241,7 +287,7 @@ describe('OnboardingTourOverlay', () => {
 
     renderOverlay()
 
-    await user.click(await screen.findByRole('button', { name: 'Complete' }))
+    await user.click(await screen.findByRole('button', { name: 'Finish' }))
     expect(mocks.controller.end).toHaveBeenCalledWith('done')
   })
 
@@ -299,7 +345,7 @@ describe('OnboardingTourOverlay', () => {
 
     await screen.findByText('Press Run to start generating your result')
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Complete' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull()
     // Skip and Back remain so the user is never trapped.
     expect(screen.getByRole('button', { name: 'Skip' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Back' })).toBeVisible()
@@ -399,9 +445,7 @@ describe('OnboardingTourOverlay', () => {
 
     renderOverlay()
 
-    expect(
-      await screen.findByRole('button', { name: 'Complete' })
-    ).toBeVisible()
+    expect(await screen.findByRole('button', { name: 'Finish' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
   })

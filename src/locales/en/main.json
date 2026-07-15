@@ -2323,7 +2323,7 @@
     "skip": "Skip",
     "back": "Back",
     "next": "Next",
-    "complete": "Complete",
+    "complete": "Finish",
     "stepCounter": "{current} of {total}",
     "step": {
       "upload": {
