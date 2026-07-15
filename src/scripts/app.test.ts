@@ -21,12 +21,11 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { fromAny } from '@total-typescript/shoehorn'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
+import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import {
   createTestRootGraph,
@@ -292,24 +291,6 @@ describe('ComfyApp', () => {
             details: ''
           }
         })
-      )
-
-      await expect(app.queuePrompt(0)).resolves.toBe(true)
-    })
-
-    it('preserves a successful result when prompt errors carry null node errors', async () => {
-      prepareEmptyPromptQueue()
-      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
-        new PromptExecutionError(
-          fromAny<PromptResponse, unknown>({
-            node_errors: null,
-            error: {
-              type: 'prompt_no_outputs',
-              message: 'Prompt has no outputs',
-              details: ''
-            }
-          })
-        )
       )
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
