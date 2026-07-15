@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 test.describe('Widget copy button', { tag: ['@ui', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -12,6 +13,9 @@ test.describe('Widget copy button', { tag: ['@ui', '@vue-nodes'] }, () => {
     })
 
     await comfyPage.vueNodes.waitForNodes()
+    // Center the node so it is clear of the top-left workflow-actions overlay,
+    // which otherwise intercepts pointer events during hover.
+    await fitToViewInstant(comfyPage)
   })
 
   test('Copy button has correct aria-label', async ({ comfyPage }) => {
