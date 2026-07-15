@@ -1,9 +1,3 @@
-<!--
-  Full-screen Getting Started takeover shown to fresh users after signup. Sits
-  over the canvas (toolbar stays visible), driven by the persistence-layer entry
-  flag. The Templates tab launches the onboarding tour on a curated template;
-  the Tutorials tab links out to the docs.
--->
 <template>
   <Teleport v-if="visible" to="body">
     <div
@@ -27,7 +21,7 @@
 
         <TabList
           v-model="activeTab"
-          class="w-auto gap-1 rounded-full border border-white/10 p-0.5"
+          class="w-auto gap-1 rounded-full border border-border-subtle p-0.5"
           :aria-label="t('onboardingTour.gettingStarted.tabsLabel')"
         >
           <Tab
