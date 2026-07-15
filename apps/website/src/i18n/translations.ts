@@ -2208,8 +2208,9 @@ const translations = {
     'zh-CN': '可以配合我的本地 ComfyUI 使用吗？'
   },
   'mcp.faq.5.a': {
-    en: 'Coming soon. Today, to drive a local ComfyUI, you can use comfy-cli.',
-    'zh-CN': '即将推出。目前，若要操作本地 ComfyUI，你可以使用 comfy-cli。'
+    en: 'Coming soon. Today, to drive a local ComfyUI, you can use comfy-cli: https://github.com/Comfy-Org/comfy-cli',
+    'zh-CN':
+      '即将推出。目前，若要操作本地 ComfyUI，你可以使用 comfy-cli：https://github.com/Comfy-Org/comfy-cli'
   },
   'mcp.faq.6.q': {
     en: 'What can my agent do once connected?',

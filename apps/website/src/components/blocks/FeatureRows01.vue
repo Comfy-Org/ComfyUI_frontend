@@ -109,7 +109,12 @@ const {
             :minimal="row.media.minimal"
             :hide-controls="row.media.hideControls"
             :fit="mediaFit"
-            class="absolute inset-0 size-full"
+            :class="
+              cn(
+                'absolute inset-0 size-full',
+                mediaFit === 'contain' && 'bg-primary-comfy-ink-light'
+              )
+            "
           />
         </div>
       </GlassCard>

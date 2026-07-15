@@ -31,7 +31,8 @@ const {
   loop = false,
   minimal = false,
   hideControls = false,
-  fit = 'cover'
+  fit = 'cover',
+  class: className
 } = defineProps<{
   locale?: Locale
   src?: string
@@ -42,6 +43,7 @@ const {
   minimal?: boolean
   hideControls?: boolean
   fit?: 'cover' | 'contain'
+  class?: string
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -191,7 +193,12 @@ function toggleFullscreen() {
 <template>
   <div
     ref="playerEl"
-    class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
+    :class="
+      cn(
+        'relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black',
+        className
+      )
+    "
     @pointermove="showControls"
     @pointerdown="showControls"
     @focusin="showControls"
