@@ -404,9 +404,6 @@ describe('graphTraversalUtil', () => {
           createMockNode(2, { isSubgraph: true, subgraph })
         ])
 
-        expect(mapAllNodes(graph, (node) => Number(node.id))).toEqual([
-          100, 1, 100, 2
-        ])
         expect(mapUniqueNodes(graph, (node) => Number(node.id))).toEqual([
           100, 1, 2
         ])

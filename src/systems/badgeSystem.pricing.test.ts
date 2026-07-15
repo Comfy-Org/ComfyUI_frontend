@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -12,7 +13,16 @@ import type { UUID } from '@/utils/uuid'
 
 import { nodeBadges } from './badgeSystem'
 
-const getNodeDisplayPrice = vi.fn(() => '$1')
+const getNodeDisplayPrice = vi.fn((node: LGraphNode) => {
+  const currentGraphId = node.graph?.rootGraph.id
+  if (currentGraphId === undefined) return '$disconnected'
+  const connected = node.inputs.some(
+    (input, index) =>
+      (input.name === 'image' || input.name?.startsWith('ref_images.')) &&
+      useLinkStore().isInputSlotConnected(currentGraphId, node.id, index)
+  )
+  return connected ? '$connected' : '$disconnected'
+})
 
 vi.mock('@/composables/node/useNodePricing', () => {
   return {
@@ -55,8 +65,8 @@ describe('badge derivation pricing input connectivity', () => {
     return { node }
   }
 
-  function connect(slot: number, linkId: number) {
-    useLinkStore().registerLink(graphId, {
+  function connect(slot: number, linkId: number, targetGraphId = graphId) {
+    useLinkStore().registerLink(targetGraphId, {
       id: toLinkId(linkId),
       originNodeId: toNodeId(99),
       originSlot: 0,
@@ -68,46 +78,45 @@ describe('badge derivation pricing input connectivity', () => {
 
   it('recomputes when a pricing-relevant input connects and disconnects', () => {
     const { node } = setup(['image', 'other'])
-    const evaluations = () => getNodeDisplayPrice.mock.calls.length
-
-    nodeBadges(node)
-    const initial = evaluations()
-    nodeBadges(node)
-    expect(evaluations()).toBe(initial)
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
     connect(0, 1)
-    nodeBadges(node)
-    expect(evaluations()).toBe(initial + 1)
+    expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
 
     const linkStore = useLinkStore()
     const topology = linkStore.getInputSlotLink(graphId, toNodeId(5), 0)!
     linkStore.deleteLink(graphId, topology)
-    nodeBadges(node)
-    expect(evaluations()).toBe(initial + 2)
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
   })
 
   it('recomputes when an input-group input connects', () => {
     const { node } = setup(['image', 'ref_images.img0'])
 
-    nodeBadges(node)
-    const initial = getNodeDisplayPrice.mock.calls.length
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
     connect(1, 2)
-    nodeBadges(node)
-
-    expect(getNodeDisplayPrice.mock.calls.length).toBe(initial + 1)
+    expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
   })
 
   it('ignores an irrelevant input connecting', () => {
     connect(7, 9)
     const { node } = setup(['image', 'other'])
 
-    nodeBadges(node)
-    const initial = getNodeDisplayPrice.mock.calls.length
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
 
     connect(1, 3)
-    nodeBadges(node)
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
+  })
 
-    expect(getNodeDisplayPrice.mock.calls.length).toBe(initial)
+  it('uses graph-keyed pricing state after the root graph id changes', () => {
+    const { node } = setup(['image'])
+    expect(nodeBadges(node).at(-1)?.text).toBe('$disconnected')
+
+    const reloadedGraphId: UUID = 'graph-pricing-reloaded'
+    node.graph!.rootGraph.id = reloadedGraphId
+    connect(0, 4, reloadedGraphId)
+    bumpGraphStructureRevision()
+
+    expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
   })
 })

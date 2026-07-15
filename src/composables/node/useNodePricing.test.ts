@@ -186,10 +186,10 @@ describe('useNodePricing', () => {
 
       getNodeDisplayPrice(node)
       getNodeDisplayPrice(node, overrides)
-      await new Promise((r) => setTimeout(r, 50))
-
-      expect(getNodeDisplayPrice(node)).toBe('inner')
-      expect(getNodeDisplayPrice(node, overrides)).toBe('outer')
+      await vi.waitFor(() => {
+        expect(getNodeDisplayPrice(node)).toBe('inner')
+        expect(getNodeDisplayPrice(node, overrides)).toBe('outer')
+      })
       expect(getNodeDisplayPrice(node)).toBe('inner')
     })
 

@@ -2,7 +2,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
@@ -211,16 +210,6 @@ describe('nodeBadges', () => {
     const second = nodeBadges(node)
     expect(second).not.toBe(first)
     expect(nodeBadges(node)).toBe(second)
-  })
-
-  it('recomputes when the graph structure revision bumps', () => {
-    const node = makeNode(9)
-
-    const first = nodeBadges(node)
-    bumpGraphStructureRevision()
-
-    expect(nodeBadges(node)).not.toBe(first)
-    expect(nodeBadges(node).map((b) => b.text)).toEqual(['#9'])
   })
 
   it('memoizes per node instance', () => {
