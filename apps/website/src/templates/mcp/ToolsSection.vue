@@ -30,22 +30,6 @@ const tools: {
     altKey: 'mcp.tools.1.alt'
   },
   {
-    n: 4,
-    media: {
-      type: 'image',
-      src: 'https://media.comfy.org/website/mcp/direct-any-model.png'
-    },
-    altKey: 'mcp.tools.4.alt'
-  },
-  {
-    n: 5,
-    media: {
-      type: 'image',
-      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png'
-    },
-    altKey: 'mcp.tools.5.alt'
-  },
-  {
     n: 2,
     media: {
       type: 'image',
@@ -63,6 +47,22 @@ const tools: {
       hideControls: true
     },
     altKey: 'mcp.tools.3.alt'
+  },
+  {
+    n: 4,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/direct-any-model.png'
+    },
+    altKey: 'mcp.tools.4.alt'
+  },
+  {
+    n: 5,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png'
+    },
+    altKey: 'mcp.tools.5.alt'
   },
   {
     n: 6,
