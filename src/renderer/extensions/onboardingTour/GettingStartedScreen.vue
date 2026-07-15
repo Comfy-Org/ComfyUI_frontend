@@ -2,7 +2,7 @@
   Full-screen Getting Started takeover shown to fresh users after signup. Sits
   over the canvas (toolbar stays visible), driven by the persistence-layer entry
   flag. The Templates tab launches the onboarding tour on a curated template;
-  Import and Tutorials are placeholders.
+  the Tutorials tab links out to the docs.
 -->
 <template>
   <Teleport v-if="visible" to="body">
@@ -52,23 +52,42 @@
               v-if="tab.value === 'templates'"
               class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
             >
-              <GettingStartedTemplateCard
-                v-for="template in cards"
-                :key="template.name"
-                :template
-                :loading="loadingTemplateId === template.name"
-                class="min-w-0"
-                @select="onSelectTemplate"
-              />
+              <template v-if="templatesStore.isLoaded">
+                <GettingStartedTemplateCard
+                  v-for="template in cards"
+                  :key="template.name"
+                  :template
+                  :loading="loadingTemplateId === template.name"
+                  class="min-w-0"
+                  @select="onSelectTemplate"
+                />
+              </template>
+              <template v-else>
+                <GettingStartedCard
+                  v-for="id in CURATED_TEMPLATE_IDS"
+                  :key="id"
+                  skeleton
+                  testid="getting-started-card-skeleton"
+                  class="min-w-0"
+                />
+              </template>
             </div>
 
-            <p
-              v-else
-              data-testid="getting-started-placeholder"
-              class="py-16 text-center text-sm text-muted-foreground"
+            <div
+              v-else-if="tab.value === 'tutorials'"
+              class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
             >
-              {{ placeholderCopy }}
-            </p>
+              <GettingStartedCard
+                v-for="tutorial in tutorialCards"
+                :key="tutorial.id"
+                :image-src="tutorialThumbnail(tutorial.thumbnailTemplate)"
+                :title="t(tutorial.titleKey)"
+                :badge-icon="TUTORIAL_BADGE_ICON"
+                :testid="`getting-started-tutorial-${tutorial.id}`"
+                class="min-w-0"
+                @select="openTutorial(tutorial.url)"
+              />
+            </div>
           </TabPanel>
         </div>
       </div>
@@ -90,29 +109,23 @@ import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboard
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
+import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
-import type { CuratedTemplateId } from './roleResolver'
+import type { TutorialCard } from './tutorialCards'
+import {
+  CURATED_TEMPLATE_IDS,
+  TUTORIAL_BADGE_ICON,
+  tutorialCards
+} from './tutorialCards'
 import { useOnboardingTourController } from './useOnboardingTourController'
 
-const CURATED_TEMPLATE_IDS: CuratedTemplateId[] = [
-  'image_krea2_turbo_t2i',
-  'image_z_image_turbo',
-  'video_ltx2_3_i2v',
-  'video_wan2_2_14B_i2v'
-]
-
-type TabValue = 'templates' | 'import' | 'tutorials'
+type TabValue = 'templates' | 'tutorials'
 
 const tabs = [
   {
     value: 'templates' as const,
     labelKey: 'onboardingTour.gettingStarted.tabs.templates',
     icon: 'icon-[lucide--layout-template]'
-  },
-  {
-    value: 'import' as const,
-    labelKey: 'onboardingTour.gettingStarted.tabs.import',
-    icon: 'icon-[lucide--upload]'
   },
   {
     value: 'tutorials' as const,
@@ -127,7 +140,7 @@ const entryStore = useOnboardingEntryStore()
 const { shouldShowGettingStarted: visible } = storeToRefs(entryStore)
 
 const templatesStore = useWorkflowTemplatesStore()
-const { loadWorkflowTemplate } = useTemplateWorkflows()
+const { loadWorkflowTemplate, getTemplateThumbnailUrl } = useTemplateWorkflows()
 const controller = useOnboardingTourController()
 
 const activeTab = ref<TabValue>('templates')
@@ -157,11 +170,14 @@ watch(
   { immediate: true }
 )
 
-const placeholderCopy = computed(() =>
-  activeTab.value === 'import'
-    ? t('onboardingTour.gettingStarted.placeholder.import')
-    : t('onboardingTour.gettingStarted.placeholder.tutorials')
-)
+function tutorialThumbnail(id: TutorialCard['thumbnailTemplate']) {
+  const template = templatesStore.getTemplateByName(id)
+  return template ? getTemplateThumbnailUrl(template, 'default') : ''
+}
+
+function openTutorial(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
 
 async function onSelectTemplate(id: string) {
   if (loadingTemplateId.value) return

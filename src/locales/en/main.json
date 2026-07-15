@@ -2356,12 +2356,13 @@
       "tabsLabel": "Getting started options",
       "tabs": {
         "templates": "Templates",
-        "import": "Import workflow",
         "tutorials": "Tutorials"
       },
-      "placeholder": {
-        "import": "Importing workflows is coming soon.",
-        "tutorials": "Tutorials are coming soon."
+      "tutorials": {
+        "interfaceOverview": "Interface overview",
+        "textToImage": "Text to image",
+        "imageToImage": "Image to image",
+        "inpaint": "Inpainting"
       }
     },
     "nudge": {

@@ -65,6 +65,7 @@ vi.mock('./useOnboardingTourController', () => ({
 }))
 
 import GettingStartedScreen from './GettingStartedScreen.vue'
+import { tutorialCards } from './tutorialCards'
 import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboardingEntryStore'
 
 import enMessages from '@/locales/en/main.json'
@@ -195,28 +196,73 @@ describe('GettingStartedScreen', () => {
     expect(store.shouldShowGettingStarted).toBe(true)
   })
 
-  it('shows a placeholder and no template cards on the Import tab', async () => {
-    const user = userEvent.setup()
+  it('does not offer the Import workflow tab', () => {
     renderScreen()
 
-    await user.click(screen.getByRole('tab', { name: /import workflow/i }))
+    expect(screen.queryByRole('tab', { name: /import workflow/i })).toBeNull()
+    expect(screen.getAllByRole('tab')).toHaveLength(2)
+  })
 
+  it('shows skeleton cards instead of an empty grid while templates load', () => {
+    mocks.templatesLoaded = false
+    renderScreen()
+
+    expect(screen.getAllByTestId('getting-started-card-skeleton')).toHaveLength(
+      CARD_IDS.length
+    )
     expect(
       screen.queryByTestId('getting-started-card-image_z_image_turbo')
     ).toBeNull()
-    expect(screen.getByTestId('getting-started-placeholder')).toBeTruthy()
   })
 
-  it('shows a placeholder on the Tutorials tab', async () => {
+  it('opens the tutorial docs in a new tab when a tutorial card is picked', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.click(screen.getByRole('tab', { name: /tutorials/i }))
+    await user.click(
+      screen.getByTestId('getting-started-tutorial-text-to-image')
+    )
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://docs.comfy.org/tutorials/basic/text-to-image',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(mocks.controllerBeginTour).not.toHaveBeenCalled()
+    expect(store.shouldShowGettingStarted).toBe(true)
+
+    openSpy.mockRestore()
+  })
+
+  it('renders a card per tutorial on the Tutorials tab', async () => {
     const user = userEvent.setup()
     renderScreen()
 
     await user.click(screen.getByRole('tab', { name: /tutorials/i }))
 
+    for (const tutorial of tutorialCards) {
+      expect(
+        screen.getByTestId(`getting-started-tutorial-${tutorial.id}`)
+      ).toBeTruthy()
+    }
     expect(
       screen.queryByTestId('getting-started-card-image_z_image_turbo')
     ).toBeNull()
-    expect(screen.getByTestId('getting-started-placeholder')).toBeTruthy()
+  })
+
+  it('badges tutorial cards so they read apart from the template cards', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    expect(screen.queryByTestId('getting-started-card-badge')).toBeNull()
+
+    await user.click(screen.getByRole('tab', { name: /tutorials/i }))
+
+    expect(screen.getAllByTestId('getting-started-card-badge')).toHaveLength(
+      tutorialCards.length
+    )
   })
 
   it('does not render when the entry flag is off', () => {
