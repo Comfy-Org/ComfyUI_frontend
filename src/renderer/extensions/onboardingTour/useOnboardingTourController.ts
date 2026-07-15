@@ -2,6 +2,8 @@ import { createSharedComposable, until, useEventListener } from '@vueuse/core'
 import { computed, effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import type {
@@ -9,8 +11,10 @@ import type {
   OnboardingTourRunStatus,
   OnboardingTourShape
 } from '@/platform/telemetry/types'
+import type { OnboardingCandidateDeps } from '@/platform/workflow/persistence/onboardingEntryStore'
 import { isOnboardingCandidate } from '@/platform/workflow/persistence/onboardingEntryStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNewUserService } from '@/services/useNewUserService'
 import type { NodeId } from '@/types/nodeId'
 
 import {
@@ -57,6 +61,11 @@ interface BeginTourOptions {
 
 function _useOnboardingTourController() {
   const store = useOnboardingTourStore()
+  const onboardingDeps: OnboardingCandidateDeps = {
+    subscription: useSubscription(),
+    newUserService: useNewUserService(),
+    featureFlags: useFeatureFlags()
+  }
 
   /** True while the loader is up: template chosen, tour not yet started. */
   const isPreparing = ref(false)
@@ -159,7 +168,7 @@ function _useOnboardingTourController() {
 
   /** Whether the onboarding tour should run for this session. */
   function shouldStartTour(): boolean {
-    return isOnboardingCandidate()
+    return isOnboardingCandidate(onboardingDeps)
   }
 
   function shapeOf(roles: ResolvedRoles | null): OnboardingTourShape {

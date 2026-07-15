@@ -16,11 +16,13 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -29,10 +31,12 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useNewUserService } from '@/services/useNewUserService'
 
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import { clearAllV2Storage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
+import type { OnboardingCandidateDeps } from '../onboardingEntryStore'
 import {
   isOnboardingCandidate,
   useOnboardingEntryStore
@@ -58,6 +62,13 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
+  const templatesStore = useWorkflowTemplatesStore()
+  const entryStore = useOnboardingEntryStore()
+  const onboardingDeps: OnboardingCandidateDeps = {
+    subscription: useSubscription(),
+    newUserService: useNewUserService(),
+    featureFlags: useFeatureFlags()
+  }
   const { onUserLogout } = useCurrentUser()
 
   // Run migration on module load, passing clientId for tab state migration
@@ -185,9 +196,9 @@ export function useWorkflowPersistenceV2() {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
       if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
-        if (isOnboardingCandidate()) {
-          void useWorkflowTemplatesStore().loadWorkflowTemplates()
-          useOnboardingEntryStore().showGettingStarted()
+        if (isOnboardingCandidate(onboardingDeps)) {
+          void templatesStore.loadWorkflowTemplates()
+          entryStore.showGettingStarted()
         } else {
           await useCommandStore().execute('Comfy.BrowseTemplates')
         }

@@ -1,23 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import type { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
-import { useNewUserService } from '@/services/useNewUserService'
+import type { useNewUserService } from '@/services/useNewUserService'
+
+export interface OnboardingCandidateDeps {
+  subscription: ReturnType<typeof useSubscription>
+  newUserService: ReturnType<typeof useNewUserService>
+  featureFlags: ReturnType<typeof useFeatureFlags>
+}
 
 /**
- * Whether this session is an onboarding candidate.
- *
- * The Getting Started screen and the tour must agree: the screen dismisses even
+ * Shared by the Getting Started screen and the tour: the screen dismisses even
  * when the tour then declines, so a looser gate on either side strands the user
- * on a bare canvas. Both read this so they cannot drift apart.
+ * on a bare canvas. Deps are resolved by callers during setup — this runs after
+ * an await, where a first composable call would have no injection context.
  */
-export function isOnboardingCandidate(): boolean {
+export function isOnboardingCandidate({
+  subscription,
+  newUserService,
+  featureFlags
+}: OnboardingCandidateDeps): boolean {
   if (!isCloud) return false
-  if (!useSubscription().isSubscriptionEnabled()) return false
-  if (useNewUserService().isNewUser() !== true) return false
-  if (!useFeatureFlags().flags.onboardingTourEnabled) return false
+  if (!subscription.isSubscriptionEnabled()) return false
+  if (newUserService.isNewUser() !== true) return false
+  if (!featureFlags.flags.onboardingTourEnabled) return false
   return true
 }
 
