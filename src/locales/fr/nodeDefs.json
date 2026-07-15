@@ -1167,7 +1167,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues multi-interlocuteurs à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez la/les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores dans le prompt, et incluez les répliques à prononcer. Vous pouvez choisir une voix prédéfinie intégrée, cloner jusqu’à 3 voix à partir de clips de référence (étiquetés @Audio1-3 dans le prompt), ou dériver une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par génération.",
+    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues multi-interlocuteurs à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez la/les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores dans le prompt, et incluez les répliques à prononcer. Vous pouvez choisir une voix prédéfinie intégrée, cloner jusqu’à 3 voix à partir de clips de référence (étiquetés {'@'}Audio1-3 dans le prompt), ou dériver une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par génération.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1183,7 +1183,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "Comment conditionner la voix : « texte uniquement » (tout décrire dans le prompt), « référence audio » (cloner jusqu’à 3 voix, étiquetées @Audio1-3), « référence image » (dériver une voix à partir de l’image d’un personnage), ou « voix prédéfinie » (choisir une voix intégrée qui lit le prompt)."
+        "tooltip": "Comment conditionner la voix : « texte uniquement » (tout décrire dans le prompt), « référence audio » (cloner jusqu’à 3 voix, étiquetées {'@'}Audio1-3), « référence image » (dériver une voix à partir de l’image d’un personnage), ou « voix prédéfinie » (choisir une voix intégrée qui lit le prompt)."
       },
       "sample_rate": {
         "name": "sample_rate",
