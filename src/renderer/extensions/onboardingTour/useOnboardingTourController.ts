@@ -285,6 +285,7 @@ function _useOnboardingTourController() {
     restoreView()
 
     useTelemetry()?.trackOnboardingTourStepViewed?.({
+      template_id: activeTemplateId,
       step_key: step.kind,
       step_index: store.stepIndex,
       step_total: store.totalSteps
@@ -312,6 +313,7 @@ function _useOnboardingTourController() {
       const step = store.currentStep
       if (step) {
         telemetry?.trackOnboardingTourSkipped?.({
+          template_id: activeTemplateId,
           step_key: step.kind,
           step_index: store.stepIndex,
           step_total: store.totalSteps
