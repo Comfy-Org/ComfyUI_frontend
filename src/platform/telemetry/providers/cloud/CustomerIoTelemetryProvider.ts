@@ -22,6 +22,7 @@ interface QueuedEvent {
   event: string
   properties: Record<string, unknown>
   identity?: CustomerIoIdentity
+  restoreIdentity?: CustomerIoIdentity
 }
 
 interface CustomerIoIdentity {
@@ -41,6 +42,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private eventQueue: QueuedEvent[] = []
   private identifiedUser: CustomerIoIdentity | null = null
+  private sessionIdentity: CustomerIoIdentity | null = null
   private operationQueue: Promise<void> = Promise.resolve()
 
   constructor() {
@@ -49,6 +51,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       site_id: siteId,
       user_id: userIdOverride
     } = window.__CONFIG__?.customer_io ?? {}
+    this.sessionIdentity = userIdOverride ? { userId: userIdOverride } : null
     if (!writeKey || !siteId) {
       this.isEnabled = false
       return
@@ -73,15 +76,16 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         const hasQueuedIdentity = this.eventQueue.some(({ identity }) =>
           Boolean(identity)
         )
-        const identifyResolvedUser = (user: AuthUserInfo) =>
-          this.enqueueOperation(() =>
-            this.identify({
-              userId: userIdOverride || user.id,
-              email: currentUser.userEmail.value || undefined
-            })
-          )
+        const identifyResolvedUser = (user: AuthUserInfo) => {
+          const identity = {
+            userId: userIdOverride || user.id,
+            email: currentUser.userEmail.value || undefined
+          }
+          this.sessionIdentity = identity
+          return this.enqueueOperation(() => this.identify(identity))
+        }
 
-        if (userIdOverride) {
+        if (userIdOverride && !currentUser.resolvedUserInfo.value) {
           void this.enqueueOperation(() =>
             this.identify({ userId: userIdOverride })
           )
@@ -90,6 +94,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
           void identifyResolvedUser(user)
         })
         currentUser.onUserLogout(() => {
+          this.sessionIdentity = null
           void this.enqueueOperation(() => this.resetIdentity())
         })
 
@@ -155,31 +160,35 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private async send(
     event: string,
     properties: Record<string, unknown>,
-    identity?: CustomerIoIdentity
+    identity?: CustomerIoIdentity,
+    restoreIdentity?: CustomerIoIdentity
   ): Promise<void> {
     const analytics = this.analytics
     if (!analytics) return
 
     if (identity) await this.identify(identity)
 
-    try {
-      await analytics.track(event, properties)
-    } catch (error) {
+    void analytics.track(event, properties).catch((error) => {
       console.error('Failed to track Customer.io event:', error)
-    }
+    })
+
+    if (restoreIdentity) await this.identify(restoreIdentity)
   }
 
   private track(
     event: string,
     metadata?: TelemetryEventProperties,
-    identity?: CustomerIoIdentity
+    identity?: CustomerIoIdentity,
+    restoreIdentity?: CustomerIoIdentity
   ): void {
     if (!this.isEnabled) return
     const properties = { ...metadata, event_source: EVENT_SOURCE }
     if (this.analytics) {
-      void this.enqueueOperation(() => this.send(event, properties, identity))
+      void this.enqueueOperation(() =>
+        this.send(event, properties, identity, restoreIdentity)
+      )
     } else {
-      this.eventQueue.push({ event, properties, identity })
+      this.eventQueue.push({ event, properties, identity, restoreIdentity })
     }
   }
 
@@ -188,22 +197,24 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     const queue = this.eventQueue
     this.eventQueue = []
     await this.enqueueOperation(async () => {
-      for (const { event, properties, identity } of queue) {
-        await this.send(event, properties, identity)
+      for (const { event, properties, identity, restoreIdentity } of queue) {
+        await this.send(event, properties, identity, restoreIdentity)
       }
     })
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    const identity = metadata.user_id
+      ? {
+          userId: metadata.user_id,
+          email: metadata.email || undefined
+        }
+      : undefined
     this.track(
       TelemetryEvents.USER_AUTH_COMPLETED,
       omit(metadata, ['email', 'share_id']),
-      metadata.user_id
-        ? {
-            userId: metadata.user_id,
-            email: metadata.email || undefined
-          }
-        : undefined
+      identity,
+      identity ? this.sessionIdentity || undefined : undefined
     )
   }
 

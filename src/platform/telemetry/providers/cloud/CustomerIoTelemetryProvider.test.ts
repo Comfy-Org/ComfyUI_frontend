@@ -86,6 +86,7 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
     hoisted.analytics.track.mockResolvedValue(undefined)
+    hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
     hoisted.userEmail.value = null
     window.__CONFIG__ = {} as typeof window.__CONFIG__
@@ -152,6 +153,25 @@ describe('CustomerIoTelemetryProvider', () => {
       undefined
     )
     expect(hoisted.onUserResolved).toHaveBeenCalledOnce()
+  })
+
+  it('identifies a restored session with the configured user id once', async () => {
+    hoisted.userEmail.value = 'restored@example.com'
+    hoisted.resolvedUserInfo.value = { id: 'resolved-uid' }
+
+    createProvider({
+      customer_io: {
+        write_key: WRITE_KEY,
+        site_id: SITE_ID,
+        user_id: 'forced-uid'
+      }
+    })
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.identify).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.identify).toHaveBeenCalledWith('forced-uid', {
+      email: 'restored@example.com'
+    })
   })
 
   it('re-identifies with the configured user id after logout and re-login', async () => {
@@ -391,6 +411,7 @@ describe('CustomerIoTelemetryProvider', () => {
 
   it('tracks auth before resetting identity on logout', async () => {
     const identifyResult = createDeferred()
+    const trackResult = createDeferred()
     let activeUser: string | null = null
     let trackedUser: string | null = null
     hoisted.analytics.identify.mockImplementationOnce((userId: string) => {
@@ -399,7 +420,7 @@ describe('CustomerIoTelemetryProvider', () => {
     })
     hoisted.analytics.track.mockImplementationOnce(() => {
       trackedUser = activeUser
-      return Promise.resolve()
+      return trackResult.promise
     })
     hoisted.analytics.reset.mockImplementationOnce(() => {
       activeUser = null
@@ -418,6 +439,34 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(trackedUser).toBe('uid-1')
     expect(hoisted.analytics.track.mock.invocationCallOrder[0]).toBeLessThan(
       hoisted.analytics.reset.mock.invocationCallOrder[0]
+    )
+    trackResult.resolve()
+  })
+
+  it('restores a configured identity after tracking auth with the Firebase uid', async () => {
+    const provider = createProvider({
+      customer_io: {
+        write_key: WRITE_KEY,
+        site_id: SITE_ID,
+        user_id: 'forced-uid'
+      }
+    })
+    await vi.dynamicImportSettled()
+    hoisted.analytics.identify.mockClear()
+
+    provider.trackAuth({
+      user_id: 'firebase-uid',
+      email: 'person@example.com'
+    })
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify.mock.calls).toEqual([
+        ['firebase-uid', { email: 'person@example.com' }],
+        ['forced-uid', undefined]
+      ])
+    )
+    expect(hoisted.analytics.track.mock.invocationCallOrder[0]).toBeLessThan(
+      hoisted.analytics.identify.mock.invocationCallOrder[1]
     )
   })
 
@@ -439,6 +488,21 @@ describe('CustomerIoTelemetryProvider', () => {
         { ...SOURCE, user_id: 'uid-without-email' }
       )
     )
+  })
+
+  it('tracks auth without identifying when user_id is absent', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({ method: 'google', email: 'person@example.com' })
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track).toHaveBeenCalledWith(
+        'app:user_auth_completed',
+        { ...SOURCE, method: 'google' }
+      )
+    )
+    expect(hoisted.analytics.identify).not.toHaveBeenCalled()
   })
 
   it('tracks auth after identification fails', async () => {
@@ -499,6 +563,45 @@ describe('CustomerIoTelemetryProvider', () => {
         ['app:user_auth_completed', { ...SOURCE, user_id: 'uid-1' }],
         ['execution_start', SOURCE]
       ])
+    )
+  })
+
+  it('does not wait for event delivery before handing off later events', async () => {
+    const trackResult = createDeferred()
+    hoisted.analytics.track.mockReturnValueOnce(trackResult.promise)
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackWorkflowExecution()
+    provider.trackAddApiCreditButtonClicked()
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track.mock.calls).toEqual([
+        ['execution_start', SOURCE],
+        ['app:add_api_credit_button_clicked', SOURCE]
+      ])
+    )
+    trackResult.resolve()
+  })
+
+  it('snapshots resolved user email before queued identification', async () => {
+    const identifyResult = createDeferred()
+    hoisted.analytics.identify.mockReturnValueOnce(identifyResult.promise)
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({ user_id: 'blocking-uid' })
+    hoisted.userEmail.value = 'first@example.com'
+    hoisted.resolveUser('resolved-uid')
+    hoisted.userEmail.value = 'second@example.com'
+    identifyResult.resolve()
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenNthCalledWith(
+        2,
+        'resolved-uid',
+        { email: 'first@example.com' }
+      )
     )
   })
 
