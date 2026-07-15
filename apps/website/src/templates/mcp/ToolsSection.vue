@@ -68,7 +68,7 @@ const tools: {
     n: 6,
     media: {
       type: 'video',
-      src: 'https://media.comfy.org/website/homepage/showcase/video-showcase.webm',
+      src: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm',
       autoplay: true,
       loop: true,
       hideControls: true
