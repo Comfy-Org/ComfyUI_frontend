@@ -42,6 +42,11 @@ export const useExtensionService = () => {
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes('extensions/core'))
+        .filter(
+          (extension) =>
+            __DISTRIBUTION__ !== 'cloud' ||
+            extension !== '/extensions/cloud/rum.js'
+        )
         .map(async (ext) => {
           try {
             await import(/* @vite-ignore */ api.fileURL(ext))

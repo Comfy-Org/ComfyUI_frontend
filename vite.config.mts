@@ -334,6 +334,27 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    {
+      name: 'inject-cloud-rum',
+      apply: 'build',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION !== 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'script',
+              attrs: {
+                type: 'module',
+                src: '/extensions/cloud/rum.js'
+              },
+              injectTo: 'head-prepend'
+            }
+          ]
+        }
+      }
+    },
     // Exclude proprietary ABCROM fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
