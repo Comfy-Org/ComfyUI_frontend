@@ -25,7 +25,7 @@ export const buttonVariants = cva({
       tertiary:
         'bg-tertiary-background text-base-foreground hover:bg-tertiary-background-hover',
       gradient:
-        'border-transparent bg-(image:--subscription-button-gradient) text-white hover:opacity-90'
+        'border-transparent bg-(image:--subscription-button-gradient) text-charcoal-800 hover:opacity-90'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',

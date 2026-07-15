@@ -49,7 +49,7 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
 
-  --color-credit: #fabc25;
+  --color-credit: #ddbd31;
 
   --color-coral-500: #f75951;
   --color-coral-600: #e04e48;
@@ -140,25 +140,10 @@
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
 
-  --subscription-button-gradient:
-    linear-gradient(
-      315deg,
-      rgb(105 230 255 / 0.15) 0%,
-      rgb(99 73 233 / 0.5) 100%
-    ),
-    radial-gradient(
-      70.71% 70.71% at 50% 50%,
-      rgb(62 99 222 / 0.15) 0.01%,
-      rgb(66 0 123 / 0.5) 100%
-    ),
-    linear-gradient(
-      92deg,
-      #d000ff 0.38%,
-      #b009fe 37.07%,
-      #3e1ffc 65.17%,
-      #009dff 103.86%
-    ),
-    linear-gradient(var(--color-button-surface, #2d2e32));
+  --subscription-button-gradient: linear-gradient(
+    var(--color-credit),
+    var(--color-credit)
+  );
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
