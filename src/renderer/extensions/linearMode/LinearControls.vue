@@ -28,7 +28,7 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
-const { isActiveSubscription } = useBillingContext()
+const { canRunWorkflows } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -54,7 +54,7 @@ const linearRunButtonTestId = 'linear-run-button'
 const showRunErrorWarning = computed(
   () =>
     hasAnyError.value &&
-    toValue(isActiveSubscription) &&
+    toValue(canRunWorkflows) &&
     toValue(overlayMessage).trim().length > 0
 )
 
@@ -152,10 +152,7 @@ function handleDragDrop() {
         class="border-t border-node-component-border p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <div v-else class="mt-4 flex">
           <PartnerNodesList mobile />
           <Popover side="top" @open-auto-focus.prevent>
@@ -210,10 +207,7 @@ function handleDragDrop() {
           :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
           class="h-7 min-w-40"
         />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <Button
           v-else
           variant="primary"
