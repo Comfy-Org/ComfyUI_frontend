@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "סנכרון מחדש של תנועות הפה בווידאו לדיבור חדש באמצעות sync.so. מטפל אוטומטית בתקריבים, פרופילים והסתרות, תוך שמירה על הבעות הדובר. העלות משתנה בהתאם לאורך הפלט.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "אודיו",
+        "tooltip": "אודיו של דיבור לסנכרון תנועות הפה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל יצירה של sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "קטע וידאו של הדובר לסנכרון מחדש. עד 4K ‏(4096x2160); קצב פריימים קבוע של 24/25/30 fps נותן תוצאות מיטביות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "הנפשת פורטרט סטטי לווידאו מדבר המונע על ידי אודיו של דיבור, באמצעות מודל sync-3 של sync.so. משך הפלט תואם לאורך האודיו. העלות משתנה בהתאם לאורך הפלט.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "אודיו",
+        "tooltip": "אודיו של דיבור שמניע את הווידאו; משך הפלט תואם לו. ניתן לשרשר כאן כל צומת TTS כדי להנפיש מטקסט."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונה בודדת עם פנים ברורות, עד 4K ‏(4096x2160)."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל יצירה של sync.so. קלט תמונה זמין רק עבור sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "הנחיה אופציונלית לאופן שבו הפורטרט מתעורר לחיים, לדוג' 'להפוך את הדמות למחייכת ומביטה למצלמה'. השאר ריק לתנועת דיבור טבעית."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5TokenizerOptions",
     "inputs": {

@@ -239,6 +239,9 @@ export const TestIds = {
     renameInput: 'subgraph-breadcrumb-rename-input',
     menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
+  workflowActions: {
+    viewModeToggle: 'view-mode-toggle'
+  },
   templates: {
     content: 'template-workflows-content',
     workflowCard: (id: string) => `template-workflow-${id}`
