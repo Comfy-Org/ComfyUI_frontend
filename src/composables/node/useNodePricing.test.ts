@@ -563,58 +563,6 @@ describe('useNodePricing', () => {
     })
   })
 
-  describe('getNodePricingConfig', () => {
-    it('should return pricing config for nodes with price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestConfigNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeDefined()
-      expect(config?.engine).toBe('jsonata')
-      expect(config?.expr).toBe('{"type":"usd","usd":0.05}')
-      expect(config?.depends_on).toBeDefined()
-    })
-
-    it('should return undefined for nodes without price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'NoPricingNode',
-        api_node: true
-      })
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
-    })
-
-    it('should return undefined for non-API nodes', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
-    })
-
-    it('does not leak the compiled JSONata expression', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestStripCompiledNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      const config = getNodePricingConfig(node)
-      expect(config).toBeDefined()
-      // _compiled is the runtime JSONata instance and must not be exposed to
-      // tooling/debug consumers.
-      expect(config).not.toHaveProperty('_compiled')
-    })
-  })
-
   describe('reactive revision', () => {
     it('bumps pricingRevision after an async evaluation resolves (Nodes 1.0 mode)', async () => {
       const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
@@ -708,28 +656,6 @@ describe('useNodePricing', () => {
       const refFromString = getNodeRevisionRef(toNodeId('123'))
 
       expect(refFromNumber).toBe(refFromString)
-    })
-  })
-
-  describe('triggerPriceRecalculation', () => {
-    it('should not throw for API nodes with price_badge', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestTriggerNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
-    })
-
-    it('should not throw for non-API nodes', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
     })
   })
 

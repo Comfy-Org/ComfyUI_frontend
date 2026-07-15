@@ -184,8 +184,15 @@ export function mapAllNodes<T>(
  */
 export function mapUniqueNodes<T>(
   graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined
+): T[] {
+  return mapUnvisitedNodes(graph, mapFn, new Set([String(graph.id)]))
+}
+
+function mapUnvisitedNodes<T>(
+  graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined,
-  visited: Set<string> = new Set([String(graph.id)])
+  visited: Set<string>
 ): T[] {
   const results: T[] = []
 
@@ -194,7 +201,7 @@ export function mapUniqueNodes<T>(
       const subgraphId = String(node.subgraph.id)
       if (!visited.has(subgraphId)) {
         visited.add(subgraphId)
-        results.push(...mapUniqueNodes(node.subgraph, mapFn, visited))
+        results.push(...mapUnvisitedNodes(node.subgraph, mapFn, visited))
       }
     }
 

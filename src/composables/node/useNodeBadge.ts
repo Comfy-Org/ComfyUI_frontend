@@ -1,8 +1,6 @@
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -16,8 +14,7 @@ import { resolveNode } from '@/utils/litegraphUtil'
  * Bootstraps the badge system: starts it against the live root graph,
  * forwards the subgraph structure events its store sources cannot
  * observe, and keeps the legacy canvas redrawing when badge sources
- * change. Dynamic-pricing recalculation wiring stays here because it
- * drives price evaluation, not badge storage.
+ * change.
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
@@ -39,6 +36,9 @@ export const useNodeBadge = () => {
     }
   )
 
+  let stopBadgeSystem: (() => void) | undefined
+  onUnmounted(() => stopBadgeSystem?.())
+
   onMounted(() => {
     if (extensionStore.isExtensionInstalled('Comfy.NodeBadge')) return
 
@@ -52,67 +52,10 @@ export const useNodeBadge = () => {
       }
     )
 
-    function wirePricingRecalculation(node: LGraphNode): void {
-      const pricingConfig = nodePricing.getNodePricingConfig(node)
-      const hasDynamicPricing =
-        !!pricingConfig &&
-        ((pricingConfig.depends_on?.widgets?.length ?? 0) > 0 ||
-          (pricingConfig.depends_on?.inputs?.length ?? 0) > 0 ||
-          (pricingConfig.depends_on?.input_groups?.length ?? 0) > 0)
-      if (!hasDynamicPricing) return
-
-      const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
-        node.constructor.nodeData?.name ?? ''
-      )
-      const computedWithWidgetWatch = useComputedWithWidgetWatch(node, {
-        widgetNames: relevantWidgetNames,
-        triggerCanvasRedraw: true
-      })
-      // Installs the widget listeners; the returned value is unused.
-      computedWithWidgetWatch(() => 0)
-
-      const relevantInputs = pricingConfig?.depends_on?.inputs ?? []
-      const inputGroupPrefixes = pricingConfig?.depends_on?.input_groups ?? []
-      if (relevantInputs.length === 0 && inputGroupPrefixes.length === 0) return
-
-      const originalOnConnectionsChange = node.onConnectionsChange
-      node.onConnectionsChange = function (
-        type,
-        slotIndex,
-        isConnected,
-        link,
-        ioSlot
-      ) {
-        originalOnConnectionsChange?.call(
-          this,
-          type,
-          slotIndex,
-          isConnected,
-          link,
-          ioSlot
-        )
-        const inputName = ioSlot?.name
-        if (!inputName) return
-        const isRelevantInput =
-          relevantInputs.includes(inputName) ||
-          inputGroupPrefixes.some((prefix) =>
-            inputName.startsWith(prefix + '.')
-          )
-        if (isRelevantInput) {
-          nodePricing.triggerPriceRecalculation(node)
-        }
-      }
-    }
-
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
-      nodeCreated(node: LGraphNode) {
-        if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          wirePricingRecalculation(node)
-        }
-      },
       init() {
-        startBadgeSystem({
+        stopBadgeSystem = startBadgeSystem({
           resolveGraphId: () => app.rootGraph.id,
           resolveNode: (nodeId) => resolveNode(nodeId, app.rootGraph)
         })

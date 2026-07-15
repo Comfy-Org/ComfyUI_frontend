@@ -4,7 +4,7 @@ import { computed, toValue } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -24,17 +24,12 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
 export function usePartitionedBadges(nodeData: VueNodeData) {
   const settingStore = useSettingStore()
   const badgeStore = useNodeBadgeStore()
+  const canvasStore = useCanvasStore()
   const nodeDef = useNodeDefStore().nodeDefsByName[nodeData.type]
-
-  const rows = computed(() => {
-    const graphId = app.canvas?.graph?.rootGraph.id
-    if (graphId === undefined || nodeData.id == null) return []
-    return badgeStore.getBadges(graphId, nodeData.id)
-  })
 
   return computed(() => {
     const showComfyLogo =
-      nodeDef?.isCoreNode &&
+      !!nodeDef?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
         NodeBadgeMode.ShowAll
 
@@ -42,23 +37,21 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
-    for (const row of rows.value) {
+    const graphId = canvasStore.rootGraphId
+    const rows = graphId ? badgeStore.getBadges(graphId, nodeData.id) : []
+    for (const row of rows) {
       if (row.kind === 'credits') {
         const [required, rest] = splitAroundFirstSpace(row.text)
         pricing.push({ required, rest })
         continue
       }
-      if (row.kind === 'core') {
-        if (nodeDef?.isCoreNode && row.part === 'source') continue
-        core.push({
-          text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
-        })
-        continue
-      }
-      extension.push({ text: row.text })
+      if (nodeDef?.isCoreNode && row.part === 'source') continue
+      core.push({
+        text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
+      })
     }
 
-    const rootGraph = app.canvas?.graph?.rootGraph
+    const rootGraph = canvasStore.currentGraph?.rootGraph
     const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
     for (const badge of (node?.badges ?? []).map(toValue)) {
       if (!badge.text) continue

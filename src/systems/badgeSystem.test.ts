@@ -27,7 +27,7 @@ function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
       source: NodeBadgeMode.ShowAll
     },
     colors: { fgColor: '#fff', bgColor: '#0b8', creditsBgColor: '#8D6932' },
-    pricing: { isApiNode: false, showApiPricing: false, priceLabel: '' },
+    pricing: { kind: 'none' },
     ...overrides
   }
 }
@@ -102,9 +102,7 @@ describe('computeBadges', () => {
 
   it('projects a credits row for a priced api node', () => {
     const rows = computeBadges(
-      sources({
-        pricing: { isApiNode: true, showApiPricing: true, priceLabel: '$0.04' }
-      })
+      sources({ pricing: { kind: 'api-node', label: '$0.04' } })
     )
 
     expect(rows.at(-1)).toEqual({
@@ -118,16 +116,12 @@ describe('computeBadges', () => {
 
   it.for([
     {
-      name: 'not an api node',
-      pricing: { isApiNode: false, showApiPricing: true, priceLabel: '$1' }
-    },
-    {
-      name: 'pricing hidden by setting',
-      pricing: { isApiNode: true, showApiPricing: false, priceLabel: '$1' }
+      name: 'pricing does not apply',
+      pricing: { kind: 'none' } as const
     },
     {
       name: 'no price label yet',
-      pricing: { isApiNode: true, showApiPricing: true, priceLabel: '' }
+      pricing: { kind: 'api-node', label: '' } as const
     }
   ])('projects no credits row when $name', ({ pricing }) => {
     const rows = computeBadges(sources({ pricing }))
@@ -136,12 +130,7 @@ describe('computeBadges', () => {
   })
 
   function subgraphPricing(apiNodeCount: number, singleLabel = '') {
-    return {
-      isApiNode: false,
-      showApiPricing: true,
-      priceLabel: '',
-      subgraphCredits: { apiNodeCount, singleLabel }
-    }
+    return { kind: 'subgraph', apiNodeCount, singleLabel } as const
   }
 
   it('aggregates multiple inner api nodes into a partner count', () => {

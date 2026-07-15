@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BadgeData } from '@/types/badgeData'
+import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { registerBadgeIcon } from './badgeIconRegistry'
 import { badgeDrawObjects } from './nodeBadgeDraw'
 
-function coreRow(part: BadgeData['part'], text: string): BadgeData {
+function coreRow(part: CoreBadgeData['part'], text: string): BadgeData {
   return { kind: 'core', part, text, fgColor: '#fff', bgColor: '#000' }
 }
 
 describe('badgeDrawObjects', () => {
   it('joins core parts into one badge in id, lifecycle, source order', () => {
-    const badges = badgeDrawObjects({}, [
+    const badges = badgeDrawObjects(new LGraphNode('n'), [
       coreRow('lifecycle', '[BETA]'),
       coreRow('id', '#5'),
       coreRow('source', 'my-pack')
@@ -24,7 +25,7 @@ describe('badgeDrawObjects', () => {
   })
 
   it('truncates the joined core text', () => {
-    const badges = badgeDrawObjects({}, [
+    const badges = badgeDrawObjects(new LGraphNode('n'), [
       coreRow('source', 'a'.repeat(40)),
       coreRow('id', '#5')
     ])
@@ -35,7 +36,7 @@ describe('badgeDrawObjects', () => {
 
   it('draws credits rows separately with their registered icon', () => {
     registerBadgeIcon('test-icon', { unicode: 'X', fontFamily: 'test' })
-    const badges = badgeDrawObjects({}, [
+    const badges = badgeDrawObjects(new LGraphNode('n'), [
       coreRow('id', '#5'),
       {
         kind: 'credits',
@@ -53,19 +54,19 @@ describe('badgeDrawObjects', () => {
   })
 
   it('keeps an unknown icon key iconless', () => {
-    const badges = badgeDrawObjects({}, [
+    const badges = badgeDrawObjects(new LGraphNode('n'), [
       { kind: 'credits', text: '$1', iconKey: 'nope' }
     ])
 
     expect(badges[0].icon).toBeUndefined()
   })
 
-  it('reuses draw objects until the rows change content', () => {
-    const node = {}
+  it('reuses draw objects until the rows array is replaced', () => {
+    const node = new LGraphNode('n')
     const rows: BadgeData[] = [coreRow('id', '#5')]
 
     const first = badgeDrawObjects(node, rows)
-    const second = badgeDrawObjects(node, [coreRow('id', '#5')])
+    const second = badgeDrawObjects(node, rows)
     expect(second[0]).toBe(first[0])
 
     const third = badgeDrawObjects(node, [coreRow('id', '#6')])

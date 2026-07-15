@@ -427,6 +427,20 @@ export class LGraphNode
    * {@link useNodeBadgeStore}. Thunks are re-evaluated every frame.
    */
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
+  /** @deprecated Badges always render top-right; assignment is ignored. */
+  get badgePosition(): string {
+    warnDeprecated(
+      'LGraphNode.badgePosition is deprecated: badges always render top-right.',
+      this
+    )
+    return 'top-right'
+  }
+  set badgePosition(_value: string) {
+    warnDeprecated(
+      'LGraphNode.badgePosition is deprecated: badges always render top-right.',
+      this
+    )
+  }
   title_buttons: LGraphButton[] = []
   onOutputRemoved?(this: LGraphNode, slot: number): void
   onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void

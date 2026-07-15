@@ -9,8 +9,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { app } from '@/scripts/app'
 import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 
@@ -18,19 +18,27 @@ defineProps<{ mobile?: boolean }>()
 
 const { t } = useI18n()
 const badgeStore = useNodeBadgeStore()
+const canvasStore = useCanvasStore()
 
-const creditsBadges = computed(() =>
-  mapUniqueNodes(app.graph, (node) => {
+const creditsBadges = computed(() => {
+  const rootGraph = canvasStore.currentGraph?.rootGraph
+  const graphId = canvasStore.rootGraphId
+  if (!rootGraph || graphId === undefined) return []
+
+  // Track bucket membership so nodes added or removed later re-run this.
+  void badgeStore.registeredNodeIds(graphId)
+
+  return mapUniqueNodes(rootGraph, (node) => {
     if (node.isSubgraphNode()) return
 
     const priceRow = badgeStore
-      .getBadges(app.graph.rootGraph.id, node.id)
+      .getBadges(graphId, node.id)
       .find((row) => row.kind === 'credits')
     if (!priceRow) return
 
     return [node.title, priceRow.text, node.id] as const
   })
-)
+})
 </script>
 <template>
   <Popover v-if="mobile && creditsBadges.length" side="top">

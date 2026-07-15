@@ -38,14 +38,14 @@ the store rows the single truth both renderers read.
 The store holds only plain data (ADR 0008 component rule):
 
 ```
-BadgeData {
-  kind: 'core' | 'credits' | 'extension'
-  text: string
-  fgColor?: string
-  bgColor?: string
-  iconKey?: string     // resolved via a small icon registry ('credits' → SVG)
-}
+BadgeData = CoreBadgeData | CreditsBadgeData   // discriminated on `kind`
+  // core rows require `part`; credits rows may carry an `iconKey`
+  // resolved via a small icon registry ('credits' → SVG)
 ```
+
+There is no `extension` kind: resolved decision 1 below keeps
+`node.badges` as the raw extension surface, so the store holds only
+system-computed rows and the system replaces them wholesale per write.
 
 No `onClick` (no producer exists; `LGraphButton`/`title_buttons` are a
 separate surface and out of scope). No `Image` objects — icons are
@@ -65,8 +65,9 @@ unregister / unregister-all trio at the `LGraph.add` / `LGraph.remove` /
 conventions.
 
 Rows are partitioned by `kind` at read time; the positional `slice(1)`
-convention and icon-identity credits detection are deleted. Display
-order is kind order (core, credits, extension), not insertion order.
+convention and icon-identity credits detection are deleted. The system
+emits rows in display order (core, then credits) and replaces a node's
+array wholesale, so reads are identity-stable between writes.
 
 ## Decision 3: A reactive BadgeSystem writes the rows
 
@@ -121,10 +122,9 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   the system's watcher and queues Vue's flush microtask, which must not
   overtake the paste-scan microtask `useErrorClearingHooks` enqueues
   from `onNodeAdded`.
-- Two write paths: `setBadgesOfKind` is the system's bulk
-  replace-one-kind recompute path (`@internal`); extension rows go
-  through `registerBadge`/`deleteBadge` per row, identity-checked, so
-  independent writers cannot stomp each other.
+- One write path: the system replaces a node's rows wholesale via
+  `setBadges` on every recompute, so no intermediate per-kind state is
+  ever observable.
 - The shell still reads `node.constructor.nodeData` and `node.inputs`
   (untracked instance state) to map pricing input names to slot
   indices — parity with the legacy closures. Those reads become store
@@ -154,9 +154,19 @@ Frame-budget parity per ADR 0008's render mitigations applies.
   its wrapper's override read do not evict each other and re-schedule
   forever.
 - Legacy `drawBadges` renders the store rows through a per-node
-  memoized `LGraphBadge` cache (decision 5); `iconKey` resolves through
-  a generic litegraph `badgeIconRegistry`, with the `credits` icon
-  registered by the system module.
+  memoized `LGraphBadge` cache (decision 5) keyed on the rows array's
+  identity — wholesale replacement makes identity the change signal, so
+  the per-frame path allocates nothing on cache hits. `iconKey` resolves
+  through a generic litegraph `badgeIconRegistry`, with the `credits`
+  icon registered when the system starts.
+- The Vue renderer samples `node.badges` whenever its partition computed
+  re-runs; live array mutation and ticking thunks are visible per frame
+  only in the legacy canvas. Array interception was considered and
+  rejected: it cannot see thunk output changes (the dominant ecosystem
+  pattern), so it buys property patching without covering the real case.
+  If a pack demonstrably needs live Vue updates, the escalation is a
+  reactive accessor declared on `LGraphNode` itself, not renderer-side
+  `defineProperty`.
 
 ## Resolved decisions (2026-07-06 interview)
 
@@ -172,7 +182,8 @@ Frame-budget parity per ADR 0008's render mitigations applies.
    scan was wrong.
 2. **`node.badgePosition` — deleted**, along with the `BadgePosition`
    enum. Zero uses outside this repo; the legacy canvas now always
-   renders badges top-right (the only surviving behaviour).
+   renders badges top-right (the only surviving behaviour). A no-op
+   deprecated accessor remains and warns on access.
 3. **Subgraph credits aggregation triggers — event-bumped revision.**
    `litegraph:set-graph`, `subgraph-converted`, and
    `afterConfigureGraph` bump `bumpSubgraphCreditsRevision()`; swap to

@@ -14,8 +14,8 @@ const graphB: UUID = 'graph-b'
 const node1 = toNodeId(1)
 const node2 = toNodeId(2)
 
-function badge(kind: BadgeData['kind'], text: string): BadgeData {
-  return { kind, text }
+function idRow(text: string): BadgeData {
+  return { kind: 'core', part: 'id', text }
 }
 
 describe('useNodeBadgeStore', () => {
@@ -23,86 +23,47 @@ describe('useNodeBadgeStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('registers a badge and reads it back', () => {
+  it('replaces rows wholesale and reads them back', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
-    store.registerBadge(graphA, node1, badge('extension', 'v2'))
+    store.setBadges(graphA, node1, [idRow('#1')])
 
-    expect(store.getBadges(graphA, node1)).toEqual([
-      { kind: 'extension', text: 'v2' }
-    ])
+    expect(store.getBadges(graphA, node1)).toEqual([idRow('#1')])
     expect(store.getBadges(graphA, node2)).toEqual([])
-  })
 
-  it('orders rows by kind (core, credits, extension), not insertion', () => {
-    const store = useNodeBadgeStore()
-    store.registerNode(graphA, node1)
-    store.registerBadge(graphA, node1, badge('extension', 'ext'))
-    store.registerBadge(graphA, node1, badge('credits', '$0.04'))
-    store.registerBadge(graphA, node1, badge('core', '#1'))
-
-    expect(store.getBadges(graphA, node1).map((b) => b.kind)).toEqual([
-      'core',
-      'credits',
-      'extension'
+    store.setBadges(graphA, node1, [
+      idRow('#1'),
+      { kind: 'credits', text: '$0.04' }
+    ])
+    expect(store.getBadges(graphA, node1).map((b) => b.text)).toEqual([
+      '#1',
+      '$0.04'
     ])
   })
 
-  it('returns tracked rows whose writes are observable', () => {
+  it('returns an identity-stable array until the next write', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
-    const row = store.registerBadge(graphA, node1, badge('extension', 'old'))!
+    store.setBadges(graphA, node1, [idRow('#1')])
 
-    const text = computed(() => store.getBadges(graphA, node1)[0]?.text)
-    expect(text.value).toBe('old')
+    const first = store.getBadges(graphA, node1)
+    expect(store.getBadges(graphA, node1)).toBe(first)
 
-    row.text = 'new'
-
-    expect(text.value).toBe('new')
+    store.setBadges(graphA, node1, [idRow('#1 beta')])
+    expect(store.getBadges(graphA, node1)).not.toBe(first)
   })
 
-  it('deletes a row; only the registered row may vacate it', () => {
+  it('recomputes reads when rows are rewritten', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
-    const row = store.registerBadge(graphA, node1, badge('extension', 'v2'))!
-
-    expect(store.deleteBadge(graphA, node1, badge('extension', 'v2'))).toBe(
-      false
-    )
-    expect(store.getBadges(graphA, node1)).toHaveLength(1)
-
-    expect(store.deleteBadge(graphA, node1, row)).toBe(true)
-    expect(store.getBadges(graphA, node1)).toHaveLength(0)
-    expect(store.deleteBadge(graphA, node1, row)).toBe(false)
-  })
-
-  it('replaces only the written kind, preserving other kinds', () => {
-    const store = useNodeBadgeStore()
-    store.registerNode(graphA, node1)
-    const kept = store.registerBadge(graphA, node1, badge('extension', 'ext'))!
-    store.setBadgesOfKind(graphA, node1, 'credits', [badge('credits', '$0.02')])
-
-    store.setBadgesOfKind(graphA, node1, 'credits', [
-      badge('credits', '$0.04'),
-      badge('credits', '$0.06')
-    ])
-
-    const rows = store.getBadges(graphA, node1)
-    expect(rows.map((b) => b.text)).toEqual(['$0.04', '$0.06', 'ext'])
-    expect(store.deleteBadge(graphA, node1, kept)).toBe(true)
-  })
-
-  it('recomputes reads when a kind is rewritten', () => {
-    const store = useNodeBadgeStore()
-    store.registerNode(graphA, node1)
-    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+    store.setBadges(graphA, node1, [idRow('#1')])
 
     const texts = computed(() =>
       store.getBadges(graphA, node1).map((b) => b.text)
     )
     expect(texts.value).toEqual(['#1'])
 
-    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1 beta')])
+    store.setBadges(graphA, node1, [idRow('#1 beta')])
 
     expect(texts.value).toEqual(['#1 beta'])
   })
@@ -134,8 +95,8 @@ describe('useNodeBadgeStore', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
     store.registerNode(graphA, node2)
-    store.registerBadge(graphA, node1, badge('extension', 'a'))
-    store.registerBadge(graphA, node2, badge('extension', 'b'))
+    store.setBadges(graphA, node1, [idRow('#1')])
+    store.setBadges(graphA, node2, [idRow('#2')])
 
     store.unregisterNode(graphA, node1)
 
@@ -147,10 +108,7 @@ describe('useNodeBadgeStore', () => {
   it('refuses row writes for unregistered nodes', () => {
     const store = useNodeBadgeStore()
 
-    expect(store.registerBadge(graphA, node1, badge('extension', 'x'))).toBe(
-      undefined
-    )
-    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+    store.setBadges(graphA, node1, [idRow('#1')])
 
     expect(store.registeredNodeIds(graphA)).toEqual([])
     expect(store.getBadges(graphA, node1)).toEqual([])
@@ -159,10 +117,10 @@ describe('useNodeBadgeStore', () => {
   it('does not resurrect a node unregistered mid-flight', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
-    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+    store.setBadges(graphA, node1, [idRow('#1')])
 
     store.unregisterNode(graphA, node1)
-    store.setBadgesOfKind(graphA, node1, 'core', [badge('core', '#1')])
+    store.setBadges(graphA, node1, [idRow('#1')])
 
     expect(store.registeredNodeIds(graphA)).toEqual([])
   })
@@ -171,12 +129,23 @@ describe('useNodeBadgeStore', () => {
     const store = useNodeBadgeStore()
     store.registerNode(graphA, node1)
     store.registerNode(graphB, node1)
-    store.registerBadge(graphA, node1, badge('extension', 'a'))
-    store.registerBadge(graphB, node1, badge('extension', 'b'))
+    store.setBadges(graphA, node1, [idRow('a')])
+    store.setBadges(graphB, node1, [idRow('b')])
 
     store.clearGraph(graphB)
 
     expect(store.getBadges(graphA, node1)).toHaveLength(1)
     expect(store.getBadges(graphB, node1)).toEqual([])
+  })
+
+  it('wakes membership readers when a new bucket appears', () => {
+    const store = useNodeBadgeStore()
+
+    const ids = computed(() => store.registeredNodeIds(graphA))
+    expect(ids.value).toEqual([])
+
+    store.registerNode(graphA, node1)
+
+    expect(ids.value).toEqual([node1])
   })
 })

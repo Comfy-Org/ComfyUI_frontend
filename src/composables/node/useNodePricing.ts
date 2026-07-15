@@ -597,17 +597,6 @@ export const useNodePricing = () => {
   }
 
   /**
-   * Expose raw pricing config for tooling/debug UI.
-   * (Strips compiled expression from returned object.)
-   */
-  const getNodePricingConfig = (node: LGraphNode) => {
-    const rule = getRuleForNode(node)
-    if (!rule) return undefined
-    const { _compiled, ...config } = rule
-    return config
-  }
-
-  /**
    * Caller compatibility helper:
    * returns union of widget dependencies + input dependencies for a node type.
    */
@@ -668,28 +657,13 @@ export const useNodePricing = () => {
     return priceBadge?.depends_on?.inputs ?? []
   }
 
-  /**
-   * Trigger price recalculation for a node (call when inputs change).
-   * Forces re-evaluation by calling getNodeDisplayPrice which will detect
-   * the signature change and schedule a new evaluation.
-   */
-  const triggerPriceRecalculation = (node: LGraphNode): void => {
-    const nodeData = getNodeConstructorData(node)
-    if (!nodeData?.api_node) return
-
-    // Call getNodeDisplayPrice to trigger evaluation if signature changed
-    getNodeDisplayPrice(node)
-  }
-
   return {
     getNodeDisplayPrice,
-    getNodePricingConfig,
     getRelevantWidgetNames,
     hasDynamicPricing,
     getInputGroupPrefixes,
     getInputNames,
     getNodeRevisionRef, // Each node has its own independent ref, so updates to one won't trigger others
-    triggerPriceRecalculation,
     pricingRevision: readonly(pricingTick) // reactive invalidation signal
   }
 }
