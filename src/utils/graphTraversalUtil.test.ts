@@ -23,6 +23,7 @@ import {
   getExecutionIdFromNodeData,
   mapAllNodes,
   mapSubgraphNodes,
+  mapUniqueNodes,
   parseExecutionId,
   traverseNodesDepthFirst,
   traverseSubgraphPath,
@@ -390,6 +391,42 @@ describe('graphTraversalUtil', () => {
 
         expect(results).toHaveLength(5)
         expect(results).toContain('node-300')
+      })
+    })
+
+    describe('mapUniqueNodes', () => {
+      it('visits a shared subgraph definition once', () => {
+        const innerNode = createMockNode(100)
+        const subgraph = createMockSubgraph('shared-uuid', [innerNode])
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph }),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ])
+
+        expect(mapAllNodes(graph, (node) => Number(node.id))).toEqual([
+          100, 1, 100, 2
+        ])
+        expect(mapUniqueNodes(graph, (node) => Number(node.id))).toEqual([
+          100, 1, 2
+        ])
+      })
+
+      it('terminates on cyclic subgraphs', () => {
+        const innerNodes: LGraphNode[] = []
+        const subgraph = createMockSubgraph('cycle-uuid', innerNodes)
+        innerNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph }),
+          createMockNode(11)
+        )
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph })
+        ])
+
+        expect(mapUniqueNodes(graph, (node) => Number(node.id))).toEqual([
+          10, 11, 1
+        ])
       })
     })
 

@@ -12,7 +12,7 @@ import Popover from '@/components/ui/Popover.vue'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 import { app } from '@/scripts/app'
 import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 
 defineProps<{ mobile?: boolean }>()
 
@@ -20,7 +20,7 @@ const { t } = useI18n()
 const badgeStore = useNodeBadgeStore()
 
 const creditsBadges = computed(() =>
-  mapAllNodes(app.graph, (node) => {
+  mapUniqueNodes(app.graph, (node) => {
     if (node.isSubgraphNode()) return
 
     const priceRow = badgeStore

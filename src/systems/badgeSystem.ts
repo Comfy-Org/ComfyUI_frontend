@@ -19,6 +19,7 @@ import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
 import { adjustColor } from '@/utils/colorUtil'
+import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
 /** The badge-relevant projection of a node's definition. */
@@ -196,22 +197,6 @@ function collectPromotedOverrides(
  * set, and the structure revision so the wrapper recomputes when inner
  * prices, membership, or structure change.
  */
-/** Api-node leaves, visiting each subgraph definition once (legacy count semantics + cycle guard). */
-function collectApiLeaves(
-  nodes: LGraphNode[],
-  visited: Set<string>
-): LGraphNode[] {
-  return nodes.flatMap((inner) => {
-    if (inner.isSubgraphNode()) {
-      const subgraphId = String(inner.subgraph.id)
-      if (visited.has(subgraphId)) return []
-      visited.add(subgraphId)
-      return collectApiLeaves(inner.subgraph.nodes, visited)
-    }
-    return inner.constructor?.nodeData?.api_node ? [inner] : []
-  })
-}
-
 function gatherSubgraphCredits(
   graphId: UUID,
   wrapper: SubgraphNode,
@@ -222,7 +207,11 @@ function gatherSubgraphCredits(
   if (!showApiPricing) return { apiNodeCount: 0, singleLabel: '' }
 
   const pricing = useNodePricing()
-  const apiLeaves = collectApiLeaves(wrapper.subgraph.nodes, new Set())
+  const apiLeaves = mapUniqueNodes(wrapper.subgraph, (node) =>
+    !node.isSubgraphNode() && node.constructor?.nodeData?.api_node
+      ? node
+      : undefined
+  )
   for (const leaf of apiLeaves) {
     void pricing.getNodeRevisionRef(leaf.id).value
   }
