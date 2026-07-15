@@ -14,7 +14,7 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.flatMap((prefix) =>
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
   ),
-  '/thank-you-individual'
+  '/individual-submission'
 ])
 
 function isExcludedFromSitemap(page: string): boolean {
@@ -35,7 +35,7 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
     '/zh-CN/terms-of-service': '/terms-of-service',
-    '/zh-CN/thank-you-individual': '/thank-you-individual'
+    '/zh-CN/individual-submission': '/individual-submission'
   },
   build: {
     assets: '_website'
