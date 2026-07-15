@@ -14,7 +14,7 @@
     </template>
 
     <template #header>
-      <h2 class="text-neutral m-0 truncate text-2xl font-semibold">
+      <h2 class="text-neutral m-0 truncate text-xl font-semibold">
         {{ pageTitle }}
       </h2>
     </template>
@@ -37,15 +37,17 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-10 w-80"
+          class="h-10 w-96"
           autofocus
         />
       </div>
     </template>
 
     <template #contentFilter>
+      <!-- pr aligns the filter row's right edge with the search input above,
+           which is inset by the modal's close button -->
       <div
-        class="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 pt-2 pb-4"
+        class="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-2 pr-[4.5rem] pb-4 pl-6"
       >
         <!-- Type tabs -->
         <div class="flex shrink-0 items-center gap-2">
