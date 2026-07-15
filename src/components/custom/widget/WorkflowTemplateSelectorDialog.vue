@@ -67,73 +67,82 @@
           </button>
         </div>
 
-        <!-- Filters + Sort (stay on one line; the whole row drops below the
-             tabs when it no longer fits) -->
+        <!-- Filters + Sort. They stay on one line and shrink/truncate to fit;
+             the whole row drops below the tabs (via the group min-width) only
+             when it can no longer fit next to them. -->
         <div
           :ref="primeVueOverlay.overlayScopeRef"
-          class="flex flex-1 items-center justify-end gap-2"
+          class="flex min-w-80 flex-1 items-center justify-end gap-2"
         >
           <!-- Model Filter -->
-          <MultiSelect
-            v-model="selectedModelObjects"
-            v-model:search-query="modelSearchText"
-            class="w-[250px] min-w-28"
-            :label="modelFilterLabel"
-            :options="modelOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-          >
-            <template #icon>
-              <i class="icon-[lucide--cpu]" />
-            </template>
-          </MultiSelect>
+          <div class="min-w-0 shrink basis-[250px]">
+            <MultiSelect
+              v-model="selectedModelObjects"
+              v-model:search-query="modelSearchText"
+              class="w-full"
+              :label="modelFilterLabel"
+              :options="modelOptions"
+              :content-style="selectContentStyle"
+              :show-search-box="true"
+              :show-selected-count="true"
+              :show-clear-button="true"
+            >
+              <template #icon>
+                <i class="icon-[lucide--cpu]" />
+              </template>
+            </MultiSelect>
+          </div>
 
           <!-- Use Case Filter -->
-          <MultiSelect
-            v-model="selectedUseCaseObjects"
-            class="min-w-28"
-            :label="useCaseFilterLabel"
-            :options="useCaseOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-          >
-            <template #icon>
-              <i class="icon-[lucide--target]" />
-            </template>
-          </MultiSelect>
+          <div class="min-w-0 shrink basis-[190px]">
+            <MultiSelect
+              v-model="selectedUseCaseObjects"
+              class="w-full"
+              :label="useCaseFilterLabel"
+              :options="useCaseOptions"
+              :content-style="selectContentStyle"
+              :show-search-box="true"
+              :show-selected-count="true"
+              :show-clear-button="true"
+            >
+              <template #icon>
+                <i class="icon-[lucide--target]" />
+              </template>
+            </MultiSelect>
+          </div>
 
           <!-- Runs On Filter -->
-          <MultiSelect
-            v-model="selectedRunsOnObjects"
-            class="min-w-28"
-            :label="runsOnFilterLabel"
-            :options="runsOnOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-          >
-            <template #icon>
-              <i class="icon-[lucide--server]" />
-            </template>
-          </MultiSelect>
+          <div class="min-w-0 shrink basis-[190px]">
+            <MultiSelect
+              v-model="selectedRunsOnObjects"
+              class="w-full"
+              :label="runsOnFilterLabel"
+              :options="runsOnOptions"
+              :content-style="selectContentStyle"
+              :show-search-box="true"
+              :show-selected-count="true"
+              :show-clear-button="true"
+            >
+              <template #icon>
+                <i class="icon-[lucide--server]" />
+              </template>
+            </MultiSelect>
+          </div>
 
           <!-- Sort Options -->
-          <SingleSelect
-            v-model="sortSelection"
-            :label="$t('templateWorkflows.sorting', 'Sort by')"
-            :options="sortOptions"
-            :content-style="selectContentStyle"
-            class="w-62.5 min-w-32"
-          >
-            <template #icon>
-              <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
-            </template>
-          </SingleSelect>
+          <div class="min-w-0 shrink basis-[250px]">
+            <SingleSelect
+              v-model="sortSelection"
+              :label="$t('templateWorkflows.sorting', 'Sort by')"
+              :options="sortOptions"
+              :content-style="selectContentStyle"
+              class="w-full"
+            >
+              <template #icon>
+                <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
+              </template>
+            </SingleSelect>
+          </div>
         </div>
       </div>
     </template>
