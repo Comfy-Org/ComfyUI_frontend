@@ -14,18 +14,13 @@
     </template>
 
     <template #header>
-      <AsyncSearchInput
-        v-model="searchInput"
-        :searcher="applySearchQuery"
-        :debounce-ms="400"
-        :debounce-max-wait-ms="4000"
-        class="h-10 max-w-96 flex-1"
-        autofocus
-      />
+      <h2 class="text-neutral m-0 truncate text-2xl font-semibold">
+        {{ pageTitle }}
+      </h2>
     </template>
 
     <template #header-right-area>
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2">
         <Button
           v-if="filteredCount !== totalCount"
           variant="secondary"
@@ -37,14 +32,45 @@
             $t('templateWorkflows.resetFilters', 'Clear Filters')
           }}</span>
         </Button>
+        <AsyncSearchInput
+          v-model="searchInput"
+          :searcher="applySearchQuery"
+          :debounce-ms="400"
+          :debounce-max-wait-ms="4000"
+          class="h-10 w-80"
+          autofocus
+        />
       </div>
     </template>
 
     <template #contentFilter>
-      <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
+      <div
+        class="relative flex flex-wrap items-center justify-between gap-2 px-6 pt-2 pb-4"
+      >
+        <!-- Type tabs -->
+        <ToggleGroup
+          :model-value="selectedType"
+          type="single"
+          class="rounded-lg"
+          @update:model-value="onSelectType"
+        >
+          <ToggleGroupItem value="all" class="flex-none">
+            {{ $t('templateWorkflows.type.all', 'All') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="nodeGraph" class="flex-none gap-1.5">
+            <i class="icon-[lucide--workflow] size-4" />
+            {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="apps" class="flex-none gap-1.5">
+            <i class="icon-[lucide--panels-top-left] size-4" />
+            {{ $t('builderToolbar.app', 'Apps') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+
+        <!-- Filters + Sort -->
         <div
           :ref="primeVueOverlay.overlayScopeRef"
-          class="flex flex-wrap gap-2"
+          class="flex flex-wrap items-center gap-2"
         >
           <!-- Model Filter -->
           <MultiSelect
@@ -92,10 +118,8 @@
               <i class="icon-[lucide--server]" />
             </template>
           </MultiSelect>
-        </div>
 
-        <!-- Sort Options -->
-        <div>
+          <!-- Sort Options -->
           <SingleSelect
             v-model="sortSelection"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
@@ -108,14 +132,6 @@
             </template>
           </SingleSelect>
         </div>
-      </div>
-      <div
-        v-if="!isLoading"
-        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold"
-      >
-        <span>
-          {{ pageTitle }}
-        </span>
       </div>
     </template>
 
@@ -260,34 +276,55 @@
                         "
                       />
                     </template>
-                    <LogoOverlay
-                      v-if="template.logos?.length"
-                      :logos="template.logos"
-                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
-                    />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
                 </template>
-                <template #bottom-right>
-                  <template v-if="template.tags && template.tags.length > 0">
-                    <Tag
-                      v-for="tag in template.tags"
-                      :key="tag"
-                      :label="tag"
-                      shape="overlay"
+                <!-- Type badge (Node Graph / App) -->
+                <template #top-left>
+                  <div
+                    class="flex h-7 items-center gap-1.5 rounded-lg bg-zinc-700/50 px-2 py-1.5 backdrop-blur-[20px]"
+                  >
+                    <i
+                      :class="
+                        isAppTemplate(template)
+                          ? 'icon-[lucide--panels-top-left]'
+                          : 'icon-[lucide--workflow]'
+                      "
+                      class="size-4 text-white"
                     />
-                  </template>
+                    <span class="text-sm font-medium whitespace-nowrap text-white">
+                      {{
+                        isAppTemplate(template)
+                          ? $t('builderToolbar.app', 'App')
+                          : $t('builderToolbar.nodeGraph', 'Node Graph')
+                      }}
+                    </span>
+                  </div>
+                </template>
+                <!-- Tutorial button (revealed on hover) -->
+                <template v-if="template.tutorialUrl" #top-right>
+                  <Button
+                    v-tooltip.bottom="$t('g.seeTutorial')"
+                    :aria-label="$t('g.seeTutorial')"
+                    variant="inverted"
+                    size="icon"
+                    class="not-group-hover/card:opacity-0"
+                    @click.stop="openTutorial(template)"
+                  >
+                    <i class="icon-[lucide--info] size-4" />
+                  </Button>
                 </template>
               </CardTop>
             </template>
             <template #bottom>
               <CardBottom>
-                <div class="flex flex-col gap-2 pt-3">
+                <div class="flex flex-col gap-1 pt-2">
+                  <!-- Title -->
                   <h3
-                    class="m-0 line-clamp-1 text-sm"
+                    class="m-0 line-clamp-1 text-sm font-semibold text-white"
                     :title="
                       getTemplateTitle(
                         template,
@@ -302,44 +339,68 @@
                       )
                     }}
                   </h3>
-                  <div class="flex justify-between gap-2">
-                    <div class="flex-1">
-                      <p
-                        class="m-0 line-clamp-2 text-sm text-muted"
-                        :title="getTemplateDescription(template)"
+
+                  <!-- Provider info (stacked monochrome logos + label) -->
+                  <div
+                    v-if="getProviderInfo(template)"
+                    class="flex items-center gap-1.5 py-1"
+                  >
+                    <div class="flex items-center">
+                      <div
+                        v-for="(badge, badgeIndex) in getProviderInfo(template)!
+                          .visibleBadges"
+                        :key="badge.provider"
+                        class="flex size-5 items-center justify-center overflow-hidden rounded-full bg-secondary-background ring-2 ring-base-background"
+                        :class="{ '-ml-1': badgeIndex > 0 }"
                       >
-                        {{ getTemplateDescription(template) }}
-                      </p>
-                    </div>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <Button
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        :aria-label="$t('g.seeTutorial')"
-                        variant="inverted"
-                        size="icon"
-                        class="not-group-hover/card:opacity-0"
-                        @click.stop="openTutorial(template)"
+                        <i
+                          v-if="badge.iconClass"
+                          :class="badge.iconClass"
+                          class="size-3 text-muted-foreground"
+                        />
+                        <img
+                          v-else
+                          :src="badge.url"
+                          :alt="badge.provider"
+                          class="size-3 object-contain"
+                          draggable="false"
+                        />
+                      </div>
+                      <div
+                        v-if="getProviderInfo(template)!.extraCount > 0"
+                        class="-ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary-background px-1 text-[10px] font-medium text-muted-foreground ring-2 ring-base-background"
                       >
-                        <i class="icon-[lucide--info] size-4" />
-                      </Button>
+                        +{{ getProviderInfo(template)!.extraCount }}
+                      </div>
                     </div>
-                  </div>
-                  <div class="flex">
-                    <span
-                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
-                    >
-                      <template v-if="isAppTemplate(template)">
-                        <i class="icon-[lucide--panels-top-left]" />
-                        {{ $t('builderToolbar.app', 'App') }}
-                      </template>
-                      <template v-else>
-                        <i class="icon-[lucide--workflow]" />
-                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
-                      </template>
+                    <span class="truncate text-sm text-muted-foreground">
+                      {{ getProviderInfo(template)!.label }}
                     </span>
+                  </div>
+
+                  <!-- Tags -->
+                  <div
+                    v-if="template.tags && template.tags.length > 0"
+                    class="flex items-center gap-2 py-1"
+                  >
+                    <Tag
+                      v-for="tag in getVisibleTags(template)"
+                      :key="tag"
+                      :label="tag"
+                      shape="rounded"
+                    />
+                    <div
+                      v-if="getExtraTagCount(template) > 0"
+                      @mouseenter="showTagsPopover($event, template)"
+                      @mouseleave="hideTagsPopover"
+                      @click.stop
+                    >
+                      <Tag
+                        :label="`+${getExtraTagCount(template)}`"
+                        shape="rounded"
+                        class="cursor-default"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardBottom>
@@ -398,12 +459,25 @@
           })
         }}
       </div>
+
+      <!-- Shared tags popover (shown on hover of a card's "+N" tag chip) -->
+      <Popover ref="tagsPopover">
+        <div class="flex max-w-72 flex-col items-start gap-2">
+          <Tag
+            v-for="tag in popoverTags"
+            :key="tag"
+            :label="tag"
+            shape="rounded"
+          />
+        </div>
+      </Popover>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
+import Popover from 'primevue/popover'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -419,8 +493,9 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -435,7 +510,7 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
   onClose: () => void
@@ -472,14 +547,164 @@ const {
   loadTemplates,
   loadWorkflowTemplate,
   getTemplateThumbnailUrl,
-  getTemplateTitle,
-  getTemplateDescription
+  getTemplateTitle
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
 
 const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
+
+/**
+ * Format a list of provider names into a localized, human-readable string,
+ * e.g. ['Google', 'Kling'] -> "Google and Kling".
+ */
+const formatProviderList = (providers: string[]): string => {
+  try {
+    return new Intl.ListFormat(String(locale.value), {
+      style: 'long',
+      type: 'conjunction'
+    }).format(providers)
+  } catch {
+    return providers.join(t('templates.logoProviderSeparator'))
+  }
+}
+
+/**
+ * Provider display name -> monochrome comfy brand icon slug.
+ * Only providers that ship a comfy icon are listed here; names that normalize
+ * directly to an available slug (e.g. "ByteDance" -> "bytedance") are resolved
+ * automatically, the rest are aliased below.
+ */
+const PROVIDER_ICON_ALIASES: Record<string, string> = {
+  'black forest labs': 'bfl',
+  google: 'gemini',
+  stability: 'stability-ai',
+  hunyuan: 'tencent',
+  lightricks: 'ltxv'
+}
+
+/** Comfy brand icon slugs available as monochrome (masked) icons. */
+const PROVIDER_ICON_SLUGS = new Set([
+  'bfl',
+  'bria',
+  'bytedance',
+  'elevenlabs',
+  'gemini',
+  'grok',
+  'hitpaw',
+  'ideogram',
+  'kling',
+  'ltxv',
+  'luma',
+  'magnific',
+  'minimax',
+  'openai',
+  'pixverse',
+  'recraft',
+  'rodin',
+  'runway',
+  'sora',
+  'stability-ai',
+  'tencent',
+  'topaz',
+  'tripo',
+  'veo',
+  'vidu',
+  'wan',
+  'wavespeed'
+])
+
+/** Resolve a provider to its monochrome comfy icon class, or null if none. */
+const getProviderIconClass = (provider: string): string | null => {
+  const normalized = provider.trim().toLowerCase()
+  const slug =
+    PROVIDER_ICON_ALIASES[normalized] ?? normalized.replace(/[^a-z0-9]/g, '')
+  return PROVIDER_ICON_SLUGS.has(slug) ? `icon-mask-[comfy--${slug}]` : null
+}
+
+interface ProviderBadge {
+  provider: string
+  /** Monochrome comfy icon class, or null when only a raster logo is available. */
+  iconClass: string | null
+  /** Fallback raster logo URL when no monochrome icon exists. */
+  url: string
+}
+
+/** Max provider badges shown before collapsing the rest into a "+N" chip. */
+const MAX_VISIBLE_LOGOS = 2
+
+/**
+ * Flatten a template's `logos` into a row of provider badges plus a label.
+ * When more than `MAX_VISIBLE_LOGOS` providers exist the extra ones collapse
+ * into a counter and the label becomes "Multiple providers".
+ * Returns null when no valid provider could be resolved.
+ */
+const getProviderInfo = (
+  template: TemplateInfo
+): {
+  visibleBadges: ProviderBadge[]
+  extraCount: number
+  label: string
+} | null => {
+  const logos = template.logos ?? []
+  if (logos.length === 0) return null
+
+  const badges: ProviderBadge[] = []
+  const customLabels: string[] = []
+
+  for (const logo of logos) {
+    const providers = Array.isArray(logo.provider)
+      ? logo.provider
+      : [logo.provider]
+    for (const provider of providers) {
+      const iconClass = getProviderIconClass(provider)
+      const url = workflowTemplatesStore.getLogoUrl(provider)
+      if (iconClass || url) {
+        badges.push({ provider, iconClass, url })
+      }
+    }
+    if (logo.label) customLabels.push(logo.label)
+  }
+
+  if (badges.length === 0 && customLabels.length === 0) return null
+
+  const extraCount = Math.max(0, badges.length - MAX_VISIBLE_LOGOS)
+  const label =
+    extraCount > 0
+      ? t('templateWorkflows.multipleProviders', 'Multiple providers')
+      : customLabels.length > 0
+        ? customLabels.join(', ')
+        : formatProviderList(badges.map((badge) => badge.provider))
+
+  return {
+    visibleBadges: badges.slice(0, MAX_VISIBLE_LOGOS),
+    extraCount,
+    label
+  }
+}
+
+/** Number of tags shown before collapsing the rest into a "+N" chip. */
+const MAX_VISIBLE_TAGS = 2
+
+const getVisibleTags = (template: TemplateInfo): string[] =>
+  (template.tags ?? []).slice(0, MAX_VISIBLE_TAGS)
+
+const getExtraTagCount = (template: TemplateInfo): number =>
+  Math.max(0, (template.tags?.length ?? 0) - MAX_VISIBLE_TAGS)
+
+// Shared hover popover listing every tag of the hovered card.
+const tagsPopover = ref<InstanceType<typeof Popover>>()
+const popoverTags = ref<string[]>([])
+
+const showTagsPopover = (event: MouseEvent, template: TemplateInfo) => {
+  popoverTags.value = template.tags ?? []
+  tagsPopover.value?.show(event)
+}
+
+const hideTagsPopover = () => {
+  tagsPopover.value?.hide()
+}
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
@@ -550,6 +775,22 @@ const navigationFilteredTemplates = computed(() => {
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
 })
 
+// Template type tabs (All / Node Graph / Apps)
+type TemplateType = 'all' | 'nodeGraph' | 'apps'
+const selectedType = ref<TemplateType>('all')
+
+/** Keep one tab always selected (reka-ui would otherwise allow deselecting). */
+const onSelectType = (value: string) => {
+  if (value) selectedType.value = value as TemplateType
+}
+
+const typeFilteredTemplates = computed(() => {
+  const base = navigationFilteredTemplates.value
+  if (selectedType.value === 'all') return base
+  const wantApp = selectedType.value === 'apps'
+  return base.filter((template) => isAppTemplate(template) === wantApp)
+})
+
 // Template filtering with scope awareness
 const {
   searchQuery,
@@ -567,7 +808,7 @@ const {
   filteredCount,
   totalCount,
   resetFilters
-} = useTemplateFiltering(navigationFilteredTemplates)
+} = useTemplateFiltering(typeFilteredTemplates)
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
@@ -794,6 +1035,7 @@ watch(
   [
     filteredTemplates,
     selectedNavItem,
+    selectedType,
     sortSelection,
     selectedModels,
     selectedUseCases,
