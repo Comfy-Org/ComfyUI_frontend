@@ -7,7 +7,7 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 type ToolMedia =
-  | { type: 'image'; src: string }
+  | { type: 'image'; src: string; fit?: 'cover' | 'contain' }
   | {
       type: 'video'
       src: string
@@ -16,12 +16,17 @@ type ToolMedia =
       hideControls?: boolean
     }
 
-const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
+const tools: {
+  n: 1 | 2 | 3 | 4 | 5 | 6
+  media: ToolMedia
+  altKey?: TranslationKey
+}[] = [
   {
     n: 1,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/generate-everything.gif'
+      src: 'https://media.comfy.org/website/mcp/generate-everything.gif',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.1.alt'
   },
@@ -29,7 +34,8 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
     n: 2,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/search-ecosystem.png'
+      src: 'https://media.comfy.org/website/mcp/search-ecosystem.png',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.2.alt'
   },
@@ -43,6 +49,35 @@ const tools: { n: 1 | 2 | 3; media: ToolMedia; altKey?: TranslationKey }[] = [
       hideControls: true
     },
     altKey: 'mcp.tools.3.alt'
+  },
+  {
+    n: 4,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/direct-any-model.png',
+      fit: 'cover'
+    },
+    altKey: 'mcp.tools.4.alt'
+  },
+  {
+    n: 5,
+    media: {
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png',
+      fit: 'cover'
+    },
+    altKey: 'mcp.tools.5.alt'
+  },
+  {
+    n: 6,
+    media: {
+      type: 'video',
+      src: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm',
+      autoplay: true,
+      loop: true,
+      hideControls: true
+    },
+    altKey: 'mcp.tools.6.alt'
   }
 ]
 
@@ -62,5 +97,6 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
     :locale="locale"
     :heading="t('mcp.tools.heading', locale)"
     :rows="rows"
+    media-fit="contain"
   />
 </template>
