@@ -7,6 +7,10 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import {
+  mockWorkspaceTokenMint,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -97,6 +101,7 @@ async function mockCloudBoot(page: Page) {
   await page.route('**/api/auth/session', (r) =>
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
+  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
   // Single personal workspace.

@@ -17,7 +17,7 @@ const ctas = mcpCtas(locale)
     badge-text="MCP"
     :title="t('mcp.hero.heading', locale)"
     :subtitle="t('mcp.hero.subtitle', locale)"
-    :primary-cta="ctas.runWorkflow"
+    :primary-cta="ctas.installMcp"
     :secondary-cta="ctas.docs"
   >
     <template #media>

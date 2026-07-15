@@ -9,15 +9,24 @@ export interface McpCta {
 }
 
 /**
- * The two calls-to-action shared by the MCP hero and "how it works" sections:
- * view the docs, or run a workflow in the cloud.
+ * Calls-to-action for the MCP page: view the docs, jump to the on-page setup
+ * steps, or run a workflow in the cloud. The hero leads with install + docs;
+ * the "how it works" section pairs run-a-workflow with docs.
  */
-export function mcpCtas(locale: Locale): { docs: McpCta; runWorkflow: McpCta } {
+export function mcpCtas(locale: Locale): {
+  docs: McpCta
+  installMcp: McpCta
+  runWorkflow: McpCta
+} {
   return {
     docs: {
       label: t('mcp.hero.viewDocs', locale),
       href: externalLinks.docsMcp,
       target: '_blank'
+    },
+    installMcp: {
+      label: t('mcp.hero.installMcp', locale),
+      href: '#setup'
     },
     runWorkflow: {
       label: t('mcp.hero.runWorkflow', locale),

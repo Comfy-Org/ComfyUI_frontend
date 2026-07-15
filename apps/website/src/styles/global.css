@@ -70,6 +70,7 @@
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
   --color-primary-comfy-plum: #49378b;
+  --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
@@ -91,6 +92,14 @@
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
+}
+
+/* Pre-hydration hide for a dismissed announcement banner (set by an inline
+   script in BaseLayout head) — prevents any flash before Vue hydrates.
+   The [data-banner-dismissed] literal is BANNER_DISMISS_ATTR in utils/banner.ts;
+   keep them in sync. */
+[data-banner-dismissed] [data-slot='announcement-banner'] {
+  display: none;
 }
 
 @keyframes border-angle-spin {
@@ -248,7 +257,7 @@
 @utility ppformula-text-center {
   display: inline-block;
   position: relative;
-  top: 0.19em;
+  top: 0.1em;
 }
 
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked

@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "أنشئ كلامًا، موسيقى، مؤثرات صوتية وحوارًا متعدد المتحدثين من خلال مطالبة واحدة باستخدام ByteDance Seed Audio 1.0. صف الصوت أو الأصوات، العاطفة، الأجواء، الموسيقى الخلفية والمؤثرات الصوتية في المطالبة، وأدرج الجمل التي سيتم نطقها. يمكنك اختيار صوت مدمج مسبقًا، أو استنساخ أصوات من حتى ٣ مقاطع مرجعية (موسومة @Audio1-3 في المطالبة)، أو اشتقاق صوت من صورة شخصية. حتى دقيقتين من الصوت لكل تشغيل.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "مستوى الصوت. ٠ = عادي، ١٠٠ = ٢.٠×، -٥٠ = ٠.٥×."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "تغيير طبقة الصوت بالنصف نغمة (-١٢ إلى ١٢)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "كيفية تحديد الصوت: 'نص فقط' (صف كل شيء في المطالبة)، 'مرجع صوتي' (استنساخ حتى ٣ أصوات، موسومة @Audio1-3)، 'مرجع صورة' (اشتقاق صوت من صورة شخصية واحدة)، أو 'صوت مدمج' (اختر صوتًا مدمجًا يقرأ المطالبة)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "معدل العينة الناتج بالهرتز."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "سرعة الكلام. ٠ = عادي، ١٠٠ = ٢.٠×، -٥٠ = ٠.٥×."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "صف الصوت أو الأصوات، العاطفة، الإيقاع، الأجواء، الموسيقى الخلفية والمؤثرات الصوتية، وأدرج الجمل التي سيتم نطقها (قم بتسمية الشخصيات ضمن النص للحوار). في وضع 'المرجع الصوتي'، أشر إلى المقاطع المتصلة حسب الترتيب كـ @Audio1، @Audio2، @Audio3. الحد الأقصى ٣٠٠٠ حرف."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "إنشاء استجابات نصية باستخدام نماذج Seed 2.0 من ByteDance. قدم مطالبة نصية ويمكنك أيضًا إضافة صورة أو أكثر أو فيديوهات للسياق متعدد الوسائط.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "النموذج"
       },
-      "model_fail_on_partial": {
-        "name": "فشل عند التوليد الجزئي"
-      },
       "model_height": {
         "name": "الارتفاع"
-      },
-      "model_max_images": {
-        "name": "أقصى عدد للصور"
       },
       "model_size_preset": {
         "name": "إعداد الحجم"
@@ -1288,6 +1324,10 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة المستخدمة للتوليد."
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "تفعيل منطق تحسين المطالبات للنموذج ('التفكير') لتحقيق التزام أفضل. قد يؤدي إلى زيادة كبيرة في وقت التوليد — خاصة على Seedream 5.0 Pro. يمكن تعطيله فقط في تحويل النص إلى صورة (وليس عند توفير صور مرجعية)."
       },
       "watermark": {
         "name": "علامة مائية",
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "سداسي عشري",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "تهيئة إلى"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "التهيئة (ضرب)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2780,6 +2835,10 @@
         "name": "الخلفية",
         "tooltip": "صورة اختيارية تُستخدم كخلفية في لوحة الرسم والمعاينة."
       },
+      "bboxes": {
+        "name": "مربعات التحديد",
+        "tooltip": "مربعات التحديد أو العناصر أو سلسلة JSON لتهيئة مساحة العمل. أي قيمة جديدة من المصدر تعيد تهيئة مساحة العمل؛ التعديلات التي تتم على مساحة العمل لها الأولوية وتبقى حتى تتغير قيمة المصدر مرة أخرى."
+      },
       "editor_state": {
         "name": "حالة المحرر",
         "tooltip": "ارسم الصناديق المحيطة وحدد نوع كل صندوق، النص، الوصف، لوحة الألوان. ابدأ بعنصر الخلفية أولاً والعناصر الأمامية أخيراً."
@@ -2787,6 +2846,10 @@
       "height": {
         "name": "الارتفاع",
         "tooltip": "ارتفاع لوحة الرسم وشبكة البكسل للصناديق المحيطة."
+      },
+      "last_incoming": {
+        "name": "آخر قيمة واردة",
+        "tooltip": "حالة داخلية تديرها مساحة العمل: قيمة مربعات التحديد الأخيرة التي قامت بتهيئتها. اتركها فارغة لإعادة تهيئة مساحة العمل من مدخل مربعات التحديد في التشغيل التالي."
       },
       "width": {
         "name": "العرض",
@@ -5196,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نموذج Google Gemini Omni Flash. يمكنك اختيار صور و/أو مقاطع فيديو مرجعية لتوجيه أو تعديل النتيجة. صف الطول المطلوب (٣-١٠ ثوانٍ) ونسبة العرض إلى الارتفاع (١٦:٩ أو ٩:١٦) مباشرة في المطالبة.",
+    "display_name": "Google Gemini Omni (فيديو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Gemini للفيديو المستخدم في إنشاء الفيديو."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "البذرة تتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "توليد المسارات",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "width": {
         "name": "العرض"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "ينشئ صورًا تزامنيًا باستخدام نموذج Ideogram V1.\n\nروابط الصور متاحة لفترة محدودة؛ إذا أردت الاحتفاظ بالصورة، يجب تنزيلها.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبة_الأبعاد",
-        "tooltip": "نسبة الأبعاد لتوليد الصورة."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "magic_prompt_option": {
-        "name": "خيار_الوصف_السحري",
-        "tooltip": "تحديد ما إذا كان يجب استخدام MagicPrompt في التوليد"
-      },
-      "negative_prompt": {
-        "name": "الوصف_السلبي",
-        "tooltip": "وصف ما يجب استبعاده من الصورة"
-      },
-      "num_images": {
-        "name": "عدد_الصور"
-      },
-      "prompt": {
-        "name": "الوصف",
-        "tooltip": "الوصف لتوليد الصورة"
-      },
-      "seed": {
-        "name": "البذرة"
-      },
-      "turbo": {
-        "name": "الوضع_السريع",
-        "tooltip": "هل تستخدم وضع التيربو (توليد أسرع، جودة أقل محتملة)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "ينشئ الصور بشكل متزامن باستخدام نموذج إيديوغرام الإصدار 2.\n\nروابط الصور متاحة لفترة محدودة من الوقت؛ إذا كنت ترغب في الاحتفاظ بالصورة، يجب عليك تنزيلها.",
-    "display_name": "إيديوغرام الإصدار 2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبة العرض إلى الارتفاع",
-        "tooltip": "نسبة العرض إلى الارتفاع لتوليد الصورة. يتم تجاهلها إذا لم يتم تعيين الدقة إلى تلقائي."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "magic_prompt_option": {
-        "name": "خيار الموجه السحري",
-        "tooltip": "تحديد ما إذا كان يجب استخدام الموجه السحري في التوليد"
-      },
-      "negative_prompt": {
-        "name": "الموجه السلبي",
-        "tooltip": "وصف ما يجب استبعاده من الصورة"
-      },
-      "num_images": {
-        "name": "عدد الصور"
-      },
-      "prompt": {
-        "name": "الموجه",
-        "tooltip": "الموجه لتوليد الصورة"
-      },
-      "resolution": {
-        "name": "الدقة",
-        "tooltip": "دقة توليد الصورة. إذا لم يتم تعيينها إلى تلقائي، فإنها تتجاوز إعداد نسبة العرض إلى الارتفاع."
-      },
-      "seed": {
-        "name": "البذرة"
-      },
-      "style_type": {
-        "name": "نوع الأسلوب",
-        "tooltip": "نوع الأسلوب للتوليد (الإصدار 2 فقط)"
-      },
-      "turbo": {
-        "name": "تيربو",
-        "tooltip": "هل يتم استخدام وضع التيربو (توليد أسرع، وجودة قد تكون أقل)"
       }
     },
     "outputs": {
@@ -10568,6 +10577,12 @@
       "mask": {
         "name": "قناع"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14576,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "معاينة ملف نموذج ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
     "display_name": "معاينة ثلاثية الأبعاد",
     "inputs": {
       "bg_image": {
@@ -14594,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "معاينة ملف نموذج ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
     "display_name": "معاينة ثلاثية الأبعاد (متقدم)",
     "inputs": {
       "camera_info": {
@@ -14640,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "معاينة أي قيمة مدخلة كنص.",
     "display_name": "معاينة أي",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "معاينة"
-      },
-      "preview_text": {
-        "name": "معاينة"
-      },
+      "preview_mode": "وضع المعاينة",
+      "preview_text": {},
       "source": {
         "name": "المصدر"
       }
     }
   },
   "PreviewAudio": {
+    "description": "معاينة الصوت دون حفظه في دليل مخرجات ComfyUI.",
     "display_name": "معاينة الصوت",
     "inputs": {
       "audio": {
@@ -14672,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "معاينة ملف Gaussian Splat ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
     "display_name": "معاينة Splat",
     "inputs": {
       "camera_info": {
@@ -14732,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "معاينة ملف Point Cloud ثلاثي الأبعاد دون حفظه في دليل مخرجات ComfyUI.",
     "display_name": "معاينة سحابة النقاط",
     "inputs": {
       "camera_info": {
@@ -17509,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "حفظ ثلاثي الأبعاد (متقدم)",
+    "inputs": {
+      "camera_info": {
+        "name": "معلومات الكاميرا"
+      },
+      "filename_prefix": {
+        "name": "بادئة اسم الملف"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_3d": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد في الأعلى."
+      },
+      "model_3d_info": {
+        "name": "معلومات النموذج ثلاثي الأبعاد"
+      },
+      "viewport_state": {
+        "name": "حالة منفذ العرض"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات النموذج ثلاثي الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "حفظ PNG متحرك",
     "inputs": {
@@ -17669,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "حفظ Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ملف Gaussian Splat ثلاثي الأبعاد."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "يحفظ الصور المدخلة في مجلد مخرجات ComfyUI الخاص بك.",
     "display_name": "حفظ الصورة",
@@ -17807,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "حفظ سحابة النقاط",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ملف سحابة نقاط (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "حفظ ملفات SVG على القرص.",
     "display_name": "عقدة حفظ SVG",
@@ -17822,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "حفظ محتوى نصي في ملف داخل مجلد الإخراج.",
+    "display_name": "حفظ نص",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17950,6 +18136,117 @@
       "0": {
         "name": "البذرة",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "إنشاء تكييف إيجابي/سلبي لـ SeedVR2 من latent VAE.",
+    "display_name": "تطبيق تكييف SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "التكييف الإيجابي لأخذ العينات."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "التكييف السلبي لأخذ العينات."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "محاذاة الصورة المُولدة مع الصورة الأصلية المُعاد تحجيمها وتطبيق تصحيح الألوان.",
+    "display_name": "معالجة مخرجات SeedVR2 بعد الإنتاج",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "طريقة مطابقة ألوان الصورة المُولدة مع الصورة الأصلية. lab: نقل اللون في فضاء CIELAB مع الحفاظ على التفاصيل (الأكثر دقة). wavelet: نقل اللون منخفض التردد مع الحفاظ على تفاصيل التردد العالي بعد التكبير. adain: مطابقة المتوسط والانحراف المعياري لكل قناة (الأسرع، تدرج لوني عام). none: تخطي نقل اللون (محاذاة هندسية فقط)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "الصورة المُولدة للمعالجة."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "الصورة الأصلية المُعاد تحجيمها قبل المعالجة المسبقة، وتُستخدم كمرجع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "الصورة المحاذاة والمصححة الألوان."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "إضافة حواف لصورة مُعاد تحجيمها لاستخدامها في نموذج SeedVR2. يتم حذف قناة ألفا. يعيد عقدة معالجة مخرجات SeedVR2 بعد الإنتاج إضافتها من الصورة الأصلية المُعاد تحجيمها.",
+    "display_name": "معالجة مدخلات SeedVR2 قبل الإنتاج",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "الصورة المُعاد تحجيمها للمعالجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "الصورة المجهزة للترميز باستخدام VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "تقسيم الفيديو الكامن لـ SeedVR2 إلى أجزاء زمنية متداخلة صغيرة بما يكفي ليتم معالجتها واحدة تلو الأخرى ضمن VRAM، مع توصيل مخرجات الكامن إلى كل من Apply SeedVR2 Conditioning ومدخل الكامن للعينات قبل إعادة الدمج باستخدام Merge SeedVR2 Latents.",
+    "display_name": "تقسيم SeedVR2 Latent",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = استخدم frames_per_chunk بالضبط؛ auto = توقع أكبر جزء يتناسب مع VRAM المتاح."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "الكامن المشفر بواسطة VAE الخاص بـ SeedVR2 للتقسيم."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "إطارات الكامن المشتركة بين الأجزاء المتجاورة ويتم دمجها تدريجياً عند الدمج؛ 0 = بدون تداخل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "الأجزاء الزمنية مرتبة حسب التسلسل."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "تداخل إطارات الكامن الفعلي بين الأجزاء المتجاورة، لاستخدامه في Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "إعادة دمج أجزاء الكامن الزمني المُعالجة لـ SeedVR2 في كامن واحد، مع دمج كل تداخل باستخدام نافذة Hann بحجم temporal_overlap الموصول من Split SeedVR2 Latent.",
+    "display_name": "دمج SeedVR2 Latents",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "الأجزاء الزمنية المُعالجة مرتبة حسب التسلسل."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "مخرج temporal_overlap من Split SeedVR2 Latent. 0 = دمج مباشر بدون تداخل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "الكامن الكامل بعد إعادة الدمج."
       }
     }
   },
@@ -18461,293 +18758,6 @@
       },
       "1": {
         "name": "سيغما منخفضة",
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioInpaint": {
-    "description": "يحول جزءًا من عينة الصوت الحالية باستخدام تعليمات نصية.",
-    "display_name": "إعادة رسم الصوت من Stability AI",
-    "inputs": {
-      "audio": {
-        "name": "صوت",
-        "tooltip": "يجب أن يكون الصوت بين 6 و190 ثانية."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "duration": {
-        "name": "المدة",
-        "tooltip": "يتحكم في مدة الصوت المُنشأ بالثواني."
-      },
-      "mask_end": {
-        "name": "نهاية القناع"
-      },
-      "mask_start": {
-        "name": "بداية القناع"
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِه"
-      },
-      "seed": {
-        "name": "بذرة",
-        "tooltip": "البذرة العشوائية المستخدمة في الإنشاء."
-      },
-      "steps": {
-        "name": "خطوات",
-        "tooltip": "يتحكم في عدد خطوات أخذ العينات."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "يحول عينات الصوت الحالية إلى تركيبات جديدة عالية الجودة باستخدام تعليمات نصية.",
-    "display_name": "تحويل الصوت إلى صوت من Stability AI",
-    "inputs": {
-      "audio": {
-        "name": "صوت",
-        "tooltip": "يجب أن يكون الصوت بين 6 و190 ثانية."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "duration": {
-        "name": "المدة",
-        "tooltip": "تتحكم في مدة الصوت المُنشأ بالثواني."
-      },
-      "model": {
-        "name": "نموذج"
-      },
-      "prompt": {
-        "name": "مُوجِه"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية المستخدمة في الإنشاء."
-      },
-      "steps": {
-        "name": "الخطوات",
-        "tooltip": "تتحكم في عدد خطوات أخذ العينات."
-      },
-      "strength": {
-        "name": "القوة",
-        "tooltip": "تتحكم المعلمة في مقدار تأثير معامل الصوت على الصوت المُنشأ."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "ينتج الصور بشكل متزامن بناءً على النص والنسبة.",
-    "display_name": "Stability AI صورة Stable Diffusion 3.5",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبة العرض إلى الارتفاع",
-        "tooltip": "نسبة عرض الصورة الناتجة."
-      },
-      "cfg_scale": {
-        "name": "مقياس CFG",
-        "tooltip": "مدى التزام عملية الانتشار بالنص الوصفي (القيم الأعلى تبقي الصورة أقرب للنص)."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "image_denoise": {
-        "name": "إزالة التشويش من الصورة",
-        "tooltip": "0.0 تعني صورة مطابقة للأصل، 1.0 تعني عدم وجود صورة أصلية."
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "negative_prompt": {
-        "name": "نص سلبي",
-        "tooltip": "الكلمات التي لا ترغب برؤيتها في الصورة الناتجة. ميزة متقدمة."
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "ما ترغب برؤيته في الصورة الناتجة. نص وصفي قوي وواضح يحدد العناصر والألوان والموضوعات يؤدي لنتائج أفضل."
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية لإنشاء الضجيج."
-      },
-      "style_preset": {
-        "name": "نمط مسبق",
-        "tooltip": "النمط المرغوب اختياريًا للصورة الناتجة."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "ينتج الصور بشكل متزامن بناءً على النص والنسبة.",
-    "display_name": "Stability AI صورة Stable Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبة العرض إلى الارتفاع",
-        "tooltip": "نسبة عرض الصورة الناتجة."
-      },
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "image_denoise": {
-        "name": "إزالة التشويش من الصورة",
-        "tooltip": "0.0 تعني صورة مطابقة للأصل، 1.0 تعني عدم وجود صورة أصلية."
-      },
-      "negative_prompt": {
-        "name": "نص سلبي",
-        "tooltip": "وصف لما لا ترغب برؤيته في الصورة الناتجة. ميزة متقدمة."
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "ما ترغب برؤيته في الصورة الناتجة. نص وصفي قوي وواضح يحدد العناصر والألوان والموضوعات يؤدي لنتائج أفضل. للتحكم في وزن كلمة معينة استخدم التنسيق (الكلمة:الوزن) حيث الوزن بين 0 و1."
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية لإنشاء الضجيج."
-      },
-      "style_preset": {
-        "name": "نمط مسبق",
-        "tooltip": "النمط المرغوب اختياريًا للصورة الناتجة."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "ينشئ موسيقى ومؤثرات صوتية عالية الجودة من أوصاف نصية.",
-    "display_name": "Stability AI تحويل النص إلى صوت",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "duration": {
-        "name": "المدة",
-        "tooltip": "تتحكم في مدة الصوت المُنشأ بالثواني."
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "المطالبة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية المستخدمة في الإنشاء."
-      },
-      "steps": {
-        "name": "الخطوات",
-        "tooltip": "تتحكم في عدد خطوات أخذ العينات."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "يكبر الصورة مع تغييرات طفيفة إلى دقة 4K.",
-    "display_name": "Stability AI تكبير محافظ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "creativity": {
-        "name": "الإبداع",
-        "tooltip": "يتحكم في احتمالية إضافة تفاصيل إضافية ليست متأثرة بقوة بالصورة الأصلية."
-      },
-      "image": {
-        "name": "الصورة"
-      },
-      "negative_prompt": {
-        "name": "نص سلبي",
-        "tooltip": "الكلمات التي لا ترغب برؤيتها في الصورة الناتجة. ميزة متقدمة."
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "ما ترغب برؤيته في الصورة الناتجة. نص وصفي قوي وواضح يحدد العناصر والألوان والموضوعات يؤدي لنتائج أفضل."
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية لإنشاء الضجيج."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "تكبير الصورة مع تغييرات طفيفة إلى دقة 4K.",
-    "display_name": "تكبير استقرار الذكاء الاصطناعي الإبداعي",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد الإنشاء"
-      },
-      "creativity": {
-        "name": "الإبداع",
-        "tooltip": "يتحكم في احتمالية إنشاء تفاصيل إضافية غير معتمدة بشكل كبير على الصورة الأصلية."
-      },
-      "image": {
-        "name": "صورة"
-      },
-      "negative_prompt": {
-        "name": "النص السلبي",
-        "tooltip": "كلمات مفتاحية لما لا ترغب في رؤيته في الصورة الناتجة. هذه ميزة متقدمة."
-      },
-      "prompt": {
-        "name": "النص الوصفي",
-        "tooltip": "ما ترغب في رؤيته في الصورة الناتجة. النص الوصفي القوي والواضح الذي يحدد العناصر والألوان والمواضيع بدقة يؤدي إلى نتائج أفضل."
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضجيج."
-      },
-      "style_preset": {
-        "name": "نمط مسبق",
-        "tooltip": "النمط المرغوب اختياريًا للصورة المولدة."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "يزيد حجم الصورة بسرعة عبر استدعاء API الخاص باستقرار الذكاء الاصطناعي إلى 4 أضعاف الحجم الأصلي؛ مخصص لتكبير الصور منخفضة الجودة أو المضغوطة.",
-    "display_name": "تكبير استقرار الذكاء الاصطناعي السريع",
-    "inputs": {
-      "image": {
-        "name": "صورة"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19755,6 +19765,42 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "إضافة نص فوق صورة أو مجموعة صور.",
+    "display_name": "إضافة نص على الصورة",
+    "inputs": {
+      "align": {
+        "name": "محاذاة"
+      },
+      "color": {
+        "name": "اللون",
+        "tooltip": "لون النص."
+      },
+      "font_size": {
+        "name": "حجم الخط",
+        "tooltip": "حجم الخط كنسبة مئوية من ارتفاع الصورة."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "outline": {
+        "name": "حد خارجي",
+        "tooltip": "رسم حد أسود حول النص."
+      },
+      "position": {
+        "name": "الموضع"
+      },
+      "text": {
+        "name": "النص"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصور",
         "tooltip": null
       }
     }
