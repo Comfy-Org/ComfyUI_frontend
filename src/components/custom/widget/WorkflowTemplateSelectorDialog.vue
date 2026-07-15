@@ -37,7 +37,7 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-10 w-96"
+          class="h-10 w-96 border border-border-subtle bg-transparent"
           autofocus
         />
       </div>
@@ -80,7 +80,7 @@
               v-model="selectedModelObjects"
               v-model:search-query="modelSearchText"
               size="md"
-              class="w-full [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
+              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
               :label="modelFilterLabel"
               :options="modelOptions"
               :content-style="selectContentStyle"
@@ -99,7 +99,7 @@
             <MultiSelect
               v-model="selectedUseCaseObjects"
               size="md"
-              class="w-full [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
+              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
               :label="useCaseFilterLabel"
               :options="useCaseOptions"
               :content-style="selectContentStyle"
@@ -118,7 +118,7 @@
             <MultiSelect
               v-model="selectedRunsOnObjects"
               size="md"
-              class="w-full [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
+              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
               :label="runsOnFilterLabel"
               :options="runsOnOptions"
               :content-style="selectContentStyle"
@@ -140,7 +140,7 @@
               :label="$t('templateWorkflows.sorting', 'Sort by')"
               :options="sortOptions"
               :content-style="selectContentStyle"
-              class="w-full [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
+              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
             >
               <template #icon>
                 <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
