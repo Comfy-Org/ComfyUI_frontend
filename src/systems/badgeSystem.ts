@@ -6,7 +6,7 @@ import { t } from '@/i18n'
 import { registerBadgeIcon } from '@/lib/litegraph/src/badgeIconRegistry'
 import { trackGraphStructure } from '@/lib/litegraph/src/graphStructureRevision'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { setBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
+import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -266,5 +266,5 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
 /** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
 export function installNodeBadges(): void {
   registerCreditsIcon()
-  setBadgeRowsProvider(nodeBadges)
+  registerBadgeRowsProvider(nodeBadges)
 }
