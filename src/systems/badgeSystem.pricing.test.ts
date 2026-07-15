@@ -1,11 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -61,7 +58,9 @@ describe('badge derivation pricing input connectivity', () => {
     node.id = toNodeId(5)
     node.type = 'ApiNode'
     for (const name of inputNames) node.addInput(name, 'IMAGE')
-    node.graph = fromPartial<LGraph>({ rootGraph: { id: graphId } })
+    const graph = new LGraph()
+    graph.id = graphId
+    node.graph = graph
     return { node }
   }
 
@@ -115,7 +114,6 @@ describe('badge derivation pricing input connectivity', () => {
     const reloadedGraphId: UUID = 'graph-pricing-reloaded'
     node.graph!.rootGraph.id = reloadedGraphId
     connect(0, 4, reloadedGraphId)
-    bumpGraphStructureRevision()
 
     expect(nodeBadges(node).at(-1)?.text).toBe('$connected')
   })

@@ -1,7 +1,6 @@
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -9,8 +8,7 @@ import { installNodeBadges } from '@/systems/badgeSystem'
 
 /**
  * Bootstraps badge derivation: installs it as the legacy canvas's row
- * source, forwards the structure events instance state cannot announce,
- * and keeps the legacy canvas redrawing when badge sources change.
+ * source and keeps the legacy canvas redrawing when badge sources change.
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
@@ -52,19 +50,9 @@ export const useNodeBadge = () => {
         app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
-            bumpGraphStructureRevision()
             app.canvas?.setDirty(true, true)
           }
         )
-        app.canvas.canvas.addEventListener<'subgraph-converted'>(
-          'subgraph-converted',
-          () => {
-            bumpGraphStructureRevision()
-          }
-        )
-      },
-      afterConfigureGraph() {
-        bumpGraphStructureRevision()
       }
     })
   })

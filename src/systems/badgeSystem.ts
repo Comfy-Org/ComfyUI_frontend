@@ -3,8 +3,6 @@ import type { ComputedRef } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { t } from '@/i18n'
-import { registerBadgeIcon } from '@/lib/litegraph/src/badgeIconRegistry'
-import { trackGraphStructure } from '@/lib/litegraph/src/graphStructureRevision'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -85,7 +83,6 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
     rows.push({
       kind: 'credits',
       text: creditsText,
-      iconKey: 'credits',
       fgColor: colors.fgColor,
       bgColor: colors.creditsBgColor
     })
@@ -110,13 +107,6 @@ function computeCreditsText(pricing: PricingBadgeSources): string {
 }
 
 const CREDITS_BASE_BG_COLOR = '#8D6932'
-
-function registerCreditsIcon(): void {
-  const icon = new Image()
-  icon.src =
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='oklch(83.01%25 0.163 83.16)' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0zm-13.239 0a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0zm6.619 6.619a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0zm0-13.238a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z'/%3E%3C/svg%3E"
-  registerBadgeIcon('credits', { image: icon, size: 8 })
-}
 
 /**
  * Reads the pricing-relevant store state so the calling computed re-runs
@@ -255,7 +245,6 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     useWidgetValueStore()
     useLinkStore()
     rows = computed(() => {
-      trackGraphStructure()
       return computeBadges(gatherSources(node))
     })
     badgeComputeds.set(node, rows)
@@ -265,6 +254,5 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
 
 /** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
 export function installNodeBadges(): void {
-  registerCreditsIcon()
   registerBadgeRowsProvider(nodeBadges)
 }

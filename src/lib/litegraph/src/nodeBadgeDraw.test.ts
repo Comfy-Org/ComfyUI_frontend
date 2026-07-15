@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { registerBadgeIcon } from './badgeIconRegistry'
 import { badgeDrawObjects } from './nodeBadgeDraw'
 
 function coreRow(part: CoreBadgeData['part'], text: string): BadgeData {
@@ -34,14 +33,12 @@ describe('badgeDrawObjects', () => {
     expect(badges[0].text.endsWith('...')).toBe(true)
   })
 
-  it('draws credits rows separately with their registered icon', () => {
-    registerBadgeIcon('test-icon', { unicode: 'X', fontFamily: 'test' })
+  it('draws credits rows separately with their icon', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
       coreRow('id', '#5'),
       {
         kind: 'credits',
         text: '$0.04',
-        iconKey: 'test-icon',
         fgColor: '#fff',
         bgColor: '#8D6932'
       }
@@ -50,15 +47,8 @@ describe('badgeDrawObjects', () => {
     expect(badges).toHaveLength(2)
     expect(badges[1].text).toBe('$0.04')
     expect(badges[1].bgColor).toBe('#8D6932')
-    expect(badges[1].icon?.unicode).toBe('X')
-  })
-
-  it('keeps an unknown icon key iconless', () => {
-    const badges = badgeDrawObjects(new LGraphNode('n'), [
-      { kind: 'credits', text: '$1', iconKey: 'nope' }
-    ])
-
-    expect(badges[0].icon).toBeUndefined()
+    expect(badges[1].icon?.size).toBe(8)
+    expect(badges[1].icon?.image).toBeInstanceOf(Image)
   })
 
   it('reuses draw objects until the rows array is replaced', () => {

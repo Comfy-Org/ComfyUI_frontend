@@ -15,7 +15,6 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
-import { bumpGraphStructureRevision } from './graphStructureRevision'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -303,7 +302,13 @@ export class LGraph
 
   revision: number = 0
 
-  _version: number = -1
+  private readonly _versionRef = shallowRef(-1)
+  get _version(): number {
+    return toRaw(this)._versionRef.value
+  }
+  set _version(value: number) {
+    toRaw(this)._versionRef.value = value
+  }
   /** The backing store for links.  Keys are wrapped in String() */
   _links: Map<LinkId, LLink> = new Map()
   /**
@@ -480,8 +485,6 @@ export class LGraph
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
     }
-    bumpGraphStructureRevision()
-
     this.id = zeroUuid
     this.revision = 0
 
@@ -555,6 +558,7 @@ export class LGraph
   }
 
   get nodes() {
+    void this._version
     return this._nodes
   }
 
@@ -1113,8 +1117,6 @@ export class LGraph
 
     this.onNodeAdded?.(node)
 
-    bumpGraphStructureRevision()
-
     this.setDirtyCanvas(true)
     this.change()
 
@@ -1233,8 +1235,6 @@ export class LGraph
     if (pos != -1) this._nodes.splice(pos, 1)
 
     delete this._nodes_by_id[node.id]
-    bumpGraphStructureRevision()
-
     this.onNodeRemoved?.(node)
 
     // close panels

@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import { trackGraphStructure } from '@/lib/litegraph/src/graphStructureRevision'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 import { nodeBadges } from '@/systems/badgeSystem'
@@ -23,9 +22,6 @@ const canvasStore = useCanvasStore()
 const creditsBadges = computed(() => {
   const rootGraph = canvasStore.currentGraph?.rootGraph
   if (!rootGraph) return []
-
-  // Track structure so nodes added or removed later re-run the traversal.
-  trackGraphStructure()
 
   return mapUniqueNodes(rootGraph, (node) => {
     if (node.isSubgraphNode()) return

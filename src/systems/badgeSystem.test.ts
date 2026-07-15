@@ -105,7 +105,6 @@ describe('computeBadges', () => {
     expect(rows.at(-1)).toEqual({
       kind: 'credits',
       text: '$0.04',
-      iconKey: 'credits',
       fgColor: '#fff',
       bgColor: '#8D6932'
     })
@@ -135,8 +134,7 @@ describe('computeBadges', () => {
 
     expect(rows.at(-1)).toMatchObject({
       kind: 'credits',
-      text: 'Partner Nodes x 5',
-      iconKey: 'credits'
+      text: 'Partner Nodes x 5'
     })
   })
 
