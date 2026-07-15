@@ -424,3 +424,35 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
       .toBe(false)
   })
 })
+
+test.describe('Widget value isolation', { tag: '@widget' }, () => {
+  test('re-added node does not inherit a cleared node widget value', async ({
+    comfyPage
+  }) => {
+    await comfyPage.nodeOps.clearGraph()
+
+    const firstNode = await comfyPage.nodeOps.addNode('EmptyLatentImage')
+    const firstWidth = await firstNode.getWidgetByName('width')
+    const defaultWidth = await firstWidth.getValue()
+
+    await comfyPage.page.evaluate(
+      ({ id, name, value }) => {
+        const node = window.app!.graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+        const widget = node.widgets?.find((w) => w.name === name)
+        if (!widget) throw new Error(`Widget ${name} not found`)
+        widget.value = value
+      },
+      { id: firstNode.id, name: 'width', value: 128 }
+    )
+    expect(await firstWidth.getValue()).toBe(128)
+
+    await comfyPage.nodeOps.clearGraph()
+
+    const secondNode = await comfyPage.nodeOps.addNode('EmptyLatentImage')
+    expect(secondNode.id).toBe(firstNode.id)
+
+    const secondWidth = await secondNode.getWidgetByName('width')
+    expect(await secondWidth.getValue()).toBe(defaultWidth)
+  })
+})
