@@ -234,7 +234,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await comfyPage.page
         .context()
         .grantPermissions(['clipboard-read', 'clipboard-write'])
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      await comfyPage.nodeOps.clearGraph()
+      await comfyPage.searchBoxV2.addNode('Load Image')
       await comfyPage.vueNodes.waitForNodes(1)
       await comfyPage.page
         .locator('[data-node-id] img')

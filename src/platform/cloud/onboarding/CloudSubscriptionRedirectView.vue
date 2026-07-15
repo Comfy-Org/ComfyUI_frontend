@@ -94,7 +94,9 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
       return
     }
     isTeamCheckout.value = true
-    await performTeamSubscriptionCheckout(stopId, billingCycle)
+    await performTeamSubscriptionCheckout(stopId, billingCycle, {
+      paymentIntentSource: 'deep_link'
+    })
     return
   }
 
@@ -112,7 +114,10 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(tierKeyParam, billingCycle, false)
+    await performSubscriptionCheckout(tierKeyParam, billingCycle, {
+      openInNewTab: false,
+      paymentIntentSource: 'deep_link'
+    })
   }
 }, reportError)
 

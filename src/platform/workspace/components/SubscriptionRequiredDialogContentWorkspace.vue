@@ -116,7 +116,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -130,7 +130,7 @@ const {
   isPersonal = false
 } = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   isPersonal?: boolean
 }>()
 
@@ -154,7 +154,7 @@ const {
   handleConfirmTransition,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason)
 </script>
 
 <style scoped>

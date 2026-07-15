@@ -24,7 +24,9 @@ export function useAccountPreconditionDialog() {
         )
         return
       case 'subscription':
-        void dialogService.showSubscriptionRequiredDialog()
+        void dialogService.showSubscriptionRequiredDialog({
+          reason: 'subscription_required'
+        })
         return
       case 'credits':
         void dialogService.showTopUpCreditsDialog({

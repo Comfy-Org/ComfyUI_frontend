@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   BillingStatus,
@@ -75,9 +76,10 @@ export interface BillingActions {
    */
   requireActiveSubscription: () => Promise<void>
   /**
-   * Shows the subscription dialog.
+   * Shows the subscription dialog. Pass a reason so the paywall open and any
+   * downstream checkout stay attributed to the triggering product moment.
    */
-  showSubscriptionDialog: () => void
+  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {

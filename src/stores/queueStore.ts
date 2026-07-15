@@ -224,7 +224,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {

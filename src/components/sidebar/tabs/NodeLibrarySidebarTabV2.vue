@@ -117,8 +117,8 @@
 </template>
 
 <script setup lang="ts">
-import { mapValues } from 'es-toolkit'
 import { useEventListener, useLocalStorage } from '@vueuse/core'
+import { mapValues } from 'es-toolkit'
 import type { MenuItem } from 'primevue/menuitem'
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
 import {

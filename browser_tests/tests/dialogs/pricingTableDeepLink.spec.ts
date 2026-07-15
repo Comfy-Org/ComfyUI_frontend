@@ -28,7 +28,12 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 // matches it against the members self-row.
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
-const BOOT_FEATURES = { team_workspaces_enabled: true } satisfies RemoteConfig
+// consolidated_billing_enabled routes personal workspaces to the unified
+// pricing table asserted here; without it they fall back to the legacy table.
+const BOOT_FEATURES = {
+  team_workspaces_enabled: true,
+  consolidated_billing_enabled: true
+} satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
 // GraphCanvas onMounted chain before the deep-link loader.

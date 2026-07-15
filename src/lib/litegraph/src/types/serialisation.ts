@@ -1,16 +1,11 @@
 import type { UUID } from '@/utils/uuid'
 
-import type {
-  LGraphConfig,
-  LGraphExtra,
-  LGraphState,
-  SubgraphId
-} from '../LGraph'
+import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeProperty } from '../LGraphNode'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId, SerialisedLLinkArray } from '../LLink'
-import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
+import type { SerialisedLLinkArray } from '../LLink'
+import type { FloatingRerouteSlot } from '../Reroute'
 import type {
   Dictionary,
   INodeFlags,
@@ -52,10 +47,17 @@ interface BaseExportedGraph {
   }
 }
 
+interface SerialisableGraphState {
+  lastGroupId: GroupId
+  lastNodeId: number
+  lastLinkId: number
+  lastRerouteId: number
+}
+
 export interface SerialisableGraph extends BaseExportedGraph {
   /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
   version: 0 | 1
-  state: LGraphState
+  state: SerialisableGraphState
   groups?: ISerialisedGroup[]
   nodes?: ISerialisedNode[]
   links?: SerialisableLLink[]
@@ -66,14 +68,16 @@ export interface SerialisableGraph extends BaseExportedGraph {
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
-  'boundingRect' | 'widget'
+  'boundingRect' | 'widget' | 'link' | '_floatingLinks'
 > & {
+  link?: number | null
   widget?: { name: string }
 }
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
-  'boundingRect' | '_data'
+  'boundingRect' | '_data' | 'links' | '_floatingLinks'
 > & {
+  links?: number[] | null
   widget?: { name: string }
 }
 
@@ -127,7 +131,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
  */
 export interface ISerialisedGraph extends BaseExportedGraph {
   last_node_id: SerializedNodeId
-  last_link_id: LinkId
+  last_link_id: number
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]
   floatingLinks?: SerialisableLLink[]
@@ -170,7 +174,7 @@ export interface SubgraphIO extends SubgraphIOShared {
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: string
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
-  linkIds?: LinkId[]
+  linkIds?: number[]
 }
 
 /** A reference to a node widget shown in the parent graph */
@@ -201,16 +205,16 @@ export interface ClipboardItems {
 }
 
 export interface SerialisableReroute {
-  id: RerouteId
-  parentId?: RerouteId
+  id: number
+  parentId?: number
   pos: Point
-  linkIds: LinkId[]
+  linkIds: number[]
   floating?: FloatingRerouteSlot
 }
 
 export interface SerialisableLLink {
   /** Link ID */
-  id: LinkId
+  id: number
   /** Output node ID */
   origin_id: SerializedNodeId
   /** Output slot index */
@@ -222,7 +226,7 @@ export interface SerialisableLLink {
   /** Data type of the link */
   type: ISlotType
   /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
-  parentId?: RerouteId
+  parentId?: number
 }
 
 export interface ExportedSubgraphIONode {

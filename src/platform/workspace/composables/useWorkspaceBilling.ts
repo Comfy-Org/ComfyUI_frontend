@@ -2,6 +2,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
@@ -275,12 +276,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!isActiveSubscription.value) {
-      subscriptionDialog.show()
+      subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
 
-  function showSubscriptionDialog(): void {
-    subscriptionDialog.show()
+  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
+    subscriptionDialog.show(options)
   }
 
   return {

@@ -53,7 +53,7 @@ export function useSettingUI(
 
   const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
-  const { isActiveSubscription } = useBillingContext()
+  const { isActiveSubscription, type: billingType } = useBillingContext()
 
   const teamWorkspacesEnabled = computed(
     () => isCloud && flags.teamWorkspacesEnabled
@@ -156,6 +156,13 @@ export function useSettingUI(
     if (!subscriptionPanel) return false
     return isActiveSubscription.value
   })
+
+  const shouldShowLegacyPlanCreditsPanel = computed(
+    () =>
+      isLoggedIn.value &&
+      billingType.value === 'legacy' &&
+      shouldShowPlanCreditsPanel.value
+  )
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -301,6 +308,9 @@ export function useSettingUI(
       label: 'General',
       children: [
         translateCategory(userPanel.node),
+        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
+          ? [translateCategory(subscriptionPanel.node)]
+          : []),
         ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
@@ -332,9 +342,7 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(isLoggedIn.value &&
-        shouldShowPlanCreditsPanel.value &&
-        subscriptionPanel
+        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
         ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),

@@ -110,17 +110,18 @@
         >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
-            <button
+            <Button
               v-tooltip="{
                 value: $t('subscription.additionalCreditsTooltip'),
                 showDelay: 300
               }"
-              type="button"
+              variant="muted-textonly"
+              size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="flex items-center text-muted"
+              class="text-muted"
             >
               <i class="icon-[lucide--info] size-4" />
-            </button>
+            </Button>
             <span
               v-if="isSpendingAdditional"
               class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
@@ -351,12 +352,12 @@ const handleRefresh = wrapWithErrorHandlingAsync(async () => {
 })
 
 function handleAddCredits() {
-  telemetry?.trackAddApiCreditButtonClicked()
+  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
   void dialogService.showTopUpCreditsDialog()
 }
 
 function handleUpgradeToAddCredits() {
-  showPricingTable()
+  showPricingTable({ reason: 'upgrade_to_add_credits' })
 }
 
 async function handleWindowFocus() {

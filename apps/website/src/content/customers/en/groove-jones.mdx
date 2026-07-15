@@ -1,0 +1,106 @@
+---
+title: "How Groove Jones Delivered a Holiday FOOH Campaign for Dick's Sporting Goods with Comfy"
+category: "CASE STUDY"
+description: "Groove Jones, a Dallas-based creative studio, used Comfy to deliver a hyper-realistic FOOH holiday campaign for the Crocs x NFL collection on a fast-approaching deadline."
+cover: "https://media.comfy.org/website/customers/groove-jones/crocs-nfl-dicks-sporting-goods-fooh.webp"
+order: 4
+sections:
+  - id: topic-1
+    label: "INTRO"
+  - id: topic-2
+    label: "THE OUTPUT"
+  - id: topic-3
+    label: "THE PROBLEM"
+  - id: topic-4
+    label: "HOW COMFY SOLVED THE PROBLEM"
+  - id: topic-5
+    label: "BRAND-TRAINED LORAS"
+  - id: topic-6
+    label: "MULTI-MODEL ORCHESTRATION"
+  - id: topic-7
+    label: "THE PIPELINE"
+  - id: topic-8
+    label: "VERSION CONTROL"
+  - id: topic-9
+    label: "FINISHING IN NUKE"
+  - id: topic-10
+    label: "THE TAKEAWAY"
+---
+
+<Section id="topic-1">
+
+Groove Jones, a Dallas-based creative studio, builds AI-driven campaigns and immersive experiences for major brands where photoreal polish, creative ambition, and social-ready speed all have to land together. As their work expanded across AI Video, AR, VR, and WebGL for clients like Crocs, the NFL, and Dick’s Sporting Goods, they faced a recurring challenge: delivering feature-film-quality VFX on commercial timelines and budgets.
+
+For the Crocs x NFL collection holiday launch, that challenge came to a head. The brief called for hyper-realistic video of giant NFL-licensed Crocs parachuting into real Dick’s Sporting Goods parking lots, across multiple locations, delivered on a fast-approaching holiday deadline. A live-action shoot plus a traditional CG pipeline was off the table.
+
+</Section>
+
+<Section id="topic-2" title="The Output Groove Jones Achieved Using Comfy">
+
+- A full FOOH (faux out-of-home) social campaign delivered on a tight holiday deadline
+- Hyper-realistic videos of giant NFL-licensed Crocs parachuting onto Dick’s Sporting Goods parking lots
+- Vertical 9:16 deliverables at 2K for Instagram Reels, TikTok, and YouTube Shorts
+- Same-day iteration on client notes instead of week-long asset updates
+- Winner, Aaron Awards 2024: Best AI Workflow for Production
+
+</Section>
+
+<Section id="topic-3" title="The Problem Groove Jones Was Trying to Solve">
+
+A traditional pipeline for this creative meant a live-action shoot at multiple store locations plus a full CG build: high-res modeling of every team’s clog, look development, lighting, rendering, compositing, and a new render every time the client wanted a variation. It also meant a large crew (modelers, texture artists, lighting artists, compositors) and a schedule measured in months. Neither the budget nor the holiday window supported that path.
+
+</Section>
+
+<Section id="topic-4" title="How Groove Jones Used Comfy to Solve the Problem">
+
+Groove Jones’s Senior Creative Technologist, Doug Hogan, rebuilt the production process around Comfy’s node-based workflow system, using their proprietary GrooveTech GenVFX pipeline. Custom LoRAs handled brand accuracy, a single Comfy graph orchestrated multiple generative models, and Nuke handled final polish. For a team with feature-film and commercial roots, the environment was immediately familiar.
+
+<Quote name="Doug Hogan | Senior Creative Technologist @ Groove Jones">Comfy felt very similar to working inside a traditional CG and compositing pipeline. Node-based logic, clear data flow, modular builds. It felt natural to our artists already.</Quote>
+
+</Section>
+
+<Section id="topic-5" title="Brand-Trained LoRAs for Hero Assets">
+
+Groove Jones trained custom LoRAs on the Crocs NFL Team Clogs and on Dick’s Sporting Goods storefronts, so every generation came out anchored in brand-accurate references. Real team colorways, real product silhouettes, and real store exteriors stayed consistent across shots without per-frame correction, replacing what would normally take weeks of manual look development.
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp" alt="Grid of brand-accurate NFL team Crocs generated via custom LoRAs" caption="Brand-accurate NFL team colorways generated through custom LoRAs." />
+
+</Section>
+
+<Section id="topic-6" title="Multi-Model Orchestration in a Single Graph">
+
+The creative required different generative models at different stages: Flux for key-frame still development, Gemini Flash 2.5 (Nano Banana) for fast ideation and variants, and Veo 3.1 plus Moonvalley’s Marey for final video generation. Comfy routed between all four inside one graph, so outputs from one model fed directly into the next without ever leaving the environment.
+
+<Quote name="Dale Carman | Co-founder @ Groove Jones">The Comfy community develops at an almost exponential curve, and we were able to leverage their existing nodes and tools to solve very specific production challenges instead of reinventing the wheel ourselves.</Quote>
+
+</Section>
+
+<Section id="topic-7" title="Storyboards to Previz to Final Shot in One Pipeline">
+
+The workflow opened with traditional storyboards for narrative approval, then moved into CGI blocking to lock composition, camera framing, and story beats. Comfy drove generation from there: the shoe drop, the parking lot reactions, the crowd coverage, and the environmental conversions that turned static summer storefronts into snow-covered holiday scenes, all inside the same graph.
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp" alt="Storyboard grid for the Crocs x NFL holiday campaign" caption="Grayscale storyboards used to lock narrative beats before generation." />
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp" alt="Composition progression from blocking to mid-render to final shot" caption="Composition progression: wireframe blocking, mid-render, and final shot." />
+
+</Section>
+
+<Section id="topic-8" title="Workflow Files as Version Control">
+
+Every variant of every shot lived as a Comfy workflow file, which doubled as version control. When notes came in requesting a different team colorway, store exterior, or time of day, the team duplicated a branch instead of rebuilding, which made same-day iteration possible. GPU usage and API credit burn were trackable inside the same environment as the work itself, giving Production real-time visibility into compute cost per iteration.
+
+</Section>
+
+<Section id="topic-9" title="Finishing in Nuke">
+
+Generated shots moved into Nuke for final compositing: falling snow, camera shake, crowd ambience, holiday audio, and 2K mastering in 9:16 for Instagram Reels, TikTok, and YouTube Shorts. Because Comfy handled generation cleanly, Nuke focused on polish and motion enhancement rather than patching generative artifacts.
+
+</Section>
+
+<Section id="topic-10" title="Conclusion">
+
+By building the FOOH pipeline inside Comfy, Groove Jones turned a brief that would have required an expensive live-action shoot plus months of CG into a fast, iterative, single-environment workflow the client could direct in real time. The project recently won the Aaron Award for Best AI Workflow for Production.
+
+<Quote name="Dale Carman | Co-founder @ Groove Jones">At Groove Jones, we care deeply about delivering work that makes people say WOW! But we also care about delivering on time and on budget. VFX projects used to operate at razor thin margins. Comfy solved that for us.</Quote>
+
+</Section>

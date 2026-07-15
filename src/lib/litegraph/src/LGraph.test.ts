@@ -17,6 +17,8 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
@@ -132,7 +134,7 @@ describe('LGraph', () => {
 
     emptySubgraph.inputNode.pos = [0, 0]
     // Reroute needs offset of ~20y to align with first slot
-    const reroute = new Reroute(1, emptySubgraph, [0, 20])
+    const reroute = new Reroute(toRerouteId(1), emptySubgraph, [0, 20])
 
     node.snapToGrid(10)
     reroute.snapToGrid(10)
@@ -744,7 +746,14 @@ describe('ensureGlobalIdUniqueness', () => {
     subgraph._nodes.push(subNodeB)
     subgraph._nodes_by_id[subNodeB.id] = subNodeB
 
-    const link = new LLink(1, 'number', subNodeA.id, 0, subNodeB.id, 0)
+    const link = new LLink(
+      toLinkId(1),
+      'number',
+      subNodeA.id,
+      0,
+      subNodeB.id,
+      0
+    )
     subgraph._links.set(link.id, link)
 
     rootGraph.ensureGlobalIdUniqueness()
@@ -818,14 +827,9 @@ describe('_removeDuplicateLinks', () => {
     source: LGraphNode,
     target: LGraphNode
   ) {
-    const dup = new LLink(
-      ++graph.state.lastLinkId,
-      'number',
-      source.id,
-      0,
-      target.id,
-      0
-    )
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+    const dup = new LLink(linkId, 'number', source.id, 0, target.id, 0)
     graph._links.set(dup.id, dup)
     source.outputs[0].links!.push(dup.id)
     return dup
@@ -1001,8 +1005,10 @@ describe('Subgraph Unpacking', () => {
 
   function duplicateExistingLink(graph: LGraph, source: LGraphNode) {
     const existingLink = graph._links.values().next().value!
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
     const dup = new LLink(
-      ++graph.state.lastLinkId,
+      linkId,
       existingLink.type,
       existingLink.origin_id,
       existingLink.origin_slot,

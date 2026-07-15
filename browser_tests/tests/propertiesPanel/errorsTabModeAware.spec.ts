@@ -286,7 +286,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all errors visible and shows selection context', async ({
       comfyPage
     }) => {
       await loadWorkflowAndOpenErrorsTab(
@@ -301,14 +301,25 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
+
       await expect(
         getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
       ).toBeVisible()
+      await expectReferenceBadge(missingModelGroup, 2)
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
       await expect(
-        missingModelGroup.getByTestId(TestIds.dialogs.missingModelLocate)
-      ).toHaveCount(1)
+        strip,
+        'The strip count is scoped to the selection, diverging from the global reference badge'
+      ).toContainText('1 error')
 
       await comfyPage.canvas.click()
+      await expect(
+        strip,
+        'Deselecting swaps the always-visible strip back to the summary'
+      ).toContainText('2 nodes — 1 error')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -381,7 +392,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingMediaGroup).toBeHidden()
     })
 
-    test('Selecting a node filters errors tab to only that node', async ({
+    test('Selecting a node keeps all media rows visible and shows selection context', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_media_multiple')
@@ -403,10 +414,63 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById('10')
       await node.click('title')
-      await expect(mediaRows).toHaveCount(1)
+
+      // Selection no longer filters the list — rows stay global and the
+      // selection is surfaced via the context strip instead.
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(strip).toBeVisible()
+      await expect(strip).toContainText('1 error')
+      await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      // Deselecting swaps the always-visible strip back to the summary
+      await expect(strip).toContainText('2 nodes — 2 errors')
       await expect(mediaRows).toHaveCount(2)
+    })
+  })
+
+  test.describe('Selection emphasis', () => {
+    test('Selecting a node collapses unrelated groups and highlights its rows', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_nodes_and_media'
+      )
+
+      const missingNodeCard = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodeCard
+      )
+      const mediaRow = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+      const strip = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.selectionContextStrip
+      )
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).toBeVisible()
+      await expect(strip).toContainText('2 nodes — 2 errors')
+
+      const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
+      // The node sits near the canvas top where overlays intercept clicks
+      await mediaNode.centerOnNode()
+      await mediaNode.click('title')
+
+      // The unrelated missing-node group auto-collapses while the matched
+      // media row stays visible and is marked as part of the selection
+      await expect(missingNodeCard).toBeHidden()
+      await expect(mediaRow).toBeVisible()
+      await expect(mediaRow).toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('1 error')
+
+      await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
+      // Emphasis ends: the collapsed group re-expands and the strip
+      // returns to the workflow summary
+      await expect(missingNodeCard).toBeVisible()
+      await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
+      await expect(strip).toContainText('2 nodes — 2 errors')
     })
   })
 

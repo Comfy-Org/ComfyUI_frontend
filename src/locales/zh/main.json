@@ -359,12 +359,14 @@
     "colors": "调色板",
     "descLabel": "描述",
     "descPlaceholder": "该区域的描述",
+    "grid": "网格",
     "textLabel": "文本",
     "textPlaceholder": "要渲染的文本（原文）",
     "typeObj": "obj",
     "typeText": "text"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}模式，工作流操作",
     "app": "应用",
     "blueprint": "蓝图",
     "clearWorkflow": "清除工作流",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "请将您的回答控制在 {max} 个字符以内。",
         "chooseAnOption": "请选择一个选项。",
         "describeAnswer": "请描述您的答案。",
         "selectAtLeastOne": "请至少选择一个选项。"
       },
       "intro": "帮助我们为您定制 ComfyUI 体验。",
       "options": {
-        "familiarity": {
-          "advanced": "高级用户（自定义工作流）",
-          "basics": "熟练掌握基础知识",
-          "expert": "专家（帮助他人）",
-          "new": "ComfyUI 新手（从未使用过）",
-          "starting": "刚刚开始（正在学习教程）"
+        "experience": {
+          "new": "ComfyUI 新手",
+          "pro": "我是高级用户",
+          "some": "我已经熟悉操作"
+        },
+        "focus": {
+          "custom_nodes": "自定义节点",
+          "pipelines": "自动化流程",
+          "products": "为他人制作产品"
         },
         "intent": {
-          "3d_game": "3D 资产 / 游戏资产",
-          "api": "运行工作流的 API 端点",
-          "apps": "基于工作流的简化应用",
-          "audio": "音频 / 音乐",
-          "custom_nodes": "自定义节点",
+          "apps_api": "应用和 API",
+          "exploring": "只是探索一下",
           "images": "图像",
-          "not_sure": "不确定",
-          "videos": "视频",
+          "other": "其他",
+          "otherPlaceholder": "你想做什么？",
+          "video": "视频",
           "workflows": "自定义工作流或流程"
         },
         "source": {
-          "conference": "会议或活动",
-          "discord": "Discord / 社区",
+          "community": "社区或论坛",
           "friend": "朋友或同事",
-          "github": "GitHub",
+          "other": "其他",
+          "otherPlaceholder": "你是从哪里了解到我们的？",
+          "search": "Google / 搜索",
+          "social": "社交媒体"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "新闻通讯或博客",
-          "other": "其他",
           "reddit": "Reddit",
-          "search": "Google / 搜索",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（推特）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育（学生或教师）",
-          "personal": "个人使用",
-          "work": "工作"
         }
       },
+      "otherPlaceholder": "请告诉我们更多",
       "placeholder": "调查问题占位符",
-      "steps": {
-        "familiarity": "你对 ComfyUI 有多熟悉？",
-        "intent": "您希望用 ComfyUI 创作什么？",
-        "source": "您是从哪里了解到 ComfyUI 的？",
-        "usage": "您打算如何使用 ComfyUI？"
-      },
       "title": "云调研"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "了解云服务",
   "cloudStart_title": "几秒钟内开始创作",
   "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
-  "cloudSurvey_steps_familiarity": "你对 ComfyUI 有多熟悉？",
+  "cloudSurvey_steps_experience": "你对 ComfyUI 有多了解？",
+  "cloudSurvey_steps_focus": "你正在构建什么？",
   "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
   "cloudSurvey_steps_source": "您是从哪里了解到 ComfyUI 的？",
-  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
+  "cloudSurvey_steps_source_social": "你是在哪个平台上看到的？",
   "cloudWaitlist_contactLink": "这里",
   "cloudWaitlist_questionsText": "有问题？联系我们",
   "color": {
@@ -621,10 +619,13 @@
     "namePlaceholder": "请输入你的姓名",
     "profileCreationNav": "个人资料创建",
     "startPublishingButton": "开始发布",
+    "startUpdatingButton": "更新工作流",
     "successDescription": "你现在可以上传你的工作流到创作者主页",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "你的个人主页已上线：",
     "successTitle": "看起来不错，{'@'}{username}！",
+    "updateIntroDescription": "将您的最新更改推送到 ComfyHub。分享链接和统计数据保持不变。",
+    "updateIntroTitle": "更新您的 ComfyHub 工作流",
     "uploadCover": "+ 上传封面",
     "uploadProfilePicture": "+ 上传头像",
     "uploadWorkflowButton": "上传我的工作流",
@@ -648,6 +649,8 @@
     "publishSuccessDescription": "您的工作流已在 ComfyHub 上上线。",
     "publishSuccessTitle": "发布成功",
     "removeExampleImage": "移除示例图像",
+    "renameFailedDescription": "您的工作流已成功发布，但本地文件重命名失败。请再次重命名以保持一致。",
+    "renameFailedTitle": "重命名失败",
     "selectAThumbnail": "选择缩略图",
     "shareAs": "分享为",
     "showLessTags": "显示更少...",
@@ -665,6 +668,7 @@
     "thumbnailVideo": "视频",
     "title": "发布到 ComfyHub",
     "unsavedDescription": "在发布到 ComfyHub 之前，您必须先保存您的工作流。请先保存以继续。",
+    "updateButton": "更新工作流",
     "uploadAnImage": "点击浏览或拖拽图片",
     "uploadComparison": "上传前后对比",
     "uploadComparisonAfterPrompt": "后",
@@ -783,6 +787,8 @@
     "faqs": "常见问题",
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
+    "loadEventsError": "活动加载失败。请重试。",
+    "loadEventsUnknownError": "加载活动时出现问题。请刷新后重试。",
     "messageSupport": "联系客服",
     "model": "模型",
     "purchaseCredits": "购买积分",
@@ -949,6 +955,16 @@
       "message": "提供的对话 ID 无效。",
       "title": "无效对话框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
+    "confirmSummary": "批准桌面端登录？",
+    "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
+    "expiredSummary": "桌面端登录失败",
+    "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
+    "failedSummary": "桌面端登录失败",
+    "successDetail": "您可以返回 ComfyUI 桌面应用。",
+    "successSummary": "登录成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
@@ -1564,6 +1580,7 @@
     "extensions": "扩展",
     "failed": "失败",
     "failedToCopyJobId": "未能复制队列 ID",
+    "failedToDownloadFile": "文件下载失败",
     "failedToDownloadImage": "图片下载失败",
     "failedToDownloadVideo": "视频下载失败",
     "favorites": "收藏夹",
@@ -1808,6 +1825,7 @@
     "systemStatsRAMTotal": "总内存",
     "systemStatsTemplatesVersion": "模板版本",
     "terminal": "终端",
+    "textFailedToLoad": "文本加载失败",
     "title": "标题",
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
@@ -2061,7 +2079,10 @@
       "appBuilder": "应用构建器",
       "apps": "应用",
       "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
-      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。"
+      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。",
+      "buildAnApp": "构建应用",
+      "create": "创建",
+      "createApp": "创建应用"
     },
     "arrange": {
       "atLeastOne": "至少一个",
@@ -2074,8 +2095,6 @@
       "switchToOutputsButton": "切换到输出"
     },
     "backToWorkflow": "返回工作流",
-    "beta": "App 模式测试版 - 提供反馈",
-    "buildAnApp": "构建应用",
     "builder": {
       "exit": "退出构建器",
       "exitConfirmMessage": "您有未保存的更改将会丢失\n确定不保存直接退出吗？",
@@ -2113,6 +2132,7 @@
       "requiresGraph": "生成过程中出现问题。可能由于无效的隐藏输入、缺失资源或工作流配置问题导致。",
       "support": "联系我们的支持团队"
     },
+    "feedbackLoadError": "反馈表单加载失败，请稍后再试。",
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "hasCreditCost": "需要额外积分",
@@ -2181,6 +2201,7 @@
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {
+      "clay": "陶土",
       "depth": "深度",
       "lineart": "线稿",
       "normal": "法线",
@@ -2188,7 +2209,29 @@
       "pointCloud": "点云",
       "wireframe": "线框"
     },
+    "menuBar": {
+      "bgColor": "背景颜色",
+      "bgImage": "背景图片",
+      "deleteRecording": "删除录制视频",
+      "downloadRecording": "下载录制视频",
+      "fov": "视场角",
+      "intensity": "强度",
+      "material": "材质",
+      "originalMaterialOnly": "仅原始材质",
+      "panorama": "全景",
+      "record": "录制",
+      "recording": "正在录制",
+      "removeBackground": "移除背景",
+      "showGrid": "显示网格",
+      "skeleton": "骨骼",
+      "startNewRecording": "开始新录制",
+      "stopRecording": "停止录制",
+      "switchProjection": "切换投影",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "场景视频录制 [mp4]"
+    },
     "model": "模型",
+    "model3d": "3D模型",
     "openIn3DViewer": "在 3D 查看器中打开",
     "panoramaMode": "全景",
     "previewOutput": "预览输出",
@@ -2400,6 +2443,11 @@
       "importFailed": "安装错误",
       "pending": "待定",
       "unknown": "未知"
+    },
+    "survey": {
+      "error": "无法加载此调查问卷。请稍后再试。",
+      "intro": "自定义节点安装功能即将上线 Comfy Cloud。请回答几个简单问题，加入候补名单并参与功能优化。",
+      "title": "加入候补名单"
     },
     "title": "自定义节点管理器",
     "toFinishSetup": "以完成设置",
@@ -2769,7 +2817,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2848,6 @@
     "cosmos": "cosmos",
     "create": "创建",
     "custom": "自定义",
-    "custom_sampling": "自定义采样",
     "dancer": "舞者",
     "debug": "调试",
     "detection": "检测",
@@ -2845,6 +2891,8 @@
     "phantom subject": "幻影主体",
     "photomaker": "PhotoMaker",
     "pixart": "pixart",
+    "post-processors": "后处理器",
+    "pre-processors": "预处理器",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
@@ -2865,8 +2913,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3D",
     "stable zero123": "stable zero123",
-    "stable_cascade": "StableCascade",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "文本",
     "training": "训练",
     "transform": "变换",
@@ -3102,8 +3150,11 @@
     "errorHelpGithub": "提交 GitHub 问题",
     "errorHelpSupport": "联系我们的支持团队",
     "errorLog": "错误日志",
+    "errorNodeSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
+    "errorNodesSummary": "{nodes} 个节点 — {count} 个错误 | {nodes} 个节点 — {count} 个错误",
     "errors": "错误",
     "errorsDetected": "检测到错误",
+    "errorsSummary": "{count} 个错误 | {count} 个错误",
     "executionErrorOccurred": "执行过程中发生错误。请查看“错误”标签获取详情。",
     "expand": "展开",
     "fallbackGroupTitle": "分组",
@@ -3193,6 +3244,8 @@
     "resetToDefault": "重置为默认值",
     "resolveBeforeRun": "请在运行工作流前解决",
     "seeError": "查看错误",
+    "selectedNodeErrors": "{node} — {count} 个错误 | {node} — {count} 个错误",
+    "selectedNodesErrors": "{nodes} 个节点已选 — {count} 个错误 | {nodes} 个节点已选 — {count} 个错误",
     "settings": "设置",
     "showAdvancedInputsButton": "显示高级输入",
     "showAdvancedShort": "显示高级选项",
@@ -3212,24 +3265,35 @@
     "errors": {
       "duplicateName": "已存在同名机密",
       "duplicateProvider": "该提供商的机密已存在",
+      "fileReadFailed": "无法读取所选文件",
+      "fileTooLarge": "文件过大。请上传小于1 MB的JSON凭证",
+      "invalidJson": "文件必须包含有效的JSON对象",
       "nameRequired": "名称为必填项",
       "nameTooLong": "名称长度不能超过 255 个字符",
       "providerRequired": "提供商为必填项",
       "secretValueRequired": "机密值为必填项"
     },
+    "jsonFileHint": "粘贴JSON或上传文件。它将被加密，无法再次查看。",
+    "jsonFileHintEdit": "留空以保留当前值，或上传新JSON文件进行替换。",
+    "jsonFilePlaceholder": "上传或粘贴提供者的JSON凭证",
     "lastUsed": "上次使用 {date}",
     "modelProviders": "模型提供商",
     "name": "名称",
     "namePlaceholder": "例如：我的 API 密钥",
     "noSecrets": "尚未存储任何机密。添加您的第一个 API 密钥以开始使用。",
     "provider": "提供商",
+    "providerHelp": {
+      "gemini": "请输入您的 Google Gemini API 密钥。您可以在 Google AI Studio 生成。",
+      "runway": "请输入您的 Runway API 密钥。您可以在 Runway 账户设置的 API 密钥中找到。"
+    },
     "providerHint": "可选。选择提供商可自动使用令牌。",
     "secretValue": "机密值",
     "secretValueHint": "该值将被加密，之后无法再次查看。",
     "secretValueHintEdit": "如需保留当前值，请留空。",
     "secretValuePlaceholder": "请输入您的 API 密钥",
     "secretValuePlaceholderEdit": "输入新值以更改",
-    "title": "API 密钥与机密"
+    "title": "API 密钥与机密",
+    "uploadJsonFile": "上传JSON文件"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "绕过分组节点",
@@ -4118,6 +4182,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
+      "relevance": "相关性",
       "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
