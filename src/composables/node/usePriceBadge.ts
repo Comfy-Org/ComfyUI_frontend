@@ -157,21 +157,23 @@ export const usePriceBadge = () => {
     updateSubgraphCredits
   }
 }
+const nodeTrigger = ref(0)
+export function registerCreditBadgeTracking(graph: LGraph) {
+  graph.onNodeAdded = useChainCallback(
+    graph.onNodeAdded,
+    () => nodeTrigger.value++
+  )
+  graph.onNodeRemoved = useChainCallback(
+    graph.onNodeRemoved,
+    () => nodeTrigger.value++
+  )
+  nodeTrigger.value++
+}
 export const useCreditsBadgesInGraph = createSharedComposable(() => {
   const { isCreditsBadge } = usePriceBadge()
-  const nodeTrigger = ref(0)
-  if (app.graph) {
-    app.graph.onNodeAdded = useChainCallback(
-      app.graph.onNodeAdded,
-      () => nodeTrigger.value++
-    )
-    app.graph.onNodeRemoved = useChainCallback(
-      app.graph.onNodeRemoved,
-      () => nodeTrigger.value++
-    )
-  }
   return computed(() => {
     void nodeTrigger.value
+    if (!app.graph) return []
     return mapAllNodes(app.graph, (node) => {
       if (node.isSubgraphNode()) return
 
