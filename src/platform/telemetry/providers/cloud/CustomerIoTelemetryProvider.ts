@@ -1,4 +1,5 @@
 import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
+import { omit } from 'es-toolkit'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -19,6 +20,12 @@ export const EVENT_SOURCE = 'web-sdk'
 interface QueuedEvent {
   event: string
   properties: Record<string, unknown>
+  identity?: CustomerIoIdentity
+}
+
+interface CustomerIoIdentity {
+  userId: string
+  email?: string
 }
 
 /**
@@ -32,6 +39,8 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private analytics: AnalyticsBrowser | null = null
   private isEnabled = true
   private eventQueue: QueuedEvent[] = []
+  private identifiedUser: CustomerIoIdentity | null = null
+  private identifyPromise: Promise<void> = Promise.resolve()
 
   constructor() {
     const {
@@ -61,11 +70,19 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
         const currentUser = useCurrentUser()
         if (userIdOverride) {
-          void analytics.identify(userIdOverride)
-        } else {
-          currentUser.onUserResolved((user) => void analytics.identify(user.id))
+          void this.identify({ userId: userIdOverride })
         }
-        currentUser.onUserLogout(() => void analytics.reset())
+        currentUser.onUserResolved((user) => {
+          void this.identify({
+            userId: userIdOverride || user.id,
+            email: currentUser.userEmail.value || undefined
+          })
+        })
+        currentUser.onUserLogout(() => {
+          this.identifiedUser = null
+          this.identifyPromise = Promise.resolve()
+          void analytics.reset()
+        })
 
         this.flushQueue()
       })
@@ -76,32 +93,79 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       })
   }
 
-  private send(event: string, properties: Record<string, unknown>): void {
-    void this.analytics?.track(event, properties)?.catch((error) => {
+  private identify(identity: CustomerIoIdentity): Promise<void> {
+    const analytics = this.analytics
+    if (!analytics) return Promise.resolve()
+
+    if (
+      this.identifiedUser?.userId === identity.userId &&
+      this.identifiedUser.email === identity.email
+    ) {
+      return this.identifyPromise
+    }
+
+    this.identifiedUser = identity
+    this.identifyPromise = analytics
+      .identify(
+        identity.userId,
+        identity.email ? { email: identity.email } : undefined
+      )
+      .then(() => undefined)
+      .catch((error) => {
+        if (this.identifiedUser === identity) this.identifiedUser = null
+        console.error('Failed to identify Customer.io user:', error)
+      })
+    return this.identifyPromise
+  }
+
+  private async send(
+    event: string,
+    properties: Record<string, unknown>,
+    identity?: CustomerIoIdentity
+  ): Promise<void> {
+    const analytics = this.analytics
+    if (!analytics) return
+
+    if (identity) await this.identify(identity)
+
+    await analytics.track(event, properties).catch((error) => {
       console.error('Failed to track Customer.io event:', error)
     })
   }
 
-  private track(event: string, metadata?: TelemetryEventProperties): void {
+  private track(
+    event: string,
+    metadata?: TelemetryEventProperties,
+    identity?: CustomerIoIdentity
+  ): void {
     if (!this.isEnabled) return
     const properties = { ...metadata, event_source: EVENT_SOURCE }
     if (this.analytics) {
-      this.send(event, properties)
+      void this.send(event, properties, identity)
     } else {
-      this.eventQueue.push({ event, properties })
+      this.eventQueue.push({ event, properties, identity })
     }
   }
 
   private flushQueue(): void {
     if (!this.analytics) return
-    for (const { event, properties } of this.eventQueue) {
-      this.send(event, properties)
+    for (const { event, properties, identity } of this.eventQueue) {
+      void this.send(event, properties, identity)
     }
     this.eventQueue = []
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.track(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    this.track(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      omit(metadata, ['email', 'share_id']),
+      metadata.user_id
+        ? {
+            userId: metadata.user_id,
+            email: metadata.email || undefined
+          }
+        : undefined
+    )
   }
 
   trackSubscription(
@@ -137,6 +201,6 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
-    this.track(TelemetryEvents.SHARE_FLOW, metadata)
+    this.track(TelemetryEvents.SHARE_FLOW, omit(metadata, ['share_id']))
   }
 }
