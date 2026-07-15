@@ -782,6 +782,14 @@ describe('recordNodeErrors', () => {
 
     expect(store.lastNodeErrors).toBeNull()
   })
+
+  it('keeps a null error record as null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors(null)
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
 })
 
 describe('read-only error state', () => {
