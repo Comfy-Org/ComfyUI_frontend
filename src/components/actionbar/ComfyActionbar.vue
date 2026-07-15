@@ -11,6 +11,7 @@
 
     <Panel
       ref="panelRef"
+      data-testid="comfy-actionbar"
       class="pointer-events-auto"
       :style="style"
       :class="panelClass"

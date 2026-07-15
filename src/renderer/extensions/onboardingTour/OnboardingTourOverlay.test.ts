@@ -7,8 +7,11 @@ import { createI18n } from 'vue-i18n'
 
 import { toNodeId } from '@/types/nodeId'
 
+import type * as adapterModule from './canvasSpotlightAdapter'
 import type { ScreenRect } from './canvasSpotlightAdapter'
 import type { TourStep } from './tourSequence'
+
+type AdapterModule = typeof adapterModule
 
 const mocks = vi.hoisted(() => ({
   maskRects: [] as ScreenRect[],
@@ -17,6 +20,10 @@ const mocks = vi.hoisted(() => ({
   // by which ids they carry — not by how many. Falls back to `maskRects`.
   rectsById: null as Record<string, ScreenRect> | null,
   focusNodes: vi.fn(),
+  // A camera already at rest: these assert what a step renders, not the settle
+  // machine (covered against the real `trackSettle` in the adapter's own tests).
+  transformKey: 'settled' as string | null,
+  viewport: { left: 0, top: 0, width: 1440, height: 900 } as ScreenRect,
   controller: {
     end: vi.fn(),
     back: vi.fn(),
@@ -24,9 +31,12 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('./canvasSpotlightAdapter', () => ({
-  RUN_BUTTON_SELECTOR:
-    '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]',
+// Only the litegraph-backed reads are stubbed; the pure geometry helpers stay real,
+// so a test that pans a target off screen exercises the same code prod does.
+vi.mock('./canvasSpotlightAdapter', async (importOriginal) => ({
+  ...(await importOriginal<AdapterModule>()),
+  // Zero so a step's copy is gated only on the camera settling, never on a wait.
+  TOUR_FOCUS_DURATION_MS: 0,
   // Return a fresh array (like prod) so a caller pushing to it can't grow the mock.
   maskRectsFor: (ids: unknown[]) =>
     mocks.rectsById === null
@@ -35,7 +45,9 @@ vi.mock('./canvasSpotlightAdapter', () => ({
           .map((id) => mocks.rectsById?.[String(id)])
           .filter((r): r is ScreenRect => r !== undefined),
   focusNodes: mocks.focusNodes,
-  coachMarkPosition: () => ({ left: 0, top: 0, pointerEdge: 'top' })
+  canvasViewport: () => mocks.viewport,
+  canvasTransformKey: () => mocks.transformKey,
+  canvasElement: () => null
 }))
 
 vi.mock('./useOnboardingTourController', () => ({
@@ -96,6 +108,8 @@ describe('OnboardingTourOverlay', () => {
     store = useOnboardingTourStore()
     mocks.maskRects = []
     mocks.rectsById = null
+    mocks.transformKey = 'settled'
+    mocks.viewport = { left: 0, top: 0, width: 1440, height: 900 }
     mocks.focusNodes.mockClear()
   })
 
@@ -219,7 +233,7 @@ describe('OnboardingTourOverlay', () => {
     expect(mocks.controller.advance).toHaveBeenCalledOnce()
   })
 
-  it('shows Done and finishes the tour on the last step', async () => {
+  it('shows Complete and finishes the tour on the last step', async () => {
     store.phase = 'active'
     store.steps = [runStep, videoResultStep]
     store.stepIndex = 1
@@ -227,7 +241,7 @@ describe('OnboardingTourOverlay', () => {
 
     renderOverlay()
 
-    await user.click(await screen.findByRole('button', { name: 'Done' }))
+    await user.click(await screen.findByRole('button', { name: 'Complete' }))
     expect(mocks.controller.end).toHaveBeenCalledWith('done')
   })
 
@@ -283,22 +297,22 @@ describe('OnboardingTourOverlay', () => {
 
     renderOverlay()
 
-    await screen.findByText('Press Run and your result starts generating.')
+    await screen.findByText('Press Run to start generating your result')
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Complete' })).toBeNull()
     // Skip and Back remain so the user is never trapped.
     expect(screen.getByRole('button', { name: 'Skip' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Back' })).toBeVisible()
   })
 
-  it('also spotlights the run progress bar on the Result step while generating', async () => {
-    // The inline progress bar renders below the Run toolbar during generation;
-    // the Result step lights it too so progress shows where it happens.
-    const progress = document.createElement('div')
-    progress.setAttribute('data-testid', 'queue-progress-overlay')
-    progress.getBoundingClientRect = () =>
+  it('lights the action bar on the Result step without ringing it', async () => {
+    // The run lives in the toolbar, so the Result step keeps it out of the scrim —
+    // but unringed, so the eye stays on the sink node the coach-mark points at.
+    const actionbar = document.createElement('div')
+    actionbar.setAttribute('data-testid', 'comfy-actionbar')
+    actionbar.getBoundingClientRect = () =>
       ({ left: 5, top: 5, width: 80, height: 8 }) as DOMRect
-    document.body.append(progress)
+    document.body.append(actionbar)
     mocks.maskRects = [rect(0)] // the sink node
 
     store.phase = 'active'
@@ -308,12 +322,14 @@ describe('OnboardingTourOverlay', () => {
     try {
       renderOverlay()
 
-      // Sink node ring + the progress-bar ring = two spotlights.
+      // Two holes cut (sink node + action bar)...
       await vi.waitFor(() => {
-        expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(2)
+        expect(screen.getAllByTestId('onboarding-hole')).toHaveLength(2)
       })
+      // ...but only the sink node is ringed.
+      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
     } finally {
-      progress.remove()
+      actionbar.remove()
     }
   })
 
@@ -330,11 +346,12 @@ describe('OnboardingTourOverlay', () => {
     })
   })
 
-  it('keeps the result copy and shows a generating indicator until media lands', async () => {
+  it('keeps the result copy and shows a generating indicator while the run is live', async () => {
     store.phase = 'active'
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
     store.resultMedia = null
+    store.runFinished = false
 
     renderOverlay()
 
@@ -344,6 +361,133 @@ describe('OnboardingTourOverlay', () => {
       )
     ).toBeInTheDocument()
     expect(await screen.findByText('Generating…')).toBeInTheDocument()
+  })
+
+  it('stops generating once the run reports, even if no media was captured', async () => {
+    // The capture polls the sink and gives up silently on timeout. Hanging the
+    // spinner off the media left it running forever when no URL ever landed.
+    store.phase = 'active'
+    store.steps = [runStep, imageResultStep]
+    store.stepIndex = 1
+    store.resultMedia = null
+    store.runFinished = true
+
+    renderOverlay()
+
+    await screen.findByText(
+      'Your new image lands right here — ready to download or share.'
+    )
+    expect(screen.queryByText('Generating…')).toBeNull()
+  })
+
+  it('stops generating once the media lands', async () => {
+    store.phase = 'active'
+    store.steps = [runStep, imageResultStep]
+    store.stepIndex = 1
+    store.resultMedia = { url: 'blob:result', kind: 'image' }
+    store.runFinished = true
+
+    renderOverlay()
+
+    await screen.findByText(
+      'Your new image lands right here — ready to download or share.'
+    )
+    expect(screen.queryByText('Generating…')).toBeNull()
+  })
+
+  it('hides Skip and Back on the Result step so Complete is the only exit', async () => {
+    store.phase = 'active'
+    store.steps = [promptStep, runStep, imageResultStep]
+    store.stepIndex = 2
+
+    renderOverlay()
+
+    expect(
+      await screen.findByRole('button', { name: 'Complete' })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+  })
+
+  it('hides the ring and holds the coach-mark when the target is panned off screen', async () => {
+    // The user can pan the spotlit node out of view mid-step. The ring must not be
+    // drawn off screen, and the mark must hold rather than chase a target that
+    // isn't there.
+    mocks.maskRects = [rect(0)]
+    store.phase = 'active'
+    store.steps = [promptStep, runStep]
+    store.stepIndex = 0
+
+    renderOverlay()
+    await vi.waitFor(() => {
+      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
+    })
+
+    mocks.maskRects = [{ left: -900, top: -900, width: 100, height: 50 }]
+
+    await vi.waitFor(() => {
+      expect(screen.queryByTestId('onboarding-spotlight')).toBeNull()
+    })
+    expect(screen.queryByTestId('onboarding-cursor')).toBeNull()
+  })
+
+  it('keeps the coach-mark on screen when the target fills the viewport', async () => {
+    // A zoomed-in node can be larger than the canvas region; the mark must still be
+    // fully placed inside it rather than spilling off an edge.
+    mocks.viewport = { left: 0, top: 40, width: 800, height: 600 }
+    mocks.maskRects = [{ left: 0, top: 40, width: 800, height: 600 }]
+    store.phase = 'active'
+    store.steps = [promptStep, runStep]
+    store.stepIndex = 0
+
+    renderOverlay()
+
+    const mark = await screen.findByTestId('onboarding-coach-mark')
+    await vi.waitFor(() => {
+      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
+    })
+    const top = Number.parseFloat(mark.style.top)
+    const left = Number.parseFloat(mark.style.left)
+
+    expect(top).toBeGreaterThanOrEqual(mocks.viewport.top)
+    expect(left).toBeGreaterThanOrEqual(mocks.viewport.left)
+  })
+
+  it('zooms in once, then pans without re-zooming on later steps', async () => {
+    // Reserving room on the first framing sizes the node so the mark fits beside
+    // it; later steps pass none, which pans at the scale already reached.
+    mocks.maskRects = [rect(0)]
+    store.phase = 'active'
+    store.steps = [promptStep, runStep, imageResultStep]
+    store.stepIndex = 0
+
+    renderOverlay()
+
+    await vi.waitFor(() => expect(mocks.focusNodes).toHaveBeenCalled())
+    expect(mocks.focusNodes.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ width: expect.any(Number) })
+    )
+
+    mocks.focusNodes.mockClear()
+    store.stepIndex = 2
+
+    await vi.waitFor(() => expect(mocks.focusNodes).toHaveBeenCalled())
+    expect(mocks.focusNodes.mock.calls[0][1]).toBeUndefined()
+  })
+
+  it('does not move the camera on the Run step, which points at the toolbar', async () => {
+    store.phase = 'active'
+    store.steps = [promptStep, runStep]
+    store.stepIndex = 0
+
+    renderOverlay()
+    await vi.waitFor(() => expect(mocks.focusNodes).toHaveBeenCalled())
+
+    mocks.focusNodes.mockClear()
+    store.stepIndex = 1
+    await screen.findByText('Press Run to start generating your result')
+
+    expect(mocks.focusNodes).not.toHaveBeenCalled()
   })
 
   it('spotlights the toolbar Run button on the Run step', async () => {
