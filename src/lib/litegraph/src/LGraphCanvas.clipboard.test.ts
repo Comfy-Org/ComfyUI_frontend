@@ -34,6 +34,8 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 function createSerialisedNode(
   id: number,
   type: string,

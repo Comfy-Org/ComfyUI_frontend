@@ -1,9 +1,13 @@
-import { describe } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {

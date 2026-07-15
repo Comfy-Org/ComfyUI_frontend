@@ -114,16 +114,17 @@ narrow accessor surface. There is no single container that fronts all entities.
 
 Shipped stores:
 
-| Store                      | File                                            |
-| -------------------------- | ----------------------------------------------- |
-| `widgetValueStore`         | `src/stores/widgetValueStore.ts`                |
-| `domWidgetStore`           | `src/stores/domWidgetStore.ts`                  |
-| `layoutStore`              | `src/renderer/core/layout/store/layoutStore.ts` |
-| `nodeOutputStore`          | `src/stores/nodeOutputStore.ts`                 |
-| `subgraphNavigationStore`  | `src/stores/subgraphNavigationStore.ts`         |
-| `previewExposureStore`     | `src/stores/previewExposureStore.ts`            |
-| `linkStore` ✅ PR 13436    | `src/stores/linkStore.ts`                       |
-| `rerouteStore` ✅ PR 13449 | `src/stores/rerouteStore.ts`                    |
+| Store                        | File                                            |
+| ---------------------------- | ----------------------------------------------- |
+| `widgetValueStore`           | `src/stores/widgetValueStore.ts`                |
+| `domWidgetStore`             | `src/stores/domWidgetStore.ts`                  |
+| `layoutStore`                | `src/renderer/core/layout/store/layoutStore.ts` |
+| `nodeOutputStore`            | `src/stores/nodeOutputStore.ts`                 |
+| `subgraphNavigationStore`    | `src/stores/subgraphNavigationStore.ts`         |
+| `previewExposureStore`       | `src/stores/previewExposureStore.ts`            |
+| `linkStore` ✅ PR 13436      | `src/stores/linkStore.ts`                       |
+| `rerouteStore` ✅ PR 13449   | `src/stores/rerouteStore.ts`                    |
+| `nodeBadgeStore` ✅ PR 13458 | `src/stores/nodeBadgeStore.ts`                  |
 
 `linkStore` holds `LinkTopology` records (`src/types/linkTopology.ts`) keyed by
 target input slot (`` `${targetNodeId}:${targetSlot}` ``) in root-graph-scoped
@@ -631,6 +632,7 @@ The dedicated stores use per-concern keying strategies:
 | `subgraphNavigationStore` | subgraphId or `'root'`                                                               |
 | `linkStore`               | `` `${targetNodeId}:${targetSlot}` `` (target input slot), root-graph-scoped buckets |
 | `rerouteStore`            | `RerouteId`, root-graph-scoped buckets                                               |
+| `nodeBadgeStore`          | `NodeId`, root-graph-scoped buckets                                                  |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use
 host boundary identity (`host node locator + SubgraphInput.name`), not interior

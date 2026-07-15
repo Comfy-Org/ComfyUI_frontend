@@ -37,6 +37,15 @@ writes are tracked without an action chokepoint. The `layoutStore` link
 connectivity mirror and the `slot._floatingLinks` sets were deleted in
 the same work; the layout store now holds geometry only.
 
+### Amendment (2026-07-14, PR 13458)
+
+`nodeBadgeStore` joined the dedicated-store set: plain `BadgeData` rows
+keyed by `NodeId` in root-graph-scoped buckets. Unlike the
+proxy-adoption stores above, rows are written by a reactive badge
+system (`src/systems/badgeSystem.ts`) — a pure `computeBadges` inside a
+per-node effect scope — see
+[Node Badge Store](../architecture/node-badge-store.md).
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.

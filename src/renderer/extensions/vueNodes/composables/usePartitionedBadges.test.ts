@@ -5,18 +5,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { computed, ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { usePriceBadge } from '@/composables/node/usePriceBadge'
+import type { LGraph, LGraphBadge } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import {
+  trackNodePrice,
+  usePartitionedBadges
+} from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 const GRAPH_ID = 'graph-test'
 
 vi.mock('@/scripts/app', () => ({ app: {} }))
+
+const settings = vi.hoisted(() => new Map<string, unknown>())
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({ get: (key: string) => settings.get(key) })
+}))
 
 vi.mock('@/composables/node/useNodePricing', () => {
   const revision = ref(0)
@@ -110,5 +123,75 @@ describe('trackNodePrice', () => {
     connect(1, 3)
     read()
     expect(runs()).toBe(1)
+  })
+})
+
+describe('usePartitionedBadges', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    settings.clear()
+    settings.set('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.ShowAll)
+    settings.set(
+      'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.None)
+  })
+
+  function addNodeDef(name: string, python_module: string) {
+    useNodeDefStore().addNodeDef(
+      fromPartial<ComfyNodeDef>({
+        name,
+        display_name: name,
+        category: 'test',
+        python_module,
+        input: {},
+        output: []
+      })
+    )
+  }
+
+  function makeNodeData(
+    type: string,
+    badges: Partial<LGraphBadge>[]
+  ): VueNodeData {
+    return fromPartial<VueNodeData>({ id: '5', type, badges })
+  }
+
+  it('partitions badges into core, pricing, and extension rows', () => {
+    addNodeDef('CustomNode', 'custom_nodes.testpack')
+    const credits = usePriceBadge().getCreditsBadge('$0.05 x 3 Runs')
+
+    const partitioned = usePartitionedBadges(
+      makeNodeData('CustomNode', [
+        { text: 'legacy-core-slot' },
+        credits,
+        { text: 'EXT' },
+        { text: '' }
+      ])
+    )
+
+    expect(partitioned.value).toEqual({
+      hasComfyBadge: false,
+      core: [{ text: '#5' }],
+      extension: [expect.objectContaining({ text: 'EXT' })],
+      pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
+    })
+  })
+
+  it('shows the Comfy badge only for core nodes without pricing', () => {
+    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.ShowAll)
+    addNodeDef('CoreNode', 'nodes')
+
+    const withoutPricing = usePartitionedBadges(
+      makeNodeData('CoreNode', [{ text: 'legacy-core-slot' }])
+    )
+    expect(withoutPricing.value.hasComfyBadge).toBe(true)
+
+    const credits = usePriceBadge().getCreditsBadge('$0.10')
+    const withPricing = usePartitionedBadges(
+      makeNodeData('CoreNode', [{ text: 'legacy-core-slot' }, credits])
+    )
+    expect(withPricing.value.hasComfyBadge).toBe(false)
   })
 })
