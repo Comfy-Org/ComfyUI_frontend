@@ -1,4 +1,7 @@
-import type { OnboardingTourStepKey } from '@/platform/telemetry/types'
+import type {
+  OnboardingTourShape,
+  OnboardingTourStepKey
+} from '@/platform/telemetry/types'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -44,15 +47,27 @@ export interface ResolvedRoles {
 type TourStepKind = OnboardingTourStepKey
 
 /**
+ * What the workflow does, derived from the roles that resolved. Drives both the
+ * step copy (the prompt means something different in each) and telemetry tags.
+ */
+export function shapeOf(roles: ResolvedRoles): OnboardingTourShape {
+  if (!roles.prompt || !roles.sink) return 'other'
+  if (!roles.source) return 't2i'
+  return roles.mediaKind === 'video' ? 'i2v' : 'image-edit'
+}
+
+/**
  * One step in a built tour. `nodeId` is the spotlight target (null for Run,
  * which points at the toolbar button, not a node); `prompt` carries the
- * subgraph-aware focus path; `mediaKind` shapes the Result renderer.
+ * subgraph-aware focus path; `mediaKind` shapes the Result renderer; `shape`
+ * picks the Upload/Prompt copy.
  */
 export interface TourStep {
   kind: TourStepKind
   nodeId: NodeId | null
   prompt?: PromptRole
   mediaKind?: MediaKind
+  shape?: OnboardingTourShape
 }
 
 /**
@@ -62,12 +77,13 @@ export interface TourStep {
  */
 export function sequenceBuilder(roles: ResolvedRoles): TourStep[] {
   const steps: TourStep[] = []
+  const shape = shapeOf(roles)
 
   if (roles.source) {
-    steps.push({ kind: 'upload', nodeId: roles.source.nodeId })
+    steps.push({ kind: 'upload', nodeId: roles.source.nodeId, shape })
   }
   if (roles.prompt) {
-    steps.push({ kind: 'prompt', nodeId: null, prompt: roles.prompt })
+    steps.push({ kind: 'prompt', nodeId: null, prompt: roles.prompt, shape })
   }
   steps.push({ kind: 'run', nodeId: null })
   if (roles.sink) {

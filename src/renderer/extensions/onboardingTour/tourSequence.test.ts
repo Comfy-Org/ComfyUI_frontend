@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ResolvedRoles } from './tourSequence'
-import { sequenceBuilder } from './tourSequence'
+import { sequenceBuilder, shapeOf } from './tourSequence'
 
 function nodeRole(id: number) {
   return { nodeId: toNodeId(id) }
@@ -88,5 +88,33 @@ describe('sequenceBuilder', () => {
 
     expect(run).toBeDefined()
     expect(run?.nodeId).toBeNull()
+  })
+
+  it('tags the Prompt and Upload steps with the shape that picks their copy', () => {
+    const steps = sequenceBuilder(i2vRoles)
+
+    expect(steps.find((s) => s.kind === 'upload')?.shape).toBe('i2v')
+    expect(steps.find((s) => s.kind === 'prompt')?.shape).toBe('i2v')
+  })
+})
+
+describe('shapeOf', () => {
+  it('is t2i when nothing feeds the prompt', () => {
+    expect(shapeOf(t2iRoles)).toBe('t2i')
+  })
+
+  it('is i2v when a source image drives video', () => {
+    expect(shapeOf(i2vRoles)).toBe('i2v')
+  })
+
+  it('is image-edit when a source image drives an image', () => {
+    // The prompt edits the picture rather than describing a new one, so this
+    // must not collapse into t2i: the copy would tell the wrong story.
+    expect(shapeOf({ ...i2vRoles, mediaKind: 'image' })).toBe('image-edit')
+  })
+
+  it('is other when the tour cannot tell what the workflow does', () => {
+    expect(shapeOf({ ...t2iRoles, sink: null })).toBe('other')
+    expect(shapeOf({ ...t2iRoles, prompt: null })).toBe('other')
   })
 })

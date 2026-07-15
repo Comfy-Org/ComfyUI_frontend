@@ -2323,20 +2323,48 @@
     "skip": "Skip",
     "back": "Back",
     "next": "Next",
-    "done": "Done",
+    "complete": "Complete",
     "stepCounter": "{current} of {total}",
     "step": {
       "upload": {
-        "title": "Start with an image",
-        "body": "This is your raw material. We loaded one to get you going — you can swap it anytime."
+        "t2i": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        },
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
       },
       "prompt": {
-        "title": "Tell it what to make",
-        "body": "This prompt reshapes the image: same style, new subject. This line is yours to change."
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
       },
       "run": {
-        "title": "Now run it and watch it come to life",
-        "body": "Press Run and your result starts generating."
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result"
       },
       "result": {
         "image": {
@@ -2351,9 +2379,9 @@
     },
     "generating": "Generating…",
     "gettingStarted": {
-      "title": "Get started with Graph",
+      "title": "Get started with graph",
       "subtitle": "Start a workflow from scratch or load one that's ready to go.",
-      "screenLabel": "Get started with Graph",
+      "screenLabel": "Get started with graph",
       "tabsLabel": "Getting started options",
       "tabs": {
         "templates": "Templates",
