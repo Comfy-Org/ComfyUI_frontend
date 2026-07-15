@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
+import { createUuidv4 } from '@/utils/uuid'
 
 import {
   createTestSubgraphData,
@@ -30,6 +31,7 @@ describe('LGraph node badge registration', () => {
 
   it('clears the root bucket when the root graph is cleared', () => {
     const graph = new LGraph()
+    graph.id = createUuidv4()
     graph.add(new LGraphNode('a'))
     graph.add(new LGraphNode('b'))
     const graphId = graph.rootGraph.id
