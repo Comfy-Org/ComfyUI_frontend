@@ -8,23 +8,21 @@ import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 
 import SectionHeader from '../common/SectionHeader.vue'
 
-type CardAction =
-  | {
-      type: 'link'
-      label: string
-      href: string
-      target?: '_blank'
-      icon?: Component
-      variant?: 'default' | 'outline'
-    }
-  | { type: 'code'; value: string }
+type CardLink = {
+  label: string
+  href: string
+  target?: '_blank'
+  icon?: Component
+  variant?: 'default' | 'outline'
+}
 
 export interface FeatureCard {
   id: string
   label?: string
   title: string
   description: string
-  action?: CardAction
+  copyable?: string
+  link?: CardLink
 }
 
 type ColumnCount = 2 | 3 | 4
@@ -91,28 +89,30 @@ const columnClass: Record<ColumnCount, string> = {
           {{ card.description }}
         </p>
 
-        <div v-if="card.action" class="mt-6">
-          <Button
-            v-if="card.action.type === 'link'"
-            as="a"
-            :href="card.action.href"
-            :target="card.action.target"
-            :rel="
-              card.action.target === '_blank'
-                ? 'noopener noreferrer'
-                : undefined
-            "
-            :variant="card.action.variant ?? 'outline'"
-            :append-icon="card.action.icon"
-          >
-            {{ card.action.label }}
-          </Button>
+        <div
+          v-if="card.copyable || card.link"
+          class="mt-6 flex flex-col items-start gap-4"
+        >
           <CopyableField
-            v-else
-            :value="card.action.value"
+            v-if="card.copyable"
+            class="w-full"
+            :value="card.copyable"
             :copy-label="copyLabel"
             :copied-label="copiedLabel"
           />
+          <Button
+            v-if="card.link"
+            as="a"
+            :href="card.link.href"
+            :target="card.link.target"
+            :rel="
+              card.link.target === '_blank' ? 'noopener noreferrer' : undefined
+            "
+            :variant="card.link.variant ?? 'outline'"
+            :append-icon="card.link.icon"
+          >
+            {{ card.link.label }}
+          </Button>
         </div>
       </div>
     </div>
