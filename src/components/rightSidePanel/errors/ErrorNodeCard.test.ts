@@ -6,8 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -100,7 +102,7 @@ describe('ErrorNodeCard.vue', () => {
     const user = userEvent.setup()
     const onCopyToClipboard = vi.fn()
     const onLocateNode = vi.fn()
-    render(ErrorNodeCard, {
+    const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
         plugins: [
@@ -142,7 +144,7 @@ describe('ErrorNodeCard.vue', () => {
         }
       }
     })
-    return { user, onCopyToClipboard, onLocateNode }
+    return { container, user, onCopyToClipboard, onLocateNode }
   }
 
   async function toggleRuntimeDetails(
@@ -180,6 +182,32 @@ describe('ErrorNodeCard.vue', () => {
           details: 'Error details',
           displayMessage:
             'The workflow does not contain any output nodes to produce a result.'
+        }
+      ]
+    }
+  }
+
+  function makeValidationErrorCard(nodeDisplayName: string): ErrorCardData {
+    const error = validationError(
+      'required_input_missing',
+      'model',
+      {},
+      'Required input is missing',
+      'model'
+    )
+
+    return {
+      id: `validation-${++cardIdCounter}`,
+      title: 'Validation error',
+      errors: [
+        {
+          message: error.message,
+          details: error.details,
+          ...resolveRunErrorMessage({
+            kind: 'node_validation',
+            error,
+            nodeDisplayName
+          })
         }
       ]
     }
@@ -278,6 +306,21 @@ describe('ErrorNodeCard.vue', () => {
     expect(
       screen.queryByText('KSampler is missing a required input: model')
     ).not.toBeInTheDocument()
+  })
+
+  it('renders catalog copy with literal special characters', () => {
+    const { container } = renderCard(makeValidationErrorCard('Foo & Bar <C>'))
+
+    expect(container.textContent).toContain('Foo & Bar <C>')
+    expect(container.textContent).not.toMatch(/&(?:amp|lt|gt);/)
+  })
+
+  it('renders script-like node names as text without creating elements', () => {
+    const { container } = renderCard(
+      makeValidationErrorCard('<script>x</script>')
+    )
+
+    expect(container.textContent).toContain('<script>x</script>')
   })
 
   it('copies enriched report when copy button is clicked for runtime error', async () => {
