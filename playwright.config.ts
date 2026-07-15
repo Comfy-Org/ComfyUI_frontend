@@ -16,6 +16,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
     }
   : {
       retries: process.env.CI ? 3 : 0,
+      workers: process.env.CI ? 2 : undefined,
       use: {
         trace: 'on-first-retry'
       }
