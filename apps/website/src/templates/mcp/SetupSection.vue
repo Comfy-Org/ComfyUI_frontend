@@ -15,41 +15,48 @@ const cards: FeatureCard[] = [
     label: t('mcp.setup.step1.label', locale),
     title: t('mcp.setup.step1.title', locale),
     description: t('mcp.setup.step1.description', locale),
-    action: {
-      type: 'code',
-      value: t('mcp.setup.step1.command', locale).replace(
-        '{url}',
-        externalLinks.docsMcp
-      )
-    }
+    actions: [
+      {
+        type: 'code',
+        value: t('mcp.setup.step1.command', locale).replace(
+          '{url}',
+          externalLinks.docsMcp
+        )
+      }
+    ]
   },
   {
     id: 'step2',
     label: t('mcp.setup.step2.label', locale),
     title: t('mcp.setup.step2.title', locale),
     description: t('mcp.setup.step2.description', locale),
-    action: {
-      type: 'link',
-      label: t('mcp.setup.step2.cta', locale),
-      href: externalLinks.docsMcp,
-      target: '_blank',
-      icon: ArrowUpRight,
-      variant: 'default'
-    }
+    actions: [
+      { type: 'code', value: externalLinks.mcpEndpoint },
+      {
+        type: 'link',
+        label: t('mcp.setup.step2.cta', locale),
+        href: externalLinks.docsMcp,
+        target: '_blank',
+        icon: ArrowUpRight,
+        variant: 'default'
+      }
+    ]
   },
   {
     id: 'step3',
     label: t('mcp.setup.step3.label', locale),
     title: t('mcp.setup.step3.title', locale),
     description: t('mcp.setup.step3.description', locale),
-    action: {
-      type: 'link',
-      label: t('mcp.setup.step3.cta', locale),
-      href: externalLinks.mcpSkills,
-      target: '_blank',
-      icon: ArrowUpRight,
-      variant: 'default'
-    }
+    actions: [
+      {
+        type: 'link',
+        label: t('mcp.setup.step3.cta', locale),
+        href: externalLinks.mcpSkills,
+        target: '_blank',
+        icon: ArrowUpRight,
+        variant: 'default'
+      }
+    ]
   }
 ]
 </script>

@@ -24,7 +24,7 @@ export interface FeatureCard {
   label?: string
   title: string
   description: string
-  action?: CardAction
+  actions?: CardAction[]
 }
 
 type ColumnCount = 2 | 3 | 4
@@ -91,28 +91,29 @@ const columnClass: Record<ColumnCount, string> = {
           {{ card.description }}
         </p>
 
-        <div v-if="card.action" class="mt-6">
-          <Button
-            v-if="card.action.type === 'link'"
-            as="a"
-            :href="card.action.href"
-            :target="card.action.target"
-            :rel="
-              card.action.target === '_blank'
-                ? 'noopener noreferrer'
-                : undefined
-            "
-            :variant="card.action.variant ?? 'outline'"
-            :append-icon="card.action.icon"
-          >
-            {{ card.action.label }}
-          </Button>
-          <CopyableField
-            v-else
-            :value="card.action.value"
-            :copy-label="copyLabel"
-            :copied-label="copiedLabel"
-          />
+        <div v-if="card.actions?.length" class="mt-6 flex flex-col gap-3">
+          <template v-for="(action, index) in card.actions" :key="index">
+            <Button
+              v-if="action.type === 'link'"
+              as="a"
+              class="self-start"
+              :href="action.href"
+              :target="action.target"
+              :rel="
+                action.target === '_blank' ? 'noopener noreferrer' : undefined
+              "
+              :variant="action.variant ?? 'outline'"
+              :append-icon="action.icon"
+            >
+              {{ action.label }}
+            </Button>
+            <CopyableField
+              v-else
+              :value="action.value"
+              :copy-label="copyLabel"
+              :copied-label="copiedLabel"
+            />
+          </template>
         </div>
       </div>
     </div>

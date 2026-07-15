@@ -1931,9 +1931,9 @@ const translations = {
     'zh-CN': '或手动添加'
   },
   'mcp.setup.step2.description': {
-    en: 'Prefer manual setup? Add Comfy Cloud as a custom connector with the MCP URL. The docs cover every client.',
+    en: 'Prefer manual setup? Add this URL as a custom connector or remote MCP server in any client, then sign in when prompted. The docs cover every client.',
     'zh-CN':
-      '想手动配置？用 MCP URL 将 Comfy Cloud 添加为自定义连接器。文档涵盖各类客户端。'
+      '想手动配置？将此 URL 添加为任意客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。文档涵盖各类客户端。'
   },
   'mcp.setup.step2.cta': {
     en: 'COMFY CLOUD MCP DOCS',
