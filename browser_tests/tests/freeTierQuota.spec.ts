@@ -8,15 +8,14 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
 
-test.describe('Free Tier Quota', { tag: '@vue-nodes' }, () => {
+test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ page }) => {
     const features = {
+      free_tier_job_allowance_enabled: true,
       free_tier_balance: { allowance: 5, remaining: 3, used: 0 }
     }
     await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
   })
-
-  test.use({ initialFeatureFlags: { free_tier_job_allowance_enabled: true } })
 
   wstest('Free Tier Quota', async ({ comfyPage, comfyMouse, getWebSocket }) => {
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
