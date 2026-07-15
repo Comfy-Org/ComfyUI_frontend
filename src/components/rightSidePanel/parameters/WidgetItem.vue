@@ -166,7 +166,7 @@ const displayLabel = customRef((track, trigger) => {
       <EditableText
         v-if="widget.name"
         :model-value="displayLabel"
-        :is-editing="isEditing"
+        :is-editing
         :input-attrs="{ placeholder: widget.name }"
         class="pointer-events-auto m-0 cursor-text truncate p-0 text-sm/8"
         @edit="displayLabel = $event"
@@ -186,9 +186,9 @@ const displayLabel = customRef((track, trigger) => {
       >
         <WidgetActions
           v-model:label="displayLabel"
-          :widget="widget"
-          :node="node"
-          :host="host"
+          :widget
+          :node
+          :host
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>

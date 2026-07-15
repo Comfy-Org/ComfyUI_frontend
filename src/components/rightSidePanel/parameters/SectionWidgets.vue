@@ -372,12 +372,12 @@ defineExpose({
           <WidgetItem
             v-for="{ widget, node } in widgets"
             :key="getStableWidgetRenderKey(widget)"
-            :widget="widget"
-            :node="node"
-            :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :host="host"
+            :widget
+            :node
+            :is-draggable
+            :hidden-favorite-indicator
+            :show-node-name
+            :host
             @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
             @reset-to-default="handleWidgetReset(node, widget, $event)"
           />
