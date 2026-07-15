@@ -1168,7 +1168,7 @@
   },
   "ByteDanceSeedAudio": {
     "display_name": "ByteDance Seed Audio 1.0",
-    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged @Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
+    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged {'@'}Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
     "inputs": {
       "text_prompt": {
         "name": "text_prompt",
@@ -1176,7 +1176,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "How to condition the voice: 'text only' (describe everything in the prompt), 'audio reference' (clone up to 3 voices, tagged @Audio1-3), 'image reference' (derive a voice from one character image), or 'preset voice' (pick a built-in named voice that reads the prompt)."
+        "tooltip": "How to condition the voice: 'text only' (describe everything in the prompt), 'audio reference' (clone up to 3 voices, tagged {'@'}Audio1-3), 'image reference' (derive a voice from one character image), or 'preset voice' (pick a built-in named voice that reads the prompt)."
       },
       "sample_rate": {
         "name": "sample_rate",
