@@ -2,7 +2,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { reactive, watch } from 'vue'
 
-type Faq = { id: string; question: string; answer: string }
+import { resolveRel } from '../../utils/cta'
+
+type FaqLink = { href: string; label: string; target?: '_blank' }
+type Faq = { id: string; question: string; answer: string; link?: FaqLink }
 
 const { faqs } = defineProps<{
   heading: string
@@ -86,6 +89,15 @@ function toggle(index: number) {
             <p class="text-sm whitespace-pre-line text-primary-comfy-canvas/70">
               {{ faq.answer }}
             </p>
+            <a
+              v-if="faq.link"
+              :href="faq.link.href"
+              :target="faq.link.target"
+              :rel="resolveRel(faq.link)"
+              class="text-primary-comfy-yellow mt-4 inline-block text-sm hover:underline"
+            >
+              {{ faq.link.label }}
+            </a>
           </section>
         </div>
       </div>
