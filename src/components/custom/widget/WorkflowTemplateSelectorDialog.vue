@@ -333,6 +333,35 @@
                     <i class="icon-[lucide--info] size-4" />
                   </Button>
                 </template>
+                <!-- Provider brand icons overlaid on the thumbnail -->
+                <template v-if="getProviderInfo(template)" #bottom-right>
+                  <div class="flex items-center gap-1">
+                    <div
+                      v-for="badge in getProviderInfo(template)!.visibleBadges"
+                      :key="badge.provider"
+                      class="flex size-6 items-center justify-center rounded-full bg-zinc-700/50 backdrop-blur-[20px]"
+                    >
+                      <i
+                        v-if="badge.iconClass"
+                        :class="badge.iconClass"
+                        class="size-3.5 text-white"
+                      />
+                      <img
+                        v-else
+                        :src="badge.url"
+                        :alt="badge.provider"
+                        class="size-3.5 rounded-full object-contain"
+                        draggable="false"
+                      />
+                    </div>
+                    <div
+                      v-if="getProviderInfo(template)!.extraCount > 0"
+                      class="flex h-6 min-w-6 items-center justify-center rounded-full bg-zinc-700/50 px-1 text-[10px] font-medium text-white backdrop-blur-[20px]"
+                    >
+                      +{{ getProviderInfo(template)!.extraCount }}
+                    </div>
+                  </div>
+                </template>
               </CardTop>
             </template>
             <template #bottom>
@@ -355,44 +384,6 @@
                       )
                     }}
                   </h3>
-
-                  <!-- Provider info (stacked monochrome logos + label) -->
-                  <div
-                    v-if="getProviderInfo(template)"
-                    class="flex items-center gap-1.5 py-1"
-                  >
-                    <div class="flex items-center">
-                      <div
-                        v-for="(badge, badgeIndex) in getProviderInfo(template)!
-                          .visibleBadges"
-                        :key="badge.provider"
-                        class="flex size-5 items-center justify-center overflow-hidden rounded-full bg-secondary-background ring-2 ring-base-background"
-                        :class="{ '-ml-1': badgeIndex > 0 }"
-                      >
-                        <i
-                          v-if="badge.iconClass"
-                          :class="badge.iconClass"
-                          class="size-3 text-muted-foreground"
-                        />
-                        <img
-                          v-else
-                          :src="badge.url"
-                          :alt="badge.provider"
-                          class="size-3 object-contain"
-                          draggable="false"
-                        />
-                      </div>
-                      <div
-                        v-if="getProviderInfo(template)!.extraCount > 0"
-                        class="-ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary-background px-1 text-[10px] font-medium text-muted-foreground ring-2 ring-base-background"
-                      >
-                        +{{ getProviderInfo(template)!.extraCount }}
-                      </div>
-                    </div>
-                    <span class="truncate text-sm text-muted-foreground">
-                      {{ getProviderInfo(template)!.label }}
-                    </span>
-                  </div>
 
                   <!-- Tags -->
                   <div
