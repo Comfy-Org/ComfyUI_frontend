@@ -29,6 +29,7 @@ import {
 } from './onboardingTourStore'
 import type { TourEndReason } from './onboardingTourStore'
 import { restoreView } from './subgraphNavigation'
+import { shapeOf } from './tourSequence'
 import type { ResolvedRoles } from './tourSequence'
 
 /** Budget for the serialized snapshot to appear (guards the URL blank-load race). */
@@ -94,10 +95,13 @@ function _useOnboardingTourController() {
    * tour so `Completed` fires — otherwise the Result step drives completion.
    */
   function handleRunOutcome(status: OnboardingTourRunStatus) {
-    // Armed in start(); ignore events before Run so they can't fire out of order.
-    if (store.currentStep?.kind !== 'run') return
+    // The Run click advances to Result before the run reports, so accept either:
+    // gating on 'run' alone dropped every outcome whenever a Result step followed.
+    const step = store.currentStep?.kind
+    if (step !== 'run' && step !== 'result') return
     if (runOutcomeHandled) return
     runOutcomeHandled = true
+    store.runFinished = true
     if (status === 'success') void store.captureResultMedia()
     reportRunTriggered(status)
     if (runIsTerminalStep()) {
@@ -171,12 +175,6 @@ function _useOnboardingTourController() {
     return isOnboardingCandidate(onboardingDeps)
   }
 
-  function shapeOf(roles: ResolvedRoles | null): OnboardingTourShape {
-    if (!roles?.prompt || !roles.sink) return 'other'
-    if (!roles.source) return 't2i'
-    return roles.mediaKind === 'video' ? 'i2v' : 'image-edit'
-  }
-
   /**
    * Serialize the loaded graph and run the tour on it. `entry` tags where the
    * tour was launched from; `?share=`/`?template=` arrivals pass `share_url`/
@@ -197,7 +195,8 @@ function _useOnboardingTourController() {
 
     store.start(workflow, templateId)
     activeTemplateId = templateId
-    activeShape = shapeOf(store.resolvedRoles)
+    const roles = store.resolvedRoles
+    activeShape = roles ? shapeOf(roles) : 'other'
     runReported = false
     listenForFirstRun()
     useTelemetry()?.trackOnboardingTourStarted?.({

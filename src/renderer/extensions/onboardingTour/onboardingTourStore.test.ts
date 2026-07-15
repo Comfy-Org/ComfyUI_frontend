@@ -314,6 +314,18 @@ describe('onboardingTourStore', () => {
     vi.useRealTimers()
   })
 
+  it('start() clears a previous tour’s finished run so the next one can generate', () => {
+    // The flag drives the Result step's "Generating…"; carried over, a second tour
+    // would show its result as already done.
+    resolveTourRoles.mockReturnValue(t2iRoles)
+    store.start(workflow)
+    store.runFinished = true
+
+    store.start(workflow)
+
+    expect(store.runFinished).toBe(false)
+  })
+
   it('showNudge() surfaces the post-run nudge', () => {
     expect(store.shouldShowNudge).toBe(false)
 

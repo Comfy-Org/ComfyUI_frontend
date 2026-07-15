@@ -55,6 +55,19 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const resolvedRoles = ref<ResolvedRoles | null>(null)
   const revealedNodeIds = ref<Set<NodeId>>(new Set())
   const resultMedia = ref<ResultMedia | null>(null)
+  /**
+   * Set when the run reports any outcome (success, error, interrupt). The Result
+   * step's "Generating…" hangs off this rather than off `resultMedia`, which only
+   * lands if the sink yields a URL before its capture times out — a failed capture
+   * must not read as generating forever.
+   */
+  const runFinished = ref(false)
+  /**
+   * Bumped once per `start()`. `start()` returns to idle and back to active in one
+   * tick, so a watcher on `phase` never observes the gap and cannot tell a restart
+   * from a step change; this gives it an edge it can see.
+   */
+  const tourRunId = ref(0)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
   /** Set when `showNudge` defers because the upgrade modal is open; the modal-close watch drains it. */
@@ -97,6 +110,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const roles = resolveTourRoles(workflow, templateId)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
+    tourRunId.value += 1
     phase.value = 'active'
     syncRevealed()
   }
@@ -169,6 +183,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     nudgeArmed.value = false
     nudgeDismissed.value = false
     resultMedia.value = null
+    runFinished.value = false
   }
 
   function reset() {
@@ -194,6 +209,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     revealedNodeIds,
     spotlitNodeIds,
     resultMedia,
+    runFinished,
+    tourRunId,
     shouldShowNudge,
     nudgeArmed,
     start,

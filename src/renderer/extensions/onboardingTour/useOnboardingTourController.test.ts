@@ -522,6 +522,46 @@ describe('useOnboardingTourController.start', () => {
     ).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
   })
 
+  it('captures the media when the run reports after the click advanced to Result', async () => {
+    // Production ordering: clicking Run advances the step synchronously, so the
+    // execution event arrives while Result — not Run — is current. Gating the
+    // outcome on the Run step alone dropped every event, and the media never
+    // resolved. The suite's `advance` is a spy, so move the step by hand here.
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    mocks.stepIndex.value = 1
+    await runJob()
+
+    expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+  })
+
+  it('ignores execution events that arrive before the Run step', async () => {
+    // A run kicked off from an earlier step must not resolve the Result or report.
+    mocks.hasFunds = true
+    mocks.steps = [
+      { kind: 'prompt', nodeId: null },
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
+    ]
+
+    await useOnboardingTourController().start()
+    mocks.stepIndex.value = 0
+    await runJob()
+
+    expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
+    expect(
+      mocks.telemetry.trackOnboardingTourRunTriggered
+    ).not.toHaveBeenCalled()
+  })
+
   it('reports the run at most once across repeated runs', async () => {
     mocks.hasFunds = true
     mocks.steps = [
