@@ -13,7 +13,7 @@ const ctas = mcpCtas(locale)
 <template>
   <HeroSplit01
     :locale="locale"
-    class="min-h-screen"
+    class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
     badge-text="MCP"
     :title="t('mcp.hero.heading', locale)"
     :subtitle="t('mcp.hero.subtitle', locale)"

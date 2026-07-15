@@ -1864,9 +1864,25 @@ const translations = {
     'zh-CN':
       'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
-  'mcp.hero.demoPrompt': {
+  'mcp.hero.demoPromptMoodboard': {
+    en: 'turn the brief in this email into a 6-up moodboard',
+    'zh-CN': '把这封邮件里的需求做成六宫格情绪板'
+  },
+  'mcp.hero.demoPromptConcepts': {
+    en: 'sketch three concept frames for the launch page',
+    'zh-CN': '为发布页画三张概念稿'
+  },
+  'mcp.hero.demoPromptKeyart': {
     en: "match this frame's palette, make the hero key art",
     'zh-CN': '匹配这一帧的配色，生成主视觉关键画面'
+  },
+  'mcp.hero.demoPromptPbr': {
+    en: 'make a tileable asphalt PBR material, all 5 maps',
+    'zh-CN': '生成可平铺的沥青 PBR 材质，共 5 张贴图'
+  },
+  'mcp.hero.demoPromptUpscale': {
+    en: 'upscale the neon kaiju shot to 4K',
+    'zh-CN': '把霓虹怪兽画面放大到 4K'
   },
   'mcp.hero.viewDocs': {
     en: 'VIEW DOCS',
@@ -1875,10 +1891,6 @@ const translations = {
   'mcp.hero.installMcp': {
     en: 'INSTALL MCP',
     'zh-CN': '安装 MCP'
-  },
-  'mcp.hero.runWorkflow': {
-    en: 'RUN A WORKFLOW',
-    'zh-CN': '运行工作流'
   },
   'mcp.hero.demoGenerate': {
     en: 'GENERATE',
@@ -1897,60 +1909,90 @@ const translations = {
     'zh-CN': '放大图像'
   },
 
-  // MCP – SetupStepsSection
+  // MCP – SetupSection
   'mcp.setup.label': {
     en: 'GET STARTED',
     'zh-CN': '快速开始'
   },
   'mcp.setup.heading': {
-    en: 'Set up Comfy MCP in three steps',
-    'zh-CN': '三步完成 Comfy MCP 配置'
+    en: 'Set up Comfy MCP',
+    'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'Add Comfy Cloud as a custom connector in Claude, Cursor, Codex, or any MCP-compatible client. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    en: 'Two ways to connect: ask your agent to install it, or add the server yourself. Sign in once, and the full ComfyUI toolset is available right in your chat.',
     'zh-CN':
-      '将 Comfy Cloud 添加为 Claude、Cursor、Codex 或任意兼容 MCP 客户端的自定义连接器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+      '两种接入方式：让你的智能体自动安装，或自行添加服务器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
-  'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
-  'mcp.setup.step1.title': {
+  'mcp.setup.option1.label': { en: 'OPTION 1', 'zh-CN': '方式一' },
+  'mcp.setup.option1.title': {
     en: 'Ask your agent to install Comfy MCP',
     'zh-CN': '让你的智能体安装 Comfy MCP'
   },
-  'mcp.setup.step1.command': {
+  'mcp.setup.option1.command': {
     en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
     'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
   },
-  'mcp.setup.step1.description': {
+  'mcp.setup.option1.description': {
     en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
     'zh-CN':
       '将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
   },
-  'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
-  'mcp.setup.step2.title': {
-    en: 'Or add it by hand',
-    'zh-CN': '或手动添加'
+  'mcp.setup.option2.label': { en: 'OPTION 2', 'zh-CN': '方式二' },
+  'mcp.setup.option2.title': {
+    en: 'Install manually',
+    'zh-CN': '手动安装'
   },
-  'mcp.setup.step2.description': {
-    en: 'Prefer manual setup? Add Comfy Cloud as a custom connector with the MCP URL. The docs cover every client.',
+  'mcp.setup.option2.description': {
+    en: 'Prefer manual setup? Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
     'zh-CN':
-      '想手动配置？用 MCP URL 将 Comfy Cloud 添加为自定义连接器。文档涵盖各类客户端。'
+      '想手动配置？将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
   },
-  'mcp.setup.step2.cta': {
-    en: 'COMFY CLOUD MCP DOCS',
-    'zh-CN': 'COMFY CLOUD MCP 文档'
+  'mcp.setup.option2.tabsLabel': {
+    en: 'Pick your client',
+    'zh-CN': '选择你的客户端'
   },
-  'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
-  'mcp.setup.step3.title': {
-    en: 'Connect and sign in',
-    'zh-CN': '连接并登录'
+  'mcp.setup.clients.claudeCode.step': {
+    en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
+    'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
   },
-  'mcp.setup.step3.description': {
-    en: 'Click Connect, sign in, and every Comfy Cloud skill is ready in your client.',
-    'zh-CN': '点击"连接"并登录，所有 Comfy Cloud 技能即可在你的客户端中使用。'
+  'mcp.setup.clients.claudeDesktop.step': {
+    en: 'Open Settings, go to Connectors, choose Add custom connector, paste the URL above, and sign in.',
+    'zh-CN':
+      '打开设置，进入 Connectors，选择添加自定义连接器，粘贴上方 URL 并登录。'
   },
-  'mcp.setup.step3.cta': {
-    en: 'COMFY CLOUD SKILLS',
-    'zh-CN': 'COMFY CLOUD 技能'
+  'mcp.setup.clients.cursor.step': {
+    en: 'Add the URL above to ~/.cursor/mcp.json with an X-API-Key header. Create your key at',
+    'zh-CN':
+      '将上方 URL 添加到 ~/.cursor/mcp.json，并附带 X-API-Key 请求头。在此创建密钥：'
+  },
+  'mcp.setup.clients.cursor.linkLabel': {
+    en: 'platform.comfy.org',
+    'zh-CN': 'platform.comfy.org'
+  },
+  'mcp.setup.clients.codex.step': {
+    en: 'Run this in your terminal, then codex mcp login comfy-cloud to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 codex mcp login comfy-cloud 登录。'
+  },
+  'mcp.setup.clients.other.name': {
+    en: 'Other clients',
+    'zh-CN': '其他客户端'
+  },
+  'mcp.setup.clients.other.step': {
+    en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the',
+    'zh-CN':
+      '将上方 URL 添加为远程 MCP 服务器。客户端不支持 OAuth？改用 X-API-Key 请求头。完整教程见'
+  },
+  'mcp.setup.clients.other.linkLabel': {
+    en: 'setup docs',
+    'zh-CN': '设置文档'
+  },
+  'mcp.setup.skillsNote': {
+    en: 'Using Claude Code? The Comfy skills plugin adds ready-made slash commands.',
+    'zh-CN': '在用 Claude Code？Comfy 技能插件提供现成的斜杠命令。'
+  },
+  'mcp.setup.skillsLink': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
   },
 
   // MCP – WhyBuildSection
