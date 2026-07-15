@@ -44,40 +44,18 @@
     </template>
 
     <template #contentFilter>
-      <!-- pr aligns the filter row's right edge with the search input above,
-           which is inset by the modal's close button -->
       <div
-        class="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-2 pr-[4.5rem] pb-4 pl-6"
+        class="relative flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pt-2 pb-4"
       >
-        <!-- Type tabs -->
-        <div class="flex shrink-0 items-center gap-2">
-          <button
-            v-for="tab in typeTabs"
-            :key="tab.value"
-            type="button"
-            :aria-pressed="selectedType === tab.value"
-            class="flex h-8 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border-none text-xs whitespace-nowrap transition-colors"
-            :class="
-              selectedType === tab.value
-                ? 'bg-base-foreground px-4 font-bold text-base-background'
-                : 'bg-secondary-background px-3 font-medium text-white opacity-70 hover:opacity-100'
-            "
-            @click="selectedType = tab.value"
-          >
-            <i v-if="tab.icon" :class="tab.icon" class="size-3.5" />
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <!-- Filters + Sort. They stay on one line and shrink/truncate to fit;
-             the whole row drops below the tabs (via the group min-width) only
-             when it can no longer fit next to them. -->
+        <!-- Filters + Sort (left-aligned; the empty space sits between them
+             and the tabs). They shrink/truncate to fit a single line and the
+             whole group drops below the tabs only when it no longer fits. -->
         <div
           :ref="primeVueOverlay.overlayScopeRef"
-          class="flex min-w-80 flex-1 items-center justify-end gap-2"
+          class="flex min-w-56 flex-1 items-center gap-2"
         >
           <!-- Model Filter -->
-          <div class="min-w-0 shrink basis-[250px]">
+          <div class="min-w-0 shrink basis-[175px]">
             <MultiSelect
               v-model="selectedModelObjects"
               v-model:search-query="modelSearchText"
@@ -97,7 +75,7 @@
           </div>
 
           <!-- Use Case Filter -->
-          <div class="min-w-0 shrink basis-[190px]">
+          <div class="min-w-0 shrink basis-[133px]">
             <MultiSelect
               v-model="selectedUseCaseObjects"
               size="md"
@@ -116,7 +94,7 @@
           </div>
 
           <!-- Runs On Filter -->
-          <div class="min-w-0 shrink basis-[190px]">
+          <div class="min-w-0 shrink basis-[133px]">
             <MultiSelect
               v-model="selectedRunsOnObjects"
               size="md"
@@ -135,7 +113,7 @@
           </div>
 
           <!-- Sort Options -->
-          <div class="min-w-0 shrink basis-[250px]">
+          <div class="min-w-0 shrink basis-[175px]">
             <SingleSelect
               v-model="sortSelection"
               size="md"
@@ -149,6 +127,26 @@
               </template>
             </SingleSelect>
           </div>
+        </div>
+
+        <!-- Type tabs (right) -->
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            v-for="tab in typeTabs"
+            :key="tab.value"
+            type="button"
+            :aria-pressed="selectedType === tab.value"
+            class="flex h-8 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border-none text-xs whitespace-nowrap transition-colors"
+            :class="
+              selectedType === tab.value
+                ? 'bg-base-foreground px-4 font-bold text-base-background'
+                : 'bg-secondary-background px-3 font-medium text-white opacity-70 hover:opacity-100'
+            "
+            @click="selectedType = tab.value"
+          >
+            <i v-if="tab.icon" :class="tab.icon" class="size-3.5" />
+            {{ tab.label }}
+          </button>
         </div>
       </div>
     </template>
