@@ -10,6 +10,7 @@ import {
   whenever
 } from '@vueuse/core'
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
@@ -43,7 +44,7 @@ const {
   minimal?: boolean
   hideControls?: boolean
   fit?: 'cover' | 'contain'
-  class?: string
+  class?: HTMLAttributes['class']
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')

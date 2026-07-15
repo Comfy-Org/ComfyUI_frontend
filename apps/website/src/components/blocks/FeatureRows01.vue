@@ -20,6 +20,7 @@ type RowMedia =
       loop?: boolean
       minimal?: boolean
       hideControls?: boolean
+      fit?: 'cover' | 'contain'
     }
 
 export interface FeatureRow {
@@ -33,14 +34,12 @@ const {
   heading,
   eyebrow,
   locale = 'en',
-  rows,
-  mediaFit = 'cover'
+  rows
 } = defineProps<{
   heading: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
-  mediaFit?: 'cover' | 'contain'
 }>()
 </script>
 
@@ -74,6 +73,7 @@ const {
         </div>
 
         <!-- Media: image or video -->
+        <!-- 620/364 and w-155 (620px) match the card media asset dimensions -->
         <div
           :class="
             cn(
@@ -91,9 +91,7 @@ const {
             :class="
               cn(
                 'absolute inset-0 size-full rounded-4xl',
-                (row.media.fit ?? mediaFit) === 'contain'
-                  ? 'object-contain'
-                  : 'object-cover'
+                row.media.fit === 'contain' ? 'object-contain' : 'object-cover'
               )
             "
           />
@@ -108,11 +106,11 @@ const {
             :loop="row.media.loop"
             :minimal="row.media.minimal"
             :hide-controls="row.media.hideControls"
-            :fit="mediaFit"
+            :fit="row.media.fit"
             :class="
               cn(
                 'absolute inset-0 size-full',
-                mediaFit === 'contain' && 'bg-primary-comfy-ink-light'
+                row.media.fit === 'contain' && 'bg-transparent'
               )
             "
           />
