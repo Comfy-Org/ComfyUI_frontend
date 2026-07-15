@@ -11,6 +11,7 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -223,6 +224,7 @@ function handleDragDrop() {
           <i aria-hidden="true" class="icon-[lucide--play]" />
           {{ t('menu.run') }}
         </Button>
+        <FreeTierQuota />
       </section>
     </div>
   </div>
