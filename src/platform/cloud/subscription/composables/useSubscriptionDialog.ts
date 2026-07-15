@@ -95,9 +95,9 @@ export const useSubscriptionDialog = () => {
     }
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) for workspaces on the consolidated billing flow. Replaces
-    // the old personal-vs-team workspace fork. Personal workspaces still on the
-    // legacy flow (consolidated billing disabled) get the legacy table.
+    // one workspace) for workspaces on the workspace-scoped billing flow.
+    // Replaces the old personal-vs-team workspace fork. Personal workspaces
+    // still on the legacy flow (billing control disabled) get the legacy table.
     if (shouldUseWorkspaceBilling.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
