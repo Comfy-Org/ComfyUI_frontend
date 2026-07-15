@@ -359,12 +359,14 @@
     "colors": "палитра_цветов",
     "descLabel": "описание",
     "descPlaceholder": "описание этой области",
+    "grid": "Сетка",
     "textLabel": "Текст",
     "textPlaceholder": "текст для отображения (дословно)",
     "typeObj": "объект",
     "typeText": "текст"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} режим, действия с рабочим процессом",
     "app": "Приложение",
     "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Пожалуйста, сократите ваш ответ до {max} символов.",
         "chooseAnOption": "Пожалуйста, выберите вариант.",
         "describeAnswer": "Пожалуйста, опишите ваш ответ.",
         "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
       },
       "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
-          "basics": "Уверенно владею основами",
-          "expert": "Эксперт (помогаю другим)",
-          "new": "Новичок в ComfyUI (никогда не использовал)",
-          "starting": "Только начинаю (следую руководствам)"
+        "experience": {
+          "new": "Впервые в ComfyUI",
+          "pro": "Я опытный пользователь",
+          "some": "Я немного знаком(а)"
+        },
+        "focus": {
+          "custom_nodes": "Пользовательские узлы",
+          "pipelines": "Автоматизированные пайплайны",
+          "products": "Продукты для других"
         },
         "intent": {
-          "3d_game": "3D-ассеты / игровые ассеты",
-          "api": "API endpoints для запуска workflow",
-          "apps": "Упрощённые приложения из workflow",
-          "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские node",
+          "apps_api": "Приложения и API",
+          "exploring": "Просто изучаю",
           "images": "Изображения",
-          "not_sure": "Не уверен",
-          "videos": "Видео",
+          "other": "Другое",
+          "otherPlaceholder": "Что вы хотите создать?",
+          "video": "Видео",
           "workflows": "Пользовательские workflow или pipeline"
         },
         "source": {
-          "conference": "Конференция или мероприятие",
-          "discord": "Discord / сообщество",
+          "community": "Сообщество или форум",
           "friend": "Друг или коллега",
-          "github": "GitHub",
+          "other": "Другое",
+          "otherPlaceholder": "Где вы о нас узнали?",
+          "search": "Google / поиск",
+          "social": "Социальные сети"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Новостная рассылка или блог",
-          "other": "Другое",
           "reddit": "Reddit",
-          "search": "Google / поиск",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Образование (студент или преподаватель)",
-          "personal": "Личное использование",
-          "work": "Работа"
         }
       },
+      "otherPlaceholder": "Расскажите подробнее",
       "placeholder": "Вопросы для опроса",
-      "steps": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "intent": "Что вы хотите создавать с помощью ComfyUI?",
-        "source": "Где вы узнали о ComfyUI?",
-        "usage": "Как вы планируете использовать ComfyUI?"
-      },
       "title": "Облачный опрос"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "Узнать о Cloud",
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
-  "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
+  "cloudSurvey_steps_experience": "Насколько хорошо вы знаете ComfyUI?",
+  "cloudSurvey_steps_focus": "Что вы создаёте?",
   "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
   "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
-  "cloudSurvey_steps_usage": "Как вы планируете использовать ComfyUI?",
+  "cloudSurvey_steps_source_social": "На какой платформе?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -621,10 +619,13 @@
     "namePlaceholder": "Введите ваше имя",
     "profileCreationNav": "Создание профиля",
     "startPublishingButton": "Начать публикацию",
+    "startUpdatingButton": "Обновить workflow",
     "successDescription": "Теперь вы можете загрузить свой workflow на страницу автора",
     "successProfileLink": "comfy.com/p/{username}",
     "successProfileUrl": "Ваша страница профиля доступна по адресу",
     "successTitle": "Отлично, {'@'}{username}!",
+    "updateIntroDescription": "Отправьте ваши последние изменения в ComfyHub. Ваша ссылка для обмена и статистика останутся прежними.",
+    "updateIntroTitle": "Обновите ваш workflow в ComfyHub",
     "uploadCover": "+ Загрузить обложку",
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
@@ -648,6 +649,8 @@
     "publishSuccessDescription": "Ваш рабочий процесс теперь доступен на ComfyHub.",
     "publishSuccessTitle": "Успешно опубликовано",
     "removeExampleImage": "Удалить пример изображения",
+    "renameFailedDescription": "Ваш workflow был успешно опубликован, но не удалось переименовать локальный файл. Переименуйте его снова, чтобы совпадало.",
+    "renameFailedTitle": "Не удалось переименовать",
     "selectAThumbnail": "Выберите миниатюру",
     "shareAs": "Поделиться как",
     "showLessTags": "Показать меньше...",
@@ -665,6 +668,7 @@
     "thumbnailVideo": "Видео",
     "title": "Публикация в ComfyHub",
     "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в ComfyHub. Сохраните его сейчас, чтобы продолжить.",
+    "updateButton": "Обновить workflow",
     "uploadAnImage": "Нажмите для выбора или перетащите изображение",
     "uploadComparison": "Загрузить до и после",
     "uploadComparisonAfterPrompt": "После",
@@ -783,6 +787,8 @@
     "faqs": "Часто задаваемые вопросы",
     "invoiceHistory": "История счетов",
     "lastUpdated": "Последнее обновление",
+    "loadEventsError": "Не удалось загрузить активность. Пожалуйста, попробуйте снова.",
+    "loadEventsUnknownError": "Произошла ошибка при загрузке активности. Пожалуйста, обновите страницу и попробуйте снова.",
     "messageSupport": "Связаться с поддержкой",
     "model": "Модель",
     "purchaseCredits": "Купить кредиты",
@@ -949,6 +955,16 @@
       "message": "Был предоставлен неверный ID диалога.",
       "title": "Неверный диалог"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "Приложение ComfyUI для рабочего стола ожидает входа в ваш аккаунт. Продолжайте только если вы только что начали вход из приложения ComfyUI для рабочего стола.",
+    "confirmSummary": "Подтвердить вход на рабочем столе?",
+    "expiredDetail": "Запрос на вход истёк или уже был использован. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "expiredSummary": "Не удалось войти на рабочем столе",
+    "failedDetail": "Произошла ошибка при завершении входа на рабочем столе. Начните вход заново из приложения ComfyUI для рабочего стола.",
+    "failedSummary": "Не удалось войти на рабочем столе",
+    "successDetail": "Вы можете вернуться в приложение ComfyUI для рабочего стола.",
+    "successSummary": "Вход выполнен"
   },
   "desktopMenu": {
     "confirmQuit": "Открыты несохраненные рабочие процессы; все несохраненные изменения будут потеряны. Проигнорировать это и выйти?",
@@ -1564,6 +1580,7 @@
     "extensions": "Расширения",
     "failed": "Ошибка",
     "failedToCopyJobId": "Не удалось скопировать ID задания",
+    "failedToDownloadFile": "Не удалось загрузить файл",
     "failedToDownloadImage": "Не удалось скачать изображение",
     "failedToDownloadVideo": "Не удалось скачать видео",
     "favorites": "Избранное",
@@ -1808,6 +1825,7 @@
     "systemStatsRAMTotal": "Всего ОЗУ",
     "systemStatsTemplatesVersion": "Версия шаблонов",
     "terminal": "Терминал",
+    "textFailedToLoad": "Не удалось загрузить текст",
     "title": "Заголовок",
     "triggerPhrase": "Триггерная фраза",
     "unknownError": "Неизвестная ошибка",
@@ -2061,7 +2079,10 @@
       "appBuilder": "Конструктор приложений",
       "apps": "Приложения",
       "appsEmptyMessage": "Сохранённые приложения появятся здесь.\nНажмите ниже, чтобы создать своё первое приложение.",
-      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение."
+      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение.",
+      "buildAnApp": "Создать приложение",
+      "create": "Создать",
+      "createApp": "Создать приложение"
     },
     "arrange": {
       "atLeastOne": "хотя бы один",
@@ -2074,8 +2095,6 @@
       "switchToOutputsButton": "Перейти к выводам"
     },
     "backToWorkflow": "Вернуться к рабочему процессу",
-    "beta": "Режим приложения Бета - Оставить отзыв",
-    "buildAnApp": "Создать приложение",
     "builder": {
       "exit": "Выйти из конструктора",
       "exitConfirmMessage": "У вас есть несохранённые изменения, которые будут потеряны\nВыйти без сохранения?",
@@ -2113,6 +2132,7 @@
       "requiresGraph": "Что-то пошло не так во время генерации. Возможные причины: неверные скрытые входные данные, отсутствующие ресурсы или ошибки конфигурации рабочего процесса.",
       "support": "связаться с поддержкой"
     },
+    "feedbackLoadError": "Не удалось загрузить форму обратной связи. Пожалуйста, попробуйте позже.",
     "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
     "hasCreditCost": "Требуются дополнительные кредиты",
@@ -2181,6 +2201,7 @@
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
+      "clay": "Глина",
       "depth": "Глубина",
       "lineart": "Линейный арт",
       "normal": "Нормальный",
@@ -2188,7 +2209,29 @@
       "pointCloud": "Облако точек",
       "wireframe": "Каркас"
     },
+    "menuBar": {
+      "bgColor": "Цвет фона",
+      "bgImage": "Фоновое изображение",
+      "deleteRecording": "Удалить запись",
+      "downloadRecording": "Скачать запись",
+      "fov": "Угол обзора",
+      "intensity": "Интенсивность",
+      "material": "Материал",
+      "originalMaterialOnly": "Только оригинальный материал",
+      "panorama": "Панорама",
+      "record": "Запись",
+      "recording": "Идёт запись",
+      "removeBackground": "Удалить фон",
+      "showGrid": "Показать сетку",
+      "skeleton": "Скелет",
+      "startNewRecording": "Начать новую запись",
+      "stopRecording": "Остановить запись",
+      "switchProjection": "Сменить проекцию",
+      "upDirection": "Направление вверх",
+      "videoRecordingTooltip": "Видеозапись сцены [mp4]"
+    },
     "model": "Модель",
+    "model3d": "3D-модель",
     "openIn3DViewer": "Открыть в 3D просмотрщике",
     "panoramaMode": "Панорама",
     "previewOutput": "Предварительный просмотр",
@@ -2400,6 +2443,11 @@
       "importFailed": "Ошибка установки",
       "pending": "В ожидании",
       "unknown": "Неизвестно"
+    },
+    "survey": {
+      "error": "Не удалось загрузить опрос. Пожалуйста, попробуйте позже.",
+      "intro": "Установка пользовательских узлов скоро появится в Comfy Cloud. Ответьте на несколько коротких вопросов, чтобы попасть в список ожидания и помочь сформировать эту функцию.",
+      "title": "Присоединяйтесь к списку ожидания"
     },
     "title": "Менеджер Пользовательских Узлов",
     "toFinishSetup": "чтобы завершить настройку",
@@ -2769,7 +2817,6 @@
     "Runway": "Runway",
     "Sonilo": "Sonilo",
     "Sora": "Sora",
-    "Stability AI": "Stability AI",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -2801,7 +2848,6 @@
     "cosmos": "cosmos",
     "create": "создать",
     "custom": "пользовательский",
-    "custom_sampling": "пользовательский_семплинг",
     "dancer": "танцор",
     "debug": "отладка",
     "detection": "детекция",
@@ -2845,6 +2891,8 @@
     "phantom subject": "фантомный объект",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "постпроцессоры",
+    "pre-processors": "препроцессоры",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
@@ -2865,8 +2913,8 @@
     "stable video": "stable video",
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
-    "stable_cascade": "стабильная_каскадная",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "текст",
     "training": "обучение",
     "transform": "преобразование",
@@ -3102,8 +3150,11 @@
     "errorHelpGithub": "создайте issue на GitHub",
     "errorHelpSupport": "свяжитесь с нашей поддержкой",
     "errorLog": "Журнал ошибок",
+    "errorNodeSummary": "{nodes} узел — {count} ошибка | {nodes} узел — {count} ошибки | {nodes} узел — {count} ошибок",
+    "errorNodesSummary": "{nodes} узлов — {count} ошибка | {nodes} узлов — {count} ошибки | {nodes} узлов — {count} ошибок",
     "errors": "Ошибки",
     "errorsDetected": "Обнаружена ошибка | Обнаружены ошибки",
+    "errorsSummary": "{count} ошибка | {count} ошибки | {count} ошибок",
     "executionErrorOccurred": "Произошла ошибка во время выполнения. Подробности смотрите на вкладке Ошибки.",
     "expand": "Развернуть",
     "fallbackGroupTitle": "Группа",
@@ -3193,6 +3244,8 @@
     "resetToDefault": "Сбросить по умолчанию",
     "resolveBeforeRun": "Устраните перед запуском рабочего процесса",
     "seeError": "Посмотреть ошибку",
+    "selectedNodeErrors": "{node} — {count} ошибка | {node} — {count} ошибки | {node} — {count} ошибок",
+    "selectedNodesErrors": "{nodes} узлов выбрано — {count} ошибка | {nodes} узлов выбрано — {count} ошибки | {nodes} узлов выбрано — {count} ошибок",
     "settings": "Настройки",
     "showAdvancedInputsButton": "Показать расширенные входные данные",
     "showAdvancedShort": "Показать расширенные",
@@ -3212,24 +3265,35 @@
     "errors": {
       "duplicateName": "Секрет с таким именем уже существует",
       "duplicateProvider": "Секрет для этого провайдера уже существует",
+      "fileReadFailed": "Не удалось прочитать выбранный файл.",
+      "fileTooLarge": "Файл слишком большой. Загрузите JSON-учётные данные размером до 1 МБ",
+      "invalidJson": "Файл должен содержать корректный JSON-объект",
       "nameRequired": "Имя обязательно",
       "nameTooLong": "Имя должно содержать не более 255 символов",
       "providerRequired": "Провайдер обязателен",
       "secretValueRequired": "Значение секрета обязательно"
     },
+    "jsonFileHint": "Вставьте JSON или загрузите файл. Он будет зашифрован и не может быть просмотрен повторно.",
+    "jsonFileHintEdit": "Оставьте пустым, чтобы сохранить текущее значение, или загрузите новый JSON-файл для замены.",
+    "jsonFilePlaceholder": "Загрузите или вставьте JSON-учётные данные провайдера",
     "lastUsed": "Последнее использование {date}",
     "modelProviders": "Провайдеры моделей",
     "name": "Имя",
     "namePlaceholder": "например, Мой API-ключ",
     "noSecrets": "Секреты не сохранены. Добавьте свой первый API-ключ, чтобы начать.",
     "provider": "Провайдер",
+    "providerHelp": {
+      "gemini": "Введите ваш API-ключ Google Gemini. Вы можете сгенерировать его в Google AI Studio.",
+      "runway": "Введите ваш API-ключ Runway. Вы можете найти его в настройках аккаунта Runway в разделе API keys."
+    },
     "providerHint": "Необязательно. Выбор провайдера позволяет использовать токен автоматически.",
     "secretValue": "Значение секрета",
     "secretValueHint": "Это значение будет зашифровано и не может быть просмотрено повторно.",
     "secretValueHintEdit": "Оставьте пустым, чтобы сохранить текущее значение.",
     "secretValuePlaceholder": "Введите ваш API-ключ",
     "secretValuePlaceholderEdit": "Введите новое значение для изменения",
-    "title": "API-ключи и секреты"
+    "title": "API-ключи и секреты",
+    "uploadJsonFile": "Загрузить JSON-файл"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Обойти групповые узлы",
@@ -4106,6 +4170,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
+      "relevance": "Актуальность",
       "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",

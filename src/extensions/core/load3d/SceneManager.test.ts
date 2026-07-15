@@ -3,6 +3,9 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
+
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
 import { SceneManager } from './SceneManager'
@@ -65,6 +68,32 @@ function makeMockEventManager() {
   } satisfies EventManagerInterface
 }
 
+function makeView(
+  renderer: THREE.WebGLRenderer,
+  width = 400,
+  height = 300
+): RendererView {
+  const canvas = document.createElement('canvas')
+  Object.defineProperty(canvas, 'clientWidth', {
+    configurable: true,
+    value: width
+  })
+  Object.defineProperty(canvas, 'clientHeight', {
+    configurable: true,
+    value: height
+  })
+  return {
+    renderer,
+    canvas,
+    state: createRendererViewState(),
+    width,
+    height,
+    beginRender: vi.fn(),
+    blit: vi.fn(),
+    setSize: vi.fn()
+  } as unknown as RendererView
+}
+
 function makeRenderer() {
   const canvas = document.createElement('canvas')
   Object.defineProperty(canvas, 'clientWidth', {
@@ -120,7 +149,7 @@ describe('SceneManager', () => {
     camera = new THREE.PerspectiveCamera()
     events = makeMockEventManager()
     manager = new SceneManager(
-      renderer,
+      makeView(renderer),
       () => camera,
       () => ({}) as unknown as OrbitControls,
       events
@@ -592,20 +621,22 @@ describe('SceneManager', () => {
 
 function makeSceneManager(
   pixelRatio = 1,
-  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera
+  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera,
+  viewSize?: { width: number; height: number }
 ) {
   const renderer = makeMockRenderer(pixelRatio)
+  const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
   const manager = new SceneManager(
-    renderer,
+    view,
     () => camera,
     vi.fn() as unknown as () => InstanceType<
       typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
     >,
     eventManager
   )
-  return { manager, renderer, camera, eventManager }
+  return { manager, renderer, view, camera, eventManager }
 }
 
 describe('SceneManager.captureScene', () => {
@@ -646,6 +677,19 @@ describe('SceneManager.captureScene', () => {
     await manager.captureScene(1920, 1080)
     const calls = vi.mocked(renderer.setSize).mock.calls
     expect(calls.at(-1)).toEqual([400, 300])
+  })
+
+  it('restores the view state first and resizes the background to the view size, not the shared buffer size', async () => {
+    const { manager, view } = makeSceneManager(1, undefined, {
+      width: 640,
+      height: 480
+    })
+    const handleResize = vi.spyOn(manager, 'handleResize')
+
+    await manager.captureScene(1920, 1080)
+
+    expect(view.beginRender).toHaveBeenCalledOnce()
+    expect(handleResize).toHaveBeenCalledWith(640, 480)
   })
 
   it('restores perspective camera aspect after capture', async () => {

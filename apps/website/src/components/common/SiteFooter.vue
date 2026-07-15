@@ -86,6 +86,7 @@ const companyColumn: { title: string; links: FooterLink[] } = {
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
+    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
     { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }
   ]
 }
@@ -174,10 +175,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       </div>
 
       <!-- Logo -->
-      <canvas
-        ref="canvasRef"
-        class="pointer-events-none size-52 opacity-80 lg:mt-28"
-      />
+      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>
