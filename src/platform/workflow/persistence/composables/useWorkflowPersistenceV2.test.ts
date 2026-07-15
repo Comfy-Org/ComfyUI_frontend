@@ -132,10 +132,13 @@ vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return onboardingMocks.isCloud
+  }
 }))
 
 const onboardingMocks = vi.hoisted(() => ({
+  isCloud: false,
   onboardingTourEnabled: false,
   isNewUser: null as boolean | null,
   isSubscriptionEnabled: true
@@ -241,6 +244,7 @@ describe('useWorkflowPersistenceV2', () => {
     commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
+    onboardingMocks.isCloud = false
     onboardingMocks.onboardingTourEnabled = false
     onboardingMocks.isNewUser = null
     onboardingMocks.isSubscriptionEnabled = true
@@ -659,6 +663,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('shows Getting Started instead of the templates browser for a flagged new user', async () => {
+      onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = true
       onboardingMocks.isNewUser = true
       const entryStore = useOnboardingEntryStore()
@@ -669,6 +674,21 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
       expect(entryStore.shouldShowGettingStarted).toBe(true)
       expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser off the Cloud build, matching the tour gate', async () => {
+      onboardingMocks.isCloud = false
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
         'Comfy.BrowseTemplates'
       )
     })

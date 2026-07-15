@@ -2,9 +2,6 @@ import { createSharedComposable, until, useEventListener } from '@vueuse/core'
 import { computed, effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import type {
@@ -12,8 +9,8 @@ import type {
   OnboardingTourRunStatus,
   OnboardingTourShape
 } from '@/platform/telemetry/types'
+import { isOnboardingCandidate } from '@/platform/workflow/persistence/onboardingEntryStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNewUserService } from '@/services/useNewUserService'
 import type { NodeId } from '@/types/nodeId'
 
 import {
@@ -160,16 +157,9 @@ function _useOnboardingTourController() {
     })
   }
 
-  /**
-   * Whether the onboarding tour should run for this session. Cloud-only, gated
-   * behind the feature flag and shown once per user via `isNewUser()`.
-   */
+  /** Whether the onboarding tour should run for this session. */
   function shouldStartTour(): boolean {
-    if (!isCloud) return false
-    if (!useSubscription().isSubscriptionEnabled()) return false
-    if (useNewUserService().isNewUser() !== true) return false
-    if (!useFeatureFlags().flags.onboardingTourEnabled) return false
-    return true
+    return isOnboardingCandidate()
   }
 
   function shapeOf(roles: ResolvedRoles | null): OnboardingTourShape {
