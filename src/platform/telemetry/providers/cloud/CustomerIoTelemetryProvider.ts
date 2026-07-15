@@ -63,7 +63,13 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         if (userIdOverride) {
           void analytics.identify(userIdOverride)
         } else {
-          currentUser.onUserResolved((user) => void analytics.identify(user.id))
+          // Journeys profiles minted by server-side event pipelines are keyed
+          // by email with no id; sending the email trait attaches this uid to
+          // them so queued in-app messages (fetched by uid) reach the user.
+          currentUser.onUserResolved((user) => {
+            const email = currentUser.userEmail.value
+            void analytics.identify(user.id, email ? { email } : undefined)
+          })
         }
         currentUser.onUserLogout(() => void analytics.reset())
 

@@ -13,6 +13,7 @@ const hoisted = vi.hoisted(() => {
     analytics,
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
+    userEmail: { value: null as string | null },
     onUserResolved: vi.fn((cb: (user: { id: string }) => void) => {
       resolvedCb = cb
     }),
@@ -31,6 +32,7 @@ vi.mock('@customerio/cdp-analytics-browser', () => ({
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
+    userEmail: hoisted.userEmail,
     onUserResolved: hoisted.onUserResolved,
     onUserLogout: hoisted.onUserLogout
   })
@@ -59,6 +61,7 @@ describe('CustomerIoTelemetryProvider', () => {
     vi.clearAllMocks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.register.mockResolvedValue(undefined)
+    hoisted.userEmail.value = null
     window.__CONFIG__ = {} as typeof window.__CONFIG__
   })
 
@@ -89,13 +92,28 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.load).not.toHaveBeenCalled()
   })
 
-  it('identifies the person by uid only on auth resolve', async () => {
+  it('identifies with uid and the email trait on auth resolve', async () => {
+    createProvider()
+    await vi.dynamicImportSettled()
+
+    hoisted.userEmail.value = 'user@example.com'
+    hoisted.resolveUser('test-uid-7f3a9c')
+
+    expect(hoisted.analytics.identify).toHaveBeenCalledWith('test-uid-7f3a9c', {
+      email: 'user@example.com'
+    })
+  })
+
+  it('identifies with uid alone when no email is available', async () => {
     createProvider()
     await vi.dynamicImportSettled()
 
     hoisted.resolveUser('test-uid-7f3a9c')
 
-    expect(hoisted.analytics.identify).toHaveBeenCalledWith('test-uid-7f3a9c')
+    expect(hoisted.analytics.identify).toHaveBeenCalledWith(
+      'test-uid-7f3a9c',
+      undefined
+    )
   })
 
   it('identifies with the configured user_id override without waiting for auth', async () => {
