@@ -67,11 +67,8 @@ const tools: {
   {
     n: 6,
     media: {
-      type: 'video',
-      src: 'https://media.comfy.org/website/homepage/showcase/video-showcase.webm',
-      autoplay: true,
-      loop: true,
-      hideControls: true
+      type: 'image',
+      src: 'https://media.comfy.org/website/mcp/ship-it-app-mode.png'
     },
     altKey: 'mcp.tools.6.alt'
   }
