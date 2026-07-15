@@ -141,6 +141,21 @@ function useBillingContextInternal(): BillingContext {
         false)
   )
 
+  // Plan identity, independent of subscription health: the per-credit Team plan
+  // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
+  // isActiveSubscription on purpose — paused and payment_failed both force
+  // is_active=false, which is exactly when callers still need to know this is a
+  // team plan.
+  const isTeamPlan = computed(
+    () =>
+      type.value === 'workspace' &&
+      (currentTeamCreditStop.value !== null ||
+        (currentPlanSlug.value
+          ?.toLowerCase()
+          .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
+          false))
+  )
+
   const billingStatus = computed(() =>
     toValue(activeContext.value.billingStatus)
   )
@@ -299,6 +314,7 @@ function useBillingContextInternal(): BillingContext {
     isActiveSubscription,
     isFreeTier,
     isLegacyTeamPlan,
+    isTeamPlan,
     billingStatus,
     subscriptionStatus,
     tier,

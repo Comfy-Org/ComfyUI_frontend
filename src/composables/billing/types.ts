@@ -112,5 +112,12 @@ export interface BillingContext extends BillingState, BillingActions {
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * True when the subscription is a team plan of either generation. Unlike
+   * `isLegacyTeamPlan` this does not require an active subscription: the spend
+   * gate folds billing_status into is_active, so a paused or payment-failed team
+   * plan reports is_active=false and must still read as a team plan.
+   */
+  isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
 }

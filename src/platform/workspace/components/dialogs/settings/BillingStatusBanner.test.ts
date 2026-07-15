@@ -18,6 +18,7 @@ interface Subscription {
 
 const state = vi.hoisted(() => ({
   isActiveSubscription: true,
+  isTeamPlan: true,
   billingStatus: 'paid' as string | null,
   subscription: {
     hasFunds: true,
@@ -39,6 +40,7 @@ vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => state.isActiveSubscription),
+    isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
     renewalDate: computed(() => state.renewalDate),
@@ -138,9 +140,15 @@ function pausedState() {
   state.isActiveSubscription = false
 }
 
+function paymentFailedState() {
+  state.billingStatus = 'payment_failed'
+  state.isActiveSubscription = false
+}
+
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.isActiveSubscription = true
+    state.isTeamPlan = true
     state.billingStatus = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
     state.renewalDate = null
@@ -230,7 +238,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows the payment-declined banner with Update payment for owners', () => {
-    state.billingStatus = 'payment_failed'
+    paymentFailedState()
     state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
@@ -243,7 +251,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
-    state.billingStatus = 'payment_failed'
+    paymentFailedState()
     state.renewalDate = null
     renderBanner()
 

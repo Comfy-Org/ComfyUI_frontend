@@ -8,6 +8,7 @@ type Subscription = BillingContext['subscription']['value']
 export interface BillingContextMockState {
   subscription: Subscription
   isActiveSubscription: boolean
+  isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
   renewalDate: string | null
@@ -16,6 +17,7 @@ export interface BillingContextMockState {
 const defaultState: BillingContextMockState = {
   subscription: null,
   isActiveSubscription: false,
+  isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
   renewalDate: null
@@ -55,6 +57,7 @@ export function useBillingContext(): BillingContext {
     isActiveSubscription: computed(() => state.value.isActiveSubscription),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
+    isTeamPlan: computed(() => state.value.isTeamPlan),
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
     tier: computed(() => null),

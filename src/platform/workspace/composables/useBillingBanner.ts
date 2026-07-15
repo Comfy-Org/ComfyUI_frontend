@@ -13,7 +13,7 @@ export type BillingBannerKind =
   | 'ending'
 
 export interface BillingBannerInputs {
-  isTeamWorkspace: boolean
+  isTeamPlan: boolean
   isLoaded: boolean
   isActiveSubscription: boolean
   billingStatus: BillingStatus | null
@@ -25,27 +25,26 @@ export interface BillingBannerInputs {
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Owner-only states fall through for members; paused and
-// outOfCredits stay visible to members with their own copy. A null subscription
-// (not yet loaded) or a non-team workspace yields no banner.
+// outOfCredits > ending. Gated on the team PLAN, not the workspace type: a team
+// workspace can sit on a personal-tier legacy plan, and once consolidated
+// billing lands a personal workspace can hold a team plan.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.isTeamWorkspace || !inputs.isLoaded) return null
+  if (!inputs.isTeamPlan || !inputs.isLoaded) return null
 
-  // Above the isActiveSubscription gate on purpose: the spend gate folds
-  // billing_status into is_active, so a paused workspace always reports
-  // is_active=false and this check would be dead code below it.
+  // Both sit above the isActiveSubscription gate because the backend folds
+  // billing_status into is_active: paused and payment_failed each report
+  // is_active=false, so either check would be dead code below it.
   if (inputs.billingStatus === 'paused') return 'paused'
-
-  // Inactive workspaces surface a run-lock modal, not this banner.
-  if (!inputs.isActiveSubscription) return null
-
-  // Owner-only states keep their `canManage` gate in the condition so a member
-  // falls through to the next state (e.g. out of credits) instead of stopping.
   if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
     return 'paymentFailed'
   }
+
+  // Inactive workspaces surface a run-lock modal, not this banner. Members hit
+  // this on payment_failed, which is per design — only billing managers see it.
+  if (!inputs.isActiveSubscription) return null
+
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
@@ -57,16 +56,16 @@ export function deriveBillingBanner(
 }
 
 function useBillingBannerInternal() {
-  const { isActiveSubscription, billingStatus, subscription } =
+  const { isActiveSubscription, billingStatus, subscription, isTeamPlan } =
     useBillingContext()
-  const { workspaceType, permissions } = useWorkspaceUI()
+  const { permissions } = useWorkspaceUI()
 
   const dismissed = ref(false)
 
   const kind = computed<BillingBannerKind | null>(() => {
     if (!isCloud) return null
     return deriveBillingBanner({
-      isTeamWorkspace: workspaceType.value === 'team',
+      isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
       isActiveSubscription: isActiveSubscription.value,
       billingStatus: billingStatus.value,

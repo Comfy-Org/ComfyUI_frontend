@@ -70,7 +70,7 @@ function story(
       // Dates in the copy go through vue-i18n's `d()`, so pin the locale rather
       // than inherit the developer's.
       i18n.global.locale.value = 'en'
-      setBillingContextMock(billing)
+      setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
     }
   }
@@ -102,11 +102,14 @@ export const PausedMember: Story = story(
   member
 )
 
-/** A failed charge with Stripe still retrying. Owner-only. */
+/**
+ * A failed charge with Stripe still retrying. Owner-only, and `is_active: false`
+ * for the same reason paused is — payment_failed also denies spend.
+ */
 export const PaymentDeclined: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: true,
+    isActiveSubscription: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -118,7 +121,7 @@ export const PaymentDeclined: Story = story(
 export const PaymentDeclinedNoDate: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: true,
+    isActiveSubscription: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active'
   },

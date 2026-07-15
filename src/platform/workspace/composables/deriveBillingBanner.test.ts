@@ -4,7 +4,7 @@ import type { BillingBannerInputs } from './useBillingBanner'
 import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
-  isTeamWorkspace: true,
+  isTeamPlan: true,
   isLoaded: true,
   isActiveSubscription: true,
   billingStatus: 'paid',
@@ -15,10 +15,17 @@ const funded: BillingBannerInputs = {
   outOfCreditsDismissed: false
 }
 
-// The backend folds billing_status into is_active, so a paused workspace always
-// reports is_active=false. Pinning that pairing keeps the paused cases honest.
+// The backend folds billing_status into is_active, so every spend-denying status
+// arrives paired with is_active=false. Pinning that pairing is what keeps these
+// cases honest — spreading `funded` instead would assert an input the backend
+// cannot emit, and pass no matter where the check sits.
 const paused: Partial<BillingBannerInputs> = {
   billingStatus: 'paused',
+  isActiveSubscription: false
+}
+
+const paymentFailed: Partial<BillingBannerInputs> = {
+  billingStatus: 'payment_failed',
   isActiveSubscription: false
 }
 
@@ -31,8 +38,8 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('shows no banner outside a team workspace', () => {
-    expect(derive({ isTeamWorkspace: false, hasFunds: false })).toBeNull()
+  it('shows no banner outside a team plan', () => {
+    expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
   })
 
   it('shows no banner until the subscription snapshot has loaded', () => {
@@ -51,26 +58,16 @@ describe('deriveBillingBanner', () => {
     expect(derive({ hasFunds: false, outOfCreditsDismissed: true })).toBeNull()
   })
 
+  it('shows payment failed to owners even though the backend reports the plan inactive', () => {
+    expect(derive(paymentFailed)).toBe('paymentFailed')
+  })
+
   it('prioritizes payment failure over out of credits for owners', () => {
-    expect(derive({ billingStatus: 'payment_failed', hasFunds: false })).toBe(
-      'paymentFailed'
-    )
+    expect(derive({ ...paymentFailed, hasFunds: false })).toBe('paymentFailed')
   })
 
-  it('hides the owner-only payment-failed banner from members, falling through to out of credits', () => {
-    expect(
-      derive({
-        billingStatus: 'payment_failed',
-        hasFunds: false,
-        canManage: false
-      })
-    ).toBe('outOfCredits')
-  })
-
-  it('shows nothing to a member whose only problem is payment failure', () => {
-    expect(
-      derive({ billingStatus: 'payment_failed', canManage: false })
-    ).toBeNull()
+  it('hides payment failed from members, who get the run-lock modal instead', () => {
+    expect(derive({ ...paymentFailed, canManage: false })).toBeNull()
   })
 
   it('prioritizes paused above everything, for owners and members', () => {
