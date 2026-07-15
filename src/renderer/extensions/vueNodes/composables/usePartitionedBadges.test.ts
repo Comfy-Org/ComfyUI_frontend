@@ -9,15 +9,11 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { BadgeData } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import type { UUID } from '@/utils/uuid'
 
-const GRAPH_ID: UUID = 'graph-test'
 const NODE_ID = toNodeId(5)
 
 const settings = vi.hoisted(() => new Map<string, unknown>())
@@ -25,20 +21,41 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: (key: string) => settings.get(key) })
 }))
 
-function seedGraph(node?: LGraphNode): void {
+const getNodeDisplayPrice = vi.fn(() => '$0.05 x 3 Runs')
+vi.mock('@/composables/node/useNodePricing', () => ({
+  useNodePricing: () => ({
+    getNodeDisplayPrice,
+    getNodeRevisionRef: () => ({ value: 0 }),
+    hasDynamicPricing: () => false,
+    getRelevantWidgetNames: () => [],
+    getInputNames: () => [],
+    getInputGroupPrefixes: () => []
+  })
+}))
+
+function seedGraph(node: LGraphNode): void {
   const graph = fromPartial<LGraph>({
-    id: GRAPH_ID,
-    getNodeById: (id: NodeId) => (id === NODE_ID ? (node ?? null) : null),
+    id: 'graph-test',
+    getNodeById: (id: NodeId) => (id === NODE_ID ? node : null),
     subgraphs: new Map()
   })
   Reflect.set(graph, 'rootGraph', graph)
+  node.graph = graph
   useCanvasStore().currentGraph = graph
 }
 
-function seedRows(rows: BadgeData[]): void {
-  const badgeStore = useNodeBadgeStore()
-  badgeStore.registerNode(GRAPH_ID, NODE_ID)
-  badgeStore.setBadges(GRAPH_ID, NODE_ID, rows)
+function makeNode(
+  type: string,
+  { apiNode = false }: { apiNode?: boolean } = {}
+): LGraphNode {
+  class TestNode extends LGraphNode {
+    static override nodeData = { name: type, api_node: apiNode }
+  }
+  const node = new TestNode(type)
+  node.id = NODE_ID
+  node.type = type
+  seedGraph(node)
+  return node
 }
 
 function addNodeDef(name: string, python_module: string): void {
@@ -48,6 +65,7 @@ function addNodeDef(name: string, python_module: string): void {
       display_name: name,
       category: 'test',
       python_module,
+      experimental: true,
       input: {},
       output: []
     })
@@ -62,59 +80,57 @@ describe('usePartitionedBadges', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     settings.clear()
+    settings.set('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.ShowAll)
+    settings.set(
+      'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
     settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.ShowAll)
-    seedGraph()
+    settings.set('Comfy.NodeBadge.ShowApiPricing', true)
   })
 
-  it('partitions rows into core chips and pricing entries', () => {
-    seedRows([
-      { kind: 'core', part: 'lifecycle', text: '[BETA]' },
-      { kind: 'core', part: 'id', text: '#5' },
-      { kind: 'core', part: 'source', text: 'my-pack' },
-      { kind: 'credits', text: '$0.05 x 3 Runs' }
-    ])
+  it('partitions derived rows into core chips and pricing entries', () => {
+    makeNode('CustomNode', { apiNode: true })
+    addNodeDef('CustomNode', 'custom_nodes.testpack')
 
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
 
     expect(partitioned.value).toEqual({
       hasComfyBadge: false,
-      core: [{ text: 'BETA' }, { text: '#5' }, { text: 'my-pack' }],
+      core: [{ text: 'BETA' }, { text: '#5' }, { text: 'testpack' }],
       extension: [],
       pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
     })
   })
 
-  it('substitutes the Comfy logo for a core node source row', () => {
+  it('suppresses the source row and shows the logo for a core node', () => {
+    makeNode('CoreNode')
     addNodeDef('CoreNode', 'nodes')
-    seedRows([
-      { kind: 'core', part: 'id', text: '#5' },
-      { kind: 'core', part: 'source', text: '🦊' }
-    ])
 
     const partitioned = usePartitionedBadges(nodeData('CoreNode'))
 
-    expect(partitioned.value.core).toEqual([{ text: '#5' }])
+    expect(partitioned.value.core.some((chip) => chip.text === '#5')).toBe(true)
     expect(partitioned.value.hasComfyBadge).toBe(true)
   })
 
-  it('shows no Comfy logo when the core node has pricing', () => {
+  it('shows no logo when the core node has pricing', () => {
+    makeNode('CoreNode', { apiNode: true })
     addNodeDef('CoreNode', 'nodes')
-    seedRows([{ kind: 'credits', text: '$0.10' }])
 
     const partitioned = usePartitionedBadges(nodeData('CoreNode'))
 
     expect(partitioned.value.hasComfyBadge).toBe(false)
-    expect(partitioned.value.pricing).toEqual([{ required: '$0.10' }])
+    expect(partitioned.value.pricing).toEqual([
+      { required: '$0.05', rest: 'x 3 Runs' }
+    ])
   })
 
-  it('appends non-empty node.badges extension badges after store rows', () => {
-    const node = new LGraphNode('ext-node')
+  it('appends non-empty node.badges extension badges after derived rows', () => {
+    const node = makeNode('CustomNode')
     node.badges = [
       new LGraphBadge({ text: 'EXT' }),
       () => new LGraphBadge({ text: '' })
     ]
-    seedGraph(node)
-    seedRows([{ kind: 'core', part: 'id', text: '#5' }])
 
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
 
@@ -124,16 +140,17 @@ describe('usePartitionedBadges', () => {
     ])
   })
 
-  it('re-partitions when the store rows are rewritten', () => {
-    seedRows([{ kind: 'core', part: 'id', text: '#5' }])
+  it('re-partitions when a badge source changes', () => {
+    makeNode('CustomNode')
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))
     expect(partitioned.value.core).toEqual([{ text: '#5' }])
 
-    useNodeBadgeStore().setBadges(GRAPH_ID, NODE_ID, [
-      { kind: 'core', part: 'id', text: '#5' },
-      { kind: 'credits', text: '$1' }
-    ])
+    addNodeDef('CustomNode', 'custom_nodes.testpack')
 
-    expect(partitioned.value.pricing).toEqual([{ required: '$1' }])
+    expect(partitioned.value.core).toEqual([
+      { text: 'BETA' },
+      { text: '#5' },
+      { text: 'testpack' }
+    ])
   })
 })

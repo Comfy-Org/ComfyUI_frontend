@@ -1,20 +1,16 @@
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
-import {
-  bumpSubgraphCreditsRevision,
-  startBadgeSystem
-} from '@/systems/badgeSystem'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { installNodeBadges } from '@/systems/badgeSystem'
 
 /**
- * Bootstraps the badge system: starts it against the live root graph,
- * forwards the subgraph structure events its store sources cannot
- * observe, and keeps the legacy canvas redrawing when badge sources
- * change.
+ * Bootstraps badge derivation: installs it as the legacy canvas's row
+ * source, forwards the structure events instance state cannot announce,
+ * and keeps the legacy canvas redrawing when badge sources change.
  */
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
@@ -36,9 +32,6 @@ export const useNodeBadge = () => {
     }
   )
 
-  let stopBadgeSystem: (() => void) | undefined
-  onUnmounted(() => stopBadgeSystem?.())
-
   onMounted(() => {
     if (extensionStore.isExtensionInstalled('Comfy.NodeBadge')) return
 
@@ -55,26 +48,23 @@ export const useNodeBadge = () => {
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       init() {
-        stopBadgeSystem = startBadgeSystem({
-          resolveGraphId: () => app.rootGraph.id,
-          resolveNode: (nodeId) => resolveNode(nodeId, app.rootGraph)
-        })
+        installNodeBadges()
         app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
-            bumpSubgraphCreditsRevision()
+            bumpGraphStructureRevision()
             app.canvas?.setDirty(true, true)
           }
         )
         app.canvas.canvas.addEventListener<'subgraph-converted'>(
           'subgraph-converted',
           () => {
-            bumpSubgraphCreditsRevision()
+            bumpGraphStructureRevision()
           }
         )
       },
       afterConfigureGraph() {
-        bumpSubgraphCreditsRevision()
+        bumpGraphStructureRevision()
       }
     })
   })

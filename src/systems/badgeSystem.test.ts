@@ -1,16 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
 
+import { bumpGraphStructureRevision } from '@/lib/litegraph/src/graphStructureRevision'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import type { UUID } from '@/utils/uuid'
 
-import { computeBadges, startBadgeSystem } from './badgeSystem'
+import { computeBadges, nodeBadges } from './badgeSystem'
 import type { BadgeSources } from './badgeSystem'
 
 function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
@@ -161,9 +159,7 @@ describe('computeBadges', () => {
   })
 })
 
-describe('startBadgeSystem', () => {
-  const graphId: UUID = 'graph-root'
-
+describe('nodeBadges', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -191,129 +187,48 @@ describe('startBadgeSystem', () => {
     })
   }
 
-  it('writes rows for registered nodes and reacts to source changes', async () => {
-    const badgeStore = useNodeBadgeStore()
+  it('derives rows and recomputes when a source changes', () => {
     const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
 
-    const stop = startBadgeSystem({
-      resolveGraphId: () => graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-
-    const texts = () =>
-      badgeStore.getBadges(graphId, node.id).map((b) => b.text)
-    expect(texts()).toEqual(['#7'])
+    expect(nodeBadges(node).map((b) => b.text)).toEqual(['#7'])
 
     seedTestNodeDef()
-    await nextTick()
 
-    expect(texts()).toEqual(['[BETA]', '#7', 'my_pack'])
-
-    stop()
+    expect(nodeBadges(node).map((b) => b.text)).toEqual([
+      '[BETA]',
+      '#7',
+      'my_pack'
+    ])
   })
 
-  it('starts watching nodes registered after system start', async () => {
-    const badgeStore = useNodeBadgeStore()
+  it('returns identity-stable rows until a source changes', () => {
     const node = makeNode(3)
 
-    const stop = startBadgeSystem({
-      resolveGraphId: () => graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-    expect(badgeStore.getBadges(graphId, node.id)).toEqual([])
+    const first = nodeBadges(node)
+    expect(nodeBadges(node)).toBe(first)
 
-    badgeStore.registerNode(graphId, node.id)
-    await nextTick()
-
-    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
-      '#3'
-    ])
-
-    stop()
-  })
-
-  it('stops maintaining rows once a node is unregistered', async () => {
-    const badgeStore = useNodeBadgeStore()
-    const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
-    const stop = startBadgeSystem({
-      resolveGraphId: () => graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-
-    badgeStore.unregisterNode(graphId, node.id)
-    await nextTick()
     seedTestNodeDef()
-    await nextTick()
-
-    expect(badgeStore.registeredNodeIds(graphId)).toEqual([])
-    expect(badgeStore.getBadges(graphId, node.id)).toEqual([])
-
-    stop()
+    const second = nodeBadges(node)
+    expect(second).not.toBe(first)
+    expect(nodeBadges(node)).toBe(second)
   })
 
-  it('follows the root graph id across a workflow clear', async () => {
-    const badgeStore = useNodeBadgeStore()
+  it('recomputes when the graph structure revision bumps', () => {
     const node = makeNode(9)
-    let liveGraphId: UUID = graphId
-    badgeStore.registerNode(graphId, node.id)
 
-    const stop = startBadgeSystem({
-      resolveGraphId: () => liveGraphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
-      '#9'
-    ])
+    const first = nodeBadges(node)
+    bumpGraphStructureRevision()
 
-    badgeStore.clearGraph(graphId)
-    liveGraphId = 'graph-after-clear'
-    badgeStore.registerNode(liveGraphId, node.id)
-    await nextTick()
-
-    expect(
-      badgeStore.getBadges(liveGraphId, node.id).map((b) => b.text)
-    ).toEqual(['#9'])
-
-    stop()
+    expect(nodeBadges(node)).not.toBe(first)
+    expect(nodeBadges(node).map((b) => b.text)).toEqual(['#9'])
   })
 
-  it('follows a workflow load that replaces an unconfigured graph id', async () => {
-    const badgeStore = useNodeBadgeStore()
-    const node = makeNode(4)
-    let liveGraphId: UUID = 'graph-unconfigured'
-    const stop = startBadgeSystem({
-      resolveGraphId: () => liveGraphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
+  it('memoizes per node instance', () => {
+    const a = makeNode(1)
+    const b = makeNode(2)
 
-    liveGraphId = 'graph-configured'
-    badgeStore.registerNode(liveGraphId, node.id)
-    await nextTick()
-
-    expect(
-      badgeStore.getBadges(liveGraphId, node.id).map((b) => b.text)
-    ).toEqual(['#4'])
-
-    stop()
-  })
-
-  it('stops writing after the system itself is stopped', async () => {
-    const badgeStore = useNodeBadgeStore()
-    const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
-    const stop = startBadgeSystem({
-      resolveGraphId: () => graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-
-    stop()
-    seedTestNodeDef()
-    await nextTick()
-
-    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
-      '#7'
-    ])
+    expect(nodeBadges(a).map((r) => r.text)).toEqual(['#1'])
+    expect(nodeBadges(b).map((r) => r.text)).toEqual(['#2'])
+    expect(nodeBadges(a)).toBe(nodeBadges(a))
   })
 })

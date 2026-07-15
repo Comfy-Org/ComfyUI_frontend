@@ -9,31 +9,28 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
+import { trackGraphStructure } from '@/lib/litegraph/src/graphStructureRevision'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
+import { nodeBadges } from '@/systems/badgeSystem'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 
 defineProps<{ mobile?: boolean }>()
 
 const { t } = useI18n()
-const badgeStore = useNodeBadgeStore()
 const canvasStore = useCanvasStore()
 
 const creditsBadges = computed(() => {
   const rootGraph = canvasStore.currentGraph?.rootGraph
-  const graphId = canvasStore.rootGraphId
-  if (!rootGraph || graphId === undefined) return []
+  if (!rootGraph) return []
 
-  // Track bucket membership so nodes added or removed later re-run this.
-  void badgeStore.registeredNodeIds(graphId)
+  // Track structure so nodes added or removed later re-run the traversal.
+  trackGraphStructure()
 
   return mapUniqueNodes(rootGraph, (node) => {
     if (node.isSubgraphNode()) return
 
-    const priceRow = badgeStore
-      .getBadges(graphId, node.id)
-      .find((row) => row.kind === 'credits')
+    const priceRow = nodeBadges(node).find((row) => row.kind === 'credits')
     if (!priceRow) return
 
     return [node.title, priceRow.text, node.id] as const

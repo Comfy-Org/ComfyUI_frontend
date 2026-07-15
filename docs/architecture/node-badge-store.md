@@ -1,10 +1,10 @@
 # Node Badge Store
 
-Date: 2026-07-05 (updated 2026-07-06)
-Status: Implemented — slice A (store + system) and slice B (consumer
-cutover, resolved decisions below) shipped as
-`src/stores/nodeBadgeStore.ts`, `src/systems/badgeSystem.ts`,
-`src/lib/litegraph/src/nodeBadgeDraw.ts`. Follow-up to the
+Date: 2026-07-05 (updated 2026-07-15)
+Status: Superseded on this branch by a derive-on-read prototype — see
+[Prototype: derive-on-read](#prototype-derive-on-read-2026-07-15) below.
+Slices A and B shipped as described; the prototype then removed the
+store. Follow-up to the
 [link topology store](link-topology-store.md),
 [reroute chain store](reroute-chain-store.md), and the
 [node data store draft](node-data-store.md)
@@ -191,7 +191,39 @@ Frame-budget parity per ADR 0008's render mitigations applies.
    store-backed. Aggregation behaviour itself is preserved (explicit
    user requirement).
 
-## Scope and sequencing
+## Prototype: derive-on-read (2026-07-15)
+
+Badge rows are derived presentation, not authoritative entity state:
+every row is a pure projection of settings, node definitions, palette,
+pricing, and graph structure. Materializing that projection into a store
+made the registration/watcher/scope machinery cache invalidation. The
+prototype replaces the store with a memoized derivation:
+
+- `nodeBadges(node)` in `src/systems/badgeSystem.ts` — one lazy
+  `computed` per node instance in a `WeakMap`. Entries die with their
+  nodes (workflow loads create new instances), so registration,
+  unregistration, teardown, and the stale-bucket bug class do not exist.
+  `computeBadges` stays pure and data-first; the authoritative sources
+  of truth remain the settings/def/palette/pricing stores and the graph.
+- `graphStructureRevision` (litegraph leaf module) — one revision signal
+  bumped at the `add`/`remove`/`clear` chokepoints and by the
+  set-graph/subgraph-converted/configure events. It replaces store
+  bucket membership, `subgraphCreditsRevision`, and the live-graph-id
+  seams: every badge computed tracks it, so graph-id-keyed reads and
+  subgraph aggregation re-resolve after structural changes. Bumps only
+  invalidate; recomputes happen lazily on the next read.
+- `setBadgeRowsProvider` (in `nodeBadgeDraw.ts`) — a one-function seam
+  installed by `useNodeBadge`, so litegraph never imports the
+  derivation's pricing/nodeDef dependency graph (same acyclicity
+  property the store's import-light trio provided). The identity-keyed
+  draw cache is unchanged: a computed returns the same array until it
+  recomputes.
+
+Trade-offs accepted: badge rows are no longer enumerable per graph
+(`PartnerNodesList` traverses the graph under `trackGraphStructure()`
+instead of querying a bucket), and the structure revision is coarse —
+any structural change invalidates all badge computeds, which is cheap
+because invalidation is a flag and recomputation is per-read.
 
 Slices: (A) store + `BadgeData` + system for core and credits +
 chokepoint registration; (B) consumer cutover — Vue partition query,

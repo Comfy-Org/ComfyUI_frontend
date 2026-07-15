@@ -1,13 +1,14 @@
-import { effectScope, ref, watch, watchEffect } from 'vue'
-import type { EffectScope } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { t } from '@/i18n'
 import { registerBadgeIcon } from '@/lib/litegraph/src/badgeIconRegistry'
+import { trackGraphStructure } from '@/lib/litegraph/src/graphStructureRevision'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { setBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -33,8 +34,8 @@ type PricingBadgeSources =
   | { kind: 'subgraph'; apiNodeCount: number; singleLabel: string }
 
 /**
- * The domain state a node's system-written badges are computed from.
- * Plain data so {@link computeBadges} stays pure — the watch shell
+ * The domain state a node's badges are computed from. Plain data so
+ * {@link computeBadges} stays pure — {@link nodeBadges}' computed
  * gathers these from the live stores.
  */
 export interface BadgeSources {
@@ -108,16 +109,6 @@ function computeCreditsText(pricing: PricingBadgeSources): string {
   }
 }
 
-export interface BadgeSystemOptions {
-  /**
-   * Read live on every recompute: `LGraph.clear()` and `configure()`
-   * reassign the root graph's id, so a captured id goes stale.
-   */
-  resolveGraphId: () => UUID
-  /** Must resolve ids anywhere in the subgraph hierarchy. */
-  resolveNode: (nodeId: NodeId) => LGraphNode | undefined
-}
-
 const CREDITS_BASE_BG_COLOR = '#8D6932'
 
 function registerCreditsIcon(): void {
@@ -128,8 +119,9 @@ function registerCreditsIcon(): void {
 }
 
 /**
- * Reads the pricing-relevant store state so the calling effect re-runs when
- * a price revision, priced widget value, or priced input connection changes.
+ * Reads the pricing-relevant store state so the calling computed re-runs
+ * when a price revision, priced widget value, or priced input connection
+ * changes.
  */
 function touchPricingSources(graphId: UUID, node: LGraphNode): void {
   const pricing = useNodePricing()
@@ -150,17 +142,6 @@ function touchPricingSources(graphId: UUID, node: LGraphNode): void {
       groupPrefixes.some((prefix) => input.name?.startsWith(prefix + '.'))
     if (relevant) void linkStore.isInputSlotConnected(graphId, nodeId, index)
   })
-}
-
-const subgraphCreditsRevision = ref(0)
-
-/**
- * Signals the system that subgraph structure changed in a way its tracked
- * store sources cannot observe (graph switched, subgraph converted,
- * workflow configured). Every wrapper's credits aggregation recomputes.
- */
-export function bumpSubgraphCreditsRevision(): void {
-  subgraphCreditsRevision.value++
 }
 
 /** Promoted widget values on the wrapper override the inner node's own. */
@@ -186,17 +167,10 @@ function collectPromotedOverrides(
 }
 
 /**
- * Tracks the inner api nodes' pricing revisions, the registered-node
- * set, and the structure revision so the wrapper recomputes when inner
- * prices, membership, or structure change.
+ * Aggregates the inner api nodes' credits for a wrapper, tracking their
+ * pricing revisions so inner price changes recompute the wrapper.
  */
-function gatherSubgraphCredits(
-  graphId: UUID,
-  wrapper: SubgraphNode
-): PricingBadgeSources {
-  void subgraphCreditsRevision.value
-  void useNodeBadgeStore().registeredNodeIds(graphId)
-
+function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
   const pricing = useNodePricing()
   const apiLeaves = mapUniqueNodes(wrapper.subgraph, (node) =>
     !node.isSubgraphNode() && node.constructor?.nodeData?.api_node
@@ -218,26 +192,22 @@ function gatherSubgraphCredits(
   return { kind: 'subgraph', apiNodeCount: 1, singleLabel }
 }
 
-function gatherPricing(graphId: UUID, node: LGraphNode): PricingBadgeSources {
-  if (node.isSubgraphNode()) return gatherSubgraphCredits(graphId, node)
+function gatherPricing(node: LGraphNode): PricingBadgeSources {
+  if (node.isSubgraphNode()) return gatherSubgraphCredits(node)
   if (!node.constructor?.nodeData?.api_node) return { kind: 'none' }
-  touchPricingSources(graphId, node)
+  const graphId = node.graph?.rootGraph.id
+  if (graphId !== undefined) touchPricingSources(graphId, node)
   return { kind: 'api-node', label: useNodePricing().getNodeDisplayPrice(node) }
 }
 
-function gatherSources(
-  options: BadgeSystemOptions,
-  graphId: UUID,
-  nodeId: NodeId
-): BadgeSources {
+function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
   const palette = useColorPaletteStore().completedActivePalette
-  const node = options.resolveNode(nodeId)
-  const def = node ? useNodeDefStore().fromLGraphNode(node) : null
+  const def = useNodeDefStore().fromLGraphNode(node)
   const showApiPricing = !!settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
   return {
-    nodeId,
+    nodeId: node.id,
     nodeDef: def
       ? {
           isCoreNode: def.isCoreNode,
@@ -261,68 +231,40 @@ function gatherSources(
         ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
         : CREDITS_BASE_BG_COLOR
     },
-    pricing:
-      node && showApiPricing ? gatherPricing(graphId, node) : { kind: 'none' }
+    pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
   }
 }
 
+const badgeComputeds = new WeakMap<LGraphNode, ComputedRef<BadgeData[]>>()
+
 /**
- * Starts the badge system for one root graph: every node registered in
- * {@link useNodeBadgeStore} gets an effect scope that recomputes its rows
- * whenever a badge source changes. At most one system per graph.
- * @returns A disposer stopping every scope the system created.
+ * A node's derived badge rows, memoized per node instance and recomputed
+ * when a source changes. The computed tracks the graph structure revision
+ * so graph-id-keyed sources and subgraph aggregation re-resolve after
+ * loads and structural edits. Entries die with their nodes; there is no
+ * registration or teardown.
  */
-export function startBadgeSystem(options: BadgeSystemOptions): () => void {
-  registerCreditsIcon()
-  const badgeStore = useNodeBadgeStore()
-  // Instantiate source stores before any effect runs: a store's first
-  // instantiation mutates pinia.state and would invalidate the effect
-  // that triggered it.
-  useSettingStore()
-  useNodeDefStore()
-  useColorPaletteStore()
-
-  const nodeScopes = new Map<NodeId, EffectScope>()
-
-  function watchNodeBadges(nodeId: NodeId): EffectScope {
-    const scope = effectScope(true)
-    scope.run(() => {
-      watchEffect(() => {
-        const graphId = options.resolveGraphId()
-        badgeStore.setBadges(
-          graphId,
-          nodeId,
-          computeBadges(gatherSources(options, graphId, nodeId))
-        )
-      })
+export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
+  let rows = badgeComputeds.get(node)
+  if (!rows) {
+    // Instantiate source stores outside the computed: a store's first
+    // instantiation mutates pinia.state and would invalidate it.
+    useSettingStore()
+    useNodeDefStore()
+    useColorPaletteStore()
+    useWidgetValueStore()
+    useLinkStore()
+    rows = computed(() => {
+      trackGraphStructure()
+      return computeBadges(gatherSources(node))
     })
-    return scope
+    badgeComputeds.set(node, rows)
   }
+  return rows.value
+}
 
-  const systemScope = effectScope(true)
-  systemScope.run(() => {
-    watch(
-      () => badgeStore.registeredNodeIds(options.resolveGraphId()),
-      (nodeIds) => {
-        const live = new Set(nodeIds)
-        for (const [nodeId, scope] of nodeScopes) {
-          if (live.has(nodeId)) continue
-          scope.stop()
-          nodeScopes.delete(nodeId)
-        }
-        for (const nodeId of nodeIds) {
-          if (!nodeScopes.has(nodeId)) {
-            nodeScopes.set(nodeId, watchNodeBadges(nodeId))
-          }
-        }
-      },
-      { immediate: true }
-    )
-  })
-
-  return () => {
-    systemScope.stop()
-    for (const scope of nodeScopes.values()) scope.stop()
-    nodeScopes.clear()
-  }
+/** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
+export function installNodeBadges(): void {
+  registerCreditsIcon()
+  setBadgeRowsProvider(nodeBadges)
 }

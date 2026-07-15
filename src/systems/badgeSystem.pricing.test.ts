@@ -1,16 +1,16 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-import { startBadgeSystem } from './badgeSystem'
+import { nodeBadges } from './badgeSystem'
 
 const getNodeDisplayPrice = vi.fn(() => '$1')
 
@@ -40,7 +40,7 @@ class ApiNode extends LGraphNode {
 
 const graphId: UUID = 'graph-pricing'
 
-describe('badge system pricing input connectivity', () => {
+describe('badge derivation pricing input connectivity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     getNodeDisplayPrice.mockClear()
@@ -51,13 +51,8 @@ describe('badge system pricing input connectivity', () => {
     node.id = toNodeId(5)
     node.type = 'ApiNode'
     for (const name of inputNames) node.addInput(name, 'IMAGE')
-
-    useNodeBadgeStore().registerNode(graphId, node.id)
-    const stop = startBadgeSystem({
-      resolveGraphId: () => graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-    return { node, stop }
+    node.graph = fromPartial<LGraph>({ rootGraph: { id: graphId } })
+    return { node }
   }
 
   function connect(slot: number, linkId: number) {
@@ -71,44 +66,48 @@ describe('badge system pricing input connectivity', () => {
     })
   }
 
-  it('recomputes when a pricing-relevant input connects and disconnects', async () => {
-    const { stop } = setup(['image', 'other'])
+  it('recomputes when a pricing-relevant input connects and disconnects', () => {
+    const { node } = setup(['image', 'other'])
     const evaluations = () => getNodeDisplayPrice.mock.calls.length
+
+    nodeBadges(node)
     const initial = evaluations()
+    nodeBadges(node)
+    expect(evaluations()).toBe(initial)
 
     connect(0, 1)
-    await nextTick()
+    nodeBadges(node)
     expect(evaluations()).toBe(initial + 1)
 
     const linkStore = useLinkStore()
     const topology = linkStore.getInputSlotLink(graphId, toNodeId(5), 0)!
     linkStore.deleteLink(graphId, topology)
-    await nextTick()
+    nodeBadges(node)
     expect(evaluations()).toBe(initial + 2)
-
-    stop()
   })
 
-  it('recomputes when an input-group input connects', async () => {
-    const { stop } = setup(['image', 'ref_images.img0'])
+  it('recomputes when an input-group input connects', () => {
+    const { node } = setup(['image', 'ref_images.img0'])
+
+    nodeBadges(node)
     const initial = getNodeDisplayPrice.mock.calls.length
 
     connect(1, 2)
-    await nextTick()
+    nodeBadges(node)
 
     expect(getNodeDisplayPrice.mock.calls.length).toBe(initial + 1)
-    stop()
   })
 
-  it('ignores an irrelevant input connecting', async () => {
+  it('ignores an irrelevant input connecting', () => {
     connect(7, 9)
-    const { stop } = setup(['image', 'other'])
+    const { node } = setup(['image', 'other'])
+
+    nodeBadges(node)
     const initial = getNodeDisplayPrice.mock.calls.length
 
     connect(1, 3)
-    await nextTick()
+    nodeBadges(node)
 
     expect(getNodeDisplayPrice.mock.calls.length).toBe(initial)
-    stop()
   })
 })

@@ -9,7 +9,6 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -29,7 +28,7 @@ import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { LGraphBadge } from './LGraphBadge'
-import { badgeDrawObjects } from './nodeBadgeDraw'
+import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -423,8 +422,8 @@ export class LGraphNode
   lostFocusAt?: number
   gotFocusAt?: number
   /**
-   * Extension-provided badges, drawn after the system-written rows held in
-   * {@link useNodeBadgeStore}. Thunks are re-evaluated every frame.
+   * Extension-provided badges, drawn after the derived rows from
+   * {@link badgeRows}. Thunks are re-evaluated every frame.
    */
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
   /** @deprecated Badges always render top-right; assignment is ignored. */
@@ -3613,12 +3612,8 @@ export class LGraphNode
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
-    const graphId = this.graph?.rootGraph.id
-    const rows = graphId
-      ? useNodeBadgeStore().getBadges(graphId, this.id)
-      : undefined
     const badgeInstances = [
-      ...(rows ? badgeDrawObjects(this, rows) : []),
+      ...badgeDrawObjects(this, badgeRows(this)),
       ...this.badges.map((badge) =>
         badge instanceof LGraphBadge ? badge : badge()
       )

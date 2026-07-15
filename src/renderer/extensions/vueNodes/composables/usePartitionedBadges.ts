@@ -5,8 +5,8 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -23,7 +23,6 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
  */
 export function usePartitionedBadges(nodeData: VueNodeData) {
   const settingStore = useSettingStore()
-  const badgeStore = useNodeBadgeStore()
   const canvasStore = useCanvasStore()
   const nodeDef = useNodeDefStore().nodeDefsByName[nodeData.type]
 
@@ -37,9 +36,9 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
-    const graphId = canvasStore.rootGraphId
-    const rows = graphId ? badgeStore.getBadges(graphId, nodeData.id) : []
-    for (const row of rows) {
+    const rootGraph = canvasStore.currentGraph?.rootGraph
+    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
+    for (const row of node ? nodeBadges(node) : []) {
       if (row.kind === 'credits') {
         const [required, rest] = splitAroundFirstSpace(row.text)
         pricing.push({ required, rest })
@@ -51,8 +50,6 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
       })
     }
 
-    const rootGraph = canvasStore.currentGraph?.rootGraph
-    const node = rootGraph ? resolveNode(nodeData.id, rootGraph) : undefined
     for (const badge of (node?.badges ?? []).map(toValue)) {
       if (!badge.text) continue
       extension.push(badge)
