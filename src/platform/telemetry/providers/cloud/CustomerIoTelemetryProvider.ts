@@ -2,6 +2,7 @@ import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
 import { omit } from 'es-toolkit'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
 import type {
@@ -40,7 +41,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private eventQueue: QueuedEvent[] = []
   private identifiedUser: CustomerIoIdentity | null = null
-  private identifyPromise: Promise<void> = Promise.resolve()
+  private operationQueue: Promise<void> = Promise.resolve()
 
   constructor() {
     const {
@@ -69,22 +70,43 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         this.analytics = analytics
 
         const currentUser = useCurrentUser()
+        const hasQueuedIdentity = this.eventQueue.some(({ identity }) =>
+          Boolean(identity)
+        )
+        const identifyResolvedUser = (user: AuthUserInfo) =>
+          this.enqueueOperation(() =>
+            this.identify({
+              userId: userIdOverride || user.id,
+              email: currentUser.userEmail.value || undefined
+            })
+          )
+
         if (userIdOverride) {
-          void this.identify({ userId: userIdOverride })
+          void this.enqueueOperation(() =>
+            this.identify({ userId: userIdOverride })
+          )
         }
         currentUser.onUserResolved((user) => {
-          void this.identify({
-            userId: userIdOverride || user.id,
-            email: currentUser.userEmail.value || undefined
-          })
+          void identifyResolvedUser(user)
         })
         currentUser.onUserLogout(() => {
-          this.identifiedUser = null
-          this.identifyPromise = Promise.resolve()
-          void analytics.reset()
+          void this.enqueueOperation(() => this.resetIdentity())
         })
 
-        this.flushQueue()
+        void this.flushQueue()
+
+        if (hasQueuedIdentity) {
+          const resolvedUser = currentUser.resolvedUserInfo.value
+          if (resolvedUser) {
+            void identifyResolvedUser(resolvedUser)
+          } else if (userIdOverride) {
+            void this.enqueueOperation(() =>
+              this.identify({ userId: userIdOverride })
+            )
+          } else {
+            void this.enqueueOperation(() => this.resetIdentity())
+          }
+        }
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
@@ -93,29 +115,41 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       })
   }
 
-  private identify(identity: CustomerIoIdentity): Promise<void> {
+  private enqueueOperation(
+    operation: () => Promise<void> | void
+  ): Promise<void> {
+    this.operationQueue = this.operationQueue.then(operation).catch((error) => {
+      console.error('Failed to process Customer.io operation:', error)
+    })
+    return this.operationQueue
+  }
+
+  private async resetIdentity(): Promise<void> {
+    this.identifiedUser = null
+    await this.analytics?.reset()
+  }
+
+  private async identify(identity: CustomerIoIdentity): Promise<void> {
     const analytics = this.analytics
-    if (!analytics) return Promise.resolve()
+    if (!analytics) return
 
     if (
       this.identifiedUser?.userId === identity.userId &&
       this.identifiedUser.email === identity.email
     ) {
-      return this.identifyPromise
+      return
     }
 
     this.identifiedUser = identity
-    this.identifyPromise = analytics
-      .identify(
+    try {
+      await analytics.identify(
         identity.userId,
         identity.email ? { email: identity.email } : undefined
       )
-      .then(() => undefined)
-      .catch((error) => {
-        if (this.identifiedUser === identity) this.identifiedUser = null
-        console.error('Failed to identify Customer.io user:', error)
-      })
-    return this.identifyPromise
+    } catch (error) {
+      this.identifiedUser = null
+      console.error('Failed to identify Customer.io user:', error)
+    }
   }
 
   private async send(
@@ -128,9 +162,11 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
     if (identity) await this.identify(identity)
 
-    await analytics.track(event, properties).catch((error) => {
+    try {
+      await analytics.track(event, properties)
+    } catch (error) {
       console.error('Failed to track Customer.io event:', error)
-    })
+    }
   }
 
   private track(
@@ -141,18 +177,21 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     if (!this.isEnabled) return
     const properties = { ...metadata, event_source: EVENT_SOURCE }
     if (this.analytics) {
-      void this.send(event, properties, identity)
+      void this.enqueueOperation(() => this.send(event, properties, identity))
     } else {
       this.eventQueue.push({ event, properties, identity })
     }
   }
 
-  private flushQueue(): void {
+  private async flushQueue(): Promise<void> {
     if (!this.analytics) return
-    for (const { event, properties, identity } of this.eventQueue) {
-      void this.send(event, properties, identity)
-    }
+    const queue = this.eventQueue
     this.eventQueue = []
+    await this.enqueueOperation(async () => {
+      for (const { event, properties, identity } of queue) {
+        await this.send(event, properties, identity)
+      }
+    })
   }
 
   trackAuth(metadata: AuthMetadata): void {
