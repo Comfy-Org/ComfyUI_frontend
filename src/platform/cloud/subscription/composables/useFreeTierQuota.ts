@@ -22,9 +22,10 @@ export const useFreeTierQuota = createSharedComposable(function () {
     { immediate: true }
   )
 
-  const quotaEnabled = computed(
-    () => flags.freeTierJobAllowanceEnabled && maxAvailable.value > 0
-  )
+  const quotaEnabled = computed(() => {
+    console.error('ftq', flags.freeTierJobAllowanceEnabled, maxAvailable.value)
+    return flags.freeTierJobAllowanceEnabled && maxAvailable.value > 0
+  })
   const hasInvalidNodes = computed(() => creditsBadges.value.length > 0)
   const freeTierExecutionPermitted = computed(
     () => !hasInvalidNodes.value && quotaEnabled.value && available.value > 0
