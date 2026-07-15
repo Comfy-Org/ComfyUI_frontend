@@ -91,7 +91,7 @@ for (const entry of loadManifest()) {
   const workflowRelative = `browser_tests/${entry.workflow}`
 
   test.describe(`custom node: ${entry.pack}`, () => {
-    test('T0 load: expected nodes register and render in both renderers', async ({
+    test('T0 load: expected nodes register, render in both renderers, and frontend extensions load', async ({
       comfyPage
     }) => {
       test.setTimeout(entry.timeoutMs)
@@ -106,6 +106,22 @@ for (const entry of loadManifest()) {
         `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
       )
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
+
+      // Backend registration alone does not prove the pack's FRONTEND JS
+      // loaded: a wrong web dir or a loadExtensions regression leaves nodes
+      // in object_info while every JS-driven behavior silently vanishes
+      // (and this suite would then be testing vanilla nodes). Assert the
+      // pack's boot-registered extensions actually arrived in the browser.
+      if (entry.expectedExtensions.length > 0) {
+        const registered = await comfyPage.page.evaluate(() =>
+          window.app!.extensions.map((extension) => extension.name)
+        )
+        for (const name of entry.expectedExtensions)
+          expect(
+            registered,
+            `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
+          ).toContain(name)
+      }
 
       // vueNodesCompatible: false = canvas-only assertions; still runs, no skip.
       const rendererPasses = rendererPassesFor(entry)

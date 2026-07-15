@@ -501,17 +501,12 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
 
       if (vueNodesEnabled) {
         await comfyPage.vueNodes.waitForNodes(2)
-        // Output-side mirror of getInputSlotConnectionDot, addressed by
-        // data-slot-key so shared-label ambiguity cannot misfire the drag.
-        const outDot = comfyPage.page
-          .locator(`[data-node-id="${String(producer.id)}"]`)
-          .locator('.lg-slot--output')
-          .filter({
-            has: comfyPage.page.locator(
-              `[data-slot-key="${String(producer.id)}-out-${outIndex}"]`
-            )
-          })
-          .getByTestId('slot-connection-dot')
+        // Slot-key-addressed dots so shared-label ambiguity cannot misfire
+        // the drag.
+        const outDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
+          String(producer.id),
+          outIndex
+        )
         const inDot = comfyPage.vueNodes.getInputSlotConnectionDot(
           String(consumer.id),
           inIndex

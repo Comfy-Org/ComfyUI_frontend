@@ -59,10 +59,19 @@ Any `-g` pattern works against the generic scripts, e.g.
   element mounts under Vue Nodes 2.0. Both renderer passes - unless the pack
   declares `vueNodesCompatible: false` in the manifest (evidence required;
   see [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)), in which case its tests run their
-  LiteGraph-canvas assertions only. Never a skip.
+  LiteGraph-canvas assertions only. Never a skip. T0 also asserts each
+  pack's declared frontend extensions registered (`expectedExtensions`):
+  backend nodes can appear while the pack's JS silently failed to load.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
+- **Dynamic inputs** (`dynamicInputs.spec.ts`): autogrow nodes (pack JS adds
+  an input when the last one is connected, removes trailing empties on
+  disconnect) grow and shrink correctly, via BOTH a real mouse drag and a
+  programmatic connect, under both renderers, asserted in the graph AND (in
+  the Vue renderer) as a rendered slot row, both directions. This behavior
+  lives in pack JS, not `/object_info`, so no def-driven tier can see it.
+  Curated cases live in the spec's `AUTOGROW_CASES` table.
 - **Every-node tiers** (`allNodes.spec.ts`): the pack's FULL node list,
   discovered live from `/object_info`, is exercised with zero
   configuration - every registered node mounts in both renderers (chunked

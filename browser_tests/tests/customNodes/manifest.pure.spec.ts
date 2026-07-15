@@ -17,6 +17,7 @@ function validEntry(): CustomNodeManifestEntry {
     tiers: ['load', 'connectivity', 'run'],
     workflow: 'assets/customNodes/example_run.json',
     expectedNodes: ['ExampleNode'],
+    expectedExtensions: ['Example.Extension'],
     requiresGpu: false,
     requiresModels: [],
     timeoutMs: 60_000
@@ -64,6 +65,30 @@ test.describe('customNode manifest', () => {
       if (prior === undefined) delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
       else process.env.CUSTOM_NODES_ALLOW_UNPINNED = prior
     }
+  })
+
+  test('expectedExtensions is required; empty only as an explicit no-frontend-JS declaration', () => {
+    // Omission must fail (a new pack row cannot silently opt out of the
+    // extension-loaded assert); an explicit [] is the deliberate opt-out.
+    const { expectedExtensions: _omitted, ...withoutField } = validEntry()
+    expect(() =>
+      assertEntry(withoutField as CustomNodeManifestEntry, 0)
+    ).toThrow(/expectedExtensions/)
+    expect(() =>
+      assertEntry({ ...validEntry(), expectedExtensions: [] }, 0)
+    ).not.toThrow()
+    expect(() =>
+      assertEntry({ ...validEntry(), expectedExtensions: [''] }, 0)
+    ).toThrow(/expectedExtensions/)
+    expect(() =>
+      assertEntry(
+        { ...validEntry(), expectedExtensions: [42 as unknown as string] },
+        0
+      )
+    ).toThrow(/expectedExtensions/)
+    expect(() =>
+      assertEntry({ ...validEntry(), expectedExtensions: ['A', 'A'] }, 0)
+    ).toThrow(/expectedExtensions/)
   })
 
   test('pack must be a plain path segment (it becomes the install dirname)', () => {
