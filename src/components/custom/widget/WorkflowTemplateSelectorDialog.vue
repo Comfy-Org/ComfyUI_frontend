@@ -37,7 +37,7 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-10 w-96 border border-border-subtle bg-transparent"
+          class="h-8 w-96 border border-border-subtle bg-transparent"
           autofocus
         />
       </div>
