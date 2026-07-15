@@ -136,18 +136,12 @@ function candidatesFor(target: ScreenRect, bubble: Size): CoachMarkPosition[] {
 }
 
 /**
- * Place the coach-mark near `target` without covering it: try below, above,
- * right, then left, and take the first placement that fits the viewport and does
- * not overlap the target. The result is always clamped into the viewport, so the
- * mark stays fully on screen at any zoom, pan, or window size — including when
- * the target is larger than the viewport and no candidate fits.
+ * Place the coach-mark near `target` without covering it: below, above, right, then
+ * left, taking the first placement that fits and clears the target. Always clamped
+ * into the viewport, so the mark stays on screen even when no candidate fits.
  *
- * `preferredEdge` wins whenever it still fits. The mark is positioned every frame
- * with no transition (it rides the canvas rigidly), so an unpinned first-fit would
- * snap between edges mid-zoom as the target grows; holding the edge for the step's
- * duration keeps it put until that edge genuinely stops working.
- *
- * Pure, so it is testable across screen sizes without layout.
+ * @param preferredEdge Wins while it still fits. Without it, a first-fit search would
+ * snap the mark between edges mid-zoom as the target grows.
  */
 export function coachMarkPosition(
   target: ScreenRect,
@@ -165,10 +159,8 @@ export function coachMarkPosition(
     candidates.find(viable)
   if (placed) return placed
 
-  // No candidate fits — the target is too big for the mark to sit clear of it (a
-  // tall node leaves no room above or below, a wide one none to the sides). Take
-  // the side with the most free space and pin the mark into the viewport there,
-  // so it overlaps the target's edge rather than spilling off screen.
+  // Nothing fits: the target is too big to sit clear of. Overlap its roomiest edge
+  // rather than spill off screen.
   return clampToViewport(
     candidates[freestEdgeIndex(target, viewport)],
     bubble,
@@ -204,11 +196,9 @@ function canvasFrame(): CanvasFrame | null {
 }
 
 /**
- * The region the overlay may draw in: the canvas's own client rect, not the
- * window. The app lays the canvas out in a grid inset by the top/bottom/side
- * chrome, so this excludes the toolbar and panels by measuring them rather than
- * assuming their size — it stays correct when that chrome changes, and in modes
- * where the canvas is inset differently. Null when the canvas is absent.
+ * The region the overlay may draw in: the canvas's client rect, not the window.
+ * Measuring the canvas excludes the toolbar and panels without assuming their size.
+ * Null when the canvas is absent or unlaid-out.
  */
 export function canvasViewport(): ScreenRect | null {
   const canvas = app.canvas
@@ -270,10 +260,7 @@ export function maskRectsFor(nodeIds: NodeId[]): ScreenRect[] {
     .filter((rect): rect is ScreenRect => rect !== null)
 }
 
-/**
- * Duration of the tour's framing animation. The overlay waits for the camera to
- * stop moving rather than counting this out, but it bounds that wait.
- */
+/** Duration of the tour's framing animation; bounds the overlay's wait for it. */
 export const TOUR_FOCUS_DURATION_MS = 450
 
 /** Never magnify past this: the aim is a node that reads, not one that dominates. */
@@ -283,14 +270,9 @@ const MAX_FOCUS_SCALE = 0.6
  * The fill fraction that frames `bounds` with room left for a `reserve`-sized
  * coach-mark, in the units `animateToBounds` expects.
  *
- * Framing can't be one tuned number: litegraph derives the scale from whichever
- * axis binds, so a fixed fill zooms a tall node until it fills the height and
- * squeezes the mark off screen, while that same value leaves a small node distant.
- *
  * The mark sits beside the node *or* below it, never both, so each arrangement is
- * costed separately and the roomier one wins. Nothing floors the result — a node
- * too big to show whole is allowed to be small, because forcing a minimum scale is
- * what pushes it past the viewport and strands the mark in a corner.
+ * costed separately and the roomier one wins. Deliberately unfloored: forcing a
+ * minimum scale is what pushes a big node past the viewport and strands the mark.
  */
 export function focusFillFor(
   bounds: Size,
@@ -322,11 +304,10 @@ export function focusFillFor(
 }
 
 /**
- * Frame the view around the given nodes, sized so `reserve` worth of space is left
- * for the coach-mark beside them. Pass no `reserve` to pan to the nodes at the
- * current scale without re-zooming, so the tour zooms in once and only pans after.
- * Uses the animated focus path (marks the canvas dirty for us); no-op when none
- * resolve.
+ * Frame the view around the given nodes. No-op when none resolve.
+ *
+ * @param reserve Space to leave for the coach-mark. Omit to pan at the current
+ * scale, so the tour zooms once and only pans after.
  */
 export function focusNodes(nodeIds: NodeId[], reserve?: Size): void {
   const nodes = resolveNodes(nodeIds)
@@ -351,13 +332,6 @@ export function canvasElement(): HTMLCanvasElement | null {
   return app.canvas?.canvas ?? null
 }
 
-/**
- * The canvas transform as a comparable string, or null when the canvas is absent.
- * The overlay samples this per frame to tell when the camera has stopped moving:
- * `animateToBounds` reports no completion and cannot be cancelled, so an unchanged
- * transform is the only honest settle signal — it stays correct when two framing
- * tweens overlap, or when the user grabs the canvas mid-zoom.
- */
 /** Consecutive identical frames that mean the camera has stopped. */
 const SETTLE_FRAMES = 2
 
@@ -377,9 +351,7 @@ export const INITIAL_SETTLE: SettleState = {
 /**
  * Fold one frame's transform into the settle state. `animateToBounds` reports no
  * completion and cannot be cancelled, so an unchanged transform is the only honest
- * "camera stopped" signal — it stays correct when two framing tweens overlap or the
- * user grabs the canvas mid-zoom. An absent transform counts as settled: there is
- * no camera to wait for.
+ * "camera stopped" signal. An absent transform counts as settled: no camera to wait for.
  */
 export function trackSettle(
   state: SettleState,
@@ -391,6 +363,7 @@ export function trackSettle(
   return { key, frames, settled: frames >= SETTLE_FRAMES }
 }
 
+/** The canvas transform as a comparable string, or null when the canvas is absent. */
 export function canvasTransformKey(): string | null {
   const frame = canvasFrame()
   if (!frame) return null

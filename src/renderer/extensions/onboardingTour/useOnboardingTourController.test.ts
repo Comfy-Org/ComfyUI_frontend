@@ -523,10 +523,8 @@ describe('useOnboardingTourController.start', () => {
   })
 
   it('captures the media when the run reports after the click advanced to Result', async () => {
-    // Production ordering: clicking Run advances the step synchronously, so the
-    // execution event arrives while Result — not Run — is current. Gating the
-    // outcome on the Run step alone dropped every event, and the media never
-    // resolved. The suite's `advance` is a spy, so move the step by hand here.
+    // Production ordering: the Run click advances synchronously, so the execution
+    // event lands while Result is current. `advance` is a spy, so move it by hand.
     mocks.hasFunds = true
     mocks.steps = [
       { kind: 'run', nodeId: null },
@@ -692,8 +690,8 @@ describe('useOnboardingTourController.start', () => {
   })
 
   it('still advances after the launching component unmounts', async () => {
-    // Regression: start() runs inside the Getting Started screen's setup, which
-    // unmounts right after. The Run-click listener must survive that teardown.
+    // start() runs inside the Getting Started screen's setup, which unmounts right
+    // after; the Run-click listener must survive that teardown.
     mocks.steps = [
       { kind: 'run', nodeId: null },
       { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }

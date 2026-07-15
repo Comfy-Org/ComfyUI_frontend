@@ -56,17 +56,15 @@ export function shapeOf(roles: ResolvedRoles): OnboardingTourShape {
   return roles.mediaKind === 'video' ? 'i2v' : 'image-edit'
 }
 
-/**
- * One step in a built tour. `nodeId` is the spotlight target (null for Run,
- * which points at the toolbar button, not a node); `prompt` carries the
- * subgraph-aware focus path; `mediaKind` shapes the Result renderer; `shape`
- * picks the Upload/Prompt copy.
- */
 export interface TourStep {
   kind: TourStepKind
+  /** Spotlight target; null for Run, which points at the toolbar button. */
   nodeId: NodeId | null
+  /** The subgraph-aware path to the editable prompt widget. */
   prompt?: PromptRole
+  /** Picks the Result renderer. */
   mediaKind?: MediaKind
+  /** Picks the Upload/Prompt copy. */
   shape?: OnboardingTourShape
 }
 

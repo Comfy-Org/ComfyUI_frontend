@@ -31,10 +31,9 @@ export function isUpgradeModalOpen(): boolean {
 }
 
 /**
- * The graph nodes a single step points at: its own target, plus the prompt's
- * collapsed host (the subgraph is never entered, so its exposed port is the
- * spotlight target). Shared by the spotlight and reveal derivations so they
- * can't drift.
+ * The graph nodes a step points at: its own target, plus the prompt's collapsed host
+ * (the subgraph is never entered). Shared by the spotlight and reveal derivations so
+ * they can't drift.
  */
 function stepTargets(step: TourStep): NodeId[] {
   const ids: NodeId[] = []
@@ -43,11 +42,7 @@ function stepTargets(step: TourStep): NodeId[] {
   return ids
 }
 
-/**
- * Tour state: step position, resolved roles, the ordered step sequence, which
- * nodes are currently revealed, and the run/result of the user's first
- * generation. All litegraph reads happen through the canvas adapter, never here.
- */
+/** Tour state. All litegraph reads happen through the canvas adapter, never here. */
 export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const phase = ref<TourPhase>('idle')
   const stepIndex = ref(0)
@@ -56,16 +51,13 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   const revealedNodeIds = ref<Set<NodeId>>(new Set())
   const resultMedia = ref<ResultMedia | null>(null)
   /**
-   * Set when the run reports any outcome (success, error, interrupt). The Result
-   * step's "Generating…" hangs off this rather than off `resultMedia`, which only
-   * lands if the sink yields a URL before its capture times out — a failed capture
-   * must not read as generating forever.
+   * Set on any run outcome. Drives "Generating…", which `resultMedia` alone cannot:
+   * a capture that times out must not read as generating forever.
    */
   const runFinished = ref(false)
   /**
-   * Bumped once per `start()`. `start()` returns to idle and back to active in one
-   * tick, so a watcher on `phase` never observes the gap and cannot tell a restart
-   * from a step change; this gives it an edge it can see.
+   * Bumped once per `start()`, which passes through idle within one tick — so a
+   * watcher on `phase` cannot tell a restart from a step change, but can tell on this.
    */
   const tourRunId = ref(0)
   /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
@@ -128,12 +120,9 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   /**
-   * Record the sink's generated output as the Result step's media. The output URL
-   * is not ready synchronously when the run finishes (the cloud queue refresh
-   * fetches it just after), so wait for it to appear rather than dropping the
-   * first run. The media kind comes from the resolved sink, not the output MIME,
-   * so a restored-from-URL result still picks the right renderer. Idempotent and
-   * bails if the tour ends mid-wait.
+   * Record the sink's output as the Result step's media. The URL lands just after the
+   * run finishes (the cloud queue refresh fetches it), so wait rather than drop it.
+   * Kind comes from the resolved sink, not the MIME, so restored results still render.
    */
   async function captureResultMedia() {
     if (phase.value !== 'active' || resultMedia.value) return

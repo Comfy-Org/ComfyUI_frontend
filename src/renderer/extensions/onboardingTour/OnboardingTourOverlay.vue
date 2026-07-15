@@ -1,10 +1,3 @@
-<!--
-  Progressive-disclosure overlay (true-hide, option (a): SVG-mask only).
-  A near-opaque scrim covers the canvas; holes are cut only for the current
-  step's revealed nodes, so everything else reads as absent without any graph
-  mutation. Step copy binds from the active step; Skip/Back/Next drive the tour
-  controller.
--->
 <template>
   <Teleport v-if="isActive" to="body">
     <div
@@ -223,21 +216,18 @@ const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
 const isRunStep = computed(() => currentStep.value?.kind === 'run')
 const isResultStep = computed(() => currentStep.value?.kind === 'result')
 
-// Generating until the run reports an outcome — not until the media arrives. The
-// media capture polls the sink and gives up silently on timeout, so hanging this off
-// `resultMedia` left the spinner running forever when the sink yielded no URL.
+/** Gated on the run reporting, not on media: a timed-out capture must not spin forever. */
 const isGenerating = computed(
   () => isResultStep.value && !runFinished.value && !resultMedia.value
 )
 
-// The Run step advances on click (no Next escape); every later step keeps Next.
+/** The Run step advances on click, so it offers no Next. */
 const showNextButton = computed(() => !isRunStep.value)
 
 function stepCopyKey(step: TourStep): { title: string; body: string } {
   const base = 'onboardingTour.step'
   switch (step.kind) {
     case 'upload': {
-      // t2i has no source node, so it never builds an Upload step.
       const shape = step.shape ?? 'other'
       return {
         title: `${base}.upload.${shape}.title`,
@@ -280,26 +270,21 @@ function onNext() {
 const preferredMotion = usePreferredReducedMotion()
 const reduceMotion = computed(() => preferredMotion.value === 'reduce')
 
-// The tour opens on the workflow's default framing, undimmed, so the user sees
-// the whole flow before it dims down to the first target.
+/** Undimmed preview of the whole workflow before the tour dims to the first target. */
 const INTRO_PREVIEW_MS = 500
-// How long the mark takes to travel to the next step's target. The camera waits
-// this out so the mark's glide and the camera's framing never run at once.
+/** The camera waits this out, so the mark's glide and the framing never run at once. */
 const MARK_GLIDE_MS = 400
-// A camera that never settles (the user keeps panning) must not strand the copy.
+/** A camera that never settles (the user keeps panning) must not strand the copy. */
 const SETTLE_WATCHDOG_MS = TOUR_FOCUS_DURATION_MS + 200
 
 const revealed = ref(false)
 const bubbleVisible = ref(false)
 /** True once the tour has zoomed in; later steps pan at that scale. */
 const hasZoomed = ref(false)
-/** True once this step's framing is final — gates latching the mark's side. */
 const cameraSettled = ref(false)
 /**
- * The side the mark sits on, held for the step so it doesn't jump as the user pans
- * or zooms. Latched only once the framing settles: latching mid-zoom would freeze a
- * choice made against the old view and keep the mark there even when the settled
- * framing gives another side more room.
+ * The side the mark sits on, held for the step so it doesn't jump as the user pans.
+ * Latched only once the framing settles, so the choice reflects the final view.
  */
 const lockedEdge = ref<CoachMarkEdge | undefined>()
 
@@ -325,14 +310,9 @@ function showCopy() {
 }
 
 /**
- * Whether the mark glides to its position or is pinned to it.
- *
- * It glides on a step change, so advancing reads as the mark travelling to the
- * next target. It is pinned whenever the canvas itself is moving — under a camera
- * tween or the user's own pan/zoom, a mark with its own transition becomes a
- * second object chasing the first, on a different easing curve. Pinned, it rides
- * the canvas as one object. The two never overlap: the glide is spent before the
- * camera starts, and the camera is still by the time the next glide begins.
+ * Whether the mark glides to its target or is pinned to it. It glides on a step
+ * change; while the canvas moves it is pinned, so it rides the canvas as one object
+ * rather than chasing it on a second easing curve.
  */
 const markGlides = ref(false)
 let lastTransformKey: string | null = null
@@ -345,18 +325,14 @@ function pinMarkWhileCanvasMoves() {
   }
 }
 
-// The copy stays hidden until the camera stops moving, so text never slides across
-// the screen mid-zoom. The ring and mark ride the canvas rigidly and need no wait.
+/** Holds the copy hidden until the camera stops, so text never slides mid-zoom. */
 function pollSettle() {
   if (!awaitingSettle) return
   settle = trackSettle(settle, canvasTransformKey())
   if (settle.settled) showCopy()
 }
 
-/**
- * The space the coach-mark needs beside the target, measured from the rendered
- * mark rather than assumed, so the framing tracks the real card and its copy.
- */
+/** Measured from the rendered mark, so the framing tracks the real card. */
 function reserve() {
   return {
     width: bubbleWidth.value + COACH_MARK_GAP,
@@ -367,14 +343,11 @@ function reserve() {
 /**
  * Reveal a step: frame its target, then show the copy once the camera is still.
  *
- * `glideFirst` delays the camera so the mark can travel to the new target first —
- * the two motions read in sequence rather than at once. The opening step has no
- * previous position to travel from, so it frames immediately.
+ * @param glideFirst Delay the camera so the mark travels first and the two motions
+ * read in sequence. False for the opening step, which has nowhere to travel from.
  */
 function beginStep(glideFirst = true) {
-  // The first node step zooms in; every step after it pans at that same scale, so
-  // the view never zooms back out and in again. The Run step points at the toolbar,
-  // so it never moves the camera.
+  // The Run step points at the toolbar, so it never moves the camera.
   const moves = !isRunStep.value
   revealed.value = true
 
@@ -384,8 +357,7 @@ function beginStep(glideFirst = true) {
   }
 
   const frame = () => {
-    // Reserve the mark's real footprint on the first framing so the node is sized
-    // to leave room for it; later steps pan at that scale.
+    // Reserving only on the first framing zooms once; later steps pan at that scale.
     focusNodes(
       [...spotlitNodeIds.value],
       hasZoomed.value ? undefined : reserve()
@@ -432,11 +404,11 @@ watch(
 const holeRects = ref<ScreenRect[]>([])
 const spotRects = ref<ScreenRect[]>([])
 
-// The region the mark may occupy is the canvas's own rect, not the window: the app
-// insets the canvas below the top bar and beside the panels, and placing against
-// the window let the mark land underneath that chrome. Re-read per frame (cheap,
-// and the rAF is already reading layout) so panel and window resizes are picked up
-// without a separate observer. Falls back to the window before the canvas exists.
+/**
+ * The canvas rect, not the window: the app insets the canvas below the top bar and
+ * beside the panels, so placing against the window put the mark under that chrome.
+ * Falls back to the window until the canvas exists.
+ */
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 const canvasRect = ref<ScreenRect | null>(null)
 const viewport = computed<ScreenRect>(
@@ -449,8 +421,7 @@ const viewport = computed<ScreenRect>(
     }
 )
 
-// Holes are cut only once the guided steps begin, so the intro preview reads as
-// the plain, undimmed workflow.
+/** Holes are cut only once the steps begin, so the intro preview reads undimmed. */
 const visibleHoleRects = computed(() => (revealed.value ? holeRects.value : []))
 const visibleSpotRects = computed(() =>
   revealed.value
@@ -472,9 +443,7 @@ function domClientRect(selector: string): ScreenRect | null {
   return { left, top, width, height }
 }
 
-// Run step spotlights the toolbar button. Result lights the toolbar too — the run
-// lives there — but only cuts it out of the scrim: no ring, so the eye stays on the
-// result node the coach-mark points at.
+/** Result cuts the toolbar out of the scrim unringed, so the eye stays on the node. */
 function recompute() {
   if (isRunStep.value) {
     const rect = domClientRect(RUN_BUTTON_SELECTOR)
@@ -494,10 +463,7 @@ function recompute() {
   spotRects.value = spotlit
 }
 
-// RAF keeps the rects aligned while the canvas moves — whether the tour's own
-// camera is animating, or the user is panning/zooming. The ring and the mark are
-// both positioned from these rects with no transition of their own, so they ride
-// the canvas as one object instead of chasing it.
+/** Keeps the rects aligned while the canvas moves, under the tour's camera or the user's. */
 function onFrame() {
   canvasRect.value = canvasViewport()
   recompute()
@@ -522,9 +488,8 @@ watch(
   { immediate: true }
 )
 
-// A canvas resize (window or side panel) invalidates the framing: animateToBounds
-// captures the canvas size when the tween starts, so a resize mid-flight lands the
-// camera short. Re-frame the settled step against the new size.
+// animateToBounds captures the canvas size when the tween starts, so a resize
+// mid-flight lands the camera short. Re-frame against the new size.
 useResizeObserver(
   computed(() => (isActive.value ? canvasElement() : null)),
   () => {
@@ -534,23 +499,22 @@ useResizeObserver(
   }
 )
 
-// Move focus to the coach-mark only when the tour opens — not on every step
-// reveal, which would yank focus back mid-interaction.
+// Only on open, not on every step: re-focusing would yank focus back mid-interaction.
 watch(isActive, (active) => {
   if (active) void bubbleRef.value?.focus()
 })
 
-// Tearing down the overlay (e.g. route away mid-tour) must end the tour so the
-// controller's grace timer can't outlive the UI it drives.
+// Routing away mid-tour must end the tour, so the controller's grace timer can't
+// outlive the UI it drives.
 onUnmounted(() => {
   clearTimers()
   if (isActive.value) controller.end('skip')
 })
 
-/** Px the node ring sits outside the box, mirroring litegraph's selection overlay (inset -3px). */
+/** Px the node ring sits outside the box, mirroring litegraph's selection overlay. */
 const NODE_RING_OFFSET = 3
 
-// The node ring frames the box from just outside; the Run button ring hugs it tightly.
+/** The node ring frames the box from outside; the Run button ring hugs it tightly. */
 function ringStyle(rect: ScreenRect) {
   const offset = isRunStep.value ? 0 : NODE_RING_OFFSET
   return {
@@ -564,14 +528,7 @@ function ringStyle(rect: ScreenRect) {
 const { width: bubbleWidth, height: bubbleHeight } =
   useElementBounding(bubbleRef)
 
-// The edge chosen for this step, held while it still fits, so the mark doesn't snap
-// sides as the user pans or zooms afterwards. Only latched once the camera settles:
-// latching mid-zoom would freeze a choice made against the old framing, and keep the
-// mark on that side even after the settled view gives a better one more room.
-// The coach-mark sits beside the target and never covers it; the cursor rides on
-// the box edge nearest the target, so the card reads as pointing at the node.
-// While the target is off-screen (the user panned away) the mark holds its last
-// placement rather than chasing a target that isn't there.
+/** Null while the target is off-screen, so the mark holds its last placement. */
 const placement = computed(() => {
   const rect = focusRect.value
   if (!rect) return null
@@ -584,14 +541,12 @@ const placement = computed(() => {
   )
 })
 
-// Latch the side once the framing is final. From there it only changes if the user
-// pans far enough that the latched side stops fitting.
+// Once latched, the side only changes if the user pans far enough to break its fit.
 watch([placement, cameraSettled], ([pos, settled]) => {
   if (settled && pos) lockedEdge.value = pos.pointerEdge
 })
 
-// The glide's CSS duration comes from the same constant the camera delay uses, so
-// the mark has always landed by the time the camera starts.
+// Shares MARK_GLIDE_MS with the camera delay, so the mark lands before it starts.
 const bubbleStyle = computed(() => {
   const glide = markGlides.value
     ? { transitionDuration: `${MARK_GLIDE_MS}ms` }

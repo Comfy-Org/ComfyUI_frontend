@@ -306,8 +306,6 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('lights the action bar on the Result step without ringing it', async () => {
-    // The run lives in the toolbar, so the Result step keeps it out of the scrim —
-    // but unringed, so the eye stays on the sink node the coach-mark points at.
     const actionbar = document.createElement('div')
     actionbar.setAttribute('data-testid', 'comfy-actionbar')
     actionbar.getBoundingClientRect = () =>
@@ -322,11 +320,10 @@ describe('OnboardingTourOverlay', () => {
     try {
       renderOverlay()
 
-      // Two holes cut (sink node + action bar)...
+      // Holes: sink node + action bar. Ring: the sink node only.
       await vi.waitFor(() => {
         expect(screen.getAllByTestId('onboarding-hole')).toHaveLength(2)
       })
-      // ...but only the sink node is ringed.
       expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
     } finally {
       actionbar.remove()

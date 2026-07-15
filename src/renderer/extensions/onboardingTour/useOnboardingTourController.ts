@@ -89,14 +89,12 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Handle the run finishing. `execution_success` captures the Result media;
-   * every outcome reports the run with its real status and surfaces the nudge.
-   * When Run is the last step (no Result follows), a finished run completes the
-   * tour so `Completed` fires — otherwise the Result step drives completion.
+   * Handle the run finishing: capture the media on success, report the real status,
+   * and surface the nudge. When Run is the last step, this completes the tour;
+   * otherwise the Result step does.
    */
   function handleRunOutcome(status: OnboardingTourRunStatus) {
-    // The Run click advances to Result before the run reports, so accept either:
-    // gating on 'run' alone dropped every outcome whenever a Result step followed.
+    // The Run click advances to Result before the run reports, so accept either.
     const step = store.currentStep?.kind
     if (step !== 'run' && step !== 'result') return
     if (runOutcomeHandled) return
@@ -112,13 +110,10 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * On the run's completion, resolve the Result media, report the run, and
-   * surface the nudge — keyed to the real execution outcome (success vs
-   * error/interrupt), NOT the ambiguous `activeJobId` reset which also fires on
-   * failures. NOT the step advance: that fires on the Run click (see
-   * {@link listenForRunClick}). Owned by a detached scope because `start()` runs
-   * inside the Getting Started screen's setup, which unmounts right after — a
-   * component-scoped listener would be disposed before the user reaches Run.
+   * Watch for the run to finish, keyed to the real execution outcome rather than the
+   * `activeJobId` reset, which also fires on failure. Owned by a detached scope:
+   * `start()` runs in the Getting Started screen's setup, which unmounts right after,
+   * so a component-scoped listener would die before the user reaches Run.
    */
   function listenForFirstRun() {
     stopRunListener?.()
@@ -145,10 +140,8 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * The Run step advances the moment the user clicks the Run button — the click
-   * is the honest "they ran it" signal and keeps the coach-mark moving instantly
-   * (waiting for execution completion left it stuck on Run). Capture-phase so it
-   * fires even though the overlay scrim sits above the toolbar.
+   * Advance on the Run click rather than on execution completion, which left the mark
+   * stuck on Run. Capture-phase, so it fires despite the scrim above the toolbar.
    */
   function listenForRunClick() {
     stopRunClick?.()
@@ -176,10 +169,10 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Serialize the loaded graph and run the tour on it. `entry` tags where the
-   * tour was launched from; `?share=`/`?template=` arrivals pass `share_url`/
-   * `template_url`, the Getting Started card keeps the default. Aborts cleanly if
-   * gating fails or no workflow is active.
+   * Serialize the loaded graph and run the tour on it. Aborts cleanly if gating fails
+   * or no workflow is active.
+   *
+   * @param entry Where the tour was launched from, for telemetry.
    */
   async function start(
     templateId?: string,
@@ -208,11 +201,9 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Shared entry point for both the Getting Started card and the URL loaders.
-   * Shows the loader, waits until the just-loaded template is actually present
-   * on the live canvas, then starts the tour — so the overlay never paints over
-   * a not-yet-rendered graph. Best-effort: on timeout it starts degraded rather
-   * than trapping, and the loader always clears.
+   * Shared entry point for the Getting Started card and the URL loaders. Waits until
+   * the template is present on the live canvas before starting, so the overlay never
+   * paints over an unrendered graph. On timeout it starts degraded rather than trap.
    */
   async function beginTour({
     templateId,
@@ -261,10 +252,10 @@ function _useOnboardingTourController() {
   }
 
   /**
-   * Gate the Run step: funded users just proceed (the run itself is reported when
-   * it actually succeeds, not on arrival here); no-funds users get the upgrade
-   * modal and the tour ends. `end` surfaces the nudge, which defers itself while
-   * the modal is open and appears once it closes. Returns true when gated.
+   * Gate the Run step: no-funds users get the upgrade modal and the tour ends, with
+   * the nudge deferring itself until that modal closes.
+   *
+   * @returns True when gated.
    */
   function gateRunStep(): boolean {
     if (hasFunds()) return false
@@ -287,13 +278,10 @@ function _useOnboardingTourController() {
 
     if (step.kind === 'run') {
       if (gateRunStep()) return
-      // Advance the instant the user clicks Run; the Result step's copy bridges
-      // the generating→ready gap.
       listenForRunClick()
     }
 
-    // Never enter the subgraph: spotlight the collapsed host's prompt port on the
-    // root graph. restoreView is defensive if the user opened one manually.
+    // Defensive: the tour never enters a subgraph, but the user may have opened one.
     restoreView()
 
     useTelemetry()?.trackOnboardingTourStepViewed?.({

@@ -198,7 +198,7 @@ describe('canvasSpotlightAdapter', () => {
   describe('rectIntersectsViewport', () => {
     const viewport = { left: 0, top: 100, width: 1000, height: 800 }
 
-    it.each([
+    it.for([
       ['fully inside', { left: 200, top: 200, width: 50, height: 50 }, true],
       [
         'straddling an edge',
@@ -220,7 +220,7 @@ describe('canvasSpotlightAdapter', () => {
         { left: 200, top: 900, width: 50, height: 50 },
         false
       ]
-    ])('is %s => %s', (_label, rect, expected) => {
+    ] as const)('is %s => %s', ([, rect, expected]) => {
       expect(rectIntersectsViewport(rect, viewport)).toBe(expected)
     })
 
@@ -278,8 +278,7 @@ describe('canvasSpotlightAdapter', () => {
       )
 
     it('caps a tiny node at the same scale a roomy one gets, never zooming further', () => {
-      // Both fit with room to spare, so both land on the ceiling rather than one
-      // being magnified until it dominates the view.
+      // Both fit with room to spare, so both land on the ceiling.
       const tiny = { width: 60, height: 40 }
       const roomy = { width: 400, height: 300 }
 
@@ -314,8 +313,6 @@ describe('canvasSpotlightAdapter', () => {
     })
 
     it('leaves the mark room for any node, without a floor forcing overflow', () => {
-      // The regression: a minimum scale used to override the fit, pushing a big
-      // node past the viewport so no placement could sit clear of it.
       const nodes = [
         { width: 240, height: 140 },
         { width: 500, height: 650 },
@@ -448,7 +445,7 @@ describe('canvasSpotlightAdapter', () => {
         expect(pos.top).toBeGreaterThanOrEqual(inset.top)
       })
 
-      it.each([
+      it.for([
         [
           'taller than the region',
           { left: 400, top: 110, width: 200, height: 900 }
@@ -469,7 +466,7 @@ describe('canvasSpotlightAdapter', () => {
           'hard against the bottom-right',
           { left: 1200, top: 750, width: 60, height: 45 }
         ]
-      ])('keeps the mark on screen with a target %s', (_label, target) => {
+      ] as const)('keeps the mark on screen with a target %s', ([, target]) => {
         expect(
           isInside(coachMarkPosition(target, bubble, inset), bubble, inset)
         ).toBe(true)

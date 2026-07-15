@@ -1,4 +1,3 @@
-<!-- Bottom-right "explore templates" nudge shown once the tour ends. -->
 <template>
   <div
     v-if="shown"
@@ -82,7 +81,7 @@ import {
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
 
-// Let the fresh result land and be looked at before the nudge fades in over it.
+/** Delayed, so the fresh result is seen before the nudge fades in over it. */
 const { appearDelayMs = 1500 } = defineProps<{ appearDelayMs?: number }>()
 
 const { t } = useI18n()
@@ -108,8 +107,8 @@ watch(shouldShow, (visible) => {
   if (visible) startAppearDelay()
 })
 
-// No-funds fallback: the run-step gate opens the upgrade modal and arms the
-// nudge; surface it only once that modal has closed so the two never overlap.
+// The run-step gate arms the nudge behind the upgrade modal; surface it only once
+// that modal closes, so the two never overlap.
 const upgradeModalOpen = computed(() => isUpgradeModalOpen())
 
 watch(upgradeModalOpen, (open, wasOpen) => {
