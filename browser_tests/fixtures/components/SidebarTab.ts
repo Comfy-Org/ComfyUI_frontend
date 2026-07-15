@@ -322,6 +322,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
+  // --- Panel chrome ---
+  public readonly panelHeader: Locator
+
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -358,6 +361,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
     this.downloadSelectedButton = page.getByTestId('assets-download-selected')
     this.backToAssetsButton = page.getByText('Back to all assets')
+    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
