@@ -715,6 +715,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('opens the templates browser when the flag is on but the user is not new', async () => {
+      onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = true
       onboardingMocks.isNewUser = false
       const entryStore = useOnboardingEntryStore()
@@ -729,6 +730,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('opens the templates browser when the flag is off', async () => {
+      onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = false
       onboardingMocks.isNewUser = true
       const entryStore = useOnboardingEntryStore()
@@ -745,6 +747,7 @@ describe('useWorkflowPersistenceV2', () => {
     it('opens the templates browser, not Getting Started, when subscriptions are disabled', async () => {
       // The tour refuses when subscriptions are off, so the takeover must not show
       // — otherwise it would dismiss into a bare canvas with no tour.
+      onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = true
       onboardingMocks.isNewUser = true
       onboardingMocks.isSubscriptionEnabled = false
@@ -760,6 +763,7 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it('does not show Getting Started for a flagged new user arriving via a template URL', async () => {
+      onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = true
       onboardingMocks.isNewUser = true
       routeMocks.query = { template: 'default-template-id' }
