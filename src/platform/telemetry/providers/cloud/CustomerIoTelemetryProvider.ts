@@ -34,7 +34,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private isInAppPluginReady = false
   private eventQueue: QueuedEvent[] = []
-  private pageViewQueued = true
+  private pageViewQueued = false
 
   constructor() {
     const {

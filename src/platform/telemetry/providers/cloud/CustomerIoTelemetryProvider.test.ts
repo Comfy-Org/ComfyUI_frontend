@@ -79,7 +79,10 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('reports the current page after registering the in-app plugin', async () => {
-    createProvider()
+    const provider = createProvider()
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
     await vi.dynamicImportSettled()
 
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
@@ -112,7 +115,8 @@ describe('CustomerIoTelemetryProvider', () => {
   it('reports client-side route changes', async () => {
     const provider = createProvider()
     await vi.dynamicImportSettled()
-    hoisted.analytics.page.mockClear()
+
+    expect(hoisted.analytics.page).not.toHaveBeenCalled()
 
     provider.trackPageView('workflow_editor', {
       path: 'https://cloud.comfy.org/'
