@@ -1167,7 +1167,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 で、1つのプロンプトから音声、音楽、効果音、複数話者の対話を生成します。プロンプト内で声の特徴、感情、雰囲気、BGM、効果音を記述し、話すセリフも含めてください。内蔵プリセットボイスの選択、最大3つの参照clip（プロンプト内で@Audio1-3とタグ付け）からのボイスクローン、またはキャラクター画像からのボイス生成も可能です。1回の実行で最大2分の音声を生成できます。",
+    "description": "ByteDance Seed Audio 1.0 で、1つのプロンプトから音声、音楽、効果音、複数話者の対話を生成します。プロンプト内で声の特徴、感情、雰囲気、BGM、効果音を記述し、話すセリフも含めてください。内蔵プリセットボイスの選択、最大3つの参照clip（プロンプト内で{'@'}Audio1-3とタグ付け）からのボイスクローン、またはキャラクター画像からのボイス生成も可能です。1回の実行で最大2分の音声を生成できます。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1183,7 +1183,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "声の条件付け方法：「text only」（すべてプロンプトで記述）、「audio reference」（最大3つの声をクローン、@Audio1-3でタグ付け）、「image reference」（キャラクター画像1枚から声を生成）、「preset voice」（内蔵の名前付きボイスでプロンプトを読み上げ）から選択。"
+        "tooltip": "声の条件付け方法：「text only」（すべてプロンプトで記述）、「audio reference」（最大3つの声をクローン、{'@'}Audio1-3でタグ付け）、「image reference」（キャラクター画像1枚から声を生成）、「preset voice」（内蔵の名前付きボイスでプロンプトを読み上げ）から選択。"
       },
       "sample_rate": {
         "name": "sample_rate",

@@ -1167,7 +1167,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0을 사용하여 하나의 프롬프트로 음성, 음악, 효과음, 다중 화자 대화를 생성합니다. 프롬프트에 음성(들), 감정, 분위기, 배경 음악, 효과음을 설명하고, 말할 대사를 포함하세요. 내장 프리셋 음성을 선택하거나, 최대 3개의 참조 clip에서 음성을 클론하거나(@Audio1-3으로 프롬프트에 태그), 캐릭터 이미지에서 음성을 추출할 수 있습니다. 실행당 최대 2분의 오디오를 생성할 수 있습니다.",
+    "description": "ByteDance Seed Audio 1.0을 사용하여 하나의 프롬프트로 음성, 음악, 효과음, 다중 화자 대화를 생성합니다. 프롬프트에 음성(들), 감정, 분위기, 배경 음악, 효과음을 설명하고, 말할 대사를 포함하세요. 내장 프리셋 음성을 선택하거나, 최대 3개의 참조 clip에서 음성을 클론하거나({'@'}Audio1-3으로 프롬프트에 태그), 캐릭터 이미지에서 음성을 추출할 수 있습니다. 실행당 최대 2분의 오디오를 생성할 수 있습니다.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1183,7 +1183,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "음성 조건 방식: 'text only'(모든 것을 프롬프트에 설명), 'audio reference'(최대 3개의 음성 클론, @Audio1-3 태그), 'image reference'(캐릭터 이미지에서 음성 추출), 'preset voice'(내장된 이름 음성으로 프롬프트 읽기) 중 선택."
+        "tooltip": "음성 조건 방식: 'text only'(모든 것을 프롬프트에 설명), 'audio reference'(최대 3개의 음성 클론, {'@'}Audio1-3 태그), 'image reference'(캐릭터 이미지에서 음성 추출), 'preset voice'(내장된 이름 음성으로 프롬프트 읽기) 중 선택."
       },
       "sample_rate": {
         "name": "sample_rate",

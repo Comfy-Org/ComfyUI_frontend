@@ -1167,7 +1167,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "Genera voz, música, efectos de sonido y diálogos multivoces a partir de un solo prompt con ByteDance Seed Audio 1.0. Describe la(s) voz/vozes, emoción, ambiente, música de fondo y efectos de sonido en el prompt, e incluye las líneas a pronunciar. Opcionalmente, elige una voz predefinida, clona voces de hasta 3 clips de referencia (etiquetados como @Audio1-3 en el prompt), o deriva una voz de la imagen de un personaje. Hasta 2 minutos de audio por ejecución.",
+    "description": "Genera voz, música, efectos de sonido y diálogos multivoces a partir de un solo prompt con ByteDance Seed Audio 1.0. Describe la(s) voz/vozes, emoción, ambiente, música de fondo y efectos de sonido en el prompt, e incluye las líneas a pronunciar. Opcionalmente, elige una voz predefinida, clona voces de hasta 3 clips de referencia (etiquetados como {'@'}Audio1-3 en el prompt), o deriva una voz de la imagen de un personaje. Hasta 2 minutos de audio por ejecución.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1183,7 +1183,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "Cómo condicionar la voz: 'solo texto' (describe todo en el prompt), 'referencia de audio' (clona hasta 3 voces, etiquetadas como @Audio1-3), 'referencia de imagen' (deriva una voz de la imagen de un personaje), o 'voz predefinida' (elige una voz incorporada que lee el prompt)."
+        "tooltip": "Cómo condicionar la voz: 'solo texto' (describe todo en el prompt), 'referencia de audio' (clona hasta 3 voces, etiquetadas como {'@'}Audio1-3), 'referencia de imagen' (deriva una voz de la imagen de un personaje), o 'voz predefinida' (elige una voz incorporada que lee el prompt)."
       },
       "sample_rate": {
         "name": "sample_rate",

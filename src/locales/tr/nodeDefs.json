@@ -1167,7 +1167,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 ile tek bir istemden konuşma, müzik, ses efektleri ve çoklu konuşmacı diyaloğu oluşturun. İstemde ses(ler)i, duyguyu, ortamı, arka plan müziğini ve ses efektlerini tanımlayın ve konuşulacak replikleri ekleyin. İsteğe bağlı olarak yerleşik bir hazır ses seçin, en fazla 3 referans clip'ten sesleri klonlayın (istemde @Audio1-3 olarak etiketlenmiş), ya da bir karakter görselinden ses türetin. Her çalıştırmada en fazla 2 dakika ses.",
+    "description": "ByteDance Seed Audio 1.0 ile tek bir istemden konuşma, müzik, ses efektleri ve çoklu konuşmacı diyaloğu oluşturun. İstemde ses(ler)i, duyguyu, ortamı, arka plan müziğini ve ses efektlerini tanımlayın ve konuşulacak replikleri ekleyin. İsteğe bağlı olarak yerleşik bir hazır ses seçin, en fazla 3 referans clip'ten sesleri klonlayın (istemde {'@'}Audio1-3 olarak etiketlenmiş), ya da bir karakter görselinden ses türetin. Her çalıştırmada en fazla 2 dakika ses.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1183,7 +1183,7 @@
       },
       "reference_mode": {
         "name": "reference_mode",
-        "tooltip": "Sesi nasıl koşullandırmak istersiniz: 'yalnızca metin' (her şeyi istemde tanımlayın), 'ses referansı' (en fazla 3 sesi klonlayın, @Audio1-3 olarak etiketlenmiş), 'görsel referansı' (bir karakter görselinden ses türetin) veya 'hazır ses' (istemi okuyan yerleşik isimli bir ses seçin)."
+        "tooltip": "Sesi nasıl koşullandırmak istersiniz: 'yalnızca metin' (her şeyi istemde tanımlayın), 'ses referansı' (en fazla 3 sesi klonlayın, {'@'}Audio1-3 olarak etiketlenmiş), 'görsel referansı' (bir karakter görselinden ses türetin) veya 'hazır ses' (istemi okuyan yerleşik isimli bir ses seçin)."
       },
       "sample_rate": {
         "name": "sample_rate",
