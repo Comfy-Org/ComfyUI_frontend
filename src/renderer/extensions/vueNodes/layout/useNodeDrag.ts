@@ -50,9 +50,9 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
-    activeDragNodeId = nodeId
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
     if (!layout) return
+    activeDragNodeId = nodeId
     const position = layout.position ?? { x: 0, y: 0 }
 
     // Track shift key state and sync to canvas for snap preview
@@ -194,9 +194,8 @@ function useNodeDragIndividual() {
     lastCanvasDelta = canvasDelta
   }
 
-  function handleDrag(event: PointerEvent, nodeId: NodeId) {
-    const activeNodeId = activeDragNodeId ?? nodeId
-    if (!dragStartPos || !dragStartMouse) {
+  function handleDrag(event: PointerEvent) {
+    if (!dragStartPos || !dragStartMouse || !activeDragNodeId) {
       return
     }
 
@@ -211,22 +210,23 @@ function useNodeDragIndividual() {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    startAutoPan(event, activeNodeId)
+    startAutoPan(event, activeDragNodeId)
 
     rafId = requestAnimationFrame(() => {
       rafId = null
-      updateNodePositions(activeNodeId)
+      updateNodePositions(activeDragNodeId!)
     })
   }
 
-  function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
-    const activeNodeId = activeDragNodeId ?? nodeId
+  function endDrag(event: PointerEvent) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && activeNodeId) {
+    if (shouldSnap(event) && activeDragNodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = toValue(layoutStore.getNodeLayoutRef(activeNodeId))
+      const currentLayout = toValue(
+        layoutStore.getNodeLayoutRef(activeDragNodeId)
+      )
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
@@ -234,7 +234,7 @@ function useNodeDragIndividual() {
         // Only add update if position actually changed
         if (snappedPos.x !== currentPos.x || snappedPos.y !== currentPos.y) {
           boundsUpdates.push({
-            nodeId: activeNodeId,
+            nodeId: activeDragNodeId,
             bounds: {
               x: snappedPos.x,
               y: snappedPos.y,
