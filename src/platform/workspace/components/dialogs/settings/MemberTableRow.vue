@@ -29,7 +29,7 @@
       </div>
     </TableCell>
     <TableCell class="text-sm text-muted-foreground">
-      {{ $t(roleLabelKey(member.role, isOriginalOwner)) }}
+      {{ $t(roleLabelKey(member.role)) }}
     </TableCell>
     <TableCell v-if="canManageMembers" class="text-sm text-muted-foreground">
       {{ lastActivityLabel }}
@@ -89,13 +89,11 @@ const {
   member,
   isCurrentUser,
   canManageMembers = false,
-  isOriginalOwner = false,
   menuItems = []
 } = defineProps<{
   member: WorkspaceMember
   isCurrentUser: boolean
   canManageMembers?: boolean
-  isOriginalOwner?: boolean
   menuItems?: MenuItem[]
 }>()
 

@@ -253,7 +253,7 @@ describe('useSettingUI', () => {
       expect(keys).toContain('workspace-members')
     })
 
-    it('shows the partner nodes entry only to owners and admins', () => {
+    it('shows the partner nodes entry only to owners', () => {
       env.state.canManagePartnerNodes = false
       expect(navKeys(useSettingUI().navGroups.value)).not.toContain(
         'workspace-partner-nodes'

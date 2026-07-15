@@ -2847,7 +2847,7 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "This workspace's subscription is paused. Your workspace owners need to update the payment method."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -3085,15 +3085,15 @@
       "error": "Failed to remove member"
     },
     "changeRoleDialog": {
-      "promoteTitle": "Make {name} an admin?",
-      "promoteIntro": "They'll be able to:",
-      "promotePermissionCredits": "Add additional credits",
-      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other admins (except the workspace owner).",
-      "promoteConfirm": "Make admin",
-      "demoteTitle": "Demote {name} to member?",
-      "demoteMessage": "They'll lose admin access.",
-      "demoteConfirm": "Demote to member",
+      "makeOwnerTitle": "Make {name} an owner?",
+      "ownerIntro": "They'll be able to:",
+      "ownerPermissionCredits": "Add additional credits",
+      "ownerPermissionManage": "Manage members, payment methods, and workspace settings",
+      "ownerPermissionRoles": "Make other members owners or members (except the workspace creator).",
+      "makeOwner": "Make owner",
+      "makeMemberTitle": "Make {name} a member?",
+      "memberMessage": "They'll lose owner access.",
+      "makeMember": "Make member",
       "success": "Role updated",
       "error": "Failed to update role"
     },
@@ -3168,7 +3168,6 @@
     "subscribe": "Subscribe",
     "personal": "Personal",
     "roleOwner": "Owner",
-    "roleAdmin": "Admin",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",

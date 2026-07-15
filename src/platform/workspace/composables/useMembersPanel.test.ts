@@ -602,13 +602,13 @@ describe('useMembersPanel', () => {
 
       const roleItems = items[0].items ?? []
       expect(roleItems.map((i) => i.label)).toEqual([
-        'workspaceSwitcher.roleAdmin',
+        'workspaceSwitcher.roleOwner',
         'workspaceSwitcher.roleMember'
       ])
       expect(roleItems.map((i) => i.checked)).toEqual([false, true])
     })
 
-    it('checks Admin for owner-role rows', async () => {
+    it('checks Owner for owner-role rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
       const roleItems = items[0].items ?? []

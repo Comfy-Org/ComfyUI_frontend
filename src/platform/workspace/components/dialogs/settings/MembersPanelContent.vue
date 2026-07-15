@@ -127,7 +127,6 @@
               :member="member"
               :is-current-user="isCurrentUser(member)"
               :can-manage-members="permissions.canManageMembers"
-              :is-original-owner="isOriginalOwner(member)"
               :menu-items="memberMenus.get(member.id)"
             />
           </template>
@@ -260,7 +259,6 @@ const {
   uiConfig,
   fetchBalance,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,

@@ -222,7 +222,7 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
-  // Partner-node governance is Owner/Admin-only; Members never see the tab.
+  // Partner-node governance is owner-only; members never see the tab.
   const shouldShowPartnerNodesPanel = computed(
     () =>
       shouldShowWorkspacePanel.value && permissions.value.canManagePartnerNodes

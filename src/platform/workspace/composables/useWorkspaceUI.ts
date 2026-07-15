@@ -23,7 +23,7 @@ interface WorkspacePermissions {
   // commit); only the original owner gets `canManageSubscriptionLifecycle`.
   canManageSubscriptionLifecycle: boolean
   canTopUp: boolean
-  // Partner-node governance is workspace-wide and gated to Owner + Admins
+  // Partner-node governance is workspace-wide and gated to owners
   // (both hold the backend 'owner' role); Members never see the tab.
   canManagePartnerNodes: boolean
 }

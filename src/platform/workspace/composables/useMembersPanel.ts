@@ -245,7 +245,7 @@ export function useMembersPanel() {
       {
         label: t('workspacePanel.members.actions.changeRole'),
         items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleAdmin')),
+          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },

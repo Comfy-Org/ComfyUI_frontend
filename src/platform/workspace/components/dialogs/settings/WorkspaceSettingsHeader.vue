@@ -74,7 +74,7 @@ const { uiConfig } = useWorkspaceUI()
 
 const MAX_NAME_LENGTH = WORKSPACE_NAME_MAX_LENGTH
 
-// Renaming is gated to Owner + Admins (and the sole owner of a personal
+// Renaming is gated to owners (and the sole owner of a personal
 // workspace); Members never see the affordance.
 const canEdit = computed(() => uiConfig.value.showEditWorkspaceMenuItem)
 

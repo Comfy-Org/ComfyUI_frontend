@@ -229,7 +229,7 @@ const { t, d } = useI18n()
 const tableContainer = ref<HTMLElement | null>(null)
 const { pageSize } = useAutoPageSize(tableContainer, 1)
 
-// Owners/admins see team-wide activity + the per-user footer; members see only
+// Owners see team-wide activity + the per-user footer; members see only
 // their own usage, scoped to their name.
 const { permissions } = useWorkspaceUI()
 const { userDisplayName, userEmail } = useCurrentUser()

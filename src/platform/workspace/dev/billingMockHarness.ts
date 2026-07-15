@@ -26,9 +26,7 @@ const LS_UI = 'cbm_ui'
 const ACTIVE_KEY = 'cbm.active'
 
 type Workspace = 'personal' | 'team'
-// 'owner' = the signed-in user is the workspace creator (isOriginalOwner);
-// 'admin' = owner-role but not the creator; 'member' = plain member.
-type Role = 'owner' | 'admin' | 'member'
+type Role = 'owner' | 'member'
 
 // Real signed-in email so 'owner' can make the current user the creator (the
 // original-owner check matches the earliest member's email to the current user).
@@ -99,7 +97,7 @@ const OPTIONS: Record<
   string[]
 > = {
   ws: ['personal', 'team'],
-  role: ['owner', 'admin', 'member'],
+  role: ['owner', 'member'],
   tier: ['free', 'standard', 'creator', 'pro', 'enterprise'],
   state: ['active', 'cancelled', 'inactive', 'changing', 'at_risk', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
@@ -379,14 +377,13 @@ function members(): unknown {
             name: 'You',
             email: me,
             joined_at: '2026-01-05T00:00:00Z',
-            role: cfg.role === 'admin' ? 'owner' : 'member',
+            role: 'member',
             is_original_owner: false,
             last_active_at: hoursAgo(1),
             credits_used_this_month: usage(1234)
           }
         ]
   // A long roster so the table overflows and scrolls under its sticky header.
-  // role 'owner' (non-creator) renders as "Admin"; 'member' as "Member".
   const names = [
     'Jane Doe',
     'Rob Johnson',

@@ -110,7 +110,7 @@ const isEnding = computed(
 )
 
 // One status banner slot across every workspace tab, in priority order: paused →
-// payment-failure warning → out of credits → plan ending. All owner/admin-only
+// payment-failure warning → out of credits → plan ending. All owner-only
 // (members can't act on any of them).
 const banner = computed(() => {
   if (isInPersonalWorkspace.value) return null
