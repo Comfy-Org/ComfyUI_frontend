@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import BrandButton from '../components/common/BrandButton.vue'
+import HeroSection from '../components/legal/HeroSection.vue'
+import { getRoutes } from '../config/routes'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout
+  title="Thanks for reaching out - Comfy"
+  description="Thanks for reaching out. Based on what you shared, one of our self-serve plans is likely the best fit."
+  noindex
+>
+  <HeroSection title="Thanks for reaching out." />
+
+  <section class="px-6 pb-24 lg:pb-40">
+    <div
+      class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-6 text-center text-base font-light lg:text-lg"
+    >
+      <p>
+        Based on what you shared, we think you'll get more out of one of our
+        self-serve plans. They're built for individual creators and smaller
+        teams, and you can start today without talking to anyone.
+      </p>
+
+      <p>
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Standard</strong
+        >,
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Creator</strong
+        >, and
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Pro</strong
+        > for individual creators, and our new
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Teams</strong
+        > plan for putting multiple users under one account with shared billing
+        and a shared pool of credits.
+      </p>
+
+      <div class="mt-2 flex justify-center">
+        <BrandButton href={routes.cloudPricing} variant="solid" size="nav">
+          See plans and pricing →
+        </BrandButton>
+      </div>
+
+      <p class="text-primary-warm-gray mt-8 text-sm">
+        Think you have an enterprise need we're missing? It happens. Email us
+        at         <a
+          href="mailto:gtm-team@comfy.org"
+          class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
+          >gtm-team@comfy.org</a
+        > and we'll take a closer look.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

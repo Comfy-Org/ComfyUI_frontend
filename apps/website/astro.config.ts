@@ -10,11 +10,12 @@ const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
 )
-const SITEMAP_EXCLUDED_PATHNAMES = new Set(
-  LOCALE_PREFIXES.flatMap((prefix) =>
+const SITEMAP_EXCLUDED_PATHNAMES = new Set([
+  ...LOCALE_PREFIXES.flatMap((prefix) =>
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
-  )
-)
+  ),
+  '/thank-you-individual'
+])
 
 function isExcludedFromSitemap(page: string): boolean {
   const pathname = new URL(page).pathname.replace(/\/$/, '')
@@ -33,7 +34,8 @@ export default defineConfig({
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service'
+    '/zh-CN/terms-of-service': '/terms-of-service',
+    '/zh-CN/thank-you-individual': '/thank-you-individual'
   },
   build: {
     assets: '_website'
