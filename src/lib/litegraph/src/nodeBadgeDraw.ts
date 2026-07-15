@@ -1,17 +1,12 @@
 import { truncate } from 'es-toolkit/compat'
 
-import type { BadgeData, CoreBadgeData, CoreBadgePart } from '@/types/badgeData'
+import { CORE_JOIN_ORDER } from '@/types/badgeData'
+import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphIconOptions } from './LGraphIcon'
 import type { LGraphNode } from './LGraphNode'
 
-/** Legacy canvas joins the core parts into a single badge in this order. */
-const CORE_JOIN_ORDER = [
-  'id',
-  'lifecycle',
-  'source'
-] as const satisfies readonly CoreBadgePart[]
 const CORE_TEXT_LIMIT = 31
 
 let creditsIconOptions: LGraphIconOptions | undefined
