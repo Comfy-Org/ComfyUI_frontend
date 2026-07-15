@@ -54,7 +54,7 @@
             :key="tab.value"
             type="button"
             :aria-pressed="selectedType === tab.value"
-            class="flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg text-xs whitespace-nowrap transition-colors"
+            class="flex h-8 shrink-0 cursor-pointer appearance-none items-center gap-1 rounded-lg border-none text-xs whitespace-nowrap transition-colors"
             :class="
               selectedType === tab.value
                 ? 'bg-base-foreground px-4 font-bold text-base-background'
@@ -79,6 +79,7 @@
             <MultiSelect
               v-model="selectedModelObjects"
               v-model:search-query="modelSearchText"
+              size="md"
               class="w-full"
               :label="modelFilterLabel"
               :options="modelOptions"
@@ -97,6 +98,7 @@
           <div class="min-w-0 shrink basis-[190px]">
             <MultiSelect
               v-model="selectedUseCaseObjects"
+              size="md"
               class="w-full"
               :label="useCaseFilterLabel"
               :options="useCaseOptions"
@@ -115,6 +117,7 @@
           <div class="min-w-0 shrink basis-[190px]">
             <MultiSelect
               v-model="selectedRunsOnObjects"
+              size="md"
               class="w-full"
               :label="runsOnFilterLabel"
               :options="runsOnOptions"
@@ -133,6 +136,7 @@
           <div class="min-w-0 shrink basis-[250px]">
             <SingleSelect
               v-model="sortSelection"
+              size="md"
               :label="$t('templateWorkflows.sorting', 'Sort by')"
               :options="sortOptions"
               :content-style="selectContentStyle"
