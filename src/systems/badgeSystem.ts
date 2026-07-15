@@ -196,6 +196,22 @@ function collectPromotedOverrides(
  * set, and the structure revision so the wrapper recomputes when inner
  * prices, membership, or structure change.
  */
+/** Api-node leaves, visiting each subgraph definition once (legacy count semantics + cycle guard). */
+function collectApiLeaves(
+  nodes: LGraphNode[],
+  visited: Set<string>
+): LGraphNode[] {
+  return nodes.flatMap((inner) => {
+    if (inner.isSubgraphNode()) {
+      const subgraphId = String(inner.subgraph.id)
+      if (visited.has(subgraphId)) return []
+      visited.add(subgraphId)
+      return collectApiLeaves(inner.subgraph.nodes, visited)
+    }
+    return inner.constructor?.nodeData?.api_node ? [inner] : []
+  })
+}
+
 function gatherSubgraphCredits(
   graphId: UUID,
   wrapper: SubgraphNode,
@@ -206,23 +222,10 @@ function gatherSubgraphCredits(
   if (!showApiPricing) return { apiNodeCount: 0, singleLabel: '' }
 
   const pricing = useNodePricing()
-  const apiLeaves: LGraphNode[] = []
-  const visited = new Set<string>()
-  function walk(nodes: LGraphNode[]): void {
-    for (const inner of nodes) {
-      if (inner.isSubgraphNode()) {
-        const subgraphId = String(inner.subgraph.id)
-        if (visited.has(subgraphId)) continue
-        visited.add(subgraphId)
-        walk(inner.subgraph.nodes)
-        continue
-      }
-      if (!inner.constructor?.nodeData?.api_node) continue
-      void pricing.getNodeRevisionRef(inner.id).value
-      apiLeaves.push(inner)
-    }
+  const apiLeaves = collectApiLeaves(wrapper.subgraph.nodes, new Set())
+  for (const leaf of apiLeaves) {
+    void pricing.getNodeRevisionRef(leaf.id).value
   }
-  walk(wrapper.subgraph.nodes)
 
   if (apiLeaves.length !== 1) {
     return { apiNodeCount: apiLeaves.length, singleLabel: '' }

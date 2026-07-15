@@ -111,11 +111,14 @@ export const useNodeBadgeStore = defineStore('nodeBadge', () => {
 
   /** The registered nodes of a graph bucket; reads are tracked. */
   function registeredNodeIds(graphId: UUID): NodeId[] {
-    // Track bucket membership too: a workflow load creates the bucket
-    // under a graph id no reader has observed yet, and a get() miss
-    // alone would leave those readers blind to it.
-    void buckets.value.size
-    return [...(buckets.value.get(graphId)?.keys() ?? [])]
+    const bucket = buckets.value.get(graphId)
+    if (!bucket) {
+      // Track bucket membership so a miss wakes when a workflow load
+      // creates the bucket under a graph id no reader has observed yet.
+      void buckets.value.size
+      return []
+    }
+    return [...bucket.keys()]
   }
 
   function clearGraph(graphId: UUID): void {
