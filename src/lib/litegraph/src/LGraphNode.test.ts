@@ -71,6 +71,19 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
+  test('preserves null property values', () => {
+    const widget = node.addWidget('number', 'value', 1, 'value')
+    const onPropertyChanged = vi.fn(() => true)
+    node.onPropertyChanged = onPropertyChanged
+
+    Reflect.apply(node.setProperty, node, ['value', null])
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
+    expect(onPropertyChanged).toHaveBeenCalledWith('value', null, undefined)
+    expect(node.serialize().properties?.value).toBeNull()
+  })
+
   test('should serialize position/size correctly', () => {
     const node = new LGraphNode('TestNode')
     node.pos = [10, 20]
