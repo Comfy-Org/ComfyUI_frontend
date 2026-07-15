@@ -126,13 +126,15 @@ describe('CustomerIoTelemetryProvider', () => {
     expect(hoisted.analytics.page).toHaveBeenCalledWith()
   })
 
-  it('continues tracking when the in-app plugin fails to register', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    hoisted.analytics.register.mockRejectedValue(
-      new Error('in-app setup failed')
-    )
+  it('continues tracking events and page views when the in-app plugin fails to register', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const registrationError = new Error('in-app setup failed')
+    hoisted.analytics.register.mockRejectedValue(registrationError)
     const provider = createProvider()
     provider.trackWorkflowExecution()
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
 
     await vi.dynamicImportSettled()
 
@@ -140,11 +142,21 @@ describe('CustomerIoTelemetryProvider', () => {
       'execution_start',
       SOURCE
     )
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to initialize Customer.io in-app plugin:',
+      registrationError
+    )
+
     provider.trackAddApiCreditButtonClicked()
     expect(hoisted.analytics.track).toHaveBeenCalledWith(
       'app:add_api_credit_button_clicked',
       SOURCE
     )
+    provider.trackPageView('settings', {
+      path: 'https://cloud.comfy.org/settings'
+    })
+    expect(hoisted.analytics.page).toHaveBeenCalledTimes(2)
   })
 
   it('does not initialize without a write key', async () => {

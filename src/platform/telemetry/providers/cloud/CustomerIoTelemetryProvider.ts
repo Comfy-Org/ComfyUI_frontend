@@ -32,7 +32,7 @@ interface QueuedEvent {
 export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private analytics: AnalyticsBrowser | null = null
   private isEnabled = true
-  private isInAppPluginReady = false
+  private isPageViewTrackingReady = false
   private eventQueue: QueuedEvent[] = []
   private pageViewQueued = false
 
@@ -72,15 +72,15 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
         this.flushQueue()
         void inAppRegistration
-          .then(() => {
-            this.isInAppPluginReady = true
-            this.flushPageView()
-          })
           .catch((error) => {
             console.error(
               'Failed to initialize Customer.io in-app plugin:',
               error
             )
+          })
+          .finally(() => {
+            this.isPageViewTrackingReady = true
+            this.flushPageView()
           })
       })
       .catch((error) => {
@@ -121,7 +121,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private flushPageView(): void {
-    if (!this.analytics || !this.isInAppPluginReady || !this.pageViewQueued) {
+    if (!this.isPageViewTrackingReady || !this.pageViewQueued) {
       return
     }
     this.pageViewQueued = false
@@ -130,7 +130,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
 
   trackPageView(_pageName: string, _properties?: PageViewMetadata): void {
     if (!this.isEnabled) return
-    if (!this.analytics || !this.isInAppPluginReady) {
+    if (!this.isPageViewTrackingReady) {
       this.pageViewQueued = true
       return
     }
