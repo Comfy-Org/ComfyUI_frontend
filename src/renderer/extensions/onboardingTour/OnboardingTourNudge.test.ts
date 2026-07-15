@@ -10,7 +10,8 @@ import enMessages from '@/locales/en/main.json'
 
 const mocks = vi.hoisted(() => ({
   show: vi.fn(),
-  trackExploreTemplatesClicked: vi.fn()
+  trackExploreTemplatesClicked: vi.fn(),
+  trackNudgeShown: vi.fn()
 }))
 
 // A reactive backing so the component's modal-close watch actually fires, the
@@ -24,7 +25,8 @@ vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackOnboardingTourExploreTemplatesClicked:
-      mocks.trackExploreTemplatesClicked
+      mocks.trackExploreTemplatesClicked,
+    trackOnboardingTourNudgeShown: mocks.trackNudgeShown
   })
 }))
 
@@ -46,7 +48,11 @@ const i18n = createI18n({
 })
 
 function renderNudge() {
-  return render(OnboardingTourNudge, { global: { plugins: [i18n] } })
+  // No appear delay: these assert what the nudge shows, not when it fades in.
+  return render(OnboardingTourNudge, {
+    props: { appearDelayMs: 0 },
+    global: { plugins: [i18n] }
+  })
 }
 
 const nudgeTitle = enMessages.onboardingTour.nudge.title
@@ -59,6 +65,7 @@ describe('OnboardingTourNudge', () => {
     store = useOnboardingTourStore()
     mocks.show.mockReset()
     mocks.trackExploreTemplatesClicked.mockReset()
+    mocks.trackNudgeShown.mockReset()
     openDialogs.value = []
   })
 
@@ -77,6 +84,58 @@ describe('OnboardingTourNudge', () => {
     store.showNudge()
 
     expect(await screen.findByText(nudgeTitle)).toBeInTheDocument()
+  })
+
+  describe('appear delay', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('holds the nudge back so the fresh result gets a beat on its own', async () => {
+      vi.useFakeTimers()
+      render(OnboardingTourNudge, {
+        props: { appearDelayMs: 2000 },
+        global: { plugins: [i18n] }
+      })
+
+      store.showNudge()
+      await vi.advanceTimersByTimeAsync(1999)
+      expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(screen.getByText(nudgeTitle)).toBeInTheDocument()
+    })
+
+    it('never appears when the nudge is withdrawn inside the delay', async () => {
+      // Dismissing during the wait must cancel the pending appearance, not fire late.
+      vi.useFakeTimers()
+      render(OnboardingTourNudge, {
+        props: { appearDelayMs: 2000 },
+        global: { plugins: [i18n] }
+      })
+
+      store.showNudge()
+      await vi.advanceTimersByTimeAsync(1000)
+      store.dismissNudge()
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(screen.queryByText(nudgeTitle)).not.toBeInTheDocument()
+    })
+
+    it('reports the nudge as shown only when it actually appears', async () => {
+      vi.useFakeTimers()
+      render(OnboardingTourNudge, {
+        props: { appearDelayMs: 2000 },
+        global: { plugins: [i18n] }
+      })
+
+      store.showNudge()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(mocks.trackNudgeShown).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(mocks.trackNudgeShown).toHaveBeenCalledOnce()
+    })
   })
 
   it('leads with the generated image when the result media is an image', async () => {

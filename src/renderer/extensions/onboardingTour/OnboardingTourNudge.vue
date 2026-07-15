@@ -1,9 +1,9 @@
 <!-- Bottom-right "explore templates" nudge shown once the tour ends. -->
 <template>
   <div
-    v-if="shouldShow"
+    v-if="shown"
     role="status"
-    class="pointer-events-auto fixed right-4 bottom-4 z-1000 flex w-80 flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-interface"
+    class="pointer-events-auto fixed right-0 bottom-0 z-1000 flex w-80 animate-in flex-col overflow-hidden rounded-tl-xl border-t border-l border-border-default/50 bg-base-background shadow-lg duration-500 fade-in-0"
   >
     <div class="relative h-50 w-full bg-secondary-background">
       <video
@@ -66,8 +66,9 @@
 </template>
 
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -81,6 +82,9 @@ import {
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
 
+// Let the fresh result land and be looked at before the nudge fades in over it.
+const { appearDelayMs = 1500 } = defineProps<{ appearDelayMs?: number }>()
+
 const { t } = useI18n()
 const store = useOnboardingTourStore()
 
@@ -88,16 +92,28 @@ const { resultMedia: media } = storeToRefs(store)
 
 const shouldShow = computed(() => store.shouldShowNudge)
 
+const shown = ref(false)
+const { start: startAppearDelay, stop: cancelAppearDelay } = useTimeoutFn(
+  () => {
+    shown.value = true
+    useTelemetry()?.trackOnboardingTourNudgeShown?.()
+  },
+  () => appearDelayMs,
+  { immediate: false }
+)
+
+watch(shouldShow, (visible) => {
+  cancelAppearDelay()
+  shown.value = false
+  if (visible) startAppearDelay()
+})
+
 // No-funds fallback: the run-step gate opens the upgrade modal and arms the
 // nudge; surface it only once that modal has closed so the two never overlap.
 const upgradeModalOpen = computed(() => isUpgradeModalOpen())
 
 watch(upgradeModalOpen, (open, wasOpen) => {
   if (wasOpen && !open && store.nudgeArmed) store.showNudge()
-})
-
-watch(shouldShow, (visible) => {
-  if (visible) useTelemetry()?.trackOnboardingTourNudgeShown?.()
 })
 
 function onExplore() {
