@@ -1956,12 +1956,12 @@ const translations = {
     'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
   },
   'mcp.setup.clients.claudeDesktop.step': {
-    en: 'Open Settings, go to Connectors, choose Add custom connector, paste the URL above, and sign in.',
+    en: 'Click Customize in the sidebar, open Connectors, choose Add custom connector, paste the URL above, and sign in.',
     'zh-CN':
-      '打开设置，进入 Connectors，选择添加自定义连接器，粘贴上方 URL 并登录。'
+      '点击侧边栏的 Customize，进入 Connectors，选择添加自定义连接器，粘贴上方 URL 并登录。'
   },
   'mcp.setup.clients.cursor.step': {
-    en: 'Add the URL above to ~/.cursor/mcp.json with an X-API-Key header. Create your key at',
+    en: 'Add the URL above to ~/.cursor/mcp.json with an X-API-Key header. Create your key at ',
     'zh-CN':
       '将上方 URL 添加到 ~/.cursor/mcp.json，并附带 X-API-Key 请求头。在此创建密钥：'
   },
@@ -1978,7 +1978,7 @@ const translations = {
     'zh-CN': '其他客户端'
   },
   'mcp.setup.clients.other.step': {
-    en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the',
+    en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the ',
     'zh-CN':
       '将上方 URL 添加为远程 MCP 服务器。客户端不支持 OAuth？改用 X-API-Key 请求头。完整教程见'
   },
@@ -1987,7 +1987,7 @@ const translations = {
     'zh-CN': '设置文档'
   },
   'mcp.setup.skillsNote': {
-    en: 'Using Claude Code? The Comfy skills plugin adds ready-made slash commands.',
+    en: 'Using Claude Code? The Comfy skills plugin adds ready-made slash commands. ',
     'zh-CN': '在用 Claude Code？Comfy 技能插件提供现成的斜杠命令。'
   },
   'mcp.setup.skillsLink': {

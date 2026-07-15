@@ -2,6 +2,7 @@
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import SectionLabel from '../../components/common/SectionLabel.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -86,11 +87,7 @@ const copiedLabel = t('ui.copied', locale)
       <div
         class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
       >
-        <p
-          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
-        >
-          {{ t('mcp.setup.option1.label', locale) }}
-        </p>
+        <SectionLabel>{{ t('mcp.setup.option1.label', locale) }}</SectionLabel>
         <h3
           class="mt-3 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
         >
@@ -106,16 +103,22 @@ const copiedLabel = t('ui.copied', locale)
             :copied-label="copiedLabel"
           />
         </div>
+        <p class="mt-auto pt-6 text-sm text-smoke-700">
+          {{ t('mcp.setup.skillsNote', locale)
+          }}<a
+            :href="externalLinks.mcpSkills"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            >{{ t('mcp.setup.skillsLink', locale) }}</a
+          >
+        </p>
       </div>
 
       <div
         class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
       >
-        <p
-          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
-        >
-          {{ t('mcp.setup.option2.label', locale) }}
-        </p>
+        <SectionLabel>{{ t('mcp.setup.option2.label', locale) }}</SectionLabel>
         <h3
           class="mt-3 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
         >
@@ -141,7 +144,7 @@ const copiedLabel = t('ui.copied', locale)
               v-for="client in clients"
               :key="client.id"
               :value="client.id"
-              class="data-[state=active]:border-primary-comfy-yellow cursor-pointer rounded-full border border-white/10 px-3.5 py-1.5 text-xs font-bold tracking-widest text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas data-[state=active]:text-primary-comfy-canvas"
+              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-full px-4 py-2 text-xs font-bold tracking-wider text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
             >
               {{ client.name }}
             </TabsTrigger>
@@ -150,16 +153,16 @@ const copiedLabel = t('ui.copied', locale)
             v-for="client in clients"
             :key="client.id"
             :value="client.id"
-            class="mt-4 flex flex-col gap-3"
+            class="mt-4 flex min-h-24 flex-col gap-3"
           >
             <p class="text-sm text-smoke-700">
-              {{ client.step }}
-              <a
+              {{ client.step
+              }}<a
                 v-if="client.link"
                 :href="client.link.href"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-comfy-canvas underline underline-offset-4"
+                class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
                 >{{ client.link.label }}</a
               >
             </p>
@@ -173,16 +176,5 @@ const copiedLabel = t('ui.copied', locale)
         </TabsRoot>
       </div>
     </div>
-
-    <p class="mt-8 text-sm text-smoke-700">
-      {{ t('mcp.setup.skillsNote', locale) }}
-      <a
-        :href="externalLinks.mcpSkills"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-primary-comfy-canvas underline underline-offset-4"
-        >{{ t('mcp.setup.skillsLink', locale) }}</a
-      >
-    </p>
   </section>
 </template>
