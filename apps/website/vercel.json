@@ -46,6 +46,16 @@
       "permanent": true
     },
     {
+      "source": "/terms",
+      "destination": "/terms-of-service/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/terms",
+      "destination": "/terms-of-service/",
+      "permanent": true
+    },
+    {
       "source": "/pricing",
       "destination": "/cloud/pricing/",
       "permanent": true

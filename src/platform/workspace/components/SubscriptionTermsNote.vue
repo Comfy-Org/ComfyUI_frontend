@@ -3,7 +3,7 @@
     <i18n-t keypath="subscription.preview.termsAgreement" tag="span">
       <template #terms>
         <a
-          href="https://comfy.org/terms"
+          href="https://comfy.org/terms-of-service/"
           target="_blank"
           rel="noopener noreferrer"
           class="underline hover:text-base-foreground"
@@ -13,7 +13,7 @@
       </template>
       <template #privacy>
         <a
-          href="https://comfy.org/privacy"
+          href="https://comfy.org/privacy-policy/"
           target="_blank"
           rel="noopener noreferrer"
           class="underline hover:text-base-foreground"

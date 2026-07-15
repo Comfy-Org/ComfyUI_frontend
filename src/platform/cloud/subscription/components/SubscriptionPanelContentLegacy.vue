@@ -101,7 +101,7 @@
     <div class="flex items-center gap-2 py-4">
       <i class="pi pi-external-link text-muted"></i>
       <a
-        href="https://comfy.org/cloud/pricing"
+        href="https://comfy.org/cloud/pricing/"
         target="_blank"
         rel="noopener noreferrer"
         class="text-sm text-muted underline hover:opacity-80"

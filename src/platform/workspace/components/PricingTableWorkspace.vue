@@ -538,6 +538,6 @@ function handleContactUs() {
 }
 
 function handleViewEnterprise() {
-  window.open('https://comfy.org/cloud/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>

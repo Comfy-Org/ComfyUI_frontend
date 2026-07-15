@@ -75,7 +75,7 @@
       >
         {{ t('auth.login.termsText') }}
         <a
-          href="https://comfy.org/terms-of-service"
+          href="https://comfy.org/terms-of-service/"
           target="_blank"
           class="cursor-pointer text-azure-600 no-underline"
         >
@@ -83,7 +83,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://comfy.org/privacy-policy"
+          href="https://comfy.org/privacy-policy/"
           target="_blank"
           class="cursor-pointer text-azure-600 no-underline"
         >
