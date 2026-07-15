@@ -1971,9 +1971,9 @@ const translations = {
     'zh-CN': '开放协议，\n任意客户端。'
   },
   'mcp.why.1.description': {
-    en: 'MCP is an open standard, so any MCP-compatible client can connect. Today Comfy supports Claude Code and Claude Desktop, with more clients coming.',
+    en: 'MCP is an open standard. Comfy works with any MCP-compatible agent — Claude Code, Claude Desktop, Cursor, and Codex. No proprietary lock-in.',
     'zh-CN':
-      'MCP 是开放标准，因此任何兼容 MCP 的客户端都能接入。目前 Comfy 支持 Claude Code 和 Claude Desktop，更多客户端即将推出。'
+      'MCP 是开放标准。Comfy 可与任何兼容 MCP 的智能体协作——Claude Code、Claude Desktop、Cursor 和 Codex。没有专有锁定。'
   },
   'mcp.why.2.title': {
     en: 'The full engine,\nnot a sandbox.',
