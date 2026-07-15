@@ -12,7 +12,7 @@ const { faqs } = defineProps<{
 type AnswerPart = { type: 'text' | 'link'; value: string }
 
 function parseAnswer(answer: string): AnswerPart[] {
-  const urlPattern = /https?:\/\/[\w\-./?=&#%~:@]+/g
+  const urlPattern = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
   const parts: AnswerPart[] = []
   let lastIndex = 0
   for (const match of answer.matchAll(urlPattern)) {
