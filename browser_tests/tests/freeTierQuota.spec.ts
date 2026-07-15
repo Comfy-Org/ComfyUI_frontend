@@ -8,7 +8,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
 
-test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
+test.describe('Free Tier Quota', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ page }) => {
     const features = {
       free_tier_balance: { allowance: 5, remaining: 3, used: 0 }
