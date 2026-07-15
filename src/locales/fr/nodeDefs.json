@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "Re-synchronisez le mouvement de la bouche dans une vidéo avec un nouvel audio de parole grâce à sync.so. Gère automatiquement les gros plans, les profils et les obstructions tout en préservant l'expression du locuteur. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole auquel synchroniser la bouche."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "image_locuteur"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "model_sync_mode": {
+        "name": "mode_sync"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Séquence du locuteur à resynchroniser. Jusqu'à 4K (4096x2160) ; un taux d'images constant de 24/25/30 fps est optimal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Animez un portrait fixe en une vidéo parlante pilotée par un audio de parole, grâce au modèle sync-3 de sync.so. La durée de sortie correspond à celle de l'audio. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole pilotant la vidéo parlante ; la durée de sortie correspond à celle-ci. Chaînez ici n'importe quel nœud TTS pour animer à partir d'un texte."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une seule image avec un visage clairement visible, jusqu'à 4K (4096x2160)."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so. L'entrée image est exclusive à sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_redimensionnement"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Indication optionnelle sur la façon dont le portrait prend vie, par exemple « faire sourire le sujet et regarder la caméra ». Laissez vide pour un mouvement naturel de la parole."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5TokenizerOptions",
     "inputs": {
