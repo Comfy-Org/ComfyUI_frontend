@@ -248,7 +248,7 @@ function rowDisplayName(row: ActiveRow): string {
 }
 
 function isRowLinked(row: ActiveRow): boolean {
-  return row.kind === 'promoted' && row.input.widgetId != null
+  return row.kind === 'promoted'
 }
 
 function promotedRowKey(row: PromotedRow): string {
@@ -269,10 +269,10 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const linkedInput = row.input._subgraphSlot
-    if (linkedInput) {
-      if (row.input.link != null) linkedInput.disconnect()
-      else subgraphNode.subgraph.removeInput(linkedInput)
+    const subgraphSlot = row.input._subgraphSlot
+    if (subgraphSlot) {
+      if (row.input.link != null) subgraphSlot.disconnect()
+      else subgraphNode.subgraph.removeInput(subgraphSlot)
     }
     refreshPromotedWidgetRendering()
     return

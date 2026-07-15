@@ -236,7 +236,10 @@ describe('WidgetActions', () => {
       type: 'TestNode',
       rootGraph: { id: 'graph-test' },
       isSubgraphNode: () => true,
-      getSlotFromWidget: () => ({ widgetId: 'graph-test:1:test_widget' })
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
     })
     const host = fromAny<SubgraphNode, unknown>({ id: 2 })
 
@@ -247,11 +250,12 @@ describe('WidgetActions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('toggles the favorite for the host node itself', async () => {
+  it("toggles the favorite for the row's node", async () => {
     const widget = createMockWidget()
     const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
 
-    const { user } = renderWidgetActions(widget, node)
+    const { user } = renderWidgetActions(widget, node, { host })
 
     await user.click(screen.getByRole('button', { name: /Favorite/ }))
 
