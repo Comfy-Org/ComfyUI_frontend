@@ -95,6 +95,35 @@ export const zJobsListResponse = z.object({
   pagination: zPaginationInfo
 })
 
+/**
+ * A single output asset produced by a job, enriched with per-output node
+ * context (`node_id`, `output_key`, `output_index`) correlated from the job's
+ * execution outputs by content hash. Node-context fields are null when the
+ * asset cannot be matched to an output entry.
+ * Returned by GET /api/jobs/{job_id}/assets.
+ */
+const zJobOutputAsset = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    hash: z.string().optional(),
+    preview_url: z.string().optional(),
+    mime_type: z.string().optional(),
+    size: z.number().optional(),
+    node_id: z.string().nullable().optional(),
+    output_key: z.string().nullable().optional(),
+    output_index: z.number().nullable().optional(),
+    created_at: z.string()
+  })
+  .passthrough()
+
+/** Paginated list of a single job's output assets. */
+export const zJobAssetsResponse = z.object({
+  job_id: z.string(),
+  assets: z.array(zJobOutputAsset),
+  pagination: zPaginationInfo
+})
+
 /** Schema for workflow container structure in job detail responses */
 export const zWorkflowContainer = z.object({
   extra_data: z
@@ -113,6 +142,7 @@ export type RawJobListItem = z.infer<typeof zRawJobListItem>
 /** Job list item with priority always set (server-provided or synthetic) */
 export type JobListItem = RawJobListItem & { priority: number }
 export type JobDetail = z.infer<typeof zJobDetail>
+export type JobOutputAsset = z.infer<typeof zJobOutputAsset>
 
 /** Task type used in the API (queue vs history endpoints) */
 export type APITaskType = 'queue' | 'history'

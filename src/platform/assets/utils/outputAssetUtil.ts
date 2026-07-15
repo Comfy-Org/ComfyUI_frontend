@@ -1,5 +1,8 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
@@ -119,6 +122,66 @@ function mapOutputsToAssetItems({
   }, [])
 }
 
+/**
+ * Overlays a resolved job asset onto a synthesized output item, linking it to
+ * the asset system: the placeholder `<jobId>-<outputKey>` id becomes the real
+ * asset id, and hash/size/mime/preview plus per-output node context
+ * (`nodeId`, `outputKey`, `outputIndex`) are filled from the endpoint.
+ */
+function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
+  return {
+    ...item,
+    id: asset.id,
+    hash: asset.hash ?? item.hash,
+    size: asset.size ?? item.size,
+    mime_type: asset.mime_type ?? item.mime_type,
+    preview_url: asset.preview_url ?? item.preview_url,
+    thumbnail_url: asset.preview_url ?? item.thumbnail_url,
+    user_metadata: {
+      ...item.user_metadata,
+      nodeId: asset.node_id ?? item.user_metadata?.nodeId,
+      outputKey: asset.output_key ?? undefined,
+      outputIndex: asset.output_index ?? undefined
+    }
+  }
+}
+
+/**
+ * Resolves persisted job outputs to real asset entities via
+ * GET /api/jobs/{job_id}/assets, matching by filename (the stable identifier
+ * across the history and asset id spaces). Cloud-only; degrades to the
+ * unresolved items when the endpoint returns nothing (e.g. not yet deployed).
+ *
+ * Each resolved asset is consumed at most once so that two outputs sharing a
+ * filename (e.g. the same file under different subfolders) map to distinct
+ * assets rather than colliding on one real id — a duplicate `AssetItem.id`
+ * makes Vue reuse a DOM node and visibly duplicate the asset on scroll.
+ */
+async function enrichWithJobAssets(
+  jobId: string,
+  items: AssetItem[]
+): Promise<AssetItem[]> {
+  if (!items.length) return items
+
+  const jobAssets = await api.getJobAssets(jobId)
+  if (!jobAssets.length) return items
+
+  const assetsByName = new Map<string, JobOutputAsset[]>()
+  for (const asset of jobAssets) {
+    const existing = assetsByName.get(asset.name)
+    if (existing) {
+      existing.push(asset)
+    } else {
+      assetsByName.set(asset.name, [asset])
+    }
+  }
+
+  return items.map((item) => {
+    const match = assetsByName.get(item.name)?.shift()
+    return match ? overlayJobAsset(item, match) : item
+  })
+}
+
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
   { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
@@ -133,7 +196,7 @@ export async function resolveOutputAssetItems(
   }
 
   // Reverse so the most recent outputs appear first
-  return mapOutputsToAssetItems({
+  const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
     outputs: outputsToDisplay.toReversed(),
     createdAt,
@@ -141,4 +204,6 @@ export async function resolveOutputAssetItems(
     workflow: metadata.workflow,
     excludeOutputKey
   })
+
+  return isCloud ? enrichWithJobAssets(metadata.jobId, items) : items
 }

@@ -4,6 +4,7 @@ import {
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -380,6 +381,139 @@ describe('fetchJobs', () => {
         '[extractWorkflow] Workflow validation failed:',
         expect.any(String)
       )
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('fetchJobAssets', () => {
+    function createAssetsResponse(
+      jobId: string,
+      assets: Record<string, unknown>[],
+      hasMore = false,
+      offset = 0
+    ) {
+      return {
+        job_id: jobId,
+        assets,
+        pagination: {
+          offset,
+          limit: 500,
+          total: assets.length,
+          has_more: hasMore
+        }
+      }
+    }
+
+    it('fetches job assets with node context', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: 'blake3:abc',
+                preview_url: '/view/a.png',
+                mime_type: 'image/png',
+                size: 123,
+                node_id: '9',
+                output_key: 'images',
+                output_index: 0,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs/job1/assets?limit=500&offset=0'
+      )
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('asset-1')
+      expect(result[0].node_id).toBe('9')
+      expect(result[0].output_index).toBe(0)
+    })
+
+    it('accepts null node context fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                node_id: null,
+                output_key: null,
+                output_index: null,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].node_id).toBeNull()
+    })
+
+    it('paginates until has_more is false', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a1', name: 'a.png', created_at: 't' }],
+                true,
+                0
+              )
+            )
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a2', name: 'b.png', created_at: 't' }],
+                false,
+                1
+              )
+            )
+        })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        '/jobs/job1/assets?limit=500&offset=1'
+      )
+      expect(result.map((a) => a.id)).toEqual(['a1', 'a2'])
+    })
+
+    it('returns empty array on non-ok response (endpoint unavailable)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
+    })
+
+    it('returns empty array on error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
       consoleSpy.mockRestore()
     })
   })
