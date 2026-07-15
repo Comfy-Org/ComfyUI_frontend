@@ -13,11 +13,13 @@ export const useFreeTierQuota = createSharedComposable(function () {
   const maxAvailable = ref(0)
   watch(
     () => remoteConfig.value.free_tier_balance?.remaining,
-    (val) => (available.value = val ?? 0)
+    (val) => (available.value = val ?? 0),
+    { immediate: true }
   )
   watch(
     () => remoteConfig.value.free_tier_balance?.allowance,
-    (val) => (maxAvailable.value = val ?? 0)
+    (val) => (maxAvailable.value = val ?? 0),
+    { immediate: true }
   )
 
   const quotaEnabled = computed(
