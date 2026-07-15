@@ -8,7 +8,7 @@ import VideoPlayer from '../common/VideoPlayer.vue'
 import type { VideoTrack } from '../common/VideoPlayer.vue'
 
 type RowMedia =
-  | { type: 'image'; src: string; alt?: string }
+  | { type: 'image'; src: string; alt?: string; fit?: 'cover' | 'contain' }
   | {
       type: 'video'
       src: string
@@ -33,12 +33,14 @@ const {
   heading,
   eyebrow,
   locale = 'en',
-  rows
+  rows,
+  mediaFit = 'cover'
 } = defineProps<{
   heading: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
+  mediaFit?: 'cover' | 'contain'
 }>()
 </script>
 
@@ -58,7 +60,7 @@ const {
         <div
           :class="
             cn(
-              'order-2 flex flex-col justify-center gap-4 p-6 lg:w-1/2 lg:p-12',
+              'order-2 flex flex-col justify-center gap-4 p-6 lg:flex-1 lg:p-12',
               i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
             )
           "
@@ -75,7 +77,7 @@ const {
         <div
           :class="
             cn(
-              'order-1 flex lg:w-1/2',
+              'relative order-1 aspect-620/364 w-full lg:w-155 lg:shrink-0',
               i % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
             )
           "
@@ -86,7 +88,14 @@ const {
             :alt="row.media.alt ?? row.title"
             loading="lazy"
             decoding="async"
-            class="aspect-4/3 w-full rounded-4xl object-cover"
+            :class="
+              cn(
+                'absolute inset-0 size-full rounded-4xl',
+                (row.media.fit ?? mediaFit) === 'contain'
+                  ? 'object-contain'
+                  : 'object-cover'
+              )
+            "
           />
           <VideoPlayer
             v-else
@@ -99,7 +108,8 @@ const {
             :loop="row.media.loop"
             :minimal="row.media.minimal"
             :hide-controls="row.media.hideControls"
-            class="w-full"
+            :fit="mediaFit"
+            class="absolute inset-0 size-full"
           />
         </div>
       </GlassCard>

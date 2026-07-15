@@ -70,6 +70,34 @@ test.describe('MCP page @smoke', () => {
       setup.getByRole('link', { name: 'View on GitHub' })
     ).toHaveAttribute('href', 'https://github.com/Comfy-Org/comfy-skills')
   })
+
+  test('capabilities section shows all six tool cards', async ({ page }) => {
+    for (const title of [
+      'Generate anything',
+      'Search the ecosystem',
+      'Run real workflows',
+      'Direct any model',
+      'Generate in batches',
+      'Ship it as an app'
+    ]) {
+      await expect(
+        page.getByRole('heading', { name: title, exact: true })
+      ).toBeVisible()
+    }
+  })
+
+  test('FAQ lists nine questions and autolinks the server URL', async ({
+    page
+  }) => {
+    const triggers = page.locator('[id^="faq-trigger-"]')
+    await triggers.first().scrollIntoViewIfNeeded()
+    await expect(triggers).toHaveCount(9)
+
+    await page.getByRole('button', { name: "What's the server URL?" }).click()
+    await expect(
+      page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
+    ).toHaveAttribute('href', MCP_ENDPOINT)
+  })
 })
 
 test.describe('MCP page zh-CN @smoke', () => {
