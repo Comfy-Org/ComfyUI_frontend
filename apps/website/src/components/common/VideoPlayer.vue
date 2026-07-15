@@ -30,7 +30,8 @@ const {
   autoplay = false,
   loop = false,
   minimal = false,
-  hideControls = false
+  hideControls = false,
+  fit = 'cover'
 } = defineProps<{
   locale?: Locale
   src?: string
@@ -40,6 +41,7 @@ const {
   loop?: boolean
   minimal?: boolean
   hideControls?: boolean
+  fit?: 'cover' | 'contain'
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -197,7 +199,9 @@ function toggleFullscreen() {
     <video
       v-if="src"
       ref="videoEl"
-      class="size-full object-cover"
+      :class="
+        cn('size-full', fit === 'contain' ? 'object-contain' : 'object-cover')
+      "
       :src
       :poster
       :preload="autoplay ? 'auto' : 'metadata'"

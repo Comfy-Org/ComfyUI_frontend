@@ -7,7 +7,7 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 type ToolMedia =
-  | { type: 'image'; src: string }
+  | { type: 'image'; src: string; fit?: 'cover' | 'contain' }
   | {
       type: 'video'
       src: string
@@ -25,7 +25,8 @@ const tools: {
     n: 1,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/generate-everything.gif'
+      src: 'https://media.comfy.org/website/mcp/generate-everything.gif',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.1.alt'
   },
@@ -33,7 +34,8 @@ const tools: {
     n: 2,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/search-ecosystem.png'
+      src: 'https://media.comfy.org/website/mcp/search-ecosystem.png',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.2.alt'
   },
@@ -52,7 +54,8 @@ const tools: {
     n: 4,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/direct-any-model.png'
+      src: 'https://media.comfy.org/website/mcp/direct-any-model.png',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.4.alt'
   },
@@ -60,7 +63,8 @@ const tools: {
     n: 5,
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png'
+      src: 'https://media.comfy.org/website/mcp/generate-in-batches.png',
+      fit: 'cover'
     },
     altKey: 'mcp.tools.5.alt'
   },
@@ -93,5 +97,6 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
     :locale="locale"
     :heading="t('mcp.tools.heading', locale)"
     :rows="rows"
+    media-fit="contain"
   />
 </template>
