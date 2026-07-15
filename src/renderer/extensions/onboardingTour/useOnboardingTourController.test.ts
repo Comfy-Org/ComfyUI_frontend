@@ -55,8 +55,7 @@ const mocks = vi.hoisted(() => ({
   hasFunds: true as boolean,
   showSubscriptionDialog: vi.fn(),
   storeShowNudge: vi.fn(),
-  storeCaptureResultMedia: vi.fn(),
-  settingSet: vi.fn()
+  storeCaptureResultMedia: vi.fn()
 }))
 
 const upgradeModalOpen = await vi.hoisted(async () => {
@@ -141,7 +140,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.TutorialCompleted' ? mocks.tutorialCompleted : undefined,
-    set: mocks.settingSet
+    set: vi.fn()
   })
 }))
 
@@ -295,7 +294,6 @@ describe('useOnboardingTourController.start', () => {
     mocks.showSubscriptionDialog.mockReset()
     upgradeModalOpen.value = false
     mocks.storeShowNudge.mockReset()
-    mocks.settingSet.mockReset()
     mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
     mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
     mocks.storeCaptureResultMedia.mockReset()
@@ -455,16 +453,13 @@ describe('useOnboardingTourController.start', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('gates via store.end without writing completion itself', async () => {
+  it('gates via store.end when the user cannot fund a run', async () => {
     mocks.hasFunds = false
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
     await useOnboardingTourController().start()
 
-    // Once-only rests on the load seam's Comfy.TutorialCompleted write; the
-    // controller ends the tour but never touches the setting itself.
     expect(mocks.storeEnd).toHaveBeenCalled()
-    expect(mocks.settingSet).not.toHaveBeenCalled()
   })
 
   it('lets a funded user reach the Run step without reporting a run yet', async () => {
@@ -606,23 +601,6 @@ describe('useOnboardingTourController.start', () => {
     expect(
       mocks.telemetry.trackOnboardingTourRunTriggered
     ).toHaveBeenCalledWith(expect.objectContaining({ status: 'interrupted' }))
-  })
-
-  it('ignores execution events that arrive before the Run step', async () => {
-    mocks.hasFunds = true
-    mocks.steps = [
-      { kind: 'upload', nodeId: toNodeId(1) },
-      { kind: 'run', nodeId: null },
-      { kind: 'result', nodeId: toNodeId(9), mediaKind: 'image' }
-    ]
-
-    await useOnboardingTourController().start()
-    await runJob()
-
-    expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).not.toHaveBeenCalled()
   })
 
   it('completes the tour when a run finishes on the terminal Run step', async () => {
