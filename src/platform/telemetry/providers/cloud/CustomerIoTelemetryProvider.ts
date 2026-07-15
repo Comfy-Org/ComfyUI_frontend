@@ -22,7 +22,6 @@ interface QueuedEvent {
   event: string
   properties: Record<string, unknown>
   identity?: CustomerIoIdentity
-  restoreIdentity?: CustomerIoIdentity
 }
 
 interface CustomerIoIdentity {
@@ -73,9 +72,6 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         this.analytics = analytics
 
         const currentUser = useCurrentUser()
-        const hasQueuedIdentity = this.eventQueue.some(({ identity }) =>
-          Boolean(identity)
-        )
         const identifyResolvedUser = (user: AuthUserInfo) => {
           const identity = {
             userId: userIdOverride || user.id,
@@ -99,19 +95,6 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         })
 
         void this.flushQueue()
-
-        if (hasQueuedIdentity) {
-          const resolvedUser = currentUser.resolvedUserInfo.value
-          if (resolvedUser) {
-            void identifyResolvedUser(resolvedUser)
-          } else if (userIdOverride) {
-            void this.enqueueOperation(() =>
-              this.identify({ userId: userIdOverride })
-            )
-          } else {
-            void this.enqueueOperation(() => this.resetIdentity())
-          }
-        }
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
@@ -132,6 +115,14 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private async resetIdentity(): Promise<void> {
     this.identifiedUser = null
     await this.analytics?.reset()
+  }
+
+  private async restoreSessionIdentity(): Promise<void> {
+    if (this.sessionIdentity) {
+      await this.identify(this.sessionIdentity)
+    } else {
+      await this.resetIdentity()
+    }
   }
 
   private async identify(identity: CustomerIoIdentity): Promise<void> {
@@ -188,7 +179,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         this.send(event, properties, identity, restoreIdentity)
       )
     } else {
-      this.eventQueue.push({ event, properties, identity, restoreIdentity })
+      this.eventQueue.push({ event, properties, identity })
     }
   }
 
@@ -197,8 +188,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     const queue = this.eventQueue
     this.eventQueue = []
     await this.enqueueOperation(async () => {
-      for (const { event, properties, identity, restoreIdentity } of queue) {
-        await this.send(event, properties, identity, restoreIdentity)
+      for (const { event, properties, identity } of queue) {
+        await this.send(event, properties, identity)
+        if (identity) await this.restoreSessionIdentity()
       }
     })
   }
