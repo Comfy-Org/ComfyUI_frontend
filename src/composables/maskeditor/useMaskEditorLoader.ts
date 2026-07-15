@@ -121,8 +121,9 @@ export function useMaskEditorLoader() {
       let maskLayersFromApi: MaskLayersResponse | undefined
       if (isCloud) {
         try {
+          const params = new URLSearchParams({ filename: fileToQuery })
           const response = await api.fetchApi(
-            `/files/mask-layers?filename=${fileToQuery}`
+            `/files/mask-layers?${params.toString()}`
           )
           if (response.ok) {
             maskLayersFromApi = await response.json()

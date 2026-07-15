@@ -1065,8 +1065,9 @@ export class ComfyApi extends EventTarget {
    * @returns The metadata for the model
    */
   async viewMetadata(folder: string, model: string) {
+    const params = new URLSearchParams({ filename: model })
     const res = await this.fetchApi(
-      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
+      `/view_metadata/${encodeURIComponent(folder)}?${params.toString()}`
     )
     const rawResponse = await res.text()
     if (!rawResponse) {
@@ -1340,8 +1341,12 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
+    const params = new URLSearchParams()
+    if (options.overwrite !== undefined) params.append('overwrite', options.overwrite.toString())
+    if (options.full_info !== undefined) params.append('full_info', options.full_info.toString())
+    const queryString = params.toString() ? `?${params.toString()}` : ''
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
+      `/userdata/${encodeURIComponent(file)}${queryString}`,
       {
         method: 'POST',
         body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
@@ -1378,8 +1383,11 @@ export class ComfyApi extends EventTarget {
     dest: string,
     options = { overwrite: false }
   ) {
+    const params = new URLSearchParams()
+    if (options?.overwrite !== undefined) params.append('overwrite', options.overwrite.toString())
+    const queryString = params.toString() ? `?${params.toString()}` : ''
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
+      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}${queryString}`,
       {
         method: 'POST'
       }
@@ -1389,8 +1397,14 @@ export class ComfyApi extends EventTarget {
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
     const trimmedDir = trimEnd(dir, '/')
+    const params = new URLSearchParams({
+      dir: trimmedDir,
+      recurse: 'true',
+      split: 'false',
+      full_info: 'true'
+    })
     const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
+      `/userdata?${params.toString()}`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {

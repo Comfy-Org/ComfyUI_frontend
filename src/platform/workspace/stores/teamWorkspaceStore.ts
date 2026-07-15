@@ -716,6 +716,45 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  function buildInviteLink(token: string): string {
+    const baseUrl = window.location.origin
+    const params = new URLSearchParams({ invite: token })
+    return `${baseUrl}?${params.toString()}`
+  }
+
+  /**
+   * Get the invite link for a pending invite.
+   */
+  function getInviteLink(inviteId: string): string | null {
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    return invite ? buildInviteLink(invite.token) : null
+  }
+
+  /**
+   * Create an invite link for a given email.
+   */
+  async function createInviteLink(email: string): Promise<string> {
+    const invite = await createInvite(email)
+    return buildInviteLink(invite.token)
+  }
+
+  /**
+   * Copy an invite link to clipboard.
+   */
+  async function copyInviteLink(inviteId: string): Promise<string> {
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    const inviteLink = buildInviteLink(invite.token)
+    await navigator.clipboard.writeText(inviteLink)
+    return inviteLink
+  }
+
   //TODO: when billing lands update this
   function subscribeWorkspace(plan: SubscriptionPlan = 'PRO_MONTHLY') {
     console.warn(plan, 'Billing endpoint has not been added yet.')

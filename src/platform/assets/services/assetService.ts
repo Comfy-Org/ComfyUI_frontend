@@ -686,9 +686,9 @@ function createAssetService() {
    * @throws Error if metadata retrieval fails
    */
   async function getAssetMetadata(url: string): Promise<AssetMetadata> {
-    const encodedUrl = encodeURIComponent(url)
+    const params = new URLSearchParams({ url })
     const res = await api.fetchApi(
-      `${ASSETS_ENDPOINT}/remote-metadata?url=${encodedUrl}`
+      `${ASSETS_ENDPOINT}/remote-metadata?${params.toString()}`
     )
 
     if (!res.ok) {
