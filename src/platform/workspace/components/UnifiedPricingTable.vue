@@ -480,8 +480,8 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */

@@ -401,7 +401,7 @@ function handleUpgrade() {
 }
 
 function handleViewMoreDetails() {
-  window.open('https://www.comfy.org/cloud/pricing', '_blank')
+  window.open('https://comfy.org/cloud/pricing/', '_blank')
 }
 
 async function handleRetry() {

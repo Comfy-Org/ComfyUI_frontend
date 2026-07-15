@@ -13,14 +13,14 @@ import { i18n } from '@/i18n'
  *
  * // Simple usage
  * const changelogUrl = buildDocsUrl('/changelog', { includeLocale: true })
- * // => 'https://docs.comfy.org/zh-CN/changelog' (if Chinese)
+ * // => 'https://docs.comfy.org/zh/changelog' (if Chinese)
  *
  * // With platform detection
  * const desktopUrl = buildDocsUrl('/installation/desktop', {
  *   includeLocale: true,
  *   platform: true
  * })
- * // => 'https://docs.comfy.org/zh-CN/installation/desktop/macos' (if Chinese + macOS)
+ * // => 'https://docs.comfy.org/zh/installation/desktop/macos' (if Chinese + macOS)
  * ```
  */
 export function useExternalLink() {
@@ -51,9 +51,9 @@ export function useExternalLink() {
    * @example
    * ```ts
    * buildDocsUrl('/changelog') // => 'https://docs.comfy.org/changelog'
-   * buildDocsUrl('/changelog', { includeLocale: true }) // => 'https://docs.comfy.org/zh-CN/changelog' (if Chinese)
+   * buildDocsUrl('/changelog', { includeLocale: true }) // => 'https://docs.comfy.org/zh/changelog' (if Chinese)
    * buildDocsUrl('/installation/desktop', { includeLocale: true, platform: true })
-   * // => 'https://docs.comfy.org/zh-CN/installation/desktop/macos' (if Chinese + macOS)
+   * // => 'https://docs.comfy.org/zh/installation/desktop/macos' (if Chinese + macOS)
    * ```
    */
   const buildDocsUrl = (
@@ -68,7 +68,7 @@ export function useExternalLink() {
     let url = 'https://docs.comfy.org'
 
     if (includeLocale && isChinese.value) {
-      url += '/zh-CN'
+      url += '/zh'
     }
 
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -84,13 +84,13 @@ export function useExternalLink() {
 
   const staticUrls = {
     // Static external URLs
-    discord: 'https://www.comfy.org/discord',
+    discord: 'https://comfy.org/discord',
     github: 'https://github.com/Comfy-Org/ComfyUI',
     githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues',
     githubFrontend: 'https://github.com/Comfy-Org/ComfyUI_frontend',
     githubElectron: 'https://github.com/Comfy-Org/electron',
     forum: 'https://forum.comfy.org/',
-    comfyOrg: 'https://www.comfy.org/'
+    comfyOrg: 'https://comfy.org/'
   }
 
   /** Common doc paths for use with buildDocsUrl */

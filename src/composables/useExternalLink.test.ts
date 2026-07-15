@@ -42,7 +42,7 @@ describe('useExternalLink', () => {
       const { staticUrls } = useExternalLink()
 
       // Static URLs
-      expect(staticUrls.discord).toBe('https://www.comfy.org/discord')
+      expect(staticUrls.discord).toBe('https://comfy.org/discord')
       expect(staticUrls.github).toBe('https://github.com/Comfy-Org/ComfyUI')
       expect(staticUrls.githubIssues).toBe(
         'https://github.com/Comfy-Org/ComfyUI/issues'
@@ -54,7 +54,7 @@ describe('useExternalLink', () => {
         'https://github.com/Comfy-Org/electron'
       )
       expect(staticUrls.forum).toBe('https://forum.comfy.org/')
-      expect(staticUrls.comfyOrg).toBe('https://www.comfy.org/')
+      expect(staticUrls.comfyOrg).toBe('https://comfy.org/')
     })
   })
 
@@ -72,7 +72,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should build docs URL with Chinese (zh-TW) locale when requested', () => {
@@ -80,7 +80,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should not include locale for English when requested', () => {
@@ -134,9 +134,7 @@ describe('useExternalLink', () => {
         includeLocale: true,
         platform: true
       })
-      expect(url).toBe(
-        'https://docs.comfy.org/zh-CN/installation/desktop/macos'
-      )
+      expect(url).toBe('https://docs.comfy.org/zh/installation/desktop/macos')
     })
 
     it('should not add platform when not desktop', () => {

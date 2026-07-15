@@ -3,17 +3,26 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import { models } from './src/config/models'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
+const NOINDEX_PAGES = ['/terms-of-service', '/privacy-policy'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
 )
+const NON_CANONICAL_MODEL_SLUGS = models
+  .filter((model) => model.canonicalSlug)
+  .map((model) => model.slug)
 const SITEMAP_EXCLUDED_PATHNAMES = new Set(
-  LOCALE_PREFIXES.flatMap((prefix) =>
-    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
-  )
+  LOCALE_PREFIXES.flatMap((prefix) => [
+    ...PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`),
+    ...NOINDEX_PAGES.map((page) => `${prefix}${page}`),
+    ...NON_CANONICAL_MODEL_SLUGS.map(
+      (slug) => `${prefix}/p/supported-models/${slug}`
+    )
+  ])
 )
 
 function isExcludedFromSitemap(page: string): boolean {
@@ -33,7 +42,7 @@ export default defineConfig({
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service'
+    '/zh-CN/terms-of-service': '/terms-of-service/'
   },
   build: {
     assets: '_website'

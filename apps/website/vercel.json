@@ -36,13 +36,33 @@
   ],
   "redirects": [
     {
+      "source": "/privacy",
+      "destination": "/privacy-policy/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/privacy",
+      "destination": "/zh-CN/privacy-policy/",
+      "permanent": true
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms-of-service/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/terms",
+      "destination": "/terms-of-service/",
+      "permanent": true
+    },
+    {
       "source": "/pricing",
-      "destination": "/cloud/pricing",
+      "destination": "/cloud/pricing/",
       "permanent": true
     },
     {
       "source": "/enterprise",
-      "destination": "/cloud/enterprise",
+      "destination": "/cloud/enterprise/",
       "permanent": true
     },
     {
@@ -52,7 +72,7 @@
     },
     {
       "source": "/press",
-      "destination": "/about",
+      "destination": "/about/",
       "permanent": true
     }
   ]

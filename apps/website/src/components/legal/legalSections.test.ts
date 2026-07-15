@@ -66,11 +66,11 @@ describe('affiliate terms i18n', () => {
     expect(leaks).toEqual([])
   })
 
-  it('exposes affiliate terms at the canonical /affiliates/terms path regardless of locale', () => {
+  it('exposes affiliate terms at the canonical /affiliates/terms/ path regardless of locale', () => {
     // Guards against re-introducing /zh-CN/affiliates/terms, which would
     // serve an unreviewed translation of legal-reviewed copy. See the
     // comment on LOCALE_INVARIANT_ROUTE_KEYS in src/config/routes.ts.
-    expect(getRoutes('en').affiliateTerms).toBe('/affiliates/terms')
-    expect(getRoutes('zh-CN').affiliateTerms).toBe('/affiliates/terms')
+    expect(getRoutes('en').affiliateTerms).toBe('/affiliates/terms/')
+    expect(getRoutes('zh-CN').affiliateTerms).toBe('/affiliates/terms/')
   })
 })

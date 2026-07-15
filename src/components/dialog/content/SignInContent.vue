@@ -118,7 +118,7 @@
       <p class="mt-8 text-xs text-muted">
         {{ t('auth.login.termsText') }}
         <a
-          href="https://www.comfy.org/terms-of-service"
+          href="https://comfy.org/terms-of-service/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -126,7 +126,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy"
+          href="https://comfy.org/privacy-policy/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >

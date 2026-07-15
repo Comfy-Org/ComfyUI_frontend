@@ -116,7 +116,7 @@ function onExplore() {
   })
 
   window.open(
-    `https://www.comfy.org/cloud?${params}`,
+    `https://comfy.org/cloud?${params}`,
     '_blank',
     'noopener,noreferrer'
   )
