@@ -2183,7 +2183,7 @@ const translations = {
     'zh-CN': '我的输出会保存到哪里？'
   },
   'mcp.faq.7.a': {
-    en: 'Into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to donwload the assets to local for you.',
+    en: 'Into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets to local for you.',
     'zh-CN':
       '保存到你的 Comfy Cloud 资产库，你可以复用、二次创作和分享——还能在画布上打开任意运行继续编辑。你也可以让智能体把资产下载到本地。'
   },
