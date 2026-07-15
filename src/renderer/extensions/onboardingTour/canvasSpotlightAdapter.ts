@@ -189,14 +189,31 @@ export function maskRectsFor(nodeIds: NodeId[]): ScreenRect[] {
 }
 
 /**
- * Smoothly frame the view around the given nodes. `zoom` is the fill fraction of
- * the viewport (not a scale). Uses the animated focus path (marks the canvas
- * dirty for us); no-op when none resolve.
+ * Duration of the tour's framing animation. The overlay waits this out before
+ * revealing the highlight, so it lands on an element already in position rather
+ * than tracking it mid-zoom.
  */
-export function focusNodes(nodeIds: NodeId[], zoom = 0.4): void {
+export const TOUR_FOCUS_DURATION_MS = 450
+
+/** Viewport fill fraction for the framing zoom — higher makes the node larger. */
+export const TOUR_ZOOM_FILL = 0.3
+
+/**
+ * Frame the view around the given nodes. `zoom` is the viewport fill fraction
+ * (higher = node appears larger); pass 0 to pan to the nodes at the current
+ * scale without re-zooming, so the view zooms in once and then only pans. Uses
+ * the animated focus path (marks the canvas dirty for us); no-op when none resolve.
+ */
+export function focusNodes(
+  nodeIds: NodeId[],
+  zoom: number = TOUR_ZOOM_FILL
+): void {
   const nodes = resolveNodes(nodeIds)
   if (nodes.length === 0) return
   const bounds = createBounds(nodes)
   if (!bounds) return
-  app.canvas?.animateToBounds(bounds, { zoom })
+  app.canvas?.animateToBounds(bounds, {
+    zoom,
+    duration: TOUR_FOCUS_DURATION_MS
+  })
 }

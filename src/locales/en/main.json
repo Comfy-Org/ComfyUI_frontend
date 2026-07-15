@@ -2335,8 +2335,8 @@
         "body": "This prompt reshapes the image: same style, new subject. This line is yours to change."
       },
       "run": {
-        "title": "Now run it and watch it come to life",
-        "body": "Press Run and your result starts generating."
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result"
       },
       "result": {
         "image": {
@@ -2351,9 +2351,9 @@
     },
     "generating": "Generating…",
     "gettingStarted": {
-      "title": "Get started with Graph",
+      "title": "Get started with graph",
       "subtitle": "Start a workflow from scratch or load one that's ready to go.",
-      "screenLabel": "Get started with Graph",
+      "screenLabel": "Get started with graph",
       "tabsLabel": "Getting started options",
       "tabs": {
         "templates": "Templates",
