@@ -6,7 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import type {
   BillingStatus,
-  BillingSubscriptionStatus,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/BillingStatusBanner.vue'
@@ -20,7 +19,6 @@ interface Subscription {
 const state = vi.hoisted(() => ({
   isActiveSubscription: true,
   billingStatus: 'paid' as string | null,
-  subscriptionStatus: 'active' as string | null,
   subscription: {
     hasFunds: true,
     isCancelled: false,
@@ -42,9 +40,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => state.isActiveSubscription),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
-    subscriptionStatus: computed(
-      () => state.subscriptionStatus as BillingSubscriptionStatus | null
-    ),
     subscription: computed(() => state.subscription),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription
@@ -136,11 +131,17 @@ function exhausted() {
   state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
 }
 
+// The spend gate folds billing_status into is_active, so the backend never emits
+// paused alongside an active subscription.
+function pausedState() {
+  state.billingStatus = 'paused'
+  state.isActiveSubscription = false
+}
+
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     state.isActiveSubscription = true
     state.billingStatus = 'paid'
-    state.subscriptionStatus = 'active'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
     state.renewalDate = null
     state.workspaceType = 'team'
@@ -203,7 +204,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows the paused banner with Update payment for owners', async () => {
-    state.subscriptionStatus = 'paused'
+    pausedState()
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscription paused')
@@ -217,7 +218,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows the paused member notice without an action', () => {
-    state.subscriptionStatus = 'paused'
+    pausedState()
     state.canManageSubscription = false
     state.canTopUp = false
     renderBanner()
@@ -254,7 +255,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows the ending banner with a Reactivate action', async () => {
-    state.subscriptionStatus = 'canceled'
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
@@ -272,7 +272,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('shows the ending banner read-only to a non-original owner (Reactivate is lifecycle-gated)', () => {
-    state.subscriptionStatus = 'canceled'
     state.subscription = {
       hasFunds: true,
       isCancelled: true,

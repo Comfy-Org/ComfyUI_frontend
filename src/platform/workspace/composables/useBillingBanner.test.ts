@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   billing: null as {
     isActiveSubscription: { value: boolean }
     billingStatus: { value: string | null }
-    subscriptionStatus: { value: string | null }
     subscription: { value: { hasFunds: boolean } | null }
   } | null
 }))
@@ -17,7 +16,6 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
   const billing = {
     isActiveSubscription: ref(true),
     billingStatus: ref<string | null>('paid'),
-    subscriptionStatus: ref<string | null>('active'),
     subscription: ref<{ hasFunds: boolean } | null>({ hasFunds: true })
   }
   mocks.billing = billing
@@ -45,7 +43,6 @@ describe('useBillingBanner', () => {
     const b = mocks.billing!
     b.isActiveSubscription.value = true
     b.billingStatus.value = 'paid'
-    b.subscriptionStatus.value = 'active'
     b.subscription.value = { hasFunds: true }
   })
 

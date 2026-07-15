@@ -244,15 +244,15 @@ export type BillingSubscriptionStatus =
   | 'scheduled'
   | 'ended'
   | 'canceled'
-  // Not yet emitted by the backend; the paused banner stays inert until the
-  // status API projects the workspace's Stripe-paused state (see FE-968).
-  | 'paused'
 
 export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {

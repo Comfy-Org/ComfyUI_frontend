@@ -3,10 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import type {
-  BillingStatus,
-  BillingSubscriptionStatus
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
@@ -20,7 +17,6 @@ export interface BillingBannerInputs {
   isLoaded: boolean
   isActiveSubscription: boolean
   billingStatus: BillingStatus | null
-  subscriptionStatus: BillingSubscriptionStatus | null
   hasFunds: boolean | null
   isCancelled: boolean
   endDate: string | null
@@ -37,7 +33,10 @@ export function deriveBillingBanner(
 ): BillingBannerKind | null {
   if (!inputs.isTeamWorkspace || !inputs.isLoaded) return null
 
-  if (inputs.subscriptionStatus === 'paused') return 'paused'
+  // Above the isActiveSubscription gate on purpose: the spend gate folds
+  // billing_status into is_active, so a paused workspace always reports
+  // is_active=false and this check would be dead code below it.
+  if (inputs.billingStatus === 'paused') return 'paused'
 
   // Inactive workspaces surface a run-lock modal, not this banner.
   if (!inputs.isActiveSubscription) return null
@@ -58,12 +57,8 @@ export function deriveBillingBanner(
 }
 
 function useBillingBannerInternal() {
-  const {
-    isActiveSubscription,
-    billingStatus,
-    subscriptionStatus,
-    subscription
-  } = useBillingContext()
+  const { isActiveSubscription, billingStatus, subscription } =
+    useBillingContext()
   const { workspaceType, permissions } = useWorkspaceUI()
 
   const dismissed = ref(false)
@@ -75,7 +70,6 @@ function useBillingBannerInternal() {
       isLoaded: subscription.value !== null,
       isActiveSubscription: isActiveSubscription.value,
       billingStatus: billingStatus.value,
-      subscriptionStatus: subscriptionStatus.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       isCancelled: subscription.value?.isCancelled ?? false,
       endDate: subscription.value?.endDate ?? null,

@@ -8,12 +8,18 @@ const funded: BillingBannerInputs = {
   isLoaded: true,
   isActiveSubscription: true,
   billingStatus: 'paid',
-  subscriptionStatus: 'active',
   hasFunds: true,
   isCancelled: false,
   endDate: null,
   canManage: true,
   outOfCreditsDismissed: false
+}
+
+// The backend folds billing_status into is_active, so a paused workspace always
+// reports is_active=false. Pinning that pairing keeps the paused cases honest.
+const paused: Partial<BillingBannerInputs> = {
+  billingStatus: 'paused',
+  isActiveSubscription: false
 }
 
 function derive(overrides: Partial<BillingBannerInputs>) {
@@ -68,22 +74,17 @@ describe('deriveBillingBanner', () => {
   })
 
   it('prioritizes paused above everything, for owners and members', () => {
-    expect(
-      derive({
-        subscriptionStatus: 'paused',
-        billingStatus: 'payment_failed',
-        hasFunds: false
-      })
-    ).toBe('paused')
-    expect(derive({ subscriptionStatus: 'paused', canManage: false })).toBe(
-      'paused'
-    )
+    expect(derive({ ...paused, hasFunds: false })).toBe('paused')
+    expect(derive({ ...paused, canManage: false })).toBe('paused')
+  })
+
+  it('shows paused even though the backend reports the workspace inactive', () => {
+    expect(derive(paused)).toBe('paused')
   })
 
   it('surfaces the ending banner for a cancelled-but-active owner', () => {
     expect(
       derive({
-        subscriptionStatus: 'canceled',
         isCancelled: true,
         endDate: '2026-08-01T00:00:00Z'
       })
@@ -93,7 +94,6 @@ describe('deriveBillingBanner', () => {
   it('does not show the ending banner until the end date is populated', () => {
     expect(
       derive({
-        subscriptionStatus: 'canceled',
         isCancelled: true,
         endDate: null
       })
@@ -103,7 +103,6 @@ describe('deriveBillingBanner', () => {
   it('hides the ending banner from members', () => {
     expect(
       derive({
-        subscriptionStatus: 'canceled',
         isCancelled: true,
         endDate: '2026-08-01T00:00:00Z',
         canManage: false
@@ -113,7 +112,7 @@ describe('deriveBillingBanner', () => {
 
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
     expect(
-      derive({ isActiveSubscription: false, subscriptionStatus: 'ended' })
+      derive({ isActiveSubscription: false, billingStatus: 'inactive' })
     ).toBeNull()
   })
 })
