@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import BrandButton from '../components/common/BrandButton.vue'
+import Button from '../components/ui/button/Button.vue'
 import HeroSection from '../components/legal/HeroSection.vue'
 import { getRoutes } from '../config/routes'
 
@@ -41,14 +41,14 @@ const routes = getRoutes('en')
       </p>
 
       <div class="mt-2 flex justify-center">
-        <BrandButton href={routes.cloudPricing} variant="solid" size="nav">
+        <Button as="a" href={routes.cloudPricing} variant="default" size="lg">
           See plans and pricing →
-        </BrandButton>
+        </Button>
       </div>
 
       <p class="text-primary-warm-gray mt-8 text-sm">
         Think you have an enterprise need we're missing? It happens. Email us
-        at         <a
+        at <a
           href="mailto:gtm-team@comfy.org"
           class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
           >gtm-team@comfy.org</a
