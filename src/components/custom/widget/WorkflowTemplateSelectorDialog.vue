@@ -222,7 +222,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card hover:bg-base-background"
+            class="group/card aspect-auto hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -703,7 +703,8 @@ const tagsPopover = ref<InstanceType<typeof Popover>>()
 const popoverTags = ref<string[]>([])
 
 const showTagsPopover = (event: MouseEvent, template: TemplateInfo) => {
-  popoverTags.value = template.tags ?? []
+  // Only the tags collapsed into the "+N" chip, not the ones already visible.
+  popoverTags.value = (template.tags ?? []).slice(MAX_VISIBLE_TAGS)
   tagsPopover.value?.show(event)
 }
 
