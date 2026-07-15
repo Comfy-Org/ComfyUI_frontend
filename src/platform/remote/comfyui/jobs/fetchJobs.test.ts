@@ -461,6 +461,31 @@ describe('fetchJobs', () => {
       expect(result[0].node_id).toBeNull()
     })
 
+    it('accepts null hash, preview_url, mime_type, and size fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: null,
+                preview_url: null,
+                mime_type: null,
+                size: null,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('asset-1')
+    })
+
     it('paginates until has_more is false', async () => {
       const mockFetch = vi
         .fn()

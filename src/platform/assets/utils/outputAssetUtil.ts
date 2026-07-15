@@ -140,8 +140,8 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
     user_metadata: {
       ...item.user_metadata,
       nodeId: asset.node_id ?? item.user_metadata?.nodeId,
-      outputKey: asset.output_key ?? undefined,
-      outputIndex: asset.output_index ?? undefined
+      outputKey: asset.output_key ?? item.user_metadata?.outputKey,
+      outputIndex: asset.output_index ?? item.user_metadata?.outputIndex
     }
   }
 }
