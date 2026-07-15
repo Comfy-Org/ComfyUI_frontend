@@ -32,7 +32,9 @@
                 dialogStore.activeKey === item.key
               )
           "
-          @focus-outside="onRekaFocusOutside"
+          @focus-outside="
+            (e) => onRekaFocusOutside(e, item.dialogComponentProps)
+          "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
           <template v-if="item.dialogComponentProps.headless">

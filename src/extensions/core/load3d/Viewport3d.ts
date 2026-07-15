@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
-import { WebGLViewport } from '@/renderer/three/WebGLViewport'
+import type { RendererView } from '@/renderer/three/RendererView'
+import { normalize } from '@/utils/mathUtil'
 
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
@@ -17,10 +18,17 @@ import type {
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
-import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import type { LetterboxNdc } from './load3dViewport'
+import {
+  clientPointToLetterboxNdc,
+  computeLetterboxedViewport,
+  isLoad3dActive
+} from './load3dViewport'
+
+const VIEW_HELPER_SIZE = 128
 
 export type Viewport3dDeps = {
-  renderer: THREE.WebGLRenderer
+  view: RendererView
   eventManager: EventManager
   sceneManager: SceneManager
   cameraManager: CameraManager
@@ -29,7 +37,8 @@ export type Viewport3dDeps = {
   viewHelperManager: ViewHelperManager
 }
 
-export class Viewport3d extends WebGLViewport {
+export class Viewport3d {
+  protected readonly view: RendererView
   protected clock: THREE.Clock
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
@@ -57,13 +66,14 @@ export class Viewport3d extends WebGLViewport {
   private externalActiveCamera: THREE.Camera | null = null
   private overlay: SceneOverlay | null = null
   private initialRenderTimer: ReturnType<typeof setTimeout> | null = null
+  private viewPixelScale = 1
 
   constructor(
-    container: Element | HTMLElement,
+    container: HTMLElement,
     deps: Viewport3dDeps,
     options: Load3DOptions = {}
   ) {
-    super(deps.renderer)
+    this.view = deps.view
     this.clock = new THREE.Clock()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
@@ -94,7 +104,15 @@ export class Viewport3d extends WebGLViewport {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
-    this.observeResize(container, () => this.handleResize())
+    this.view.observeResize(container, () => this.handleResize())
+  }
+
+  get renderer(): THREE.WebGLRenderer {
+    return this.view.renderer
+  }
+
+  get domElement(): HTMLCanvasElement {
+    return this.view.canvas
   }
 
   start(): void {
@@ -120,7 +138,7 @@ export class Viewport3d extends WebGLViewport {
 
   private initContextMenu(): void {
     this.disposeContextMenuGuard = attachContextMenuGuard(
-      this.renderer.domElement,
+      this.view.canvas,
       (event) => this.onContextMenuCallback?.(event),
       { isDisabled: () => this.isViewerMode }
     )
@@ -159,15 +177,21 @@ export class Viewport3d extends WebGLViewport {
   forceRender(): void {
     const delta = this.clock.getDelta()
     this.tickPerFrame(delta)
-
-    this.renderMainScene()
-    this.resetViewport()
-
-    if (this.viewHelperManager.viewHelper.render) {
-      this.viewHelperManager.viewHelper.render(this.renderer)
-    }
-
+    this.renderView()
     this.INITIAL_RENDER_DONE = true
+  }
+
+  private renderView(): void {
+    this.view.beginRender()
+    this.renderMainScene()
+
+    this.renderer.setScissorTest(false)
+    this.viewHelperManager.render(
+      this.renderer,
+      VIEW_HELPER_SIZE * this.viewPixelScale
+    )
+
+    this.view.blit()
   }
 
   protected tickPerFrame(delta: number): void {
@@ -219,8 +243,8 @@ export class Viewport3d extends WebGLViewport {
   }
 
   renderMainScene(): void {
-    const containerWidth = this.renderer.domElement.clientWidth
-    const containerHeight = this.renderer.domElement.clientHeight
+    const viewWidth = this.view.width
+    const viewHeight = this.view.height
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -229,15 +253,16 @@ export class Viewport3d extends WebGLViewport {
       }
     }
 
+    this.renderer.setViewport(0, 0, viewWidth, viewHeight)
+    this.renderer.setScissor(0, 0, viewWidth, viewHeight)
+    this.renderer.setScissorTest(true)
+
     if (this.shouldMaintainAspectRatio()) {
       const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
-        { width: containerWidth, height: containerHeight },
+        { width: viewWidth, height: viewHeight },
         this.targetAspectRatio
       )
 
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
       this.renderer.setClearColor(0x0a0a0a)
       this.renderer.clear()
 
@@ -246,22 +271,26 @@ export class Viewport3d extends WebGLViewport {
 
       this.cameraManager.updateAspectRatio(width / height)
     } else {
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
+      this.renderer.setClearColor(
+        this.view.state.clearColor,
+        this.view.state.clearAlpha
+      )
+      this.renderer.clear()
     }
 
     this.sceneManager.renderBackground()
     this.renderer.render(this.sceneManager.scene, this.getRenderCamera())
   }
 
-  resetViewport(): void {
-    const width = this.renderer.domElement.clientWidth
-    const height = this.renderer.domElement.clientHeight
-
-    this.renderer.setViewport(0, 0, width, height)
-    this.renderer.setScissor(0, 0, width, height)
-    this.renderer.setScissorTest(false)
+  clientPointToNdc(clientX: number, clientY: number): LetterboxNdc | null {
+    const rect = this.domElement.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return null
+    return clientPointToLetterboxNdc(
+      normalize(clientX, rect.left, rect.right),
+      normalize(clientY, rect.top, rect.bottom),
+      { width: rect.width, height: rect.height },
+      this.shouldMaintainAspectRatio() ? this.targetAspectRatio : null
+    )
   }
 
   protected startAnimation(): void {
@@ -269,11 +298,7 @@ export class Viewport3d extends WebGLViewport {
       tick: () => {
         const delta = this.clock.getDelta()
         this.tickPerFrame(delta)
-        this.renderMainScene()
-        this.resetViewport()
-        if (this.viewHelperManager.viewHelper.render) {
-          this.viewHelperManager.viewHelper.render(this.renderer)
-        }
+        this.renderView()
       },
       isActive: () => this.isActive()
     })
@@ -346,7 +371,7 @@ export class Viewport3d extends WebGLViewport {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement?.parentElement
+    const parentElement = this.view.canvas.parentElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
@@ -357,7 +382,7 @@ export class Viewport3d extends WebGLViewport {
     const containerHeight = parentElement.clientHeight
 
     const zoomScale = this.getZoomScaleCallback?.() ?? 1
-    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
+    this.viewPixelScale = Math.min(zoomScale, 3)
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -366,17 +391,20 @@ export class Viewport3d extends WebGLViewport {
       }
     }
 
+    this.view.setSize(
+      containerWidth * this.viewPixelScale,
+      containerHeight * this.viewPixelScale
+    )
+
     if (this.shouldMaintainAspectRatio()) {
       const { width, height } = computeLetterboxedViewport(
         { width: containerWidth, height: containerHeight },
         this.targetAspectRatio
       )
 
-      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(width, height)
       this.sceneManager.handleResize(width, height)
     } else {
-      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(containerWidth, containerHeight)
       this.sceneManager.handleResize(containerWidth, containerHeight)
     }
@@ -398,7 +426,7 @@ export class Viewport3d extends WebGLViewport {
 
     this.disposeManagers()
 
-    this.disposeRenderer()
+    this.view.dispose()
   }
 
   protected disposeManagers(): void {

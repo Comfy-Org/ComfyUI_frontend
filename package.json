@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.48.0",
+  "version": "1.48.3",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -114,6 +114,7 @@
     "jsonata": "catalog:",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
+    "minisearch": "catalog:",
     "pinia": "catalog:",
     "posthog-js": "catalog:",
     "primeicons": "catalog:",

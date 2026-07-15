@@ -823,7 +823,7 @@ const translations = {
     'zh-CN': 'Comfy Cloud 支持的自定义节点包'
   },
   'cloudNodes.meta.title': {
-    en: 'Custom-node packs on Comfy Cloud — supported by default',
+    en: 'Custom-node packs on Comfy Cloud - supported by default',
     'zh-CN': 'Comfy Cloud 自定义节点包合集——开箱即用'
   },
   'cloudNodes.meta.description': {
@@ -1845,8 +1845,8 @@ const translations = {
 
   // MCP – Meta
   'mcp.meta.title': {
-    en: 'Comfy MCP — Drive ComfyUI from any AI agent',
-    'zh-CN': 'Comfy MCP — 让任何 AI 智能体驱动 ComfyUI'
+    en: 'Comfy MCP - Drive ComfyUI from any AI agent',
+    'zh-CN': 'Comfy MCP - 让任何 AI 智能体驱动 ComfyUI'
   },
   'mcp.meta.description': {
     en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client.',
@@ -2191,6 +2191,13 @@ const translations = {
   'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
   'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
+  'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
+  'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -3477,8 +3484,8 @@ const translations = {
   },
 
   'affiliate-terms.page.title': {
-    en: 'Affiliate Terms — Comfy',
-    'zh-CN': 'Affiliate Terms — Comfy'
+    en: 'Affiliate Terms - Comfy',
+    'zh-CN': 'Affiliate Terms - Comfy'
   },
   'affiliate-terms.page.description': {
     en: 'Comfy.org Affiliate Program Terms and Conditions.',
@@ -3890,8 +3897,8 @@ const translations = {
       'This document reproduces the current template of the Enterprise Customer Agreement for reference only. The executed Agreement between Comfy and Customer, together with any signed Order Forms, governs the relationship between the parties. To request an executable copy, please contact <a href="mailto:sales@comfy.org" class="text-white underline">sales@comfy.org</a>.'
   },
   'enterprise-msa.page.title': {
-    en: 'Enterprise MSA — Comfy',
-    'zh-CN': 'Enterprise MSA — Comfy'
+    en: 'Enterprise MSA - Comfy',
+    'zh-CN': 'Enterprise MSA - Comfy'
   },
   'enterprise-msa.page.description': {
     en: 'Comfy Enterprise Customer Agreement — the master services agreement that governs Comfy Enterprise deployments of Comfy Cloud, Comfy API, and related products.',
@@ -4062,7 +4069,6 @@ const translations = {
     en: 'This page is being redesigned. Check back soon.',
     'zh-CN': '此页面正在重新设计中，请稍后再来。'
   },
-  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
@@ -4157,10 +4163,6 @@ const translations = {
   'models.index.subtitle': {
     en: "Run the world's leading AI models in ComfyUI",
     'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
-  },
-  'models.breadcrumb.home': {
-    en: 'Home',
-    'zh-CN': '首页'
   },
   'models.breadcrumb.models': {
     en: 'Supported Models',
@@ -4360,8 +4362,8 @@ const translations = {
 
   // Affiliate page (/affiliates) — head metadata
   'affiliate.page.title': {
-    en: 'Comfy.org Affiliate Program — Become a Partner',
-    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
+    en: 'Comfy.org Affiliate Program - Become a Partner',
+    'zh-CN': 'Comfy.org 联盟计划 - 成为合作伙伴'
   },
   'affiliate.page.description': {
     en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
@@ -4386,8 +4388,8 @@ const translations = {
   // Launches page (/launches) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.page.title': {
-    en: 'ComfyUI Live Demo & Q&A — June 29 Launch Livestream',
-    'zh-CN': 'ComfyUI 直播演示与问答 — 6 月 29 日发布直播'
+    en: 'ComfyUI Live Demo & Q&A - June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 - 6 月 29 日发布直播'
   },
   'launches.page.description': {
     en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',

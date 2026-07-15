@@ -176,10 +176,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       </div>
 
       <!-- Logo -->
-      <canvas
-        ref="canvasRef"
-        class="pointer-events-none size-52 opacity-80 lg:mt-28"
-      />
+      <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>
 </template>

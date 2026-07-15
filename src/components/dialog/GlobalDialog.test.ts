@@ -449,6 +449,12 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 
+  it('focus-outside never dismisses when dismissOnFocusOutside is false', () => {
+    const event = makeEvent(document.body)
+    onRekaFocusOutside(event, { dismissOnFocusOutside: false })
+    expect(event.defaultPrevented).toBe(true)
+  })
+
   it('focus-outside on a sibling Reka portal does not dismiss the parent', () => {
     const portal = document.createElement('div')
     portal.setAttribute('role', 'dialog')
