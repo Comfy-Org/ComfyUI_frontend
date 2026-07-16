@@ -39,11 +39,11 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.2
+  '@storybook/addon-docs': ^10.5.0
   '@storybook/addon-mcp': 0.1.6
-  '@storybook/vue3': ^10.5.2
-  '@storybook/vue3-vite': ^10.5.2
-  '@tailwindcss/vite': ^4.3.3
+  '@storybook/vue3': ^10.5.0
+  '@storybook/vue3-vite': ^10.5.0
+  '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
@@ -85,7 +85,7 @@ catalog:
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.73.0
   eslint-plugin-playwright: ^2.10.5
-  eslint-plugin-storybook: ^10.5.2
+  eslint-plugin-storybook: ^10.5.0
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.9.2
@@ -118,9 +118,9 @@ catalog:
   primevue: ^4.2.5
   reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
-  storybook: ^10.5.2
+  storybook: ^10.5.0
   stylelint: ^16.26.1
-  tailwindcss: ^4.3.3
+  tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
   three: ^0.184.0
   tsx: ^4.15.6
@@ -133,12 +133,12 @@ catalog:
   unplugin-vue-components: ^30.0.0
   uuid: ^11.1.1
   vee-validate: ^4.15.1
-  vite: ^8.1.5
+  vite: ^8.1.4
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.1.5
   vitest: ^4.1.10
-  vue: ^3.5.40
+  vue: ^3.5.39
   vue-component-type-helpers: ^3.3.7
   vue-eslint-parser: ^10.4.1
   vue-i18n: ^9.14.5
@@ -175,40 +175,3 @@ overrides:
   minimatch@^9.0.0: ^9.0.7
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
-
-minimumReleaseAgeExclude:
-  - '@storybook/addon-docs@10.5.2'
-  - '@storybook/builder-vite@10.5.2'
-  - '@storybook/csf-plugin@10.5.2'
-  - '@storybook/react-dom-shim@10.5.2'
-  - '@storybook/vue3-vite@10.5.2'
-  - '@storybook/vue3@10.5.2'
-  - '@tailwindcss/node@4.3.3'
-  - '@tailwindcss/oxide-android-arm64@4.3.3'
-  - '@tailwindcss/oxide-darwin-arm64@4.3.3'
-  - '@tailwindcss/oxide-darwin-x64@4.3.3'
-  - '@tailwindcss/oxide-freebsd-x64@4.3.3'
-  - '@tailwindcss/oxide-linux-arm-gnueabihf@4.3.3'
-  - '@tailwindcss/oxide-linux-arm64-gnu@4.3.3'
-  - '@tailwindcss/oxide-linux-arm64-musl@4.3.3'
-  - '@tailwindcss/oxide-linux-x64-gnu@4.3.3'
-  - '@tailwindcss/oxide-linux-x64-musl@4.3.3'
-  - '@tailwindcss/oxide-wasm32-wasi@4.3.3'
-  - '@tailwindcss/oxide-win32-arm64-msvc@4.3.3'
-  - '@tailwindcss/oxide-win32-x64-msvc@4.3.3'
-  - '@tailwindcss/oxide@4.3.3'
-  - '@tailwindcss/vite@4.3.3'
-  - '@vue/compiler-core@3.5.40'
-  - '@vue/compiler-dom@3.5.40'
-  - '@vue/compiler-sfc@3.5.40'
-  - '@vue/compiler-ssr@3.5.40'
-  - '@vue/reactivity@3.5.40'
-  - '@vue/runtime-core@3.5.40'
-  - '@vue/runtime-dom@3.5.40'
-  - '@vue/server-renderer@3.5.40'
-  - '@vue/shared@3.5.40'
-  - eslint-plugin-storybook@10.5.2
-  - storybook@10.5.2
-  - tailwindcss@4.3.3
-  - vite@8.1.5
-  - vue@3.5.40
