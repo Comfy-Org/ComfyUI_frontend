@@ -8,6 +8,7 @@ import { TelemetryEvents } from '../../types'
 import type {
   AuthMetadata,
   ExecutionSuccessMetadata,
+  PageViewMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
   TelemetryEventProperties,
@@ -41,7 +42,9 @@ interface CustomerIoIdentity {
 export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private analytics: AnalyticsBrowser | null = null
   private isEnabled = true
+  private isPageViewTrackingReady = false
   private eventQueue: QueuedEvent[] = []
+  private pageViewQueued = false
   private identifiedUser: CustomerIoIdentity | null = null
   private sessionIdentity: CustomerIoIdentity | null = null
   private operationQueue: Promise<void> = Promise.resolve()
@@ -61,7 +64,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
     void import('@customerio/cdp-analytics-browser')
       .then(({ AnalyticsBrowser, InAppPlugin }) => {
         const analytics = AnalyticsBrowser.load({ writeKey })
-        void analytics.register(
+        const inAppRegistration = analytics.register(
           InAppPlugin({
             siteId,
             events: null,
@@ -97,6 +100,17 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         })
 
         void this.flushQueue()
+        void inAppRegistration
+          .catch((error) => {
+            console.error(
+              'Failed to initialize Customer.io in-app plugin:',
+              error
+            )
+          })
+          .finally(() => {
+            this.isPageViewTrackingReady = true
+            this.flushPageView()
+          })
       })
       .catch((error) => {
         console.error('Failed to load Customer.io:', error)
@@ -196,6 +210,29 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         await this.send(event, properties, identity)
       }
     })
+  }
+
+  private sendPageView(): void {
+    void this.analytics?.page()?.catch((error) => {
+      console.error('Failed to track Customer.io page view:', error)
+    })
+  }
+
+  private flushPageView(): void {
+    if (!this.isPageViewTrackingReady || !this.pageViewQueued) {
+      return
+    }
+    this.pageViewQueued = false
+    this.sendPageView()
+  }
+
+  trackPageView(_pageName: string, _properties?: PageViewMetadata): void {
+    if (!this.isEnabled) return
+    if (!this.isPageViewTrackingReady) {
+      this.pageViewQueued = true
+      return
+    }
+    this.sendPageView()
   }
 
   trackAuth(metadata: AuthMetadata): void {

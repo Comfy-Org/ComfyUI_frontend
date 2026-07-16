@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const hoisted = vi.hoisted(() => {
   const analytics = {
     identify: vi.fn().mockResolvedValue(undefined),
+    page: vi.fn(),
     track: vi.fn().mockResolvedValue(undefined),
     reset: vi.fn(),
     register: vi.fn().mockResolvedValue(undefined)
@@ -106,6 +107,89 @@ describe('CustomerIoTelemetryProvider', () => {
       expect.objectContaining({ siteId: SITE_ID })
     )
     expect(hoisted.analytics.register).toHaveBeenCalled()
+  })
+
+  it('reports the current page after registering the in-app plugin', async () => {
+    const provider = createProvider()
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.page).toHaveBeenCalledWith()
+    expect(hoisted.analytics.register.mock.invocationCallOrder[0]).toBeLessThan(
+      hoisted.analytics.page.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('queues page views until the in-app plugin is registered', async () => {
+    let resolveRegistration: (() => void) | undefined
+    const registration = new Promise<void>((resolve) => {
+      resolveRegistration = resolve
+    })
+    hoisted.analytics.register.mockReturnValue(registration)
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+    expect(hoisted.analytics.page).not.toHaveBeenCalled()
+
+    resolveRegistration?.()
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('reports client-side route changes', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.page).not.toHaveBeenCalled()
+
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.page).toHaveBeenCalledWith()
+  })
+
+  it('continues tracking events and page views when the in-app plugin fails to register', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const registrationError = new Error('in-app setup failed')
+    hoisted.analytics.register.mockRejectedValue(registrationError)
+    const provider = createProvider()
+    provider.trackWorkflowExecution()
+    provider.trackPageView('workflow_editor', {
+      path: 'https://cloud.comfy.org/'
+    })
+
+    await vi.dynamicImportSettled()
+
+    expect(hoisted.analytics.track).toHaveBeenCalledWith(
+      'execution_start',
+      SOURCE
+    )
+    expect(hoisted.analytics.page).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      'Failed to initialize Customer.io in-app plugin:',
+      registrationError
+    )
+
+    provider.trackAddApiCreditButtonClicked()
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.track).toHaveBeenCalledWith(
+        'app:add_api_credit_button_clicked',
+        SOURCE
+      )
+    )
+    provider.trackPageView('settings', {
+      path: 'https://cloud.comfy.org/settings'
+    })
+    expect(hoisted.analytics.page).toHaveBeenCalledTimes(2)
   })
 
   it('does not initialize without a write key', async () => {
