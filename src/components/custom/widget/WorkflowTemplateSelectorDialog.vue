@@ -182,6 +182,7 @@
         <div
           :key="templateListKey"
           :style="gridStyle"
+          class="-mx-2 items-start"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -223,7 +224,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card aspect-auto! hover:bg-base-background"
+            class="group/card aspect-auto! h-fit! hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -371,7 +372,7 @@
             </template>
             <template #bottom>
               <CardBottom>
-                <div class="flex flex-col gap-1 pt-2">
+                <div class="flex flex-col gap-2 pt-2">
                   <!-- Title -->
                   <h3
                     class="m-0 line-clamp-1 text-sm font-semibold text-white"
