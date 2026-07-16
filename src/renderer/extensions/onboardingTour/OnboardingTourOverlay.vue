@@ -162,7 +162,7 @@ import {
   shift,
   useFloating
 } from '@floating-ui/vue'
-import type { Placement, VirtualElement } from '@floating-ui/vue'
+import type { VirtualElement } from '@floating-ui/vue'
 import {
   useElementBounding,
   usePreferredReducedMotion,
@@ -299,15 +299,19 @@ const visibleSpotRects = computed(() =>
   revealed.value ? rects.visibleSpotRects.value : []
 )
 
-// A canvas node has no DOM element; hand Floating UI the live spotlit rect so its
-// flip/shift/hide middleware places the mark and tracks the camera each frame.
-const reference = computed<VirtualElement | null>(() => {
-  const r = focusRect.value
-  if (!r) return null
-  return {
-    getBoundingClientRect: () => new DOMRect(r.left, r.top, r.width, r.height)
+// A canvas node has no DOM element; one stable VirtualElement reads the live spotlit
+// rect so autoUpdate tracks the camera each frame without re-initialising during motion.
+const referenceEl: VirtualElement = {
+  getBoundingClientRect: () => {
+    const rect = focusRect.value
+    return rect
+      ? new DOMRect(rect.left, rect.top, rect.width, rect.height)
+      : new DOMRect()
   }
-})
+}
+const reference = computed<VirtualElement | null>(() =>
+  focusRect.value ? referenceEl : null
+)
 
 const { floatingStyles, middlewareData, placement } = useFloating(
   reference,
@@ -329,7 +333,7 @@ const { floatingStyles, middlewareData, placement } = useFloating(
   }
 )
 
-/** True while the target is clipped out of view; the ring hides and the mark holds centre. */
+/** True while the target is clipped out of view; the ring hides and the mark recentres. */
 const targetHidden = computed(
   () =>
     !reference.value || (middlewareData.value.hide?.referenceHidden ?? false)
@@ -430,7 +434,7 @@ const OPPOSITE_EDGE: Record<string, 'top' | 'bottom' | 'left' | 'right'> = {
 
 const cursorEdgeClass = computed(() => {
   if (targetHidden.value) return ''
-  const side = (placement.value as Placement).split('-')[0]
+  const side = placement.value.split('-')[0]
   const edge = OPPOSITE_EDGE[side]
   return edge ? CURSOR_EDGE_CLASS[edge] : ''
 })

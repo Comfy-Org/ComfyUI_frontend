@@ -470,6 +470,10 @@ describe('OnboardingTourOverlay', () => {
       expect(screen.queryByTestId('onboarding-spotlight')).toBeNull()
     })
     expect(screen.queryByTestId('onboarding-cursor')).toBeNull()
+
+    const mark = screen.getByTestId('onboarding-coach-mark')
+    expect(mark.style.top).toBe('50%')
+    expect(mark.style.left).toBe('50%')
   })
 
   it('keeps the coach-mark on screen when the target fills the viewport', async () => {

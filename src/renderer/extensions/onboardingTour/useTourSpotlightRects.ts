@@ -147,8 +147,6 @@ export function useTourSpotlightRects({
 
   return {
     holeRects: toRef(() => holeRects.value),
-    spotRects: toRef(() => spotRects.value),
-    viewport,
     /** Nodes off the canvas region are not ringed; the mark holds instead of chasing. */
     visibleSpotRects: computed(() =>
       spotRects.value.filter((rect) =>
@@ -156,7 +154,6 @@ export function useTourSpotlightRects({
       )
     ),
     focusRect: computed(() => spotRects.value[0] ?? null),
-    recompute,
     start,
     stop
   }
