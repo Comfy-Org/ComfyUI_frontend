@@ -1919,37 +1919,37 @@ const translations = {
     'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'Two ways to connect: ask your agent to install it, or add the server yourself. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    en: 'Two ways to connect: add the server yourself, or ask your agent to install it. Sign in once, and the full ComfyUI toolset is available right in your chat.',
     'zh-CN':
-      '两种接入方式：让你的智能体自动安装，或自行添加服务器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+      '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
-  'mcp.setup.option1.label': { en: 'OPTION 1', 'zh-CN': '方式一' },
-  'mcp.setup.option1.title': {
-    en: 'Ask your agent to install Comfy MCP',
-    'zh-CN': '让你的智能体安装 Comfy MCP'
-  },
-  'mcp.setup.option1.command': {
-    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
-    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
-  },
-  'mcp.setup.option1.description': {
-    en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
-    'zh-CN':
-      '将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
-  },
-  'mcp.setup.option2.label': { en: 'OPTION 2', 'zh-CN': '方式二' },
-  'mcp.setup.option2.title': {
+  'mcp.setup.manual.label': { en: 'OPTION 1', 'zh-CN': '方式一' },
+  'mcp.setup.manual.title': {
     en: 'Install manually',
     'zh-CN': '手动安装'
   },
-  'mcp.setup.option2.description': {
-    en: 'Prefer manual setup? Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
+  'mcp.setup.manual.description': {
+    en: 'Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
     'zh-CN':
-      '想手动配置？将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
+      '将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
   },
-  'mcp.setup.option2.tabsLabel': {
+  'mcp.setup.manual.tabsLabel': {
     en: 'Pick your client',
     'zh-CN': '选择你的客户端'
+  },
+  'mcp.setup.agent.label': { en: 'OPTION 2', 'zh-CN': '方式二' },
+  'mcp.setup.agent.title': {
+    en: 'Ask your agent to install Comfy MCP',
+    'zh-CN': '让你的智能体安装 Comfy MCP'
+  },
+  'mcp.setup.agent.command': {
+    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
+    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
+  },
+  'mcp.setup.agent.description': {
+    en: 'Prefer to let your agent do it? Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
+    'zh-CN':
+      '想让智能体代劳？将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
   },
   'mcp.setup.clients.claudeCode.step': {
     en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
