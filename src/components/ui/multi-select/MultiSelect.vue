@@ -55,18 +55,9 @@
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
       >
-        <div
-          v-if="showSearchBox || showSelectedCount || showClearButton"
-          class="flex flex-col px-2 pt-2 pb-0"
-        >
+        <div v-if="showSearchBox" class="px-2 pt-2 pb-2">
           <div
-            v-if="showSearchBox"
-            :class="
-              cn(
-                'flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5',
-                (showSelectedCount || showClearButton) && 'mb-2'
-              )
-            "
+            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
           >
             <i
               class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
@@ -77,26 +68,6 @@
               class="w-full border-none bg-transparent text-sm outline-none"
             />
           </div>
-          <div
-            v-if="showSelectedCount || showClearButton"
-            class="mt-2 flex items-center justify-between"
-          >
-            <span
-              v-if="showSelectedCount"
-              class="px-1 text-sm text-base-foreground"
-            >
-              {{ $t('g.itemsSelected', { count: selectedCount }) }}
-            </span>
-            <Button
-              v-if="showClearButton"
-              variant="textonly"
-              size="md"
-              @click.stop="selectedItems = []"
-            >
-              {{ $t('g.clearAll') }}
-            </Button>
-          </div>
-          <div class="my-4 h-px bg-border-default" />
         </div>
 
         <ComboboxViewport
@@ -130,6 +101,26 @@
             {{ $t('g.noResultsFound') }}
           </ComboboxEmpty>
         </ComboboxViewport>
+
+        <div
+          v-if="showSelectedCount || showClearButton"
+          class="mt-1 flex items-center justify-between border-t border-border-default px-3 pt-2"
+        >
+          <span
+            v-if="showSelectedCount"
+            class="text-sm text-muted-foreground"
+          >
+            {{ $t('g.itemsSelected', { count: selectedCount }) }}
+          </span>
+          <Button
+            v-if="showClearButton"
+            variant="textonly"
+            size="md"
+            @click.stop="selectedItems = []"
+          >
+            {{ $t('g.clearAll') }}
+          </Button>
+        </div>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>
