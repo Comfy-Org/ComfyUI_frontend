@@ -5,12 +5,15 @@ import { useI18n } from 'vue-i18n'
 
 import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
 import {
+  type CredentialOptionConfig,
   DEFAULT_PROVIDER_IDS,
+  getCredentialOptions,
   getProviderHelpKey,
   getProviderLabel,
   getProviderLogo
 } from '../providers'
 import type {
+  SecretCredentialType,
   SecretErrorCode,
   SecretInputType,
   SecretMetadata,
@@ -79,6 +82,11 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const apiErrorMessage = ref<string | null>(null)
   // Name of the uploaded credential file (json_file providers), for display.
   const fileName = ref('')
+  // DEMO SHIM (FE-1281): the selected credential type for a provider that
+  // offers more than one (currently Gemini: AI Studio api_key vs Vertex
+  // gcp_service_account). Sent on create so the backend routes to the right
+  // upstream. Defaults to api_key for single-credential providers.
+  const credentialType = ref<SecretCredentialType>('api_key')
 
   const form = reactive<SecretFormState>({
     name: '',
@@ -133,9 +141,25 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }))
   })
 
-  // How the selected provider's credential is entered. Providers omitting
-  // `input_type` (and any unlisted selection) default to a single-line secret.
+  // DEMO SHIM (FE-1281): the credential options for the selected provider. When
+  // a provider offers more than one, the form shows a credential-type
+  // sub-selection; an empty list is the single-credential common case.
+  const credentialOptions = computed<CredentialOptionConfig[]>(() =>
+    getCredentialOptions(form.provider ?? undefined)
+  )
+
+  // How the selected provider's credential is entered. When the provider offers
+  // credential options, the selected option's input type wins; otherwise fall
+  // back to the server-advertised `input_type`, defaulting to a single-line
+  // secret when absent.
   const selectedInputType = computed<SecretInputType>(() => {
+    const options = credentialOptions.value
+    if (options.length) {
+      const selected = options.find(
+        (o) => o.credentialType === credentialType.value
+      )
+      return (selected ?? options[0]).inputType
+    }
     if (!form.provider) return 'text'
     return providerInfoById.value.get(form.provider)?.input_type ?? 'text'
   })
@@ -181,6 +205,9 @@ export function useSecretForm(options: UseSecretFormOptions) {
       form.provider = null
     }
     fileName.value = ''
+    credentialType.value =
+      getCredentialOptions(form.provider ?? undefined)[0]?.credentialType ??
+      'api_key'
     errors.name = ''
     errors.secretValue = ''
     errors.provider = ''
@@ -214,15 +241,27 @@ export function useSecretForm(options: UseSecretFormOptions) {
 
   // Switching providers discards any entered or uploaded credential so a value
   // captured for one provider (e.g. an uploaded JSON key) can't be submitted
-  // under another, and invalidates any in-flight file read.
+  // under another, and invalidates any in-flight file read. Also resets the
+  // credential type to the new provider's first option (DEMO SHIM, FE-1281).
   watch(
     () => form.provider,
     () => {
       latestFileReadId++
       form.secretValue = ''
       fileName.value = ''
+      credentialType.value =
+        getCredentialOptions(form.provider ?? undefined)[0]?.credentialType ??
+        'api_key'
     }
   )
+
+  // Switching credential type (e.g. AI Studio -> Vertex) changes the input shape
+  // (text vs json_file), so discard any value captured under the previous shape.
+  watch(credentialType, () => {
+    latestFileReadId++
+    form.secretValue = ''
+    fileName.value = ''
+  })
 
   whenever(() => visible.value, resetForm)
 
@@ -271,7 +310,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
         await createSecret({
           name: form.name.trim(),
           secret_value: form.secretValue,
-          provider: form.provider!
+          provider: form.provider!,
+          credential_type: credentialType.value
         })
       } else if (secret) {
         const updatePayload: { name: string; secret_value?: string } = {
@@ -302,6 +342,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
     providerOptions,
     providerHelp,
     selectedInputType,
+    credentialType,
+    credentialOptions,
     fileName,
     loadSecretFromFile,
     handleSubmit

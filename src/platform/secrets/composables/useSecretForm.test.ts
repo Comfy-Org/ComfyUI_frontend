@@ -483,25 +483,30 @@ describe('useSecretForm', () => {
       expect(selectedInputType.value).toBe('text')
     })
 
-    it('reports json_file input type for a json_file provider', () => {
+    it('reports json_file input type when the Vertex service-account option is selected', () => {
       const visible = ref(true)
-      const { form, selectedInputType } = useSecretForm({
+      const { form, credentialType, selectedInputType } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => [{ id: 'gemini' }],
         visible,
         onSaved: vi.fn()
       })
 
       form.provider = 'gemini'
+      // Gemini defaults to its first option (AI Studio api_key -> text).
+      expect(selectedInputType.value).toBe('text')
+      // Selecting the Vertex service-account option switches to json_file.
+      credentialType.value = 'gcp_service_account'
       expect(selectedInputType.value).toBe('json_file')
     })
   })
 
   describe('json_file credential input', () => {
-    const vertexProviders: SecretProviderInfo[] = [
-      { id: 'gemini', input_type: 'json_file' }
-    ]
+    // Gemini's json_file input is reached by selecting its Vertex
+    // service-account credential option (DEMO SHIM, FE-1281), not by a
+    // server-advertised input_type.
+    const vertexProviders: SecretProviderInfo[] = [{ id: 'gemini' }]
 
     it('loads file contents into the secret value', async () => {
       const visible = ref(true)
@@ -523,7 +528,7 @@ describe('useSecretForm', () => {
 
     it('rejects invalid JSON for a json_file provider', async () => {
       const visible = ref(true)
-      const { form, errors, handleSubmit } = useSecretForm({
+      const { form, errors, credentialType, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
         availableProviders: () => vertexProviders,
@@ -533,6 +538,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      credentialType.value = 'gcp_service_account'
       form.secretValue = 'not json'
 
       await handleSubmit()
@@ -543,7 +549,7 @@ describe('useSecretForm', () => {
 
     it('rejects JSON that is not an object for a json_file provider', async () => {
       const visible = ref(true)
-      const { form, errors, handleSubmit } = useSecretForm({
+      const { form, errors, credentialType, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
         availableProviders: () => vertexProviders,
@@ -553,6 +559,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      credentialType.value = 'gcp_service_account'
       form.secretValue = '["not", "an", "object"]'
 
       await handleSubmit()
@@ -657,10 +664,10 @@ describe('useSecretForm', () => {
       expect(fileName.value).toBe('')
     })
 
-    it('submits valid JSON for a json_file provider', async () => {
+    it('submits valid JSON with the gcp_service_account credential type', async () => {
       const visible = ref(true)
       mockCreate.mockResolvedValue({})
-      const { form, handleSubmit } = useSecretForm({
+      const { form, credentialType, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
         availableProviders: () => vertexProviders,
@@ -670,6 +677,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      credentialType.value = 'gcp_service_account'
       form.secretValue = '{"type":"service_account"}'
 
       await handleSubmit()
@@ -677,7 +685,8 @@ describe('useSecretForm', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         name: 'Vertex SA',
         secret_value: '{"type":"service_account"}',
-        provider: 'gemini'
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
       })
     })
   })
@@ -704,7 +713,8 @@ describe('useSecretForm', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         name: 'My Secret',
         secret_value: 'secret123',
-        provider: 'civitai'
+        provider: 'civitai',
+        credential_type: 'api_key'
       })
       expect(onSaved).toHaveBeenCalled()
       expect(visible.value).toBe(false)

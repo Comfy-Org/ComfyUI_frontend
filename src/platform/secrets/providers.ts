@@ -69,3 +69,45 @@ export function getProviderHelpKey(
 ): string | undefined {
   return findProvider(provider)?.helpKey
 }
+
+/**
+ * DEMO SHIM (BE-3128 / FE-1281): a credential-entry option for a provider that
+ * supports more than one credential shape. This mirrors the `credential_options`
+ * metadata the backend will advertise on `GET /secrets/providers` (BE-3128).
+ * It is hardcoded here only so the Gemini "AI Studio API key vs Vertex service
+ * account" sub-selection can be demoed against production before that backend
+ * field ships. DELETE once the endpoint advertises credential_options and the
+ * form renders the sub-selection from server data (FE-1281).
+ */
+export interface CredentialOptionConfig {
+  credentialType: 'api_key' | 'gcp_service_account'
+  inputType: 'text' | 'json_file'
+  label: string
+}
+
+const DEMO_CREDENTIAL_OPTIONS: Record<string, CredentialOptionConfig[]> = {
+  gemini: [
+    {
+      credentialType: 'api_key',
+      inputType: 'text',
+      label: 'API key (Google AI Studio)'
+    },
+    {
+      credentialType: 'gcp_service_account',
+      inputType: 'json_file',
+      label: 'Service account (Vertex AI)'
+    }
+  ]
+}
+
+/**
+ * The credential-entry options a provider offers. An empty array means the
+ * provider has a single implicit api_key/text credential (the common case), so
+ * callers render no sub-selection.
+ */
+export function getCredentialOptions(
+  provider: string | undefined
+): CredentialOptionConfig[] {
+  if (!provider) return []
+  return DEMO_CREDENTIAL_OPTIONS[provider] ?? []
+}

@@ -57,6 +57,32 @@
             </small>
           </div>
 
+          <!-- DEMO SHIM (FE-1281): credential-type sub-selection for providers
+               that offer more than one (currently Gemini: AI Studio vs Vertex).
+               Renders from hardcoded options until BE-3128 advertises them. -->
+          <div
+            v-if="credentialOptions.length > 1"
+            class="flex flex-col gap-1"
+          >
+            <label for="secret-credential-type" class="text-sm font-medium">
+              Credential type
+            </label>
+            <Select v-model="credentialType">
+              <SelectTrigger id="secret-credential-type" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent disable-portal>
+                <SelectItem
+                  v-for="option in credentialOptions"
+                  :key="option.credentialType"
+                  :value="option.credentialType"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div class="flex flex-col gap-1">
             <label for="secret-name" class="text-sm font-medium">
               {{ $t('secrets.name') }}
@@ -205,6 +231,8 @@ const {
   providerOptions,
   providerHelp,
   selectedInputType,
+  credentialType,
+  credentialOptions,
   fileName,
   loadSecretFromFile,
   handleSubmit

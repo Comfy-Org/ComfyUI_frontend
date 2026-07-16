@@ -33,11 +33,20 @@ export type SecretProviderInfo = SecretProviderSchema
  */
 export type SecretInputType = NonNullable<SecretProviderInfo['input_type']>
 
+/**
+ * Credential class discriminator sent on create. `api_key` (default) stores an
+ * opaque key/token; `gcp_service_account` stores a Google Cloud service-account
+ * key JSON (e.g. a Vertex credential).
+ */
+export type SecretCredentialType = 'api_key' | 'gcp_service_account'
+
 export interface SecretCreateRequest {
   name: string
   secret_value: string
   /** Provider identifier as returned by `GET /secrets/providers`. */
   provider?: string
+  /** Credential class discriminator; omitted defaults to `api_key` server-side. */
+  credential_type?: SecretCredentialType
 }
 
 export interface SecretUpdateRequest {

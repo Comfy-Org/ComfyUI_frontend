@@ -6,7 +6,14 @@ import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-const mockState = vi.hoisted(() => ({ inputType: 'text' as string }))
+const mockState = vi.hoisted(() => ({
+  inputType: 'text' as string,
+  credentialOptions: [] as {
+    credentialType: string
+    inputType: string
+    label: string
+  }[]
+}))
 
 vi.mock('../composables/useSecretForm', () => ({
   useSecretForm: () => ({
@@ -17,6 +24,8 @@ vi.mock('../composables/useSecretForm', () => ({
     providerOptions: [],
     providerHelp: '',
     selectedInputType: computed(() => mockState.inputType),
+    credentialType: ref('api_key'),
+    credentialOptions: computed(() => mockState.credentialOptions),
     fileName: ref(''),
     loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
@@ -90,6 +99,7 @@ describe('SecretFormDialog', () => {
   beforeEach(() => {
     capturedPointerDownOutside = null
     mockState.inputType = 'text'
+    mockState.credentialOptions = []
   })
 
   it('prevents backdrop pointer-down-outside from closing the dialog', () => {
@@ -151,5 +161,38 @@ describe('SecretFormDialog', () => {
     await userEvent.keyboard('{Enter}')
 
     expect(fileClickSpy).toHaveBeenCalledOnce()
+  })
+
+  it('renders the credential-type selector when the provider offers multiple options', () => {
+    mockState.credentialOptions = [
+      {
+        credentialType: 'api_key',
+        inputType: 'text',
+        label: 'API key (Google AI Studio)'
+      },
+      {
+        credentialType: 'gcp_service_account',
+        inputType: 'json_file',
+        label: 'Service account (Vertex AI)'
+      }
+    ]
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.getByText('Credential type')).toBeTruthy()
+    expect(screen.getByText('API key (Google AI Studio)')).toBeTruthy()
+    expect(screen.getByText('Service account (Vertex AI)')).toBeTruthy()
+  })
+
+  it('hides the credential-type selector when the provider offers a single option', () => {
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.queryByText('Credential type')).toBeNull()
   })
 })
