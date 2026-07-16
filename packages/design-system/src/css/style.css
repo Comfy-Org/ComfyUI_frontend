@@ -664,6 +664,9 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  /* App backdrop = the sunken canvas surface (only defined for the default
+     dark palette; other palettes stay transparent over their own bg). */
+  background-color: var(--base-background-sunken);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
