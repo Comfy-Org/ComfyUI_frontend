@@ -169,6 +169,16 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }
   })
 
+  // Bumped whenever a read is started or invalidated (by a provider change or a
+  // form reset), so a slow read that resolves after the user has moved on is
+  // discarded instead of overwriting the current field.
+  let latestFileReadId = 0
+
+  function clearSecretValue() {
+    form.secretValue = ''
+    fileName.value = ''
+  }
+
   function resetForm() {
     const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
@@ -186,21 +196,20 @@ export function useSecretForm(options: UseSecretFormOptions) {
     errors.provider = ''
     apiErrorCode.value = null
     apiErrorMessage.value = null
+    latestFileReadId++
   }
-
-  // Bumped whenever a read is started or invalidated (by a provider change), so
-  // a slow read that resolves after the user has moved on is discarded instead
-  // of overwriting the current field.
-  let latestFileReadId = 0
 
   async function loadSecretFromFile(file: File | null) {
     if (!file) return
+    // Invalidate any in-flight read up front so a slower earlier read can't
+    // resolve later and overwrite the outcome of this selection.
+    const readId = ++latestFileReadId
     errors.secretValue = ''
-    if (file.size > MAX_JSON_FILE_BYTES) {
+    if (file.size >= MAX_JSON_FILE_BYTES) {
+      clearSecretValue()
       errors.secretValue = t('secrets.errors.fileTooLarge')
       return
     }
-    const readId = ++latestFileReadId
     try {
       const text = await file.text()
       if (readId !== latestFileReadId) return
@@ -208,6 +217,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
       fileName.value = file.name
     } catch {
       if (readId !== latestFileReadId) return
+      clearSecretValue()
       errors.secretValue = t('secrets.errors.fileReadFailed')
     }
   }
@@ -219,8 +229,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
     () => form.provider,
     () => {
       latestFileReadId++
-      form.secretValue = ''
-      fileName.value = ''
+      clearSecretValue()
+      errors.secretValue = ''
     }
   )
 
@@ -247,13 +257,17 @@ export function useSecretForm(options: UseSecretFormOptions) {
       errors.secretValue = t('secrets.errors.secretValueRequired')
       return false
     }
-    if (
-      selectedInputType.value === 'json_file' &&
-      form.secretValue &&
-      !isJsonObject(form.secretValue)
-    ) {
-      errors.secretValue = t('secrets.errors.invalidJson')
-      return false
+    if (selectedInputType.value === 'json_file' && form.secretValue) {
+      // Guard the size cap for pasted content too, so an arbitrarily large
+      // string can't block the main thread on JSON.parse below.
+      if (form.secretValue.length >= MAX_JSON_FILE_BYTES) {
+        errors.secretValue = t('secrets.errors.fileTooLarge')
+        return false
+      }
+      if (!isJsonObject(form.secretValue)) {
+        errors.secretValue = t('secrets.errors.invalidJson')
+        return false
+      }
     }
     return true
   }

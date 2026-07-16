@@ -117,6 +117,7 @@ describe('useSecretForm', () => {
 
       form.name = 'My Secret'
       form.provider = 'huggingface'
+      await nextTick()
       form.secretValue = ''
 
       await handleSubmit()
@@ -533,6 +534,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = 'not json'
 
       await handleSubmit()
@@ -553,6 +555,7 @@ describe('useSecretForm', () => {
 
       form.name = 'Vertex SA'
       form.provider = 'gemini'
+      await nextTick()
       form.secretValue = '["not", "an", "object"]'
 
       await handleSubmit()
@@ -655,6 +658,152 @@ describe('useSecretForm', () => {
 
       expect(form.secretValue).toBe('')
       expect(fileName.value).toBe('')
+    })
+
+    it('clears a previously loaded credential when a replacement is oversized', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const good = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(good)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      const oversized = new File(['x'.repeat(1024 * 1024)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('clears a previously loaded credential when a replacement read fails', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const good = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(good)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      const unreadable = {
+        name: 'replacement.json',
+        size: 20,
+        text: () => Promise.reject(new Error('read failed'))
+      } as unknown as File
+      await loadSecretFromFile(unreadable)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
+    })
+
+    it('discards an in-flight read invalidated by a later oversized selection', async () => {
+      const visible = ref(true)
+      const { form, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+      const oversized = new File(['x'.repeat(1024 * 1024)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('discards a file read superseded by a form reset', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({ provider: 'gemini' })
+      const { form, loadSecretFromFile } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+
+      visible.value = false
+      await nextTick()
+      visible.value = true
+      await nextTick()
+
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+    })
+
+    it('rejects pasted JSON that exceeds the size cap', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = `{"key":"${'a'.repeat(1024 * 1024)}"}`
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
     })
 
     it('submits valid JSON for a json_file provider', async () => {
