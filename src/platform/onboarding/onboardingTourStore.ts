@@ -127,6 +127,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       }
     }
     stepIdx.value = idx
+    if (nextStep.onEnter) {
+      await nextStep.onEnter(signal)
+      if (signal.aborted) return
+    }
     trackTour('step_shown')
   }
 
@@ -172,7 +176,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     watch(
       trigger.autoOpen,
       (visible) => {
-        if (visible) startTour(entryPath)
+        if (visible) void startTour(entryPath)
       },
       { immediate: true }
     )
@@ -192,10 +196,15 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  function startTour(entryPath: EntryPath, force = false) {
+  async function startTour(entryPath: EntryPath, force = false) {
     if (steps.value.length) return
     if (!force && hasSeenTour(entryPath)) return
-    const resolved = resolveSteps(TOURS[entryPath], targetMounted)
+    const definition = TOURS[entryPath]
+    const built =
+      typeof definition === 'function' ? await definition() : definition
+    // A resolver settling late may have let a concurrent start fill steps first.
+    if (steps.value.length) return
+    const resolved = resolveSteps(built, targetMounted)
     if (!resolved.length) return
     steps.value = resolved
     activeTour.value = entryPath
@@ -204,7 +213,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   function replayTour(entryPath: EntryPath) {
-    startTour(entryPath, true)
+    void startTour(entryPath, true)
   }
 
   return {
@@ -219,6 +228,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
+    startTour,
     replayTour,
     next,
     back,
