@@ -2883,16 +2883,33 @@
       "selectAll": "Select all partner nodes",
       "columns": {
         "name": "Partner Node",
-        "partner": "Partner",
-        "lastModified": "Last modified"
+        "nodes": "Nodes",
+        "lastModified": "Last modified",
+        "enabled": "Enabled",
+        "futureModels": "Future models"
       },
       "neverModified": "—",
       "empty": "No partner nodes match your search.",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "enableResults": "Enable results",
+      "disableResults": "Disable results",
+      "disableAllConfirm": {
+        "title": "Disable all partner nodes?",
+        "message": "This disables every current partner node and prevents future models from being enabled automatically.",
+        "hint": "Workflows using these nodes will be blocked."
+      },
+      "disableAllSuccess": "All partner nodes and future-model permissions disabled",
+      "expandProvider": "Expand {partner} partner nodes",
+      "collapseProvider": "Collapse {partner} partner nodes",
+      "groupCount": "{enabled}/{total} enabled",
+      "groupToggle": "Enable or disable {partner} partner nodes",
+      "futureModelsToggle": "Automatically enable future models from {partner}",
+      "futureModelsDescription": "Automatically enable new models from this provider when they’re released.",
+      "nodeToggle": "Enable or disable {name}",
+      "bulkToggle": "Enable or disable selected partner nodes",
       "selectedCount": "{count} node selected | {count} nodes selected",
       "clearSelection": "Clear selection",
-      "autoEnableLabel": "When a new partner node is added, it should be:",
-      "autoEnabled": "auto-enabled",
-      "autoDisabled": "auto-disabled",
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes"
     },
