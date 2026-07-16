@@ -29,7 +29,9 @@
     </div>
     <span
       v-if="showRoleColumn && !isSingleSeatPlan"
-      class="text-sm text-muted-foreground"
+      :class="
+        cn('text-sm text-muted-foreground', !showCreditsColumn && 'text-right')
+      "
     >
       {{
         member.role === 'owner'
@@ -37,18 +39,20 @@
           : $t('workspaceSwitcher.roleMember')
       }}
     </span>
-    <div
-      v-if="canManageMembers && !isSingleSeatPlan"
-      class="text-sm tabular-nums"
-    >
+    <div v-if="showCreditsColumn" class="text-sm tabular-nums">
       <div v-if="member.monthlyCreditLimit" class="flex flex-col gap-1">
         <span class="text-base-foreground">{{ creditsLabel }}</span>
         <div
           class="h-1 overflow-hidden rounded-full bg-secondary-background-hover"
+          role="progressbar"
+          :aria-valuenow="creditUsagePercent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-label="creditsLabel"
         >
           <div
             class="h-full rounded-full bg-credit"
-            :style="{ width: creditUsageWidth }"
+            :style="{ width: `${creditUsagePercent}%` }"
           />
         </div>
       </div>
@@ -87,6 +91,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   member,
   showRoleColumn = false,
+  showCreditsColumn = false,
   canManageMembers = false,
   isSingleSeatPlan = false,
   striped = false,
@@ -97,6 +102,7 @@ const {
   photoUrl?: string
   gridCols: string
   showRoleColumn?: boolean
+  showCreditsColumn?: boolean
   canManageMembers?: boolean
   isSingleSeatPlan?: boolean
   striped?: boolean
@@ -110,12 +116,11 @@ const creditsLabel = computed(() => {
     : used
 })
 
-const creditUsageWidth = computed(() => {
-  if (!member.monthlyCreditLimit) return '0%'
-  const percent = Math.min(
+const creditUsagePercent = computed(() => {
+  if (!member.monthlyCreditLimit) return 0
+  return Math.min(
     100,
     ((member.creditsUsedThisMonth ?? 0) / member.monthlyCreditLimit) * 100
   )
-  return `${percent}%`
 })
 </script>

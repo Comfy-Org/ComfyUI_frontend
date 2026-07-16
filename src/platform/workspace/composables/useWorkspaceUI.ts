@@ -3,6 +3,7 @@ import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import type { WorkspaceMember } from '../stores/teamWorkspaceStore'
@@ -31,6 +32,7 @@ interface WorkspaceUIConfig {
   showPendingTab: boolean
   showSearch: boolean
   showRoleColumn: boolean
+  showCreditsColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
@@ -100,6 +102,7 @@ function getUIConfig(
       showPendingTab: false,
       showSearch: false,
       showRoleColumn: false,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
@@ -115,9 +118,10 @@ function getUIConfig(
       showPendingTab: true,
       showSearch: true,
       showRoleColumn: true,
-      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      showCreditsColumn: false,
+      membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip:
@@ -131,6 +135,7 @@ function getUIConfig(
     showPendingTab: false,
     showSearch: true,
     showRoleColumn: true,
+    showCreditsColumn: false,
     membersGridCols: 'grid-cols-[1fr_auto]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[1fr_auto]',
@@ -198,9 +203,24 @@ function useWorkspaceUIInternal() {
     )
   )
 
-  const uiConfig = computed<WorkspaceUIConfig>(() =>
-    getUIConfig(workspaceType.value, workspaceRole.value)
-  )
+  const { flags } = useFeatureFlags()
+
+  // The per-member credit limit UI (FE-1277) is mock-backed until FE-1278 wires
+  // the backend, so it stays behind a flag: off, the Members panel is unchanged.
+  const uiConfig = computed<WorkspaceUIConfig>(() => {
+    const base = getUIConfig(workspaceType.value, workspaceRole.value)
+    const showCreditsColumn =
+      flags.memberCreditLimitsEnabled &&
+      workspaceType.value === 'team' &&
+      workspaceRole.value === 'owner'
+    if (!showCreditsColumn) return base
+    return {
+      ...base,
+      showCreditsColumn: true,
+      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      headerGridCols: 'grid-cols-[38%_18%_30%_14%]'
+    }
+  })
 
   // Cancel / reactivate / delete are original-owner-only; personal workspaces
   // are single-member, so the user is always their own original owner.

@@ -125,14 +125,16 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-start"
+              :class="
+                uiConfig.showCreditsColumn ? 'justify-start' : 'justify-end'
+              "
               @click="toggleSort('role')"
             >
               {{ $t('workspacePanel.members.columns.role') }}
               <i class="icon-[lucide--chevrons-up-down] size-4" />
             </Button>
             <div
-              v-if="permissions.canManageMembers"
+              v-if="uiConfig.showCreditsColumn"
               class="flex items-center gap-1 text-sm text-muted-foreground"
             >
               <i class="icon-[lucide--coins] size-4" />
@@ -173,6 +175,7 @@
                 :show-role-column="
                   uiConfig.showRoleColumn && hasMultipleMembers
                 "
+                :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
                 :striped="index % 2 === 1"

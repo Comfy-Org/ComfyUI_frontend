@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
@@ -92,6 +93,7 @@ export function useMembersPanel() {
   const { t } = useI18n()
   const toast = useToast()
   const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
+  const { flags } = useFeatureFlags()
   const {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
@@ -198,10 +200,13 @@ export function useMembersPanel() {
         })
     }
 
-    // The creator can't change their own role or remove themselves, but any
-    // owner (including the creator) can still cap their own usage.
+    const creditLimitEnabled = flags.memberCreditLimitsEnabled
+
+    // The creator and the current user can't change their own role or be
+    // removed; their only possible action is capping their own usage, so they
+    // get a menu at all only when credit limits are enabled.
     if (isCurrentUser(member) || isOriginalOwner(member)) {
-      return [creditLimitItem]
+      return creditLimitEnabled ? [creditLimitItem] : []
     }
 
     return [
@@ -212,7 +217,7 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
-      creditLimitItem,
+      ...(creditLimitEnabled ? [creditLimitItem] : []),
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)

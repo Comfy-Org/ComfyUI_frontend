@@ -46,6 +46,18 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get memberCreditLimitsEnabled() {
+        return mockMemberCreditLimitsEnabled.value
+      }
+    }
+  })
+}))
+
 const personalWorkspace: WorkspaceWithRole = {
   id: 'ws-personal',
   name: 'Personal',
@@ -86,6 +98,7 @@ function resetStore() {
   mockUserEmail.value = null
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
+  mockMemberCreditLimitsEnabled.value = false
 }
 
 describe('useWorkspaceUI', () => {
@@ -190,14 +203,29 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBe(
         'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
       )
+      expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[50%_40%_10%]')
+      expect(ui.uiConfig.value.headerGridCols).toBe('grid-cols-[50%_40%_10%]')
+      expect(ui.uiConfig.value.pendingGridCols).toBe(
+        'grid-cols-[50%_20%_20%_10%]'
+      )
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+    })
+
+    it('keeps the Members grid unchanged while credit limits are disabled', async () => {
+      const ui = await loadComposable()
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+      expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[50%_40%_10%]')
+    })
+
+    it('adds the credits column when the credit-limit flag is enabled', async () => {
+      mockMemberCreditLimitsEnabled.value = true
+      const ui = await loadComposable()
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(true)
       expect(ui.uiConfig.value.membersGridCols).toBe(
         'grid-cols-[38%_18%_30%_14%]'
       )
       expect(ui.uiConfig.value.headerGridCols).toBe(
         'grid-cols-[38%_18%_30%_14%]'
-      )
-      expect(ui.uiConfig.value.pendingGridCols).toBe(
-        'grid-cols-[50%_20%_20%_10%]'
       )
     })
   })

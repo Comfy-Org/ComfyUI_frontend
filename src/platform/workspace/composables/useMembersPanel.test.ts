@@ -397,9 +397,22 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
+const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get memberCreditLimitsEnabled() {
+        return mockMemberCreditLimitsEnabled.value
+      }
+    }
+  })
+}))
+
 describe('useMembersPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockMemberCreditLimitsEnabled.value = true
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
@@ -670,6 +683,28 @@ describe('useMembersPanel', () => {
       expect(items.map((item) => item.label)).toEqual([
         'workspacePanel.members.actions.setCreditLimit'
       ])
+    })
+
+    it('omits the credit-limit action when the flag is disabled', async () => {
+      mockMemberCreditLimitsEnabled.value = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('gives the creator no menu when the flag is disabled', async () => {
+      mockMemberCreditLimitsEnabled.value = false
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+
+      expect(
+        panel.memberMenuItems(createMember({ id: 'creator-1', role: 'owner' }))
+      ).toEqual([])
     })
   })
 

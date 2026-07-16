@@ -24,6 +24,7 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
+  MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -137,6 +138,20 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
         remoteConfig.value.user_secrets_enabled,
+        false
+      )
+    },
+    /**
+     * Whether the per-member monthly credit limit UI (Members panel Credits
+     * column + Set credit limit dialog) is shown. Off by default until backend
+     * persistence and enforcement land (FE-1278); the UI is mock-backed until
+     * then, so shipping it enabled would expose a control that silently drops
+     * writes and a usage column with no real data.
+     */
+    get memberCreditLimitsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
+        remoteConfig.value.member_credit_limits_enabled,
         false
       )
     },
