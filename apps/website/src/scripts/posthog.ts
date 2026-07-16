@@ -49,3 +49,12 @@ export function captureDownloadClick(platform: Platform) {
     console.error('PostHog download click capture failed', error)
   }
 }
+
+export function captureNavigationClick(item: string, placement: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:navigation_clicked', { item, placement })
+  } catch (error) {
+    console.error('PostHog navigation click capture failed', error)
+  }
+}

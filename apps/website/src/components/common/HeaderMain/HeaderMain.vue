@@ -2,6 +2,7 @@
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { captureNavigationClick } from '../../../scripts/posthog'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -29,12 +30,21 @@ const ctaButtons = [
     primary: true
   }
 ]
+
+function handleNavigationClick(event: MouseEvent) {
+  if (!(event.target instanceof Element)) return
+  const trackedElement = event.target.closest<HTMLElement>('[data-nav-label]')
+  const item = trackedElement?.dataset.navLabel
+  if (!item) return
+  captureNavigationClick(item, trackedElement.dataset.navPlacement ?? 'header')
+}
 </script>
 
 <template>
   <nav
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
+    @click.capture="handleNavigationClick"
   >
     <a
       :href="routes.home"

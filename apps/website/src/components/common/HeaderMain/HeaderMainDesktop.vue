@@ -6,6 +6,7 @@ import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLi
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   isHrefActive,
@@ -26,7 +27,11 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
   return (
     navItem.columns?.some((column) =>
-      column.items.some((item) => isHrefActive(item.href, path))
+      column.items.some(
+        (item) =>
+          item.contributesToParentActive !== false &&
+          isHrefActive(item.href, path)
+      )
     ) ?? false
   )
 }
@@ -42,6 +47,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
         <template v-if="navItem.columns?.length">
           <NavigationMenuTrigger
             :active="isNavItemActive(navItem, currentPath)"
+            :data-nav-label="navItem.analyticsId"
+            data-nav-placement="desktop-top"
           >
             <span class="inline-flex items-center gap-1">
               <span class="ppformula-text-center">{{ navItem.label }}</span>
@@ -49,18 +56,38 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <ul class="flex w-max gap-16">
+            <ul
+              :class="
+                cn(
+                  'flex w-max max-w-dvw gap-10',
+                  navItem.layout === 'wide' && 'gap-16'
+                )
+              "
+            >
               <NavFeaturedCard
                 v-if="navItem.featured"
                 :featured="navItem.featured"
               />
-              <NavColumn
-                v-for="column in navItem.columns"
-                :key="column.header"
-                :column="column"
-                :locale="locale"
-                :current-path="currentPath"
-              />
+              <li>
+                <ul
+                  :class="
+                    cn(
+                      'grid grid-cols-2 gap-x-10 gap-y-8',
+                      navItem.layout === 'wide' && 'gap-x-16'
+                    )
+                  "
+                >
+                  <NavColumn
+                    v-for="column in navItem.columns"
+                    :key="column.header"
+                    :column="column"
+                    :locale="locale"
+                    :current-path="currentPath"
+                    :parent-analytics-id="navItem.analyticsId"
+                    :wide="navItem.layout === 'wide'"
+                  />
+                </ul>
+              </li>
             </ul>
           </NavigationMenuContent>
         </template>
@@ -69,6 +96,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           as-child
           :active="isNavItemActive(navItem, currentPath)"
           :class="navigationMenuTriggerStyle()"
+          :data-nav-label="navItem.analyticsId"
+          data-nav-placement="desktop-top"
         >
           <a :href="navItem.href" class="ppformula-text-center">{{
             navItem.label

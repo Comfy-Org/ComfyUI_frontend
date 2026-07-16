@@ -2251,6 +2251,7 @@ const translations = {
 
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
+  'nav.enterprise': { en: 'Enterprise', 'zh-CN': '企业版' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
   'nav.community': { en: 'Community', 'zh-CN': '社区' },
   'nav.resources': { en: 'Resources', 'zh-CN': '资源' },
@@ -2275,6 +2276,17 @@ const translations = {
   'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
+  'nav.whatsNew': { en: "What's New", 'zh-CN': '最新动态' },
+  'nav.enterpriseOverview': {
+    en: 'Enterprise Overview',
+    'zh-CN': '企业版概览'
+  },
+  'nav.contactSales': { en: 'Contact Sales', 'zh-CN': '联系销售' },
+  'nav.support': { en: 'Support', 'zh-CN': '支持' },
+  'nav.affiliateProgram': {
+    en: 'Affiliate Program',
+    'zh-CN': '联盟计划'
+  },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
@@ -2301,6 +2313,13 @@ const translations = {
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
+  'nav.colCreate': { en: 'Create', 'zh-CN': '创作' },
+  'nav.colBuild': { en: 'Build', 'zh-CN': '构建' },
+  'nav.colLearn': { en: 'Learn', 'zh-CN': '学习' },
+  'nav.colDiscover': { en: 'Discover', 'zh-CN': '探索' },
+  'nav.colStayCurrent': { en: 'Stay current', 'zh-CN': '保持关注' },
+  'nav.colEvaluate': { en: 'Evaluate', 'zh-CN': '评估' },
+  'nav.colContact': { en: 'Contact', 'zh-CN': '联系我们' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
@@ -2324,6 +2343,30 @@ const translations = {
   'nav.featuredProductsCtaAria': {
     en: 'Get started with Comfy MCP',
     'zh-CN': '开始使用 Comfy MCP'
+  },
+  'nav.featuredResourcesTitle': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'nav.featuredResourcesAlt': {
+    en: 'Sky Replacement workflow demo image',
+    'zh-CN': '天空替换工作流演示图片'
+  },
+  'nav.featuredResourcesCtaAria': {
+    en: 'Watch the Sky Replacement demo',
+    'zh-CN': '观看天空替换演示'
+  },
+  'nav.featuredEnterpriseTitle': {
+    en: 'Comfy Enterprise',
+    'zh-CN': 'Comfy 企业版'
+  },
+  'nav.featuredEnterpriseAlt': {
+    en: 'Comfy Enterprise customer story',
+    'zh-CN': 'Comfy 企业版客户故事'
+  },
+  'nav.featuredEnterpriseCtaAria': {
+    en: 'Explore Comfy Enterprise',
+    'zh-CN': '探索 Comfy 企业版'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
