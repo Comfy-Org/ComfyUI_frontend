@@ -17,6 +17,7 @@ function validEntry(): CustomNodeManifestEntry {
     tiers: ['load', 'connectivity', 'run'],
     workflow: 'assets/customNodes/example_run.json',
     expectedNodes: ['ExampleNode'],
+    expectedNodeCount: 1,
     expectedExtensions: ['Example.Extension'],
     requiresGpu: false,
     requiresModels: [],
@@ -89,6 +90,21 @@ test.describe('customNode manifest', () => {
     expect(() =>
       assertEntry({ ...validEntry(), expectedExtensions: ['A', 'A'] }, 0)
     ).toThrow(/expectedExtensions/)
+  })
+
+  test('expectedNodeCount must be a positive integer', () => {
+    const { expectedNodeCount: _omitted, ...withoutField } = validEntry()
+    expect(() =>
+      assertEntry(withoutField as CustomNodeManifestEntry, 0)
+    ).toThrow(/expectedNodeCount/)
+    for (const bad of [0, -3, 1.5, Number.NaN]) {
+      expect(() =>
+        assertEntry({ ...validEntry(), expectedNodeCount: bad }, 0)
+      ).toThrow(/expectedNodeCount/)
+    }
+    expect(() =>
+      assertEntry({ ...validEntry(), expectedNodeCount: 197 }, 0)
+    ).not.toThrow()
   })
 
   test('pack must be a plain path segment (it becomes the install dirname)', () => {

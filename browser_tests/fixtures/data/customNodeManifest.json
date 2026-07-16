@@ -3,10 +3,20 @@
     "pack": "ComfyUI-Impact-Pack",
     "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
     "pin": "429d0159ad429e64d2b3916e6e7be9c22d025c3c",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/impact_primitives_run.json",
-    "expectedNodes": ["ImpactInt", "ImpactFloat"],
-    "expectedExtensions": ["Comfy.Impack"],
+    "expectedNodes": [
+      "ImpactInt",
+      "ImpactFloat"
+    ],
+    "expectedNodeCount": 197,
+    "expectedExtensions": [
+      "Comfy.Impack"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
@@ -24,10 +34,20 @@
     "pack": "ComfyUI-VideoHelperSuite",
     "repo": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
     "pin": "4ee72c065db22c9d96c2427954dc69e7b908444b",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/vhs_video_pipeline_run.json",
-    "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
-    "expectedExtensions": ["VideoHelperSuite.Core"],
+    "expectedNodes": [
+      "VHS_LoadVideoPath",
+      "VHS_VideoInfo"
+    ],
+    "expectedNodeCount": 40,
+    "expectedExtensions": [
+      "VideoHelperSuite.Core"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 90000,
@@ -44,23 +64,45 @@
     "pack": "rgthree-comfy",
     "repo": "https://github.com/rgthree/rgthree-comfy",
     "pin": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/rgthree_seed_display_run.json",
-    "expectedNodes": ["Seed (rgthree)", "Display Any (rgthree)"],
-    "expectedExtensions": ["rgthree.AnySwitch"],
+    "expectedNodes": [
+      "Seed (rgthree)",
+      "Display Any (rgthree)"
+    ],
+    "expectedNodeCount": 24,
+    "expectedExtensions": [
+      "rgthree.AnySwitch"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
-    "cannotRunAlone": ["Image or Latent Size (rgthree)"]
+    "cannotRunAlone": [
+      "Image or Latent Size (rgthree)"
+    ]
   },
   {
     "pack": "ComfyUI_essentials",
     "repo": "https://github.com/cubiq/ComfyUI_essentials",
     "pin": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/essentials_math_display_run.json",
-    "expectedNodes": ["SimpleMathInt+", "DisplayAny"],
-    "expectedExtensions": ["essentials.DisplayAny"],
+    "expectedNodes": [
+      "SimpleMathInt+",
+      "DisplayAny"
+    ],
+    "expectedNodeCount": 85,
+    "expectedExtensions": [
+      "essentials.DisplayAny"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
@@ -79,10 +121,20 @@
     "pack": "ComfyUI-KJNodes",
     "repo": "https://github.com/kijai/ComfyUI-KJNodes",
     "pin": "e27a505b3ba6ce42687fe00500deda103d9d6071",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/kjnodes_constants_run.json",
-    "expectedNodes": ["INTConstant", "FloatConstant"],
-    "expectedExtensions": ["KJNodes.appearance"],
+    "expectedNodes": [
+      "INTConstant",
+      "FloatConstant"
+    ],
+    "expectedNodeCount": 244,
+    "expectedExtensions": [
+      "KJNodes.appearance"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
@@ -122,22 +174,43 @@
     "pack": "ComfyUI-Custom-Scripts",
     "repo": "https://github.com/pythongosssss/ComfyUI-Custom-Scripts",
     "pin": "609f3afaa74b2f88ef9ce8d939626065e3247469",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/customscripts_string_show_run.json",
-    "expectedNodes": ["StringFunction|pysssss", "ShowText|pysssss"],
-    "expectedExtensions": ["pysssss.ShowText"],
+    "expectedNodes": [
+      "StringFunction|pysssss",
+      "ShowText|pysssss"
+    ],
+    "expectedNodeCount": 13,
+    "expectedExtensions": [
+      "pysssss.ShowText"
+    ],
     "requiresGpu": false,
     "requiresModels": [],
     "timeoutMs": 30000,
-    "cannotRunAlone": ["MathExpression|pysssss"]
+    "cannotRunAlone": [
+      "MathExpression|pysssss"
+    ]
   },
   {
     "pack": "was-node-suite-comfyui",
     "repo": "https://github.com/WASasquatch/was-node-suite-comfyui",
     "pin": "ea935d1044ae5a26efa54ebeb18fe9020af49a45",
-    "tiers": ["load", "connectivity", "run"],
+    "tiers": [
+      "load",
+      "connectivity",
+      "run"
+    ],
     "workflow": "assets/customNodes/was_number_text_run.json",
-    "expectedNodes": ["Constant Number", "Number to Text", "Text to Console"],
+    "expectedNodes": [
+      "Constant Number",
+      "Number to Text",
+      "Text to Console"
+    ],
+    "expectedNodeCount": 220,
     "expectedExtensions": [],
     "requiresGpu": false,
     "requiresModels": [],

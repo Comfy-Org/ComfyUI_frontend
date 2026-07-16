@@ -400,10 +400,17 @@ for (const entry of loadManifest()) {
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
-      // Per-pack registered-node count. Prints the number to calibrate the
-      // manifest's expectedNodeCount guard (added in a follow-up once CI
-      // reports the real counts) and stands alone as a coverage-size signal.
+      // Exact-count guard: the corpus below comes from the live backend, so
+      // a pack silently registering fewer nodes (broken sub-import, a core
+      // change breaking registration) would shrink coverage while every
+      // remaining assertion stays green. At a fixed pin the count is
+      // deterministic; a delta in either direction fails until the manifest
+      // is deliberately recalibrated with the pin/core change that moved it.
       console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
+      expect(
+        keys,
+        `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+      ).toHaveLength(entry.expectedNodeCount)
       const declaredByKey = new Map(
         keys.map((key) => [key, declaredShape(defs[key])])
       )
