@@ -1955,6 +1955,10 @@ const translations = {
     en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
     'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
   },
+  'mcp.setup.clients.claudeDesktop.manualTitle': {
+    en: 'Add Custom Connector',
+    'zh-CN': '添加自定义连接器'
+  },
   'mcp.setup.clients.claudeDesktop.step': {
     en: 'Click Customize in the sidebar, open Connectors, choose Add custom connector, paste the URL above, and sign in.',
     'zh-CN':

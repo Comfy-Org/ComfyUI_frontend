@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { computed, ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import SectionLabel from '../../components/common/SectionLabel.vue'
@@ -22,19 +23,31 @@ interface McpClient {
   step: string
   command?: string
   link?: { label: string; href: string }
+  manualTitle?: string
+  showAgentCard: boolean
 }
 
 const clients: McpClient[] = [
   {
-    id: 'claude-code',
-    name: 'Claude Code',
-    step: t('mcp.setup.clients.claudeCode.step', locale),
-    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`
-  },
-  {
     id: 'claude-desktop',
     name: 'Claude Desktop',
-    step: t('mcp.setup.clients.claudeDesktop.step', locale)
+    step: t('mcp.setup.clients.claudeDesktop.step', locale),
+    manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
+    showAgentCard: false
+  },
+  {
+    id: 'claude-code',
+    name: 'Claude Code Terminal',
+    step: t('mcp.setup.clients.claudeCode.step', locale),
+    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
+    showAgentCard: true
+  },
+  {
+    id: 'codex',
+    name: 'Codex',
+    step: t('mcp.setup.clients.codex.step', locale),
+    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
+    showAgentCard: false
   },
   {
     id: 'cursor',
@@ -43,19 +56,15 @@ const clients: McpClient[] = [
     link: {
       label: t('mcp.setup.clients.cursor.linkLabel', locale),
       href: externalLinks.apiKeys
-    }
-  },
-  {
-    id: 'codex',
-    name: 'Codex',
-    step: t('mcp.setup.clients.codex.step', locale),
-    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`
+    },
+    showAgentCard: true
   },
   {
     id: 'openclaw',
     name: 'OpenClaw',
     step: t('mcp.setup.clients.openclaw.step', locale),
-    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`
+    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
+    showAgentCard: true
   },
   {
     id: 'other',
@@ -64,9 +73,19 @@ const clients: McpClient[] = [
     link: {
       label: t('mcp.setup.clients.other.linkLabel', locale),
       href: externalLinks.docsMcp
-    }
+    },
+    showAgentCard: true
   }
 ]
+
+const activeClientId = ref(clients[0].id)
+const activeClient = computed(
+  () =>
+    clients.find((client) => client.id === activeClientId.value) ?? clients[0]
+)
+const manualTitle = computed(
+  () => activeClient.value.manualTitle ?? t('mcp.setup.manual.title', locale)
+)
 
 const copyLabel = t('ui.copy', locale)
 const copiedLabel = t('ui.copied', locale)
@@ -90,7 +109,7 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
-    <TabsRoot default-value="claude-code" class="mt-10 block">
+    <TabsRoot v-model="activeClientId" class="mt-10 block">
       <TabsList
         :aria-label="t('mcp.setup.manual.tabsLabel', locale)"
         class="inline-flex flex-wrap gap-1 rounded-2xl border border-white/10 p-1"
@@ -110,11 +129,13 @@ const copiedLabel = t('ui.copied', locale)
         <div
           class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
         >
-          <SectionLabel>{{ t('mcp.setup.manual.label', locale) }}</SectionLabel>
+          <SectionLabel v-if="activeClient.showAgentCard">{{
+            t('mcp.setup.manual.label', locale)
+          }}</SectionLabel>
           <h3
             class="mt-3 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
           >
-            {{ t('mcp.setup.manual.title', locale) }}
+            {{ manualTitle }}
           </h3>
           <p class="mt-3 text-sm text-smoke-700">
             {{ t('mcp.setup.manual.description', locale) }}
@@ -153,6 +174,7 @@ const copiedLabel = t('ui.copied', locale)
         </div>
 
         <div
+          v-if="activeClient.showAgentCard"
           class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
         >
           <SectionLabel>{{ t('mcp.setup.agent.label', locale) }}</SectionLabel>
