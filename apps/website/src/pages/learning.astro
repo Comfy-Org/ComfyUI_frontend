@@ -1,8 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import HeroSection from '../components/learning/HeroSection.vue'
-import FeaturedWorkflowSection from '../components/learning/FeaturedWorkflowSection.vue'
-import TutorialsSection from '../components/learning/TutorialsSection.vue'
+// PROTOTYPE: the original page body (HeroSection + FeaturedWorkflowSection +
+// TutorialsSection) is temporarily swapped for LearningRedesignPrototype —
+// three redesign variants switchable via ?variant=a|b|c. Restore the three
+// commented imports/components below to revert.
+// import HeroSection from '../components/learning/HeroSection.vue'
+// import FeaturedWorkflowSection from '../components/learning/FeaturedWorkflowSection.vue'
+// import TutorialsSection from '../components/learning/TutorialsSection.vue'
+import LearningRedesignPrototype from '../components/prototype/learning-redesign/LearningRedesignPrototype.vue'
 import CallToActionSection from '../components/common/CallToActionSection.vue'
 // import EventsSection from '../components/common/EventsSection.vue'
 import { getRoutes } from '../config/routes'
@@ -13,9 +18,10 @@ const routes = getRoutes('en')
 ---
 
 <BaseLayout title="Learning — Comfy">
-  <HeroSection client:load />
+  <LearningRedesignPrototype client:only="vue" />
+  {/* <HeroSection client:load />
   <FeaturedWorkflowSection client:visible />
-  <TutorialsSection client:visible />
+  <TutorialsSection client:visible /> */}
   <CallToActionSection
     headingKey="learning.cta.heading"
     primaryLabelKey="learning.cta.contactSales"
