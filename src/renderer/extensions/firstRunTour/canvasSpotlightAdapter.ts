@@ -5,11 +5,19 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 
-/** The toolbar Run button (queue on desktop, subscribe-to-run on cloud). */
+/**
+ * The toolbar Run button (queue on desktop, subscribe-to-run on cloud).
+ * Used by the first-run tour controller (lands in a follow-up PR).
+ * @public
+ */
 export const RUN_BUTTON_SELECTOR =
   '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
 
-/** The floating action bar the Run button sits in. */
+/**
+ * The floating action bar the Run button sits in.
+ * Used by the first-run tour controller (lands in a follow-up PR).
+ * @public
+ */
 export const ACTIONBAR_SELECTOR = '[data-testid="comfy-actionbar"]'
 
 /** A rectangle in client (viewport) coordinates. */
@@ -38,7 +46,11 @@ export function rectIntersectsViewport(
   )
 }
 
-/** Space between the coach-mark and the target it points at. */
+/**
+ * Space between the coach-mark and the target it points at.
+ * Used by the first-run tour overlay (lands in a follow-up PR).
+ * @public
+ */
 export const COACH_MARK_GAP = 40
 
 interface CanvasFrame {
@@ -61,6 +73,8 @@ function canvasFrame(): CanvasFrame | null {
  * The region the overlay may draw in: the canvas's client rect, not the window.
  * Measuring the canvas excludes the toolbar and panels without assuming their size.
  * Null when the canvas is absent or unlaid-out.
+ * Also used by the first-run tour overlay (lands in a follow-up PR).
+ * @public
  */
 export function canvasViewport(): ScreenRect | null {
   const canvas = app.canvas
@@ -189,7 +203,11 @@ export function focusNodes(nodeIds: NodeId[], reserve?: Size): void {
   })
 }
 
-/** The canvas element, or null when it is absent — for observing its size. */
+/**
+ * The canvas element, or null when it is absent — for observing its size.
+ * Used by the first-run tour overlay (lands in a follow-up PR).
+ * @public
+ */
 export function canvasElement(): HTMLCanvasElement | null {
   return app.canvas?.canvas ?? null
 }
@@ -225,7 +243,11 @@ export function trackSettle(
   return { key, frames, settled: frames >= SETTLE_FRAMES }
 }
 
-/** The canvas transform as a comparable string, or null when the canvas is absent. */
+/**
+ * The canvas transform as a comparable string, or null when the canvas is absent.
+ * Used by the first-run tour overlay (lands in a follow-up PR).
+ * @public
+ */
 export function canvasTransformKey(): string | null {
   const frame = canvasFrame()
   if (!frame) return null
