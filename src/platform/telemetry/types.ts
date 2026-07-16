@@ -93,6 +93,31 @@ export interface SurveyResponses {
   usage?: string
 }
 
+export type OnboardingTourStage =
+  | 'started'
+  | 'step_shown'
+  | 'completed'
+  | 'skipped'
+
+export type OnboardingTourSkipReason =
+  | 'user'
+  | 'target_timeout'
+  | 'trigger_lost'
+
+/**
+ * `step_number` is 1-based and matches the "Step N of M" indicator the user
+ * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
+ * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
+ * present only on the `skipped` stage.
+ */
+export interface OnboardingTourMetadata {
+  tour: string
+  step_count: number
+  step_number?: number
+  coach_id?: string
+  skip_reason?: OnboardingTourSkipReason
+}
+
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
   industry_raw?: string
@@ -633,6 +658,12 @@ export interface TelemetryProvider {
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
+  // Onboarding coachmark tour events
+  trackOnboardingTour?(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void
+
   // Email verification events
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
@@ -755,6 +786,12 @@ export const TelemetryEvents = {
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
+  // Onboarding Coachmarks
+  ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
+  ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
+  ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
+  ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
   USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
@@ -815,11 +852,8 @@ export const TelemetryEvents = {
   PAGE_VIEW: 'app:page_view',
 
   // Onboarding Tour
-  ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_VIEWED: 'app:onboarding_tour_step_viewed',
   ONBOARDING_TOUR_RUN_TRIGGERED: 'app:onboarding_tour_run_triggered',
-  ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
-  ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
   ONBOARDING_TOUR_UPGRADE_SHOWN: 'app:onboarding_tour_upgrade_shown',
   ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
   ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
@@ -828,6 +862,16 @@ export const TelemetryEvents = {
 
 export type TelemetryEventName =
   (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+
+export const OnboardingTourEvents: Record<
+  OnboardingTourStage,
+  TelemetryEventName
+> = {
+  started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
+  step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
+  completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+}
 
 export const CANCELLATION_STAGE_EVENTS = {
   flow_opened: TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED,
@@ -849,6 +893,7 @@ export type ExecutionTriggerSource =
 export type TelemetryEventProperties =
   | AuthMetadata
   | AuthErrorMetadata
+  | OnboardingTourMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

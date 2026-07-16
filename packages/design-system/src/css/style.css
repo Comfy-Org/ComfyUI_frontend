@@ -102,6 +102,10 @@
   --color-alpha-magenta-700-60: #6a246a99;
   --color-alpha-magenta-300-60: #ceaac999;
 
+  /* Onboarding coachmark overlay (always renders over a dark scrim) */
+  --color-coach-scrim: rgb(0 0 0 / 0.6);
+  --color-coach-ring: #fff;
+
   /* PrimeVue pulled colors */
   --color-muted: var(--p-text-muted-color);
   --color-highlight: var(--p-primary-color);
