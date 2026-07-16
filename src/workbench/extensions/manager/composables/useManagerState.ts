@@ -67,20 +67,12 @@ export function useManagerState() {
         'extension.manager.supports_csrf_post'
       )
 
-      // Check command line args first (highest priority)
-      // --enable-manager flag enables the manager (opposite of old --disable-manager)
-      const hasEnableManager =
-        systemStats.value?.system?.argv?.includes('--enable-manager')
-
-      // If --enable-manager is NOT present, manager is disabled
-      if (!hasEnableManager) {
-        return ManagerUIState.DISABLED
-      }
-
-      if (
-        systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
-      ) {
+      const argv = systemStats.value?.system?.argv
+      if (argv?.includes('--enable-manager-legacy-ui')) {
         return ManagerUIState.LEGACY_UI
+      }
+      if (!argv?.includes('--enable-manager')) {
+        return ManagerUIState.DISABLED
       }
 
       // Server exposes v4 but is missing the CSRF-hardened POST endpoints
