@@ -83,8 +83,8 @@ const translations = {
       '如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。'
   },
   'showcase.feature3.title': {
-    en: 'Community Workflows on Comfy Hub',
-    'zh-CN': 'Comfy Hub 上的社区工作流'
+    en: 'Community Workflows on Comfy Workflows',
+    'zh-CN': 'Comfy Workflows 上的社区工作流'
   },
   'showcase.feature3.description': {
     en: 'Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs.',
@@ -2262,7 +2262,7 @@ const translations = {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
   },
-  'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
+  'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
   'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
@@ -4292,8 +4292,8 @@ const translations = {
     'zh-CN': '{count} 个工作流'
   },
   'models.list.contact.label': {
-    en: 'COMFY HUB',
-    'zh-CN': 'COMFY HUB'
+    en: 'COMFY WORKFLOWS',
+    'zh-CN': 'COMFY WORKFLOWS'
   },
   'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
   'models.showcase.heading': {
@@ -4329,9 +4329,9 @@ const translations = {
     'zh-CN': 'Wan 2.2\n文字转视频'
   },
   'models.list.contact.heading': {
-    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Workflows</a> for the newest workflows.',
     'zh-CN':
-      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Workflows</a> 查看最新工作流。'
   },
 
   // Payment status pages
