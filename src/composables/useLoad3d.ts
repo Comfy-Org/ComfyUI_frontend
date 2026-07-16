@@ -143,7 +143,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
-    fov: 75
+    fov: 75,
+    hasCustomUp: false,
+    useCustomUp: false
   })
 
   const lightConfig = ref<LightConfig>({
@@ -534,6 +536,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Camera Config'] = newValue
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
+        if (newValue.hasCustomUp) {
+          load3d.setUseCustomUp(newValue.useCustomUp ?? false)
+        }
       }
       markDirty()
     },
@@ -873,6 +878,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     },
     cameraTypeChange: (value: string) => {
       cameraConfig.value.cameraType = value as CameraType
+    },
+    cameraUpStateChange: (value: {
+      hasCustomUp: boolean
+      usingCustomUp: boolean
+    }) => {
+      cameraConfig.value.hasCustomUp = value.hasCustomUp
+      cameraConfig.value.useCustomUp = value.usingCustomUp
     },
     showGridChange: (value: boolean) => {
       sceneConfig.value.showGrid = value

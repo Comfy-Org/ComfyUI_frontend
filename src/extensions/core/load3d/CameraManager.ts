@@ -17,6 +17,9 @@ export class CameraManager implements CameraManagerInterface {
 
   private controls: OrbitControls | null = null
 
+  private customUp: THREE.Vector3 | null = null
+  private usingCustomUp = false
+
   DEFAULT_DISTANCE = 10
   DEFAULT_LOOK_AT = 0
 
@@ -91,6 +94,7 @@ export class CameraManager implements CameraManagerInterface {
 
     const position = oldCamera.position.clone()
     const rotation = oldCamera.rotation.clone()
+    const up = oldCamera.up.clone()
     const target = this.controls?.target.clone() || new THREE.Vector3()
 
     const oldZoom =
@@ -116,6 +120,7 @@ export class CameraManager implements CameraManagerInterface {
 
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
+    this.activeCamera.up.copy(up)
 
     if (this.activeCamera instanceof THREE.OrthographicCamera) {
       this.activeCamera.zoom = oldZoom
@@ -171,9 +176,20 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   setCameraState(state: CameraState): void {
+    if (state.cameraType && state.cameraType !== this.getCurrentCameraType()) {
+      this.toggleCamera(state.cameraType)
+    }
+
     this.activeCamera.position.copy(state.position)
 
     this.controls?.target.copy(state.target)
+
+    if (
+      state.fov !== undefined &&
+      this.activeCamera instanceof THREE.PerspectiveCamera
+    ) {
+      this.activeCamera.fov = state.fov
+    }
 
     if (this.activeCamera instanceof THREE.OrthographicCamera) {
       this.activeCamera.zoom = state.zoom
@@ -183,7 +199,39 @@ export class CameraManager implements CameraManagerInterface {
       this.activeCamera.updateProjectionMatrix()
     }
 
+    if (state.quaternion) {
+      const q = new THREE.Quaternion(
+        state.quaternion.x,
+        state.quaternion.y,
+        state.quaternion.z,
+        state.quaternion.w
+      )
+      const appliedUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+      const isFirstDerivation = this.customUp === null
+      this.customUp = appliedUp.clone()
+      if (isFirstDerivation) this.usingCustomUp = true
+      if (this.usingCustomUp) this.activeCamera.up.copy(appliedUp)
+      this.eventManager.emitEvent('cameraUpStateChange', {
+        hasCustomUp: true,
+        usingCustomUp: this.usingCustomUp
+      })
+    }
+
     this.controls?.update()
+  }
+
+  setUseCustomUp(use: boolean): void {
+    if (use && !this.customUp) return
+    if (use === this.usingCustomUp) return
+    const target =
+      use && this.customUp ? this.customUp : new THREE.Vector3(0, 1, 0)
+    this.activeCamera.up.copy(target)
+    this.usingCustomUp = use
+    this.controls?.update()
+    this.eventManager.emitEvent('cameraUpStateChange', {
+      hasCustomUp: this.customUp !== null,
+      usingCustomUp: this.usingCustomUp
+    })
   }
 
   handleResize(width: number, height: number): void {
