@@ -34,8 +34,7 @@ export default defineConfig({
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service',
-    '/zh-CN/individual-submission': '/individual-submission'
+    '/zh-CN/terms-of-service': '/terms-of-service'
   },
   build: {
     assets: '_website'
