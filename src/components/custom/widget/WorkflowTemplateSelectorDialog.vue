@@ -46,7 +46,7 @@
 
     <template #contentFilter>
       <div
-        class="relative flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pt-2 pb-4"
+        class="relative -mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pt-0 pb-4"
       >
         <!-- Type tabs (left) -->
         <div class="flex shrink-0 items-center gap-2">
