@@ -1,6 +1,6 @@
 <template>
   <ButtonGroup
-    class="queue-button-group h-8 rounded-lg bg-secondary-background"
+    class="queue-button-group h-8 rounded-l-lg rounded-r-none bg-secondary-background"
   >
     <BatchCountEdit />
     <Button
@@ -181,9 +181,9 @@ const queueButtonLabel = computed(() =>
 const queueButtonVariant = computed<'destructive' | 'inverted'>(() =>
   isStopInstantAction.value ? 'destructive' : 'inverted'
 )
-const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
+const queueActionButtonClass = 'h-full rounded-none gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
-  'h-full w-7 rounded-l-none rounded-r-lg border-l border-base-background/15 p-0 data-[state=open]:bg-base-foreground/80'
+  'h-full w-7 rounded-none border-l border-base-background/15 p-0 data-[state=open]:bg-base-foreground/80'
 const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {
