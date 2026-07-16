@@ -386,6 +386,67 @@ describe('Viewport3d', () => {
     })
   })
 
+  describe('clientPointToNdc', () => {
+    function installCanvas(rect: {
+      left: number
+      top: number
+      width: number
+      height: number
+    }) {
+      const canvas = document.createElement('canvas')
+      vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+        ...rect,
+        right: rect.left + rect.width,
+        bottom: rect.top + rect.height,
+        x: rect.left,
+        y: rect.top,
+        toJSON: () => ({})
+      } as DOMRect)
+      Object.assign(ctx.viewport, { view: { canvas } })
+    }
+
+    beforeEach(() => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 100,
+        targetHeight: 100,
+        targetAspectRatio: 1,
+        isViewerMode: false
+      })
+    })
+
+    it('normalizes client coordinates against the canvas rect before letterbox mapping', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+
+      expect(ctx.viewport.clientPointToNdc(300, 150)).toEqual({
+        x: expect.closeTo(0),
+        y: expect.closeTo(0),
+        inside: true
+      })
+      expect(ctx.viewport.clientPointToNdc(150, 150)).toEqual({
+        x: expect.closeTo(-1.5),
+        y: expect.closeTo(0),
+        inside: false
+      })
+    })
+
+    it('returns null when the canvas has no layout size', () => {
+      installCanvas({ left: 0, top: 0, width: 0, height: 0 })
+
+      expect(ctx.viewport.clientPointToNdc(10, 10)).toBeNull()
+    })
+
+    it('maps the full canvas when no aspect ratio is maintained', () => {
+      installCanvas({ left: 100, top: 50, width: 400, height: 200 })
+      Object.assign(ctx.viewport, { targetWidth: 0, targetHeight: 0 })
+
+      expect(ctx.viewport.clientPointToNdc(100, 50)).toEqual({
+        x: expect.closeTo(-1),
+        y: expect.closeTo(1),
+        inside: true
+      })
+    })
+  })
+
   describe('start / remove lifecycle', () => {
     beforeEach(() => {
       vi.useFakeTimers()

@@ -10,6 +10,7 @@ import {
   whenever
 } from '@vueuse/core'
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
@@ -30,7 +31,9 @@ const {
   autoplay = false,
   loop = false,
   minimal = false,
-  hideControls = false
+  hideControls = false,
+  fit = 'cover',
+  class: className
 } = defineProps<{
   locale?: Locale
   src?: string
@@ -40,6 +43,8 @@ const {
   loop?: boolean
   minimal?: boolean
   hideControls?: boolean
+  fit?: 'cover' | 'contain'
+  class?: HTMLAttributes['class']
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -189,7 +194,12 @@ function toggleFullscreen() {
 <template>
   <div
     ref="playerEl"
-    class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
+    :class="
+      cn(
+        'relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black',
+        className
+      )
+    "
     @pointermove="showControls"
     @pointerdown="showControls"
     @focusin="showControls"
@@ -197,7 +207,9 @@ function toggleFullscreen() {
     <video
       v-if="src"
       ref="videoEl"
-      class="size-full object-cover"
+      :class="
+        cn('size-full', fit === 'contain' ? 'object-contain' : 'object-cover')
+      "
       :src
       :poster
       :preload="autoplay ? 'auto' : 'metadata'"

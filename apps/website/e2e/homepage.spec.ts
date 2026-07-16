@@ -17,7 +17,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy — Professional Control of Visual AI')
+    await expect(page).toHaveTitle('Comfy - Professional Control of Visual AI')
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
