@@ -1,47 +1,44 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import PlansPricingCta from '../components/individual-submission/PlansPricingCta.vue'
-import HeroSection from '../components/legal/HeroSection.vue'
-import { getRoutes } from '../config/routes'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PlansPricingCta from '../../components/individual-submission/PlansPricingCta.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import { getRoutes } from '../../config/routes'
 
-const routes = getRoutes('en')
+const routes = getRoutes('zh-CN')
 ---
 
 <BaseLayout
-  title="Thanks for reaching out - Comfy"
-  description="Thanks for reaching out. Based on what you shared, one of our self-serve plans is probably a better fit."
+  title="感谢您的联系 - Comfy"
+  description="感谢您的联系。根据您提供的信息，我们的自助服务套餐之一可能更适合您。"
   noindex
 >
-  <HeroSection title="Thanks for reaching out." />
+  <HeroSection title="感谢您的联系。" />
 
   <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
     <div
       class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-6 text-center text-base font-light lg:text-lg"
     >
       <p>
-        Based on what you shared, one of our self-serve plans is probably a
-        better fit.
+        根据您提供的信息，我们的自助服务套餐之一可能更适合您。面向个人创作者的
         <strong class="text-primary-comfy-yellow font-semibold italic">
           Standard</strong
-        >,
+        >、
         <strong class="text-primary-comfy-yellow font-semibold italic">
           Creator</strong
-        >, and
+        >
+        和
         <strong class="text-primary-comfy-yellow font-semibold italic">
           Pro</strong
-        > for individual creators, plus our new
+        >，以及我们全新的
         <strong class="text-primary-comfy-yellow font-semibold italic">
           Teams</strong
-        > plan for multiple users under shared billing.
+        > 套餐，可让多位用户共享账单。
       </p>
 
-      <PlansPricingCta
-        href={routes.cloudPricing}
-        label="See plans and pricing →"
-      />
+      <PlansPricingCta href={routes.cloudPricing} label="查看套餐与价格 →" />
 
       <p class="text-primary-warm-gray mt-8 text-sm">
-        Still think you have an enterprise need? We're happy to assist. Email: <a
+        仍然认为您有企业级需求？我们很乐意为您提供帮助。邮箱：<a
           href="mailto:gtm-team@comfy.org"
           class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
           >gtm-team@comfy.org</a
@@ -49,7 +46,7 @@ const routes = getRoutes('en')
       </p>
 
       <p class="text-primary-warm-gray text-sm">
-        Need help with something else? Email: <a
+        需要其他方面的帮助？邮箱：<a
           href="mailto:support@comfy.org"
           class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
           >support@comfy.org</a
