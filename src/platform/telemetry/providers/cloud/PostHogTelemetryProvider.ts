@@ -24,6 +24,12 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourCompletedMetadata,
+  OnboardingTourRunTriggeredMetadata,
+  OnboardingTourSkippedMetadata,
+  OnboardingTourStartedMetadata,
+  OnboardingTourStepViewedMetadata,
+  OnboardingTourUpgradeShownMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -574,5 +580,45 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackOnboardingTourStarted(metadata: OnboardingTourStartedMetadata): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_STARTED, metadata)
+  }
+
+  trackOnboardingTourStepViewed(
+    metadata: OnboardingTourStepViewedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_STEP_VIEWED, metadata)
+  }
+
+  trackOnboardingTourRunTriggered(
+    metadata: OnboardingTourRunTriggeredMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_RUN_TRIGGERED, metadata)
+  }
+
+  trackOnboardingTourCompleted(
+    metadata: OnboardingTourCompletedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_COMPLETED, metadata)
+  }
+
+  trackOnboardingTourSkipped(metadata: OnboardingTourSkippedMetadata): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_SKIPPED, metadata)
+  }
+
+  trackOnboardingTourUpgradeShown(
+    metadata: OnboardingTourUpgradeShownMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_UPGRADE_SHOWN, metadata)
+  }
+
+  trackOnboardingTourNudgeShown(): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN)
+  }
+
+  trackOnboardingTourExploreTemplatesClicked(): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED)
   }
 }

@@ -544,6 +544,56 @@ export interface WorkspaceInviteMetadata extends Record<string, unknown> {
 }
 
 /**
+ * Onboarding tour telemetry. `shape` labels the role-derived sequence, not the
+ * template — `'other'` is the honest bucket for graphs the resolver handles
+ * best-effort but that aren't a named shape. `step_key`/`template_id` carry no
+ * user content or share id, so no PII.
+ */
+export type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
+export type OnboardingTourEntry =
+  | 'getting_started'
+  | 'share_url'
+  | 'template_url'
+export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
+
+export interface OnboardingTourStartedMetadata {
+  template_id?: string
+  shape: OnboardingTourShape
+  entry: OnboardingTourEntry
+}
+
+export interface OnboardingTourStepViewedMetadata {
+  template_id?: string
+  step_key: OnboardingTourStepKey
+  step_index: number
+  step_total: number
+}
+
+export type OnboardingTourRunStatus = 'success' | 'error' | 'interrupted'
+
+export interface OnboardingTourRunTriggeredMetadata {
+  template_id?: string
+  shape: OnboardingTourShape
+  status: OnboardingTourRunStatus
+}
+
+export interface OnboardingTourCompletedMetadata {
+  template_id?: string
+  shape: OnboardingTourShape
+}
+
+export interface OnboardingTourSkippedMetadata {
+  template_id?: string
+  step_key: OnboardingTourStepKey
+  step_index: number
+  step_total: number
+}
+
+export interface OnboardingTourUpgradeShownMetadata {
+  template_id?: string
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -644,6 +694,22 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Onboarding tour events
+  trackOnboardingTourStarted?(metadata: OnboardingTourStartedMetadata): void
+  trackOnboardingTourStepViewed?(
+    metadata: OnboardingTourStepViewedMetadata
+  ): void
+  trackOnboardingTourRunTriggered?(
+    metadata: OnboardingTourRunTriggeredMetadata
+  ): void
+  trackOnboardingTourCompleted?(metadata: OnboardingTourCompletedMetadata): void
+  trackOnboardingTourSkipped?(metadata: OnboardingTourSkippedMetadata): void
+  trackOnboardingTourUpgradeShown?(
+    metadata: OnboardingTourUpgradeShownMetadata
+  ): void
+  trackOnboardingTourNudgeShown?(): void
+  trackOnboardingTourExploreTemplatesClicked?(): void
 }
 
 /**
@@ -746,7 +812,18 @@ export const TelemetryEvents = {
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Onboarding Tour
+  ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
+  ONBOARDING_TOUR_STEP_VIEWED: 'app:onboarding_tour_step_viewed',
+  ONBOARDING_TOUR_RUN_TRIGGERED: 'app:onboarding_tour_run_triggered',
+  ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
+  ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_UPGRADE_SHOWN: 'app:onboarding_tour_upgrade_shown',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked'
 } as const
 
 export type TelemetryEventName =
@@ -803,3 +880,9 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | OnboardingTourStartedMetadata
+  | OnboardingTourStepViewedMetadata
+  | OnboardingTourRunTriggeredMetadata
+  | OnboardingTourCompletedMetadata
+  | OnboardingTourSkippedMetadata
+  | OnboardingTourUpgradeShownMetadata
