@@ -1090,7 +1090,6 @@ export class LGraph
     }
 
     node.graph = this
-    this.incrementVersion()
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1116,6 +1115,9 @@ export class LGraph
     if (!shouldSkipComputeOrder) this.updateExecutionOrder()
 
     this.onNodeAdded?.(node)
+
+    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
+    this.incrementVersion()
 
     this.setDirtyCanvas(true)
     this.change()
