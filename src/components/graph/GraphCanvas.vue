@@ -39,6 +39,10 @@
       <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
+      <div
+        ref="canvasPanelBoundsRef"
+        class="pointer-events-none absolute inset-0"
+      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -89,7 +93,10 @@
   />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle v-if="comfyAppReady" />
+  <SelectionRectangle
+    v-if="comfyAppReady"
+    :panel-el="canvasPanelBoundsRef ?? undefined"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -116,6 +123,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -172,6 +180,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/useFirstRunTourController'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
@@ -202,6 +211,7 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -495,6 +505,9 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
+  let templateFromUrl: Awaited<
+    ReturnType<typeof workflowPersistence.loadTemplateFromUrlIfPresent>
+  >
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -552,11 +565,38 @@ onMounted(async () => {
     // Restore saved workflow and workflow tabs state
     await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    templateFromUrl = await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
-  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedFromUrl =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+
+  // A ?template=/?share= URL loads a workflow directly (Getting Started is
+  // skipped). Start the onboarding tour on it; beginTour() self-gates and reads
+  // the now-loaded graph, so the loaders above must have finished first.
+  const startTourFromUrl = (
+    options?: Parameters<
+      ReturnType<typeof useFirstRunTourController>['beginTour']
+    >[0]
+  ) =>
+    useFirstRunTourController()
+      .beginTour(options)
+      .catch((error: unknown) => {
+        console.error('[onboardingTour] failed to start from URL', error)
+      })
+
+  if (templateFromUrl.loaded) {
+    void startTourFromUrl({
+      templateId: templateFromUrl.templateId,
+      entry: 'template_url'
+    })
+  } else if (
+    sharedFromUrl === 'loaded' ||
+    sharedFromUrl === 'loaded-without-assets'
+  ) {
+    void startTourFromUrl({ entry: 'share_url' })
+  }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,

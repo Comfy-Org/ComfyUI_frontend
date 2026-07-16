@@ -188,6 +188,18 @@ vi.mock(
   () => stubModule
 )
 vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
+vi.mock(
+  '@/renderer/extensions/firstRunTour/GettingStartedScreen.vue',
+  () => stubModule
+)
+vi.mock(
+  '@/renderer/extensions/firstRunTour/FirstRunTourOverlay.vue',
+  () => stubModule
+)
+vi.mock(
+  '@/renderer/extensions/firstRunTour/FirstRunTourNudge.vue',
+  () => stubModule
+)
 vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
 vi.mock('@/components/MenuHamburger.vue', () => stubModule)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
