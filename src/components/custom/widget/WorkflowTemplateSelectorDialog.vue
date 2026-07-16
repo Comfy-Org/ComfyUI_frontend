@@ -400,6 +400,7 @@
                       :key="tag"
                       :label="tag"
                       shape="rounded"
+                      class="rounded-lg"
                     />
                     <div
                       v-if="getExtraTagCount(template) > 0"
@@ -410,7 +411,7 @@
                       <Tag
                         :label="`+${getExtraTagCount(template)}`"
                         shape="rounded"
-                        class="cursor-default"
+                        class="cursor-default rounded-lg"
                       />
                     </div>
                   </div>
@@ -480,6 +481,7 @@
             :key="tag"
             :label="tag"
             shape="rounded"
+            class="rounded-lg"
           />
         </div>
       </Popover>
