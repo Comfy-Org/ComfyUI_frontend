@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -13,7 +13,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
 import { TOURS, TOUR_SEEN_SETTING, resolveSteps } from './onboardingTours'
-import type { CoachStep, EntryPath, TourDefinition } from './onboardingTours'
+import type { CoachStep, EntryPath } from './onboardingTours'
 import { useTourTriggers } from './useTourTriggers'
 
 const DEFER_TIMEOUT_MS = 8000
@@ -51,6 +51,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     skipReason?: OnboardingTourSkipReason
   ) {
     const tour = activeTour.value
+    // Definition-driven tours (firstRun) aren't in TOURS and report their own telemetry.
     if (!tour || !TOURS[tour]) return
     telemetry?.trackOnboardingTour(stage, {
       tour,
@@ -172,7 +173,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     watch(
       trigger.autoOpen,
       (visible) => {
-        if (visible) void startTour(entryPath)
+        if (visible) startTour(entryPath)
       },
       { immediate: true }
     )
@@ -192,21 +193,18 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  async function startTour(
+  function startTour(
     entryPath: EntryPath,
     {
       force = false,
       definition
-    }: { force?: boolean; definition?: TourDefinition } = {}
+    }: { force?: boolean; definition?: CoachStep[] } = {}
   ) {
     if (steps.value.length) return
     if (!force && hasSeenTour(entryPath)) return
     const def = definition ?? TOURS[entryPath]
     if (!def) return
-    const built = typeof def === 'function' ? await def() : def
-    // A resolver settling late may have let a concurrent start fill steps first.
-    if (steps.value.length) return
-    const resolved = resolveSteps(built, targetMounted)
+    const resolved = resolveSteps(def, targetMounted)
     if (!resolved.length) return
     steps.value = resolved
     activeTour.value = entryPath
@@ -215,7 +213,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
   }
 
   function replayTour(entryPath: EntryPath) {
-    void startTour(entryPath, { force: true })
+    startTour(entryPath, { force: true })
   }
 
   return {
@@ -230,7 +228,7 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     countedStepIdx,
     countedStepsTotal,
     waitingForTarget,
-    activeTour,
+    activeTour: readonly(activeTour),
     startTour,
     replayTour,
     next,

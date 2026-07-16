@@ -55,12 +55,7 @@ export function resolveSteps(
   )
 }
 
-/** A tour's steps: a fixed list, or a resolver that builds them at start. */
-export type TourDefinition =
-  | CoachStep[]
-  | (() => CoachStep[] | Promise<CoachStep[]>)
-
-export const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
+export const TOURS: Partial<Record<EntryPath, CoachStep[]>> = {
   appMode: [
     {
       name: 'landing',
