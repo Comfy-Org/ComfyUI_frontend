@@ -35,11 +35,11 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
+            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 text-2xl font-bold group-hover:hidden"
             >•</span
           >
           <Button
-            class="close-button invisible w-auto p-0"
+            class="close-button invisible w-auto p-0 hover:bg-transparent hover:text-base-foreground"
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
