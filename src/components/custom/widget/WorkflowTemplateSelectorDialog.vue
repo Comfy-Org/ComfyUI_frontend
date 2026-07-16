@@ -349,13 +349,13 @@
                         :class="badge.iconClass"
                         class="size-3.5 text-white"
                       />
-                      <img
+                      <span
                         v-else
-                        :src="badge.url"
-                        :alt="badge.provider"
-                        class="size-3.5 rounded-full object-contain"
-                        draggable="false"
-                      />
+                        class="text-[11px] font-semibold text-white"
+                        aria-hidden="true"
+                      >
+                        {{ badge.provider.charAt(0).toUpperCase() }}
+                      </span>
                     </div>
                     <div
                       v-if="getProviderInfo(template)!.extraCount > 0"
@@ -401,7 +401,7 @@
                       :key="tag"
                       :label="tag"
                       shape="rounded"
-                      class="rounded-lg"
+                      class="rounded-lg text-muted-foreground"
                     />
                     <div
                       v-if="getExtraTagCount(template) > 0"
@@ -412,7 +412,7 @@
                       <Tag
                         :label="`+${getExtraTagCount(template)}`"
                         shape="rounded"
-                        class="cursor-default rounded-lg"
+                        class="cursor-default rounded-lg text-muted-foreground"
                       />
                     </div>
                   </div>
@@ -482,7 +482,7 @@
             :key="tag"
             :label="tag"
             shape="rounded"
-            class="rounded-lg"
+            class="rounded-lg text-muted-foreground"
           />
         </div>
       </Popover>
