@@ -53,6 +53,10 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <div
+              class="h-5 w-px shrink-0 self-center bg-border-subtle"
+              aria-hidden="true"
+            />
             <Button
               v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"

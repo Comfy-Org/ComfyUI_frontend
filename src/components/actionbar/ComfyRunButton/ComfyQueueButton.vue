@@ -178,8 +178,8 @@ const queueButtonLabel = computed(() =>
     : String(activeQueueModeMenuItem.value?.label ?? '')
 )
 
-const queueButtonVariant = computed<'destructive' | 'primary'>(() =>
-  isStopInstantAction.value ? 'destructive' : 'primary'
+const queueButtonVariant = computed<'destructive' | 'inverted'>(() =>
+  isStopInstantAction.value ? 'destructive' : 'inverted'
 )
 const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
