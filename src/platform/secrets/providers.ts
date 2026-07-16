@@ -95,7 +95,7 @@ const DEMO_CREDENTIAL_OPTIONS: Record<string, CredentialOptionConfig[]> = {
     {
       credentialType: 'gcp_service_account',
       inputType: 'json_file',
-      label: 'Service account (Vertex AI)'
+      label: 'Service account (Vertex AI / Gemini Enterprise)'
     }
   ]
 }

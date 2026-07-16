@@ -173,7 +173,7 @@ describe('SecretFormDialog', () => {
       {
         credentialType: 'gcp_service_account',
         inputType: 'json_file',
-        label: 'Service account (Vertex AI)'
+        label: 'Service account (Vertex AI / Gemini Enterprise)'
       }
     ]
 
@@ -184,7 +184,7 @@ describe('SecretFormDialog', () => {
 
     expect(screen.getByText('Credential type')).toBeTruthy()
     expect(screen.getByText('API key (Google AI Studio)')).toBeTruthy()
-    expect(screen.getByText('Service account (Vertex AI)')).toBeTruthy()
+    expect(screen.getByText('Service account (Vertex AI / Gemini Enterprise)')).toBeTruthy()
   })
 
   it('hides the credential-type selector when the provider offers a single option', () => {
