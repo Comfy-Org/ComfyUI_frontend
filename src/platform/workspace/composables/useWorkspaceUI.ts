@@ -115,9 +115,9 @@ function getUIConfig(
       showPendingTab: true,
       showSearch: true,
       showRoleColumn: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
+      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
+      headerGridCols: 'grid-cols-[38%_18%_30%_14%]',
       showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip:

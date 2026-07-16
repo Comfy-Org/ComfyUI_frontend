@@ -558,6 +558,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed: number
+    currentLimit: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -729,6 +745,7 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,

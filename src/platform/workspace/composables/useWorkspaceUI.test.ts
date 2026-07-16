@@ -190,8 +190,12 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBe(
         'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
       )
-      expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[50%_40%_10%]')
-      expect(ui.uiConfig.value.headerGridCols).toBe('grid-cols-[50%_40%_10%]')
+      expect(ui.uiConfig.value.membersGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
+      expect(ui.uiConfig.value.headerGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
       expect(ui.uiConfig.value.pendingGridCols).toBe(
         'grid-cols-[50%_20%_20%_10%]'
       )

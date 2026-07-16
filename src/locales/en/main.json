@@ -2904,13 +2904,24 @@
       "columns": {
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
-        "role": "Role"
+        "role": "Role",
+        "creditsUsed": "Credits used this month"
       },
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
+        "setCreditLimit": "Set credit limit",
         "removeMember": "Remove member"
+      },
+      "creditLimitDialog": {
+        "title": "Set a monthly credit limit for {name}",
+        "description": "Once they reach this limit, they’ll be unable to run workflows.",
+        "limitOption": "Limit monthly credit usage to:",
+        "noLimit": "No limit",
+        "warning": "This user has already spent {credits} credits. Setting this cap will prevent further runs until next month.",
+        "invalidLimit": "Enter a credit limit greater than zero.",
+        "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",

@@ -131,6 +131,13 @@
               {{ $t('workspacePanel.members.columns.role') }}
               <i class="icon-[lucide--chevrons-up-down] size-4" />
             </Button>
+            <div
+              v-if="permissions.canManageMembers"
+              class="flex items-center gap-1 text-sm text-muted-foreground"
+            >
+              <i class="icon-[lucide--coins] size-4" />
+              {{ $t('workspacePanel.members.columns.creditsUsed') }}
+            </div>
             <!-- Empty cell for action column header (OWNER only) -->
             <div v-if="permissions.canManageMembers" />
           </template>
@@ -168,7 +175,6 @@
                 "
                 :can-manage-members="permissions.canManageMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
-                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -247,7 +253,6 @@ const {
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,

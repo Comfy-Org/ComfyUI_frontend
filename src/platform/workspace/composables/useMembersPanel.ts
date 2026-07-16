@@ -96,6 +96,7 @@ export function useMembersPanel() {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog
   } = useDialogService()
@@ -186,6 +187,23 @@ export function useMembersPanel() {
   }
 
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
+    const creditLimitItem: MenuItem = {
+      label: t('workspacePanel.members.actions.setCreditLimit'),
+      command: () =>
+        void showSetMemberCreditLimitDialog({
+          memberId: member.id,
+          memberName: member.name,
+          creditsUsed: member.creditsUsedThisMonth ?? 0,
+          currentLimit: member.monthlyCreditLimit ?? null
+        })
+    }
+
+    // The creator can't change their own role or remove themselves, but any
+    // owner (including the creator) can still cap their own usage.
+    if (isCurrentUser(member) || isOriginalOwner(member)) {
+      return [creditLimitItem]
+    }
+
     return [
       {
         label: t('workspacePanel.members.actions.changeRole'),
@@ -194,6 +212,7 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
+      creditLimitItem,
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)
