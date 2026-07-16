@@ -104,7 +104,7 @@
 
         <div
           v-if="showSelectedCount || showClearButton"
-          class="mt-1 flex items-center justify-between border-t border-border-default px-3 pt-2"
+          class="-mx-2 mt-2 flex items-center justify-between border-t border-border-default px-4 pt-3 pb-1"
         >
           <span
             v-if="showSelectedCount"
