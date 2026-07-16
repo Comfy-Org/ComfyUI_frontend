@@ -125,7 +125,7 @@
             <Button
               variant="muted-textonly"
               size="sm"
-              class="justify-end"
+              class="justify-start"
               @click="toggleSort('role')"
             >
               {{ $t('workspacePanel.members.columns.role') }}

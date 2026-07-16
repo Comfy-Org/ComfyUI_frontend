@@ -29,7 +29,7 @@
     </div>
     <span
       v-if="showRoleColumn && !isSingleSeatPlan"
-      class="text-right text-sm text-muted-foreground"
+      class="text-sm text-muted-foreground"
     >
       {{
         member.role === 'owner'
