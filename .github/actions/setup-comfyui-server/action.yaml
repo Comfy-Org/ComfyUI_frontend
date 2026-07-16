@@ -9,10 +9,6 @@ inputs:
     description: 'Whether to launch the server after setup'
     required: false
     default: 'false'
-  comfyui_ref:
-    description: 'ComfyUI git ref to check out (tag/branch/SHA). Empty = default branch (master).'
-    required: false
-    default: ''
 runs:
   using: 'composite'
   steps:
@@ -23,7 +19,6 @@ runs:
       uses: actions/checkout@v6
       with:
         repository: 'comfyanonymous/ComfyUI'
-        ref: ${{ inputs.comfyui_ref }}
         path: 'ComfyUI'
 
     - name: Install ComfyUI_devtools from frontend repo
