@@ -22,7 +22,7 @@
         @blur="onInputBlur"
         @keydown.enter.prevent="onInputEnter"
       />
-      <div class="flex h-full w-6 flex-col">
+      <div class="flex h-full w-6 flex-col border-l border-border-subtle">
         <Button
           variant="secondary"
           size="unset"
