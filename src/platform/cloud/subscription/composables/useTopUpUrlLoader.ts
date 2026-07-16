@@ -29,6 +29,7 @@ export function useTopUpUrlLoader() {
   const dialogService = useDialogService()
   const billingContext = useBillingContext()
   const { permissions } = useWorkspaceUI()
+  const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
   async function loadTopUpFromUrl() {
@@ -62,22 +63,28 @@ export function useTopUpUrlLoader() {
     // server before deciding.
     await billingContext.fetchStatus()
 
-    // A null subscription means the fetch did not actually resolve the state:
-    // the legacy adapter swallows fetch failures instead of rejecting. Bail
-    // out rather than route a possibly-subscribed user to the paywall.
+    // A null subscription means the status fetch did not resolve the state:
+    // the legacy adapter swallows fetch failures instead of rejecting, leaving
+    // a possibly-subscribed user indistinguishable from an unknown one. Bail
+    // rather than route them to the paywall on that ambiguity. A definitively
+    // free or lapsed user keeps a non-null subscription (tier 'FREE' on legacy,
+    // a populated status object on workspace), so they still fall through to
+    // the paywall below; only a never-subscribed legacy user with no tier at
+    // all overlaps with the swallowed-failure case guarded here.
     if (!billingContext.subscription.value) return
 
-    // Mirrors the paywall branch inside showTopUpCreditsDialog so deep_link
-    // telemetry only counts opens of the actual top-up dialog, matching the
-    // other sources whose buttons render only for active paid users.
-    const opensTopUpDialog =
+    // Emit deep_link only for opens of the real top-up dialog, matching the
+    // other sources whose buttons render only for active paid users. This is
+    // the negation of the paywall gate in showTopUpCreditsDialog
+    // (dialogService.ts); keep the two in sync.
+    const willOpenTopUpMode =
       billingContext.isActiveSubscription.value &&
       !billingContext.isFreeTier.value
-    if (opensTopUpDialog) {
-      useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
+    if (willOpenTopUpMode) {
+      telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
 
-    await dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog()
   }
 
   return {

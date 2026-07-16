@@ -94,10 +94,13 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    // The loader strips the param for everyone before the eligibility gate, so
+    // waiting for the clean URL is a real "loader ran" signal. window.app's
+    // extensionManager is assigned in App.vue setup, long before the loader
+    // runs at the tail of GraphCanvas onMounted, so it would resolve too early.
+    await page.waitForURL((url) => !url.searchParams.has('topup'), {
       timeout: 45_000
     })
-    await expect(page).not.toHaveURL(/[?&]topup=/)
     await expect(topUpHeading(page)).toBeHidden()
   })
 })
