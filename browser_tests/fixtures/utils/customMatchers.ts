@@ -50,36 +50,28 @@ export const comfyExpect = expect.extend({
       message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
     }
   },
-  toBeCloseToArray(
-    target: number[],
-    expected: number[],
-    options?: { numDigits?: number }
-  ) {
-    expect(target).toHaveLength(expected.length)
-    const closeTo: (a: number, b: number) => void = this.isNot
-      ? (a, b) => expect(a).not.toBeCloseTo(b, options?.numDigits)
-      : (a, b) => expect(a).toBeCloseTo(b, options?.numDigits)
-    target.forEach((a, i) => closeTo(a, expected[i]))
-    const message = () =>
-      `${JSON.stringify(target)} is ${this.isNot ? 'not ' : ''}close to ${JSON.stringify(expected)}`
-    return { pass: !this.isNot, message }
-  },
   async toHaveBounds(
     locator: Locator,
     expected: Bounds,
     { numDigits }: { numDigits?: number } = {}
   ) {
-    await expect(async () => {
-      const box = (await locator.boundingBox())!
-      const closeTo: (k: keyof Bounds) => void = this.isNot
-        ? (k) => expect(box[k], k).not.toBeCloseTo(expected[k], numDigits)
-        : (k) => expect(box[k], k).toBeCloseTo(expected[k], numDigits)
-      for (const key of ['x', 'y', 'width', 'height'] as const) closeTo(key)
-    }).toPass({ timeout: 5000 })
+    const message = (box: object) =>
+      `Bounds ${JSON.stringify(box)} should ${this.isNot ? 'not ' : ''}match ${JSON.stringify(expected)}`
 
-    const box = (await locator.boundingBox())!
-    const message = () =>
-      `Bounds ${box} ${this.isNot ? 'does not match' : 'matches'} ${JSON.stringify(expected)}`
-    return { pass: !this.isNot, message }
+    const assertBounds = async () => {
+      const box = await locator.boundingBox()
+      if (!box) throw new Error(`Failed to resolve bounds for ${locator}`)
+
+      const assertBoundsEqual = () => {
+        for (const key of ['x', 'y', 'width', 'height'] as const)
+          expect(box[key], key).toBeCloseTo(expected[key], numDigits)
+      }
+      if (this.isNot) expect(assertBoundsEqual, message(box)).toThrow()
+      else expect(assertBoundsEqual, message(box)).not.toThrow()
+    }
+
+    await expect(assertBounds).toPass({ timeout: 5000 })
+    const box = await locator.boundingBox
+    return { pass: !this.isNot, message: () => message(box) }
   }
 })

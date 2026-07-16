@@ -351,8 +351,31 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         await comfyPage.vueNodes.enterSubgraph()
       })
 
+      await test.step('deeply nested subgraphs', async () => {
+        await convertToSubgraph('New Subgraph')
+        const intermediateGraphId = await comfyPage.subgraph.getActiveGraphId()
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect
+          .poll(() => comfyPage.subgraph.getActiveGraphId())
+          .not.toBe(intermediateGraphId)
+
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(
+            () => comfyPage.subgraph.getActiveGraphId(),
+            'undo from deeply nested subgraph resolves immediate valid parent'
+          )
+          .toBe(intermediateGraphId)
+      })
+
       await comfyPage.keyboard.undo()
-      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await comfyPage.keyboard.undo()
+      await expect
+        .poll(
+          () => comfyPage.subgraph.isInSubgraph(),
+          'Currently bugged: click after subgraph requires additional undo'
+        )
+        .toBe(false)
     }
   )
 })
