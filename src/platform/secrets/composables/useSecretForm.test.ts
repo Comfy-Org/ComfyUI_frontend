@@ -657,7 +657,7 @@ describe('useSecretForm', () => {
       expect(fileName.value).toBe('')
     })
 
-    it('submits valid JSON for a json_file provider', async () => {
+    it('submits valid JSON with the gcp_service_account credential type', async () => {
       const visible = ref(true)
       mockCreate.mockResolvedValue({})
       const { form, handleSubmit } = useSecretForm({
@@ -677,6 +677,31 @@ describe('useSecretForm', () => {
       expect(mockCreate).toHaveBeenCalledWith({
         name: 'Vertex SA',
         secret_value: '{"type":"service_account"}',
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+    })
+
+    it('omits credential_type for a text provider (defaults to api_key)', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+      const { form, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini', input_type: 'text' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Gemini Studio'
+      form.provider = 'gemini'
+      form.secretValue = 'AIzaStudioKey'
+
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Gemini Studio',
+        secret_value: 'AIzaStudioKey',
         provider: 'gemini'
       })
     })

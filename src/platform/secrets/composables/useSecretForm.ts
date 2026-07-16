@@ -271,7 +271,11 @@ export function useSecretForm(options: UseSecretFormOptions) {
         await createSecret({
           name: form.name.trim(),
           secret_value: form.secretValue,
-          provider: form.provider!
+          provider: form.provider!,
+          // A json_file credential is a service-account key → route via Vertex.
+          ...(selectedInputType.value === 'json_file' && {
+            credential_type: 'gcp_service_account'
+          })
         })
       } else if (secret) {
         const updatePayload: { name: string; secret_value?: string } = {

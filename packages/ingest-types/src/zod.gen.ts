@@ -922,7 +922,8 @@ export const zUpdateSecretRequest = z.object({
 export const zCreateSecretRequest = z.object({
   name: z.string().min(1).max(255),
   provider: z.string().max(64).optional(),
-  secret_value: z.string().min(1)
+  secret_value: z.string().min(1),
+  credential_type: z.enum(['api_key', 'gcp_service_account']).optional()
 })
 
 /**
