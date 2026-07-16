@@ -1,10 +1,10 @@
 import { createSharedComposable } from '@vueuse/core'
-import { computed, ref, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -157,22 +157,11 @@ export const usePriceBadge = () => {
     updateSubgraphCredits
   }
 }
-const nodeTrigger = ref(0)
-export function registerCreditBadgeTracking(graph: LGraph) {
-  graph.onNodeAdded = useChainCallback(
-    graph.onNodeAdded,
-    () => nodeTrigger.value++
-  )
-  graph.onNodeRemoved = useChainCallback(
-    graph.onNodeRemoved,
-    () => nodeTrigger.value++
-  )
-  nodeTrigger.value++
-}
 export const useCreditsBadgesInGraph = createSharedComposable(() => {
   const { isCreditsBadge } = usePriceBadge()
+  const vueNodeLifecycle = useVueNodeLifecycle()
   return computed(() => {
-    void nodeTrigger.value
+    void vueNodeLifecycle.nodeManager.value?.vueNodeData.size
     if (!app.graph) return []
     return mapAllNodes(app.graph, (node) => {
       if (node.isSubgraphNode()) return
