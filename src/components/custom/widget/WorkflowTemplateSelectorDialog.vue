@@ -341,7 +341,7 @@
                       v-for="badge in getProviderInfo(template)!.visibleBadges"
                       :key="badge.provider"
                       v-tooltip.top="badge.provider"
-                      class="flex size-6 items-center justify-center rounded-lg bg-zinc-700/50 backdrop-blur-[20px]"
+                      class="flex size-7 items-center justify-center rounded-full bg-zinc-700/50 backdrop-blur-[20px]"
                     >
                       <i
                         v-if="badge.iconClass"
@@ -361,7 +361,7 @@
                       v-tooltip.top="
                         getProviderInfo(template)!.extraProviders.join(', ')
                       "
-                      class="flex h-6 min-w-6 items-center justify-center rounded-lg bg-zinc-700/50 px-1 text-[10px] font-medium text-white backdrop-blur-[20px]"
+                      class="flex h-7 min-w-7 items-center justify-center rounded-full bg-zinc-700/50 px-1.5 text-[10px] font-medium text-white backdrop-blur-[20px]"
                     >
                       +{{ getProviderInfo(template)!.extraCount }}
                     </div>
