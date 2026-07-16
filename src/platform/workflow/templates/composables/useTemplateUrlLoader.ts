@@ -10,6 +10,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
+export interface TemplateUrlLoadResult {
+  loaded: boolean
+  templateId?: string
+}
+
 /**
  * Composable for loading templates from URL query parameters
  *
@@ -64,10 +69,7 @@ export function useTemplateUrlLoader() {
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
    */
-  const loadTemplateFromUrl = async (): Promise<{
-    loaded: boolean
-    templateId?: string
-  }> => {
+  const loadTemplateFromUrl = async (): Promise<TemplateUrlLoadResult> => {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
