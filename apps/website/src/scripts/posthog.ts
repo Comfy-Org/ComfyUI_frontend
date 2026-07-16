@@ -85,3 +85,12 @@ export function captureMcpClientTabClick(client: string) {
     console.error('PostHog MCP client tab capture failed', error)
   }
 }
+
+export function captureNavigationClick(item: string, placement: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:navigation_clicked', { item, placement })
+  } catch (error) {
+    console.error('PostHog navigation click capture failed', error)
+  }
+}

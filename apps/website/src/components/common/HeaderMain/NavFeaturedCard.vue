@@ -11,6 +11,8 @@ defineProps<{ featured: NavFeatured }>()
     <a
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
+      :data-nav-label="featured.analyticsId"
+      data-nav-placement="desktop-featured"
       class="group/pill-trigger relative block"
     >
       <img

@@ -149,3 +149,23 @@ describe('captureMcpClientTabClick', () => {
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })
 })
+
+describe('captureNavigationClick', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the navigation item and placement', async () => {
+    const { initPostHog, captureNavigationClick } = await import('./posthog')
+    initPostHog()
+    captureNavigationClick('customer-stories', 'desktop-enterprise')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:navigation_clicked',
+      {
+        item: 'customer-stories',
+        placement: 'desktop-enterprise'
+      }
+    )
+  })
+})

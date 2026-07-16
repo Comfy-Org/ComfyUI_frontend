@@ -5,12 +5,19 @@ import { isHrefActive } from '../../../composables/useCurrentPath'
 import type { NavColumn } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
-defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
+defineProps<{
+  column: NavColumn
+  locale: Locale
+  currentPath: string
+  parentAnalyticsId: string
+  wide?: boolean
+}>()
 </script>
 
 <template>
-  <li class="flex flex-col space-y-4">
+  <li :class="cn('flex w-44 flex-col space-y-4', wide && 'w-52')">
     <p class="font-formula text-primary-warm-gray pl-2 text-sm font-medium">
       {{ column.header }}
     </p>
@@ -25,7 +32,8 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
             :href="item.href"
             :target="item.external ? '_blank' : undefined"
             :rel="item.external ? 'noopener noreferrer' : undefined"
-            class="whitespace-nowrap"
+            :data-nav-label="item.analyticsId"
+            :data-nav-placement="`desktop-${parentAnalyticsId}`"
           >
             <NavLinkContent :item="item" :locale="locale" />
           </a>
