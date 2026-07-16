@@ -2181,6 +2181,7 @@ const translations = {
   'nav.youtube': { en: 'YouTube', 'zh-CN': 'YouTube' },
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
@@ -4446,6 +4447,161 @@ const translations = {
   'launches.section.title': {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
+  },
+
+  // Brand Portal page (/brand)
+  'brand.page.title': {
+    en: 'Brand — Comfy',
+    'zh-CN': '品牌 — Comfy'
+  },
+  'brand.page.description': {
+    en: 'The Comfy brand portal: logos, color, typography, and voice. Everything you need to build something that looks and sounds like Comfy.',
+    'zh-CN':
+      'Comfy 品牌门户：标志、色彩、字体与语调。打造与 Comfy 观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.label': {
+    en: 'Brand Portal',
+    'zh-CN': '品牌门户'
+  },
+  'brand.hero.heading': {
+    en: 'Create with ComfyUI',
+    'zh-CN': '用 ComfyUI 创作'
+  },
+  'brand.hero.subheading': {
+    en: 'Logo, color, type, and voice. Everything you need to build something that looks and sounds like us.',
+    'zh-CN': '标志、色彩、字体与语调。打造与我们观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.viewGuidelines': {
+    en: 'View brand guidelines',
+    'zh-CN': '查看品牌规范'
+  },
+  'brand.hero.downloadLogos': {
+    en: 'Download logos',
+    'zh-CN': '下载标志'
+  },
+  'brand.logos.heading': {
+    en: 'One mark, many dimensions.',
+    'zh-CN': '一个标志，多种维度。'
+  },
+  'brand.logos.subheading': {
+    en: 'Logos come in light and dark options. Use as provided. Do not distort, recolor, or outline. Make sure the logo is legible against its background.',
+    'zh-CN':
+      '标志提供浅色和深色两种版本。请按原样使用，不要变形、改色或描边。确保标志在其背景上清晰可辨。'
+  },
+  'brand.colors.heading': {
+    en: 'Every color earns its place.',
+    'zh-CN': '每种颜色都各得其所。'
+  },
+  'brand.colors.subheading': {
+    en: 'Our color palette helps build brand recognition. When people think of Comfy, we want them to associate it with the following colors.',
+    'zh-CN':
+      '我们的调色板有助于建立品牌辨识度。当人们想到 Comfy 时，我们希望他们联想到以下这些颜色。'
+  },
+  'brand.colors.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'brand.colors.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+  'brand.voice.heading': {
+    en: 'Precise, never cute.',
+    'zh-CN': '精准，绝不卖弄。'
+  },
+  'brand.voice.direct.title': {
+    en: 'Direct',
+    'zh-CN': '直接'
+  },
+  'brand.voice.direct.body': {
+    en: 'We state things. We don’t hedge, qualify, or suggest. Short sentences. Active voice. One idea at a time.',
+    'zh-CN':
+      '我们直陈其事。不含糊、不设限、不暗示。短句。主动语态。一次只讲一个观点。'
+  },
+  'brand.voice.precise.title': {
+    en: 'Precise',
+    'zh-CN': '精准'
+  },
+  'brand.voice.precise.body': {
+    en: 'We use the real names for things. Nodes, samplers, seeds, checkpoints. We don’t talk around the product or reach for metaphor when the technical term is already good.',
+    'zh-CN':
+      '我们直呼其名：nodes、samplers、seeds、checkpoints。当技术术语已经足够贴切时，我们不绕弯子，也不借用比喻。'
+  },
+  'brand.voice.human.title': {
+    en: 'Human-first',
+    'zh-CN': '以人为先'
+  },
+  'brand.voice.human.body': {
+    en: 'The human creates. Comfy makes every step visible. We never write as though the AI is doing the work.',
+    'zh-CN':
+      '创作的是人。Comfy 让每一步都清晰可见。我们绝不把功劳写成是 AI 完成的。'
+  },
+  'brand.voice.antihype.title': {
+    en: 'Anti-hype',
+    'zh-CN': '拒绝浮夸'
+  },
+  'brand.voice.antihype.body': {
+    en: 'We don’t write “stunning,” “revolutionary,” or “effortless.” We don’t promise magic. Our tagline says exactly what we mean: Method, not magic.',
+    'zh-CN':
+      '我们不写“惊艳”“革命性”或“毫不费力”。我们不承诺魔法。我们的口号恰如其分：方法，而非魔法。'
+  },
+  'brand.voice.doLabel': {
+    en: 'Do',
+    'zh-CN': '推荐'
+  },
+  'brand.voice.dontLabel': {
+    en: 'Don’t',
+    'zh-CN': '避免'
+  },
+  'brand.voice.do.0': {
+    en: 'Route your prompt through a ControlNet. Wire the output to the VAE decode.',
+    'zh-CN': '让你的 prompt 经过 ControlNet，再将输出连接到 VAE decode。'
+  },
+  'brand.voice.do.1': {
+    en: 'Comfy runs on your hardware. Nothing leaves your machine.',
+    'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
+  },
+  'brand.voice.dont.0': {
+    en: 'Simply connect your AI blocks and watch the magic happen!',
+    'zh-CN': '只需连接你的 AI 模块，见证奇迹的发生！'
+  },
+  'brand.voice.dont.1': {
+    en: 'Oops! Something went wrong. Please try again later.',
+    'zh-CN': '哎呀！出了点问题，请稍后再试。'
+  },
+  'brand.trademark.heading': {
+    en: 'Trademark guidelines.',
+    'zh-CN': '商标使用规范。'
+  },
+  'brand.trademark.body1': {
+    en: 'Comfy and ComfyUI are trademarks of Comfy Org. You’re welcome to reference them in content that accurately describes your work with our platform. Tutorials, reviews, integrations, and affiliate content all qualify.',
+    'zh-CN':
+      'Comfy 和 ComfyUI 是 Comfy Org 的商标。欢迎在准确描述你与我们平台相关工作的内容中引用它们。教程、评测、集成以及联盟内容均可。'
+  },
+  'brand.trademark.body2': {
+    en: 'A few rules: don’t modify the logo, don’t use the Comfy name in your own product or company name, and don’t present your content in a way that implies official endorsement or partnership beyond what’s been agreed.',
+    'zh-CN':
+      '几条规则：不要修改标志，不要在你自己的产品或公司名称中使用 Comfy 这一名称，也不要以暗示官方认可或合作关系（超出双方已达成的约定）的方式呈现你的内容。'
+  },
+  'brand.trademark.body3': {
+    en: 'For permissions outside these guidelines,',
+    'zh-CN': '如需本规范之外的授权，请'
+  },
+  'brand.trademark.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
+  },
+  'brand.questions.heading': {
+    en: 'Questions?',
+    'zh-CN': '有疑问？'
+  },
+  'brand.questions.body': {
+    en: 'For press, partnerships, or anything outside these guidelines,',
+    'zh-CN': '如涉及媒体、合作，或本规范未涵盖的任何事宜，请'
+  },
+  'brand.questions.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
