@@ -93,6 +93,10 @@ const manualTitle = computed(
   () => activeClient.value.manualTitle ?? t('mcp.setup.manual.title', locale)
 )
 
+function onClientTabChange(value: string | number | undefined) {
+  if (value) captureMcpClientTabClick(String(value))
+}
+
 const copyLabel = t('ui.copy', locale)
 const copiedLabel = t('ui.copied', locale)
 </script>
@@ -115,7 +119,11 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
-    <TabsRoot v-model="activeClientId" class="mt-10 block">
+    <TabsRoot
+      v-model="activeClientId"
+      class="mt-10 block"
+      @update:model-value="onClientTabChange"
+    >
       <TabsList
         :aria-label="t('mcp.setup.manual.tabsLabel', locale)"
         class="flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-2xl border border-white/10 p-1 lg:inline-flex lg:overflow-visible"
@@ -125,7 +133,6 @@ const copiedLabel = t('ui.copied', locale)
           :key="client.id"
           :value="client.id"
           class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-xl px-4 py-2 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
-          @click="captureMcpClientTabClick(client.id)"
         >
           {{ client.name }}
         </TabsTrigger>

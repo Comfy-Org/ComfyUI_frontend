@@ -2196,9 +2196,9 @@ const translations = {
     'zh-CN': '我需要 API 密钥吗？'
   },
   'mcp.faq.3.a': {
-    en: 'Not for Claude Code, Claude Desktop, or Codex. You need a Comfy API key for Cursor, Hermes, and OpenClaw for now. Just copy https://docs.comfy.org/agent-tools/cloud and your agent will figure out the installation for you.',
+    en: 'Not for Claude Code, Claude Desktop, Codex, or OpenClaw. You need a Comfy API key for Cursor and Hermes for now. Just copy https://docs.comfy.org/agent-tools/cloud and your agent will figure out the installation for you.',
     'zh-CN':
-      'Claude Code、Claude Desktop 和 Codex 不需要。Cursor、Hermes 和 OpenClaw 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/cloud，你的智能体就会为你完成安装。'
+      'Claude Code、Claude Desktop、Codex 和 OpenClaw 不需要。Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/cloud，你的智能体就会为你完成安装。'
   },
   'mcp.faq.4.q': {
     en: 'Does it cost anything?',
