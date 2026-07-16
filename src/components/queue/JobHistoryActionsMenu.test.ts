@@ -54,11 +54,17 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 
+const BaseTooltipStub = {
+  template: '<slot />'
+}
+
 const renderMenu = () =>
   render(JobHistoryActionsMenu, {
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} }
+      stubs: {
+        BaseTooltip: BaseTooltipStub
+      }
     }
   })
 
@@ -117,7 +123,9 @@ describe('JobHistoryActionsMenu', () => {
       props: { onClearHistory: clearHistorySpy },
       global: {
         plugins: [i18n],
-        directives: { tooltip: () => {} }
+        stubs: {
+          BaseTooltip: BaseTooltipStub
+        }
       }
     })
 

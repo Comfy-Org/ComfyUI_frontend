@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
 const i18n = createI18n({
   legacy: false,
@@ -28,9 +27,8 @@ const i18n = createI18n({
   }
 })
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
+const BaseTooltipStub = {
+  template: '<slot />'
 }
 
 const defaultProps = {
@@ -49,8 +47,8 @@ const renderComponent = (props: Record<string, unknown> = {}) =>
     props: { ...defaultProps, ...props },
     global: {
       plugins: [i18n],
-      directives: {
-        tooltip: tooltipDirectiveStub
+      stubs: {
+        BaseTooltip: BaseTooltipStub
       }
     }
   })
@@ -110,14 +108,5 @@ describe('QueueOverlayActive', () => {
     expect(
       screen.queryByRole('button', { name: 'Clear queued' })
     ).not.toBeInTheDocument()
-  })
-
-  it('builds tooltip configs with translated strings', () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
-
-    renderComponent()
-
-    expect(spy).toHaveBeenCalledWith('Cancel job')
-    expect(spy).toHaveBeenCalledWith('Clear queue')
   })
 })
