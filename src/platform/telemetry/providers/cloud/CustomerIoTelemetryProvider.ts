@@ -1,6 +1,8 @@
 import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
+import { omit, withTimeout } from 'es-toolkit'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
 
 import { TelemetryEvents } from '../../types'
 import type {
@@ -17,9 +19,17 @@ import type {
 
 export const EVENT_SOURCE = 'web-sdk'
 
+const SDK_OPERATION_TIMEOUT_MS = 10_000
+
 interface QueuedEvent {
   event: string
   properties: Record<string, unknown>
+  identity?: CustomerIoIdentity
+}
+
+interface CustomerIoIdentity {
+  userId: string
+  email?: string
 }
 
 /**
@@ -35,6 +45,9 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   private isPageViewTrackingReady = false
   private eventQueue: QueuedEvent[] = []
   private pageViewQueued = false
+  private identifiedUser: CustomerIoIdentity | null = null
+  private sessionIdentity: CustomerIoIdentity | null = null
+  private operationQueue: Promise<void> = Promise.resolve()
 
   constructor() {
     const {
@@ -42,6 +55,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       site_id: siteId,
       user_id: userIdOverride
     } = window.__CONFIG__?.customer_io ?? {}
+    this.sessionIdentity = userIdOverride ? { userId: userIdOverride } : null
     if (!writeKey || !siteId) {
       this.isEnabled = false
       return
@@ -63,14 +77,29 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         this.analytics = analytics
 
         const currentUser = useCurrentUser()
-        if (userIdOverride) {
-          void analytics.identify(userIdOverride)
-        } else {
-          currentUser.onUserResolved((user) => void analytics.identify(user.id))
+        const identifyResolvedUser = (user: AuthUserInfo) => {
+          const identity = {
+            userId: userIdOverride || user.id,
+            email: currentUser.userEmail.value || undefined
+          }
+          this.sessionIdentity = identity
+          return this.enqueueOperation(() => this.identify(identity))
         }
-        currentUser.onUserLogout(() => void analytics.reset())
 
-        this.flushQueue()
+        if (userIdOverride && !currentUser.resolvedUserInfo.value) {
+          void this.enqueueOperation(() =>
+            this.identify({ userId: userIdOverride })
+          )
+        }
+        currentUser.onUserResolved((user) => {
+          void identifyResolvedUser(user)
+        })
+        currentUser.onUserLogout(() => {
+          this.sessionIdentity = null
+          void this.enqueueOperation(() => this.resetIdentity())
+        })
+
+        void this.flushQueue()
         void inAppRegistration
           .catch((error) => {
             console.error(
@@ -90,28 +119,97 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
       })
   }
 
-  private send(event: string, properties: Record<string, unknown>): void {
-    void this.analytics?.track(event, properties)?.catch((error) => {
-      console.error('Failed to track Customer.io event:', error)
+  private enqueueOperation(
+    operation: () => Promise<void> | void
+  ): Promise<void> {
+    this.operationQueue = this.operationQueue.then(operation).catch((error) => {
+      console.error('Failed to process Customer.io operation:', error)
     })
+    return this.operationQueue
   }
 
-  private track(event: string, metadata?: TelemetryEventProperties): void {
+  private async resetIdentity(): Promise<void> {
+    this.identifiedUser = null
+    const analytics = this.analytics
+    if (!analytics) return
+    await withTimeout(async () => {
+      await analytics.reset()
+    }, SDK_OPERATION_TIMEOUT_MS)
+  }
+
+  private async restoreSessionIdentity(): Promise<void> {
+    if (this.sessionIdentity) {
+      await this.identify(this.sessionIdentity)
+    } else {
+      await this.resetIdentity()
+    }
+  }
+
+  private async identify(identity: CustomerIoIdentity): Promise<void> {
+    const analytics = this.analytics
+    if (!analytics) return
+
+    if (
+      this.identifiedUser?.userId === identity.userId &&
+      this.identifiedUser.email === identity.email
+    ) {
+      return
+    }
+
+    this.identifiedUser = identity
+    try {
+      await withTimeout(async () => {
+        await analytics.identify(
+          identity.userId,
+          identity.email ? { email: identity.email } : undefined
+        )
+      }, SDK_OPERATION_TIMEOUT_MS)
+    } catch (error) {
+      this.identifiedUser = null
+      console.error('Failed to identify Customer.io user:', error)
+    }
+  }
+
+  private async send(
+    event: string,
+    properties: Record<string, unknown>,
+    identity?: CustomerIoIdentity
+  ): Promise<void> {
+    const analytics = this.analytics
+    if (!analytics) return
+
+    if (identity) await this.identify(identity)
+
+    void analytics.track(event, properties).catch((error) => {
+      console.error('Failed to track Customer.io event:', error)
+    })
+
+    if (identity) await this.restoreSessionIdentity()
+  }
+
+  private track(
+    event: string,
+    metadata?: TelemetryEventProperties,
+    identity?: CustomerIoIdentity
+  ): void {
     if (!this.isEnabled) return
     const properties = { ...metadata, event_source: EVENT_SOURCE }
     if (this.analytics) {
-      this.send(event, properties)
+      void this.enqueueOperation(() => this.send(event, properties, identity))
     } else {
-      this.eventQueue.push({ event, properties })
+      this.eventQueue.push({ event, properties, identity })
     }
   }
 
-  private flushQueue(): void {
+  private async flushQueue(): Promise<void> {
     if (!this.analytics) return
-    for (const { event, properties } of this.eventQueue) {
-      this.send(event, properties)
-    }
+    const queue = this.eventQueue
     this.eventQueue = []
+    await this.enqueueOperation(async () => {
+      for (const { event, properties, identity } of queue) {
+        await this.send(event, properties, identity)
+      }
+    })
   }
 
   private sendPageView(): void {
@@ -138,7 +236,17 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.track(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    const identity = metadata.user_id
+      ? {
+          userId: metadata.user_id,
+          email: metadata.email || undefined
+        }
+      : undefined
+    this.track(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      omit(metadata, ['email', 'share_id']),
+      identity
+    )
   }
 
   trackSubscription(
@@ -174,6 +282,6 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
-    this.track(TelemetryEvents.SHARE_FLOW, metadata)
+    this.track(TelemetryEvents.SHARE_FLOW, omit(metadata, ['share_id']))
   }
 }

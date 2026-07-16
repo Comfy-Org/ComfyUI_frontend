@@ -361,6 +361,24 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures auth failure events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuthFailed({
+        error_code: 'auth/user-not-found',
+        auth_action: 'email_sign_in'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_FAILED,
+        {
+          error_code: 'auth/user-not-found',
+          auth_action: 'email_sign_in'
+        }
+      )
+    })
+
     it.for([
       ['flow_opened', TelemetryEvents.SUBSCRIPTION_CANCEL_FLOW_OPENED, {}],
       ['confirmed', TelemetryEvents.SUBSCRIPTION_CANCEL_CONFIRMED, {}],
