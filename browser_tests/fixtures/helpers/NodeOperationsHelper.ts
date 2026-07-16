@@ -94,12 +94,6 @@ export class NodeOperationsHelper {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
   }
 
-  async getNodes(): Promise<LGraphNode[]> {
-    return await this.page.evaluate(() => {
-      return window.app!.graph.nodes
-    })
-  }
-
   async waitForGraphNodes(count: number): Promise<void> {
     await this.page.waitForFunction((count) => {
       return window.app?.canvas.graph?.nodes?.length === count
