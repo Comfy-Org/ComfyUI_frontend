@@ -48,7 +48,7 @@ logic.
 Instead, `src/systems/badgeSystem.ts` keeps one lazy computed projection per
 node instance. Renderers query that projection through a temporary app-layer
 registration seam, which keeps the litegraph layer independent from the badge
-system's store and pricing dependencies. Badge rows remain transient: they are
+system's pricing dependencies. Badge rows remain transient: they are
 not serialized, transmitted through CRDT, or included in undo history. See
 [Node Badge Store](../architecture/node-badge-store.md) for the design history.
 

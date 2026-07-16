@@ -205,13 +205,13 @@ prototype replaces the store with a memoized derivation:
   unregistration, teardown, and the stale-bucket bug class do not exist.
   `computeBadges` stays pure and data-first; the authoritative sources
   of truth remain the settings/def/palette/pricing stores and the graph.
-- `graphStructureRevision` (litegraph leaf module) — one revision signal
-  bumped at the `add`/`remove`/`clear` chokepoints and by the
-  set-graph/subgraph-converted/configure events. It replaces store
+- `LGraph`'s ref-backed `id` and `_version` (bumped by
+  `incrementVersion()` at the `add`/`remove`/`clear` chokepoints and
+  read by the `nodes` getter) — the revision signals replacing store
   bucket membership, `subgraphCreditsRevision`, and the live-graph-id
-  seams: every badge computed tracks it, so graph-id-keyed reads and
-  subgraph aggregation re-resolve after structural changes. Bumps only
-  invalidate; recomputes happen lazily on the next read.
+  seams: graph-id-keyed reads and subgraph aggregation re-resolve after
+  loads and structural changes. Bumps only invalidate; recomputes happen
+  lazily on the next read.
 - `setBadgeRowsProvider` (in `nodeBadgeDraw.ts`) — a one-function seam
   installed by `useNodeBadge`, so litegraph never imports the
   derivation's pricing/nodeDef dependency graph (same acyclicity
@@ -220,7 +220,7 @@ prototype replaces the store with a memoized derivation:
   recomputes.
 
 Trade-offs accepted: badge rows are no longer enumerable per graph
-(`PartnerNodesList` traverses the graph under `trackGraphStructure()`
+(`PartnerNodesList` traverses the graph via `mapUniqueNodes`
 instead of querying a bucket), and the structure revision is coarse —
 any structural change invalidates all badge computeds, which is cheap
 because invalidation is a flag and recomputation is per-read.

@@ -940,7 +940,6 @@ export class LGraph
 
   /**
    * Increments the internal version counter.
-   * Currently only read for debug display in {@link LGraphCanvas.renderInfo}.
    * Centralized so a future VersionSystem can intercept, batch, or replace it.
    */
   incrementVersion(): void {

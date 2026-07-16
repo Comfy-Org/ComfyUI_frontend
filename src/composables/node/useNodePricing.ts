@@ -471,10 +471,6 @@ const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
 // WeakMaps avoid memory leaks when nodes are removed.
 type InflightEntry = { sig: string; promise: Promise<void> }
 
-// Labels are cached per signature: a node can be read concurrently under
-// several signatures (its own widget values, and a SubgraphNode wrapper's
-// promoted overrides), and a single-slot cache would make those readers
-// evict each other's entry and re-schedule forever.
 const MAX_CACHED_SIGNATURES = 8
 const cache = new WeakMap<LGraphNode, Map<string, string>>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()

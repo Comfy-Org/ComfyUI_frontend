@@ -229,9 +229,7 @@ const badgeComputeds = new WeakMap<LGraphNode, ComputedRef<BadgeData[]>>()
 
 /**
  * A node's derived badge rows, memoized per node instance and recomputed
- * when a source changes. The computed tracks the graph structure revision
- * so graph-id-keyed sources and subgraph aggregation re-resolve after
- * loads and structural edits. Entries die with their nodes; there is no
+ * when a source changes. Entries die with their nodes; there is no
  * registration or teardown.
  */
 export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
