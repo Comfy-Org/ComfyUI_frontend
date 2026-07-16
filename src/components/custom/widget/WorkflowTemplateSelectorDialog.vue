@@ -593,7 +593,6 @@ const PROVIDER_ICON_ALIASES: Record<string, string> = {
   'black forest labs': 'bfl',
   google: 'gemini',
   stability: 'stability-ai',
-  hunyuan: 'tencent',
   lightricks: 'ltxv'
 }
 
@@ -619,12 +618,10 @@ const PROVIDER_ICON_SLUGS = new Set([
   'runway',
   'sora',
   'stability-ai',
-  'tencent',
   'topaz',
   'tripo',
   'veo',
   'vidu',
-  'wan',
   'wavespeed'
 ])
 
