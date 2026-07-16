@@ -77,60 +77,32 @@
         >
           <!-- Model Filter -->
           <div class="min-w-0 shrink basis-[175px]">
-            <MultiSelect
-              v-model="selectedModelObjects"
-              v-model:search-query="modelSearchText"
-              size="md"
-              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
-              :label="modelFilterLabel"
+            <FilterMultiCombobox
+              v-model="selectedModels"
+              :label="$t('templateWorkflows.modelFilter', 'Model Filter')"
               :options="modelOptions"
-              :content-style="selectContentStyle"
-              :show-search-box="true"
-              :show-selected-count="true"
-              :show-clear-button="true"
-            >
-              <template #icon>
-                <i class="icon-[lucide--cpu]" />
-              </template>
-            </MultiSelect>
+              icon="icon-[lucide--cpu]"
+            />
           </div>
 
           <!-- Use Case Filter -->
           <div class="min-w-0 shrink basis-[133px]">
-            <MultiSelect
-              v-model="selectedUseCaseObjects"
-              size="md"
-              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
-              :label="useCaseFilterLabel"
+            <FilterMultiCombobox
+              v-model="selectedUseCases"
+              :label="$t('templateWorkflows.useCaseFilter', 'Use Case')"
               :options="useCaseOptions"
-              :content-style="selectContentStyle"
-              :show-search-box="true"
-              :show-selected-count="true"
-              :show-clear-button="true"
-            >
-              <template #icon>
-                <i class="icon-[lucide--target]" />
-              </template>
-            </MultiSelect>
+              icon="icon-[lucide--target]"
+            />
           </div>
 
           <!-- Runs On Filter -->
           <div class="min-w-0 shrink basis-[133px]">
-            <MultiSelect
-              v-model="selectedRunsOnObjects"
-              size="md"
-              class="w-full border! border-border-subtle! bg-transparent! [&>div:first-child]:pl-1.5 [&>div:last-child]:px-1.5"
-              :label="runsOnFilterLabel"
+            <FilterMultiCombobox
+              v-model="selectedRunsOn"
+              :label="$t('templateWorkflows.runsOnFilter', 'Runs On')"
               :options="runsOnOptions"
-              :content-style="selectContentStyle"
-              :show-search-box="true"
-              :show-selected-count="true"
-              :show-clear-button="true"
-            >
-              <template #icon>
-                <i class="icon-[lucide--server]" />
-              </template>
-            </MultiSelect>
+              icon="icon-[lucide--server]"
+            />
           </div>
 
           <!-- Sort Options -->
@@ -502,8 +474,8 @@ import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import FilterMultiCombobox from '@/components/custom/widget/FilterMultiCombobox.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
@@ -823,8 +795,6 @@ const {
   selectedRunsOn,
   sortSelection,
   hasActiveQuery,
-  activeModels,
-  activeUseCases,
   filteredTemplates,
   availableModels,
   availableUseCases,
@@ -881,42 +851,6 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
 watch(selectedNavItem, () => coordinateNavAndSort('nav'))
 watch(sortSelection, () => coordinateNavAndSort('sort'))
 
-// Convert between string array and object array for MultiSelect component
-// Only show selected items that exist in the current scope
-const selectedModelObjects = computed({
-  get() {
-    // Only include selected models that exist in availableModels
-    return activeModels.value.map((model) => ({ name: model, value: model }))
-  },
-  set(value: { name: string; value: string }[]) {
-    selectedModels.value = value.map((item) => item.value)
-  }
-})
-
-const selectedUseCaseObjects = computed({
-  get() {
-    return activeUseCases.value.map((useCase) => ({
-      name: useCase,
-      value: useCase
-    }))
-  },
-  set(value: { name: string; value: string }[]) {
-    selectedUseCases.value = value.map((item) => item.value)
-  }
-})
-
-const selectedRunsOnObjects = computed({
-  get() {
-    return selectedRunsOn.value.map((runsOn) => ({
-      name: runsOn,
-      value: runsOn
-    }))
-  },
-  set(value: { name: string; value: string }[]) {
-    selectedRunsOn.value = value.map((item) => item.value)
-  }
-})
-
 // Loading states
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
@@ -926,9 +860,6 @@ const selectContentStyle = primeVueOverlay.contentStyle
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
-
-// Search text for model filter
-const modelSearchText = ref<string>('')
 
 // Filter options
 const modelOptions = computed(() =>
@@ -951,43 +882,6 @@ const runsOnOptions = computed(() =>
     value: runsOn
   }))
 )
-
-// Filter labels
-const modelFilterLabel = computed(() => {
-  if (selectedModelObjects.value.length === 0) {
-    return t('templateWorkflows.modelFilter', 'Model Filter')
-  } else if (selectedModelObjects.value.length === 1) {
-    return selectedModelObjects.value[0].name
-  } else {
-    return t('templateWorkflows.modelsSelected', {
-      count: selectedModelObjects.value.length
-    })
-  }
-})
-
-const useCaseFilterLabel = computed(() => {
-  if (selectedUseCaseObjects.value.length === 0) {
-    return t('templateWorkflows.useCaseFilter', 'Use Case')
-  } else if (selectedUseCaseObjects.value.length === 1) {
-    return selectedUseCaseObjects.value[0].name
-  } else {
-    return t('templateWorkflows.useCasesSelected', {
-      count: selectedUseCaseObjects.value.length
-    })
-  }
-})
-
-const runsOnFilterLabel = computed(() => {
-  if (selectedRunsOnObjects.value.length === 0) {
-    return t('templateWorkflows.runsOnFilter', 'Runs On')
-  } else if (selectedRunsOnObjects.value.length === 1) {
-    return selectedRunsOnObjects.value[0].name
-  } else {
-    return t('templateWorkflows.runsOnSelected', {
-      count: selectedRunsOnObjects.value.length
-    })
-  }
-})
 
 const sortOptions = computed(() => [
   ...(hasActiveQuery.value
