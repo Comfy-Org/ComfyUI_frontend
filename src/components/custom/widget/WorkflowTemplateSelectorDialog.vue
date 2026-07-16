@@ -223,7 +223,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card aspect-auto hover:bg-base-background"
+            class="group/card aspect-auto! hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -340,6 +340,7 @@
                     <div
                       v-for="badge in getProviderInfo(template)!.visibleBadges"
                       :key="badge.provider"
+                      v-tooltip.top="badge.provider"
                       class="flex size-6 items-center justify-center rounded-full bg-zinc-700/50 backdrop-blur-[20px]"
                     >
                       <i
@@ -357,6 +358,9 @@
                     </div>
                     <div
                       v-if="getProviderInfo(template)!.extraCount > 0"
+                      v-tooltip.top="
+                        getProviderInfo(template)!.extraProviders.join(', ')
+                      "
                       class="flex h-6 min-w-6 items-center justify-center rounded-full bg-zinc-700/50 px-1 text-[10px] font-medium text-white backdrop-blur-[20px]"
                     >
                       +{{ getProviderInfo(template)!.extraCount }}
@@ -651,6 +655,7 @@ const getProviderInfo = (
 ): {
   visibleBadges: ProviderBadge[]
   extraCount: number
+  extraProviders: string[]
   label: string
 } | null => {
   const logos = template.logos ?? []
@@ -686,6 +691,7 @@ const getProviderInfo = (
   return {
     visibleBadges: badges.slice(0, MAX_VISIBLE_LOGOS),
     extraCount,
+    extraProviders: badges.slice(MAX_VISIBLE_LOGOS).map((badge) => badge.provider),
     label
   }
 }
