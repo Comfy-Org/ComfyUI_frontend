@@ -102,6 +102,26 @@ test.describe('Education landing — desktop @smoke', () => {
   })
 })
 
+type JsonLdNode = Record<string, unknown>
+
+// The page emits one connected @graph, so every node (FAQPage, Product,
+// breadcrumbs) is read from that single ld+json block.
+const readJsonLdGraph = async (page: Page): Promise<JsonLdNode[]> => {
+  const raw = await page.evaluate(() => {
+    const scripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>(
+        'script[type="application/ld+json"]'
+      )
+    )
+    const graph = scripts.find((s) =>
+      (s.textContent ?? '').includes('"@graph"')
+    )
+    return graph?.textContent ?? null
+  })
+  expect(raw, 'JSON-LD @graph script').not.toBeNull()
+  return (JSON.parse(raw!) as { '@graph': JsonLdNode[] })['@graph']
+}
+
 test.describe('Education landing — desktop interactions', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(PATH)
@@ -110,22 +130,37 @@ test.describe('Education landing — desktop interactions', () => {
   test('emits FAQPage structured data with one entry per FAQ', async ({
     page
   }) => {
-    const faqJsonLd = await page.evaluate(() => {
-      const scripts = Array.from(
-        document.querySelectorAll<HTMLScriptElement>(
-          'script[type="application/ld+json"]'
-        )
-      )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
-    })
-    expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
-    const parsed = JSON.parse(faqJsonLd!)
-    expect(parsed['@type']).toBe('FAQPage')
-    expect(Array.isArray(parsed.mainEntity)).toBe(true)
-    expect(parsed.mainEntity.length).toBe(FAQ_COUNT)
+    const graph = await readJsonLdGraph(page)
+    const faqPage = graph.find((node) => node['@type'] === 'FAQPage')
+    expect(faqPage, 'FAQPage node').toBeTruthy()
+    expect(Array.isArray(faqPage!.mainEntity)).toBe(true)
+    expect((faqPage!.mainEntity as unknown[]).length).toBe(FAQ_COUNT)
+  })
+
+  test('describes the discounted plans as a priced Product', async ({
+    page
+  }) => {
+    const graph = await readJsonLdGraph(page)
+    const product = graph.find((node) => node['@type'] === 'Product')
+    const webPage = graph.find((node) => node['@type'] === 'WebPage')
+    expect(product, 'Product node').toBeTruthy()
+    expect(webPage?.mainEntity).toEqual({ '@id': product!['@id'] })
+
+    const offers = product!.offers as JsonLdNode[]
+    expect(offers.length).toBeGreaterThan(0)
+    for (const offer of offers) {
+      expect(offer.priceCurrency).toBe('USD')
+      expect(Number(offer.price)).toBeGreaterThan(0)
+    }
+
+    const breadcrumb = graph.find((node) => node['@type'] === 'BreadcrumbList')
+    const names = (breadcrumb!.itemListElement as JsonLdNode[]).map(
+      (item) => item.name
+    )
+    expect(names).toEqual([
+      t('breadcrumb.home', 'en'),
+      t('nav.education', 'en')
+    ])
   })
 
   test('FAQ items toggle open and closed on click', async ({ page }) => {
