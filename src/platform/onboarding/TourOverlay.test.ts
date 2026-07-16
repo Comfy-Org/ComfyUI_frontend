@@ -8,13 +8,14 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import TourOverlay from './TourOverlay.vue'
-import type { CoachStep } from './onboardingTours'
+import type { CoachStep, EntryPath } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 vi.mock('./onboardingTourStore', () => ({ useOnboardingTourStore: vi.fn() }))
 
 function makeTourState() {
   return {
+    activeTour: ref<EntryPath>('appMode'),
     step: ref<CoachStep | null>(null),
     title: ref('Canvas title'),
     body: ref('Canvas body'),

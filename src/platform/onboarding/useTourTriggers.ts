@@ -1,8 +1,8 @@
-import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useDesktopLayout } from '@/composables/useDesktopLayout'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 import type { EntryPath } from './onboardingTours'
@@ -16,7 +16,7 @@ export interface TourTrigger {
 export function useTourTriggers(): [EntryPath, TourTrigger][] {
   const { mode } = useAppMode()
   const appModeStore = useAppModeStore()
-  const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
+  const desktopLayout = useDesktopLayout()
   const inAppMode = computed(() => desktopLayout.value && mode.value === 'app')
   return [
     [

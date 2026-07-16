@@ -52,7 +52,27 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-/** Survey field ids → answers. Fields are backend-overridable, so all optional. */
+export type AuthFlowAction =
+  | 'email_sign_in'
+  | 'email_sign_up'
+  | 'google_sign_in'
+  | 'google_sign_up'
+  | 'github_sign_in'
+  | 'github_sign_up'
+  | 'password_reset'
+
+/**
+ * Metadata for failed authentication attempts
+ */
+export interface AuthErrorMetadata {
+  error_code: string
+  auth_action: AuthFlowAction
+}
+
+/**
+ * Survey field ids mapped to answers. Fields are backend-overridable, so all
+ * are optional.
+ */
 export interface SurveyResponses {
   // Current default schema (see defaultSurveySchema.ts)
   intent?: string | string[]
@@ -78,6 +98,10 @@ export type OnboardingTourStage =
   | 'step_shown'
   | 'completed'
   | 'skipped'
+  | 'run_triggered'
+  | 'upgrade_shown'
+  | 'nudge_shown'
+  | 'explore_templates_clicked'
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -88,14 +112,36 @@ export type OnboardingTourSkipReason =
  * `step_number` is 1-based and matches the "Step N of M" indicator the user
  * sees, with `step_count` as M. Both `step_number` and `coach_id` are absent
  * for steps with no numbered spotlight (e.g. the landing). `skip_reason` is
- * present only on the `skipped` stage.
+ * present only on the `skipped` stage. `step_count` is absent on `nudge_shown`
+ * and `explore_templates_clicked`, which fire outside the step sequence.
  */
 export interface OnboardingTourMetadata {
   tour: string
-  step_count: number
+  step_count?: number
   step_number?: number
   coach_id?: string
   skip_reason?: OnboardingTourSkipReason
+}
+
+/** `shape` labels the role-derived sequence, not the template — `'other'` is the
+ * honest bucket for graphs the resolver handles best-effort but that aren't a
+ * named shape. */
+export type OnboardingTourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
+export type OnboardingTourEntry =
+  | 'getting_started'
+  | 'share_url'
+  | 'template_url'
+export type OnboardingTourStepKey = 'upload' | 'prompt' | 'run' | 'result'
+export type OnboardingTourRunStatus = 'success' | 'error' | 'interrupted'
+
+/** Reported only by the first-run tour. No field carries user content or a
+ * share id, so no PII. */
+export interface FirstRunTourMetadata extends OnboardingTourMetadata {
+  template_id?: string
+  shape?: OnboardingTourShape
+  entry?: OnboardingTourEntry
+  step_key?: OnboardingTourStepKey
+  status?: OnboardingTourRunStatus
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
@@ -556,6 +602,7 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
+  trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -674,6 +721,7 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
@@ -698,11 +746,16 @@ export const TelemetryEvents = {
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
 
-  // Onboarding Coachmarks
+  // Onboarding Tour
   ONBOARDING_TOUR_STARTED: 'app:onboarding_tour_started',
   ONBOARDING_TOUR_STEP_SHOWN: 'app:onboarding_tour_step_shown',
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
+  ONBOARDING_TOUR_RUN_TRIGGERED: 'app:onboarding_tour_run_triggered',
+  ONBOARDING_TOUR_UPGRADE_SHOWN: 'app:onboarding_tour_upgrade_shown',
+  ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
+    'app:onboarding_tour_explore_templates_clicked',
 
   // Email Verification
   USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
@@ -774,7 +827,12 @@ export const OnboardingTourEvents: Record<
   started: TelemetryEvents.ONBOARDING_TOUR_STARTED,
   step_shown: TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN,
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
-  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED
+  skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
+  run_triggered: TelemetryEvents.ONBOARDING_TOUR_RUN_TRIGGERED,
+  upgrade_shown: TelemetryEvents.ONBOARDING_TOUR_UPGRADE_SHOWN,
+  nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  explore_templates_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
 
 export const CANCELLATION_STAGE_EVENTS = {
@@ -796,6 +854,7 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | AuthErrorMetadata
   | OnboardingTourMetadata
   | SurveyResponses
   | TemplateMetadata

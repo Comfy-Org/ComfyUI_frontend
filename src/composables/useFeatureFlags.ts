@@ -33,7 +33,8 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
-  SIGNUP_TURNSTILE = 'signup_turnstile'
+  SIGNUP_TURNSTILE = 'signup_turnstile',
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
 }
 
 /**
@@ -207,6 +208,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    get onboardingTourEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
+        remoteConfig.value.onboarding_tour_enabled,
+        false
       )
     }
   })

@@ -116,6 +116,7 @@ export type RemoteConfig = {
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
   consolidated_billing_enabled?: boolean
+  onboarding_tour_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).

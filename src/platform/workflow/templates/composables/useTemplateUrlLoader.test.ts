@@ -97,6 +97,51 @@ describe('useTemplateUrlLoader', () => {
     expect(mockLoadWorkflowTemplate).not.toHaveBeenCalled()
   })
 
+  it('returns the loaded template id when the template loads successfully', async () => {
+    mockQueryParams = { template: 'flux_simple' }
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
+    await expect(loadTemplateFromUrl()).resolves.toEqual({
+      loaded: true,
+      templateId: 'flux_simple'
+    })
+  })
+
+  it('returns not-loaded when no template param is present', async () => {
+    mockQueryParams = {}
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
+    await expect(loadTemplateFromUrl()).resolves.toEqual({ loaded: false })
+  })
+
+  it('returns not-loaded without a template id when the template fails to load', async () => {
+    mockQueryParams = { template: 'invalid-template' }
+    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
+    await expect(loadTemplateFromUrl()).resolves.toEqual({ loaded: false })
+  })
+
+  it('returns not-loaded when loading throws', async () => {
+    mockQueryParams = { template: 'flux_simple' }
+    mockLoadTemplates.mockRejectedValueOnce(new Error('Network error'))
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
+    await expect(loadTemplateFromUrl()).resolves.toEqual({ loaded: false })
+  })
+
+  it('returns not-loaded for an invalid template parameter', async () => {
+    mockQueryParams = { template: '../../../etc/passwd' }
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+
+    await expect(loadTemplateFromUrl()).resolves.toEqual({ loaded: false })
+  })
+
   it('loads template when query param is present', async () => {
     mockQueryParams = { template: 'flux_simple' }
 
