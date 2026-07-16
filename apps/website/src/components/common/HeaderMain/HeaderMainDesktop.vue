@@ -44,7 +44,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             :active="isNavItemActive(navItem, currentPath)"
           >
             <span class="inline-flex items-center gap-1">
-              {{ navItem.label }}
+              <span>{{ navItem.label }}</span>
               <NewBadge v-if="navItem.badge" :locale="locale" size="xxs" />
             </span>
           </NavigationMenuTrigger>
