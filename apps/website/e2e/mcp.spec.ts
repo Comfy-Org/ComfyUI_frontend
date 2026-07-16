@@ -36,6 +36,7 @@ test.describe('MCP page @smoke', () => {
         name: 'Ask your agent to install Comfy MCP'
       })
     ).toHaveCount(0)
+    await expect(setup.locator('video')).toBeVisible()
   })
 
   test('client tabs swap install instructions and agent-card visibility', async ({
@@ -127,7 +128,6 @@ test.describe('MCP page zh-CN @smoke', () => {
       setup.getByRole('heading', { name: '添加自定义连接器' })
     ).toBeVisible()
     await setup.getByRole('tab', { name: 'Claude Code Terminal' }).click()
-    await expect(setup.getByText('方式一')).toBeVisible()
     await expect(setup.getByRole('heading', { name: '手动安装' })).toBeVisible()
     await expect(setup.getByText(MCP_ENDPOINT, { exact: true })).toBeVisible()
   })

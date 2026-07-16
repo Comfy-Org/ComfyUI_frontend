@@ -1923,7 +1923,6 @@ const translations = {
     'zh-CN':
       '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
-  'mcp.setup.manual.label': { en: 'OPTION 1', 'zh-CN': '方式一' },
   'mcp.setup.manual.title': {
     en: 'Install manually',
     'zh-CN': '手动安装'
@@ -1937,7 +1936,6 @@ const translations = {
     en: 'Pick your client',
     'zh-CN': '选择你的客户端'
   },
-  'mcp.setup.agent.label': { en: 'OPTION 2', 'zh-CN': '方式二' },
   'mcp.setup.agent.title': {
     en: 'Ask your agent to install Comfy MCP',
     'zh-CN': '让你的智能体安装 Comfy MCP'
