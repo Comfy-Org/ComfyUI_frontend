@@ -1973,9 +1973,13 @@ const translations = {
     en: 'Run this in your terminal, then codex mcp login comfy-cloud to sign in.',
     'zh-CN': '在终端运行以下命令，然后执行 codex mcp login comfy-cloud 登录。'
   },
+  'mcp.setup.clients.openclaw.step': {
+    en: 'Run these in your terminal, then openclaw mcp login comfy to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 openclaw mcp login comfy 登录。'
+  },
   'mcp.setup.clients.other.name': {
-    en: 'Other clients',
-    'zh-CN': '其他客户端'
+    en: 'Others',
+    'zh-CN': '其他'
   },
   'mcp.setup.clients.other.step': {
     en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the ',

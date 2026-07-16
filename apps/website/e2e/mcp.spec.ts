@@ -59,6 +59,11 @@ test.describe('MCP page @smoke', () => {
     await expect(activePanel).toContainText(
       `codex mcp add comfy-cloud --url ${MCP_ENDPOINT}`
     )
+
+    await setup.getByRole('tab', { name: 'OpenClaw' }).click()
+    await expect(activePanel).toContainText(
+      'openclaw skills install @comfy-org/comfy'
+    )
   })
 
   test('skills plugin link lives in the agent option card', async ({
