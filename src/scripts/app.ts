@@ -666,6 +666,12 @@ export class ComfyApp {
             imageFiles.length + audioFiles.length + videoFiles.length
           const hasMultipleMedia = totalMedia > 1
 
+          const createdNodes: LGraphNode[] = []
+          const handleFileOptions = {
+            deferWarnings: true,
+            onNodeCreated: (node: LGraphNode) => createdNodes.push(node)
+          }
+
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
               await this.handleFileList(imageFiles)
@@ -677,17 +683,15 @@ export class ComfyApp {
               await this.handleVideoFileList(videoFiles)
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           } else {
             for (const file of files) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           }
+
+          this.positionNodes(createdNodes)
         } finally {
           workspace.spinner = false
         }
@@ -1851,7 +1855,10 @@ export class ComfyApp {
   async handleFile(
     file: File,
     openSource?: WorkflowOpenSource,
-    options?: { deferWarnings?: boolean }
+    options?: {
+      deferWarnings?: boolean
+      onNodeCreated?: (node: LGraphNode) => void
+    }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
@@ -1873,11 +1880,13 @@ export class ComfyApp {
         transfer.items.add(file)
         const node = await createNode(this.canvas, nodeType)
         await pasteFn(this.canvas, transfer.items, node)
+        if (node) options?.onNodeCreated?.(node)
         return
       }
 
       if (isMeshModelFile(file)) {
-        await this.handleMeshFile(file)
+        const node = await this.handleMeshFile(file)
+        if (node) options?.onNodeCreated?.(node)
         return
       }
 
@@ -1963,13 +1972,15 @@ export class ComfyApp {
    * Uploads a mesh model file and creates a Load3DAdvanced node displaying it
    * @param {File} file
    */
-  private async handleMeshFile(file: File) {
+  private async handleMeshFile(file: File): Promise<LGraphNode | null> {
     const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
-    if (!uploadedPath) return
+    if (!uploadedPath) return null
 
     const node = await createNode(this.canvas, 'Load3DAdvanced')
-    const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
-    if (!modelWidget) return
+    if (!node) return null
+
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (!modelWidget) return node
 
     const values = (modelWidget.options as { values?: string[] } | undefined)
       ?.values
@@ -1977,6 +1988,7 @@ export class ComfyApp {
       values.push(uploadedPath)
     }
     modelWidget.value = uploadedPath
+    return node
   }
 
   /**

@@ -652,6 +652,70 @@ describe('ComfyApp', () => {
       expect(createNode).not.toHaveBeenCalled()
     })
 
+    it('should report each created Load3DAdvanced node via onNodeCreated', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(Load3dUtils.uploadFile)
+        .mockResolvedValueOnce('3d/a.glb')
+        .mockResolvedValueOnce('3d/b.glb')
+
+      const modelWidgetA = { name: 'model_file', value: '', options: {} }
+      const modelWidgetB = { name: 'model_file', value: '', options: {} }
+      const nodeA = createMockNode({
+        id: 1,
+        type: 'Load3DAdvanced',
+        widgets: [modelWidgetA]
+      })
+      const nodeB = createMockNode({
+        id: 2,
+        type: 'Load3DAdvanced',
+        widgets: [modelWidgetB]
+      })
+      vi.mocked(createNode)
+        .mockResolvedValueOnce(nodeA)
+        .mockResolvedValueOnce(nodeB)
+
+      const onNodeCreated = vi.fn()
+      await app.handleFile(createTestFile('a.glb', ''), 'file_drop', {
+        onNodeCreated
+      })
+      await app.handleFile(createTestFile('b.glb', ''), 'file_drop', {
+        onNodeCreated
+      })
+
+      expect(onNodeCreated).toHaveBeenNthCalledWith(1, nodeA)
+      expect(onNodeCreated).toHaveBeenNthCalledWith(2, nodeB)
+    })
+
+    it('should not report a node via onNodeCreated when mesh upload fails', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
+
+      const onNodeCreated = vi.fn()
+      await app.handleFile(createTestFile('a.glb', ''), 'file_drop', {
+        onNodeCreated
+      })
+
+      expect(onNodeCreated).not.toHaveBeenCalled()
+    })
+
+    it('positionNodes spreads stacked nodes so multi-mesh drops do not overlap', () => {
+      const nodes = [
+        createMockNode({
+          id: 1,
+          pos: [100, 200],
+          getBounding: vi.fn(() => new Float64Array([100, 200, 200, 100]))
+        }),
+        createMockNode({ id: 2, pos: [100, 200] }),
+        createMockNode({ id: 3, pos: [100, 200] })
+      ]
+
+      app.positionNodes(nodes)
+
+      expect(nodes[0].pos).toEqual([100, 200])
+      expect(nodes[1].pos).toEqual([100, 400])
+      expect(nodes[2].pos).toEqual([100, 575])
+    })
+
     it('should handle image files with non-workflow metadata by creating LoadImage node', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         Software: 'gnome-screenshot'
