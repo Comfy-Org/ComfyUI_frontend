@@ -256,8 +256,8 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
 
 export interface CreditsBadgeEntry {
   nodeId: NodeId
-  title: string
   price: string
+  title: string
 }
 
 const creditsComputeds = new WeakMap<LGraph, ComputedRef<CreditsBadgeEntry[]>>()
@@ -276,7 +276,7 @@ export function graphCreditsBadges(
         if (node.isSubgraphNode()) return
         const priceRow = nodeBadges(node).find((row) => row.kind === 'credits')
         if (!priceRow) return
-        return { nodeId: node.id, title: node.title, price: priceRow.text }
+        return { nodeId: node.id, price: priceRow.text, title: node.title }
       })
     )
     creditsComputeds.set(rootGraph, entries)

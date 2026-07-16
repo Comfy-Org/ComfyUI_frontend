@@ -139,8 +139,8 @@ describe('badge derivation subgraph credits aggregation', () => {
       rootGraph.add(rootNode)
 
       expect(graphCreditsBadges(rootGraph)).toEqual([
-        { nodeId: toNodeId(11), title: 'inner-api', price: '$0.05/Run' },
-        { nodeId: toNodeId(2), title: 'root-api', price: '$0.05/Run' }
+        { nodeId: toNodeId(11), price: '$0.05/Run', title: 'inner-api' },
+        { nodeId: toNodeId(2), price: '$0.05/Run', title: 'root-api' }
       ])
     })
 
