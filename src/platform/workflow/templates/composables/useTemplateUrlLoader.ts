@@ -10,6 +10,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
 
+export interface TemplateUrlLoadResult {
+  loaded: boolean
+  templateId?: string
+}
+
 /**
  * Composable for loading templates from URL query parameters
  *
@@ -64,18 +69,18 @@ export function useTemplateUrlLoader() {
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
    */
-  const loadTemplateFromUrl = async () => {
+  const loadTemplateFromUrl = async (): Promise<TemplateUrlLoadResult> => {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {
-      return
+      return { loaded: false }
     }
 
     if (!isValidParameter(templateParam)) {
       console.warn(
         `[useTemplateUrlLoader] Invalid template parameter format: ${templateParam}`
       )
-      return
+      return { loaded: false }
     }
 
     const sourceParam = (route.query.source as string | undefined) || 'default'
@@ -84,7 +89,7 @@ export function useTemplateUrlLoader() {
       console.warn(
         `[useTemplateUrlLoader] Invalid source parameter format: ${sourceParam}`
       )
-      return
+      return { loaded: false }
     }
 
     const modeParam = route.query.mode as string | undefined
@@ -96,7 +101,7 @@ export function useTemplateUrlLoader() {
       console.warn(
         `[useTemplateUrlLoader] Invalid mode parameter format: ${modeParam}`
       )
-      return
+      return { loaded: false }
     }
 
     if (modeParam && !isSupportedMode(modeParam)) {
@@ -121,11 +126,16 @@ export function useTemplateUrlLoader() {
             templateName: templateParam
           })
         })
-      } else if (modeParam === 'linear') {
+        return { loaded: false }
+      }
+
+      if (modeParam === 'linear') {
         // Set linear mode after successful template load
         useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
+
+      return { loaded: true, templateId: templateParam }
     } catch (error) {
       console.error(
         '[useTemplateUrlLoader] Failed to load template from URL:',
@@ -136,6 +146,7 @@ export function useTemplateUrlLoader() {
         summary: t('g.error'),
         detail: t('g.errorLoadingTemplate')
       })
+      return { loaded: false }
     } finally {
       cleanupUrlParams()
       clearPreservedQuery(TEMPLATE_NAMESPACE)

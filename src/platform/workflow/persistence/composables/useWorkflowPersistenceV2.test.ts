@@ -5,6 +5,8 @@ import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { TemplateUrlLoadResult } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { useOnboardingEntryStore } from '../onboardingEntryStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
@@ -58,11 +60,17 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   })
 }))
 
+const templateLoaderMocks = vi.hoisted(() => ({
+  loadTemplateFromUrl: vi.fn(
+    async () => ({ loaded: false }) as TemplateUrlLoadResult
+  )
+}))
+
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateUrlLoader',
   () => ({
     useTemplateUrlLoader: () => ({
-      loadTemplateFromUrl: vi.fn()
+      loadTemplateFromUrl: templateLoaderMocks.loadTemplateFromUrl
     })
   })
 )
@@ -125,7 +133,57 @@ vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return onboardingMocks.isCloud
+  }
+}))
+
+const onboardingMocks = vi.hoisted(() => ({
+  isCloud: false,
+  onboardingTourEnabled: false,
+  isNewUser: null as boolean | null,
+  isSubscriptionEnabled: true,
+  isDesktop: true,
+  loadWorkflowTemplates: vi.fn(async () => {})
+}))
+
+vi.mock('@/composables/useDesktopLayout', () => ({
+  useDesktopLayout: () => ({
+    get value() {
+      return onboardingMocks.isDesktop
+    }
+  })
+}))
+
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => ({
+      loadWorkflowTemplates: onboardingMocks.loadWorkflowTemplates
+    })
+  })
+)
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get onboardingTourEnabled() {
+        return onboardingMocks.onboardingTourEnabled
+      }
+    }
+  })
+}))
+
+vi.mock('@/services/useNewUserService', () => ({
+  useNewUserService: () => ({
+    isNewUser: () => onboardingMocks.isNewUser
+  })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    isSubscriptionEnabled: () => onboardingMocks.isSubscriptionEnabled
+  })
 }))
 
 vi.mock('../migration/migrateV1toV2', () => ({
@@ -206,6 +264,12 @@ describe('useWorkflowPersistenceV2', () => {
     commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
+    onboardingMocks.isCloud = false
+    onboardingMocks.onboardingTourEnabled = false
+    onboardingMocks.isNewUser = null
+    onboardingMocks.isSubscriptionEnabled = true
+    templateLoaderMocks.loadTemplateFromUrl.mockReset()
+    templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({ loaded: false })
   })
 
   afterEach(() => {
@@ -616,6 +680,157 @@ describe('useWorkflowPersistenceV2', () => {
       expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
         'Comfy.BrowseTemplates'
       )
+    })
+
+    it('shows Getting Started instead of the templates browser for a flagged new user', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(entryStore.shouldShowGettingStarted).toBe(true)
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser off the Cloud build, matching the tour gate', async () => {
+      onboardingMocks.isCloud = false
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('prefetches templates when Getting Started is shown so its cards are ready', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(onboardingMocks.loadWorkflowTemplates).toHaveBeenCalled()
+    })
+
+    it('opens the templates browser when the flag is on but the user is not new', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = false
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser when the flag is off', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = false
+      onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('opens the templates browser, not Getting Started, when subscriptions are disabled', async () => {
+      // The tour refuses when subscriptions are off, so the takeover must not show
+      // — otherwise it would dismiss into a bare canvas with no tour.
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      onboardingMocks.isSubscriptionEnabled = false
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not show Getting Started for a flagged new user arriving via a template URL', async () => {
+      onboardingMocks.isCloud = true
+      onboardingMocks.onboardingTourEnabled = true
+      onboardingMocks.isNewUser = true
+      routeMocks.query = { template: 'default-template-id' }
+      const entryStore = useOnboardingEntryStore()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(entryStore.shouldShowGettingStarted).toBe(false)
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+  })
+
+  describe('loadTemplateFromUrlIfPresent', () => {
+    it('surfaces the validated template id the loader reports', async () => {
+      routeMocks.query = { template: 'image_z_image_turbo' }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+
+      await expect(loadTemplateFromUrlIfPresent()).resolves.toEqual({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+    })
+
+    it('reports not-loaded when the loader loads nothing', async () => {
+      routeMocks.query = {}
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: false
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+
+      await expect(loadTemplateFromUrlIfPresent()).resolves.toEqual({
+        loaded: false
+      })
+    })
+
+    it('hydrates preserved template intent before delegating to the loader', async () => {
+      preservedQueryMocks.payloads.template = {
+        template: 'image_z_image_turbo'
+      }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+      await loadTemplateFromUrlIfPresent()
+
+      expect(templateLoaderMocks.loadTemplateFromUrl).toHaveBeenCalled()
     })
   })
 })
