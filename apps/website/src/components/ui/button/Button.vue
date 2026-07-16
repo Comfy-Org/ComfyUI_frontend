@@ -40,7 +40,7 @@ const {
     <slot name="prepend">
       <component :is="prependIcon" v-if="prependIcon" />
     </slot>
-    <span class="ppformula-text-center">
+    <span>
       <slot />
     </span>
     <slot name="append">

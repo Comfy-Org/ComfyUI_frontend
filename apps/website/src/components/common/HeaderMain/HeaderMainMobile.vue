@@ -97,7 +97,7 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  <span class="ppformula-text-center">{{ item.label }}</span>
+                  {{ item.label }}
                   <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
                   <template #append>
                     <ChevronRight class="size-7" />
