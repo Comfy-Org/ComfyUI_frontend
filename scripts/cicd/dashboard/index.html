@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>ComfyUI_frontend CI Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --muted: #59636e;
+      --border: #d8dee4;
+      --card-bg: #f6f8fa;
+      --link: #0969da;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #9198a1;
+        --border: #30363d;
+        --card-bg: #161b22;
+        --link: #4493f8;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2.5rem 1.5rem;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 40rem;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+    p.lede {
+      color: var(--muted);
+      margin-top: 0;
+      margin-bottom: 2rem;
+    }
+    ul.reports {
+      list-style: none;
+      margin: 0 0 2rem;
+      padding: 0;
+      display: grid;
+      gap: 0.75rem;
+    }
+    ul.reports li {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card-bg);
+      padding: 1rem 1.25rem;
+    }
+    ul.reports a {
+      color: var(--link);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    ul.reports a:hover {
+      text-decoration: underline;
+    }
+    ul.reports .description {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    footer {
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+    code {
+      background: var(--card-bg);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ComfyUI_frontend CI Dashboard</h1>
+    <p class="lede">
+      Persistent links to CI-generated reports and tools for the
+      <code>main</code> branch, rebuilt on every push.
+    </p>
+
+    <ul class="reports">
+      <li>
+        <a href="https://main.comfy-storybook.pages.dev">Storybook</a>
+        <div class="description">Component library, built and deployed from <code>ci-tests-storybook.yaml</code>.</div>
+      </li>
+      <li>
+        <a href="./playwright-report/">Playwright report</a>
+        <div class="description">Merged end-to-end test report from the latest <code>main</code> run of <code>ci-tests-e2e.yaml</code>.</div>
+      </li>
+    </ul>
+
+    <footer>
+      More report types (coverage, bundle size, lint, etc.) will be added here in
+      follow-up PRs as they get a persistent, hosted home. This page is intentionally
+      minimal for now.
+    </footer>
+  </main>
+</body>
+</html>
