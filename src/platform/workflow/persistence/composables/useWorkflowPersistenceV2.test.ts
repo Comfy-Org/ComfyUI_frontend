@@ -5,6 +5,7 @@ import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { TemplateUrlLoadResult } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { useOnboardingEntryStore } from '../onboardingEntryStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
@@ -61,7 +62,7 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 
 const templateLoaderMocks = vi.hoisted(() => ({
   loadTemplateFromUrl: vi.fn(
-    async () => ({ loaded: false }) as { loaded: boolean; templateId?: string }
+    async () => ({ loaded: false }) as TemplateUrlLoadResult
   )
 }))
 
@@ -142,7 +143,16 @@ const onboardingMocks = vi.hoisted(() => ({
   onboardingTourEnabled: false,
   isNewUser: null as boolean | null,
   isSubscriptionEnabled: true,
+  isDesktop: true,
   loadWorkflowTemplates: vi.fn(async () => {})
+}))
+
+vi.mock('@/composables/useDesktopLayout', () => ({
+  useDesktopLayout: () => ({
+    get value() {
+      return onboardingMocks.isDesktop
+    }
+  })
 }))
 
 vi.mock(

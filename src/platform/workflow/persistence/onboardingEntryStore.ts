@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -10,6 +11,7 @@ export interface OnboardingCandidateDeps {
   subscription: ReturnType<typeof useSubscription>
   newUserService: ReturnType<typeof useNewUserService>
   featureFlags: ReturnType<typeof useFeatureFlags>
+  desktop: ComputedRef<boolean>
 }
 
 /**
@@ -21,8 +23,10 @@ export interface OnboardingCandidateDeps {
 export function isOnboardingCandidate({
   subscription,
   newUserService,
-  featureFlags
+  featureFlags,
+  desktop
 }: OnboardingCandidateDeps): boolean {
+  if (!desktop.value) return false
   if (!isCloud) return false
   if (!subscription.isSubscriptionEnabled()) return false
   if (newUserService.isNewUser() !== true) return false

@@ -2,6 +2,7 @@ import { createSharedComposable, until, useEventListener } from '@vueuse/core'
 import { computed, effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useDesktopLayout } from '@/composables/useDesktopLayout'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -64,7 +65,8 @@ function _useOnboardingTourController() {
   const onboardingDeps: OnboardingCandidateDeps = {
     subscription: useSubscription(),
     newUserService: useNewUserService(),
-    featureFlags: useFeatureFlags()
+    featureFlags: useFeatureFlags(),
+    desktop: useDesktopLayout()
   }
 
   /** True while the loader is up: template chosen, tour not yet started. */
@@ -145,8 +147,9 @@ function _useOnboardingTourController() {
   function listenForRunClick() {
     stopRunClick?.()
     const onClick = (event: MouseEvent) => {
-      const target = event.target as Element | null
-      if (target?.closest(RUN_BUTTON_SELECTOR)) void advance()
+      const target = event.target
+      if (target instanceof Element && target.closest(RUN_BUTTON_SELECTOR))
+        void advance()
     }
     document.addEventListener('click', onClick, true)
     stopRunClick = () => document.removeEventListener('click', onClick, true)
@@ -162,7 +165,6 @@ function _useOnboardingTourController() {
     })
   }
 
-  /** Whether the onboarding tour should run for this session. */
   function shouldStartTour(): boolean {
     return isOnboardingCandidate(onboardingDeps)
   }
@@ -185,6 +187,9 @@ function _useOnboardingTourController() {
   ) {
     if (!shouldStartTour()) return
 
+    // The engine runs one tour at a time; don't preempt one already in progress.
+    if (engine.activeTour) return
+
     const workflow = useWorkflowStore().activeWorkflow?.activeState
     if (!workflow) {
       store.end()
@@ -192,11 +197,10 @@ function _useOnboardingTourController() {
     }
 
     store.prepare(workflow, templateId)
-    await engine.startTour('firstRun', {
+    engine.startTour('firstRun', {
       force: true,
       definition: toCoachSteps(store.steps)
     })
-    // The engine runs one tour at a time; bail if App Mode already holds it.
     if (engine.activeTour !== 'firstRun') return
     syncFromEngine()
 
@@ -289,7 +293,8 @@ function _useOnboardingTourController() {
 
     if (step.kind === 'run') {
       if (gateRunStep()) return
-      listenForRunClick()
+      // A terminal Run has no next step; let the run outcome end the tour.
+      if (!runIsTerminalStep()) listenForRunClick()
     }
 
     // Defensive: the tour never enters a subgraph, but the user may have opened one.

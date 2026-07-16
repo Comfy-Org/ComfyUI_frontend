@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   isSubscriptionEnabled: vi.fn(() => true),
   isNewUser: vi.fn<() => boolean | null>(() => true),
   onboardingTourEnabled: true,
+  isDesktop: true,
   tutorialCompleted: false as boolean,
   resolveTourRoles: vi.fn(),
   restoreView: vi.fn(),
@@ -132,6 +133,14 @@ vi.mock('@/composables/useFeatureFlags', () => ({
       get onboardingTourEnabled() {
         return mocks.onboardingTourEnabled
       }
+    }
+  })
+}))
+
+vi.mock('@/composables/useDesktopLayout', () => ({
+  useDesktopLayout: () => ({
+    get value() {
+      return mocks.isDesktop
     }
   })
 }))
@@ -269,6 +278,7 @@ describe('useOnboardingTourController.shouldStartTour', () => {
     mocks.isSubscriptionEnabled.mockReturnValue(true)
     mocks.isNewUser.mockReturnValue(true)
     mocks.onboardingTourEnabled = true
+    mocks.isDesktop = true
     mocks.tutorialCompleted = false
     mocks.activeWorkflowState = activeState
     mocks.steps = []
@@ -308,6 +318,11 @@ describe('useOnboardingTourController.shouldStartTour', () => {
     expect(useOnboardingTourController().shouldStartTour()).toBe(false)
   })
 
+  it('does not start on a narrow (mobile) viewport', () => {
+    mocks.isDesktop = false
+    expect(useOnboardingTourController().shouldStartTour()).toBe(false)
+  })
+
   it('still starts when the tutorial flag is already set but the user is new', () => {
     mocks.tutorialCompleted = true
     mocks.isNewUser.mockReturnValue(true)
@@ -322,6 +337,7 @@ describe('useOnboardingTourController.start', () => {
     mocks.isSubscriptionEnabled.mockReturnValue(true)
     mocks.isNewUser.mockReturnValue(true)
     mocks.onboardingTourEnabled = true
+    mocks.isDesktop = true
     mocks.tutorialCompleted = false
     mocks.activeWorkflowState = activeState
     mocks.storePrepare.mockReset()
@@ -651,6 +667,20 @@ describe('useOnboardingTourController.start', () => {
     await runJob()
 
     expect(tourReports('completed')).toHaveLength(1)
+  })
+
+  it('does not click-advance the terminal Run step out from under the run outcome', async () => {
+    mocks.hasFunds = true
+    mocks.steps = [{ kind: 'run', nodeId: null }]
+
+    await useOnboardingTourController().start('image_z_image_turbo')
+    clickRunButton()
+    await runJob()
+
+    expect(mocks.engineNext).not.toHaveBeenCalled()
+    expect(tourReports('completed')).toHaveLength(1)
+    expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
+    expect(apiEventHandlers.size).toBe(0)
   })
 
   it('does not complete on run when a Result step follows', async () => {

@@ -16,6 +16,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useDesktopLayout } from '@/composables/useDesktopLayout'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   hydratePreservedQuery,
@@ -67,7 +68,8 @@ export function useWorkflowPersistenceV2() {
   const onboardingDeps: OnboardingCandidateDeps = {
     subscription: useSubscription(),
     newUserService: useNewUserService(),
-    featureFlags: useFeatureFlags()
+    featureFlags: useFeatureFlags(),
+    desktop: useDesktopLayout()
   }
   const { onUserLogout } = useCurrentUser()
 
