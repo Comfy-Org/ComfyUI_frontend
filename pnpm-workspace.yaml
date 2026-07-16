@@ -24,11 +24,11 @@ catalog:
   '@iconify/tailwind4': ^1.2.3
   '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
-  '@intlify/eslint-plugin-vue-i18n': ^4.5.0
+  '@intlify/eslint-plugin-vue-i18n': ^4.5.1
   '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
   '@pinia/testing': ^1.0.3
-  '@playwright/test': ^1.58.1
+  '@playwright/test': ^1.61.1
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
@@ -39,11 +39,11 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.2.10
+  '@storybook/addon-docs': ^10.5.2
   '@storybook/addon-mcp': 0.1.6
-  '@storybook/vue3': ^10.2.10
-  '@storybook/vue3-vite': ^10.2.10
-  '@tailwindcss/vite': ^4.3.0
+  '@storybook/vue3': ^10.5.2
+  '@storybook/vue3-vite': ^10.5.2
+  '@tailwindcss/vite': ^4.3.3
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
@@ -64,11 +64,11 @@ catalog:
   '@types/three': ^0.184.1
   '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
-  '@vitejs/plugin-vue': ^6.0.0
-  '@vitest/coverage-v8': ^4.0.16
-  '@vitest/ui': ^4.0.16
-  '@vueuse/core': ^14.2.0
-  '@vueuse/integrations': ^14.2.0
+  '@vitejs/plugin-vue': ^6.0.8
+  '@vitest/coverage-v8': ^4.1.10
+  '@vitest/ui': ^4.1.10
+  '@vueuse/core': ^14.3.0
+  '@vueuse/integrations': ^14.3.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   astro: ^6.4.2
@@ -78,37 +78,37 @@ catalog:
   cva: 1.0.0-beta.4
   dompurify: ^3.4.5
   dotenv: ^16.4.5
-  eslint: ^10.4.0
+  eslint: ^10.7.0
   eslint-config-prettier: ^10.1.8
-  eslint-import-resolver-typescript: ^4.4.4
-  eslint-plugin-better-tailwindcss: ^4.3.1
-  eslint-plugin-import-x: ^4.16.2
-  eslint-plugin-oxlint: 1.69.0
-  eslint-plugin-playwright: ^2.10.1
-  eslint-plugin-storybook: ^10.2.10
-  eslint-plugin-testing-library: ^7.16.1
+  eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-better-tailwindcss: ^4.6.1
+  eslint-plugin-import-x: ^4.17.1
+  eslint-plugin-oxlint: 1.73.0
+  eslint-plugin-playwright: ^2.10.5
+  eslint-plugin-storybook: ^10.5.2
+  eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
-  eslint-plugin-vue: ^10.9.1
+  eslint-plugin-vue: ^10.9.2
   fast-check: ^4.5.3
   firebase: ^11.6.0
   glob: ^13.0.6
   globals: ^16.5.0
   gsap: ^3.14.2
-  happy-dom: ^20.8.9
+  happy-dom: 20.9.0
   husky: ^9.1.7
-  jiti: 2.6.1
+  jiti: 2.7.0
   jsdom: ^27.4.0
   jsonata: ^2.1.0
-  knip: ^6.15.0
+  knip: ^6.27.0
   lenis: ^1.3.21
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
-  oxfmt: ^0.54.0
-  oxlint: ^1.69.0
-  oxlint-tsgolint: ^0.23.0
+  oxfmt: ^0.59.0
+  oxlint: ^1.74.0
+  oxlint-tsgolint: ^0.24.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
@@ -118,32 +118,32 @@ catalog:
   primevue: ^4.2.5
   reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
-  storybook: ^10.2.10
+  storybook: ^10.5.2
   stylelint: ^16.26.1
-  tailwindcss: ^4.3.0
+  tailwindcss: ^4.3.3
   tailwindcss-primeui: ^0.6.1
   three: ^0.184.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
   typescript: ^5.9.3
-  typescript-eslint: ^8.60.0
+  typescript-eslint: ^8.64.0
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
   uuid: ^11.1.1
   vee-validate: ^4.15.1
-  vite: ^8.0.13
+  vite: ^8.1.5
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
-  vite-plugin-vue-devtools: ^8.0.0
-  vitest: ^4.1.0
-  vue: ^3.5.34
-  vue-component-type-helpers: ^3.2.1
-  vue-eslint-parser: ^10.4.0
+  vite-plugin-vue-devtools: ^8.1.5
+  vitest: ^4.1.10
+  vue: ^3.5.40
+  vue-component-type-helpers: ^3.3.7
+  vue-eslint-parser: ^10.4.1
   vue-i18n: ^9.14.5
   vue-router: ^4.4.3
-  vue-tsc: ^3.2.5
+  vue-tsc: ^3.3.7
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yjs: ^13.6.27
@@ -175,3 +175,40 @@ overrides:
   minimatch@^9.0.0: ^9.0.7
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
+
+minimumReleaseAgeExclude:
+  - '@storybook/addon-docs@10.5.2'
+  - '@storybook/builder-vite@10.5.2'
+  - '@storybook/csf-plugin@10.5.2'
+  - '@storybook/react-dom-shim@10.5.2'
+  - '@storybook/vue3-vite@10.5.2'
+  - '@storybook/vue3@10.5.2'
+  - '@tailwindcss/node@4.3.3'
+  - '@tailwindcss/oxide-android-arm64@4.3.3'
+  - '@tailwindcss/oxide-darwin-arm64@4.3.3'
+  - '@tailwindcss/oxide-darwin-x64@4.3.3'
+  - '@tailwindcss/oxide-freebsd-x64@4.3.3'
+  - '@tailwindcss/oxide-linux-arm-gnueabihf@4.3.3'
+  - '@tailwindcss/oxide-linux-arm64-gnu@4.3.3'
+  - '@tailwindcss/oxide-linux-arm64-musl@4.3.3'
+  - '@tailwindcss/oxide-linux-x64-gnu@4.3.3'
+  - '@tailwindcss/oxide-linux-x64-musl@4.3.3'
+  - '@tailwindcss/oxide-wasm32-wasi@4.3.3'
+  - '@tailwindcss/oxide-win32-arm64-msvc@4.3.3'
+  - '@tailwindcss/oxide-win32-x64-msvc@4.3.3'
+  - '@tailwindcss/oxide@4.3.3'
+  - '@tailwindcss/vite@4.3.3'
+  - '@vue/compiler-core@3.5.40'
+  - '@vue/compiler-dom@3.5.40'
+  - '@vue/compiler-sfc@3.5.40'
+  - '@vue/compiler-ssr@3.5.40'
+  - '@vue/reactivity@3.5.40'
+  - '@vue/runtime-core@3.5.40'
+  - '@vue/runtime-dom@3.5.40'
+  - '@vue/server-renderer@3.5.40'
+  - '@vue/shared@3.5.40'
+  - eslint-plugin-storybook@10.5.2
+  - storybook@10.5.2
+  - tailwindcss@4.3.3
+  - vite@8.1.5
+  - vue@3.5.40

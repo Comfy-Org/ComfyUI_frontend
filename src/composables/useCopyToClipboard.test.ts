@@ -30,9 +30,10 @@ describe('useCopyToClipboard', () => {
     vi.resetAllMocks()
     vi.mocked(useClipboard).mockReturnValue({
       copy: mockCopy,
-      copied: ref(false),
+      copied: computed(() => false),
+      copyPending: computed(() => false),
       isSupported: computed(() => true),
-      text: ref('')
+      text: computed(() => '')
     })
   })
 
@@ -76,9 +77,10 @@ describe('useCopyToClipboard', () => {
   it('falls through to legacy when isSupported is false', async () => {
     vi.mocked(useClipboard).mockReturnValue({
       copy: mockCopy,
-      copied: ref(false),
+      copied: computed(() => false),
+      copyPending: computed(() => false),
       isSupported: computed(() => false),
-      text: ref('')
+      text: computed(() => '')
     })
     document.execCommand = vi.fn(() => true)
 
