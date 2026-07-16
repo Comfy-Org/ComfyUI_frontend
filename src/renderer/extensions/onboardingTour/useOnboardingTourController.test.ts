@@ -38,12 +38,16 @@ const mocks = vi.hoisted(() => ({
   nodesPresent: vi.fn(() => true),
   canvasTransformValid: vi.fn(() => true),
   activeWorkflowState: {} as ComfyWorkflowJSON | null,
-  storeStart: vi.fn(),
-  storeAdvance: vi.fn(),
+  storePrepare: vi.fn(),
   storeEnd: vi.fn(),
+  engineStartTour: vi.fn(),
+  engineNext: vi.fn(),
+  engineBack: vi.fn(),
+  engineSkip: vi.fn(),
   steps: [] as TourStep[],
   stepIndex: { value: 0 },
-  phase: { value: 'active' as 'idle' | 'active' },
+  isActive: { value: false },
+  engineActiveTour: { value: null as string | null },
   resolvedRoles: { value: null as ResolvedRoles | null },
   telemetry: {
     trackOnboardingTour: vi.fn()
@@ -185,23 +189,28 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mocks.telemetry
 }))
 
-vi.mock('./onboardingTourStore', () => ({
+vi.mock('./firstRunTourStore', () => ({
   isUpgradeModalOpen: () => upgradeModalOpen.value,
-  useOnboardingTourStore: () => ({
-    start: mocks.storeStart,
-    advance: mocks.storeAdvance,
-    back: vi.fn(),
+  useFirstRunTourStore: () => ({
+    prepare: mocks.storePrepare,
     end: mocks.storeEnd,
     showNudge: mocks.storeShowNudge,
     captureResultMedia: mocks.storeCaptureResultMedia,
-    get phase() {
-      return mocks.phase.value
+    runFinished: false,
+    get isActive() {
+      return mocks.isActive.value
     },
-    get steps() {
-      return mocks.steps
+    set isActive(value: boolean) {
+      mocks.isActive.value = value
     },
     get stepIndex() {
       return mocks.stepIndex.value
+    },
+    set stepIndex(value: number) {
+      mocks.stepIndex.value = value
+    },
+    get steps() {
+      return mocks.steps
     },
     get currentStep() {
       return mocks.steps[mocks.stepIndex.value] ?? null
@@ -211,6 +220,35 @@ vi.mock('./onboardingTourStore', () => ({
     },
     get resolvedRoles() {
       return mocks.resolvedRoles.value
+    }
+  })
+}))
+
+// The coachmark engine sequences both tours; here it drives the shared step index.
+vi.mock('@/platform/onboarding/onboardingTourStore', () => ({
+  useOnboardingTourStore: () => ({
+    startTour: (...args: unknown[]) => {
+      mocks.engineStartTour(...args)
+      mocks.engineActiveTour.value = 'firstRun'
+      mocks.stepIndex.value = 0
+    },
+    next: () => {
+      mocks.engineNext()
+      mocks.stepIndex.value += 1
+    },
+    back: () => {
+      mocks.engineBack()
+      if (mocks.stepIndex.value > 0) mocks.stepIndex.value -= 1
+    },
+    skip: () => {
+      mocks.engineSkip()
+      mocks.engineActiveTour.value = null
+    },
+    get activeTour() {
+      return mocks.engineActiveTour.value
+    },
+    get countedStepIdx() {
+      return mocks.stepIndex.value
     }
   })
 }))
@@ -286,12 +324,12 @@ describe('useOnboardingTourController.start', () => {
     mocks.onboardingTourEnabled = true
     mocks.tutorialCompleted = false
     mocks.activeWorkflowState = activeState
-    mocks.storeStart.mockReset()
+    mocks.storePrepare.mockReset()
     mocks.storeEnd.mockReset()
-    mocks.storeAdvance.mockReset()
+    mocks.engineNext.mockReset()
     mocks.steps = []
     mocks.stepIndex.value = 0
-    mocks.phase.value = 'active'
+    mocks.isActive.value = true
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
@@ -313,7 +351,7 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start()
 
-    expect(mocks.storeStart).not.toHaveBeenCalled()
+    expect(mocks.storePrepare).not.toHaveBeenCalled()
   })
 
   it('serializes the active workflow and starts the store', async () => {
@@ -321,7 +359,7 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start('image_z_image_turbo')
 
-    expect(mocks.storeStart).toHaveBeenCalledWith(
+    expect(mocks.storePrepare).toHaveBeenCalledWith(
       activeState,
       'image_z_image_turbo'
     )
@@ -381,7 +419,7 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start(undefined, 'share_url')
 
-    expect(mocks.storeStart).toHaveBeenCalledWith(activeState, undefined)
+    expect(mocks.storePrepare).toHaveBeenCalledWith(activeState, undefined)
     expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
       'started',
       expect.objectContaining({
@@ -397,7 +435,7 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start()
 
-    expect(mocks.storeStart).not.toHaveBeenCalled()
+    expect(mocks.storePrepare).not.toHaveBeenCalled()
     expect(mocks.storeEnd).toHaveBeenCalled()
   })
 
@@ -430,7 +468,7 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start()
     await vi.advanceTimersByTimeAsync(60000)
 
-    expect(mocks.storeAdvance).not.toHaveBeenCalled()
+    expect(mocks.engineNext).not.toHaveBeenCalled()
   })
 
   it('gates a no-funds user at the Run step: upgrade modal, nudge, end', async () => {
@@ -635,12 +673,12 @@ describe('useOnboardingTourController.start', () => {
     ]
 
     await useOnboardingTourController().start()
-    expect(mocks.storeAdvance).not.toHaveBeenCalled()
+    expect(mocks.engineNext).not.toHaveBeenCalled()
 
     clickRunButton()
 
     // The click alone advances — no waiting for the run to finish.
-    expect(mocks.storeAdvance).toHaveBeenCalledOnce()
+    expect(mocks.engineNext).toHaveBeenCalledOnce()
   })
 
   it('does not advance when a click misses the Run button', async () => {
@@ -653,7 +691,7 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start()
     clickElsewhere()
 
-    expect(mocks.storeAdvance).not.toHaveBeenCalled()
+    expect(mocks.engineNext).not.toHaveBeenCalled()
   })
 
   it('captures the media when the run finishes (not the step advance)', async () => {
@@ -684,7 +722,7 @@ describe('useOnboardingTourController.start', () => {
 
     clickRunButton()
 
-    expect(mocks.storeAdvance).toHaveBeenCalledOnce()
+    expect(mocks.engineNext).toHaveBeenCalledOnce()
   })
 
   it('does not advance on the Result step when a run completes', async () => {
@@ -699,7 +737,7 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start()
     await runJob()
 
-    expect(mocks.storeAdvance).not.toHaveBeenCalled()
+    expect(mocks.engineNext).not.toHaveBeenCalled()
   })
 
   it('only gates when the funds check reaches the Run step', async () => {
@@ -724,11 +762,11 @@ describe('useOnboardingTourController post-run nudge', () => {
     mocks.isNewUser.mockReturnValue(true)
     mocks.onboardingTourEnabled = true
     mocks.activeWorkflowState = activeState
-    mocks.storeStart.mockReset()
+    mocks.storePrepare.mockReset()
     mocks.storeShowNudge.mockReset()
     mocks.steps = [{ kind: 'run', nodeId: null }]
     mocks.stepIndex.value = 0
-    mocks.phase.value = 'active'
+    mocks.isActive.value = true
     mocks.hasFunds = true
     apiEventHandlers.clear()
   })
@@ -775,10 +813,10 @@ describe('useOnboardingTourController.beginTour', () => {
     mocks.resolveTourRoles.mockReturnValue(imageEditRoles)
     mocks.nodesPresent.mockReturnValue(true)
     mocks.canvasTransformValid.mockReturnValue(true)
-    mocks.storeStart.mockReset()
+    mocks.storePrepare.mockReset()
     mocks.steps = [{ kind: 'run', nodeId: null }]
     mocks.stepIndex.value = 0
-    mocks.phase.value = 'idle'
+    mocks.isActive.value = false
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -800,7 +838,7 @@ describe('useOnboardingTourController.beginTour', () => {
       templateId: 'image_z_image_turbo'
     })
 
-    expect(mocks.storeStart).toHaveBeenCalledWith(
+    expect(mocks.storePrepare).toHaveBeenCalledWith(
       activeState,
       'image_z_image_turbo'
     )
@@ -827,15 +865,15 @@ describe('useOnboardingTourController.beginTour', () => {
 
     await useOnboardingTourController().beginTour({ templateId: 'x' })
 
-    expect(mocks.storeStart).not.toHaveBeenCalled()
+    expect(mocks.storePrepare).not.toHaveBeenCalled()
   })
 
   it('does not start a second tour while one is already active', async () => {
-    mocks.phase.value = 'active'
+    mocks.isActive.value = true
 
     await useOnboardingTourController().beginTour({ templateId: 'x' })
 
-    expect(mocks.storeStart).not.toHaveBeenCalled()
+    expect(mocks.storePrepare).not.toHaveBeenCalled()
   })
 
   it('starts degraded rather than trapping when the graph never becomes ready', async () => {
@@ -847,7 +885,7 @@ describe('useOnboardingTourController.beginTour', () => {
     await vi.runAllTimersAsync()
     await pending
 
-    expect(mocks.storeStart).toHaveBeenCalled()
+    expect(mocks.storePrepare).toHaveBeenCalled()
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
   })

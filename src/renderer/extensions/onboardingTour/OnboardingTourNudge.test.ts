@@ -34,7 +34,7 @@ vi.mock('@/stores/dialogStore', () => ({
 vi.mock('@/scripts/app', () => ({ app: { canvas: null } }))
 
 import OnboardingTourNudge from './OnboardingTourNudge.vue'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import { useFirstRunTourStore } from './firstRunTourStore'
 
 const i18n = createI18n({
   legacy: false,
@@ -53,11 +53,11 @@ function renderNudge() {
 const nudgeTitle = enMessages.onboardingTour.nudge.title
 
 describe('OnboardingTourNudge', () => {
-  let store: ReturnType<typeof useOnboardingTourStore>
+  let store: ReturnType<typeof useFirstRunTourStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useOnboardingTourStore()
+    store = useFirstRunTourStore()
     mocks.show.mockReset()
     mocks.trackOnboardingTour.mockReset()
     openDialogs.value = []

@@ -1,6 +1,7 @@
 <template>
+  <!-- Skip the first-run tour here; it renders its own overlay. -->
   <CoachmarkLanding
-    v-if="tour.step?.landing"
+    v-if="tour.activeTour !== 'firstRun' && tour.step?.landing"
     :title="tour.title"
     :message="tour.body"
     :image="tour.step.image"
@@ -11,7 +12,7 @@
     @skip="tour.skip"
   />
   <TourSpotlight
-    v-else-if="tour.step"
+    v-else-if="tour.activeTour !== 'firstRun' && tour.step"
     :step="tour.step"
     :title="tour.title"
     :body="tour.body"

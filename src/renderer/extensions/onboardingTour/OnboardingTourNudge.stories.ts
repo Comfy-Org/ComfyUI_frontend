@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import OnboardingTourNudge from './OnboardingTourNudge.vue'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import { useFirstRunTourStore } from './firstRunTourStore'
 
 const SAMPLE_IMAGE =
   'data:image/svg+xml;utf8,' +
@@ -18,7 +18,7 @@ const meta: Meta<typeof OnboardingTourNudge> = {
   },
   decorators: [
     () => {
-      const store = useOnboardingTourStore()
+      const store = useFirstRunTourStore()
       store.resultMedia = { url: SAMPLE_IMAGE, kind: 'image' }
       store.showNudge()
       return { template: '<story />' }

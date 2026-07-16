@@ -57,7 +57,7 @@ vi.mock('./useOnboardingTourController', () => ({
 vi.mock('@/scripts/app', () => ({ app: { canvas: null } }))
 
 import OnboardingTourOverlay from './OnboardingTourOverlay.vue'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import { useFirstRunTourStore } from './firstRunTourStore'
 
 import enMessages from '@/locales/en/main.json'
 
@@ -101,11 +101,11 @@ function renderOverlay() {
 }
 
 describe('OnboardingTourOverlay', () => {
-  let store: ReturnType<typeof useOnboardingTourStore>
+  let store: ReturnType<typeof useFirstRunTourStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useOnboardingTourStore()
+    store = useFirstRunTourStore()
     mocks.maskRects = []
     mocks.rectsById = null
     mocks.transformKey = 'settled'
@@ -123,7 +123,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('names the dialog for assistive technology when active', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     renderOverlay()
     expect(
@@ -133,7 +133,7 @@ describe('OnboardingTourOverlay', () => {
 
   it('draws a focus ring for each spotlit node when active', async () => {
     mocks.maskRects = [rect(0), rect(200)]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     store.stepIndex = 0
 
@@ -149,7 +149,7 @@ describe('OnboardingTourOverlay', () => {
     // the ring set is the current step's targets, not the accumulated reveals.
     const uploadStep: TourStep = { kind: 'upload', nodeId: toNodeId(1) }
     mocks.rectsById = { '1': rect(0), '2': rect(200) }
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [uploadStep, promptStep, runStep]
     store.stepIndex = 1
 
@@ -162,7 +162,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('shows the step counter derived from stepIndex and the step total', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, videoResultStep]
     store.stepIndex = 1
 
@@ -193,7 +193,7 @@ describe('OnboardingTourOverlay', () => {
       body: 'This is your prompt. Change it to change your result.'
     }
   ] as const)('$name', async ({ shape, body }) => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [{ ...promptStep, shape }, runStep]
 
     renderOverlay()
@@ -218,7 +218,7 @@ describe('OnboardingTourOverlay', () => {
       body: 'This image feeds the workflow. Swap in your own whenever you like.'
     }
   ] as const)('$name', async ({ shape, body }) => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [{ kind: 'upload', nodeId: toNodeId(1), shape }, runStep]
 
     renderOverlay()
@@ -227,7 +227,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('renders video result copy for a video sink once the media is captured', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, videoResultStep]
     store.stepIndex = 1
     store.resultMedia = { url: 'blob:video-output', kind: 'video' }
@@ -242,7 +242,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('keeps result media out of the coach-mark (it lands on the canvas node)', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
     store.resultMedia = { url: 'blob:image-output', kind: 'image' }
@@ -257,7 +257,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('ends the tour with skip when the Skip control is pressed', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     const user = userEvent.setup()
 
@@ -268,7 +268,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('advances on Next before the last step', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, videoResultStep]
     store.stepIndex = 0
     const user = userEvent.setup()
@@ -280,7 +280,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('shows Complete and finishes the tour on the last step', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, videoResultStep]
     store.stepIndex = 1
     const user = userEvent.setup()
@@ -292,7 +292,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('hides Back on the first step', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, videoResultStep]
     store.stepIndex = 0
 
@@ -303,7 +303,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('shows Back after the first step and goes back on press', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, videoResultStep]
     store.stepIndex = 1
     const user = userEvent.setup()
@@ -316,7 +316,7 @@ describe('OnboardingTourOverlay', () => {
 
   it('points the decorative agent cursor at the focused target', async () => {
     mocks.maskRects = [rect(0)]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
 
     renderOverlay()
@@ -327,7 +327,7 @@ describe('OnboardingTourOverlay', () => {
 
   it('hides the cursor but keeps the coach-mark and Skip reachable with no target', async () => {
     mocks.maskRects = []
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
 
     renderOverlay()
@@ -337,7 +337,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('offers no Next escape on the Run step (the run is the only way forward)', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, imageResultStep]
     store.stepIndex = 1
 
@@ -359,7 +359,7 @@ describe('OnboardingTourOverlay', () => {
     document.body.append(actionbar)
     mocks.maskRects = [rect(0)] // the sink node
 
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
 
@@ -378,7 +378,7 @@ describe('OnboardingTourOverlay', () => {
 
   it('spotlights only the sink on the Result step when no run bar is present', async () => {
     mocks.maskRects = [rect(0)]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
 
@@ -390,7 +390,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('keeps the result copy and shows a generating indicator while the run is live', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
     store.resultMedia = null
@@ -409,7 +409,7 @@ describe('OnboardingTourOverlay', () => {
   it('stops generating once the run reports, even if no media was captured', async () => {
     // The capture polls the sink and gives up silently on timeout. Hanging the
     // spinner off the media left it running forever when no URL ever landed.
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
     store.resultMedia = null
@@ -424,7 +424,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('stops generating once the media lands', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep, imageResultStep]
     store.stepIndex = 1
     store.resultMedia = { url: 'blob:result', kind: 'image' }
@@ -439,7 +439,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('hides Skip and Back on the Result step so Complete is the only exit', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, imageResultStep]
     store.stepIndex = 2
 
@@ -455,7 +455,7 @@ describe('OnboardingTourOverlay', () => {
     // drawn off screen, and the mark must hold rather than chase a target that
     // isn't there.
     mocks.maskRects = [rect(0)]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     store.stepIndex = 0
 
@@ -477,7 +477,7 @@ describe('OnboardingTourOverlay', () => {
     // fully placed inside it rather than spilling off an edge.
     mocks.viewport = { left: 0, top: 40, width: 800, height: 600 }
     mocks.maskRects = [{ left: 0, top: 40, width: 800, height: 600 }]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     store.stepIndex = 0
 
@@ -498,7 +498,7 @@ describe('OnboardingTourOverlay', () => {
     // Reserving room on the first framing sizes the node so the mark fits beside
     // it; later steps pass none, which pans at the scale already reached.
     mocks.maskRects = [rect(0)]
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep, imageResultStep]
     store.stepIndex = 0
 
@@ -517,7 +517,7 @@ describe('OnboardingTourOverlay', () => {
   })
 
   it('does not move the camera on the Run step, which points at the toolbar', async () => {
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [promptStep, runStep]
     store.stepIndex = 0
 
@@ -538,7 +538,7 @@ describe('OnboardingTourOverlay', () => {
       ({ left: 10, top: 20, width: 40, height: 16 }) as DOMRect
     document.body.append(runButton)
 
-    store.phase = 'active'
+    store.isActive = true
     store.steps = [runStep]
 
     try {

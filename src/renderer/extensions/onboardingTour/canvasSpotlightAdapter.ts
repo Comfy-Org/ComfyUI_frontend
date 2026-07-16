@@ -1,5 +1,3 @@
-import { clamp } from 'es-toolkit/math'
-
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -22,19 +20,9 @@ export interface ScreenRect {
   height: number
 }
 
-/** The box edge the cursor sits on, pointing back at the target. */
-export type CoachMarkEdge = 'top' | 'bottom' | 'left' | 'right'
-
 interface Size {
   width: number
   height: number
-}
-
-/** A viewport-space position for the coach-mark plus the edge that points at the target. */
-interface CoachMarkPosition {
-  left: number
-  top: number
-  pointerEdge: CoachMarkEdge
 }
 
 /** Whether any part of `rect` is inside `viewport`. */
@@ -52,130 +40,6 @@ export function rectIntersectsViewport(
 
 /** Space between the coach-mark and the target it points at. */
 export const COACH_MARK_GAP = 40
-const VIEWPORT_PADDING = 12
-
-function fitsViewport(
-  pos: CoachMarkPosition,
-  bubble: Size,
-  viewport: ScreenRect
-) {
-  return (
-    pos.left >= viewport.left + VIEWPORT_PADDING &&
-    pos.top >= viewport.top + VIEWPORT_PADDING &&
-    pos.left + bubble.width <=
-      viewport.left + viewport.width - VIEWPORT_PADDING &&
-    pos.top + bubble.height <= viewport.top + viewport.height - VIEWPORT_PADDING
-  )
-}
-
-function overlaps(pos: CoachMarkPosition, bubble: Size, target: ScreenRect) {
-  return (
-    pos.left < target.left + target.width &&
-    pos.left + bubble.width > target.left &&
-    pos.top < target.top + target.height &&
-    pos.top + bubble.height > target.top
-  )
-}
-
-/** Pin a placement inside the padded viewport, so the mark is never cut off. */
-function clampToViewport(
-  pos: CoachMarkPosition,
-  bubble: Size,
-  viewport: ScreenRect
-): CoachMarkPosition {
-  const minLeft = viewport.left + VIEWPORT_PADDING
-  const minTop = viewport.top + VIEWPORT_PADDING
-  return {
-    ...pos,
-    left: clamp(
-      pos.left,
-      minLeft,
-      Math.max(
-        minLeft,
-        viewport.left + viewport.width - bubble.width - VIEWPORT_PADDING
-      )
-    ),
-    top: clamp(
-      pos.top,
-      minTop,
-      Math.max(
-        minTop,
-        viewport.top + viewport.height - bubble.height - VIEWPORT_PADDING
-      )
-    )
-  }
-}
-
-function candidatesFor(target: ScreenRect, bubble: Size): CoachMarkPosition[] {
-  const centerX = target.left + target.width / 2 - bubble.width / 2
-  const centerY = target.top + target.height / 2 - bubble.height / 2
-  return [
-    {
-      left: centerX,
-      top: target.top + target.height + COACH_MARK_GAP,
-      pointerEdge: 'top'
-    },
-    {
-      left: centerX,
-      top: target.top - bubble.height - COACH_MARK_GAP,
-      pointerEdge: 'bottom'
-    },
-    {
-      left: target.left + target.width + COACH_MARK_GAP,
-      top: centerY,
-      pointerEdge: 'left'
-    },
-    {
-      left: target.left - bubble.width - COACH_MARK_GAP,
-      top: centerY,
-      pointerEdge: 'right'
-    }
-  ]
-}
-
-/**
- * Place the coach-mark near `target` without covering it: below, above, right, then
- * left, taking the first placement that fits and clears the target. Always clamped
- * into the viewport, so the mark stays on screen even when no candidate fits.
- *
- * @param preferredEdge Wins while it still fits. Without it, a first-fit search would
- * snap the mark between edges mid-zoom as the target grows.
- */
-export function coachMarkPosition(
-  target: ScreenRect,
-  bubble: Size,
-  viewport: ScreenRect,
-  preferredEdge?: CoachMarkEdge
-): CoachMarkPosition {
-  const candidates = candidatesFor(target, bubble)
-  const viable = (pos: CoachMarkPosition) =>
-    fitsViewport(pos, bubble, viewport) && !overlaps(pos, bubble, target)
-
-  const preferred = candidates.find((pos) => pos.pointerEdge === preferredEdge)
-  const placed =
-    (preferred && viable(preferred) ? preferred : undefined) ??
-    candidates.find(viable)
-  if (placed) return placed
-
-  // Nothing fits: the target is too big to sit clear of. Overlap its roomiest edge
-  // rather than spill off screen.
-  return clampToViewport(
-    candidates[freestEdgeIndex(target, viewport)],
-    bubble,
-    viewport
-  )
-}
-
-/** Index into `candidatesFor`'s order (below, above, right, left) with most room. */
-function freestEdgeIndex(target: ScreenRect, viewport: ScreenRect): number {
-  const room = [
-    viewport.top + viewport.height - (target.top + target.height), // below
-    target.top - viewport.top, // above
-    viewport.left + viewport.width - (target.left + target.width), // right
-    target.left - viewport.left // left
-  ]
-  return room.indexOf(Math.max(...room))
-}
 
 interface CanvasFrame {
   left: number

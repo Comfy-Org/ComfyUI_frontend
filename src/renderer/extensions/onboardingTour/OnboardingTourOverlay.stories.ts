@@ -3,12 +3,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { toNodeId } from '@/types/nodeId'
 
 import OnboardingTourOverlay from './OnboardingTourOverlay.vue'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import { useFirstRunTourStore } from './firstRunTourStore'
 import type { TourStep } from './tourSequence'
 
 interface StoryArgs {
   stepIndex: number
-  revealedCount: number
 }
 
 const SAMPLE_IMAGE =
@@ -41,20 +40,14 @@ const meta: Meta<StoryArgs> = {
     backgrounds: { default: 'dark' }
   },
   argTypes: {
-    stepIndex: { control: { type: 'number', min: 0, max: 3 } },
-    revealedCount: { control: { type: 'number', min: 0, max: 4 } }
+    stepIndex: { control: { type: 'number', min: 0, max: 3 } }
   },
   decorators: [
     (_, context) => {
-      const store = useOnboardingTourStore()
-      store.phase = 'active'
+      const store = useFirstRunTourStore()
+      store.isActive = true
       store.steps = steps
       store.stepIndex = context.args.stepIndex
-      store.revealedNodeIds = new Set(
-        Array.from({ length: context.args.revealedCount }, (_, i) =>
-          toNodeId(i + 1)
-        )
-      )
       const activeStep = steps[context.args.stepIndex]
       store.resultMedia =
         activeStep?.kind === 'result'
@@ -76,16 +69,16 @@ const render: Story['render'] = () => ({
 })
 
 export const FirstStep: Story = {
-  args: { stepIndex: 0, revealedCount: 1 },
+  args: { stepIndex: 0 },
   render
 }
 
 export const MultiReveal: Story = {
-  args: { stepIndex: 1, revealedCount: 2 },
+  args: { stepIndex: 1 },
   render
 }
 
 export const LastStep: Story = {
-  args: { stepIndex: 3, revealedCount: 1 },
+  args: { stepIndex: 3 },
   render
 }

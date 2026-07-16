@@ -31,7 +31,6 @@ import {
   INITIAL_SETTLE,
   TOUR_FOCUS_DURATION_MS,
   canvasTransformValid,
-  coachMarkPosition,
   focusFillFor,
   focusNodes,
   maskRectsFor,
@@ -40,7 +39,6 @@ import {
   rectIntersectsViewport,
   trackSettle
 } from './canvasSpotlightAdapter'
-import type { ScreenRect } from './canvasSpotlightAdapter'
 
 function fakeCanvas(options: {
   offset?: [number, number]
@@ -346,156 +344,6 @@ describe('canvasSpotlightAdapter', () => {
         Math.max(node.width, 300)
 
       expect(smallScale).toBeLessThan(largeScale)
-    })
-  })
-
-  describe('coachMarkPosition', () => {
-    const bubble = { width: 320, height: 200 }
-    const viewport = { left: 0, top: 0, width: 1440, height: 900 }
-
-    it('centers below the target with room on all sides', () => {
-      const target = { left: 600, top: 300, width: 100, height: 60 }
-
-      // left = 600 + 50 - 160 = 490; top = 300 + 60 + 40 = 400
-      expect(coachMarkPosition(target, bubble, viewport)).toEqual({
-        left: 490,
-        top: 400,
-        pointerEdge: 'top'
-      })
-    })
-
-    it('flips above when it would overflow the bottom edge', () => {
-      const target = { left: 600, top: 800, width: 100, height: 60 }
-
-      // below (900) + 200 overflows 900; flip above: 800 - 200 - 40 = 560
-      expect(coachMarkPosition(target, bubble, viewport).top).toBe(560)
-    })
-
-    it('places to the right when below/above would clip the left edge', () => {
-      const target = { left: 0, top: 300, width: 40, height: 40 }
-
-      // centered-below/above overflow the left edge; the right placement fits.
-      // The card sits to the right, so the cursor points off its left edge.
-      expect(coachMarkPosition(target, bubble, viewport)).toEqual({
-        left: 0 + 40 + 40,
-        top: 300 + 20 - 100,
-        pointerEdge: 'left'
-      })
-    })
-
-    it('places to the left when the right edge has no room', () => {
-      const target = { left: 1400, top: 300, width: 40, height: 40 }
-
-      // right placement would overflow; the left placement fits.
-      expect(coachMarkPosition(target, bubble, viewport)).toEqual({
-        left: 1400 - 320 - 40,
-        top: 300 + 20 - 100,
-        pointerEdge: 'right'
-      })
-    })
-
-    it('sits beside a zoomed-in node instead of covering it', () => {
-      // A node tall enough that below/above clip vertically but a side still fits
-      // (the realistic zoomed case) — the card must not overlap the node.
-      const target = { left: 500, top: 60, width: 400, height: 780 }
-      const pos = coachMarkPosition(target, bubble, viewport)
-
-      const overlapsTarget =
-        pos.left < target.left + target.width &&
-        pos.left + bubble.width > target.left &&
-        pos.top < target.top + target.height &&
-        pos.top + bubble.height > target.top
-      expect(overlapsTarget).toBe(false)
-    })
-
-    it('clamps to the padded corner when the bubble is larger than the viewport', () => {
-      // Bubble bigger than the viewport: no candidate fits, so the fallback pins
-      // it on screen and points from the side with the most room (here, right).
-      const tiny = { left: 0, top: 0, width: 300, height: 180 }
-      const target = { left: 100, top: 80, width: 40, height: 40 }
-
-      // Every clamp max collapses to VIEWPORT_PADDING (viewport - bubble < 0).
-      expect(coachMarkPosition(target, bubble, tiny)).toEqual({
-        left: 12,
-        top: 12,
-        pointerEdge: 'left'
-      })
-    })
-
-    /** Whether a placement sits entirely inside the region. */
-    const isInside = (
-      pos: { left: number; top: number },
-      box: { width: number; height: number },
-      region: ScreenRect
-    ) =>
-      pos.left >= region.left &&
-      pos.top >= region.top &&
-      pos.left + box.width <= region.left + region.width &&
-      pos.top + box.height <= region.top + region.height
-
-    describe('staying inside an inset region', () => {
-      // The canvas sits below the top bar and beside the panels, so the mark must
-      // be placed against that region — measuring the whole window put it under
-      // the toolbar.
-      const inset = { left: 64, top: 100, width: 1200, height: 700 }
-
-      it('never lands under the chrome above the region', () => {
-        const target = { left: 400, top: 120, width: 80, height: 60 }
-        const pos = coachMarkPosition(target, bubble, inset)
-        expect(pos.top).toBeGreaterThanOrEqual(inset.top)
-      })
-
-      it.for([
-        [
-          'taller than the region',
-          { left: 400, top: 110, width: 200, height: 900 }
-        ],
-        [
-          'wider than the region',
-          { left: 70, top: 300, width: 1400, height: 200 }
-        ],
-        [
-          'larger on both axes',
-          { left: 70, top: 110, width: 1400, height: 900 }
-        ],
-        [
-          'hard against the top-left',
-          { left: 64, top: 100, width: 40, height: 40 }
-        ],
-        [
-          'hard against the bottom-right',
-          { left: 1200, top: 750, width: 60, height: 45 }
-        ]
-      ] as const)('keeps the mark on screen with a target %s', ([, target]) => {
-        expect(
-          isInside(coachMarkPosition(target, bubble, inset), bubble, inset)
-        ).toBe(true)
-      })
-    })
-
-    describe('preferred edge', () => {
-      const target = { left: 600, top: 300, width: 100, height: 60 }
-
-      it('holds the preferred side while it still fits', () => {
-        // Below fits and would win on its own; the caller's latched side wins.
-        expect(
-          coachMarkPosition(target, bubble, viewport, 'left').pointerEdge
-        ).toBe('left')
-      })
-
-      it('abandons the preferred side once it stops fitting', () => {
-        // Nothing fits to the right of a target hard against the right edge.
-        const atRightEdge = { left: 1380, top: 300, width: 50, height: 60 }
-        expect(
-          coachMarkPosition(atRightEdge, bubble, viewport, 'left').pointerEdge
-        ).not.toBe('left')
-      })
-
-      it('falls back to first-fit when no side is preferred', () => {
-        expect(coachMarkPosition(target, bubble, viewport).pointerEdge).toBe(
-          'top'
-        )
-      })
     })
   })
 

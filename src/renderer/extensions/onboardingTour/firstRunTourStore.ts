@@ -14,7 +14,6 @@ import { restoreView } from './subgraphNavigation'
 import { sequenceBuilder } from './tourSequence'
 import type { MediaKind, ResolvedRoles, TourStep } from './tourSequence'
 
-export type TourPhase = 'idle' | 'active'
 export type TourEndReason = 'done' | 'skip' | 'error'
 
 export interface ResultMedia {
@@ -22,7 +21,6 @@ export interface ResultMedia {
   kind: MediaKind
 }
 
-/** How long to wait for the sink's output URL after a run before giving up. */
 const RESULT_MEDIA_TIMEOUT_MS = 8000
 
 export function isUpgradeModalOpen(): boolean {
@@ -30,11 +28,7 @@ export function isUpgradeModalOpen(): boolean {
   return UPGRADE_DIALOG_KEYS.some((key) => dialogStore.isDialogOpen(key))
 }
 
-/**
- * The graph nodes a step points at: its own target, plus the prompt's collapsed host
- * (the subgraph is never entered). Shared by the spotlight and reveal derivations so
- * they can't drift.
- */
+/** A step's target node, plus the prompt's collapsed host (the subgraph is never entered). */
 function stepTargets(step: TourStep): NodeId[] {
   const ids: NodeId[] = []
   if (step.nodeId !== null) ids.push(step.nodeId)
@@ -42,29 +36,21 @@ function stepTargets(step: TourStep): NodeId[] {
   return ids
 }
 
-/** Tour state. All litegraph reads happen through the canvas adapter, never here. */
-export const useOnboardingTourStore = defineStore('firstRunTour', () => {
-  const phase = ref<TourPhase>('idle')
+/** First-run tour view state; the coachmark engine owns the sequence, the controller mirrors its position here. */
+export const useFirstRunTourStore = defineStore('firstRunTour', () => {
+  const isActive = ref(false)
   const stepIndex = ref(0)
   const steps = ref<TourStep[]>([])
   const resolvedRoles = ref<ResolvedRoles | null>(null)
-  const revealedNodeIds = ref<Set<NodeId>>(new Set())
   const resultMedia = ref<ResultMedia | null>(null)
-  /**
-   * Set on any run outcome. Drives "Generating…", which `resultMedia` alone cannot:
-   * a capture that times out must not read as generating forever.
-   */
+  /** Set on any run outcome; drives "Generating…" so a timed-out capture doesn't spin forever. */
   const runFinished = ref(false)
-  /**
-   * Bumped once per `start()`, which passes through idle within one tick — so a
-   * watcher on `phase` cannot tell a restart from a step change, but can tell on this.
-   */
+  /** Bumped once per tour so the overlay can tell a restart from a step change. */
   const tourRunId = ref(0)
-  /** Drives the bottom-right nudge; outlives the tour so it can show after it ends. */
   const shouldShowNudge = ref(false)
-  /** Set when `showNudge` defers because the upgrade modal is open; the modal-close watch drains it. */
+  /** Set when `showNudge` defers behind the upgrade modal; the modal-close watch drains it. */
   const nudgeArmed = ref(false)
-  /** "Not now" latches this so no later trigger can resurface the nudge this session. */
+  /** "Not now" latches this so no later trigger resurfaces the nudge this session. */
   const nudgeDismissed = ref(false)
 
   const currentStep = computed<TourStep | null>(
@@ -72,60 +58,36 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
   )
   const totalSteps = computed(() => steps.value.length)
 
-  /** Nodes the current step targets, spotlit brightly while prior reveals stay dim. */
   const spotlitNodeIds = computed<Set<NodeId>>(() => {
     const step = currentStep.value
     return step ? new Set(stepTargets(step)) : new Set()
   })
 
-  /**
-   * Reveal every node targeted by steps up to and including `stepIndex` so the
-   * graph builds up — except the final Result step, which collapses back to just
-   * the sink so the generated output is the sole focus.
-   */
-  function syncRevealed() {
+  // Steps up to `stepIndex` accumulate — except Result, which collapses to just the sink.
+  const revealedNodeIds = computed<Set<NodeId>>(() => {
     const step = currentStep.value
     if (step?.kind === 'result' && step.nodeId !== null) {
-      revealedNodeIds.value = new Set([step.nodeId])
-      return
+      return new Set([step.nodeId])
     }
     const revealed = new Set<NodeId>()
     for (const prior of steps.value.slice(0, stepIndex.value + 1)) {
       for (const id of stepTargets(prior)) revealed.add(id)
     }
-    revealedNodeIds.value = revealed
-  }
+    return revealed
+  })
 
-  function start(workflow: ComfyWorkflowJSON, templateId?: string) {
-    reset()
+  function prepare(workflow: ComfyWorkflowJSON, templateId?: string) {
     resetNudge()
+    stepIndex.value = 0
     const roles = resolveTourRoles(workflow, templateId)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
     tourRunId.value += 1
-    phase.value = 'active'
-    syncRevealed()
   }
 
-  function advance() {
-    if (stepIndex.value >= steps.value.length - 1) return
-    stepIndex.value += 1
-    syncRevealed()
-  }
-
-  function back() {
-    if (stepIndex.value <= 0) return
-    stepIndex.value -= 1
-    syncRevealed()
-  }
-
-  /**
-   * Record the sink's output as the Result step's media. The URL lands just after the
-   * run finishes (the cloud queue refresh fetches it), so wait rather than drop it.
-   * Kind comes from the resolved sink, not the MIME, so restored results still render.
-   */
+  // The URL lands just after the run (the cloud queue refresh fetches it), so wait rather than drop it.
   async function captureResultMedia() {
-    if (phase.value !== 'active' || resultMedia.value) return
+    if (!isActive.value || resultMedia.value) return
     const sink = resolvedRoles.value?.sink
     if (!sink) return
 
@@ -140,16 +102,12 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
       timeout: RESULT_MEDIA_TIMEOUT_MS,
       throwOnTimeout: false
     })
-    if (!url || phase.value !== 'active') return
+    if (!url || !isActive.value) return
 
     resultMedia.value = { url, kind: resolvedRoles.value?.mediaKind ?? 'image' }
   }
 
-  /**
-   * Surface the bottom-right nudge once the tour ends — on every outcome. If the
-   * upgrade modal is open, defer instead (arm it) so the two never overlap; the
-   * modal-close watch re-runs this once the modal clears. Dismissal wins over both.
-   */
+  // Defer behind the upgrade modal so the two never overlap; dismissal wins over both.
   function showNudge() {
     if (nudgeDismissed.value) return
     if (isUpgradeModalOpen()) {
@@ -160,13 +118,12 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
     shouldShowNudge.value = true
   }
 
-  /** "Not now": hide the nudge and block any later trigger this session. */
   function dismissNudge() {
     shouldShowNudge.value = false
     nudgeDismissed.value = true
   }
 
-  /** Nudge state outlives the tour, so only a fresh tour clears it. */
+  // Nudge state outlives the tour, so only a fresh tour clears it.
   function resetNudge() {
     shouldShowNudge.value = false
     nudgeArmed.value = false
@@ -176,11 +133,10 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
   }
 
   function reset() {
-    phase.value = 'idle'
+    isActive.value = false
     stepIndex.value = 0
     steps.value = []
     resolvedRoles.value = null
-    revealedNodeIds.value = new Set()
   }
 
   function end() {
@@ -189,7 +145,7 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
   }
 
   return {
-    phase,
+    isActive,
     stepIndex,
     steps,
     currentStep,
@@ -202,9 +158,7 @@ export const useOnboardingTourStore = defineStore('firstRunTour', () => {
     tourRunId,
     shouldShowNudge,
     nudgeArmed,
-    start,
-    advance,
-    back,
+    prepare,
     captureResultMedia,
     showNudge,
     dismissNudge,

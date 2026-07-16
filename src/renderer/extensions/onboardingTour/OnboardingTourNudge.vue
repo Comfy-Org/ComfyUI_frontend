@@ -74,10 +74,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 
 import { trackFirstRunTour } from './firstRunTourTelemetry'
-import {
-  isUpgradeModalOpen,
-  useOnboardingTourStore
-} from './onboardingTourStore'
+import { isUpgradeModalOpen, useFirstRunTourStore } from './firstRunTourStore'
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
 
@@ -85,7 +82,7 @@ const FALLBACK_MEDIA = '/assets/images/og-image.png'
 const { appearDelayMs = 1500 } = defineProps<{ appearDelayMs?: number }>()
 
 const { t } = useI18n()
-const store = useOnboardingTourStore()
+const store = useFirstRunTourStore()
 
 const { resultMedia: media } = storeToRefs(store)
 

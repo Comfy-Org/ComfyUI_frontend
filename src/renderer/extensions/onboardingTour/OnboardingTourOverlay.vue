@@ -56,7 +56,7 @@
         data-testid="onboarding-coach-mark"
         :class="
           cn(
-            'absolute flex h-fit w-full max-w-xs flex-col gap-6 rounded-2xl bg-secondary-background p-5 shadow-interface',
+            'absolute w-full max-w-xs',
             !reduceMotion &&
               (markGlides
                 ? 'transition-[top,left,opacity] ease-in-out'
@@ -71,7 +71,7 @@
         aria-live="polite"
       >
         <i
-          v-if="placement"
+          v-if="cursorEdgeClass"
           data-testid="onboarding-cursor"
           :class="
             cn(
@@ -81,82 +81,88 @@
           "
           aria-hidden="true"
         />
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-base-foreground opacity-50">
-              {{
-                t('onboardingTour.stepCounter', {
-                  current: stepIndex + 1,
-                  total: totalSteps
-                })
-              }}
-            </span>
-            <span
-              v-if="isGenerating"
-              class="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <DotSpinner :size="12" />
-              {{ t('onboardingTour.generating') }}
-            </span>
-          </div>
-          <h2 class="m-0 text-base font-semibold text-base-foreground">
-            {{ t(copy.title) }}
-          </h2>
-          <p class="m-0 text-sm text-muted-foreground">{{ t(copy.body) }}</p>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <Button
-            v-if="!isResultStep"
-            variant="textonly"
-            size="md"
-            class="font-normal"
-            @click="controller.end('skip')"
-          >
-            {{ t('onboardingTour.skip') }}
-          </Button>
-          <div class="ml-auto flex items-center gap-2">
+        <span
+          v-if="isGenerating"
+          class="absolute top-4 right-4 z-10 flex items-center gap-1.5 text-xs text-muted-foreground"
+        >
+          <DotSpinner :size="12" />
+          {{ t('onboardingTour.generating') }}
+        </span>
+        <CoachmarkCard
+          :subtitle="
+            t('onboardingTour.stepCounter', {
+              current: stepIndex + 1,
+              total: totalSteps
+            })
+          "
+          :title="t(copy.title)"
+          :message="t(copy.body)"
+        >
+          <template #actions>
             <Button
-              v-if="stepIndex > 0 && !isResultStep"
-              variant="secondary"
+              v-if="!isResultStep"
+              variant="textonly"
               size="md"
-              class="gap-1 border border-muted-background px-3 py-2 font-normal"
-              @click="controller.back()"
+              class="font-normal"
+              @click="controller.end('skip')"
             >
-              <i class="icon-[lucide--arrow-left] size-4" aria-hidden="true" />
-              {{ t('onboardingTour.back') }}
+              {{ t('onboardingTour.skip') }}
             </Button>
-            <Button
-              v-if="showNextButton"
-              variant="inverted"
-              size="md"
-              class="gap-1 px-3 py-2 font-normal"
-              @click="onNext"
-            >
-              <i
-                v-if="isLastStep"
-                class="icon-[lucide--check] size-4"
-                aria-hidden="true"
-              />
-              {{
-                isLastStep
-                  ? t('onboardingTour.complete')
-                  : t('onboardingTour.next')
-              }}
-              <i
-                v-if="!isLastStep"
-                class="icon-[lucide--arrow-right] size-4"
-                aria-hidden="true"
-              />
-            </Button>
-          </div>
-        </div>
+            <div class="ml-auto flex items-center gap-2">
+              <Button
+                v-if="stepIndex > 0 && !isResultStep"
+                variant="secondary"
+                size="md"
+                class="gap-1 border border-muted-background px-3 py-2 font-normal"
+                @click="controller.back()"
+              >
+                <i
+                  class="icon-[lucide--arrow-left] size-4"
+                  aria-hidden="true"
+                />
+                {{ t('onboardingTour.back') }}
+              </Button>
+              <Button
+                v-if="showNextButton"
+                variant="inverted"
+                size="md"
+                class="gap-1 px-3 py-2 font-normal"
+                @click="onNext"
+              >
+                <i
+                  v-if="isLastStep"
+                  class="icon-[lucide--check] size-4"
+                  aria-hidden="true"
+                />
+                {{
+                  isLastStep
+                    ? t('onboardingTour.complete')
+                    : t('onboardingTour.next')
+                }}
+                <i
+                  v-if="!isLastStep"
+                  class="icon-[lucide--arrow-right] size-4"
+                  aria-hidden="true"
+                />
+              </Button>
+            </div>
+          </template>
+        </CoachmarkCard>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
+import {
+  autoUpdate,
+  flip,
+  hide,
+  offset,
+  shift,
+  useFloating
+} from '@floating-ui/vue'
+import type { Placement, VirtualElement } from '@floating-ui/vue'
 import {
   useElementBounding,
   usePreferredReducedMotion,
@@ -168,29 +174,30 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import Button from '@/components/ui/button/Button.vue'
+import CoachmarkCard from '@/platform/onboarding/CoachmarkCard.vue'
 
 import {
   COACH_MARK_GAP,
   canvasElement,
-  coachMarkPosition,
-  focusNodes,
-  rectIntersectsViewport
+  focusNodes
 } from './canvasSpotlightAdapter'
-import type { CoachMarkEdge, ScreenRect } from './canvasSpotlightAdapter'
+import type { ScreenRect } from './canvasSpotlightAdapter'
 import { MARK_GLIDE_MS, useTourChoreography } from './useTourChoreography'
 import { useOnboardingTourController } from './useOnboardingTourController'
-import { useOnboardingTourStore } from './onboardingTourStore'
+import { useFirstRunTourStore } from './firstRunTourStore'
 import { useTourSpotlightRects } from './useTourSpotlightRects'
 import type { TourStep } from './tourSequence'
 
+const VIEWPORT_MARGIN = 12
+
 const { t } = useI18n()
 
-const store = useOnboardingTourStore()
+const store = useFirstRunTourStore()
 const controller = useOnboardingTourController()
 const {
-  phase,
+  isActive,
   stepIndex,
   revealedNodeIds,
   spotlitNodeIds,
@@ -201,7 +208,6 @@ const {
   tourRunId
 } = storeToRefs(store)
 
-const isActive = computed(() => phase.value === 'active')
 const isLastStep = computed(() => stepIndex.value >= totalSteps.value - 1)
 
 const isRunStep = computed(() => currentStep.value?.kind === 'run')
@@ -257,12 +263,6 @@ const { width: bubbleWidth, height: bubbleHeight } =
 const hasZoomed = ref(false)
 
 /**
- * The side the mark sits on, held for the step so it doesn't jump as the user pans.
- * Latched only once the framing settles, so the choice reflects the final view.
- */
-const lockedEdge = ref<CoachMarkEdge | undefined>()
-
-/**
  * Frame the current step, reserving the mark's real footprint on the first framing
  * so the node is sized to leave room for it. Later steps pan at that scale.
  */
@@ -280,7 +280,7 @@ const choreography = useTourChoreography({
   frameTarget,
   isStatic: isRunStep
 })
-const { revealed, copyVisible, cameraSettled, markGlides } = choreography
+const { revealed, copyVisible, markGlides } = choreography
 
 const rects = useTourSpotlightRects({
   isRunStep,
@@ -289,7 +289,7 @@ const rects = useTourSpotlightRects({
   spotlitNodeIds,
   onFrame: choreography.sampleFrame
 })
-const { viewport, focusRect } = rects
+const { focusRect } = rects
 
 /** Holes are cut only once the steps begin, so the intro preview reads undimmed. */
 const visibleHoleRects = computed(() =>
@@ -297,6 +297,42 @@ const visibleHoleRects = computed(() =>
 )
 const visibleSpotRects = computed(() =>
   revealed.value ? rects.visibleSpotRects.value : []
+)
+
+// A canvas node has no DOM element; hand Floating UI the live spotlit rect so its
+// flip/shift/hide middleware places the mark and tracks the camera each frame.
+const reference = computed<VirtualElement | null>(() => {
+  const r = focusRect.value
+  if (!r) return null
+  return {
+    getBoundingClientRect: () => new DOMRect(r.left, r.top, r.width, r.height)
+  }
+})
+
+const { floatingStyles, middlewareData, placement } = useFloating(
+  reference,
+  bubbleRef,
+  {
+    strategy: 'fixed',
+    // Position via top/left, not transform, so the mark's glide transition animates.
+    transform: false,
+    // The Run button lives in the top toolbar, so its mark sits below it.
+    placement: () => (isRunStep.value ? 'bottom' : 'right-start'),
+    middleware: [
+      offset(COACH_MARK_GAP),
+      flip({ fallbackPlacements: ['left-start', 'bottom', 'top'] }),
+      shift({ crossAxis: true, padding: VIEWPORT_MARGIN }),
+      hide()
+    ],
+    whileElementsMounted: (ref_, floating, update) =>
+      autoUpdate(ref_, floating, update, { animationFrame: true })
+  }
+)
+
+/** True while the target is clipped out of view; the ring hides and the mark holds centre. */
+const targetHidden = computed(
+  () =>
+    !reference.value || (middlewareData.value.hide?.referenceHidden ?? false)
 )
 
 watch(
@@ -312,12 +348,10 @@ watch(
     // watcher only ever sees active→active and would carry the last tour's zoom in.
     if (previous?.[2] === runId) {
       choreography.resetStep()
-      lockedEdge.value = undefined
       choreography.beginStep()
       return
     }
     hasZoomed.value = false
-    lockedEdge.value = undefined
     choreography.openTour()
   },
   { immediate: true }
@@ -361,52 +395,43 @@ function ringStyle(rect: ScreenRect) {
   }
 }
 
-/** Null while the target is off-screen, so the mark holds its last placement. */
-const placement = computed(() => {
-  const rect = focusRect.value
-  if (!rect) return null
-  if (!rectIntersectsViewport(rect, viewport.value)) return null
-  return coachMarkPosition(
-    rect,
-    { width: bubbleWidth.value, height: bubbleHeight.value },
-    viewport.value,
-    lockedEdge.value
-  )
-})
-
-// Once latched, the side only changes if the user pans far enough to break its fit.
-watch([placement, cameraSettled], ([pos, settled]) => {
-  if (settled && pos) lockedEdge.value = pos.pointerEdge
-})
-
 // Shares MARK_GLIDE_MS with the camera delay, so the mark lands before it starts.
 const bubbleStyle = computed(() => {
   const glide = markGlides.value
     ? { transitionDuration: `${MARK_GLIDE_MS}ms` }
     : {}
-  return placement.value
-    ? {
-        ...glide,
-        position: 'fixed' as const,
-        top: `${placement.value.top}px`,
-        left: `${placement.value.left}px`
-      }
-    : {
-        ...glide,
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)'
-      }
+  if (targetHidden.value) {
+    return {
+      ...glide,
+      position: 'fixed' as const,
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)'
+    }
+  }
+  return { ...glide, ...floatingStyles.value }
 })
 
 /** Floats the cursor mid-gap on the target-facing edge, tip rotated toward the node. */
-const CURSOR_EDGE_CLASS: Record<CoachMarkEdge, string> = {
+const CURSOR_EDGE_CLASS: Record<'top' | 'bottom' | 'left' | 'right', string> = {
   top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
   bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
   left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
   right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
 }
-const cursorEdgeClass = computed(() =>
-  placement.value ? CURSOR_EDGE_CLASS[placement.value.pointerEdge] : ''
-)
+
+// The card sits on one side of the target; the cursor points back from the opposite edge.
+const OPPOSITE_EDGE: Record<string, 'top' | 'bottom' | 'left' | 'right'> = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left'
+}
+
+const cursorEdgeClass = computed(() => {
+  if (targetHidden.value) return ''
+  const side = (placement.value as Placement).split('-')[0]
+  const edge = OPPOSITE_EDGE[side]
+  return edge ? CURSOR_EDGE_CLASS[edge] : ''
+})
 </script>

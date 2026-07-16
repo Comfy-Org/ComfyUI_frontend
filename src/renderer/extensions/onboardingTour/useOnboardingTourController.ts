@@ -3,6 +3,7 @@ import { computed, effectScope, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { api } from '@/scripts/api'
 import type {
@@ -23,13 +24,10 @@ import {
 } from './canvasSpotlightAdapter'
 import { trackFirstRunTour } from './firstRunTourTelemetry'
 import { resolveTourRoles } from './roleResolution'
-import {
-  isUpgradeModalOpen,
-  useOnboardingTourStore
-} from './onboardingTourStore'
-import type { TourEndReason } from './onboardingTourStore'
+import { isUpgradeModalOpen, useFirstRunTourStore } from './firstRunTourStore'
+import type { TourEndReason } from './firstRunTourStore'
 import { restoreView } from './subgraphNavigation'
-import { shapeOf } from './tourSequence'
+import { shapeOf, toCoachSteps } from './tourSequence'
 import type { ResolvedRoles } from './tourSequence'
 
 /** Budget for the serialized snapshot to appear (guards the URL blank-load race). */
@@ -61,7 +59,8 @@ interface BeginTourOptions {
 }
 
 function _useOnboardingTourController() {
-  const store = useOnboardingTourStore()
+  const store = useFirstRunTourStore()
+  const engine = useOnboardingTourStore()
   const onboardingDeps: OnboardingCandidateDeps = {
     subscription: useSubscription(),
     newUserService: useNewUserService(),
@@ -133,7 +132,7 @@ function _useOnboardingTourController() {
       // doesn't hang on the Result step. The nudge defers itself until it closes.
       const upgradeModalOpen = computed(() => isUpgradeModalOpen())
       watch(upgradeModalOpen, (open) => {
-        if (open && store.phase === 'active') end('done')
+        if (open && store.isActive) end('done')
       })
     })
     stopRunListener = () => scope.stop()
@@ -168,6 +167,12 @@ function _useOnboardingTourController() {
     return isOnboardingCandidate(onboardingDeps)
   }
 
+  /** Mirror the engine's position into our view store (the engine owns the sequence). */
+  function syncFromEngine() {
+    store.isActive = engine.activeTour === 'firstRun'
+    store.stepIndex = engine.countedStepIdx
+  }
+
   /**
    * Serialize the loaded graph and run the tour on it. Aborts cleanly if gating fails
    * or no workflow is active.
@@ -186,7 +191,15 @@ function _useOnboardingTourController() {
       return
     }
 
-    store.start(workflow, templateId)
+    store.prepare(workflow, templateId)
+    await engine.startTour('firstRun', {
+      force: true,
+      definition: toCoachSteps(store.steps)
+    })
+    // The engine runs one tour at a time; bail if App Mode already holds it.
+    if (engine.activeTour !== 'firstRun') return
+    syncFromEngine()
+
     activeTemplateId = templateId
     const roles = store.resolvedRoles
     activeShape = roles ? shapeOf(roles) : 'other'
@@ -210,7 +223,7 @@ function _useOnboardingTourController() {
     entry = 'getting_started'
   }: BeginTourOptions = {}) {
     if (!shouldStartTour()) return
-    if (isPreparing.value || store.phase === 'active') return
+    if (isPreparing.value || store.isActive) return
 
     isPreparing.value = true
     try {
@@ -291,17 +304,19 @@ function _useOnboardingTourController() {
   }
 
   async function advance() {
-    store.advance()
+    engine.next()
+    syncFromEngine()
     await enterStep()
   }
 
   async function back() {
-    store.back()
+    engine.back()
+    syncFromEngine()
     await enterStep()
   }
 
   function end(reason: TourEndReason) {
-    if (store.phase !== 'active') return
+    if (!store.isActive) return
     stopRunListener?.()
     stopRunListener = undefined
     stopRunClick?.()
@@ -322,6 +337,7 @@ function _useOnboardingTourController() {
         shape: activeShape
       })
     }
+    engine.skip()
     store.showNudge()
     store.end()
   }

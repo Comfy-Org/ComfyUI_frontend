@@ -1,3 +1,4 @@
+import type { CoachStep } from '@/platform/onboarding/onboardingTours'
 import type {
   OnboardingTourShape,
   OnboardingTourStepKey
@@ -93,4 +94,11 @@ export function sequenceBuilder(roles: ResolvedRoles): TourStep[] {
   }
 
   return steps
+}
+
+/** Targetless coach steps, so `resolveSteps` keeps all and indices stay 1:1 with `steps`. */
+export function toCoachSteps(steps: TourStep[]): CoachStep[] {
+  return steps.map(
+    (step): CoachStep => ({ name: step.kind, placement: 'center' })
+  )
 }

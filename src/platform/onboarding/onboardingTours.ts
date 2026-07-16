@@ -1,4 +1,4 @@
-export type EntryPath = 'appMode'
+export type EntryPath = 'appMode' | 'firstRun'
 
 /** Setting holding the tours the user has completed or dismissed. */
 export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -40,12 +40,6 @@ export interface CoachStep {
   /** Renders the landing dialog instead of a spotlight. */
   landing?: boolean
   image?: string
-  /** Runs when the step activates (e.g. to frame the camera); signal aborts on step change. */
-  onEnter?: (signal: AbortSignal) => void | Promise<void>
-  /** Lets the user reach the page beneath the scrim (type, click) instead of trapping focus. */
-  interactive?: boolean
-  /** Extra rects to cut from the scrim alongside the target (e.g. revealed nodes). */
-  maskRects?: () => DOMRect[]
 }
 
 /**
@@ -66,7 +60,7 @@ export type TourDefinition =
   | CoachStep[]
   | (() => CoachStep[] | Promise<CoachStep[]>)
 
-export const TOURS: Record<EntryPath, TourDefinition> = {
+export const TOURS: Partial<Record<EntryPath, TourDefinition>> = {
   appMode: [
     {
       name: 'landing',

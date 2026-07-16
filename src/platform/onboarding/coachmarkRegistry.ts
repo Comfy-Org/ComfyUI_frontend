@@ -1,38 +1,30 @@
-import type { VirtualElement } from '@floating-ui/vue'
 import { shallowReactive, watch } from 'vue'
 
 import type { CoachId } from './onboardingTours'
 
-/**
- * A coachmark target. A DOM element registers via the `v-coachmark` directive;
- * a canvas-drawn node with no DOM registers a `VirtualElement` programmatically.
- * Both report through `getBoundingClientRect`, which is all the engine reads.
- */
-export type CoachTarget = HTMLElement | VirtualElement
-
-const EMPTY: readonly CoachTarget[] = []
+const EMPTY: readonly HTMLElement[] = []
 
 /** Laid out — a registered target that is currently visible and has a size. */
-export function isLaidOut(el: CoachTarget): boolean {
+export function isLaidOut(el: HTMLElement): boolean {
   const r = el.getBoundingClientRect()
   return r.width > 0 && r.height > 0
 }
 
 // An id can map to several elements (e.g. responsive variants); consumers pick
 // the first laid-out one.
-const registry = shallowReactive(new Map<CoachId, readonly CoachTarget[]>())
+const registry = shallowReactive(new Map<CoachId, readonly HTMLElement[]>())
 
-export function registerCoachmark(id: CoachId, el: CoachTarget) {
+export function registerCoachmark(id: CoachId, el: HTMLElement) {
   registry.set(id, [...(registry.get(id) ?? EMPTY), el])
 }
 
-export function unregisterCoachmark(id: CoachId, el: CoachTarget) {
+export function unregisterCoachmark(id: CoachId, el: HTMLElement) {
   const next = (registry.get(id) ?? EMPTY).filter((entry) => entry !== el)
   if (next.length) registry.set(id, next)
   else registry.delete(id)
 }
 
-export function coachmarkElements(id: CoachId): readonly CoachTarget[] {
+export function coachmarkElements(id: CoachId): readonly HTMLElement[] {
   return registry.get(id) ?? EMPTY
 }
 

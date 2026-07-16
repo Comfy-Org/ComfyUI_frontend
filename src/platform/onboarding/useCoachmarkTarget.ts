@@ -6,7 +6,6 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { CARD_GAP, VIEWPORT_MARGIN, topSafeInset } from './coachmarkLayout'
 import { coachmarkElements, isLaidOut } from './coachmarkRegistry'
-import type { CoachTarget } from './coachmarkRegistry'
 import type { CoachPlacement, CoachStep } from './onboardingTours'
 
 // A target animating in via CSS transform reports through neither scroll nor
@@ -64,12 +63,12 @@ export function useCoachmarkTarget(
   step: MaybeRefOrGetter<CoachStep | null>,
   cardRef: Ref<HTMLElement | null>
 ) {
-  const candidateEls = computed<readonly CoachTarget[]>(() => {
+  const candidateEls = computed<readonly HTMLElement[]>(() => {
     const id = toValue(step)?.coachId
     return id ? coachmarkElements(id) : []
   })
 
-  const targetEl = computed<CoachTarget | null>(
+  const targetEl = computed<HTMLElement | null>(
     () => candidateEls.value.find(isLaidOut) ?? null
   )
 
@@ -126,10 +125,9 @@ export function useCoachmarkTarget(
     const reference = targetEl.value
     const floating = cardRef.value
     if (!reference || !floating) return
-    const isVirtual = !(reference instanceof Element)
     onCleanup(
       autoUpdate(reference, floating, update, {
-        animationFrame: trackMotion.value || isVirtual
+        animationFrame: trackMotion.value
       })
     )
   })
