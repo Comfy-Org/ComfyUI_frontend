@@ -336,7 +336,7 @@ onUpdated(() => {
   border-radius: 0;
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
+  border-right-color: var(--workflow-tab-divider);
   min-width: 90px;
 }
 
@@ -361,28 +361,21 @@ onUpdated(() => {
   display: none;
 }
 
-:deep(.p-togglebutton:first-child) {
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-left-color: var(--border-color);
-}
-
-:deep(.p-togglebutton:not(:first-child)) {
-  border-left-width: 0;
-}
-
 :deep(.p-togglebutton.p-togglebutton-checked) {
   height: 100%;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-bottom-color: var(--p-button-text-primary-color);
+  background-color: var(--workflow-tab-selected-surface);
+  border-right: 1px solid var(--workflow-tab-divider);
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
   opacity: 0.75;
 }
 
-:deep(.p-togglebutton-checked) .close-button,
+:deep(.p-togglebutton:not(.p-togglebutton-checked):hover) {
+  background-color: var(--workflow-tab-hover-surface);
+  opacity: 1;
+}
+
 :deep(.p-togglebutton:hover) .close-button {
   visibility: visible;
 }

@@ -183,6 +183,10 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+  --region-stroke: color-mix(in srgb, var(--border-color) 50%, transparent);
+  --workflow-tab-divider: color-mix(in srgb, var(--border-color) 50%, transparent);
+  --workflow-tab-selected-surface: var(--bg-color);
+  --workflow-tab-hover-surface: var(--content-hover-bg);
 
   --interface-builder-mode-background: var(--color-ocean-300);
   --interface-builder-mode-button-background: var(--color-ocean-600);
@@ -329,6 +333,8 @@
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
+  --workflow-tab-selected-surface: var(--color-charcoal-900);
+  --workflow-tab-hover-surface: var(--color-charcoal-700);
 
   --interface-builder-mode-background: var(--color-ocean-900);
   --interface-builder-mode-button-background: var(--color-ocean-600);
@@ -388,6 +394,8 @@
   --tertiary-background: var(--color-charcoal-400);
   --tertiary-background-hover: var(--color-charcoal-300);
   --base-background: var(--color-charcoal-800);
+  --base-background-sunken: var(--color-charcoal-950);
+  --sidebar-surface: var(--color-charcoal-900);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
   --destructive-background: var(--color-coral-700);
