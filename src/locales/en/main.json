@@ -2052,6 +2052,19 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
+    "useCustomUp": "Restore camera up from input",
+    "useNaturalUp": "Reset camera up to Y",
+    "showGizmos": "Show gizmos",
+    "hideGizmos": "Hide gizmos",
+    "lookThrough": "Camera view",
+    "exitLookThrough": "Exit camera view",
+    "transformGizmo": {
+      "label": "Edit",
+      "none": "None",
+      "target": "Target",
+      "cameraTranslate": "Cam pos",
+      "cameraRotate": "Cam rot"
+    },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -2254,6 +2267,7 @@
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
