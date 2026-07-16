@@ -60,7 +60,7 @@
             <Button
               v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"
-              variant="secondary"
+              variant="textonly"
               size="icon"
               :aria-label="t('actionbar.shareTooltip')"
               @click="() => openShareDialog().catch(toastErrorHandler)"
@@ -77,7 +77,7 @@
                       'outline-1 outline-destructive-background'
                   )
                 "
-                variant="secondary"
+                variant="textonly"
                 size="icon"
                 :aria-label="t('rightSidePanel.togglePanel')"
                 @click="openRightSidePanel"
