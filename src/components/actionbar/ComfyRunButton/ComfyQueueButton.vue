@@ -42,11 +42,14 @@
             @select="item.command"
           >
             <Button
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
+              variant="textonly"
               size="sm"
-              :class="queueMenuItemButtonClass"
+              :class="
+                cn(
+                  queueMenuItemButtonClass,
+                  item.key === selectedQueueMode && 'bg-secondary-background'
+                )
+              "
             >
               <i :class="cn(item.icon, 'size-4 shrink-0')" />
               <span class="mr-auto">{{ item.label }}</span>
@@ -205,8 +208,9 @@ const queueButtonVariant = computed<'destructive' | 'inverted'>(() =>
 )
 const queueActionButtonClass = 'h-full rounded-none gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
-  'h-full w-7 rounded-none border-l border-base-background/15 p-0 data-[state=open]:bg-base-foreground/80'
-const queueMenuItemButtonClass = 'w-full justify-start font-normal'
+  'h-full w-7 rounded-none border-l border-solid border-base-background/25 p-0 data-[state=open]:bg-base-foreground/80'
+const queueMenuItemButtonClass =
+  'w-full justify-start font-normal data-[highlighted]:bg-secondary-background-hover'
 
 const iconClass = computed(() => {
   if (isStopInstantAction.value) {
