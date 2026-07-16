@@ -15,7 +15,7 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
   ),
   '/individual-submission',
-  '/booking-confirmation'
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`)
 ])
 
 function isExcludedFromSitemap(page: string): boolean {
