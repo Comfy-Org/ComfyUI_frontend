@@ -93,6 +93,16 @@ watch(videoEl, syncNativeDuration)
 useEventListener(videoEl, 'loadedmetadata', syncNativeDuration)
 useEventListener(videoEl, 'durationchange', syncNativeDuration)
 
+// The muted attribute only sets defaultMuted, so SSR-rendered autoplay
+// videos count as unmuted and get blocked; force the property and kick
+// playback once mounted.
+watch(videoEl, (el) => {
+  if (autoplay && el) {
+    el.muted = true
+    el.play().catch(() => {})
+  }
+})
+
 const effectiveDuration = computed(() => duration.value || nativeDuration.value)
 
 // Scrubber (modeled after VueUse demo Scrubber.vue)

@@ -36,8 +36,7 @@ const clients: McpClient[] = [
     step: t('mcp.setup.clients.claudeDesktop.step', locale),
     manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
     showAgentCard: false,
-    video:
-      'https://mintcdn.com/dripart/UM6LYOmx4pqCW3H7/images/agent_tools/Claude_desktop.mp4?fit=max&auto=format&n=UM6LYOmx4pqCW3H7&q=85&s=6bb8cfd8fcf2c004809bf23f7a42ee41'
+    video: '/videos/mcp/setup-claude-desktop-v1.mp4'
   },
   {
     id: 'claude-code',
