@@ -10,7 +10,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 
-import { nodeBadges } from './badgeSystem'
+import { graphCreditsBadges, nodeBadges } from './badgeSystem'
 
 function defaultDisplayPrice(
   _node: LGraphNode,
@@ -69,7 +69,7 @@ describe('badge derivation subgraph credits aggregation', () => {
         .filter((row) => row.kind === 'credits')
         .map((row) => row.text)
 
-    return { subgraph, wrapper, addInner, wrapperCredits }
+    return { rootGraph, subgraph, wrapper, addInner, wrapperCredits }
   }
 
   it('shows no wrapper credits without priced inner nodes', () => {
@@ -128,5 +128,31 @@ describe('badge derivation subgraph credits aggregation', () => {
     useWidgetValueStore().setValue(inputWidgetId, 'outer value')
 
     expect(wrapperCredits()).toEqual(['outer value'])
+  })
+
+  describe('graphCreditsBadges', () => {
+    it('lists priced nodes once and skips subgraph wrappers', () => {
+      const { rootGraph, addInner } = setup()
+      addInner(new ApiNode('inner-api'), 11)
+      const rootNode = new ApiNode('root-api')
+      rootNode.id = toNodeId(2)
+      rootGraph.add(rootNode)
+
+      expect(graphCreditsBadges(rootGraph)).toEqual([
+        { nodeId: toNodeId(11), title: 'inner-api', price: '$0.05/Run' },
+        { nodeId: toNodeId(2), title: 'root-api', price: '$0.05/Run' }
+      ])
+    })
+
+    it('reacts when a priced node is added to the root graph', () => {
+      const { rootGraph } = setup()
+      expect(graphCreditsBadges(rootGraph)).toEqual([])
+
+      const node = new ApiNode('root-api')
+      node.id = toNodeId(2)
+      rootGraph.add(node)
+
+      expect(graphCreditsBadges(rootGraph)).toHaveLength(1)
+    })
   })
 })

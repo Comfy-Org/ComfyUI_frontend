@@ -3,7 +3,11 @@ import type { ComputedRef } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { t } from '@/i18n'
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -248,6 +252,36 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     badgeComputeds.set(node, rows)
   }
   return rows.value
+}
+
+export interface CreditsBadgeEntry {
+  nodeId: NodeId
+  title: string
+  price: string
+}
+
+const creditsComputeds = new WeakMap<LGraph, ComputedRef<CreditsBadgeEntry[]>>()
+
+/**
+ * The credits rows of every unique non-wrapper node under a root graph,
+ * memoized per graph instance like {@link nodeBadges}.
+ */
+export function graphCreditsBadges(
+  rootGraph: LGraph
+): readonly CreditsBadgeEntry[] {
+  let entries = creditsComputeds.get(rootGraph)
+  if (!entries) {
+    entries = computed(() =>
+      mapUniqueNodes(rootGraph, (node) => {
+        if (node.isSubgraphNode()) return
+        const priceRow = nodeBadges(node).find((row) => row.kind === 'credits')
+        if (!priceRow) return
+        return { nodeId: node.id, title: node.title, price: priceRow.text }
+      })
+    )
+    creditsComputeds.set(rootGraph, entries)
+  }
+  return entries.value
 }
 
 /** Installs {@link nodeBadges} as the legacy canvas's badge row source. */

@@ -11,8 +11,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
-import { nodeBadges } from '@/systems/badgeSystem'
-import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
+import { graphCreditsBadges } from '@/systems/badgeSystem'
 
 defineProps<{ mobile?: boolean }>()
 
@@ -21,16 +20,7 @@ const canvasStore = useCanvasStore()
 
 const creditsBadges = computed(() => {
   const rootGraph = canvasStore.currentGraph?.rootGraph
-  if (!rootGraph) return []
-
-  return mapUniqueNodes(rootGraph, (node) => {
-    if (node.isSubgraphNode()) return
-
-    const priceRow = nodeBadges(node).find((row) => row.kind === 'credits')
-    if (!priceRow) return
-
-    return [node.title, priceRow.text, node.id] as const
-  })
+  return rootGraph ? graphCreditsBadges(rootGraph) : []
 })
 </script>
 <template>
@@ -44,8 +34,8 @@ const creditsBadges = computed(() => {
       class="max-h-(--reka-popover-content-available-height) scroll-shadows-comfy-menu-bg overflow-y-auto"
     >
       <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
-        :key
+        v-for="{ nodeId, title, price } in creditsBadges"
+        :key="nodeId"
         :title
         :price
       />
@@ -53,8 +43,8 @@ const creditsBadges = computed(() => {
   </Popover>
   <div v-else-if="creditsBadges.length === 1">
     <PartnerNodeItem
-      v-for="[title, price, key] in creditsBadges"
-      :key
+      v-for="{ nodeId, title, price } in creditsBadges"
+      :key="nodeId"
       :title
       :price
       class="border-t border-border-subtle pt-2"
@@ -76,8 +66,8 @@ const creditsBadges = computed(() => {
     </CollapsibleTrigger>
     <CollapsibleContent class="scroll-shadows-comfy-menu-bg overflow-y-auto">
       <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
-        :key
+        v-for="{ nodeId, title, price } in creditsBadges"
+        :key="nodeId"
         :title
         :price
       />
