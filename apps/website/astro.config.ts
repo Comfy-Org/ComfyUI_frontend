@@ -14,7 +14,7 @@ const SITEMAP_EXCLUDED_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.flatMap((prefix) =>
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
   ),
-  '/individual-submission',
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`)
 ])
 
