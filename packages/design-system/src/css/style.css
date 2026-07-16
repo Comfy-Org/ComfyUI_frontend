@@ -185,6 +185,9 @@
   --interface-stroke: var(--color-smoke-300);
   --region-stroke: color-mix(in srgb, var(--border-color) 50%, transparent);
   --workflow-tab-divider: color-mix(in srgb, var(--border-color) 50%, transparent);
+  /* Sidebar and selected tab share the canvas base level so they match the
+     rest of the canvas surfaces in every theme */
+  --sidebar-surface: var(--bg-color);
   --workflow-tab-selected-surface: var(--bg-color);
   --workflow-tab-hover-surface: var(--content-hover-bg);
 
@@ -307,6 +310,16 @@
   --modal-panel-background: var(--color-white);
 }
 
+/* Default dark palette only: the tuned charcoal depth. Other dark palettes
+   (solarized/arc/nord/github) keep the :root fallbacks that derive from
+   their own comfy_base vars, so they use their own colors. */
+:root[data-color-palette='dark'] {
+  --sidebar-surface: var(--color-charcoal-900);
+  --workflow-tab-selected-surface: var(--color-charcoal-900);
+  --workflow-tab-hover-surface: var(--color-charcoal-700);
+  --base-background-sunken: var(--color-charcoal-950);
+}
+
 .dark-theme {
   --fg-color: #fff;
   --bg-color: #202020;
@@ -333,8 +346,6 @@
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
-  --workflow-tab-selected-surface: var(--color-charcoal-900);
-  --workflow-tab-hover-surface: var(--color-charcoal-700);
 
   --interface-builder-mode-background: var(--color-ocean-900);
   --interface-builder-mode-button-background: var(--color-ocean-600);
@@ -394,8 +405,6 @@
   --tertiary-background: var(--color-charcoal-400);
   --tertiary-background-hover: var(--color-charcoal-300);
   --base-background: var(--color-charcoal-800);
-  --base-background-sunken: var(--color-charcoal-950);
-  --sidebar-surface: var(--color-charcoal-900);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
   --destructive-background: var(--color-coral-700);
