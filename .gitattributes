@@ -6,3 +6,6 @@ packages/registry-types/src/comfyRegistryTypes.ts linguist-generated=true
 packages/ingest-types/src/types.gen.ts linguist-generated=true
 packages/ingest-types/src/zod.gen.ts linguist-generated=true
 src/workbench/extensions/manager/types/generatedManagerTypes.ts linguist-generated=true
+
+# Vendored upstream workflow templates used as resolver test fixtures
+src/renderer/extensions/firstRunTour/__fixtures__/templates/*.json linguist-generated=true
