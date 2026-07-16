@@ -196,7 +196,7 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('shares one dismiss across every mount (graph + linear shells)', async () => {
+  it('shares one dismiss across instances rather than tracking it per mount', async () => {
     exhausted()
     render(
       {
