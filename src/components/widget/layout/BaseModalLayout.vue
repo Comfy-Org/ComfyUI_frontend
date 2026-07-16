@@ -61,6 +61,7 @@
             <Button
               size="lg"
               class="w-10"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -117,6 +118,7 @@
             <Button
               size="lg"
               class="w-10 p-0"
+              :variant="closeButtonVariant"
               :aria-label="t('g.closeDialog')"
               @click="closeDialog"
             >
@@ -138,6 +140,7 @@ import { computed, inject, ref, useSlots, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -158,13 +161,16 @@ const {
   rightPanelTitle,
   size = 'lg',
   leftPanelWidth = '14rem',
-  contentPadding = 'default'
+  contentPadding = 'default',
+  closeButtonVariant
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
   leftPanelWidth?: string
   contentPadding?: ContentPadding
+  /** Variant for the modal's close button(s). Defaults to the Button default. */
+  closeButtonVariant?: ButtonVariants['variant']
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])

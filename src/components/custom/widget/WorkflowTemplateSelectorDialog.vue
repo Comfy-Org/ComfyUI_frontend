@@ -2,6 +2,7 @@
   <BaseModalLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     size="md"
+    close-button-variant="textonly"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
