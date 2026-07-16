@@ -320,6 +320,15 @@
   --base-background-sunken: var(--color-charcoal-950);
 }
 
+/* Default light palette: the Comfy Design System light-mode values. */
+:root[data-color-palette='light'] {
+  --sidebar-surface: var(--color-smoke-200);
+  --workflow-tab-selected-surface: var(--color-smoke-200);
+  --workflow-tab-hover-surface: var(--color-smoke-400);
+  --workflow-tab-divider: var(--color-smoke-400);
+  --region-stroke: var(--color-smoke-300);
+}
+
 .dark-theme {
   --fg-color: #fff;
   --bg-color: #202020;
