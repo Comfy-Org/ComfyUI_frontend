@@ -59,7 +59,7 @@
             :class="
               selectedType === tab.value
                 ? 'bg-base-foreground px-4 font-bold text-base-background'
-                : 'bg-secondary-background px-3 font-medium text-white opacity-70 hover:opacity-100'
+                : 'bg-secondary-background px-3 font-medium text-base-foreground opacity-70 hover:opacity-100'
             "
             @click="selectedType = tab.value"
           >
