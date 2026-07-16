@@ -43,7 +43,7 @@ function stepTargets(step: TourStep): NodeId[] {
 }
 
 /** Tour state. All litegraph reads happen through the canvas adapter, never here. */
-export const useOnboardingTourStore = defineStore('onboardingTour', () => {
+export const useOnboardingTourStore = defineStore('firstRunTour', () => {
   const phase = ref<TourPhase>('idle')
   const stepIndex = ref(0)
   const steps = ref<TourStep[]>([])
