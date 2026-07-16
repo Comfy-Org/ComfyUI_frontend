@@ -1,0 +1,149 @@
+---
+title: "从节点图到建筑立面：Ina Conradi 的 NTU 学生如何用 ComfyUI 创作建筑尺度的公共艺术"
+category: "创意校园展示"
+description: "在新加坡的 NTU，Ina Conradi 的学生为楼宇大小的 LED 墙创作 90 秒影片——这是提示词框无法渲染、而 ComfyUI 可以胜任的作品，它们从校园走向杭州西湖媒体立面，每天面对上百万观众。"
+cover: "https://media.comfy.org/website/customers/ina-conradi/cover.png"
+order: 6
+sections:
+  - id: topic-1
+    label: "简介"
+  - id: topic-2
+    label: "画布"
+  - id: topic-3
+    label: "为何选择 ComfyUI"
+  - id: topic-4
+    label: "2026 年课题"
+  - id: topic-5
+    label: "学生作品"
+  - id: topic-6
+    label: "公共屏幕"
+  - id: topic-7
+    label: "概览"
+---
+
+<Section id="topic-1">
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig1-quantum-logos.jpg" alt="Media Art Nexus LED 屏幕上的 Quantum Logos (Vision Serpent)" caption="Quantum Logos (Vision Serpent)，Mark Chavez 与 Ina Conradi。实验动画，Media Art Nexus LED 屏幕（15 米 × 2 米），新加坡。摄影：Quek Jia Liang。" />
+
+### 构建一条从工作室到屏幕的 AI 艺术管线
+
+自 2022 年以来，Ina Conradi 撰写并讲授 NTU 的两门 AI 课程：DM2012《AI 生成艺术探索》（本科）和 AP7055《创意机器时代的艺术》（研究生）。每门课每学期约 30 名学生。与她并肩打磨这条制作管线的是 Mark Chavez——一位动画老兵（DreamWorks、Rhythm & Hues）和 ComfyUI 的早期采用者。两人共同策展这些课程所服务的平台：一面 15 米 × 2 米的 LED 墙，2016 年作为 Media Art Nexus 安装于 NTU 的 North Spine，如今由 NTU 博物馆以 NTU Index 之名运营，每学期仍在接收新作品。
+
+来自这面墙的作品已走向新加坡（Ten Square）、杭州和重庆的巨型公共屏幕，并与包豪斯大学、柏林艺术大学以及汉堡易北爱乐音乐厅展开合作。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig2-nature-sanctuary.jpg" alt="西湖媒体立面上的 Nature Sanctuary 3000" caption="Nature Sanctuary 3000，Sowmya Sreeshna。实验动画，西湖媒体立面（170 米 × 18 米），中国杭州。摄影：Limpid Art。" />
+
+</Section>
+
+<Section id="topic-2">
+
+### Ina，你的学生并不为笔记本电脑制作影片。为什么要用楼宇大小的屏幕？
+
+因为这种格式本身就是教学。一部 90 秒、横向 6K、8:1 全景的影片，不可能靠一次侥幸的提示词得来。它必须被"构图"。而这些屏幕是真实的：最出色的学生作品会在 NTU Index——我们校园里那面 15 米 × 2 米的墙——上播放，并通过城市数字皮肤艺术节（CDSA）走向中国和欧洲的城市立面。当一名学生知道每天可能有上百万人在杭州从他的影片前走过，关于"手艺"的讨论就变得不一样了。
+
+### Mark，请描述一下这块画布。
+
+基本上，我们为新加坡和中国的超大型媒体 LED 屏幕做构图。我们在新加坡有一块八比一的屏幕，是 5,888 × 768 像素。学生在课上创作图像，通常横向约 6K 分辨率，一幅长长的横向全景。成果是 90 秒的短片。两分钟、90 秒，我不会改。我喜欢这种格式，因为它在课程范围内是可管理的。
+
+</Section>
+
+<Section id="topic-3">
+
+### 这种格式会让大多数 AI 工具崩溃。发生了什么？
+
+Runway 是我们使用的工具之一，用的是对学校很合适的教育版方案。我们撞上的限制是格式：Runway 以 16:9 工作，而我们的 6K 全景落在它的范围之外。上学期 Midjourney 在我们的分辨率下给我们带来了麻烦，放大也很困难。所以我们在扩展工具组合，把 ComfyUI 引入到已有的流程之中。
+
+<Quote>ComfyUI 给出了最干净的结果。构图之后要把一幅 1:8 的全景放大到 8K，这确实很难，而 ComfyUI 是唯一让学生能够把图像、运动和放大模型组合在一起的管线。</Quote>
+
+### 预算方面呢？
+
+预算会一直是个问题。学校对我们支持得很好，但每学期都有新工具出现，学生想去尝试并搭建自己的管线。按月计的单座席许可并不契合一个学期的运作方式。让学生在本地运行 ComfyUI 很难：大多数笔记本电脑没有足够 VRAM 的 GPU，把它跑起来需要真正的反复试错。许多人更愿意在家里工作，但硬件挡住了他们，于是他们只能来实验室。另一些人用了 Comfy Cloud。它按订阅收费，但仍比预付费工具便宜得多，而且结果更好。无论哪种方式，他们追求的都是同一样东西：一条无论身在何处都能持续打磨的管线。
+
+### Ina，你坚持说这些课程与工具无关。它们到底关乎什么？
+
+我的课不是要教某一个工具。它是学生跨平台与之互动的一套有回应的系统——通过持续的对话去指导、批评并塑造输出。ComfyUI 契合这一点：一张节点图是一个你可以阅读、质疑并重建的论证。提示词框则不是。新加坡的学生在技术上很快就变得娴熟。他们从艺术教育中需要的，是质疑自己所创作之物的语言，而不仅仅是创作它的技能。
+
+</Section>
+
+<Section id="topic-4">
+
+### Ina，2026 年的课题把学生带向海洋。这个作业是什么？
+
+这个项目是 The Liquid Commons: Bringing Ocean Science into Global Media Architecture（流动的公域：把海洋科学带入全球媒体建筑），与 OceanX（OceanXplorer 科考船背后的机构）以及 CDSA 2026 的节庆主题对话开发而成。课题很严格：不要图解科学，而要转译科学。2026 届是第一届用 ComfyUI 配合 Topaz 放大来制作这些影片的学生，他们同时朝着两个真实的截止期努力。他们的作品正在争取入选今年十月在新加坡举办的 OceanX 峰会，经评审团遴选的作品将在城市数字皮肤艺术节期间于杭州西湖媒体立面上放映：170 米 × 18 米，每天约上百万观众。
+
+<Quote>交付规格本身就告诉你工具为何重要：最终导出为 5,888 × 768 像素，必要处达 8K。这是任何提示词框都无法完成的课题。</Quote>
+
+</Section>
+
+<Section id="topic-5">
+
+### Mark，学生的作品是什么样子的？
+
+到目前为止，大约有八名学生用 Comfy 完成了他们的影片，而且都相当酷。它们出人意料又富有洞见，因为它们不受游戏引擎图形的限制。有一名学生尤为突出：他把 Comfy 里的每个模型都试了个遍，走得也最远。
+
+2026 届的三个项目展现了作品的广度。
+
+**The Tao of Water**（Wang Zilin，AP7055）借《道德经》来解读海洋，是一条从水到海洋植物、再到虚空并回归本源的三段式弧线。管线从 Pinterest 研究面板出发，经 Midjourney 进入 ComfyUI，在那里 Nano Banana 把单帧扩展成无缝全景，Kling 3.0 以完整的 5,888 像素宽度实现首帧到末帧的运动动画，之后再用 Premiere 剪辑。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig3-tao-of-water.jpg" alt="NTU Index 屏幕上的 The Tao of Water" caption="The Tao of Water，Wang Zilin。实验动画，NTU Index 屏幕（15 米 × 2 米），新加坡。摄影：Quek Jia Liang。" />
+
+**microscophony**（Jiin Ko，AP7055）融合了 *microscopic*（微观）与 *micropolyphony*——Ligeti 用来指那种密集交织、模糊成一整片声云的声部之网。素材源自 OceanX 拍摄的深海微生物显微镜影像，被转译为图形记谱法（Ligeti、Xenakis、Cardew）的视觉逻辑，使这幅全景成为一份可供聆听的乐谱。图像经由 Midjourney 和 Nano Banana，视频经由 ComfyUI 配合 Vidu Q2，声音设计在 Ableton Live 中完成，不同的声音质地对应不同的视觉形态。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig4-microscophony.jpg" alt="NTU Index 屏幕上的 microscophony" caption="microscophony，Jiin Ko。实验动画，NTU Index 屏幕（15 米 × 2 米），新加坡。摄影：Quek Jia Liang。" />
+
+**GO! PLASTIC**（Jianwei Hoe，DM2012）是一部关于海洋塑料的作品，它的制作日志读起来更像工作室的工程文件，而非提示词记录。它以一行艺术指导开篇（每个项目都在生成第一帧之前，用一行话陈述其理念，并嵌入反讽），然后逐一走过模型选型、平台与本地的成本对比（在 RTX 5090 与云端 B200 上每段片段、每个场景的成本，含渲染时间），以及一张逐镜表，把每张源图像与其完整的提示词和设置一一配对。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig5-go-plastic.jpg" alt="NTU Index 屏幕上的 GO! PLASTIC" caption="GO! PLASTIC，Hoe Jianwei。实验动画，NTU Index 屏幕（15 米 × 2 米），新加坡。摄影：Quek Jia Liang。" />
+
+</Section>
+
+<Section id="topic-6">
+
+### Ina，这些作品离开课堂之后去向何方？
+
+走上公共屏幕，进入有评审的国际竞赛。城市数字皮肤艺术节创办于 2023 年，由中国美术学院雕塑与公共艺术学院发起，并与柏林公共艺术实验室（Public Art Lab Berlin）、米兰 MEET 数字文化中心以及 NTU ADM 共同策展，背后是一个覆盖中国和欧洲、超过 29 所艺术院校的网络。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig6-cdsa-awards.jpg" alt="西湖媒体立面上的 CDSA 艺术节获奖者" caption="CDSA 艺术节的获奖者、策展人与主办方。西湖媒体立面（170 米 × 18 米），中国杭州。摄影：Limpid Art。亚洲最大的高清户外屏幕。" />
+
+2024 年那一届覆盖 5 个国家 9 座城市的 11 块 LED 屏幕，触达观看量超过 1 亿次。2025–2026 届以"记忆共存"为主题，收到 200 多件国际投稿，由 16 位评委从中选出前 40 名。我策划新加坡单元，横跨 NTU Index 和 Ten Square 地标立面。一名在我们课堂上以 6K 构图的学生，就是在为那个平台构图。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig7-crispr.jpg" alt="Ten Square 地标立面上的 Crispr" caption="Crispr，Lee Chaewon。实验动画，Ten Square 地标立面（21.2 米 × 14.4 米），新加坡。摄影：Quek Jia Liang。" />
+
+NTU ADM 的学生早已在这一层级上获奖。在 CDSA 2025 上，大多数最高奖项都花落这两门课程的学生：金奖（Sun Yutong，*Echoes of Her*）、银奖（Tan Yu Yan Cheerie，*Eternal Flux*）、铜奖（Shah Pranjal Kirti，*Mumbai Miniatures*）、商业奖（Ong Sze Ching，*Nuwa*）以及创意奖（Leah Chakola，*Caravan of Memory*）。这两门课程还让 NTU 自 2023 年起成为唯一参与林茨 Ars Electronica 的新加坡校园伙伴，先是凭 *Butterfly's Dreams*（2023，主题"谁拥有真相？"），随后在 2025 年凭 *Beyond the Screen*——一场与中国美术学院和魏玛包豪斯大学联合举办的展览。
+
+### Mark，你在 DreamWorks 待了十年。为什么这个工具适合艺术专业的学生？
+
+我出身于视觉特效。我在 DreamWorks 待了大约十年，之后是 Rhythm & Hues，再之后是游戏行业和大型交互装置。我不是程序员，所以我很喜欢 ComfyUI。
+
+<Quote>我认识的每一个如今做图形的人都在用它，因为它太能适应各种需求了。有时我们只是把 Comfy 当作后端来用。大家都在这么做。</Quote>
+
+我们在大学里的一件艺术装置中拥有了这块 15 米 × 2 米的大屏幕，它让我们得以探索媒体和各种不同的技法。我们发现学生的技术功底还不足以驾驭 TouchDesigner，于是他们干脆开始做影片。后来我开始玩 AI，现在一切都是 AI 了。我接下来最想要的，是为这些屏幕量身定制的模板。
+
+以 *Echoes, Whispers and Memories* 为例，这是 Ina 和我共同创作的作品。我们并不用 Comfy 直接吐出成品插画。我们构建的工作流会不断重新组合图像，把它拆开再拼回去，让它在屏幕上演化，而这正是要点所在：熵、记忆、事物的瓦解与重构。然后我们把这些输出推入面向大空间的实时和投影系统，比如 Ars Electronica 的 Deep Space 8K 和米兰的 MEET。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig8-echoes.jpg" alt="Ars Electronica Deep Space 8K 中的 Echoes, Whispers and Memories" caption="Echoes, Whispers and Memories，Mark Chavez 与 Ina Conradi。使用 ComfyUI 创作的 AI 生成沉浸式装置，Deep Space 8K，Ars Electronica，奥地利林茨。摄影：Wolfgang Simlinger。" />
+
+### 来自行业的信号
+
+<Quote>我从那些找实习或工作的学生那里听说，对方问的第一个问题就是："你会用 Comfy 吗？"因为他们想招懂这条管线的年轻人。</Quote>
+
+</Section>
+
+<Section id="topic-7" title="概览">
+
+<AtAGlance rows={[
+  { label: "院校", value: "南洋理工大学艺术、设计与媒体学院（新加坡）" },
+  { label: "课程", value: "DM2012：AI 生成艺术探索（本科）与 AP7055：创意机器时代的艺术（研究生），自 2022 年起由 Ina Conradi 撰写并讲授；每学期约 30 名学生" },
+  { label: "画布", value: "新加坡和中国的 6K 宽、8:1 LED 墙；校园里的 NTU Index 墙（15 米 × 2 米，5,888 × 768 像素）" },
+  { label: "核心技术", value: "ComfyUI 构图，配合 Topaz 放大以输出超宽全景；带有每段片段成本和提示词表的制作日志" },
+  { label: "Comfy 胜出的原因", value: "托管工具被锁定在 16:9；构图后要把 1:8 全景放大到 8K 需要一条多模型管线；按座席按月续费不契合学期节奏" }
+]} />
+
+</Section>
+
+<AuthorBio label="关于作者" people={[
+  { name: "Ina Conradi", photo: "https://media.comfy.org/website/customers/ina-conradi/author-ina.jpg", bio: `Ina Conradi 是往返于新加坡和洛杉矶之间的艺术家与策展人。她是 NTU 艺术、设计与媒体学院（创立于 2005 年）的创院教员，自 2022 年起撰写并讲授该院的 AI 课程。她的影片 Moirai: Thread of Life 荣获 SIGGRAPH Asia 2023 计算机动画节的 Best in Show，这是新加坡首次获此殊荣。` },
+  { name: "Mark Chavez", photo: "https://media.comfy.org/website/customers/ina-conradi/author-mark.jpg", bio: `Mark Chavez 是动画师、导演，也是新加坡 NTU 艺术、设计与媒体学院的创院教员。在 DreamWorks Animation 工作十年、并在最初的 Rhythm & Hues Studios 从事视觉特效之后，他创建了 NTU 的数字动画方向（2005），并成立了一个由新加坡国家研究基金会和媒体发展局资助的动画研究智库。` }
+]} />
+
+<EducationCta />
