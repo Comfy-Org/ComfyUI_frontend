@@ -8,7 +8,7 @@
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
+      'border-r border-(--region-stroke)': isConnected
     }"
   >
     <div
@@ -306,11 +306,11 @@ onMounted(() => {
 
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
 }
 
 .sidebar-item-group {
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
   border: 1px solid transparent;
 }
 
@@ -318,6 +318,6 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--sidebar-surface, var(--comfy-menu-bg));
 }
 </style>
