@@ -1,4 +1,4 @@
-export type EntryPath = 'appMode'
+export type EntryPath = 'appMode' | 'firstRun'
 
 /** Setting holding the tours the user has completed or dismissed. */
 export const TOUR_SEEN_SETTING = 'Comfy.OnboardingCoachmarks.Seen'
@@ -55,7 +55,7 @@ export function resolveSteps(
   )
 }
 
-export const TOURS: Record<EntryPath, CoachStep[]> = {
+export const TOURS: Partial<Record<EntryPath, CoachStep[]>> = {
   appMode: [
     {
       name: 'landing',
