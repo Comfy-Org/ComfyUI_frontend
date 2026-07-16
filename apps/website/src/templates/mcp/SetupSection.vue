@@ -52,8 +52,7 @@ const clients: McpClient[] = [
     step: t('mcp.setup.clients.codex.step', locale),
     command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
     showAgentCard: false,
-    video:
-      'https://mintcdn.com/dripart/oeEoB3PP1mIk3aIP/images/agent_tools/CodeX_Oauth_mcp.mp4?fit=max&auto=format&n=oeEoB3PP1mIk3aIP&q=85&s=c09f1520aadfb3f325d7a166a56ba5a7'
+    video: '/videos/mcp/setup-codex-oauth-v1.webm'
   },
   {
     id: 'cursor',
