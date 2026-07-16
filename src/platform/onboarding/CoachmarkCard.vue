@@ -29,7 +29,6 @@
           {{ message }}
         </p>
       </div>
-      <slot />
       <div v-if="$slots.actions" class="flex w-full items-center gap-3">
         <slot name="actions" />
       </div>
