@@ -1,25 +1,24 @@
 <template>
-  <ButtonGroup
-    class="queue-button-group h-8 rounded-l-lg rounded-r-none bg-secondary-background"
-  >
+  <div class="queue-run-controls flex h-8 items-center gap-1.5">
     <BatchCountEdit />
-    <Button
-      v-tooltip.bottom="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
-      :variant="queueButtonVariant"
-      size="unset"
-      :class="queueActionButtonClass"
-      data-testid="queue-button"
-      :data-variant="queueButtonVariant"
-      @click="queuePrompt"
-    >
-      <i :class="cn(iconClass, 'size-4')" />
-      {{ queueButtonLabel }}
-    </Button>
+    <ButtonGroup class="queue-button-group h-full rounded-lg">
+      <Button
+        v-tooltip.bottom="{
+          value: queueButtonTooltip,
+          showDelay: 600
+        }"
+        :variant="queueButtonVariant"
+        size="unset"
+        :class="queueActionButtonClass"
+        data-testid="queue-button"
+        :data-variant="queueButtonVariant"
+        @click="queuePrompt"
+      >
+        <i :class="cn(iconClass, 'size-4')" />
+        {{ queueButtonLabel }}
+      </Button>
 
-    <DropdownMenuRoot>
+      <DropdownMenuRoot>
       <DropdownMenuTrigger as-child>
         <Button
           variant="inverted"
@@ -58,8 +57,9 @@
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
-    </DropdownMenuRoot>
-  </ButtonGroup>
+      </DropdownMenuRoot>
+    </ButtonGroup>
+  </div>
 </template>
 
 <script setup lang="ts">
