@@ -140,6 +140,16 @@ describe('usePartitionedBadges', () => {
     ])
   })
 
+  it('reacts to a core node definition registered after creation', () => {
+    makeNode('CoreNode')
+    const partitioned = usePartitionedBadges(nodeData('CoreNode'))
+    expect(partitioned.value.hasComfyBadge).toBe(false)
+
+    addNodeDef('CoreNode', 'nodes')
+
+    expect(partitioned.value.hasComfyBadge).toBe(true)
+  })
+
   it('re-partitions when a badge source changes', () => {
     makeNode('CustomNode')
     const partitioned = usePartitionedBadges(nodeData('CustomNode'))

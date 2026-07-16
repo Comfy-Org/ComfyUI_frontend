@@ -24,9 +24,10 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
 export function usePartitionedBadges(nodeData: VueNodeData) {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const nodeDef = useNodeDefStore().nodeDefsByName[nodeData.type]
+  const nodeDefStore = useNodeDefStore()
 
   return computed(() => {
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
     const showComfyLogo =
       !!nodeDef?.isCoreNode &&
       settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') ===
