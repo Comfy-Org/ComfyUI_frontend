@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { resolveSteps } from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ResolvedRoles } from './tourSequence'
-import { sequenceBuilder, shapeOf } from './tourSequence'
+import { sequenceBuilder, shapeOf, toCoachSteps } from './tourSequence'
 
 function nodeRole(id: number) {
   return { nodeId: toNodeId(id) }
@@ -116,5 +117,16 @@ describe('shapeOf', () => {
   it('is other when the tour cannot tell what the workflow does', () => {
     expect(shapeOf({ ...t2iRoles, sink: null })).toBe('other')
     expect(shapeOf({ ...t2iRoles, prompt: null })).toBe('other')
+  })
+})
+
+describe('toCoachSteps', () => {
+  it('yields one targetless coach step per sequence step so indices stay aligned', () => {
+    const steps = sequenceBuilder(i2vRoles)
+    const coach = toCoachSteps(steps)
+
+    expect(coach).toHaveLength(steps.length)
+    expect(coach.every((s) => !s.coachId && !s.landing)).toBe(true)
+    expect(resolveSteps(coach, () => false)).toHaveLength(steps.length)
   })
 })
