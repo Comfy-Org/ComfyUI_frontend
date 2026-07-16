@@ -4,6 +4,7 @@ import type { BillingBannerInputs } from './useBillingBanner'
 import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
+  billingControlEnabled: true,
   isTeamPlan: true,
   isLoaded: true,
   isActiveSubscription: true,
@@ -40,6 +41,10 @@ describe('deriveBillingBanner', () => {
 
   it('shows no banner outside a team plan', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
+  })
+
+  it('shows no banner when billing control is rolled back, even out of credits', () => {
+    expect(derive({ billingControlEnabled: false, hasFunds: false })).toBeNull()
   })
 
   it('shows no banner until the subscription snapshot has loaded', () => {

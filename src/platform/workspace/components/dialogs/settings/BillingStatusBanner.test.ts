@@ -17,6 +17,7 @@ interface Subscription {
 }
 
 const state = vi.hoisted(() => ({
+  billingControlEnabled: true,
   isActiveSubscription: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
@@ -36,6 +37,16 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get billingControlEnabled() {
+        return state.billingControlEnabled
+      }
+    }
+  })
+}))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -147,6 +158,7 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
+    state.billingControlEnabled = true
     state.isActiveSubscription = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -160,6 +172,13 @@ describe('BillingStatusBanner', () => {
   })
 
   it('renders nothing for a healthy funded team', () => {
+    renderBanner()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('renders nothing when billing control is rolled back, even out of credits', () => {
+    state.billingControlEnabled = false
+    state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
     renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
