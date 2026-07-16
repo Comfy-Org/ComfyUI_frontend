@@ -15,7 +15,6 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -303,7 +302,13 @@ export class LGraph
 
   revision: number = 0
 
-  _version: number = -1
+  private readonly _versionRef = shallowRef(-1)
+  get _version(): number {
+    return toRaw(this)._versionRef.value
+  }
+  set _version(value: number) {
+    toRaw(this)._versionRef.value = value
+  }
   /** The backing store for links.  Keys are wrapped in String() */
   _links: Map<LinkId, LLink> = new Map()
   /**
@@ -474,17 +479,12 @@ export class LGraph
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
-      useNodeBadgeStore().clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
       // bucket with other graphs, so unregister each link individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
-      forEachNode(this, (node) =>
-        useNodeBadgeStore().unregisterNode(this.rootGraph.id, node.id)
-      )
     }
-
     this.id = zeroUuid
     this.revision = 0
 
@@ -558,6 +558,7 @@ export class LGraph
   }
 
   get nodes() {
+    void this._version
     return this._nodes
   }
 
@@ -939,7 +940,6 @@ export class LGraph
 
   /**
    * Increments the internal version counter.
-   * Currently only read for debug display in {@link LGraphCanvas.renderInfo}.
    * Centralized so a future VersionSystem can intercept, batch, or replace it.
    */
   incrementVersion(): void {
@@ -1089,9 +1089,6 @@ export class LGraph
     }
 
     node.graph = this
-    this.incrementVersion()
-
-    useNodeBadgeStore().registerNode(this.rootGraph.id, node.id)
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1117,6 +1114,9 @@ export class LGraph
     if (!shouldSkipComputeOrder) this.updateExecutionOrder()
 
     this.onNodeAdded?.(node)
+
+    // Must follow onNodeAdded: its microtask-deferred hooks must run before the Vue flush this write schedules
+    this.incrementVersion()
 
     this.setDirtyCanvas(true)
     this.change()
@@ -1208,9 +1208,6 @@ export class LGraph
 
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, fireNodeRemovalLifecycle)
-        forEachNode(node.subgraph, (innerNode) =>
-          useNodeBadgeStore().unregisterNode(this.rootGraph.id, innerNode.id)
-        )
         unregisterAllLinkTopologies(node.subgraph)
         unregisterAllRerouteChains(node.subgraph)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
@@ -1239,8 +1236,6 @@ export class LGraph
     if (pos != -1) this._nodes.splice(pos, 1)
 
     delete this._nodes_by_id[node.id]
-    useNodeBadgeStore().unregisterNode(this.rootGraph.id, node.id)
-
     this.onNodeRemoved?.(node)
 
     // close panels

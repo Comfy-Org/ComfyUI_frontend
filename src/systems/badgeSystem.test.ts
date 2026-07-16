@@ -1,16 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeBadgeStore } from '@/stores/nodeBadgeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import type { UUID } from '@/utils/uuid'
 
-import { computeBadges, startBadgeSystem } from './badgeSystem'
+import { computeBadges, nodeBadges } from './badgeSystem'
 import type { BadgeSources } from './badgeSystem'
 
 function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
@@ -27,17 +24,35 @@ function sources(overrides: Partial<BadgeSources> = {}): BadgeSources {
       source: NodeBadgeMode.ShowAll
     },
     colors: { fgColor: '#fff', bgColor: '#0b8', creditsBgColor: '#8D6932' },
-    pricing: { isApiNode: false, showApiPricing: false, priceLabel: '' },
+    pricing: { kind: 'none' },
     ...overrides
   }
 }
 
 describe('computeBadges', () => {
-  it('projects lifecycle, id, and source core rows in that order', () => {
+  it('projects part-tagged core rows carrying raw source text', () => {
     expect(computeBadges(sources())).toEqual([
-      { kind: 'core', text: 'BETA', fgColor: '#fff', bgColor: '#0b8' },
-      { kind: 'core', text: '#5', fgColor: '#fff', bgColor: '#0b8' },
-      { kind: 'core', text: 'my-pack', fgColor: '#fff', bgColor: '#0b8' }
+      {
+        kind: 'core',
+        part: 'lifecycle',
+        text: '[BETA]',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      },
+      {
+        kind: 'core',
+        part: 'id',
+        text: '#5',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      },
+      {
+        kind: 'core',
+        part: 'source',
+        text: 'my-pack',
+        fgColor: '#fff',
+        bgColor: '#0b8'
+      }
     ])
   })
 
@@ -65,7 +80,7 @@ describe('computeBadges', () => {
       })
     )
 
-    expect(rows.map((b) => b.text)).toEqual(['BETA'])
+    expect(rows.map((b) => b.text)).toEqual(['[BETA]'])
   })
 
   it('projects only the id row without a node definition', () => {
@@ -84,15 +99,12 @@ describe('computeBadges', () => {
 
   it('projects a credits row for a priced api node', () => {
     const rows = computeBadges(
-      sources({
-        pricing: { isApiNode: true, showApiPricing: true, priceLabel: '$0.04' }
-      })
+      sources({ pricing: { kind: 'api-node', label: '$0.04' } })
     )
 
     expect(rows.at(-1)).toEqual({
       kind: 'credits',
       text: '$0.04',
-      iconKey: 'credits',
       fgColor: '#fff',
       bgColor: '#8D6932'
     })
@@ -100,27 +112,51 @@ describe('computeBadges', () => {
 
   it.for([
     {
-      name: 'not an api node',
-      pricing: { isApiNode: false, showApiPricing: true, priceLabel: '$1' }
-    },
-    {
-      name: 'pricing hidden by setting',
-      pricing: { isApiNode: true, showApiPricing: false, priceLabel: '$1' }
+      name: 'pricing does not apply',
+      pricing: { kind: 'none' } as const
     },
     {
       name: 'no price label yet',
-      pricing: { isApiNode: true, showApiPricing: true, priceLabel: '' }
+      pricing: { kind: 'api-node', label: '' } as const
     }
   ])('projects no credits row when $name', ({ pricing }) => {
     const rows = computeBadges(sources({ pricing }))
 
     expect(rows.filter((b) => b.kind === 'credits')).toEqual([])
   })
+
+  function subgraphPricing(apiNodeCount: number, singleLabel = '') {
+    return { kind: 'subgraph', apiNodeCount, singleLabel } as const
+  }
+
+  it('aggregates multiple inner api nodes into a partner count', () => {
+    const rows = computeBadges(sources({ pricing: subgraphPricing(5) }))
+
+    expect(rows.at(-1)).toMatchObject({
+      kind: 'credits',
+      text: 'Partner Nodes x 5'
+    })
+  })
+
+  it('passes a single inner api node label through to the wrapper', () => {
+    const rows = computeBadges(
+      sources({ pricing: subgraphPricing(1, '$0.05/Run') })
+    )
+
+    expect(rows.at(-1)).toMatchObject({ kind: 'credits', text: '$0.05/Run' })
+  })
+
+  it.for([
+    { name: 'no inner api nodes', pricing: subgraphPricing(0) },
+    { name: 'a single empty label', pricing: subgraphPricing(1, '') }
+  ])('projects no wrapper credits row given $name', ({ pricing }) => {
+    const rows = computeBadges(sources({ pricing }))
+
+    expect(rows.filter((b) => b.kind === 'credits')).toEqual([])
+  })
 })
 
-describe('startBadgeSystem', () => {
-  const graphId: UUID = 'graph-root'
-
+describe('nodeBadges', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -148,83 +184,38 @@ describe('startBadgeSystem', () => {
     })
   }
 
-  it('writes rows for registered nodes and reacts to source changes', async () => {
-    const badgeStore = useNodeBadgeStore()
+  it('derives rows and recomputes when a source changes', () => {
     const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
 
-    const stop = startBadgeSystem({
-      graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-
-    const texts = () =>
-      badgeStore.getBadges(graphId, node.id).map((b) => b.text)
-    expect(texts()).toEqual(['#7'])
+    expect(nodeBadges(node).map((b) => b.text)).toEqual(['#7'])
 
     seedTestNodeDef()
-    await nextTick()
 
-    expect(texts()).toEqual(['BETA', '#7', 'my_pack'])
-
-    stop()
+    expect(nodeBadges(node).map((b) => b.text)).toEqual([
+      '[BETA]',
+      '#7',
+      'my_pack'
+    ])
   })
 
-  it('starts watching nodes registered after system start', async () => {
-    const badgeStore = useNodeBadgeStore()
+  it('returns identity-stable rows until a source changes', () => {
     const node = makeNode(3)
 
-    const stop = startBadgeSystem({
-      graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-    expect(badgeStore.getBadges(graphId, node.id)).toEqual([])
+    const first = nodeBadges(node)
+    expect(nodeBadges(node)).toBe(first)
 
-    badgeStore.registerNode(graphId, node.id)
-    await nextTick()
-
-    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
-      '#3'
-    ])
-
-    stop()
+    seedTestNodeDef()
+    const second = nodeBadges(node)
+    expect(second).not.toBe(first)
+    expect(nodeBadges(node)).toBe(second)
   })
 
-  it('stops maintaining rows once a node is unregistered', async () => {
-    const badgeStore = useNodeBadgeStore()
-    const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
-    const stop = startBadgeSystem({
-      graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
+  it('memoizes per node instance', () => {
+    const a = makeNode(1)
+    const b = makeNode(2)
 
-    badgeStore.unregisterNode(graphId, node.id)
-    await nextTick()
-    seedTestNodeDef()
-    await nextTick()
-
-    expect(badgeStore.registeredNodeIds(graphId)).toEqual([])
-    expect(badgeStore.getBadges(graphId, node.id)).toEqual([])
-
-    stop()
-  })
-
-  it('stops writing after the system itself is stopped', async () => {
-    const badgeStore = useNodeBadgeStore()
-    const node = makeNode(7)
-    badgeStore.registerNode(graphId, node.id)
-    const stop = startBadgeSystem({
-      graphId,
-      resolveNode: (id) => (id === node.id ? node : undefined)
-    })
-
-    stop()
-    seedTestNodeDef()
-    await nextTick()
-
-    expect(badgeStore.getBadges(graphId, node.id).map((b) => b.text)).toEqual([
-      '#7'
-    ])
+    expect(nodeBadges(a).map((r) => r.text)).toEqual(['#1'])
+    expect(nodeBadges(b).map((r) => r.text)).toEqual(['#2'])
+    expect(nodeBadges(a)).toBe(nodeBadges(a))
   })
 })

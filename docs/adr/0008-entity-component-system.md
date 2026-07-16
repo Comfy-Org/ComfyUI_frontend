@@ -37,14 +37,20 @@ writes are tracked without an action chokepoint. The `layoutStore` link
 connectivity mirror and the `slot._floatingLinks` sets were deleted in
 the same work; the layout store now holds geometry only.
 
-### Amendment (2026-07-14, PR 13458)
+### Amendment (2026-07-15, PR 13458)
 
-`nodeBadgeStore` joined the dedicated-store set: plain `BadgeData` rows
-keyed by `NodeId` in root-graph-scoped buckets. Unlike the
-proxy-adoption stores above, rows are written by a reactive badge
-system (`src/systems/badgeSystem.ts`) — a pure `computeBadges` inside a
-per-node effect scope — see
-[Node Badge Store](../architecture/node-badge-store.md).
+Node badge rows remain plain `BadgeData`, but they are derived presentation
+data rather than authoritative entity state. Materializing them in a dedicated
+store duplicated settings, node definitions, palette, pricing, widget, link,
+and graph state. It also required registration, teardown, and cache lifecycle
+logic.
+
+Instead, `src/systems/badgeSystem.ts` keeps one lazy computed projection per
+node instance. Renderers query that projection through a temporary app-layer
+registration seam, which keeps the litegraph layer independent from the badge
+system's pricing dependencies. Badge rows remain transient: they are
+not serialized, transmitted through CRDT, or included in undo history. See
+[Node Badge Store](../architecture/node-badge-store.md) for the design history.
 
 ## Context
 
@@ -246,6 +252,15 @@ Systems are pure functions that query the relevant store(s) for entities with sp
 - **ExecutionSystem** — queries `Execution` + `Connectivity` to determine run order
 - **LayoutSystem** — queries `Position` + `Dimensions` + structural components for auto-layout
 - **SelectionSystem** — queries `Position` for point entities and `Position` + `Dimensions` for box hit-testing
+
+Until a `RenderSystem` owns render orchestration, node badges use a registered
+query function so the legacy canvas can read the app-owned projection without
+importing the badge system. Once the `RenderSystem` can query entity data and
+compose renderer input, badge lookup should move there. That migration should
+delete the registration seam and remove badge projection access from
+`LGraphNode`; the render system will query `BadgeData` and pass plain draw data
+to the canvas. This keeps badge derivation app-owned without materializing its
+output as a second source of truth.
 
 System design is deferred to a future ADR. For detailed before/after walkthroughs of how lifecycle operations (node removal, link creation, subgraph nesting, etc.) transform under ECS, see [ECS Lifecycle Scenarios](../architecture/ecs-lifecycle-scenarios.md).
 

@@ -14,7 +14,6 @@ import type { NodeId } from '@/types/nodeId'
 
 import type {
   LGraph,
-  LGraphBadge,
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -22,8 +21,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-
-type Badges = (LGraphBadge | (() => LGraphBadge))[]
 
 const reactiveArrayNodes = new WeakSet<LGraphNode>()
 
@@ -35,7 +32,6 @@ export interface VueNodeData {
   title: string
   type: string
   apiNode?: boolean
-  badges?: Badges
   bgcolor?: string
   color?: string
   flags?: {
@@ -155,7 +151,6 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     executing: false,
     subgraphId,
     apiNode: node.constructor?.nodeData?.api_node ?? false,
-    badges: node.badges,
     hasErrors: !!node.has_errors,
     inputs,
     outputs,
@@ -384,12 +379,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               vueNodeData.set(nodeId, {
                 ...currentData,
                 showAdvanced: Boolean(propertyEvent.newValue)
-              })
-              break
-            case 'badges':
-              vueNodeData.set(nodeId, {
-                ...currentData,
-                badges: propertyEvent.newValue as Badges
               })
               break
           }

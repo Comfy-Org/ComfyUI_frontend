@@ -469,12 +469,29 @@ const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
 }
 
 // WeakMaps avoid memory leaks when nodes are removed.
-type CacheEntry = { sig: string; label: string }
 type InflightEntry = { sig: string; promise: Promise<void> }
 
-const cache = new WeakMap<LGraphNode, CacheEntry>()
-const desiredSig = new WeakMap<LGraphNode, string>()
+const MAX_CACHED_SIGNATURES = 8
+const cache = new WeakMap<LGraphNode, Map<string, string>>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
+
+function nodeSigCache(node: LGraphNode): Map<string, string> {
+  const existing = cache.get(node)
+  if (existing) return existing
+  const next = new Map<string, string>()
+  cache.set(node, next)
+  return next
+}
+
+function cacheLabel(node: LGraphNode, sig: string, label: string): void {
+  const sigCache = nodeSigCache(node)
+  sigCache.delete(sig)
+  sigCache.set(sig, label)
+  for (const oldest of sigCache.keys()) {
+    if (sigCache.size <= MAX_CACHED_SIGNATURES) break
+    sigCache.delete(oldest)
+  }
+}
 
 const scheduleEvaluation = (
   node: LGraphNode,
@@ -482,8 +499,6 @@ const scheduleEvaluation = (
   ctx: JsonataEvalContext,
   sig: string
 ) => {
-  desiredSig.set(node, sig)
-
   const running = inflight.get(node)
   if (running && running.sig === sig) return
 
@@ -491,19 +506,11 @@ const scheduleEvaluation = (
 
   const promise = Promise.resolve(rule._compiled.evaluate(ctx))
     .then((res) => {
-      const label = formatPricingResult(res)
-
-      // Ignore stale results: if the node changed while we were evaluating,
-      // desiredSig will no longer match.
-      if (desiredSig.get(node) !== sig) return
-
-      cache.set(node, { sig, label })
+      cacheLabel(node, sig, formatPricingResult(res))
     })
     .catch(() => {
       // Cache empty to avoid retry-spam for same signature
-      if (desiredSig.get(node) === sig) {
-        cache.set(node, { sig, label: '' })
-      }
+      cacheLabel(node, sig, '')
     })
     .finally(() => {
       const cur = inflight.get(node)
@@ -574,26 +581,15 @@ export const useNodePricing = () => {
     const ctx = buildJsonataContext(node, rule, widgetOverrides)
     const sig = buildSignature(ctx, rule)
 
-    const cached = cache.get(node)
-    if (cached && cached.sig === sig) {
-      return cached.label
-    }
+    const sigCache = cache.get(node)
+    const hit = sigCache?.get(sig)
+    if (hit !== undefined) return hit
 
     // Cache miss: start async evaluation.
-    // Return last-known label (if any) to avoid flicker; otherwise return empty.
+    // Return the last-known label (if any) to avoid flicker.
     scheduleEvaluation(node, rule, ctx, sig)
-    return cached?.label ?? ''
-  }
-
-  /**
-   * Expose raw pricing config for tooling/debug UI.
-   * (Strips compiled expression from returned object.)
-   */
-  const getNodePricingConfig = (node: LGraphNode) => {
-    const rule = getRuleForNode(node)
-    if (!rule) return undefined
-    const { _compiled, ...config } = rule
-    return config
+    const labels = [...(sigCache?.values() ?? [])]
+    return labels.at(-1) ?? ''
   }
 
   /**
@@ -657,28 +653,13 @@ export const useNodePricing = () => {
     return priceBadge?.depends_on?.inputs ?? []
   }
 
-  /**
-   * Trigger price recalculation for a node (call when inputs change).
-   * Forces re-evaluation by calling getNodeDisplayPrice which will detect
-   * the signature change and schedule a new evaluation.
-   */
-  const triggerPriceRecalculation = (node: LGraphNode): void => {
-    const nodeData = getNodeConstructorData(node)
-    if (!nodeData?.api_node) return
-
-    // Call getNodeDisplayPrice to trigger evaluation if signature changed
-    getNodeDisplayPrice(node)
-  }
-
   return {
     getNodeDisplayPrice,
-    getNodePricingConfig,
     getRelevantWidgetNames,
     hasDynamicPricing,
     getInputGroupPrefixes,
     getInputNames,
     getNodeRevisionRef, // Each node has its own independent ref, so updates to one won't trigger others
-    triggerPriceRecalculation,
     pricingRevision: readonly(pricingTick) // reactive invalidation signal
   }
 }

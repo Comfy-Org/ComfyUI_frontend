@@ -174,6 +174,47 @@ export function mapAllNodes<T>(
 }
 
 /**
+ * Maps a function over each unique node in a graph hierarchy. Subgraph
+ * instances share their definition's nodes, so unlike {@link mapAllNodes}
+ * each subgraph definition is visited once and cyclic subgraphs terminate.
+ *
+ * @param graph - The root graph to traverse
+ * @param mapFn - Function to apply to each node
+ * @returns Array of mapped results (excluding undefined values)
+ */
+export function mapUniqueNodes<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined
+): T[] {
+  return mapUnvisitedNodes(graph, mapFn, new Set([String(graph.id)]))
+}
+
+function mapUnvisitedNodes<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<string>
+): T[] {
+  const results: T[] = []
+
+  visitGraphNodes(graph, (node) => {
+    if (node.isSubgraphNode?.() && node.subgraph) {
+      const subgraphId = String(node.subgraph.id)
+      if (!visited.has(subgraphId)) {
+        visited.add(subgraphId)
+        results.push(...mapUnvisitedNodes(node.subgraph, mapFn, visited))
+      }
+    }
+
+    const result = mapFn(node)
+    if (result !== undefined) {
+      results.push(result)
+    }
+  })
+
+  return results
+}
+
+/**
  * Executes a side-effect function on all nodes in a graph hierarchy.
  * This is for operations that modify nodes or perform side effects.
  *

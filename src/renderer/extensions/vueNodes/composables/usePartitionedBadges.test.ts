@@ -3,128 +3,78 @@ import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { computed, ref } from 'vue'
-
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { usePriceBadge } from '@/composables/node/usePriceBadge'
-import type { LGraph, LGraphBadge } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import {
-  trackNodePrice,
-  usePartitionedBadges
-} from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-const GRAPH_ID = 'graph-test'
-
-vi.mock('@/scripts/app', () => ({ app: {} }))
+const NODE_ID = toNodeId(5)
 
 const settings = vi.hoisted(() => new Map<string, unknown>())
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: (key: string) => settings.get(key) })
 }))
 
-vi.mock('@/composables/node/useNodePricing', () => {
-  const revision = ref(0)
-  return {
-    useNodePricing: () => ({
-      hasDynamicPricing: () => true,
-      getRelevantWidgetNames: () => [],
-      getInputNames: () => ['image'],
-      getInputGroupPrefixes: () => ['ref_images'],
-      getNodeRevisionRef: () => revision
-    })
-  }
-})
+const getNodeDisplayPrice = vi.fn(() => '$0.05 x 3 Runs')
+vi.mock('@/composables/node/useNodePricing', () => ({
+  useNodePricing: () => ({
+    getNodeDisplayPrice,
+    getNodeRevisionRef: () => ({ value: 0 }),
+    hasDynamicPricing: () => false,
+    getRelevantWidgetNames: () => [],
+    getInputNames: () => [],
+    getInputGroupPrefixes: () => []
+  })
+}))
 
-function makeInputSlot(name: string): INodeInputSlot {
-  return { name, type: 'IMAGE', link: null, boundingRect: [0, 0, 0, 0] }
+function seedGraph(node: LGraphNode): void {
+  const graph = fromPartial<LGraph>({
+    id: 'graph-test',
+    getNodeById: (id: NodeId) => (id === NODE_ID ? node : null),
+    subgraphs: new Map()
+  })
+  Reflect.set(graph, 'rootGraph', graph)
+  node.graph = graph
+  useCanvasStore().currentGraph = graph
 }
 
-describe('trackNodePrice', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    useCanvasStore().currentGraph = fromPartial<LGraph>({
-      rootGraph: { id: GRAPH_ID }
-    })
-    // Instantiate up front so first-use state registration inside a test
-    // cannot masquerade as connectivity-driven invalidation.
-    useLinkStore()
-    useWidgetValueStore()
-  })
-
-  function trackedRuns(inputs: INodeInputSlot[]) {
-    let runs = 0
-    const tracker = computed(() => {
-      trackNodePrice({ id: '5', type: 'ApiNode', inputs })
-      runs += 1
-      return runs
-    })
-    return { read: () => tracker.value, runs: () => runs }
+function makeNode(
+  type: string,
+  { apiNode = false }: { apiNode?: boolean } = {}
+): LGraphNode {
+  class TestNode extends LGraphNode {
+    static override nodeData = { name: type, api_node: apiNode }
   }
+  const node = new TestNode(type)
+  node.id = NODE_ID
+  node.type = type
+  seedGraph(node)
+  return node
+}
 
-  function connect(slot: number, linkId: number) {
-    useLinkStore().registerLink(GRAPH_ID, {
-      id: toLinkId(linkId),
-      originNodeId: toNodeId(99),
-      originSlot: 0,
-      targetNodeId: toNodeId(5),
-      targetSlot: slot,
-      type: 'IMAGE'
+function addNodeDef(name: string, python_module: string): void {
+  useNodeDefStore().addNodeDef(
+    fromPartial<ComfyNodeDef>({
+      name,
+      display_name: name,
+      category: 'test',
+      python_module,
+      experimental: true,
+      input: {},
+      output: []
     })
-  }
+  )
+}
 
-  it('re-runs when a pricing-relevant input connects or disconnects', () => {
-    const inputs = [makeInputSlot('image'), makeInputSlot('other')]
-    const { read, runs } = trackedRuns(inputs)
-
-    read()
-    expect(runs()).toBe(1)
-
-    connect(0, 1)
-    read()
-    expect(runs()).toBe(2)
-
-    const linkStore = useLinkStore()
-    const topology = linkStore.getInputSlotLink(GRAPH_ID, toNodeId(5), 0)!
-    linkStore.deleteLink(GRAPH_ID, topology)
-    read()
-    expect(runs()).toBe(3)
-  })
-
-  it('re-runs when an input-group input connects', () => {
-    const inputs = [makeInputSlot('image'), makeInputSlot('ref_images.img0')]
-    const { read, runs } = trackedRuns(inputs)
-
-    read()
-    expect(runs()).toBe(1)
-
-    connect(1, 2)
-    read()
-    expect(runs()).toBe(2)
-  })
-
-  it('does not re-run when an irrelevant input connects', () => {
-    const inputs = [makeInputSlot('image'), makeInputSlot('other')]
-    // Seed the graph's link bucket so its creation is not what gets observed.
-    connect(7, 9)
-    const { read, runs } = trackedRuns(inputs)
-
-    read()
-    expect(runs()).toBe(1)
-
-    connect(1, 3)
-    read()
-    expect(runs()).toBe(1)
-  })
-})
+function nodeData(type: string): VueNodeData {
+  return fromPartial<VueNodeData>({ id: NODE_ID, type })
+}
 
 describe('usePartitionedBadges', () => {
   beforeEach(() => {
@@ -135,63 +85,82 @@ describe('usePartitionedBadges', () => {
       'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
       NodeBadgeMode.ShowAll
     )
-    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.None)
+    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.ShowAll)
+    settings.set('Comfy.NodeBadge.ShowApiPricing', true)
   })
 
-  function addNodeDef(name: string, python_module: string) {
-    useNodeDefStore().addNodeDef(
-      fromPartial<ComfyNodeDef>({
-        name,
-        display_name: name,
-        category: 'test',
-        python_module,
-        input: {},
-        output: []
-      })
-    )
-  }
-
-  function makeNodeData(
-    type: string,
-    badges: Partial<LGraphBadge>[]
-  ): VueNodeData {
-    return fromPartial<VueNodeData>({ id: '5', type, badges })
-  }
-
-  it('partitions badges into core, pricing, and extension rows', () => {
+  it('partitions derived rows into core chips and pricing entries', () => {
+    makeNode('CustomNode', { apiNode: true })
     addNodeDef('CustomNode', 'custom_nodes.testpack')
-    const credits = usePriceBadge().getCreditsBadge('$0.05 x 3 Runs')
 
-    const partitioned = usePartitionedBadges(
-      makeNodeData('CustomNode', [
-        { text: 'legacy-core-slot' },
-        credits,
-        { text: 'EXT' },
-        { text: '' }
-      ])
-    )
+    const partitioned = usePartitionedBadges(nodeData('CustomNode'))
 
     expect(partitioned.value).toEqual({
       hasComfyBadge: false,
-      core: [{ text: '#5' }],
-      extension: [expect.objectContaining({ text: 'EXT' })],
+      core: [{ text: 'BETA' }, { text: '#5' }, { text: 'testpack' }],
+      extension: [],
       pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
     })
   })
 
-  it('shows the Comfy badge only for core nodes without pricing', () => {
-    settings.set('Comfy.NodeBadge.NodeSourceBadgeMode', NodeBadgeMode.ShowAll)
+  it('suppresses the source row and shows the logo for a core node', () => {
+    makeNode('CoreNode')
     addNodeDef('CoreNode', 'nodes')
 
-    const withoutPricing = usePartitionedBadges(
-      makeNodeData('CoreNode', [{ text: 'legacy-core-slot' }])
-    )
-    expect(withoutPricing.value.hasComfyBadge).toBe(true)
+    const partitioned = usePartitionedBadges(nodeData('CoreNode'))
 
-    const credits = usePriceBadge().getCreditsBadge('$0.10')
-    const withPricing = usePartitionedBadges(
-      makeNodeData('CoreNode', [{ text: 'legacy-core-slot' }, credits])
-    )
-    expect(withPricing.value.hasComfyBadge).toBe(false)
+    expect(partitioned.value.core.some((chip) => chip.text === '#5')).toBe(true)
+    expect(partitioned.value.hasComfyBadge).toBe(true)
+  })
+
+  it('shows no logo when the core node has pricing', () => {
+    makeNode('CoreNode', { apiNode: true })
+    addNodeDef('CoreNode', 'nodes')
+
+    const partitioned = usePartitionedBadges(nodeData('CoreNode'))
+
+    expect(partitioned.value.hasComfyBadge).toBe(false)
+    expect(partitioned.value.pricing).toEqual([
+      { required: '$0.05', rest: 'x 3 Runs' }
+    ])
+  })
+
+  it('appends non-empty node.badges extension badges after derived rows', () => {
+    const node = makeNode('CustomNode')
+    node.badges = [
+      new LGraphBadge({ text: 'EXT' }),
+      () => new LGraphBadge({ text: '' })
+    ]
+
+    const partitioned = usePartitionedBadges(nodeData('CustomNode'))
+
+    expect(partitioned.value.core).toEqual([{ text: '#5' }])
+    expect(partitioned.value.extension).toEqual([
+      expect.objectContaining({ text: 'EXT' })
+    ])
+  })
+
+  it('reacts to a core node definition registered after creation', () => {
+    makeNode('CoreNode')
+    const partitioned = usePartitionedBadges(nodeData('CoreNode'))
+    expect(partitioned.value.hasComfyBadge).toBe(false)
+
+    addNodeDef('CoreNode', 'nodes')
+
+    expect(partitioned.value.hasComfyBadge).toBe(true)
+  })
+
+  it('re-partitions when a badge source changes', () => {
+    makeNode('CustomNode')
+    const partitioned = usePartitionedBadges(nodeData('CustomNode'))
+    expect(partitioned.value.core).toEqual([{ text: '#5' }])
+
+    addNodeDef('CustomNode', 'custom_nodes.testpack')
+
+    expect(partitioned.value.core).toEqual([
+      { text: 'BETA' },
+      { text: '#5' },
+      { text: 'testpack' }
+    ])
   })
 })

@@ -27,7 +27,8 @@ import {
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
-import { BadgePosition, LGraphBadge } from './LGraphBadge'
+import { LGraphBadge } from './LGraphBadge'
+import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -420,9 +421,26 @@ export class LGraphNode
   widgets_start_y?: number
   lostFocusAt?: number
   gotFocusAt?: number
+  /**
+   * Extension-provided badges, drawn after the derived rows from
+   * {@link badgeRows}. Thunks are re-evaluated every frame.
+   */
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
+  /** @deprecated Badges always render top-right; assignment is ignored. */
+  get badgePosition(): string {
+    warnDeprecated(
+      'LGraphNode.badgePosition is deprecated: badges always render top-right.',
+      this
+    )
+    return 'top-right'
+  }
+  set badgePosition(_value: string) {
+    warnDeprecated(
+      'LGraphNode.badgePosition is deprecated: badges always render top-right.',
+      this
+    )
+  }
   title_buttons: LGraphButton[] = []
-  badgePosition: BadgePosition = BadgePosition.TopLeft
   onOutputRemoved?(this: LGraphNode, slot: number): void
   onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
   /**
@@ -3594,18 +3612,16 @@ export class LGraphNode
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
-    const badgeInstances = this.badges.map((badge) =>
-      badge instanceof LGraphBadge ? badge : badge()
-    )
-    const isLeftAligned = this.badgePosition === BadgePosition.TopLeft
+    const badgeInstances = [
+      ...badgeDrawObjects(this, badgeRows(this)),
+      ...this.badges.map((badge) =>
+        badge instanceof LGraphBadge ? badge : badge()
+      )
+    ]
 
-    let currentX = isLeftAligned
-      ? 0
-      : this.width -
-        badgeInstances.reduce(
-          (acc, badge) => acc + badge.getWidth(ctx) + gap,
-          0
-        )
+    let currentX =
+      this.width -
+      badgeInstances.reduce((acc, badge) => acc + badge.getWidth(ctx) + gap, 0)
     const y = -(LiteGraph.NODE_TITLE_HEIGHT + gap)
 
     for (const badge of badgeInstances) {
