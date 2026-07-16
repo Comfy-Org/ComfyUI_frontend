@@ -769,7 +769,7 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   return workflowTemplatesStore.navGroupedTemplates
 })
 
-const gridStyle = computed(() => createGridStyle())
+const gridStyle = computed(() => createGridStyle({ gap: '0.5rem' }))
 
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {
