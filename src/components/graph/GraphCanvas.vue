@@ -10,7 +10,7 @@
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
         <div
-          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
+          class="flex h-full items-center border-b border-(--region-stroke) bg-comfy-menu-bg"
         >
           <WorkflowTabs />
           <TopbarBadges />

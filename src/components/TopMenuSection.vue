@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-1 flex flex-col gap-1 pt-2"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -14,7 +14,7 @@
         <div class="flex items-center gap-2">
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+            class="pointer-events-auto flex h-(--workflow-tabs-height) shrink-0 items-center rounded-lg bg-comfy-menu-bg px-1 shadow-interface"
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
@@ -57,14 +57,12 @@
               v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"
               variant="secondary"
+              size="icon"
               :aria-label="t('actionbar.shareTooltip')"
               @click="() => openShareDialog().catch(toastErrorHandler)"
               @pointerenter="prefetchShareDialog"
             >
               <i class="icon-[comfy--send] size-4" />
-              <span class="not-md:hidden">
-                {{ t('actionbar.share') }}
-              </span>
             </Button>
             <div v-if="!isRightSidePanelOpen" class="relative">
               <Button
@@ -211,18 +209,18 @@ const isActionbarContainerEmpty = computed(
 )
 const actionbarContainerClass = computed(() => {
   const base =
-    'actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 rounded-lg border bg-comfy-menu-bg shadow-interface'
+    'actionbar-container pointer-events-auto relative flex h-[var(--workflow-tabs-height)] items-center gap-2 rounded-lg bg-comfy-menu-bg shadow-interface'
 
   if (isActionbarContainerEmpty.value) {
     return cn(
       base,
       '-ml-2 w-0 min-w-0 border-transparent shadow-none',
       'has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto',
-      'has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+      'has-[.border-dashed]:border has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
     )
   }
 
-  return cn(base, 'px-2', 'border-interface-stroke')
+  return cn(base, 'px-1')
 })
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
