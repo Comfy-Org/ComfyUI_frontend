@@ -1,8 +1,19 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
+
+// The setup island hydrates on visibility; clicks before hydration are
+// no-ops, so retry until the tab actually activates.
+async function selectClientTab(setup: Locator, name: string) {
+  const tab = setup.getByRole('tab', { name })
+  await expect(async () => {
+    await tab.click()
+    await expect(tab).toHaveAttribute('data-state', 'active', { timeout: 500 })
+  }).toPass()
+}
 
 test.describe('MCP page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -51,7 +62,7 @@ test.describe('MCP page @smoke', () => {
 
     await expect(activePanel).toContainText('Add custom connector')
 
-    await setup.getByRole('tab', { name: 'Claude Code Terminal' }).click()
+    await selectClientTab(setup, 'Claude Code Terminal')
     await expect(activePanel).toContainText(
       `claude mcp add --transport http comfy-cloud ${MCP_ENDPOINT}`
     )
@@ -60,20 +71,20 @@ test.describe('MCP page @smoke', () => {
     ).toBeVisible()
     await expect(agentHeading).toBeVisible()
 
-    await setup.getByRole('tab', { name: 'Codex' }).click()
+    await selectClientTab(setup, 'Codex')
     await expect(activePanel).toContainText(
       `codex mcp add comfy-cloud --url ${MCP_ENDPOINT}`
     )
     await expect(agentHeading).toHaveCount(0)
 
-    await setup.getByRole('tab', { name: 'Cursor' }).click()
+    await selectClientTab(setup, 'Cursor')
     await expect(activePanel).toContainText('X-API-Key')
     await expect(
       activePanel.getByRole('link', { name: 'platform.comfy.org' })
     ).toHaveAttribute('href', 'https://platform.comfy.org/profile/api-keys')
     await expect(agentHeading).toBeVisible()
 
-    await setup.getByRole('tab', { name: 'OpenClaw' }).click()
+    await selectClientTab(setup, 'OpenClaw')
     await expect(activePanel).toContainText(
       'openclaw skills install @comfy-org/comfy'
     )
@@ -84,7 +95,7 @@ test.describe('MCP page @smoke', () => {
   }) => {
     const setup = page.locator('#setup')
     await setup.scrollIntoViewIfNeeded()
-    await setup.getByRole('tab', { name: 'Claude Code Terminal' }).click()
+    await selectClientTab(setup, 'Claude Code Terminal')
     await expect(
       setup.getByRole('link', { name: 'View on GitHub' })
     ).toHaveAttribute('href', 'https://github.com/Comfy-Org/comfy-skills')
@@ -127,7 +138,7 @@ test.describe('MCP page zh-CN @smoke', () => {
     await expect(
       setup.getByRole('heading', { name: '添加自定义连接器' })
     ).toBeVisible()
-    await setup.getByRole('tab', { name: 'Claude Code Terminal' }).click()
+    await selectClientTab(setup, 'Claude Code Terminal')
     await expect(setup.getByRole('heading', { name: '手动安装' })).toBeVisible()
     await expect(setup.getByText(MCP_ENDPOINT, { exact: true })).toBeVisible()
   })
