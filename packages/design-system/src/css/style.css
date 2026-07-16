@@ -320,9 +320,11 @@
   --base-background-sunken: var(--color-charcoal-950);
 }
 
-/* Default light palette: the Comfy Design System light-mode values. */
+/* Default light palette: the Comfy Design System light-mode values.
+   Sidebar is nudged one step lighter (smoke-100) so the menu reads as
+   near-white while the selected tab keeps smoke-200 to stay distinct. */
 :root[data-color-palette='light'] {
-  --sidebar-surface: var(--color-smoke-200);
+  --sidebar-surface: var(--color-smoke-100);
   --workflow-tab-selected-surface: var(--color-smoke-200);
   --workflow-tab-hover-surface: var(--color-smoke-400);
   --workflow-tab-divider: var(--color-smoke-400);
