@@ -72,8 +72,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { useTelemetry } from '@/platform/telemetry'
 
+import { trackFirstRunTour } from './firstRunTourTelemetry'
 import {
   isUpgradeModalOpen,
   useOnboardingTourStore
@@ -95,7 +95,7 @@ const shown = ref(false)
 const { start: startAppearDelay, stop: cancelAppearDelay } = useTimeoutFn(
   () => {
     shown.value = true
-    useTelemetry()?.trackOnboardingTourNudgeShown?.()
+    trackFirstRunTour('nudge_shown')
   },
   () => appearDelayMs,
   { immediate: false }
@@ -117,7 +117,7 @@ watch(upgradeModalOpen, (open, wasOpen) => {
 
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('command')
-  useTelemetry()?.trackOnboardingTourExploreTemplatesClicked?.()
+  trackFirstRunTour('explore_templates_clicked')
   store.dismissNudge()
 }
 </script>

@@ -17,12 +17,6 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
-  OnboardingTourCompletedMetadata,
-  OnboardingTourRunTriggeredMetadata,
-  OnboardingTourSkippedMetadata,
-  OnboardingTourStartedMetadata,
-  OnboardingTourStepViewedMetadata,
-  OnboardingTourUpgradeShownMetadata,
   OnboardingTourMetadata,
   OnboardingTourStage,
   SearchQueryMetadata,
@@ -305,55 +299,5 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
-  }
-
-  trackOnboardingTourStarted(metadata: OnboardingTourStartedMetadata): void {
-    this.dispatch((provider) => provider.trackOnboardingTourStarted?.(metadata))
-  }
-
-  trackOnboardingTourStepViewed(
-    metadata: OnboardingTourStepViewedMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackOnboardingTourStepViewed?.(metadata)
-    )
-  }
-
-  trackOnboardingTourRunTriggered(
-    metadata: OnboardingTourRunTriggeredMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackOnboardingTourRunTriggered?.(metadata)
-    )
-  }
-
-  trackOnboardingTourCompleted(
-    metadata: OnboardingTourCompletedMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackOnboardingTourCompleted?.(metadata)
-    )
-  }
-
-  trackOnboardingTourSkipped(metadata: OnboardingTourSkippedMetadata): void {
-    this.dispatch((provider) => provider.trackOnboardingTourSkipped?.(metadata))
-  }
-
-  trackOnboardingTourUpgradeShown(
-    metadata: OnboardingTourUpgradeShownMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackOnboardingTourUpgradeShown?.(metadata)
-    )
-  }
-
-  trackOnboardingTourNudgeShown(): void {
-    this.dispatch((provider) => provider.trackOnboardingTourNudgeShown?.())
-  }
-
-  trackOnboardingTourExploreTemplatesClicked(): void {
-    this.dispatch((provider) =>
-      provider.trackOnboardingTourExploreTemplatesClicked?.()
-    )
   }
 }

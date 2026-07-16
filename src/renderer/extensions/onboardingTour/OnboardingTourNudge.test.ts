@@ -10,8 +10,7 @@ import enMessages from '@/locales/en/main.json'
 
 const mocks = vi.hoisted(() => ({
   show: vi.fn(),
-  trackExploreTemplatesClicked: vi.fn(),
-  trackNudgeShown: vi.fn()
+  trackOnboardingTour: vi.fn()
 }))
 
 // A reactive backing so the component's modal-close watch actually fires, the
@@ -23,11 +22,7 @@ vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackOnboardingTourExploreTemplatesClicked:
-      mocks.trackExploreTemplatesClicked,
-    trackOnboardingTourNudgeShown: mocks.trackNudgeShown
-  })
+  useTelemetry: () => ({ trackOnboardingTour: mocks.trackOnboardingTour })
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -64,8 +59,7 @@ describe('OnboardingTourNudge', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useOnboardingTourStore()
     mocks.show.mockReset()
-    mocks.trackExploreTemplatesClicked.mockReset()
-    mocks.trackNudgeShown.mockReset()
+    mocks.trackOnboardingTour.mockReset()
     openDialogs.value = []
   })
 
@@ -131,10 +125,16 @@ describe('OnboardingTourNudge', () => {
 
       store.showNudge()
       await vi.advanceTimersByTimeAsync(1000)
-      expect(mocks.trackNudgeShown).not.toHaveBeenCalled()
+      expect(mocks.trackOnboardingTour).not.toHaveBeenCalledWith(
+        'nudge_shown',
+        expect.anything()
+      )
 
       await vi.advanceTimersByTimeAsync(1000)
-      expect(mocks.trackNudgeShown).toHaveBeenCalledOnce()
+      expect(mocks.trackOnboardingTour).toHaveBeenCalledExactlyOnceWith(
+        'nudge_shown',
+        expect.objectContaining({ tour: 'firstRun' })
+      )
     })
   })
 
@@ -169,7 +169,10 @@ describe('OnboardingTourNudge', () => {
     )
 
     expect(mocks.show).toHaveBeenCalledOnce()
-    expect(mocks.trackExploreTemplatesClicked).toHaveBeenCalledOnce()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+      'explore_templates_clicked',
+      expect.objectContaining({ tour: 'firstRun' })
+    )
   })
 
   it('permanently dismisses on Not now and does not resurface', async () => {

@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { effectScope, nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { OnboardingTourStage } from '@/platform/telemetry/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
@@ -45,12 +46,7 @@ const mocks = vi.hoisted(() => ({
   phase: { value: 'active' as 'idle' | 'active' },
   resolvedRoles: { value: null as ResolvedRoles | null },
   telemetry: {
-    trackOnboardingTourStarted: vi.fn(),
-    trackOnboardingTourStepViewed: vi.fn(),
-    trackOnboardingTourSkipped: vi.fn(),
-    trackOnboardingTourCompleted: vi.fn(),
-    trackOnboardingTourRunTriggered: vi.fn(),
-    trackOnboardingTourUpgradeShown: vi.fn()
+    trackOnboardingTour: vi.fn()
   },
   hasFunds: true as boolean,
   showSubscriptionDialog: vi.fn(),
@@ -221,6 +217,13 @@ vi.mock('./onboardingTourStore', () => ({
 
 import { useOnboardingTourController } from './useOnboardingTourController'
 
+/** The metadata reported for one stage of the shared onboarding-tour event. */
+function tourReports(stage: OnboardingTourStage) {
+  return mocks.telemetry.trackOnboardingTour.mock.calls
+    .filter(([reported]) => reported === stage)
+    .map(([, metadata]) => metadata)
+}
+
 describe('useOnboardingTourController.shouldStartTour', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -294,8 +297,7 @@ describe('useOnboardingTourController.start', () => {
     mocks.showSubscriptionDialog.mockReset()
     upgradeModalOpen.value = false
     mocks.storeShowNudge.mockReset()
-    mocks.telemetry.trackOnboardingTourRunTriggered.mockReset()
-    mocks.telemetry.trackOnboardingTourUpgradeShown.mockReset()
+    mocks.telemetry.trackOnboardingTour.mockReset()
     mocks.storeCaptureResultMedia.mockReset()
     apiEventHandlers.clear()
   })
@@ -323,8 +325,10 @@ describe('useOnboardingTourController.start', () => {
       activeState,
       'image_z_image_turbo'
     )
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({
+        tour: 'firstRun',
         template_id: 'image_z_image_turbo',
         shape: 'image-edit'
       })
@@ -337,7 +341,8 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start()
 
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({ shape: 't2i' })
     )
   })
@@ -347,7 +352,8 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start('image_z_image_turbo')
 
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({ entry: 'getting_started' })
     )
   })
@@ -360,7 +366,8 @@ describe('useOnboardingTourController.start', () => {
       'template_url'
     )
 
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({
         template_id: 'image_z_image_turbo',
         entry: 'template_url'
@@ -375,7 +382,8 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start(undefined, 'share_url')
 
     expect(mocks.storeStart).toHaveBeenCalledWith(activeState, undefined)
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({
         template_id: undefined,
         shape: 'other',
@@ -398,7 +406,7 @@ describe('useOnboardingTourController.start', () => {
 
     useOnboardingTourController().end('done')
 
-    expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalled()
+    expect(tourReports('completed')).toHaveLength(1)
   })
 
   it('spotlights the collapsed port on the prompt step without entering a subgraph', async () => {
@@ -440,17 +448,14 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'out_of_credits'
     })
-    expect(
-      mocks.telemetry.trackOnboardingTourUpgradeShown
-    ).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'upgrade_shown',
       expect.objectContaining({ template_id: 'image_z_image_turbo' })
     )
     expect(mocks.storeShowNudge).toHaveBeenCalledOnce()
     expect(mocks.storeEnd).toHaveBeenCalledOnce()
-    expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalledOnce()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).not.toHaveBeenCalled()
+    expect(tourReports('completed')).toHaveLength(1)
+    expect(tourReports('run_triggered')).toHaveLength(0)
   })
 
   it('gates via store.end when the user cannot fund a run', async () => {
@@ -472,9 +477,7 @@ describe('useOnboardingTourController.start', () => {
     expect(mocks.storeEnd).not.toHaveBeenCalled()
     // Merely arriving at the Run step is not a run — telemetry waits for a real
     // execution so nothing can fabricate an activation event.
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).not.toHaveBeenCalled()
+    expect(tourReports('run_triggered')).toHaveLength(0)
   })
 
   it('ends the tour when the upgrade modal opens mid-run so it never hangs', async () => {
@@ -505,16 +508,15 @@ describe('useOnboardingTourController.start', () => {
 
     await useOnboardingTourController().start()
     // Merely starting the tour reports nothing — the run must finish first.
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).not.toHaveBeenCalled()
+    expect(tourReports('run_triggered')).toHaveLength(0)
 
     await runJob()
 
     expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'run_triggered',
+      expect.objectContaining({ status: 'success' })
+    )
   })
 
   it('captures the media when the run reports after the click advanced to Result', async () => {
@@ -531,9 +533,10 @@ describe('useOnboardingTourController.start', () => {
     await runJob()
 
     expect(mocks.storeCaptureResultMedia).toHaveBeenCalledOnce()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'run_triggered',
+      expect.objectContaining({ status: 'success' })
+    )
   })
 
   it('ignores execution events that arrive before the Run step', async () => {
@@ -550,9 +553,7 @@ describe('useOnboardingTourController.start', () => {
     await runJob()
 
     expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).not.toHaveBeenCalled()
+    expect(tourReports('run_triggered')).toHaveLength(0)
   })
 
   it('reports the run at most once across repeated runs', async () => {
@@ -566,9 +567,7 @@ describe('useOnboardingTourController.start', () => {
     await runJob()
     await runJob()
 
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledOnce()
+    expect(tourReports('run_triggered')).toHaveLength(1)
   })
 
   it('reports the true status and skips media capture when a run errors', async () => {
@@ -582,9 +581,10 @@ describe('useOnboardingTourController.start', () => {
     await failJob('execution_error')
 
     expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }))
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'run_triggered',
+      expect.objectContaining({ status: 'error' })
+    )
   })
 
   it('reports the true status and skips media capture when a run is interrupted', async () => {
@@ -598,9 +598,10 @@ describe('useOnboardingTourController.start', () => {
     await failJob('execution_interrupted')
 
     expect(mocks.storeCaptureResultMedia).not.toHaveBeenCalled()
-    expect(
-      mocks.telemetry.trackOnboardingTourRunTriggered
-    ).toHaveBeenCalledWith(expect.objectContaining({ status: 'interrupted' }))
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'run_triggered',
+      expect.objectContaining({ status: 'interrupted' })
+    )
   })
 
   it('completes the tour when a run finishes on the terminal Run step', async () => {
@@ -611,7 +612,7 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start('image_z_image_turbo')
     await runJob()
 
-    expect(mocks.telemetry.trackOnboardingTourCompleted).toHaveBeenCalledOnce()
+    expect(tourReports('completed')).toHaveLength(1)
   })
 
   it('does not complete on run when a Result step follows', async () => {
@@ -624,7 +625,7 @@ describe('useOnboardingTourController.start', () => {
     await useOnboardingTourController().start('image_z_image_turbo')
     await runJob()
 
-    expect(mocks.telemetry.trackOnboardingTourCompleted).not.toHaveBeenCalled()
+    expect(tourReports('completed')).toHaveLength(0)
   })
 
   it('advances off the Run step the instant the Run button is clicked', async () => {
@@ -803,7 +804,8 @@ describe('useOnboardingTourController.beginTour', () => {
       activeState,
       'image_z_image_turbo'
     )
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({
         template_id: 'image_z_image_turbo',
         entry: 'getting_started'
@@ -814,7 +816,8 @@ describe('useOnboardingTourController.beginTour', () => {
   it('threads the share_url entry through when launched from a URL', async () => {
     await useOnboardingTourController().beginTour({ entry: 'share_url' })
 
-    expect(mocks.telemetry.trackOnboardingTourStarted).toHaveBeenCalledWith(
+    expect(mocks.telemetry.trackOnboardingTour).toHaveBeenCalledWith(
+      'started',
       expect.objectContaining({ entry: 'share_url' })
     )
   })

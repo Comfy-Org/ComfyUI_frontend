@@ -4,7 +4,6 @@ import { computed, effectScope, ref, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import type {
   OnboardingTourEntry,
@@ -22,6 +21,7 @@ import {
   canvasTransformValid,
   nodesPresent
 } from './canvasSpotlightAdapter'
+import { trackFirstRunTour } from './firstRunTourTelemetry'
 import { resolveTourRoles } from './roleResolution'
 import {
   isUpgradeModalOpen,
@@ -156,7 +156,7 @@ function _useOnboardingTourController() {
   function reportRunTriggered(status: OnboardingTourRunStatus) {
     if (runReported) return
     runReported = true
-    useTelemetry()?.trackOnboardingTourRunTriggered?.({
+    trackFirstRunTour('run_triggered', {
       template_id: activeTemplateId,
       shape: activeShape,
       status
@@ -192,7 +192,7 @@ function _useOnboardingTourController() {
     activeShape = roles ? shapeOf(roles) : 'other'
     runReported = false
     listenForFirstRun()
-    useTelemetry()?.trackOnboardingTourStarted?.({
+    trackFirstRunTour('started', {
       template_id: activeTemplateId,
       shape: activeShape,
       entry
@@ -261,9 +261,7 @@ function _useOnboardingTourController() {
     if (hasFunds()) return false
 
     useBillingContext().showSubscriptionDialog({ reason: 'out_of_credits' })
-    useTelemetry()?.trackOnboardingTourUpgradeShown?.({
-      template_id: activeTemplateId
-    })
+    trackFirstRunTour('upgrade_shown', { template_id: activeTemplateId })
     end('done')
     return true
   }
@@ -284,11 +282,11 @@ function _useOnboardingTourController() {
     // Defensive: the tour never enters a subgraph, but the user may have opened one.
     restoreView()
 
-    useTelemetry()?.trackOnboardingTourStepViewed?.({
+    trackFirstRunTour('step_shown', {
       template_id: activeTemplateId,
       step_key: step.kind,
-      step_index: store.stepIndex,
-      step_total: store.totalSteps
+      step_number: store.stepIndex + 1,
+      step_count: store.totalSteps
     })
   }
 
@@ -308,19 +306,18 @@ function _useOnboardingTourController() {
     stopRunListener = undefined
     stopRunClick?.()
     stopRunClick = undefined
-    const telemetry = useTelemetry()
     if (reason === 'skip') {
       const step = store.currentStep
       if (step) {
-        telemetry?.trackOnboardingTourSkipped?.({
+        trackFirstRunTour('skipped', {
           template_id: activeTemplateId,
           step_key: step.kind,
-          step_index: store.stepIndex,
-          step_total: store.totalSteps
+          step_number: store.stepIndex + 1,
+          step_count: store.totalSteps
         })
       }
     } else if (reason === 'done') {
-      telemetry?.trackOnboardingTourCompleted?.({
+      trackFirstRunTour('completed', {
         template_id: activeTemplateId,
         shape: activeShape
       })
