@@ -2891,6 +2891,10 @@
         "user": "User"
       },
       "empty": "No activity yet.",
+      "eventType": {
+        "cloudRun": "Cloud workflow run",
+        "partnerNode": "Partner node usage"
+      },
       "fullActivity": "Full activity",
       "hoverCard": {
         "lastActivity": "Last activity",

@@ -34,7 +34,11 @@
     </div>
 
     <SubscriptionPanelContentWorkspace v-if="activeView === 'overview'" />
-    <WorkspaceActivityContent v-else :search="searchQuery" />
+    <WorkspaceActivityContent
+      v-else
+      :search="searchQuery"
+      :events="activityEvents"
+    />
   </div>
 </template>
 
@@ -48,6 +52,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
+import { useWorkspaceActivitySource } from '@/platform/workspace/composables/useWorkspaceActivitySource'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
@@ -56,6 +61,8 @@ const { t } = useI18n()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName } = storeToRefs(workspaceStore)
+
+const { events: activityEvents } = useWorkspaceActivitySource()
 
 // The Invoices tab (owner/admin only) is added by FE-1245, which owns the
 // next-invoice banner + Stripe portal link that fill it.
