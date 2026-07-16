@@ -315,7 +315,7 @@ describe('ErrorNodeCard.vue', () => {
     expect(container.textContent).not.toMatch(/&(?:amp|lt|gt);/)
   })
 
-  it('renders script-like node names as text without creating elements', () => {
+  it('renders script-like node names as literal text', () => {
     const { container } = renderCard(
       makeValidationErrorCard('<script>x</script>')
     )

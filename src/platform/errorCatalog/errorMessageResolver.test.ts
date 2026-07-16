@@ -10,7 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
-import { i18n } from '@/i18n'
+import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
   type: string,
@@ -1573,6 +1573,9 @@ describe('errorMessageResolver', () => {
 
   it('preserves special characters in catalog copy for model names', () => {
     const modelName = 'sd&xl<v2>.safetensors'
+    expect(
+      te('errorCatalog.missingErrors.missing_model.toastTitleOneOss')
+    ).toBe(true)
     const result = resolveMissingErrorMessage({
       kind: 'missing_model',
       groups: missingModelGroups(modelName),
