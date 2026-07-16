@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // PROTOTYPE — floating variant switcher bar. Not part of the design under
-// review; hidden in production builds.
+// review. Shown in all builds: it only ever mounts on the throwaway
+// /learning-prototype route, which is deleted once a variant wins.
 import { onMounted, onUnmounted } from 'vue'
 
 interface PrototypeVariant {
@@ -16,8 +17,6 @@ const { variants, current } = defineProps<{
 const emit = defineEmits<{
   'update:current': [key: string]
 }>()
-
-const isDev = import.meta.env.DEV
 
 const currentIndex = () =>
   Math.max(
@@ -50,7 +49,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 <template>
   <div
-    v-if="isDev"
     class="bg-primary-comfy-yellow fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border-2 border-primary-comfy-ink py-1.5 pr-4 pl-1.5 text-primary-comfy-ink shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
   >
     <button
