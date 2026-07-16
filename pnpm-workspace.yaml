@@ -142,7 +142,7 @@ catalog:
   vue: ^3.5.39
   vue-component-type-helpers: ^3.3.7
   vue-eslint-parser: ^10.4.1
-  vue-i18n: ^9.14.5
+  vue-i18n: ^11.4.6
   vue-router: ^4.4.3
   vue-tsc: ^3.3.7
   vuefire: ^3.2.1
