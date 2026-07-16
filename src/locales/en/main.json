@@ -1109,7 +1109,9 @@
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel",
-    "fullscreen": "Fullscreen"
+    "fullscreen": "Fullscreen",
+    "runOnChange": "Run on change",
+    "onChangeDescription": "Automatically triggers a new generation queue every time you modify a parameter, tweak a prompt, or adjust a slider"
   },
   "tabMenu": {
     "duplicateTab": "Duplicate Tab",

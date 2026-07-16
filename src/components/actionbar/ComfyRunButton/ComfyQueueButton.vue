@@ -39,20 +39,23 @@
             v-for="item in queueModeMenuItems"
             :key="item.key"
             as-child
-            @select.prevent="item.command"
+            @select="item.command"
           >
             <Button
-              v-tooltip="{
-                value: item.tooltip,
-                showDelay: 600
-              }"
               :variant="
                 item.key === selectedQueueMode ? 'primary' : 'secondary'
               "
               size="sm"
               :class="queueMenuItemButtonClass"
             >
-              {{ item.label }}
+              <i :class="cn(item.icon, 'size-4 shrink-0')" />
+              <span class="mr-auto">{{ item.label }}</span>
+              <i
+                v-if="item.description"
+                v-tooltip.bottom="buildModeInfoTooltip(item)"
+                class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground"
+                @click.stop
+              />
             </Button>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -106,7 +109,9 @@ type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
 interface QueueModeMenuItem {
   key: QueueModeMenuKey
   label: string
+  icon: string
   tooltip: string
+  description?: string
   command: () => void
 }
 
@@ -120,6 +125,7 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
       disabled: {
         key: 'disabled',
         label: t('menu.run'),
+        icon: 'icon-[lucide--play]',
         tooltip: t('menu.disabledTooltip'),
         command: () => {
           queueMode.value = 'disabled'
@@ -127,8 +133,10 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
       },
       change: {
         key: 'change',
-        label: `${t('menu.run')} (${t('menu.onChange')})`,
+        label: t('menu.runOnChange'),
+        icon: 'icon-[lucide--step-forward]',
         tooltip: t('menu.onChangeTooltip'),
+        description: t('menu.onChangeDescription'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'queue_mode_option_run_on_change_selected',
@@ -143,6 +151,7 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
       items['instant-idle'] = {
         key: 'instant-idle',
         label: `${t('menu.run')} (${t('menu.instant')})`,
+        icon: 'icon-[lucide--fast-forward]',
         tooltip: t('menu.instantTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
@@ -167,6 +176,19 @@ const activeQueueModeMenuItem = computed(() => {
 const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
+
+const buildModeInfoTooltip = (item: QueueModeMenuItem) => ({
+  escape: false,
+  showDelay: 150,
+  hideDelay: 0,
+  value: `<div class="text-sm font-semibold text-base-foreground">${item.label}</div><div class="mt-1 text-xs leading-snug text-muted-foreground">${item.description ?? ''}</div>`,
+  pt: {
+    text: {
+      class:
+        'max-w-[280px] rounded-lg border border-border-subtle bg-base-background px-3 py-2 text-left shadow-interface'
+    }
+  }
+})
 
 const isStopInstantAction = computed(() =>
   isInstantRunningMode(queueMode.value)
