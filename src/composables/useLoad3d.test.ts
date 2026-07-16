@@ -77,6 +77,14 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
+const { settingGetMock } = vi.hoisted(() => ({
+  settingGetMock: vi.fn()
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({ get: settingGetMock })
+}))
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn()
 }))
@@ -95,6 +103,9 @@ describe('useLoad3d', () => {
     vi.clearAllMocks()
     nodeToLoad3dMap.clear()
     vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
+    settingGetMock.mockImplementation((key: string) =>
+      key === 'Comfy.Load3D.BackgroundColor' ? '282828' : undefined
+    )
 
     mockNode = createMockLGraphNode({
       properties: {
@@ -203,9 +214,7 @@ describe('useLoad3d', () => {
       getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
-      renderer: {
-        domElement: mockCanvas
-      } as Partial<Load3d['renderer']> as Load3d['renderer']
+      domElement: mockCanvas
     }
 
     vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
@@ -292,7 +301,7 @@ describe('useLoad3d', () => {
       mockNode.flags.collapsed = true
       mockNode.onDrawBackground?.({} as CanvasRenderingContext2D)
 
-      expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
+      expect(mockLoad3d.domElement!.hidden).toBe(true)
     })
 
     it('should initialize without loading model (model loading is handled by Load3DConfiguration)', async () => {
@@ -356,6 +365,20 @@ describe('useLoad3d', () => {
       expect(composable.isPreview.value).toBe(true)
     })
 
+    it('should set preview mode for save-viewer nodes despite width/height widgets', async () => {
+      Object.defineProperty(mockNode, 'constructor', {
+        value: { comfyClass: 'Save3DAdvanced' },
+        configurable: true
+      })
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.isPreview.value).toBe(true)
+    })
+
     it('should handle initialization errors', async () => {
       vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
@@ -383,7 +406,37 @@ describe('useLoad3d', () => {
       const nodeRef = shallowRef<LGraphNode | null>(mockNode)
       const composable = useLoad3d(nodeRef)
 
-      expect(composable.sceneConfig.value.backgroundColor).toBe('#000000')
+      expect(composable.sceneConfig.value.backgroundColor).toBe('#282828')
+    })
+
+    it('defaults background color from the Comfy.Load3D.BackgroundColor setting', () => {
+      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      vi.mocked(useCanvasStore).mockReturnValue(
+        reactive({ appScalePercentage: 100 }) as unknown as ReturnType<
+          typeof useCanvasStore
+        >
+      )
+      settingGetMock.mockImplementation((key: string) =>
+        key === 'Comfy.Load3D.BackgroundColor' ? '123456' : undefined
+      )
+
+      const composable = useLoad3d(mockNode)
+
+      expect(composable.sceneConfig.value.backgroundColor).toBe('#123456')
+    })
+
+    it('attaches event listeners before running queued ready callbacks', async () => {
+      const composable = useLoad3d(mockNode)
+      let listenersAttachedWhenCallbackRan = false
+
+      composable.waitForLoad3d(() => {
+        listenersAttachedWhenCallbackRan =
+          vi.mocked(mockLoad3d.addEventListener!).mock.calls.length > 0
+      })
+
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(listenersAttachedWhenCallbackRan).toBe(true)
     })
 
     it('passes getZoomScale callback to createLoad3d', async () => {
