@@ -37,7 +37,21 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud/
+      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
+    },
+
+    // The custom-node suite needs the manifest packs installed and exclusive
+    // backend-queue access (its afterEach drains the queue), so it runs in
+    // its own gating job (ci-tests-custom-nodes.yaml) with --workers=1, not
+    // alongside the parallel main e2e shards. Excluded from `chromium` above
+    // so the main job never collects it and its unscoped drain cannot
+    // interrupt a sibling worker's in-flight prompt.
+    {
+      name: 'custom-nodes',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 15000,
+      grep: /@custom-nodes/,
+      fullyParallel: false
     },
 
     {

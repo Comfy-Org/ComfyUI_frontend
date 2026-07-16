@@ -13,7 +13,7 @@ import {
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 // Core-only, model-free workflow: the bundled default template references
@@ -38,7 +38,7 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-test.describe('smoke: core workflow', () => {
+test.describe('smoke: core workflow @custom-nodes', () => {
   test('loads without console errors in both renderers', async ({
     comfyPage
   }) => {
@@ -59,13 +59,7 @@ test.describe('smoke: core workflow', () => {
         consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
         `console errors (VueNodes=${vueNodesEnabled})`
       ).toEqual([])
-      for (const [surface, locator] of Object.entries(
-        errorSurfaces(comfyPage.page)
-      ))
-        await expect(
-          locator,
-          `${surface} (VueNodes=${vueNodesEnabled})`
-        ).toHaveCount(0)
+      await expectNoVisibleErrors(comfyPage.page, `VueNodes=${vueNodesEnabled}`)
     }
   })
 })

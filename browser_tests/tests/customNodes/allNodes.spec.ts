@@ -32,7 +32,7 @@ import {
   dismissTemplatesDialog,
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const target = new LocalDesktopTarget()
 
@@ -258,14 +258,6 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-async function expectNoVisibleErrors(
-  page: Page,
-  context: string
-): Promise<void> {
-  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
-}
-
 // The widgetValueStore keys state by node id and survives graph.clear(), so
 // a recreated node that reuses an id inherits the previous node's same-named
 // widget values (core bug, upstream-report candidate). Every in-page builder
@@ -398,7 +390,7 @@ async function packNodeKeys(
 }
 
 for (const entry of loadManifest()) {
-  test.describe(`all nodes: ${entry.pack}`, () => {
+  test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts in both renderers', async ({
       comfyPage
     }) => {
@@ -408,6 +400,10 @@ for (const entry of loadManifest()) {
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
+      // Per-pack registered-node count. Prints the number to calibrate the
+      // manifest's expectedNodeCount guard (added in a follow-up once CI
+      // reports the real counts) and stands alone as a coverage-size signal.
+      console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
       const declaredByKey = new Map(
         keys.map((key) => [key, declaredShape(defs[key])])
       )

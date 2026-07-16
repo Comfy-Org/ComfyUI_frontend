@@ -7,7 +7,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
-import { expectedNodesPresent } from '@e2e/fixtures/customNode/objectInfoValidator'
+import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   loadManifest,
@@ -78,7 +78,7 @@ async function consumerShape(
 }
 
 for (const autogrowCase of AUTOGROW_CASES) {
-  test.describe(`dynamic inputs: ${autogrowCase.pack}`, () => {
+  test.describe(`dynamic inputs: ${autogrowCase.pack} @custom-nodes`, () => {
     test(`${autogrowCase.consumerType} grows on connect and shrinks on disconnect (drag + programmatic, both renderers)`, async ({
       comfyPage
     }) => {
@@ -88,7 +88,7 @@ for (const autogrowCase of AUTOGROW_CASES) {
         Object.keys(objectInfo).length,
         'object_info sanity floor'
       ).toBeGreaterThan(50)
-      const { missing } = expectedNodesPresent(objectInfo, [
+      const missing = missingExpectedNodes(objectInfo, [
         autogrowCase.consumerType,
         autogrowCase.producerType
       ])

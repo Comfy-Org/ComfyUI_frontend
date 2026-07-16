@@ -142,8 +142,13 @@ jobs:
         run: |
           # workers=1: the auto-run tier needs exclusive backend-queue access;
           # parallel workers interrupt each other's executions.
+          # --project=custom-nodes: the `@custom-nodes`-tagged specs, which the
+          # main e2e job's `chromium` project excludes (see playwright.config).
+          # list,json,html: json feeds the skip gate below; html writes
+          # playwright-report/ (the upload step's target) and folds in the
+          # on-first-retry traces, which a bare list,json would discard.
           pnpm exec playwright test browser_tests/tests/customNodes/ \
-            --project=chromium --reporter=list,json --workers=1
+            --project=custom-nodes --reporter=list,json,html --workers=1
 
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.

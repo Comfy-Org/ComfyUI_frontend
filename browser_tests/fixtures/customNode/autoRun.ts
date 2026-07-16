@@ -1,5 +1,7 @@
 // Classifies which nodes can execute with no hand-authored fixture; the
 // rest are recorded with the reason, never silently dropped.
+import { chunk } from 'es-toolkit'
+
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 
 type AutoRunClass =
@@ -158,8 +160,5 @@ export function batchAutoRunnable(
     (verdict) =>
       verdict.verdict === 'AUTO_RUNNABLE' || verdict.verdict === 'CHAINABLE'
   )
-  const batches: AutoRunVerdict[][] = []
-  for (let offset = 0; offset < runnable.length; offset += batchSize)
-    batches.push(runnable.slice(offset, offset + batchSize))
-  return batches
+  return chunk(runnable, batchSize)
 }

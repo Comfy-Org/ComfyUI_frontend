@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -13,4 +14,15 @@ export function errorSurfaces(page: Page): Record<string, Locator> {
     nodeRenderErrors: page.locator('.node-error'),
     errorToasts: page.locator('.p-toast-message-error')
   }
+}
+
+// The suite's central invariant: a regression run is green only if every
+// user-visible error surface is empty. Kept here (single source) so a new
+// surface added above is enforced everywhere at once.
+export async function expectNoVisibleErrors(
+  page: Page,
+  context: string
+): Promise<void> {
+  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
+    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
 }

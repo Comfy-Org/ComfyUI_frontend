@@ -22,7 +22,7 @@ import {
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const CORE_PROOF_NODE_COUNT = 16
 // A node may legitimately veto a wiring via onConnectInput; committed
@@ -69,14 +69,6 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-async function expectNoVisibleErrors(
-  page: Page,
-  context: string
-): Promise<void> {
-  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
-}
-
 function concrete(slot: { type: string }): boolean {
   return !isWildcard(slot.type)
 }
@@ -92,7 +84,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
 )
 
-test('connectivity: every type-paired link survives model, serialize, and prompt round-trips', async ({
+test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
@@ -341,7 +333,7 @@ function runPairsInPage(
   }, pairs)
 }
 
-test('connectivity self-check: the executor rejects broken pairs', async ({
+test('connectivity self-check: the executor rejects broken pairs @custom-nodes', async ({
   comfyPage
 }) => {
   const slot = (nodeType: string, slotName: string, slotType: string) => ({
@@ -366,7 +358,7 @@ test('connectivity self-check: the executor rejects broken pairs', async ({
   ])
 })
 
-test('connectivity drags: curated slot-to-slot wires connect under both renderers', async ({
+test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
