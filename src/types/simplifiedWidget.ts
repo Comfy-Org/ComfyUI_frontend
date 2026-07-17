@@ -12,15 +12,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 /** Valid types for widget values */
-export type WidgetValue =
-  | string
-  | number
-  | boolean
-  | object
-  | undefined
-  | null
-  | void
-  | File[]
+export type WidgetValue = string | number | boolean | object | undefined | null
 
 export const CONTROL_OPTIONS = [
   'fixed',

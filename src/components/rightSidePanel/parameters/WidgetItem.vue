@@ -40,8 +40,7 @@ const {
   hiddenFavoriteIndicator = false,
   hiddenWidgetActions = false,
   showNodeName = false,
-  parents = [],
-  isShownOnParents = false
+  host
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
@@ -49,8 +48,7 @@ const {
   hiddenFavoriteIndicator?: boolean
   hiddenWidgetActions?: boolean
   showNodeName?: boolean
-  parents?: SubgraphNode[]
-  isShownOnParents?: boolean
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -115,10 +113,7 @@ const displayNodeName = computed((): string | null => {
   })
 })
 
-const hasParents = computed(() => parents?.length > 0)
-const favoriteNode = computed(() =>
-  isShownOnParents && hasParents.value ? parents[0] : node
-)
+const hasHost = computed(() => host != null)
 
 const widgetValue = computed({
   get: () => widget.value,
@@ -138,7 +133,7 @@ const displayLabel = customRef((track, trigger) => {
 
       const trimmedLabel = newValue.trim()
 
-      const success = renameWidget(widget, node, trimmedLabel, parents)
+      const success = renameWidget(widget, node, trimmedLabel)
 
       if (success) {
         canvasStore.canvas?.setDirty(true)
@@ -171,7 +166,7 @@ const displayLabel = customRef((track, trigger) => {
       <EditableText
         v-if="widget.name"
         :model-value="displayLabel"
-        :is-editing="isEditing"
+        :is-editing
         :input-attrs="{ placeholder: widget.name }"
         class="pointer-events-auto m-0 cursor-text truncate p-0 text-sm/8"
         @edit="displayLabel = $event"
@@ -180,7 +175,7 @@ const displayLabel = customRef((track, trigger) => {
       />
 
       <span
-        v-if="(showNodeName || hasParents) && displayNodeName"
+        v-if="(showNodeName || hasHost) && displayNodeName"
         class="mx-1 my-0 min-w-10 flex-1 truncate p-0 text-right text-xs text-muted-foreground"
       >
         {{ displayNodeName }}
@@ -191,10 +186,9 @@ const displayLabel = customRef((track, trigger) => {
       >
         <WidgetActions
           v-model:label="displayLabel"
-          :widget="widget"
-          :node="node"
-          :parents="parents"
-          :is-shown-on-parents="isShownOnParents"
+          :widget
+          :node
+          :host
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
@@ -203,7 +197,7 @@ const displayLabel = customRef((track, trigger) => {
     <div
       v-if="
         !hiddenFavoriteIndicator &&
-        favoritedWidgetsStore.isFavorited(favoriteNode, widget.name)
+        favoritedWidgetsStore.isFavorited(node, widget.name)
       "
       class="pointer-events-none relative z-2"
     >

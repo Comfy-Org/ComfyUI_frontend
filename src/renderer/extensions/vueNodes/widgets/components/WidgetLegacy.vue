@@ -15,7 +15,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<void>
+  widget: SimplifiedWidget<undefined>
   nodeId: NodeId
 }>()
 

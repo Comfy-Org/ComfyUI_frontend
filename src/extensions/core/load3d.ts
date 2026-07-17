@@ -635,9 +635,10 @@ useExtensionService().registerExtension({
           const extrinsics = result?.[3]
           const intrinsics = result?.[4]
 
-          modelWidget.value = filePath?.replaceAll('\\', '/')
+          const modelFilePath = filePath?.replaceAll('\\', '/')
+          modelWidget.value = modelFilePath
 
-          node.properties['Last Time Model File'] = modelWidget.value
+          node.properties['Last Time Model File'] = modelFilePath
 
           const settings = {
             loadFolder: 'output',

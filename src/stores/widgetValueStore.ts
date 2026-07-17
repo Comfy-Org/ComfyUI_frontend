@@ -6,6 +6,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
 export interface WidgetRenderState {
@@ -84,7 +85,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
-  function registerWidget<TValue = unknown>(
+  function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
     renderState: WidgetRenderState = {}

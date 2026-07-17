@@ -108,7 +108,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeProperty = string | number | boolean | object
+export type NodeProperty = string | number | boolean | object | null
 
 interface INodePropertyInfo {
   name?: string

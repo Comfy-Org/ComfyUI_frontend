@@ -23,6 +23,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -112,7 +113,7 @@ function promotedWidgetStateByName(
 function writePromotedWidgetValue(
   node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
   index: number,
-  value: unknown
+  value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
   if (!input) throw new Error(`Missing promoted input ${index}`)

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Bounds } from '@/renderer/core/layout/types'
-import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
+import type { LinkedUpstreamInfo, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState } from '@/types/widgetState'
 
 type ValueExtractor<T = unknown> = (
@@ -28,7 +28,7 @@ export function useUpstreamValue<T>(
   })
 }
 
-export function singleValueExtractor<T>(
+export function singleValueExtractor<T extends WidgetValue>(
   isValid: (value: unknown) => value is T
 ): ValueExtractor<T> {
   return (widgets, outputName) => {

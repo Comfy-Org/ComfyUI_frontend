@@ -3849,7 +3849,6 @@
     "settings": "Settings",
     "addFavorite": "Favorite",
     "removeFavorite": "Unfavorite",
-    "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
     "locateNodeFor": "Locate {item}",

@@ -283,8 +283,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return store.getWidget(id)?.options ?? {}
       },
       get value() {
-        const value = store.getWidget(id)?.value
-        return isWidgetValue(value) ? value : undefined
+        return store.getWidget(id)?.value
       },
       set value(next) {
         store.setValue(id, next)
@@ -498,9 +497,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
         .toReversed()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
-          sourceNodeId === '-1' &&
-          hostValue !== undefined &&
-          isWidgetValue(hostValue)
+          sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]
             : []
         )

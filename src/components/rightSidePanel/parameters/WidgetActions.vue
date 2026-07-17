@@ -5,33 +5,21 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import {
-  demotePromotedInput,
-  demoteWidget,
-  isLinkedPromotion,
-  promoteWidget
-} from '@/core/graph/subgraph/promotionUtils'
+import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-const {
-  widget,
-  node,
-  parents = [],
-  isShownOnParents = false
-} = defineProps<{
+const { widget, node, host } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
-  parents?: SubgraphNode[]
-  isShownOnParents?: boolean
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -40,24 +28,17 @@ const emit = defineEmits<{
 
 const label = defineModel<string>('label', { required: true })
 
-const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
-const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
-  const source = widgetPromotedSource(node, widget)
-  if (!source) return false
-  return isLinkedPromotion(node, source.nodeId, source.widgetName)
+  return inputForWidget(node, widget)?.widgetId != null
 })
-const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
-const favoriteNode = computed(() =>
-  isShownOnParents && hasParents.value ? parents[0] : node
-)
+const canShowInput = computed(() => host != null && !isLinked.value)
 const isFavorited = computed(() =>
-  favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
+  favoritedWidgetsStore.isFavorited(node, widget.name)
 )
 
 const inputSpec = computed(() =>
@@ -85,33 +66,13 @@ async function handleRename() {
   if (newLabel !== null) label.value = newLabel
 }
 
-function handleHideInput() {
-  if (!parents?.length) return
-
-  const source = widgetPromotedSource(node, widget)
-  if (source) {
-    const currentNodeId = node.id
-    for (const parent of parents) {
-      const sourceNodeId =
-        String(node.id) === String(parent.id) ? source.nodeId : currentNodeId
-      demotePromotedInput(parent, {
-        sourceNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    canvasStore.canvas?.setDirty(true, true)
-  } else {
-    demoteWidget(node, widget, parents)
-  }
-}
-
 function handleShowInput() {
-  if (!parents?.length) return
-  promoteWidget(node, widget, parents)
+  if (!host) return
+  promoteWidget(node, widget, [host])
 }
 
 function handleToggleFavorite() {
-  favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
+  favoritedWidgetsStore.toggleFavorite(node, widget.name)
 }
 
 function handleResetToDefault() {
@@ -143,26 +104,19 @@ function handleResetToDefault() {
       </Button>
 
       <Button
-        v-if="canToggleVisibility"
+        v-if="canShowInput"
         variant="textonly"
         size="unset"
         class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
         @click="
           () => {
-            if (isShownOnParents) handleHideInput()
-            else handleShowInput()
+            handleShowInput()
             close()
           }
         "
       >
-        <template v-if="isShownOnParents">
-          <i class="icon-[lucide--eye-off] size-4" />
-          <span>{{ t('rightSidePanel.hideInput') }}</span>
-        </template>
-        <template v-else>
-          <i class="icon-[lucide--eye] size-4" />
-          <span>{{ t('rightSidePanel.showInput') }}</span>
-        </template>
+        <i class="icon-[lucide--eye] size-4" />
+        <span>{{ t('rightSidePanel.showInput') }}</span>
       </Button>
 
       <Button
