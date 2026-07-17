@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "playwright-test": {
+      "command": "pnpm",
+      "args": ["dlx", "@playwright/mcp@0.0.68"]
+    }
+  }
+}

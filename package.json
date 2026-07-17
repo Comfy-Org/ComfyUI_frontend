@@ -51,6 +51,7 @@
     "storybook:desktop": "pnpm --filter @comfyorg/desktop-ui run storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
+    "comfy-test": "tsx tools/test-recorder/src/index.ts",
     "test:browser": "pnpm exec playwright test",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
