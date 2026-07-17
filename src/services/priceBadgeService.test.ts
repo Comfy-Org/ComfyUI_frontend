@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
+const mockApiBase = vi.hoisted(() => ({ url: 'https://api.example.com' }))
+
 const mockSystemStatsStore = vi.hoisted(() => ({
   isInitialized: true,
   error: null as Error | null,
@@ -16,7 +18,7 @@ vi.mock('@sentry/vue', () => ({
 }))
 
 vi.mock('@/config/comfyApi', () => ({
-  getComfyApiBaseUrl: () => 'https://api.example.com'
+  getComfyApiBaseUrl: () => mockApiBase.url
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -80,6 +82,7 @@ async function importService() {
 describe('priceBadgeService', () => {
   beforeEach(() => {
     vi.resetModules()
+    mockApiBase.url = 'https://api.example.com'
     mockSystemStatsStore.isInitialized = true
     mockSystemStatsStore.error = null
     mockSystemStatsStore.systemStats = {
@@ -113,6 +116,17 @@ describe('priceBadgeService', () => {
     )
   })
 
+  it('normalizes a trailing slash on the API base URL', async () => {
+    mockApiBase.url = 'https://api.example.com/'
+    const fetchMock = mockFetchResponse({})
+    vi.stubGlobal('fetch', fetchMock)
+    const { overlayPriceBadges } = await importService()
+    await overlayPriceBadges(makeDefs())
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/nodes/pricing/badges?comfyui_version=0.3.50&platform=local'
+    )
+  })
+
   it('falls back to nightly when the version is unavailable', async () => {
     mockSystemStatsStore.systemStats = null
     const fetchMock = mockFetchResponse({})
@@ -122,6 +136,156 @@ describe('priceBadgeService', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('comfyui_version=nightly')
     )
+  })
+
+  it('preserves an existing baked-in badge on nodes absent from the map', async () => {
+    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: validBadge }))
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    const bakedIn = {
+      engine: 'jsonata',
+      depends_on: { widgets: [], inputs: [], input_groups: [] },
+      expr: '{"type":"usd","usd":9.99}'
+    }
+    defs['OtherNode'].price_badge =
+      bakedIn as unknown as (typeof defs)['OtherNode']['price_badge']
+    await overlayPriceBadges(defs)
+    // Absent from the map: untouched, same object identity.
+    expect(defs['OtherNode'].price_badge).toBe(bakedIn)
+    // Present in the map: replaced.
+    expect(defs['PartnerNode'].price_badge).toMatchObject({
+      expr: validBadge.expr
+    })
+  })
+
+  it('skips only the malformed badge, applying valid siblings', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetchResponse({
+        PartnerNode: validBadge,
+        OtherNode: { expr: 'missing engine and depends_on' }
+      })
+    )
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    await overlayPriceBadges(defs)
+    expect(defs['PartnerNode'].price_badge).toBeDefined()
+    expect(defs['OtherNode'].price_badge).toBeUndefined()
+  })
+
+  it.for([
+    ['engine', () => ({ ...validBadge, engine: undefined })],
+    ['depends_on', () => ({ ...validBadge, depends_on: undefined })],
+    ['expr', () => ({ ...validBadge, expr: undefined })],
+    [
+      'depends_on.widgets',
+      () => ({
+        ...validBadge,
+        depends_on: { inputs: [], input_groups: [] }
+      })
+    ],
+    [
+      'depends_on.inputs',
+      () => ({
+        ...validBadge,
+        depends_on: { widgets: validBadge.depends_on.widgets, input_groups: [] }
+      })
+    ],
+    [
+      'depends_on.input_groups',
+      () => ({
+        ...validBadge,
+        depends_on: { widgets: validBadge.depends_on.widgets, inputs: [] }
+      })
+    ]
+  ] as const)(
+    'rejects a badge missing required field %s, applying valid siblings',
+    async ([, makeBadge]) => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchResponse({
+          PartnerNode: makeBadge(),
+          OtherNode: {
+            ...validBadge,
+            depends_on: { widgets: [], inputs: [], input_groups: [] }
+          }
+        })
+      )
+      const { overlayPriceBadges } = await importService()
+      const defs = makeDefs()
+      await overlayPriceBadges(defs)
+      expect(defs['PartnerNode'].price_badge).toBeUndefined()
+      expect(defs['OtherNode'].price_badge).toBeDefined()
+    }
+  )
+
+  it.for([
+    ['null', null],
+    ['array', [validBadge]],
+    ['string', 'nope']
+  ] as const)('fails open when the response body is %s', async ([, body]) => {
+    vi.stubGlobal('fetch', mockFetchResponse(body))
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    await expect(overlayPriceBadges(defs)).resolves.toBeUndefined()
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
+  })
+
+  it('skips a badge whose def input spec is malformed, without throwing', async () => {
+    const badge = {
+      ...validBadge,
+      depends_on: {
+        widgets: [{ name: 'broken', type: 'INT' }],
+        inputs: [],
+        input_groups: []
+      }
+    }
+    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    // /object_info is unvalidated; a non-string, non-array tuple head must not
+    // crash the overlay (fail open for this node only).
+    ;(
+      defs['PartnerNode'] as unknown as {
+        input: { required: Record<string, unknown> }
+      }
+    ).input.required['broken'] = [42, {}]
+    await expect(overlayPriceBadges(defs)).resolves.toBeUndefined()
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
+  })
+
+  it('skips a badge with an unknown engine', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetchResponse({ PartnerNode: { ...validBadge, engine: 'python' } })
+    )
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    await overlayPriceBadges(defs)
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
+  })
+
+  it('honors a widgetType override on the def input spec', async () => {
+    const badge = {
+      ...validBadge,
+      depends_on: {
+        widgets: [{ name: 'strength', type: 'STRING' }],
+        inputs: [],
+        input_groups: []
+      }
+    }
+    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
+    const { overlayPriceBadges } = await importService()
+    const defs = makeDefs()
+    // Socket type INT, but the runtime widget (and core's serialized badge
+    // dependency type) is the widgetType override.
+    ;(
+      defs['PartnerNode'] as unknown as {
+        input: { required: Record<string, unknown> }
+      }
+    ).input.required['strength'] = ['INT', { widgetType: 'STRING' }]
+    await overlayPriceBadges(defs)
+    expect(defs['PartnerNode'].price_badge).toBeDefined()
   })
 
   it('ignores badges for nodes missing from the defs', async () => {
@@ -233,6 +397,39 @@ describe('priceBadgeService', () => {
     })
     const defs2 = makeDefs()
     await overlayPriceBadges(defs2)
+    expect(defs2['PartnerNode'].price_badge).toBeUndefined()
+  })
+
+  it('never applies badges on a concurrent overlay once the session lost the race', async () => {
+    vi.useFakeTimers()
+    let resolveFetch!: (value: unknown) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+    )
+    const { overlayPriceBadges } = await importService()
+    const defs1 = makeDefs()
+    const defs2 = makeDefs()
+    const overlay1 = overlayPriceBadges(defs1)
+    await vi.advanceTimersByTimeAsync(1000)
+    const overlay2 = overlayPriceBadges(defs2)
+    // overlay1's timer fires at 2500ms and marks the session lost;
+    // overlay2's timer would fire at 3500ms.
+    await vi.advanceTimersByTimeAsync(1600)
+    await overlay1
+    // The fetch resolves after the session is lost but before overlay2's
+    // timeout: overlay2 must still not apply.
+    resolveFetch({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ PartnerNode: validBadge })
+    })
+    await overlay2
+    expect(defs1['PartnerNode'].price_badge).toBeUndefined()
     expect(defs2['PartnerNode'].price_badge).toBeUndefined()
   })
 

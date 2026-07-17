@@ -4,7 +4,12 @@ import { z } from 'zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { isCloud } from '@/platform/distribution/types'
-import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  InputSpec,
+  PriceBadge
+} from '@/schemas/nodeDefSchema'
+import { getInputSpecType } from '@/schemas/nodeDefSchema'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const zWidgetDependency = z.object({
@@ -13,20 +18,20 @@ const zWidgetDependency = z.object({
 })
 
 const zPriceBadgeDepends = z.object({
-  widgets: z.array(zWidgetDependency).optional().default([]),
-  inputs: z.array(z.string()).optional().default([]),
-  input_groups: z.array(z.string()).optional().default([])
+  widgets: z.array(zWidgetDependency),
+  inputs: z.array(z.string()),
+  input_groups: z.array(z.string())
 })
 
+// Stricter than the canonical zPriceBadge: the wire contract always carries
+// the full shape, so nothing is defaulted and unknown engines are rejected.
 const zRemotePriceBadge = z.object({
-  engine: z.literal('jsonata').optional().default('jsonata'),
-  depends_on: zPriceBadgeDepends
-    .optional()
-    .default({ widgets: [], inputs: [], input_groups: [] }),
-  expr: z.string()
+  engine: z.literal('jsonata'),
+  depends_on: zPriceBadgeDepends,
+  expr: z.string().min(1)
 })
 
-const zPriceBadgeMap = z.record(zRemotePriceBadge)
+const zPriceBadgeMap = z.record(z.unknown())
 
 type PriceBadgeMap = Record<string, PriceBadge>
 
@@ -46,12 +51,12 @@ async function resolveComfyUIVersion(): Promise<string> {
 async function fetchPriceBadgeMap(): Promise<PriceBadgeMap | null> {
   try {
     const version = await resolveComfyUIVersion()
-    const url = `${getComfyApiBaseUrl()}/nodes/pricing/badges`
+    const base = getComfyApiBaseUrl().replace(/\/+$/, '')
     const params = new URLSearchParams({
       comfyui_version: version,
       platform: isCloud ? 'cloud' : 'local'
     })
-    const response = await fetch(`${url}?${params}`)
+    const response = await fetch(`${base}/nodes/pricing/badges?${params}`)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
@@ -59,7 +64,19 @@ async function fetchPriceBadgeMap(): Promise<PriceBadgeMap | null> {
     if (!parsed.success) {
       throw new Error(`invalid response: ${parsed.error.message}`)
     }
-    return parsed.data
+    const map: PriceBadgeMap = {}
+    for (const [name, rawBadge] of Object.entries(parsed.data)) {
+      const badge = zRemotePriceBadge.safeParse(rawBadge)
+      if (!badge.success) {
+        console.warn(
+          `[pricing/badges] skipping malformed badge for '${name}':`,
+          badge.error.message
+        )
+        continue
+      }
+      map[name] = badge.data
+    }
+    return map
   } catch (error) {
     console.warn(
       '[pricing/badges] fetch failed; no core-node badges this session:',
@@ -94,9 +111,26 @@ function bucketOfType(type: string): WidgetTypeBucket {
   return 'string'
 }
 
-function declaredInputBucket(spec: unknown): WidgetTypeBucket {
-  if (!Array.isArray(spec) || Array.isArray(spec[0])) return 'string'
-  return bucketOfType(String(spec[0]))
+/**
+ * Bucket the declared type of a def input spec, or null when the spec is
+ * malformed. /object_info arrives unvalidated, so the tuple head must be
+ * narrowed before it reaches the canonical parser.
+ */
+function declaredInputBucket(spec: unknown): WidgetTypeBucket | null {
+  if (!Array.isArray(spec)) return null
+  // A widgetType override is what the runtime widget is constructed as.
+  const options = spec[1]
+  const widgetType =
+    options !== null &&
+    typeof options === 'object' &&
+    'widgetType' in options &&
+    typeof options.widgetType === 'string'
+      ? options.widgetType
+      : undefined
+  if (widgetType) return bucketOfType(widgetType)
+  const head: unknown = spec[0]
+  if (typeof head !== 'string' && !Array.isArray(head)) return null
+  return bucketOfType(getInputSpecType(spec as InputSpec))
 }
 
 function validateBadgeAgainstDef(
@@ -109,8 +143,14 @@ function validateBadgeAgainstDef(
     const spec = inputs[parent]
     if (!spec) return `widget '${widget.name}' has no def input '${parent}'`
     const isNested = widget.name.includes('.')
-    if (!isNested && bucketOfType(widget.type) !== declaredInputBucket(spec)) {
-      return `widget '${widget.name}' type '${widget.type}' does not match def input type`
+    if (!isNested) {
+      const declared = declaredInputBucket(spec)
+      if (declared === null) {
+        return `widget '${widget.name}' def input spec is malformed`
+      }
+      if (bucketOfType(widget.type) !== declared) {
+        return `widget '${widget.name}' type '${widget.type}' does not match def input type`
+      }
     }
   }
   for (const name of [
@@ -154,6 +194,9 @@ export async function overlayPriceBadges(
     })
     return
   }
+  // A concurrent overlay call may have timed out and marked the session lost
+  // while we were awaiting; honor the all-or-nothing session invariant.
+  if (raceLostForSession) return
   if (!result) return
   for (const [name, badge] of Object.entries(result)) {
     const def = defs[name]
