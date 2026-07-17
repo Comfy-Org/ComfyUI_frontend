@@ -277,18 +277,6 @@ describe('missingModelStore', () => {
     })
   })
 
-  describe('setGatedRepoUrl', () => {
-    it('stores gated repo URLs by model download URL', () => {
-      const store = useMissingModelStore()
-      const url =
-        'https://huggingface.co/org/model/resolve/main/model.safetensors'
-
-      store.setGatedRepoUrl(url, 'https://huggingface.co/org/model')
-
-      expect(store.gatedRepoUrls[url]).toBe('https://huggingface.co/org/model')
-    })
-  })
-
   describe('isWidgetMissingModel', () => {
     it('returns true when specific widget has missing model', () => {
       const store = useMissingModelStore()

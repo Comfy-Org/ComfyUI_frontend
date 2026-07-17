@@ -496,6 +496,36 @@ describe('MissingModelRow', () => {
     expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
   })
 
+  it('falls back when the Desktop bridge resolves false', async () => {
+    mockIsCloud.value = false
+    const user = userEvent.setup()
+    const openModelAccessPage = vi.fn().mockResolvedValue(false)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      openModelAccessPage
+    }
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
+
+    renderRow(model, vi.fn(), false)
+    const store = useMissingModelStore()
+    store.setGatedRepoUrl(
+      model.representative.url,
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    await nextTick()
+
+    await user.click(screen.getByTestId('missing-model-gated-access'))
+
+    expect(openModelAccessPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
+      'https://huggingface.co/bfl/FLUX.1'
+    )
+  })
+
   it('shows unknown category metadata for models without a directory', () => {
     renderRow(
       makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]),

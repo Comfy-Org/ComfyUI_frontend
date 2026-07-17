@@ -47,12 +47,17 @@ async function startDesktop2ModelDownload(
   }
 }
 
-export function openGatedRepoPage(url: string): void {
+function openUrlInNewTab(url: string, downloadAs?: string): void {
   const link = document.createElement('a')
   link.href = url
+  if (downloadAs) link.download = downloadAs
   link.target = '_blank'
   link.rel = 'noopener noreferrer'
   link.click()
+}
+
+export function openGatedRepoPage(url: string): void {
+  openUrlInNewTab(url)
 }
 
 function isHuggingFaceRepoUrl(url: string): boolean {
@@ -98,12 +103,7 @@ export function downloadModel(
   }
 
   if (!isDesktop) {
-    const link = document.createElement('a')
-    link.href = model.url
-    link.download = model.name
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.click()
+    openUrlInNewTab(model.url, model.name)
     return
   }
 
@@ -169,6 +169,7 @@ const GATED_STATUS_CODES = new Set([401, 403, 451])
 
 async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
   try {
+    // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
     const response = await fetch(url, { method: 'HEAD' })
     if (!response.ok) {
       if (

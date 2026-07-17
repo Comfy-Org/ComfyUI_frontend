@@ -12,19 +12,12 @@ export function useMissingModelDownload() {
   async function prefetchModelMetadata(url: string): Promise<void> {
     if (store.fileSizes[url] !== undefined || store.gatedRepoUrls[url]) return
 
-    try {
-      const metadata = await fetchModelMetadata(url)
-      if (metadata.fileSize !== null) {
-        store.setFileSize(url, metadata.fileSize)
-      }
-      if (metadata.gatedRepoUrl) {
-        store.setGatedRepoUrl(url, metadata.gatedRepoUrl)
-      }
-    } catch (error: unknown) {
-      console.warn(
-        `[MissingModelDownload] Failed to fetch metadata for ${url}:`,
-        error
-      )
+    const metadata = await fetchModelMetadata(url)
+    if (metadata.fileSize !== null) {
+      store.setFileSize(url, metadata.fileSize)
+    }
+    if (metadata.gatedRepoUrl) {
+      store.setGatedRepoUrl(url, metadata.gatedRepoUrl)
     }
   }
 
@@ -32,15 +25,16 @@ export function useMissingModelDownload() {
     downloadModel(model, store.folderPaths)
   }
 
-  function openModelAccessPage(repoUrl: string): void {
-    const desktopBridge = window.__comfyDesktop2
-    if (desktopBridge?.openModelAccessPage) {
-      void desktopBridge
-        .openModelAccessPage(repoUrl)
-        .catch((error: unknown) => {
-          console.error('Failed to open model access page in Desktop:', error)
-        })
-      return
+  // Use the bridge regardless of isRemote() so provider cookies land in the
+  // host session reused by downloads.
+  async function openModelAccessPage(repoUrl: string): Promise<void> {
+    const openInHost = window.__comfyDesktop2?.openModelAccessPage
+    if (openInHost) {
+      try {
+        if (await openInHost(repoUrl)) return
+      } catch (error: unknown) {
+        console.error('Failed to open model access page in Desktop:', error)
+      }
     }
 
     openGatedRepoPage(repoUrl)

@@ -3,7 +3,7 @@
     <div
       v-if="showGatedModelsHint"
       data-testid="missing-model-gated-hint"
-      role="alert"
+      role="status"
       class="mb-2 flex gap-2 rounded-md border border-warning-background/30 bg-warning-background/10 p-2.5"
     >
       <i
@@ -138,20 +138,17 @@ const unsupportedModelRows = computed(() =>
   isCloud ? sortedModelRows.value.filter((row) => !canCloudImport(row)) : []
 )
 
-const showGatedModelsHint = computed(
-  () =>
-    !isCloud &&
-    sortedModelRows.value.some((row) => {
-      const url = row.model.representative.url
-      return !!url && !!missingModelStore.gatedRepoUrls[url]
-    })
-)
-
 const downloadableModels = computed(() => {
   if (isCloud) return []
 
   return getDownloadableModels(missingModelGroups)
 })
+
+const showGatedModelsHint = computed(() =>
+  downloadableModels.value.some(
+    (model) => !!missingModelStore.gatedRepoUrls[model.url]
+  )
+)
 
 const downloadAllLabel = computed(() => {
   const base = t('rightSidePanel.missingModels.downloadAll')

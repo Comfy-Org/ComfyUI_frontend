@@ -69,6 +69,7 @@ export interface ComfyDesktop2TelemetryBridge {
 }
 
 export interface ComfyDesktop2Bridge {
+  /** Reports whether the backend server is cloud/remote, not the user's location. */
   isRemote(): boolean
   /** Opens a model provider access page in the hosted frontend's browser session.
    *  Resolves `true` when the host accepts the request. */

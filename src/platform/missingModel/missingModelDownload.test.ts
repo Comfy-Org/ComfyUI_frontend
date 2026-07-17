@@ -103,15 +103,18 @@ describe('fetchModelMetadata', () => {
     }
   )
 
-  it('does not treat HuggingFace 404/500 as gated', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 404 })
+  it.for([404, 500])(
+    'does not treat HuggingFace %s as gated',
+    async (status) => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status })
 
-    const metadata = await fetchModelMetadata(
-      `https://huggingface.co/org/model/resolve/main/notfound-${testId}.safetensors`
-    )
-    expect(metadata.gatedRepoUrl).toBeNull()
-    expect(metadata.fileSize).toBeNull()
-  })
+      const metadata = await fetchModelMetadata(
+        `https://huggingface.co/org/model/resolve/main/not-gated-${status}-${testId}.safetensors`
+      )
+      expect(metadata.gatedRepoUrl).toBeNull()
+      expect(metadata.fileSize).toBeNull()
+    }
+  )
 
   it('does not treat non-HuggingFace hosts as gated', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })

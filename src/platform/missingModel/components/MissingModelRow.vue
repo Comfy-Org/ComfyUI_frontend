@@ -408,7 +408,7 @@ function handleDownload() {
 
 function handleOpenGatedRepo() {
   const repoUrl = gatedRepoUrl.value
-  if (repoUrl) openModelAccessPage(repoUrl)
+  if (repoUrl) void openModelAccessPage(repoUrl)
 }
 
 function handleLocatePrimary() {

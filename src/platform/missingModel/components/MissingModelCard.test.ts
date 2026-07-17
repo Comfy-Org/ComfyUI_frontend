@@ -340,6 +340,23 @@ describe('MissingModelCard (OSS)', () => {
     )
   })
 
+  it('does not show gated guidance for a model that is not downloadable', async () => {
+    const group = makeGroup({
+      modelNames: ['model.bin'],
+      withDownloadUrls: true
+    })
+    const url = 'https://huggingface.co/comfy/test/resolve/main/model.bin'
+    mountCard({ missingModelGroups: [group] })
+
+    useMissingModelStore().gatedRepoUrls[url] =
+      'https://huggingface.co/comfy/test'
+    await nextTick()
+
+    expect(
+      screen.queryByTestId('missing-model-gated-hint')
+    ).not.toBeInTheDocument()
+  })
+
   it('routes Download all through the shared missing-model download handler', async () => {
     mountCard({
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
