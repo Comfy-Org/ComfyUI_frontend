@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -18,6 +19,10 @@ const getNodeImageUrls = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls })
 }))
+
+// Reactive so `until(sinkUrl)` wakes on a real dependency change rather than
+// relying on incidental re-polling of a plain mock.
+const sinkOutput = ref<string[] | undefined>(['blob:sink-output'])
 
 const isDialogOpen = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/stores/dialogStore', () => ({
@@ -68,7 +73,8 @@ describe('firstRunTourStore', () => {
     resolveNode.mockReset()
     getNodeImageUrls.mockReset()
     resolveNode.mockReturnValue(sinkNode)
-    getNodeImageUrls.mockReturnValue(['blob:sink-output'])
+    sinkOutput.value = ['blob:sink-output']
+    getNodeImageUrls.mockImplementation(() => sinkOutput.value)
     isDialogOpen.mockReset()
     isDialogOpen.mockReturnValue(false)
   })
@@ -205,11 +211,12 @@ describe('firstRunTourStore', () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
     store.isActive = true
-    // The cloud queue refresh fills the output just after execution_success.
-    getNodeImageUrls.mockReturnValueOnce(undefined)
-    getNodeImageUrls.mockReturnValue(['blob:late-output'])
+    sinkOutput.value = undefined
 
-    await store.captureResultMedia()
+    const pending = store.captureResultMedia()
+    // The cloud queue refresh fills the output just after execution_success.
+    sinkOutput.value = ['blob:late-output']
+    await pending
 
     expect(store.resultMedia).toEqual({
       url: 'blob:late-output',
@@ -228,13 +235,30 @@ describe('firstRunTourStore', () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
     store.isActive = true
-    getNodeImageUrls.mockReturnValueOnce(undefined)
-    getNodeImageUrls.mockReturnValue(['blob:late-output'])
+    sinkOutput.value = undefined
 
     // The tour ends (user skips) during the wait; the URL then resolves, but the
     // post-await guard must drop it rather than record into a dead tour.
     const pending = store.captureResultMedia()
     store.end()
+    sinkOutput.value = ['blob:late-output']
+    await pending
+
+    expect(store.resultMedia).toBeNull()
+  })
+
+  it('captureResultMedia() discards the URL if a newer tour started mid-wait', async () => {
+    resolveTourRoles.mockReturnValue(t2iRoles)
+    store.prepare(workflow)
+    store.isActive = true
+    sinkOutput.value = undefined
+
+    // The original tour's capture is still waiting when a fresh tour starts
+    // (prepare bumps tourRunId). The late URL must not write into the new run.
+    const pending = store.captureResultMedia()
+    store.prepare(workflow)
+    store.isActive = true
+    sinkOutput.value = ['blob:late-output']
     await pending
 
     expect(store.resultMedia).toBeNull()
@@ -245,7 +269,7 @@ describe('firstRunTourStore', () => {
     store.prepare(workflow)
     store.isActive = true
     await store.captureResultMedia()
-    getNodeImageUrls.mockReturnValue(['blob:second-run'])
+    sinkOutput.value = ['blob:second-run']
 
     await store.captureResultMedia()
 
@@ -261,7 +285,7 @@ describe('firstRunTourStore', () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
     store.isActive = true
-    getNodeImageUrls.mockReturnValue(undefined)
+    sinkOutput.value = undefined
 
     const pending = store.captureResultMedia()
     await vi.runAllTimersAsync()

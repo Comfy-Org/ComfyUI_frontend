@@ -380,16 +380,20 @@ export function resolveRoles(
   const graph = fromWorkflowJson(workflow)
   const host = subgraphHost(graph)
 
-  const prompt = host
+  // Fall back to the root graph so an unrelated subgraph can't null out its roles.
+  const subgraphPrompt = host
     ? resolveSubgraphPrompt(host.node.id, host.subgraph)
-    : resolveTopLevelPrompt(graph)
+    : null
+  const prompt = subgraphPrompt ?? resolveTopLevelPrompt(graph)
 
   const override = overrideFor(templateId)
   if (override) return applyOverride(graph, override, prompt)
 
   const sink = findSink(graph, nodeDefLookup)
   const source = findSource(graph)
-  const engine = firstSampler(host ? host.subgraph.nodes : graph.nodes)
+  const engine =
+    (host ? firstSampler(host.subgraph.nodes) : null) ??
+    firstSampler(graph.nodes)
 
   return {
     source: source ? toNodeRole(source.id) : null,

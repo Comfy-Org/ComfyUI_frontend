@@ -88,8 +88,10 @@ export const useFirstRunTourStore = defineStore('firstRunTour', () => {
   // The URL lands just after the run (the cloud queue refresh fetches it), so wait rather than drop it.
   async function captureResultMedia() {
     if (!isActive.value || resultMedia.value) return
-    const sink = resolvedRoles.value?.sink
+    const roles = resolvedRoles.value
+    const sink = roles?.sink
     if (!sink) return
+    const runId = tourRunId.value
 
     const sinkUrl = () => {
       const node = resolveNode(sink.nodeId)
@@ -102,9 +104,10 @@ export const useFirstRunTourStore = defineStore('firstRunTour', () => {
       timeout: RESULT_MEDIA_TIMEOUT_MS,
       throwOnTimeout: false
     })
-    if (!url || !isActive.value) return
+    // A newer tour may have started during the wait; don't write into it.
+    if (!url || !isActive.value || tourRunId.value !== runId) return
 
-    resultMedia.value = { url, kind: resolvedRoles.value?.mediaKind ?? 'image' }
+    resultMedia.value = { url, kind: roles.mediaKind }
   }
 
   // Defer behind the upgrade modal so the two never overlap; dismissal wins over both.

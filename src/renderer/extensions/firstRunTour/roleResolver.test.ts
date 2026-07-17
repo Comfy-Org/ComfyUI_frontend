@@ -306,6 +306,43 @@ describe('resolveRoles — arbitrary (non-curated) graphs', () => {
 
     expect(roles.sink?.nodeId).toBe(toNodeId(9))
   })
+
+  it('resolves top-level prompt and engine past an unrelated subgraph', () => {
+    const subgraphId = '22222222-2222-2222-2222-222222222222'
+    const graph = {
+      ...workflow(
+        [
+          node(1, subgraphId, { inputs: [] }),
+          cte(6, 4, 'a red fox'),
+          node(3, 'KSampler', {
+            inputs: [{ name: 'positive', type: 'CONDITIONING', link: 4 }]
+          }),
+          node(9, 'SaveImage', {
+            inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+          })
+        ],
+        [
+          [4, 6, 0, 3, 1, 'CONDITIONING'],
+          [8, 3, 0, 9, 0, 'IMAGE']
+        ]
+      ),
+      definitions: {
+        subgraphs: [
+          {
+            id: subgraphId,
+            inputs: [],
+            nodes: [node(10, 'VAEDecode', { inputs: [] })],
+            links: []
+          }
+        ]
+      }
+    } as unknown as ComfyWorkflowJSON
+
+    const roles = resolveRoles(graph)
+    expect(roles.prompt?.innerNodeId).toBe(toNodeId(6))
+    expect(roles.engine?.nodeId).toBe(toNodeId(3))
+    expect(roles.sink?.nodeId).toBe(toNodeId(9))
+  })
 })
 
 describe('fromWorkflowJson normalizes the serialized shape', () => {

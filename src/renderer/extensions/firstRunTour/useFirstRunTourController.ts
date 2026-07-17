@@ -225,9 +225,9 @@ function _useFirstRunTourController() {
   async function beginTour({
     templateId,
     entry = 'getting_started'
-  }: BeginTourOptions = {}) {
-    if (!shouldStartTour()) return
-    if (isPreparing.value || store.isActive) return
+  }: BeginTourOptions = {}): Promise<boolean> {
+    if (!shouldStartTour()) return false
+    if (isPreparing.value || store.isActive) return false
 
     isPreparing.value = true
     try {
@@ -239,7 +239,7 @@ function _useFirstRunTourController() {
         throwOnTimeout: false
       })
       const workflow = workflowStore.activeWorkflow?.activeState
-      if (!workflow) return
+      if (!workflow) return false
 
       // Resolve from the same snapshot start() uses, then hold until the live
       // graph agrees — the spotlight reads the live graph, so they must match.
@@ -258,6 +258,7 @@ function _useFirstRunTourController() {
       await nextFrame()
       await start(templateId, entry)
       await nextFrame()
+      return store.isActive
     } finally {
       isPreparing.value = false
     }

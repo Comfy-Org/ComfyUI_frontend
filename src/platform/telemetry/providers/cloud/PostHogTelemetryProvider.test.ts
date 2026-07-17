@@ -729,7 +729,14 @@ describe('PostHogTelemetryProvider', () => {
       ['started', TelemetryEvents.ONBOARDING_TOUR_STARTED],
       ['step_shown', TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN],
       ['completed', TelemetryEvents.ONBOARDING_TOUR_COMPLETED],
-      ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED]
+      ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED],
+      ['run_triggered', TelemetryEvents.ONBOARDING_TOUR_RUN_TRIGGERED],
+      ['upgrade_shown', TelemetryEvents.ONBOARDING_TOUR_UPGRADE_SHOWN],
+      ['nudge_shown', TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN],
+      [
+        'explore_templates_clicked',
+        TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
+      ]
     ])(
       'maps onboarding tour stage %s to %s',
       async ([stage, expectedEvent]) => {

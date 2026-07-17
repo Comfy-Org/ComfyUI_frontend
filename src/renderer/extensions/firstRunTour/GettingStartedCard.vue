@@ -11,6 +11,7 @@
     v-else
     role="button"
     :tabindex="loading ? -1 : 0"
+    :aria-disabled="loading"
     :data-testid="testid"
     :aria-label="title"
     :aria-busy="loading"

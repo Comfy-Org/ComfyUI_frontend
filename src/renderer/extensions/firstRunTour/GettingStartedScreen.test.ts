@@ -203,6 +203,22 @@ describe('GettingStartedScreen', () => {
     expect(screen.getAllByRole('tab')).toHaveLength(2)
   })
 
+  it('shows a message instead of endless skeletons when the catalog load fails', async () => {
+    mocks.templatesLoaded = false
+    mocks.loadWorkflowTemplates.mockRejectedValueOnce(new Error('offline'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    renderScreen()
+
+    await vi.waitFor(() =>
+      expect(
+        screen.getByText(enMessages.onboardingTour.gettingStarted.loadFailed)
+      ).toBeTruthy()
+    )
+    expect(
+      screen.queryAllByTestId('getting-started-card-skeleton')
+    ).toHaveLength(0)
+  })
+
   it('shows skeleton cards instead of an empty grid while templates load', () => {
     mocks.templatesLoaded = false
     renderScreen()

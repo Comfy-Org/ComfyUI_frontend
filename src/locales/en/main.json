@@ -2381,6 +2381,7 @@
     "gettingStarted": {
       "title": "Get started with graph",
       "subtitle": "Start a workflow from scratch or load one that's ready to go.",
+      "loadFailed": "Failed to load templates",
       "screenLabel": "Get started with graph",
       "tabsLabel": "Getting started options",
       "tabs": {

@@ -864,10 +864,11 @@ describe('useFirstRunTourController.beginTour', () => {
   })
 
   it('starts the tour once the live graph holds the resolved nodes', async () => {
-    await useFirstRunTourController().beginTour({
+    const started = await useFirstRunTourController().beginTour({
       templateId: 'image_z_image_turbo'
     })
 
+    expect(started).toBe(true)
     expect(mocks.storePrepare).toHaveBeenCalledWith(
       activeState,
       'image_z_image_turbo'
@@ -893,16 +894,22 @@ describe('useFirstRunTourController.beginTour', () => {
   it('does not start when gating fails', async () => {
     mocks.isNewUser.mockReturnValue(false)
 
-    await useFirstRunTourController().beginTour({ templateId: 'x' })
+    const started = await useFirstRunTourController().beginTour({
+      templateId: 'x'
+    })
 
+    expect(started).toBe(false)
     expect(mocks.storePrepare).not.toHaveBeenCalled()
   })
 
   it('does not start a second tour while one is already active', async () => {
     mocks.isActive.value = true
 
-    await useFirstRunTourController().beginTour({ templateId: 'x' })
+    const started = await useFirstRunTourController().beginTour({
+      templateId: 'x'
+    })
 
+    expect(started).toBe(false)
     expect(mocks.storePrepare).not.toHaveBeenCalled()
   })
 
