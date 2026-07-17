@@ -67,24 +67,17 @@ const nodeData = computed<VueNodeData>(() => {
         input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
-      // Preview nodes have no widget-value store entry, so combo widgets
-      // render their first option; lead with the requested value to show it.
       const leadValue = widgetValues?.[name]
+      const value = leadValue ?? input.default ?? comboValues?.[0] ?? ''
       return {
         nodeId: toNodeId('-1'),
         name,
         type: input.widgetType || input.type,
-        value:
-          input.default !== undefined
-            ? input.default
-            : (comboValues?.[0] ?? ''),
+        value,
         options: {
           hidden: input.hidden,
           advanced: input.advanced,
-          values:
-            leadValue && comboValues
-              ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
-              : comboValues
+          values: comboValues?.length ? [value] : comboValues
         } satisfies IWidgetOptions
       }
     })
