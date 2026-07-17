@@ -27,7 +27,11 @@ const readNullTerminatedString = (
   return { str, length: length + 1 } // Include null terminator
 }
 
-const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
+const parseInfeBox = (
+  dataView: DataView,
+  start: number,
+  end: number
+): AvifInfeBox => {
   const version = dataView.getUint8(start)
   const flags = dataView.getUint32(start) & 0xffffff
   let offset = start + 4
@@ -57,11 +61,10 @@ const parseInfeBox = (dataView: DataView, start: number): AvifInfeBox => {
     )
     offset += name_len
 
-    const content_type = readNullTerminatedString(
-      dataView,
-      offset,
-      dataView.byteLength
-    ).str
+    const content_type =
+      item_type === 'mime'
+        ? readNullTerminatedString(dataView, offset, end).str
+        : undefined
 
     return {
       box_header: { size: 0, type: 'infe' }, // Size is dynamic
@@ -99,7 +102,7 @@ const parseIinfBox = (
     )
 
     if (boxType === 'infe') {
-      const infe = parseInfeBox(dataView, offset + 8)
+      const infe = parseInfeBox(dataView, offset + 8, offset + boxSize)
       infe.box_header.size = boxSize
       entries.push(infe)
     }
@@ -144,9 +147,9 @@ const parseIlocBox = (
       version < 2 ? dataView.getUint16(offset) : dataView.getUint32(offset)
     offset += version < 2 ? 2 : 4
 
-    if (version === 1 || version === 2) {
-      offset += 2 // construction_method
-    }
+    const construction_method =
+      version === 1 || version === 2 ? dataView.getUint16(offset) & 0x000f : 0
+    if (version === 1 || version === 2) offset += 2
 
     const data_reference_index = dataView.getUint16(offset)
     offset += 2
@@ -170,6 +173,7 @@ const parseIlocBox = (
     }
     items.push({
       item_ID,
+      construction_method,
       data_reference_index,
       base_offset,
       extent_count,
@@ -215,6 +219,86 @@ function findBox(
   return null
 }
 
+function getIlocItemData(
+  buffer: ArrayBuffer,
+  item: AvifIlocBox['items'][number]
+): Uint8Array | null {
+  if (
+    item.construction_method !== 0 ||
+    item.data_reference_index !== 0 ||
+    item.extents.length === 0
+  )
+    return null
+
+  const totalLength = item.extents.reduce(
+    (length, extent) => length + extent.extent_length,
+    0
+  )
+  const itemData = new Uint8Array(totalLength)
+  let destinationOffset = 0
+
+  for (const extent of item.extents) {
+    const sourceOffset = item.base_offset + extent.extent_offset
+    const sourceEnd = sourceOffset + extent.extent_length
+    if (sourceOffset < 0 || sourceEnd > buffer.byteLength) return null
+
+    itemData.set(
+      new Uint8Array(buffer, sourceOffset, extent.extent_length),
+      destinationOffset
+    )
+    destinationOffset += extent.extent_length
+  }
+
+  return itemData
+}
+
+function setXmpMetadataValue(
+  metadata: ComfyMetadata,
+  localName: string,
+  value: string
+) {
+  const metadataKey = localName.toLowerCase()
+
+  try {
+    if (metadataKey === ComfyMetadataTags.PROMPT.toLowerCase()) {
+      metadata.prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(value)
+    } else if (metadataKey === ComfyMetadataTags.WORKFLOW.toLowerCase()) {
+      metadata.workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(value)
+    }
+  } catch (error) {
+    console.error(`Failed to parse XMP ${metadataKey} metadata`, error)
+  }
+}
+
+function parseXmpMetadata(itemData: Uint8Array): ComfyMetadata {
+  const metadata: ComfyMetadata = {}
+  const xmpText = new TextDecoder('utf-8').decode(itemData)
+  const xmpDocument = new DOMParser().parseFromString(
+    xmpText,
+    'application/xml'
+  )
+  if (xmpDocument.getElementsByTagName('parsererror').length > 0)
+    return metadata
+
+  const elements = xmpDocument.getElementsByTagName('*')
+  for (let elementIndex = 0; elementIndex < elements.length; elementIndex++) {
+    const element = elements[elementIndex]
+
+    for (
+      let attributeIndex = 0;
+      attributeIndex < element.attributes.length;
+      attributeIndex++
+    ) {
+      const attribute = element.attributes[attributeIndex]
+      setXmpMetadataValue(metadata, attribute.localName, attribute.value)
+    }
+
+    setXmpMetadataValue(metadata, element.localName, element.textContent ?? '')
+  }
+
+  return metadata
+}
+
 function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
   const metadata: ComfyMetadata = {}
   const dataView = new DataView(buffer)
@@ -241,7 +325,11 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
   const iinf = parseIinfBox(dataView, iinfBoxRange)
 
   const exifInfe = iinf.entries.find((e) => e.item_type === 'Exif')
-  if (!exifInfe) return {}
+  const xmpInfe = iinf.entries.find(
+    (entry) =>
+      entry.item_type === 'mime' && entry.content_type === 'application/rdf+xml'
+  )
+  if (!exifInfe && !xmpInfe) return {}
 
   const ilocBoxRange = findBox(
     dataView,
@@ -251,36 +339,31 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
   )
   const iloc = parseIlocBox(dataView, ilocBoxRange)
 
-  const exifIloc = iloc.items.find((i) => i.item_ID === exifInfe.item_ID)
-  if (!exifIloc || exifIloc.extents.length === 0) return {}
-
-  const exifExtent = exifIloc.extents[0]
-  const itemData = new Uint8Array(
-    buffer,
-    exifExtent.extent_offset,
-    exifExtent.extent_length
-  )
+  const exifIloc = exifInfe
+    ? iloc.items.find((item) => item.item_ID === exifInfe.item_ID)
+    : undefined
+  const exifData = exifIloc ? getIlocItemData(buffer, exifIloc) : null
 
   let tiffHeaderOffset = -1
-  for (let i = 0; i < itemData.length - 4; i++) {
+  for (let i = 0; exifData && i < exifData.length - 4; i++) {
     if (
-      (itemData[i] === 0x4d &&
-        itemData[i + 1] === 0x4d &&
-        itemData[i + 2] === 0x00 &&
-        itemData[i + 3] === 0x2a) || // MM*
-      (itemData[i] === 0x49 &&
-        itemData[i + 1] === 0x49 &&
-        itemData[i + 2] === 0x2a &&
-        itemData[i + 3] === 0x00) // II*
+      (exifData[i] === 0x4d &&
+        exifData[i + 1] === 0x4d &&
+        exifData[i + 2] === 0x00 &&
+        exifData[i + 3] === 0x2a) || // MM*
+      (exifData[i] === 0x49 &&
+        exifData[i + 1] === 0x49 &&
+        exifData[i + 2] === 0x2a &&
+        exifData[i + 3] === 0x00) // II*
     ) {
       tiffHeaderOffset = i
       break
     }
   }
 
-  if (tiffHeaderOffset !== -1) {
-    const exifData = itemData.subarray(tiffHeaderOffset)
-    const data: Record<string, any> = parseExifData(exifData)
+  if (exifData && tiffHeaderOffset !== -1) {
+    const tiffData = exifData.subarray(tiffHeaderOffset)
+    const data: Record<string, any> = parseExifData(tiffData)
     for (const key in data) {
       const value = data[key]
       if (typeof value === 'string') {
@@ -321,9 +404,15 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
         }
       }
     }
-  } else {
+  } else if (exifInfe) {
     console.log('Warning: TIFF header not found in EXIF data.')
   }
+
+  const xmpIloc = xmpInfe
+    ? iloc.items.find((item) => item.item_ID === xmpInfe.item_ID)
+    : undefined
+  const xmpData = xmpIloc ? getIlocItemData(buffer, xmpIloc) : null
+  if (xmpData) Object.assign(metadata, parseXmpMetadata(xmpData))
 
   return metadata
 }
