@@ -97,7 +97,7 @@
     "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
-    "@vueuse/router": "^14.2.0",
+    "@vueuse/router": "^14.3.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
@@ -111,7 +111,7 @@
     "extendable-media-recorder": "^9.2.27",
     "extendable-media-recorder-wav-encoder": "^7.0.129",
     "firebase": "catalog:",
-    "fuse.js": "^7.0.0",
+    "fuse.js": "7.0.0",
     "glob": "catalog:",
     "jsonata": "catalog:",
     "loglevel": "^1.9.2",
@@ -219,5 +219,5 @@
     "node": ">=25 <26",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.3.0"
+  "packageManager": "pnpm@11.13.1"
 }
