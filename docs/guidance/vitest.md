@@ -20,7 +20,7 @@ See `docs/testing/*.md` for detailed patterns.
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
-- Don't mock what you don't own
+- [Don't mock what you don't own](https://hynek.me/articles/what-to-mock-in-5-mins/)
 
 ## Component Testing
 

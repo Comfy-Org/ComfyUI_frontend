@@ -39,6 +39,26 @@ guardrails.
 23. Favor pure functions (especially testable ones)
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+26. Do not add alias helpers whose implementation is just a single-line call to another function
+    - Bad: `function id(value) { return nodeId(value) }`
+    - Use the real function directly, or introduce a named helper only when it adds validation, branching, domain meaning, or shared behavior beyond renaming
+
+## Code Comments
+
+- NEVER add multi-line block comments to justify trivial code changes
+  - A one-line fix does not need a three-line comment explaining why
+  - A guard clause that mirrors another file does not need a comment naming that file
+  - A test setup line does not need a comment paraphrasing what the next line does
+  - If the diff is small and obvious, the comment is noise — write the code and move on
+  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding one of these comments:**
+    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
+    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
+    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
+    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
 
 ## Project Philosophy
 
