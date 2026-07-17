@@ -196,7 +196,9 @@ test.describe('Model library sidebar - asset mode', () => {
     )
     expect(loader).toBeDefined()
     const widget = await loader.getWidgetByName('ckpt_name')
-    expect(await widget.getValue()).toBe(MODEL_TYPE_CHECKPOINT_NESTED.loader_path)
+    expect(await widget.getValue()).toBe(
+      MODEL_TYPE_CHECKPOINT_NESTED.loader_path
+    )
   })
 })
 
