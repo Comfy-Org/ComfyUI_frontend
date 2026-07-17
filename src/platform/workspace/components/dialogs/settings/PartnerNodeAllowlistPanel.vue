@@ -159,6 +159,7 @@ const searchQuery = ref('')
 const draftNodes = ref<Record<string, boolean>>({})
 const isSaving = ref(false)
 const saveError = ref(false)
+let saveGeneration = 0
 
 const isReady = computed(
   () => status.value === 'configured' || status.value === 'unconfigured'
@@ -178,6 +179,15 @@ function resetDraft(): void {
 watch([governedWorkspaceId, partnerNodes, policy], resetDraft, {
   immediate: true
 })
+
+watch(
+  governedWorkspaceId,
+  () => {
+    saveGeneration += 1
+    isSaving.value = false
+  },
+  { flush: 'sync' }
+)
 
 const hasChanges = computed(() =>
   partnerNodes.value.some(
@@ -227,6 +237,7 @@ function setNodeEnabled(nodeId: string, enabled: boolean): void {
 async function save(): Promise<void> {
   if (!hasChanges.value || isSaving.value) return
 
+  const generation = saveGeneration
   isSaving.value = true
   saveError.value = false
   try {
@@ -237,16 +248,19 @@ async function save(): Promise<void> {
         ...draftNodes.value
       }
     })
-    if (!applied) return
+    if (!applied || generation !== saveGeneration) return
     toastStore.add({
       severity: 'success',
       summary: t('workspacePanel.allowlist.saved'),
       life: 2000
     })
   } catch {
+    if (generation !== saveGeneration) return
     saveError.value = true
   } finally {
-    isSaving.value = false
+    if (generation === saveGeneration) {
+      isSaving.value = false
+    }
   }
 }
 

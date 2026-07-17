@@ -225,4 +225,37 @@ describe('PartnerNodeAllowlistPanel', () => {
       'Allowlist could not be saved.'
     )
   })
+
+  it('releases the new workspace when a previous save fails', async () => {
+    const user = userEvent.setup()
+    let rejectSave: (reason?: unknown) => void = () => undefined
+    mockSavePolicy.mockImplementation(
+      () =>
+        new Promise<boolean>((_resolve, reject) => {
+          rejectSave = reject
+        })
+    )
+    renderPanel()
+
+    await user.click(screen.getByRole('switch', { name: 'Allow Flux Fill' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(
+      screen.getByRole('switch', { name: 'Allow Flux Fill' })
+    ).toBeDisabled()
+
+    state.governedWorkspaceId.value = 'workspace-two'
+    await nextTick()
+
+    expect(
+      screen.getByRole('switch', { name: 'Allow Flux Fill' })
+    ).not.toBeDisabled()
+
+    rejectSave(new Error('Conflict'))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      screen.queryByText('Allowlist could not be saved.')
+    ).not.toBeInTheDocument()
+  })
 })
