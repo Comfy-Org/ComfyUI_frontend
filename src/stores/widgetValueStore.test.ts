@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
 import { useWidgetValueStore } from './widgetValueStore'
@@ -35,7 +36,7 @@ describe('useWidgetValueStore', () => {
 
     it('widgetState.value can be read and written directly', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 100))
+      const registered = store.registerWidget(seedA, state('number', 100))!
       expect(registered.value).toBe(100)
 
       registered.value = 200
@@ -79,7 +80,7 @@ describe('useWidgetValueStore', () => {
   describe('widget registration', () => {
     it('registers a widget with minimal properties', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 12345))
+      const registered = store.registerWidget(seedA, state('number', 12345))!
 
       expect(registered.nodeId).toBe('node-1')
       expect(registered.name).toBe('seed')
@@ -96,17 +97,17 @@ describe('useWidgetValueStore', () => {
       const registered = store.registerWidget(
         seedA,
         state('number', 12345, { y: 42 })
-      )
+      )!
 
       expect(registered.y).toBe(42)
     })
 
     it('registerWidget is idempotent and does not overwrite existing state', () => {
       const store = useWidgetValueStore()
-      const first = store.registerWidget(seedA, state('number', 11))
+      const first = store.registerWidget(seedA, state('number', 11))!
       first.value = 99
 
-      const second = store.registerWidget(seedA, state('number', 11))
+      const second = store.registerWidget(seedA, state('number', 11))!
       expect(second).toBe(first)
       expect(second.value).toBe(99)
     })
@@ -121,7 +122,7 @@ describe('useWidgetValueStore', () => {
           serialize: false,
           options: { multiline: true }
         })
-      )
+      )!
 
       expect(registered.label).toBe('Prompt Text')
       expect(registered.disabled).toBe(true)
@@ -187,7 +188,7 @@ describe('useWidgetValueStore', () => {
   describe('direct property mutation', () => {
     it('disabled can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 100))
+      const registered = store.registerWidget(seedA, state('number', 100))!
 
       registered.disabled = true
       expect(store.getWidget(seedA)?.disabled).toBe(true)
@@ -195,7 +196,7 @@ describe('useWidgetValueStore', () => {
 
     it('label can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 100))
+      const registered = store.registerWidget(seedA, state('number', 100))!
 
       registered.label = 'Random Seed'
       expect(store.getWidget(seedA)?.label).toBe('Random Seed')
@@ -224,6 +225,38 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
+    })
+  })
+
+  describe('un-keyable widget ids', () => {
+    // A custom node can register a widget with an empty/malformed name (spacer,
+    // header, preview, button). Such an id cannot be keyed; the store must
+    // decline it rather than throw and blank every widget on the node.
+    const namelessId = widgetId(graphA, toNodeId('node-1'), '') as WidgetId
+
+    it('registerWidget declines an un-keyable id instead of throwing', () => {
+      const store = useWidgetValueStore()
+      expect(() =>
+        store.registerWidget(namelessId, state('button', null))
+      ).not.toThrow()
+      expect(
+        store.registerWidget(namelessId, state('button', null))
+      ).toBeUndefined()
+    })
+
+    it('getWidget / setValue / deleteWidget tolerate an un-keyable id', () => {
+      const store = useWidgetValueStore()
+      expect(store.getWidget(namelessId)).toBeUndefined()
+      expect(store.setValue(namelessId, 1)).toBe(false)
+      expect(store.deleteWidget(namelessId)).toBe(false)
+    })
+
+    it('a declined widget does not block valid siblings on the same node', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(namelessId, state('button', null))
+      store.registerWidget(seedA, state('number', 7))
+
+      expect(store.getWidget(seedA)?.value).toBe(7)
     })
   })
 })

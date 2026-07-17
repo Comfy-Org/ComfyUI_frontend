@@ -4,7 +4,7 @@ import { reactive, ref } from 'vue'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { parseWidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
@@ -27,7 +27,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue = unknown>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>
-  ): WidgetState<TValue> {
+  ): WidgetState<TValue> | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const existing = getWidget(widgetId)
     if (existing) return existing as WidgetState<TValue>
 
@@ -44,6 +46,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).get(widgetId)
   }
@@ -56,6 +60,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
