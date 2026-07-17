@@ -4561,6 +4561,10 @@
     "cancelAll": "Cancel all",
     "pending": "Pending",
     "failed": "FAILED",
-    "nothingRunning": "Nothing running right now"
+    "nothingRunning": "Nothing running right now",
+    "queued": "Queued",
+    "jobFailed": "Failed",
+    "locate": "Locate",
+    "cancel": "Cancel"
   }
 }
