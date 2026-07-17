@@ -4555,5 +4555,12 @@
     "collapse": "Hide details",
     "failedCount": "{count} FAILED",
     "stop": "Stop"
+  },
+  "queueStatus": {
+    "activeGenerations": "Active generations",
+    "cancelAll": "Cancel all",
+    "pending": "Pending",
+    "failed": "FAILED",
+    "nothingRunning": "Nothing running right now"
   }
 }

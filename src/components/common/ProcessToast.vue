@@ -5,7 +5,7 @@
       data-testid="process-toast-pill"
       :class="
         cn(
-          'relative flex h-8 items-center gap-1.5 overflow-clip rounded-lg border border-interface-stroke bg-comfy-menu-bg py-1 pr-1 pl-2.5 shadow-interface',
+          'relative flex h-8 items-center gap-1.5 overflow-clip rounded-lg bg-comfy-menu-bg py-1 pr-1 pl-2.5 shadow-interface',
           pillClass
         )
       "
