@@ -37,16 +37,6 @@ function normalizePreviewExposure(
   }
 }
 
-function matchesExposureSource(
-  entry: PreviewExposure,
-  source: ExposureSource
-): boolean {
-  return (
-    entry.sourceNodeId === toNodeId(source.sourceNodeId) &&
-    entry.sourcePreviewName === source.sourcePreviewName
-  )
-}
-
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
 
@@ -94,8 +84,11 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     hostNodeLocator: string,
     source: ExposureSource
   ): PreviewExposure | undefined {
-    return _getExposuresRef(rootGraphId, hostNodeLocator)?.find((entry) =>
-      matchesExposureSource(entry, source)
+    const sourceNodeId = toNodeId(source.sourceNodeId)
+    return _getExposuresRef(rootGraphId, hostNodeLocator)?.find(
+      (entry) =>
+        entry.sourceNodeId === sourceNodeId &&
+        entry.sourcePreviewName === source.sourcePreviewName
     )
   }
 

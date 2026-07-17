@@ -181,6 +181,13 @@ function isSamePromotedInput(
   return false
 }
 
+function toExposureSource(source: PromotedWidgetSource) {
+  return {
+    sourceNodeId: source.sourceNodeId,
+    sourcePreviewName: source.sourceWidgetName
+  }
+}
+
 function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
@@ -189,10 +196,7 @@ function isPreviewExposed(
   return usePreviewExposureStore().hasExposure(
     subgraphNode.rootGraph.id,
     hostLocator,
-    {
-      sourceNodeId: source.sourceNodeId,
-      sourcePreviewName: source.sourceWidgetName
-    }
+    toExposureSource(source)
   )
 }
 
@@ -397,10 +401,7 @@ export function demoteWidget(
       const exposure = previewStore.findExposure(
         parent.rootGraph.id,
         hostLocator,
-        {
-          sourceNodeId: source.sourceNodeId,
-          sourcePreviewName: source.sourceWidgetName
-        }
+        toExposureSource(source)
       )
       if (exposure) {
         previewStore.removeExposure(
