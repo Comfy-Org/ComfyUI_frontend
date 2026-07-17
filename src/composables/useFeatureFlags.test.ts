@@ -182,6 +182,20 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('partnerNodeGovernanceEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the workspace eligibility flag', () => {
+      remoteConfig.value = { partner_node_governance_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
