@@ -81,11 +81,31 @@ runs:
 
             if (!existing) {
               try {
-                await github.rest.issues.createComment({
+                const created = await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: prNumber,
                   body: `${commentMarker}\n${sectionBlock}`
                 })
+                // Concurrent writers may have also created a comment; deduplicate
+                // by keeping the lowest-id copy and deleting the rest.
+                const allComments = await github.paginate(
+                  github.rest.issues.listComments,
+                  { ...context.repo, issue_number: prNumber }
+                )
+                const duplicates = allComments.filter(
+                  (c) =>
+                    c.user?.login === 'github-actions[bot]' &&
+                    c.body?.includes(commentMarker) &&
+                    c.id !== created.data.id
+                )
+                for (const dup of duplicates) {
+                  try {
+                    await github.rest.issues.deleteComment({
+                      ...context.repo,
+                      comment_id: dup.id
+                    })
+                  } catch (_) {}
+                }
                 return
               } catch (err) {
                 if (attempt === maxAttempts) throw err
