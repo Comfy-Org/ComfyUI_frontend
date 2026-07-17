@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -150,6 +151,76 @@ test.describe('Product showcase accordion @interaction', () => {
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+})
+
+test.describe('Hero image picker @interaction', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  // Exclude the glitch swap's outgoing image, which lingers in the DOM until
+  // the transition settles, so the locator always resolves to the current one.
+  const activeImage = (page: Page) =>
+    page.locator(
+      '[data-testid="hero-active-image"]:visible:not(.hero-glitch-leave-active)'
+    )
+
+  const outputImage = (page: Page) =>
+    page.locator(
+      '[data-testid="hero-output-image"]:visible:not(.hero-glitch-leave-active)'
+    )
+
+  test('defaults to the portrait variant with its thumbnail selected', async ({
+    page
+  }) => {
+    await expect(activeImage(page)).toHaveAttribute(
+      'src',
+      /input-portrait\.png/
+    )
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-cyberpunk\.png/
+    )
+    await expect(
+      page.getByRole('button', { name: /portrait/i })
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('hovering a thumbnail swaps the large image and moves selection', async ({
+    page
+  }) => {
+    const deerThumb = page.getByRole('button', { name: /deer/i })
+    await deerThumb.hover()
+
+    await expect(activeImage(page)).toHaveAttribute('src', /input-deer\.png/)
+    await expect(deerThumb).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      page.getByRole('button', { name: /portrait/i })
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('selecting an input cascades the matching output', async ({ page }) => {
+    await page.getByRole('button', { name: /vase/i }).click()
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-vase\.png/
+    )
+
+    await page.getByRole('button', { name: /deer/i }).click()
+    await expect(outputImage(page).first()).toHaveAttribute(
+      'src',
+      /output-deer\.png/
+    )
+  })
+
+  test('thumbnails are keyboard operable', async ({ page }) => {
+    const mirrorThumb = page.getByRole('button', { name: /mirror/i })
+    await mirrorThumb.focus()
+    await page.keyboard.press('Enter')
+
+    await expect(activeImage(page)).toHaveAttribute('src', /input-mirror\.png/)
+    await expect(mirrorThumb).toHaveAttribute('aria-pressed', 'true')
   })
 })
 
