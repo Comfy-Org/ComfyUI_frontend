@@ -208,7 +208,7 @@ const queueButtonVariant = computed<'destructive' | 'inverted'>(() =>
 )
 const queueActionButtonClass = 'h-full rounded-none gap-1.5 px-4 font-light'
 const queueMenuTriggerClass =
-  'h-full w-7 rounded-none border-l border-solid border-base-background/25 p-0 data-[state=open]:bg-base-foreground/80'
+  'h-full w-7 rounded-none border-solid border-y-0 border-r-0 border-l border-base-background/25 p-0 data-[state=open]:bg-base-foreground/80'
 const queueMenuItemButtonClass =
   'w-full justify-start font-normal data-[highlighted]:bg-secondary-background-hover'
 
