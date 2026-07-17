@@ -37,7 +37,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
 
     const existing = getWidget(widgetId)
-    if (existing) return existing as WidgetState<TValue>
+    if (existing && existing.type === init.type) {
+      return existing as WidgetState<TValue>
+    }
 
     const { graphId, nodeId, name } = parseWidgetId(widgetId)
     const state: WidgetState<TValue> = {

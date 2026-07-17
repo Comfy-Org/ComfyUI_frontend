@@ -112,6 +112,21 @@ describe('useWidgetValueStore', () => {
       expect(second.value).toBe(99)
     })
 
+    it('replaces a stale entry when the widget type changes', () => {
+      const store = useWidgetValueStore()
+      const first = store.registerWidget(seedA, state('number', 5))!
+      first.value = 42
+
+      // After a subgraph convert the graphId:nodeId:name key can be reused by a
+      // different widget. A type mismatch means it is not the same widget, so
+      // the live type/value must win rather than the stale entry (BUG: a text
+      // widget rendered as int until reload).
+      const reconciled = store.registerWidget(seedA, state('string', 'hello'))!
+      expect(reconciled.type).toBe('string')
+      expect(reconciled.value).toBe('hello')
+      expect(store.getWidget(seedA)?.type).toBe('string')
+    })
+
     it('registers a widget with all properties', () => {
       const store = useWidgetValueStore()
       const registered = store.registerWidget(
