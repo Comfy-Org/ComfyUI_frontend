@@ -49,7 +49,7 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
 
-  --color-credit: #fabc25;
+  --color-credit: #ddbd31;
 
   --color-coral-500: #f75951;
   --color-coral-600: #e04e48;
@@ -78,9 +78,9 @@
   --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
-  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
-  --color-modal-tag: rgb(from var(--color-smoke-400) r g b/ 0.4);
+  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b / 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b / 0.1);
+  --color-modal-tag: rgb(from var(--color-smoke-400) r g b / 0.4);
   --color-alpha-charcoal-600-30: color-mix(
     in srgb,
     var(--color-charcoal-600) 30%,
@@ -107,7 +107,7 @@
   --color-highlight: var(--p-primary-color);
 
   /* Special Colors (temporary) */
-  --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
+  --color-dark-elevation-1-5: rgba(from white r g b / 0.015);
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
@@ -139,26 +139,6 @@
 
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
-
-  --subscription-button-gradient:
-    linear-gradient(
-      315deg,
-      rgb(105 230 255 / 0.15) 0%,
-      rgb(99 73 233 / 0.5) 100%
-    ),
-    radial-gradient(
-      70.71% 70.71% at 50% 50%,
-      rgb(62 99 222 / 0.15) 0.01%,
-      rgb(66 0 123 / 0.5) 100%
-    ),
-    linear-gradient(
-      92deg,
-      #d000ff 0.38%,
-      #b009fe 37.07%,
-      #3e1ffc 65.17%,
-      #009dff 103.86%
-    ),
-    linear-gradient(var(--color-button-surface, #2d2e32));
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -1873,9 +1853,9 @@ audio.comfy-audio.empty-audio-widget {
     /* Shadow Cover TOP */
     linear-gradient(--value(--color-*) 30%, transparent) center top,
     /* Shadow Cover BOTTOM */
-      linear-gradient(transparent, --value(--color-*) 70%) center bottom,
+    linear-gradient(transparent, --value(--color-*) 70%) center bottom,
     /* Shadow TOP */
-      radial-gradient(
+    radial-gradient(
         farthest-side at 50% 0,
         color-mix(in oklab, --value(--color-*), #777777 35%),
         60%,
@@ -1883,7 +1863,7 @@ audio.comfy-audio.empty-audio-widget {
       )
       center top,
     /* Shadow BOTTOM */
-      radial-gradient(
+    radial-gradient(
         farthest-side at 50% 100%,
         color-mix(in oklab, --value(--color-*), #777777 35%),
         60%,
