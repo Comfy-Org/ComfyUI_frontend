@@ -72,20 +72,20 @@
           </Button>
         </div>
 
-        <div class="flex max-h-[50vh] flex-col gap-2 overflow-y-auto px-2 pb-2">
+        <div class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
           <div
             v-for="job in activeJobs"
             :key="job.id"
             data-testid="queue-status-row"
-            class="flex flex-col gap-2 rounded-lg bg-secondary-background px-4 py-3"
+            class="flex flex-col gap-1 rounded-lg bg-secondary-background px-3 py-2"
           >
-            <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center justify-between gap-2">
               <span
-                class="min-w-0 flex-1 truncate text-sm font-medium text-base-foreground"
+                class="min-w-0 flex-1 truncate text-xs font-medium text-base-foreground"
               >
                 {{ job.title }}
               </span>
-              <div class="flex shrink-0 items-center gap-0.5">
+              <div class="-my-1 flex shrink-0 items-center gap-0.5">
                 <Button
                   v-tooltip.bottom="locateTooltip"
                   variant="textonly"
@@ -94,7 +94,7 @@
                   data-testid="queue-status-row-view"
                   @click="viewJob(job)"
                 >
-                  <i class="icon-[lucide--locate] size-4 text-text-secondary" />
+                  <i class="icon-[lucide--locate] size-3.5 text-text-secondary" />
                 </Button>
                 <Button
                   v-tooltip.bottom="cancelTooltip"
@@ -104,18 +104,18 @@
                   data-testid="queue-status-row-cancel"
                   @click="cancelJob(job)"
                 >
-                  <i class="icon-[lucide--x] size-4 text-text-secondary" />
+                  <i class="icon-[lucide--x] size-3.5 text-text-secondary" />
                 </Button>
               </div>
             </div>
 
-            <span class="text-xs text-muted-foreground">
+            <span class="text-[11px] leading-none text-muted-foreground">
               {{ jobSubtitle(job) }}
             </span>
 
             <div
               v-if="isRunning(job)"
-              class="h-1.5 w-full overflow-hidden rounded-full bg-white/10"
+              class="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-white/10"
             >
               <div
                 class="h-full rounded-full bg-base-foreground transition-[width] duration-200 ease-out"

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex select-none flex-col items-stretch">
+  <div class="flex select-none flex-col items-end">
     <!-- Collapsed pill -->
     <div
       data-testid="process-toast-pill"
