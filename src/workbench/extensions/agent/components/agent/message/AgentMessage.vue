@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type {
+  AssistantMessage,
+  NoticePart,
+  TextPart,
+  ToolPart
+} from '../../../services/agent/agentMessageParts'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import MarkdownStream from './MarkdownStream.vue'
+import MessageFeedback from './MessageFeedback.vue'
+import ToolCallGroup from './ToolCallGroup.vue'
+
+const { message } = defineProps<{ message: AssistantMessage }>()
+const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
+
+const { t } = useI18n()
+
+type Group =
+  | { kind: 'text'; part: TextPart }
+  | { kind: 'notice'; part: NoticePart }
+  | { kind: 'tools'; parts: ToolPart[] }
+
+const groups = computed<Group[]>(() => {
+  const out: Group[] = []
+  for (const part of message.parts) {
+    const prev = out.at(-1)
+    if (part.type === 'tool') {
+      if (prev?.kind === 'tools') prev.parts.push(part)
+      else out.push({ kind: 'tools', parts: [part] })
+    } else if (part.type === 'text') {
+      out.push({ kind: 'text', part })
+    } else {
+      out.push({ kind: 'notice', part })
+    }
+  }
+  return out
+})
+
+const plainText = computed(() =>
+  message.parts
+    .filter((part): part is TextPart => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n\n')
+)
+
+const showActions = computed(
+  () => !message.streaming && plainText.value.length > 0
+)
+
+const raw = ref(false)
+</script>
+
+<template>
+  <div class="space-y-1.5">
+    <div
+      v-if="message.thinking || (message.streaming && !message.parts.length)"
+      class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm"
+    >
+      <span class="icon-[lucide--brain] size-3.5 shrink-0" />
+      <span class="agent-shimmer-text">{{ t('agent.thinking') }}</span>
+    </div>
+
+    <template v-for="(group, index) in groups" :key="index">
+      <MarkdownStream
+        v-if="group.kind === 'text'"
+        :text="group.part.text"
+        :raw="raw"
+      />
+      <ToolCallGroup v-else-if="group.kind === 'tools'" :tools="group.parts" />
+      <div
+        v-else
+        :class="
+          cn(
+            'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',
+            group.part.level === 'error'
+              ? 'border-agent-danger/40 text-agent-danger'
+              : 'border-agent-border text-agent-fg-muted'
+          )
+        "
+      >
+        <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+        <span>{{ group.part.text }}</span>
+      </div>
+    </template>
+
+    <div v-if="showActions" class="flex items-center gap-1">
+      <MessageFeedback :text="plainText" @feedback="emit('feedback', $event)" />
+      <button
+        type="button"
+        :aria-label="t('agent.toggleRaw')"
+        :aria-pressed="raw"
+        :class="
+          cn(
+            'rounded-agent text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-7 items-center justify-center transition-colors',
+            raw && 'text-agent-fg'
+          )
+        "
+        @click="raw = !raw"
+      >
+        <span class="icon-[lucide--code] size-4" />
+      </button>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,24 @@
+@theme inline {
+  --color-agent-surface: var(--color-base-background);
+  --color-agent-surface-raised: var(--color-secondary-background);
+  --color-agent-surface-hover: var(--color-secondary-background-hover);
+  --color-agent-fg: var(--color-base-foreground);
+  --color-agent-fg-muted: var(--color-muted-foreground);
+  --color-agent-fg-subtle: var(--color-muted-foreground);
+  --color-agent-border: var(--color-component-node-border);
+  --color-agent-border-strong: var(--color-border-default);
+  --color-agent-accent: var(--color-primary-background);
+  /* accent-fg: text on the always-blue accent stays white in both themes; no host
+     on-primary token flips correctly here. Design-review item for FE-1187. */
+  --color-agent-accent-fg: #ffffff;
+  --color-agent-danger: var(--color-destructive-background);
+  --color-agent-success: var(--color-success-background);
+  --color-agent-pill: #303036;
+
+  --radius-agent: 0.75rem;
+}
+
+@theme {
+  --animate-agent-collapsible-down: agent-collapsible-down 200ms ease-out;
+  --animate-agent-collapsible-up: agent-collapsible-up 200ms ease-out;
+}

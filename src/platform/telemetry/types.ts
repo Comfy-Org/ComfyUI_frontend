@@ -403,6 +403,51 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  vote: 'up' | 'down' | null
+  workflow_id: string | null
+}
+
+export type AgentPanelCloseSource =
+  | 'topbar_button'
+  | 'close_button'
+  | 'flag_disabled'
+
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'topbar_button'
+}
+
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+}
+
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'new_tab' | 'existing_tab' | 'active_tab_open' | 'active_tab_switch'
+}
+
+/**
  * Help center opened metadata
  */
 export interface HelpCenterOpenedMetadata {
@@ -643,6 +688,19 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+
+  // In-App Agent panel engagement (FE-1187)
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
 }
@@ -746,6 +804,17 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -796,6 +865,13 @@ export type TelemetryEventProperties =
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
+  | AgentMessageFeedbackMetadata
+  | AgentPanelOpenedMetadata
+  | AgentPanelClosedMetadata
+  | AgentEntryButtonClickedMetadata
+  | AgentMessageSentMetadata
+  | AgentNodeTaggedMetadata
+  | AgentWorkflowAppliedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata

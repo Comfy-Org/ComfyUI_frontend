@@ -79,6 +79,34 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
+const agentPanelHolder = vi.hoisted(() => ({
+  store: null as unknown as {
+    isOpen: { value: boolean }
+    enabled: { value: boolean }
+    toggle: ReturnType<typeof vi.fn>
+  }
+}))
+vi.mock(
+  '@/workbench/extensions/agent/stores/agent/agentPanelStore',
+  async () => {
+    const { ref } = await import('vue')
+    agentPanelHolder.store = {
+      isOpen: ref(false),
+      enabled: ref(false),
+      toggle: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value =
+          !agentPanelHolder.store.isOpen.value
+      })
+    }
+    return { useAgentPanelStore: () => agentPanelHolder.store }
+  }
+)
+
+const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackAgentEntryButtonClicked })
+}))
+
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
 }))
@@ -130,6 +158,42 @@ function renderComponent() {
 
   return { user, ...result }
 }
+
+describe('WorkflowTabs agent entry button', () => {
+  beforeEach(() => {
+    tabBarLayout.value = 'Integrated'
+    agentPanelHolder.store.enabled.value = true
+    agentPanelHolder.store.isOpen.value = false
+    trackAgentEntryButtonClicked.mockClear()
+    agentPanelHolder.store.toggle.mockClear()
+  })
+
+  afterEach(() => {
+    tabBarLayout.value = 'Legacy'
+    agentPanelHolder.store.enabled.value = false
+    agentPanelHolder.store.isOpen.value = false
+  })
+
+  it('reports the entry click with the state the click produces', async () => {
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
+      resulting_state: 'opened'
+    })
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
+
+    agentPanelHolder.store.isOpen.value = true
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+    expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
+      resulting_state: 'closed'
+    })
+  })
+})
 
 describe('WorkflowTabs feedback button', () => {
   let openSpy: ReturnType<typeof vi.spyOn>

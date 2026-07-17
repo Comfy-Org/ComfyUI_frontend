@@ -150,6 +150,22 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
+  it('passes raw details through to the card for agent prompt errors only', () => {
+    renderComponent({
+      executionError: {
+        lastPromptError: {
+          type: 'agent_api_failed',
+          message: 'Comfy Agent hit a server error.',
+          details: 'HTTP 500 from /api/agent/threads'
+        }
+      }
+    })
+
+    expect(
+      screen.getByText('HTTP 500 from /api/agent/threads')
+    ).toBeInTheDocument()
+  })
+
   it('renders node validation errors grouped by catalog copy', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {

@@ -65,6 +65,10 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.agent_draft_apply_failed.title':
+      'An error was found',
+    'errorCatalog.promptErrors.agent_draft_apply_failed.desc':
+      "Couldn't apply the agent's draft to the canvas.",
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -672,6 +676,25 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it('carries prompt error details onto the card item', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastPromptError = {
+        type: 'agent_draft_apply_failed',
+        message: "Couldn't apply the agent's draft to the canvas",
+        details: 'Validation error: Required at "version"'
+      }
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution' && g.displayTitle === 'An error was found'
+      )
+      const details =
+        promptGroup && 'cards' in promptGroup
+          ? promptGroup.cards[0]?.errors[0]?.details
+          : undefined
+      expect(details).toBe('Validation error: Required at "version"')
     })
 
     it('includes prompt error when a node is selected', async () => {

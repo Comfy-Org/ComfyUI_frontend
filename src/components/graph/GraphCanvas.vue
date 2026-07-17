@@ -38,6 +38,15 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
+    <template #agent-panel>
+      <div class="size-full p-2">
+        <div
+          class="size-full overflow-hidden rounded-lg border border-(--interface-stroke)"
+        >
+          <AgentPanelRoot />
+        </div>
+      </div>
+    </template>
     <template #graph-canvas-panel>
       <div
         ref="canvasPanelBoundsRef"
@@ -118,6 +127,7 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onMounted,
   onUnmounted,
@@ -204,6 +214,10 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
+
+const AgentPanelRoot = defineAsyncComponent(
+  () => import('@/workbench/extensions/agent/AgentPanelRoot.vue')
+)
 
 const { t } = useI18n()
 const emit = defineEmits<{
