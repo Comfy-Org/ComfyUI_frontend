@@ -194,6 +194,16 @@ describe('useFeatureFlags', () => {
 
       expect(flags.partnerNodeGovernanceEnabled).toBe(true)
     })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(false)
+    })
   })
 
   describe('dev override via localStorage', () => {
