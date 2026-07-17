@@ -1,14 +1,16 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   resolveRoles,
   templateOverrides
 } from '@/renderer/extensions/firstRunTour/roleResolver'
 import type { CuratedTemplateId } from '@/renderer/extensions/firstRunTour/roleResolver'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { templateApiFixture as test } from '@e2e/fixtures/templateApiFixture'
 
 const curatedIds = Object.keys(templateOverrides) as CuratedTemplateId[]
+
+const baseUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 /**
  * The resolver's curated overrides were once guarded by committed copies of the
@@ -17,6 +19,9 @@ const curatedIds = Object.keys(templateOverrides) as CuratedTemplateId[]
  * against it: the overrides must point at nodes that exist on the live graph, and
  * the pure heuristics must still agree with the overrides. A divergence means an
  * upstream restructure or a stale override — fix `templateOverrides`.
+ *
+ * This only fetches JSON and runs the pure resolver, so it uses the base request
+ * fixture rather than booting the app.
  */
 test.describe(
   'first-run tour resolver — live curated templates',
@@ -24,16 +29,13 @@ test.describe(
   () => {
     for (const id of curatedIds) {
       test(`resolves ${id} against the served template`, async ({
-        comfyPage
+        request
       }) => {
-        const templateUrl = new URL(
-          `/templates/${id}.json`,
-          comfyPage.url
-        ).toString()
+        const templateUrl = new URL(`/templates/${id}.json`, baseUrl).toString()
 
         // A curated template the tour depends on must be served; a 404 is a real
         // failure (a stale curated id or a backend that dropped it), not a skip.
-        const response = await comfyPage.page.request.get(templateUrl)
+        const response = await request.get(templateUrl)
         expect(
           response.ok(),
           `Backend does not serve /templates/${id}.json`
