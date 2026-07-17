@@ -42,7 +42,17 @@
       </ToggleGroup>
     </div>
 
-    <template v-if="restrictionsEnabled">
+    <fieldset
+      :disabled="!restrictionsEnabled"
+      :aria-disabled="!restrictionsEnabled"
+      :class="
+        cn(
+          'm-0 flex min-h-0 min-w-0 flex-1 flex-col gap-4 border-0 p-0 transition-opacity',
+          !restrictionsEnabled && 'pointer-events-none opacity-60'
+        )
+      "
+      :aria-label="$t('workspacePanel.partnerNodes.controlsLabel')"
+    >
       <div class="flex w-full justify-end">
         <SearchInput
           v-model="searchQuery"
@@ -275,7 +285,7 @@
           </TableBody>
         </Table>
       </div>
-    </template>
+    </fieldset>
 
     <div class="absolute inset-x-0 bottom-0">
       <Transition

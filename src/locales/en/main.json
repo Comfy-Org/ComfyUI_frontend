@@ -2879,6 +2879,7 @@
     },
     "partnerNodes": {
       "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
+      "controlsLabel": "Partner node controls",
       "searchPlaceholder": "Search partner nodes",
       "selectAll": "Select all partner nodes",
       "columns": {
@@ -2899,8 +2900,8 @@
         },
         "confirm": {
           "title": "Restrict access to partner nodes?",
-          "message": "Once restrictions are enabled, newly released models will be unavailable until you enable them manually.",
-          "hint": "Existing partner-node models will remain available until you turn them off."
+          "message": "Only partner nodes you enable will be available to workspace members.",
+          "hint": "Newly released partner nodes will start disabled and must be enabled manually."
         },
         "allowAllConfirm": {
           "title": "Allow access to all partner nodes?",

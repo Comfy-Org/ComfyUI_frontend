@@ -141,13 +141,29 @@ describe('PartnerNodesPanelContent', () => {
     mockConfirm.mockResolvedValue(true)
   })
 
-  it('starts unrestricted with the allowlist hidden', () => {
+  it('starts unrestricted with the allowlist visible but disabled', () => {
     mockRestrictionsEnabled.value = false
+    const unrestrictedNodes = [enabledNode, { ...disabledNode, enabled: true }]
+    mockNodes.value = unrestrictedNodes
+    mockGroups.value = [
+      {
+        partner: 'BFL',
+        nodes: unrestrictedNodes,
+        allNodes: unrestrictedNodes,
+        enabledCount: 2,
+        totalCount: 2,
+        lastModified: null,
+        expanded: true
+      }
+    ]
     renderComponent()
 
-    expect(screen.getByRole('group')).toHaveAccessibleName(
-      'Partner node access'
-    )
+    expect(
+      screen.getByRole('group', {
+        name: 'Partner node access',
+        description: 'All partner nodes are available, including new releases.'
+      })
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Unrestricted' })
     ).toHaveAttribute('data-state', 'on')
@@ -160,12 +176,15 @@ describe('PartnerNodesPanelContent', () => {
         'All partner nodes are available, including new releases.'
       )
     ).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search partner nodes')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Enable all' })).toBeDisabled()
     expect(
-      screen.queryByPlaceholderText('Search partner nodes')
-    ).not.toBeInTheDocument()
+      screen.getByRole('columnheader', { name: 'Enabled' })
+    ).toBeInTheDocument()
     expect(
-      screen.queryByRole('columnheader', { name: 'Enabled' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('group', { name: 'Partner node controls' })
+    ).toBeDisabled()
+    expect(screen.getByText('2/2 enabled')).toBeInTheDocument()
   })
 
   it('confirms before restricting partner-node access', async () => {
@@ -179,7 +198,8 @@ describe('PartnerNodesPanelContent', () => {
       expect.objectContaining({
         title: 'Restrict access to partner nodes?',
         message:
-          'Once restrictions are enabled, newly released models will be unavailable until you enable them manually.'
+          'Only partner nodes you enable will be available to workspace members.',
+        hint: 'Newly released partner nodes will start disabled and must be enabled manually.'
       })
     )
     await waitFor(() =>
