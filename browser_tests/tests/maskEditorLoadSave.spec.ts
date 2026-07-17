@@ -118,24 +118,23 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
       ])
 
       let maskedCount = 0
-      let savedSum = 0
-      let originalSum = 0
+      let maxAbsoluteError = 0
       for (let i = 0; i < savedAlpha.length; i += 4) {
         const masked = savedAlpha[i + 3] < 128
         if (!masked) continue
         maskedCount++
-        savedSum += (savedRgb[i] + savedRgb[i + 1] + savedRgb[i + 2]) / 3
-        originalSum += (original[i] + original[i + 1] + original[i + 2]) / 3
+        for (let channel = 0; channel < 3; channel++) {
+          maxAbsoluteError = Math.max(
+            maxAbsoluteError,
+            Math.abs(savedRgb[i + channel] - original[i + channel])
+          )
+        }
       }
-      return {
-        maskedCount,
-        savedMeanRgb: maskedCount ? savedSum / maskedCount : 0,
-        originalMeanRgb: maskedCount ? originalSum / maskedCount : 0
-      }
+      return { maskedCount, maxAbsoluteError }
     }, widgetValue)
 
     expect(stats.maskedCount).toBeGreaterThan(0)
-    expect(stats.savedMeanRgb).toBeCloseTo(stats.originalMeanRgb, 0)
+    expect(stats.maxAbsoluteError).toBe(0)
   })
 
   test('Save failure keeps dialog open', async ({ comfyPage, maskEditor }) => {
