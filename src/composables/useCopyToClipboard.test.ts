@@ -1,16 +1,7 @@
-import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockCopy = vi.fn()
+const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
-
-vi.mock('@vueuse/core', () => ({
-  useClipboard: vi.fn(() => ({
-    copy: mockCopy,
-    copied: ref(false),
-    isSupported: computed(() => true)
-  }))
-}))
 
 vi.mock('primevue/usetoast', () => ({
   useToast: vi.fn(() => ({
@@ -22,35 +13,31 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-import { useClipboard } from '@vueuse/core'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 describe('useCopyToClipboard', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.mocked(useClipboard).mockReturnValue({
-      copy: mockCopy,
-      copied: computed(() => false),
-      copyPending: computed(() => false),
-      isSupported: computed(() => true),
-      text: computed(() => '')
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: mockWriteText }
     })
   })
 
   it('shows success toast when modern clipboard succeeds', async () => {
-    mockCopy.mockResolvedValue(undefined)
+    mockWriteText.mockResolvedValue(undefined)
 
     const { copyToClipboard } = useCopyToClipboard()
     await copyToClipboard('hello')
 
-    expect(mockCopy).toHaveBeenCalledWith('hello')
+    expect(mockWriteText).toHaveBeenCalledWith('hello')
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
   })
 
   it('falls back to legacy when modern clipboard fails', async () => {
-    mockCopy.mockRejectedValue(new Error('Not allowed'))
+    mockWriteText.mockRejectedValue(new Error('Not allowed'))
     document.execCommand = vi.fn(() => true)
 
     const { copyToClipboard } = useCopyToClipboard()
@@ -63,7 +50,7 @@ describe('useCopyToClipboard', () => {
   })
 
   it('shows error toast when both modern and legacy fail', async () => {
-    mockCopy.mockRejectedValue(new Error('Not allowed'))
+    mockWriteText.mockRejectedValue(new Error('Not allowed'))
     document.execCommand = vi.fn(() => false)
 
     const { copyToClipboard } = useCopyToClipboard()
@@ -74,20 +61,17 @@ describe('useCopyToClipboard', () => {
     )
   })
 
-  it('falls through to legacy when isSupported is false', async () => {
-    vi.mocked(useClipboard).mockReturnValue({
-      copy: mockCopy,
-      copied: computed(() => false),
-      copyPending: computed(() => false),
-      isSupported: computed(() => false),
-      text: computed(() => '')
+  it('falls through to legacy when clipboard API is unavailable', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: undefined
     })
     document.execCommand = vi.fn(() => true)
 
     const { copyToClipboard } = useCopyToClipboard()
     await copyToClipboard('hello')
 
-    expect(mockCopy).not.toHaveBeenCalled()
+    expect(mockWriteText).not.toHaveBeenCalled()
     expect(document.execCommand).toHaveBeenCalledWith('copy')
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
