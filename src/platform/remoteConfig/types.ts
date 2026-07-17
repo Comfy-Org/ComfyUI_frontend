@@ -110,12 +110,17 @@ export type RemoteConfig = {
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
+  free_tier_balance?: {
+    allowance: number
+    used: number
+    remaining: number
+  }
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
-  consolidated_billing_enabled?: boolean
+  billing_control_enabled?: boolean
   onboarding_tour_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string

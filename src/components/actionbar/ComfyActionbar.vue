@@ -76,6 +76,7 @@
         </Button>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
+      <FreeTierQuota v-if="!isDocked" />
     </Panel>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
@@ -110,6 +111,7 @@ import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
