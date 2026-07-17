@@ -8,6 +8,9 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphNode,
   LiteGraph,
@@ -76,12 +79,27 @@ describe('LGraphNode', () => {
     const onPropertyChanged = vi.fn(() => true)
     node.onPropertyChanged = onPropertyChanged
 
-    Reflect.apply(node.setProperty, node, ['value', null])
+    node.setProperty('value', null)
 
     expect(node.properties.value).toBeNull()
     expect(widget.value).toBeNull()
     expect(onPropertyChanged).toHaveBeenCalledWith('value', null, undefined)
     expect(node.serialize().properties?.value).toBeNull()
+  })
+
+  test('syncs null widget values to the bound property', () => {
+    const widget = node.addWidget('text', 'value', 'initial', 'value')
+    if (!(widget instanceof BaseWidget)) throw new Error('expected BaseWidget')
+    const nullableWidget: BaseWidget = widget
+    node.setProperty('value', 'initial')
+    const canvas = {
+      graph_mouse: [0, 0]
+    } as Partial<LGraphCanvas> as LGraphCanvas
+
+    nullableWidget.setValue(null, { e: {} as CanvasPointerEvent, node, canvas })
+
+    expect(node.properties.value).toBeNull()
+    expect(widget.value).toBeNull()
   })
 
   test('should serialize position/size correctly', () => {

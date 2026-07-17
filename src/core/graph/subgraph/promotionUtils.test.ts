@@ -625,6 +625,38 @@ describe('reorderSubgraphInputsByName', () => {
     ])
   })
 
+  it('preserves null promoted widget values across reordering', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    writePromotedInputValue(host, 'first', null)
+    writePromotedInputValue(host, 'second', 'second value')
+
+    reorderSubgraphInputsByName(host, ['second', 'first'])
+
+    expect(promotedInputNames(host)).toEqual(['second', 'first'])
+    const valueByName = (name: string) => {
+      const input = host.inputs.find((input) => input.name === name)
+      if (!input?.widgetId) throw new Error(`Missing promoted input ${name}`)
+      return useWidgetValueStore().getWidget(input.widgetId)?.value
+    }
+    expect(valueByName('first')).toBeNull()
+    expect(valueByName('second')).toBe('second value')
+    expect(host.serialize().widgets_values).toEqual(['second value', null])
+  })
+
   it('updates subgraph input link slot indices after reordering', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

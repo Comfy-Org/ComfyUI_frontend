@@ -429,7 +429,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.value = v
     if (
       this.options?.property &&
-      v != null &&
       node.properties[this.options.property] !== undefined
     ) {
       node.setProperty(this.options.property, v)

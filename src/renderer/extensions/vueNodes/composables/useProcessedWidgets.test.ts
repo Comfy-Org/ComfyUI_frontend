@@ -86,7 +86,7 @@ function registerWidgetState(
   id: WidgetId,
   init: {
     type?: string
-    value?: unknown
+    value?: IBaseWidget['value']
     label?: string
     options?: IBaseWidget['options']
   } = {},

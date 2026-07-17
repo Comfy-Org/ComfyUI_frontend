@@ -1,7 +1,6 @@
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 
@@ -78,8 +77,7 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
       return store.getWidget(id)?.options ?? {}
     },
     get value() {
-      const value = store.getWidget(id)?.value
-      return isWidgetValue(value) ? value : undefined
+      return store.getWidget(id)?.value
     },
     set value(next) {
       store.setValue(id, next)

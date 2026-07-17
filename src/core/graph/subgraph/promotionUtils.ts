@@ -8,7 +8,6 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -136,8 +135,7 @@ function applySubgraphInputOrder(
   const widgetValues = subgraphNode.inputs.map((input) => {
     const id = input?.widgetId
     if (!id) return undefined
-    const value = useWidgetValueStore().getWidget(id)?.value
-    return isWidgetValue(value) ? value : undefined
+    return useWidgetValueStore().getWidget(id)?.value
   })
 
   reorderSubgraphInputs(subgraphNode, orderedIndices)
