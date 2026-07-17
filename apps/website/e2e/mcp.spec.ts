@@ -62,6 +62,8 @@ test.describe('MCP page @smoke', () => {
 
     await expect(activePanel).toContainText('Add custom connector')
 
+    // First interaction retries until the island hydrates; later switches
+    // assert synchronously so steady-state click regressions fail.
     await selectClientTab(setup, 'Claude Code Terminal')
     await expect(activePanel).toContainText(
       `claude mcp add --transport http comfy-cloud ${MCP_ENDPOINT}`
@@ -71,23 +73,29 @@ test.describe('MCP page @smoke', () => {
     ).toBeVisible()
     await expect(agentHeading).toBeVisible()
 
-    await selectClientTab(setup, 'Codex')
+    await setup.getByRole('tab', { name: 'Codex' }).click()
     await expect(activePanel).toContainText(
       `codex mcp add comfy-cloud --url ${MCP_ENDPOINT}`
     )
     await expect(agentHeading).toHaveCount(0)
+    await expect(setup.locator('video')).toBeVisible()
 
-    await selectClientTab(setup, 'Cursor')
+    await setup.getByRole('tab', { name: 'Cursor' }).click()
     await expect(activePanel).toContainText('X-API-Key')
     await expect(
       activePanel.getByRole('link', { name: 'platform.comfy.org' })
     ).toHaveAttribute('href', 'https://platform.comfy.org/profile/api-keys')
     await expect(agentHeading).toBeVisible()
 
-    await selectClientTab(setup, 'OpenClaw')
+    await setup.getByRole('tab', { name: 'OpenClaw' }).click()
     await expect(activePanel).toContainText(
       'openclaw skills install @comfy-org/comfy'
     )
+    await expect(agentHeading).toBeVisible()
+
+    await setup.getByRole('tab', { name: 'Others' }).click()
+    await expect(activePanel).toContainText('remote MCP server')
+    await expect(agentHeading).toBeVisible()
   })
 
   test('skills plugin link lives in the agent option card', async ({

@@ -91,9 +91,23 @@ const manualTitle = computed(
   () => activeClient.value.manualTitle ?? t('mcp.setup.manual.title', locale)
 )
 
+// reka-ui re-emits update:modelValue even when the value is unchanged
+// (re-clicking the active tab), so dedupe before capturing.
+let lastTrackedClientId: string | undefined
 function onClientTabChange(value: string | number | undefined) {
-  if (value) captureMcpClientTabClick(String(value))
+  if (!value) return
+  const id = String(value)
+  if (id === lastTrackedClientId) return
+  lastTrackedClientId = id
+  captureMcpClientTabClick(id)
 }
+
+const walkthroughLabel = computed(() =>
+  t('mcp.setup.walkthroughAlt', locale).replace(
+    '{client}',
+    activeClient.value.name
+  )
+)
 
 const copyLabel = t('ui.copy', locale)
 const copiedLabel = t('ui.copied', locale)
@@ -119,6 +133,7 @@ const copiedLabel = t('ui.copied', locale)
 
     <TabsRoot
       v-model="activeClientId"
+      activation-mode="manual"
       class="mt-10 block"
       @update:model-value="onClientTabChange"
     >
@@ -130,7 +145,7 @@ const copiedLabel = t('ui.copied', locale)
           v-for="client in clients"
           :key="client.id"
           :value="client.id"
-          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-none bg-white/8 px-6 py-2.5 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors first:rounded-l-xl last:rounded-r-xl hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer bg-white/8 px-6 py-2.5 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors first:rounded-l-xl last:rounded-r-xl hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
         >
           {{ client.name }}
         </TabsTrigger>
@@ -216,8 +231,9 @@ const copiedLabel = t('ui.copied', locale)
           </template>
           <VideoPlayer
             v-else-if="activeClient.video"
+            :key="activeClient.id"
             :locale="locale"
-            :aria-label="manualTitle"
+            :aria-label="walkthroughLabel"
             :src="activeClient.video"
             autoplay
             loop
