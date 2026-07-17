@@ -85,6 +85,7 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   links: [
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
+    { label: t('nav.contact', locale), href: routes.contact },
     { label: t('nav.brand', locale), href: routes.brand },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
     { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
@@ -95,7 +96,6 @@ const companyColumn: { title: string; links: FooterLink[] } = {
 const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
   links: [
-    { label: t('footer.sales', locale), href: routes.contact },
     {
       label: t('footer.support', locale),
       href: externalLinks.support,
