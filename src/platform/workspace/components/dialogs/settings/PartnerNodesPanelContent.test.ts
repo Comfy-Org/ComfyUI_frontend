@@ -14,13 +14,14 @@ const mockSetEnabled = vi.fn()
 const mockSetSelectedEnabled = vi.fn()
 const mockSetAllFilteredEnabled = vi.fn()
 const mockSetGroupEnabled = vi.fn()
-const mockSetProviderFutureEnabled = vi.fn()
+const mockSetRestrictionsEnabled = vi.fn()
 const mockToggleSelection = vi.fn()
 const mockToggleSelectAll = vi.fn()
 const mockTogglePartnerCollapsed = vi.fn()
 const mockClearSelection = vi.fn()
 const mockConfirm = vi.fn()
 
+const mockRestrictionsEnabled = ref(true)
 const mockSearchQuery = ref('')
 const mockSortField = ref<'name' | 'lastModified'>('name')
 const mockSortDirection = ref<'asc' | 'desc'>('asc')
@@ -45,13 +46,13 @@ const mockGroups = ref([
     enabledCount: 1,
     totalCount: 2,
     lastModified: null,
-    expanded: true,
-    enableFuture: true
+    expanded: true
   }
 ])
 
 vi.mock('@/platform/workspace/composables/usePartnerNodes', () => ({
   usePartnerNodes: () => ({
+    restrictionsEnabled: mockRestrictionsEnabled,
     searchQuery: mockSearchQuery,
     sortField: mockSortField,
     sortDirection: mockSortDirection,
@@ -67,7 +68,7 @@ vi.mock('@/platform/workspace/composables/usePartnerNodes', () => ({
     setSelectedEnabled: mockSetSelectedEnabled,
     setAllFilteredEnabled: mockSetAllFilteredEnabled,
     setGroupEnabled: mockSetGroupEnabled,
-    setProviderFutureEnabled: mockSetProviderFutureEnabled,
+    setRestrictionsEnabled: mockSetRestrictionsEnabled,
     toggleSelection: mockToggleSelection,
     toggleSelectAll: mockToggleSelectAll,
     togglePartnerCollapsed: mockTogglePartnerCollapsed,
@@ -104,6 +105,7 @@ function renderComponent() {
 describe('PartnerNodesPanelContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRestrictionsEnabled.value = true
     mockSearchQuery.value = ''
     mockSelectedIds.value = new Set()
     mockSelectedCount.value = 0
@@ -117,24 +119,82 @@ describe('PartnerNodesPanelContent', () => {
         enabledCount: 1,
         totalCount: 2,
         lastModified: null,
-        expanded: true,
-        enableFuture: true
+        expanded: true
       }
     ]
     mockSetGroupEnabled.mockResolvedValue(true)
     mockSetAllFilteredEnabled.mockResolvedValue(true)
+    mockSetRestrictionsEnabled.mockResolvedValue(true)
     mockConfirm.mockResolvedValue(true)
   })
 
-  it('shows provider controls without a global gate', () => {
+  it('starts unrestricted with the allowlist hidden', () => {
+    mockRestrictionsEnabled.value = false
     renderComponent()
 
     expect(
-      screen.getByRole('columnheader', { name: 'Enabled' })
-    ).toBeInTheDocument()
+      screen.getByRole('switch', {
+        name: 'Restrict access to partner nodes'
+      })
+    ).toHaveAttribute('aria-checked', 'false')
     expect(
-      screen.queryByRole('switch', { name: 'Enable partner node controls' })
+      screen.queryByPlaceholderText('Search partner nodes')
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Enabled' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('confirms before restricting partner-node access', async () => {
+    mockRestrictionsEnabled.value = false
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Restrict access to partner nodes'
+      })
+    )
+
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Restrict access to partner nodes?',
+        message:
+          'Once restrictions are enabled, newly released models will be unavailable until you enable them manually.'
+      })
+    )
+    await waitFor(() =>
+      expect(mockSetRestrictionsEnabled).toHaveBeenCalledWith(true)
+    )
+  })
+
+  it('leaves the workspace unrestricted when confirmation is cancelled', async () => {
+    mockRestrictionsEnabled.value = false
+    mockConfirm.mockResolvedValue(false)
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Restrict access to partner nodes'
+      })
+    )
+
+    expect(mockSetRestrictionsEnabled).not.toHaveBeenCalled()
+  })
+
+  it('removes restrictions without confirmation', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Restrict access to partner nodes'
+      })
+    )
+
+    expect(mockSetRestrictionsEnabled).toHaveBeenCalledWith(false)
+    expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   it('shows a partially enabled provider as off and enables all on click', async () => {
@@ -150,8 +210,8 @@ describe('PartnerNodesPanelContent', () => {
       screen.getByRole('columnheader', { name: 'Enabled' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('columnheader', { name: 'Future models' })
-    ).toBeInTheDocument()
+      screen.queryByRole('columnheader', { name: 'Future models' })
+    ).not.toBeInTheDocument()
 
     await user.click(disclosure)
     expect(mockTogglePartnerCollapsed).toHaveBeenCalledWith('BFL')
@@ -166,15 +226,13 @@ describe('PartnerNodesPanelContent', () => {
       expect.objectContaining({ partner: 'BFL' }),
       true
     )
-    expect(mockSetProviderFutureEnabled).not.toHaveBeenCalled()
   })
 
   it('enables a provider directly from its Enabled switch', async () => {
     mockGroups.value = [
       {
         ...mockGroups.value[0],
-        enabledCount: 0,
-        enableFuture: false
+        enabledCount: 0
       }
     ]
     const user = userEvent.setup()
@@ -190,11 +248,6 @@ describe('PartnerNodesPanelContent', () => {
       expect.objectContaining({ partner: 'BFL' }),
       true
     )
-    expect(
-      screen.getByRole('switch', {
-        name: 'Automatically enable future models from BFL'
-      })
-    ).toBeDisabled()
   })
 
   it('disables a fully enabled provider from its Enabled switch', async () => {
@@ -220,20 +273,6 @@ describe('PartnerNodesPanelContent', () => {
     )
   })
 
-  it('changes future-model policy independently for each provider', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-
-    await user.click(
-      screen.getByRole('switch', {
-        name: 'Automatically enable future models from BFL'
-      })
-    )
-
-    expect(mockSetProviderFutureEnabled).toHaveBeenCalledWith('BFL', false)
-    expect(mockSetGroupEnabled).not.toHaveBeenCalled()
-  })
-
   it('selects a child from the row without toggling its enabled state', async () => {
     const user = userEvent.setup()
     renderComponent()
@@ -244,7 +283,7 @@ describe('PartnerNodesPanelContent', () => {
     expect(mockSetEnabled).not.toHaveBeenCalled()
   })
 
-  it('confirms before disabling every current and future model', async () => {
+  it('confirms before disabling every current model', async () => {
     const user = userEvent.setup()
     renderComponent()
 

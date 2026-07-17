@@ -13,7 +13,6 @@ interface PartnerGroup {
   totalCount: number
   lastModified: string | null
   expanded: boolean
-  enableFuture: boolean
 }
 
 type SortField = 'name' | 'lastModified'
@@ -53,13 +52,13 @@ export function usePartnerNodes() {
 
   const nodes = ref<PartnerNode[]>([])
   const isLoading = ref(false)
+  const restrictionsEnabled = ref(false)
 
   const searchQuery = ref('')
   const sortField = ref<SortField>('name')
   const sortDirection = ref<SortDirection>('asc')
   const selectedIds = ref<Set<string>>(new Set())
   const expandedPartners = ref<Set<string>>(new Set())
-  const futureEnabledByPartner = ref<Map<string, boolean>>(new Map())
 
   const filteredNodes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
@@ -117,8 +116,7 @@ export function usePartnerNodes() {
                 : latest,
             null
           ),
-          expanded: isSearching || expandedPartners.value.has(partner),
-          enableFuture: futureEnabledByPartner.value.get(partner) ?? false
+          expanded: isSearching || expandedPartners.value.has(partner)
         }
       })
       .sort((a, b) => compareGroups(a, b, sortField.value, sortDirection.value))
@@ -129,10 +127,9 @@ export function usePartnerNodes() {
     try {
       const data = await partnerNodesApi.list()
       nodes.value = data.partner_nodes
-      futureEnabledByPartner.value = new Map(
-        data.partner_nodes.map((node) => [node.partner, data.auto_enable_new])
-      )
-      clearFutureForDisabledProviders()
+      restrictionsEnabled.value =
+        !data.auto_enable_new ||
+        data.partner_nodes.some((node) => !node.enabled)
     } catch {
       toast.add({
         severity: 'error',
@@ -160,24 +157,11 @@ export function usePartnerNodes() {
     )
   }
 
-  function clearFutureForDisabledProviders() {
-    const enabledPartners = new Set(
-      nodes.value.filter((node) => node.enabled).map((node) => node.partner)
-    )
-    futureEnabledByPartner.value = new Map(
-      [...futureEnabledByPartner.value].map(([partner, enabled]) => [
-        partner,
-        enabled && enabledPartners.has(partner)
-      ])
-    )
-  }
-
   async function setEnabled(node: PartnerNode, enabled: boolean) {
     const { enabled: prevEnabled, last_modified: prevModified } = node
     applyEnabled([node.id], enabled)
     try {
       await partnerNodesApi.setEnabled(node.id, enabled)
-      if (!enabled) clearFutureForDisabledProviders()
     } catch {
       nodes.value = nodes.value.map((n) =>
         n.id === node.id
@@ -208,7 +192,6 @@ export function usePartnerNodes() {
     applyEnabled(ids, enabled)
     try {
       await partnerNodesApi.setEnabledBulk(ids, enabled)
-      if (!enabled) clearFutureForDisabledProviders()
       return true
     } catch {
       nodes.value = nodes.value.map((n) =>
@@ -233,17 +216,11 @@ export function usePartnerNodes() {
     )
     if (!updated || searchQuery.value.trim()) return updated
 
-    if (enabled) {
-      futureEnabledByPartner.value = new Map(
-        [...futureEnabledByPartner.value].map(([partner]) => [partner, true])
-      )
-      return true
-    }
-
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.partnerNodes.disableAllSuccess')
-    })
+    if (!enabled)
+      toast.add({
+        severity: 'success',
+        summary: t('workspacePanel.partnerNodes.disableAllSuccess')
+      })
     return true
   }
 
@@ -254,17 +231,36 @@ export function usePartnerNodes() {
     )
   }
 
-  function setProviderFutureEnabled(partner: string, enabled: boolean) {
-    if (
-      enabled &&
-      !nodes.value.some((node) => node.partner === partner && node.enabled)
-    ) {
-      return
+  async function setRestrictionsEnabled(enabled: boolean): Promise<boolean> {
+    if (enabled) {
+      try {
+        await partnerNodesApi.setAutoEnableNew(false)
+        restrictionsEnabled.value = true
+        return true
+      } catch {
+        toast.add({
+          severity: 'error',
+          summary: t('workspacePanel.partnerNodes.updateError')
+        })
+        return false
+      }
     }
-    futureEnabledByPartner.value = new Map(futureEnabledByPartner.value).set(
-      partner,
-      enabled
-    )
+
+    const ids = nodes.value.map((node) => node.id)
+    if (ids.length > 0 && !(await setNodesEnabled(ids, true))) return false
+
+    try {
+      await partnerNodesApi.setAutoEnableNew(true)
+      restrictionsEnabled.value = false
+      selectedIds.value = new Set()
+      return true
+    } catch {
+      toast.add({
+        severity: 'error',
+        summary: t('workspacePanel.partnerNodes.updateError')
+      })
+      return false
+    }
   }
 
   function toggleSelection(id: string) {
@@ -298,6 +294,7 @@ export function usePartnerNodes() {
   return {
     nodes,
     isLoading,
+    restrictionsEnabled,
     searchQuery,
     sortField,
     sortDirection,
@@ -313,7 +310,7 @@ export function usePartnerNodes() {
     setSelectedEnabled,
     setAllFilteredEnabled,
     setGroupEnabled,
-    setProviderFutureEnabled,
+    setRestrictionsEnabled,
     toggleSelection,
     toggleSelectAll,
     togglePartnerCollapsed,

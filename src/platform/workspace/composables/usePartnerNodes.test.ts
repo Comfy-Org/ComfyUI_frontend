@@ -17,7 +17,8 @@ vi.mock('@/platform/workspace/api/partnerNodesApi', () => ({
   partnerNodesApi: {
     list: vi.fn(),
     setEnabled: vi.fn(),
-    setEnabledBulk: vi.fn()
+    setEnabledBulk: vi.fn(),
+    setAutoEnableNew: vi.fn()
   }
 }))
 
@@ -48,6 +49,19 @@ async function setupLoaded() {
   return pn
 }
 
+async function setupUnrestricted() {
+  vi.mocked(partnerNodesApi.list).mockResolvedValue({
+    partner_nodes: sampleNodes.map((partnerNode) => ({
+      ...partnerNode,
+      enabled: true
+    })),
+    auto_enable_new: true
+  })
+  const pn = usePartnerNodes()
+  await pn.fetch()
+  return pn
+}
+
 describe('usePartnerNodes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -58,22 +72,31 @@ describe('usePartnerNodes', () => {
     expect(pn.nodes.value).toHaveLength(3)
   })
 
-  it('starts enabled providers with future models enabled', async () => {
+  it('starts unrestricted when all current and future nodes are enabled', async () => {
+    const pn = await setupUnrestricted()
+
+    expect(pn.restrictionsEnabled.value).toBe(false)
+  })
+
+  it('shows restrictions when a current node is disabled', async () => {
+    const pn = await setupLoaded()
+
+    expect(pn.restrictionsEnabled.value).toBe(true)
+  })
+
+  it('shows restrictions when newly released nodes are not auto-enabled', async () => {
     vi.mocked(partnerNodesApi.list).mockResolvedValue({
       partner_nodes: sampleNodes.map((partnerNode) => ({
         ...partnerNode,
         enabled: true
       })),
-      auto_enable_new: true
+      auto_enable_new: false
     })
     const pn = usePartnerNodes()
 
     await pn.fetch()
 
-    expect(pn.nodes.value.every((partnerNode) => partnerNode.enabled)).toBe(
-      true
-    )
-    expect(pn.groups.value.every((group) => group.enableFuture)).toBe(true)
+    expect(pn.restrictionsEnabled.value).toBe(true)
   })
 
   it('sorts by name ascending by default and toggles direction', async () => {
@@ -102,12 +125,11 @@ describe('usePartnerNodes', () => {
 
     expect(
       pn.groups.value.map(
-        ({ partner, enabledCount, totalCount, expanded, enableFuture }) => ({
+        ({ partner, enabledCount, totalCount, expanded }) => ({
           partner,
           enabledCount,
           totalCount,
-          expanded,
-          enableFuture
+          expanded
         })
       )
     ).toEqual([
@@ -115,15 +137,13 @@ describe('usePartnerNodes', () => {
         partner: 'Anthropic',
         enabledCount: 0,
         totalCount: 1,
-        expanded: false,
-        enableFuture: false
+        expanded: false
       },
       {
         partner: 'BFL',
         enabledCount: 2,
         totalCount: 2,
-        expanded: false,
-        enableFuture: true
+        expanded: false
       }
     ])
   })
@@ -178,7 +198,6 @@ describe('usePartnerNodes', () => {
   it('toggles every node in a provider group', async () => {
     const pn = await setupLoaded()
     const bfl = pn.groups.value.find((group) => group.partner === 'BFL')!
-    pn.setProviderFutureEnabled('BFL', true)
 
     await pn.setGroupEnabled(bfl, false)
 
@@ -191,30 +210,6 @@ describe('usePartnerNodes', () => {
         .filter((partnerNode) => partnerNode.partner === 'BFL')
         .every((partnerNode) => !partnerNode.enabled)
     ).toBe(true)
-    expect(
-      pn.groups.value.find((group) => group.partner === 'BFL')?.enableFuture
-    ).toBe(false)
-  })
-
-  it('tracks whether a provider should disable future nodes', async () => {
-    const pn = await setupLoaded()
-
-    pn.setProviderFutureEnabled('BFL', false)
-
-    expect(
-      pn.groups.value.find((group) => group.partner === 'BFL')?.enableFuture
-    ).toBe(false)
-  })
-
-  it('does not allow future nodes for a disabled provider', async () => {
-    const pn = await setupLoaded()
-
-    pn.setProviderFutureEnabled('Anthropic', true)
-
-    expect(
-      pn.groups.value.find((group) => group.partner === 'Anthropic')
-        ?.enableFuture
-    ).toBe(false)
   })
 
   it('reports a failed provider update', async () => {
@@ -228,35 +223,69 @@ describe('usePartnerNodes', () => {
     expect(mockToastAdd).toHaveBeenCalled()
   })
 
+  it('enables restrictions without changing current partner nodes', async () => {
+    const pn = await setupUnrestricted()
+
+    await expect(pn.setRestrictionsEnabled(true)).resolves.toBe(true)
+
+    expect(partnerNodesApi.setAutoEnableNew).toHaveBeenCalledWith(false)
+    expect(partnerNodesApi.setEnabledBulk).not.toHaveBeenCalled()
+    expect(pn.restrictionsEnabled.value).toBe(true)
+  })
+
+  it('removes restrictions by enabling all current and future nodes', async () => {
+    const pn = await setupLoaded()
+    pn.toggleSelection('b')
+
+    await expect(pn.setRestrictionsEnabled(false)).resolves.toBe(true)
+
+    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(
+      ['a', 'b', 'c'],
+      true
+    )
+    expect(partnerNodesApi.setAutoEnableNew).toHaveBeenCalledWith(true)
+    expect(pn.nodes.value.every((partnerNode) => partnerNode.enabled)).toBe(
+      true
+    )
+    expect(pn.restrictionsEnabled.value).toBe(false)
+    expect(pn.selectedCount.value).toBe(0)
+  })
+
+  it('keeps restrictions visible when enabling current nodes fails', async () => {
+    const pn = await setupLoaded()
+    vi.mocked(partnerNodesApi.setEnabledBulk).mockRejectedValueOnce(
+      new Error('x')
+    )
+
+    await expect(pn.setRestrictionsEnabled(false)).resolves.toBe(false)
+
+    expect(partnerNodesApi.setAutoEnableNew).not.toHaveBeenCalled()
+    expect(pn.restrictionsEnabled.value).toBe(true)
+  })
+
   it('enables or disables only the nodes matching the current search', async () => {
     const pn = await setupLoaded()
-    pn.setProviderFutureEnabled('BFL', true)
     pn.searchQuery.value = 'zeta'
 
     await pn.setAllFilteredEnabled(false)
 
     expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(['a'], false)
-    expect(
-      pn.groups.value.find((group) => group.partner === 'BFL')?.enableFuture
-    ).toBe(true)
   })
 
-  it('disables all current and future partner nodes together', async () => {
+  it('disables every current partner node', async () => {
     const pn = await setupLoaded()
-    pn.setProviderFutureEnabled('BFL', true)
 
     await pn.setAllFilteredEnabled(false)
 
     expect(pn.nodes.value.every((partnerNode) => !partnerNode.enabled)).toBe(
       true
     )
-    expect(pn.groups.value.every((group) => !group.enableFuture)).toBe(true)
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
   })
 
-  it('enables all current and future partner nodes together', async () => {
+  it('enables every current partner node', async () => {
     const pn = await setupLoaded()
 
     await pn.setAllFilteredEnabled(true)
@@ -264,24 +293,6 @@ describe('usePartnerNodes', () => {
     expect(pn.nodes.value.every((partnerNode) => partnerNode.enabled)).toBe(
       true
     )
-    expect(pn.groups.value.every((group) => group.enableFuture)).toBe(true)
-  })
-
-  it('does not change future-model policy when enabling search results', async () => {
-    const pn = await setupLoaded()
-    pn.searchQuery.value = 'anthropic'
-
-    await pn.setAllFilteredEnabled(true)
-
-    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(['b'], true)
-    pn.searchQuery.value = ''
-    expect(
-      pn.groups.value.find((group) => group.partner === 'Anthropic')
-        ?.enableFuture
-    ).toBe(false)
-    expect(
-      pn.groups.value.find((group) => group.partner === 'BFL')?.enableFuture
-    ).toBe(true)
   })
 
   it('select-all reflects the filtered set', async () => {
