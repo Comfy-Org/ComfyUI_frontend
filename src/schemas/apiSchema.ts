@@ -438,6 +438,8 @@ const zSettings = z.object({
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
+  'Comfy.Image.PreviewCompression': z.boolean(),
+  'Comfy.Image.PreviewMaxSize': z.number(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
   'Comfy.Load3D.BackgroundColor': z.string(),
   'Comfy.Load3D.LightIntensity': z.number(),

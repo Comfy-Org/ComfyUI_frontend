@@ -31,6 +31,12 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn(() => false)
+  }))
+}))
+
 vi.mock('@/scripts/api', () => ({
   api: {
     fetchApi: vi.fn(),

@@ -75,6 +75,18 @@ vi.mock('@/scripts/app', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
+const mockSettings = vi.hoisted(() => ({ previewCompression: false }))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => ({
+    get: vi.fn((key: string) =>
+      key === 'Comfy.Image.PreviewCompression'
+        ? mockSettings.previewCompression
+        : undefined
+    )
+  }))
+}))
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
@@ -93,6 +105,7 @@ describe('useMaskEditorSaver', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockSettings.previewCompression = false
 
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
@@ -200,5 +213,72 @@ describe('useMaskEditorSaver', () => {
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
     expect(body.get('subfolder')).toBeNull()
+  })
+
+  it('composites on the server via /upload/mask when preview compression is enabled', async () => {
+    mockSettings.previewCompression = true
+    const fetchApiMock = vi.mocked(api.fetchApi)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+    const [route, init] = fetchApiMock.mock.calls[0]
+    expect(route).toBe('/upload/mask')
+
+    const body = init?.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('original_ref')).toBe(
+      JSON.stringify({ filename: 'original.png', subfolder: '', type: 'input' })
+    )
+    expect(body.get('image')).toBeInstanceOf(Blob)
+    expect(body.get('paint')).toBeInstanceOf(Blob)
+    expect(String(body.get('paint_filename'))).toMatch(/^clipspace-paint-/)
+    expect(String(body.get('painted_filename'))).toMatch(/^clipspace-painted-/)
+    expect(String(body.get('painted_masked_filename'))).toMatch(
+      /^clipspace-painted-masked-/
+    )
+  })
+
+  it('updates layer refs from the server composite response', async () => {
+    mockSettings.previewCompression = true
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    const outputData = mockDataStore.outputData as {
+      maskedImage: { ref: { filename: string; subfolder: string } }
+      paintedMaskedImage: { ref: { subfolder: string; type: string } }
+    }
+    expect(outputData.maskedImage.ref.filename).toBe(
+      'clipspace-painted-masked-123.png'
+    )
+    expect(outputData.paintedMaskedImage.ref.subfolder).toBe('clipspace')
+    expect(outputData.paintedMaskedImage.ref.type).toBe('input')
+  })
+
+  it('throws an actionable error when the composite response is not valid JSON', async () => {
+    mockSettings.previewCompression = true
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () => Promise.reject(new Error('Unexpected end of JSON input'))
+    } as Response)
+
+    const { save } = useMaskEditorSaver()
+    await expect(save()).rejects.toThrow(/Invalid composite upload response/)
+  })
+
+  it('throws an error when the server composite request fails', async () => {
+    mockSettings.previewCompression = true
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('Internal Server Error')
+    } as Response)
+
+    const { save } = useMaskEditorSaver()
+    await expect(save()).rejects.toThrow(
+      /Failed to composite mask layers on server \(500: Internal Server Error\)/
+    )
   })
 })
