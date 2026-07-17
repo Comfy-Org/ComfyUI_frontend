@@ -189,14 +189,16 @@ export function useMembersPanel() {
   }
 
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
+    if (!permissions.value.canManageMembers) return []
+
     const creditLimitItem: MenuItem = {
       label: t('workspacePanel.members.actions.setCreditLimit'),
       command: () =>
         void showSetMemberCreditLimitDialog({
           memberId: member.id,
           memberName: member.name,
-          creditsUsed: member.creditsUsedThisMonth ?? 0,
-          currentLimit: member.monthlyCreditLimit ?? null
+          creditsUsed: member.creditsUsedThisMonth,
+          currentLimit: member.monthlyCreditLimit
         })
     }
 

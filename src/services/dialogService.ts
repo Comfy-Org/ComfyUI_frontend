@@ -585,8 +585,8 @@ export const useDialogService = () => {
   async function showSetMemberCreditLimitDialog(props: {
     memberId: string
     memberName: string
-    creditsUsed: number
-    currentLimit: number | null
+    creditsUsed?: number
+    currentLimit?: number | null
   }) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')

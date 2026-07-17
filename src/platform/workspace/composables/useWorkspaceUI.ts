@@ -1,12 +1,10 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import type { WorkspaceMember } from '../stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
@@ -146,32 +144,14 @@ function getUIConfig(
 }
 
 /**
- * The original owner is the earliest-joined member. Ties on join date are
- * broken by the stable member id so exactly one member is the original owner.
- */
-function isOriginalOwnerByEmail(
-  members: WorkspaceMember[],
-  email: string
-): boolean {
-  if (members.length === 0) return false
-  const original = [...members].sort(
-    (a, b) =>
-      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
-  )[0]
-  return original.email.toLowerCase() === email
-}
-
-/**
  * Internal implementation of UI configuration composable.
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { userEmail } = useCurrentUser()
   const { isActiveSubscription, subscription } = useBillingContext()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
   const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
-  const members = computed(() => store.members)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -224,11 +204,9 @@ function useWorkspaceUIInternal() {
 
   // Cancel / reactivate / delete are original-owner-only; personal workspaces
   // are single-member, so the user is always their own original owner.
-  const isOriginalOwner = computed(() => {
-    if (isInPersonalWorkspace.value) return true
-    const email = userEmail.value?.toLowerCase()
-    return !!email && isOriginalOwnerByEmail(members.value, email)
-  })
+  const isOriginalOwner = computed(
+    () => isInPersonalWorkspace.value || store.isCurrentUserOriginalOwner
+  )
 
   // Cancellation is meaningful only for team (workspace) billing; personal plans
   // use legacy billing with different semantics.

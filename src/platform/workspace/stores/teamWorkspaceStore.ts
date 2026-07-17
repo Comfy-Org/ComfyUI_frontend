@@ -54,8 +54,8 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     joinDate: new Date(member.joined_at),
     role: member.role,
     isOriginalOwner: member.is_original_owner ?? false,
-    creditsUsedThisMonth: member.credits_used_this_month ?? 0,
-    monthlyCreditLimit: member.monthly_credit_limit ?? null
+    creditsUsedThisMonth: member.credits_used_this_month,
+    monthlyCreditLimit: member.monthly_credit_limit
   }
 }
 

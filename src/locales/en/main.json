@@ -2936,7 +2936,7 @@
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
         "role": "Role",
-        "creditsUsed": "Credits used this month"
+        "creditsUsed": "Monthly credits"
       },
       "actions": {
         "resendInvite": "Resend invite",
@@ -2950,7 +2950,7 @@
         "description": "Once they reach this limit, they’ll be unable to run workflows.",
         "limitOption": "Limit monthly credit usage to:",
         "noLimit": "No limit",
-        "warning": "This user has already spent {credits} credits. Setting this cap will prevent further runs until next month.",
+        "warning": "This user has already spent {credits} credits. Setting the limit at or below their current usage will prevent further runs until next month.",
         "invalidLimit": "Enter a credit limit greater than zero.",
         "update": "Update limit"
       },

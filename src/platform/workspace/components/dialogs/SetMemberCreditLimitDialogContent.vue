@@ -5,7 +5,10 @@
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
+      <h2
+        id="set-member-credit-limit"
+        class="m-0 text-sm font-normal text-base-foreground"
+      >
         {{
           $t('workspacePanel.members.creditLimitDialog.title', {
             name: memberName
@@ -79,7 +82,7 @@
         <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
         {{
           $t('workspacePanel.members.creditLimitDialog.warning', {
-            credits: creditsUsed.toLocaleString()
+            credits: $n(creditsUsed ?? 0)
           })
         }}
       </p>
@@ -106,6 +109,7 @@
 
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -114,24 +118,23 @@ import { useDialogStore } from '@/stores/dialogStore'
 const { memberId, currentLimit, creditsUsed } = defineProps<{
   memberId: string
   memberName: string
-  creditsUsed: number
-  currentLimit: number | null
+  creditsUsed?: number
+  currentLimit?: number | null
 }>()
 
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
+const { n } = useI18n()
 const modeGroupName = useId()
 const mode = ref<'limited' | 'unlimited'>(
-  currentLimit ? 'limited' : 'unlimited'
+  currentLimit !== null && currentLimit !== undefined ? 'limited' : 'unlimited'
 )
 const limitInput = ref(currentLimit?.toString() ?? '')
 const limitModel = computed({
   get: () => {
     if (!limitInput.value) return ''
     const value = Number(limitInput.value)
-    return Number.isSafeInteger(value)
-      ? value.toLocaleString()
-      : limitInput.value
+    return Number.isSafeInteger(value) ? n(value) : limitInput.value
   },
   set: (value: string) => {
     limitInput.value = value.replace(/[^0-9]/g, '')
@@ -153,6 +156,7 @@ const showError = computed(
 const showWarning = computed(
   () =>
     mode.value === 'limited' &&
+    creditsUsed !== undefined &&
     hasValidLimit.value &&
     parsedLimit.value <= creditsUsed
 )

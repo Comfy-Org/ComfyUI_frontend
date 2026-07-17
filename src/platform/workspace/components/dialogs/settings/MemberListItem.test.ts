@@ -7,7 +7,20 @@ import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceS
 
 import MemberListItem from './MemberListItem.vue'
 
-const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: {
+        monthlyUsageProgress: '{used} of {total} monthly credits used'
+      },
+      workspacePanel: {
+        members: { columns: { creditsUsed: 'Monthly credits' } }
+      }
+    }
+  }
+})
 
 function member(overrides: Partial<WorkspaceMember>): WorkspaceMember {
   return {
@@ -45,6 +58,9 @@ describe('MemberListItem credits column', () => {
       showCreditsColumn: true
     })
     expect(screen.getByText('546 / 3,000')).toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Monthly credits' })
+    ).toHaveAttribute('aria-valuetext', '546 of 3,000 monthly credits used')
   })
 
   it('shows usage only for an uncapped member', () => {
@@ -65,6 +81,29 @@ describe('MemberListItem credits column', () => {
       'aria-valuenow',
       '100'
     )
+  })
+
+  it('renders a zero-credit cap without dividing by zero', () => {
+    renderRow({
+      member: member({ creditsUsedThisMonth: 0, monthlyCreditLimit: 0 }),
+      showCreditsColumn: true
+    })
+
+    expect(screen.getByText('0 / 0')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '100'
+    )
+  })
+
+  it('shows an unknown-usage placeholder without a progress bar', () => {
+    renderRow({
+      member: member({ monthlyCreditLimit: 3000 }),
+      showCreditsColumn: true
+    })
+
+    expect(screen.getByText('— / 3,000')).toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   })
 
   it('renders no credits cell when the column is disabled', () => {

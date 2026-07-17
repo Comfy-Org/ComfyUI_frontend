@@ -422,6 +422,7 @@ describe('useMembersPanel', () => {
     mockIsInviteLimitReached.value = false
     mockIsActiveSubscription.value = true
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
+    mockPermissions.value.canManageMembers = true
   })
 
   // Lazy import so mocks are in place
@@ -671,6 +672,31 @@ describe('useMembersPanel', () => {
         creditsUsed: 645,
         currentLimit: 3000
       })
+    })
+
+    it('preserves unavailable usage and limit values for the dialog', async () => {
+      const panel = await setup()
+      const member = createMember({ id: 'mem-9', name: 'Jane' })
+      const limitItem = panel.memberMenuItems(member)[1]
+
+      limitItem.command?.({
+        originalEvent: new Event('click'),
+        item: limitItem
+      })
+
+      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+        memberId: 'mem-9',
+        memberName: 'Jane',
+        creditsUsed: undefined,
+        currentLimit: undefined
+      })
+    })
+
+    it('returns no actions without member-management permission', async () => {
+      mockPermissions.value.canManageMembers = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember())).toEqual([])
     })
 
     it('exposes only Set credit limit for the workspace creator', async () => {

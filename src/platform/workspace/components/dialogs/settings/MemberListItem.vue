@@ -40,15 +40,17 @@
       }}
     </span>
     <div v-if="showCreditsColumn" class="text-sm tabular-nums">
-      <div v-if="member.monthlyCreditLimit" class="flex flex-col gap-1">
+      <div v-if="hasCreditLimit" class="flex flex-col gap-1">
         <span class="text-base-foreground">{{ creditsLabel }}</span>
         <div
+          v-if="hasCreditUsage"
           class="h-1 overflow-hidden rounded-full bg-secondary-background-hover"
           role="progressbar"
           :aria-valuenow="creditUsagePercent"
           aria-valuemin="0"
           aria-valuemax="100"
-          :aria-label="creditsLabel"
+          :aria-label="$t('workspacePanel.members.columns.creditsUsed')"
+          :aria-valuetext="creditUsageValueText"
         >
           <div
             class="h-full rounded-full bg-credit"
@@ -81,6 +83,7 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -109,18 +112,32 @@ const {
   menuItems?: MenuItem[]
 }>()
 
+const { n, t } = useI18n()
+const hasCreditLimit = computed(
+  () =>
+    member.monthlyCreditLimit !== null &&
+    member.monthlyCreditLimit !== undefined
+)
+const hasCreditUsage = computed(() => member.creditsUsedThisMonth !== undefined)
 const creditsLabel = computed(() => {
-  const used = (member.creditsUsedThisMonth ?? 0).toLocaleString()
-  return member.monthlyCreditLimit
-    ? `${used} / ${member.monthlyCreditLimit.toLocaleString()}`
-    : used
+  const used = member.creditsUsedThisMonth
+  const limit = member.monthlyCreditLimit
+  if (used === undefined) return limit == null ? '—' : `— / ${n(limit)}`
+  return limit == null ? n(used) : `${n(used)} / ${n(limit)}`
 })
 
 const creditUsagePercent = computed(() => {
-  if (!member.monthlyCreditLimit) return 0
-  return Math.min(
-    100,
-    ((member.creditsUsedThisMonth ?? 0) / member.monthlyCreditLimit) * 100
-  )
+  const used = member.creditsUsedThisMonth
+  const limit = member.monthlyCreditLimit
+  if (used === undefined || limit == null) return 0
+  if (limit === 0) return 100
+  return Math.min(100, (used / limit) * 100)
 })
+
+const creditUsageValueText = computed(() =>
+  t('subscription.monthlyUsageProgress', {
+    used: n(member.creditsUsedThisMonth ?? 0),
+    total: n(member.monthlyCreditLimit ?? 0)
+  })
+)
 </script>

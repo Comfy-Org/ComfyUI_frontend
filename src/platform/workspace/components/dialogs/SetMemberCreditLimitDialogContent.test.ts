@@ -43,13 +43,20 @@ const i18n = createI18n({
   }
 })
 
-function renderDialog(currentLimit: number | null = 3000) {
+interface RenderDialogOptions {
+  currentLimit?: number | null
+  creditsUsed?: number
+}
+
+function renderDialog(options: RenderDialogOptions = {}) {
   const user = userEvent.setup()
+  const currentLimit = 'currentLimit' in options ? options.currentLimit : 3000
+  const creditsUsed = 'creditsUsed' in options ? options.creditsUsed : 645
   const result = render(SetMemberCreditLimitDialogContent, {
     props: {
       memberId: 'mem-1',
       memberName: 'Jane',
-      creditsUsed: 645,
+      creditsUsed,
       currentLimit
     },
     global: { plugins: [i18n] }
@@ -74,6 +81,15 @@ describe('SetMemberCreditLimitDialogContent', () => {
     })
   })
 
+  it('opens a zero-credit cap in limited mode', () => {
+    renderDialog({ currentLimit: 0 })
+
+    expect(
+      screen.getByRole('radio', { name: 'Limit monthly credit usage to:' })
+    ).toBeChecked()
+    expect(screen.getByRole('textbox')).toHaveValue('0')
+  })
+
   it('removes a limit', async () => {
     const { user } = renderDialog()
     await user.click(screen.getByRole('radio', { name: 'No limit' }))
@@ -93,15 +109,26 @@ describe('SetMemberCreditLimitDialogContent', () => {
   })
 
   it('warns when the new limit is at or below current usage', async () => {
-    const { user } = renderDialog()
+    const { user } = renderDialog({ creditsUsed: 12000 })
     const input = screen.getByRole('textbox')
     await user.clear(input)
-    await user.type(input, '645')
-    expect(screen.getByText('Already spent 645')).toBeInTheDocument()
+    await user.type(input, '12000')
+    expect(screen.getByText('Already spent 12,000')).toBeInTheDocument()
+  })
+
+  it('does not infer zero usage when usage is unavailable', async () => {
+    const { user } = renderDialog({
+      currentLimit: null,
+      creditsUsed: undefined
+    })
+    const input = screen.getByRole('textbox')
+    await user.type(input, '1')
+
+    expect(screen.queryByText(/Already spent/)).not.toBeInTheDocument()
   })
 
   it('rejects limits beyond the safe whole-number range', async () => {
-    const { user } = renderDialog(null)
+    const { user } = renderDialog({ currentLimit: null })
     const input = screen.getByRole('textbox')
     await user.type(input, '9007199254740992')
 
