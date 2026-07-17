@@ -2,11 +2,12 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
+import { uploadMedia } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -40,33 +41,26 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     isPasted: boolean = false,
     formFields: Partial<{ type: ResultItemType }> = {}
   ) {
-    const body = new FormData()
-    body.append('image', file)
-    if (isPasted) body.append('subfolder', 'pasted')
-    else {
-      const subfolder = toValue(options.uploadSubfolder)
-      if (subfolder) body.append('subfolder', subfolder)
-    }
-    if (formFields.type) body.append('type', formFields.type)
+    const subfolder = isPasted
+      ? 'pasted'
+      : (toValue(options.uploadSubfolder) ?? undefined)
 
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
+    const result = await uploadMedia(
+      { source: file },
+      { subfolder, type: formFields.type }
+    )
 
-    if (resp.status !== 200) {
-      toastStore.addAlert(resp.status + ' - ' + resp.statusText)
+    if (!result.success) {
+      toastStore.addAlert(result.error ?? t('toastMessages.uploadFailed'))
       return null
     }
-
-    const data = await resp.json()
 
     if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
       const assetsStore = useAssetsStore()
       await assetsStore.updateInputs()
     }
 
-    return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+    return result.path
   }
 
   async function uploadFiles(files: File[]): Promise<string[]> {
@@ -85,7 +79,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toastStore.addAlert('File upload failed')
+        toastStore.addAlert(t('toastMessages.fileUploadFailed'))
         return
       }
 
