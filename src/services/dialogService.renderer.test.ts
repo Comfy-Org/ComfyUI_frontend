@@ -90,6 +90,16 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
   })
 
+  it('showAutoReloadDialog() uses the headless workspace dialog chrome', async () => {
+    await useDialogService().showAutoReloadDialog()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('auto-reload')
+    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
+    expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
+  })
+
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {
     const Component = { template: '<div />' }
     useDialogService().showLayoutDialog({

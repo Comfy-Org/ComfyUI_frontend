@@ -1,5 +1,5 @@
 <template>
-  <div class="flex grow flex-col overflow-auto pt-6">
+  <div class="@container flex grow flex-col overflow-auto pt-6">
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -293,6 +293,12 @@
         </div>
       </div>
 
+      <AutoReloadSection
+        v-if="showAutoReload"
+        class="mt-4"
+        :frozen="autoReloadFrozen"
+      />
+
       <!-- View More Details - Outside main content -->
       <div v-if="permissions.canManageSubscription" class="py-6">
         <Button
@@ -321,11 +327,14 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import AutoReloadSection from '@/platform/workspace/components/dialogs/settings/AutoReloadSection.vue'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -344,6 +353,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
+  billingStatus,
   subscription,
   isLoading,
   error,
@@ -351,6 +361,15 @@ const {
   manageSubscription,
   initialize
 } = useBillingContext()
+
+const { flags } = useFeatureFlags()
+const { hasLapsedTeamPlan } = useTeamPlan()
+const showAutoReload = computed(
+  () => flags.billingControlEnabled && permissions.value.canManageSubscription
+)
+const autoReloadFrozen = computed(
+  () => billingStatus.value === 'paused' || hasLapsedTeamPlan.value
+)
 
 const { showPricingTable } = useSubscriptionDialog()
 

@@ -606,6 +606,18 @@ export const useDialogService = () => {
     })
   }
 
+  async function showAutoReloadDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/AutoReloadDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'auto-reload',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
@@ -756,6 +768,7 @@ export const useDialogService = () => {
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showAutoReloadDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
     showDowngradeToPersonalDialog
