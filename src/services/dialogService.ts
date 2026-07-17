@@ -67,6 +67,7 @@ interface BaseConfirmOptions {
   /** Displayed as an unordered list immediately below the message body */
   itemList?: string[]
   hint?: string
+  showHintIcon?: boolean
 }
 
 type ConfirmOptions = BaseConfirmOptions &
@@ -301,6 +302,7 @@ export const useDialogService = () => {
     type = 'default',
     itemList = [],
     hint,
+    showHintIcon,
     denyLabel
   }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
@@ -314,6 +316,7 @@ export const useDialogService = () => {
           itemList,
           onConfirm: resolve,
           hint,
+          showHintIcon,
           denyLabel
         },
         dialogComponentProps: {

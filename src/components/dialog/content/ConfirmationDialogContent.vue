@@ -14,7 +14,12 @@
         role="status"
         class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
       >
-        <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
+        <i
+          v-if="showHintIcon !== false"
+          class="pi pi-info-circle mt-0.5"
+          aria-hidden="true"
+          data-testid="confirmation-dialog-hint-icon"
+        />
         <span>{{ hint }}</span>
       </div>
     </div>
@@ -128,6 +133,7 @@ const props = defineProps<{
   onConfirm: (value?: boolean) => void
   itemList?: string[]
   hint?: string
+  showHintIcon?: boolean
   denyLabel?: string
 }>()
 

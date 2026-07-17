@@ -198,8 +198,9 @@ describe('PartnerNodesPanelContent', () => {
       expect.objectContaining({
         title: 'Restrict access to partner nodes?',
         message:
-          'Only partner nodes you enable will be available to workspace members.',
-        hint: 'Newly released partner nodes will start disabled and must be enabled manually.'
+          'Workspace members will only be able to use Partner Nodes that you enable.',
+        hint: 'New Partner Nodes will be unavailable until you enable them.',
+        showHintIcon: false
       })
     )
     await waitFor(() =>

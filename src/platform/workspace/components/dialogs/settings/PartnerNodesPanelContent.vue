@@ -48,7 +48,7 @@
       :class="
         cn(
           'm-0 flex min-h-0 min-w-0 flex-1 flex-col gap-4 border-0 p-0 transition-opacity',
-          !restrictionsEnabled && 'pointer-events-none opacity-60'
+          !restrictionsEnabled && 'pointer-events-none opacity-50'
         )
       "
       :aria-label="$t('workspacePanel.partnerNodes.controlsLabel')"
@@ -410,7 +410,8 @@ async function requestRestrictionsChange(mode: unknown) {
   const confirmed = await confirm({
     title: t('workspacePanel.partnerNodes.restrictions.confirm.title'),
     message: t('workspacePanel.partnerNodes.restrictions.confirm.message'),
-    hint: t('workspacePanel.partnerNodes.restrictions.confirm.hint')
+    hint: t('workspacePanel.partnerNodes.restrictions.confirm.hint'),
+    showHintIcon: false
   })
   if (confirmed) await setRestrictionsEnabled(true)
 }

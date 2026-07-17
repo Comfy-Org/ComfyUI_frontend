@@ -71,6 +71,20 @@ describe('ConfirmationDialogContent', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  it('can render a text-only hint', () => {
+    renderComponent({
+      hint: 'This action cannot be undone.',
+      showHintIcon: false
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'This action cannot be undone.'
+    )
+    expect(
+      screen.queryByTestId('confirmation-dialog-hint-icon')
+    ).not.toBeInTheDocument()
+  })
+
   describe('button surface per type', () => {
     it("type='default' renders Cancel and Confirm", () => {
       renderComponent({ type: 'default' })
