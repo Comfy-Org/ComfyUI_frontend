@@ -13,6 +13,7 @@ See `docs/testing/*.md` for detailed patterns.
 - Do NOT use `waitForTimeout` — use Locator actions and retrying assertions
 - Prefer specific selectors (role, label, test-id)
 - Test across viewports
+- Tags like `@mobile` and `@2x` are respected by config — use them for relevant tests
 
 ## Window Globals
 
