@@ -20,7 +20,7 @@ const { t } = useI18n()
   <Popover v-if="mobile && creditsBadges.length" side="top">
     <template #button>
       <Button class="mr-2 size-10">
-        <i class="icon-[comfy--credits] bg-amber-400" />
+        <i class="icon-[comfy--credits] bg-credit" />
       </Button>
     </template>
     <section
@@ -51,7 +51,7 @@ const { t } = useI18n()
     <div class="mb-1 w-full border-b border-border-subtle" />
     <CollapsibleTrigger as-child>
       <Button variant="textonly" class="w-full text-sm">
-        <i class="icon-[comfy--credits] size-4 bg-amber-400" />
+        <i class="icon-[comfy--credits] size-4 bg-credit" />
         {{ t('linearMode.hasCreditCost') }}
         <i v-if="open" class="ml-auto icon-[lucide--chevron-up]" />
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />
