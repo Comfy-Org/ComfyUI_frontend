@@ -119,11 +119,16 @@ runs:
               ? body.replace(sectionRegex, sectionBlock)
               : body.trimEnd() + '\n\n' + sectionBlock
 
-            await github.rest.issues.updateComment({
-              ...context.repo,
-              comment_id: existing.id,
-              body: updated
-            })
+            try {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body: updated
+              })
+            } catch (err) {
+              if (attempt === maxAttempts) throw err
+              continue // transient failure; retry
+            }
 
             const current = (await findComment())?.body ?? ''
             const survived =
