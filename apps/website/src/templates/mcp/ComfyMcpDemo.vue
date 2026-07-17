@@ -7,35 +7,40 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const PROMPT = t('mcp.hero.demoPrompt', locale)
 const generateLabel = t('mcp.hero.demoGenerate', locale)
 
+// Each cycle types the prompt that produces the card about to slide in.
 const cards = [
   {
+    promptKey: 'mcp.hero.demoPromptMoodboard',
     actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'moodboard_v1.png · 6-up',
     tag: 'Gmail',
     thumb: '/images/mcp/mcp-thumb-moodboard.webp'
   },
   {
+    promptKey: 'mcp.hero.demoPromptConcepts',
     actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'concepts_01–03.png',
     tag: 'Notion',
     thumb: '/images/mcp/mcp-thumb-concepts.webp'
   },
   {
+    promptKey: 'mcp.hero.demoPromptKeyart',
     actionKey: 'mcp.hero.demoActionGenerateImage',
     file: 'hero_keyart.png',
     tag: 'Figma',
     thumb: '/images/mcp/mcp-thumb-keyart.webp'
   },
   {
+    promptKey: 'mcp.hero.demoPromptPbr',
     actionKey: 'mcp.hero.demoActionGenerate3d',
     file: 'asphalt_pbr/ · 5 maps',
     tag: 'Blender',
     thumb: '/images/mcp/mcp-thumb-asphalt.webp'
   },
   {
+    promptKey: 'mcp.hero.demoPromptUpscale',
     actionKey: 'mcp.hero.demoActionUpscale',
     file: 'kaiju_neon_4k.png · 4096',
     tag: null,
@@ -65,15 +70,15 @@ function schedule(fn: () => void, ms: number) {
   }, ms)
 }
 
-function typePrompt(onDone: () => void) {
+function typePrompt(prompt: string, onDone: () => void) {
   displayedPrompt.value = ''
   promptDone.value = false
   let i = 0
 
   function step() {
     i++
-    displayedPrompt.value = PROMPT.slice(0, i)
-    if (i < PROMPT.length) {
+    displayedPrompt.value = prompt.slice(0, i)
+    if (i < prompt.length) {
       schedule(step, 35)
     } else {
       promptDone.value = true
@@ -94,8 +99,8 @@ function revealNextCard() {
     return
   }
 
-  // Type the prompt, then slide in the next card
-  typePrompt(() => {
+  // Type the next card's prompt, then slide that card in
+  typePrompt(t(cards[visibleCount.value].promptKey, locale), () => {
     visibleCount.value++
     schedule(revealNextCard, 400)
   })

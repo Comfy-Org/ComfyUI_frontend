@@ -76,7 +76,7 @@ catalog:
   class-variance-authority: ^0.7.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
-  dompurify: ^3.4.5
+  dompurify: 3.4.7
   dotenv: ^16.4.5
   eslint: ^10.7.0
   eslint-config-prettier: ^10.1.8
