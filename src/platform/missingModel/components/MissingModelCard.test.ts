@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -10,6 +11,20 @@ import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
+import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+
+const mockDownloadModel = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+  const actual = await vi.importActual<typeof MissingModelDownload>(
+    '@/platform/missingModel/missingModelDownload'
+  )
+  return {
+    ...actual,
+    downloadModel: mockDownloadModel
+  }
+})
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
@@ -131,6 +146,7 @@ function getRowsIn(testId: string) {
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mockIsCloud.value = true
   })
 
@@ -241,6 +257,21 @@ describe('MissingModelCard', () => {
         screen.queryByTestId('missing-model-actions')
       ).not.toBeInTheDocument()
     })
+
+    it('does not show gated model guidance in cloud', async () => {
+      const group = makeGroup({ withDownloadUrls: true })
+      const url =
+        'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+      mountCard({ missingModelGroups: [group] })
+
+      useMissingModelStore().gatedRepoUrls[url] =
+        'https://huggingface.co/comfy/test'
+      await nextTick()
+
+      expect(
+        screen.queryByTestId('missing-model-gated-hint')
+      ).not.toBeInTheDocument()
+    })
   })
 
   describe('Event Handling', () => {
@@ -256,6 +287,7 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mockIsCloud.value = false
   })
 
@@ -291,6 +323,38 @@ describe('MissingModelCard (OSS)', () => {
     expect(
       within(actions).getByRole('button', { name: /Download all/ })
     ).toBeVisible()
+  })
+
+  it('shows gated model guidance in OSS', async () => {
+    const group = makeGroup({ withDownloadUrls: true })
+    const url =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    mountCard({ missingModelGroups: [group] })
+
+    useMissingModelStore().gatedRepoUrls[url] =
+      'https://huggingface.co/comfy/test'
+    await nextTick()
+
+    expect(screen.getByTestId('missing-model-gated-hint')).toHaveTextContent(
+      'Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.'
+    )
+  })
+
+  it('routes Download all through the shared missing-model download handler', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    await userEvent.click(screen.getByTestId('missing-model-download-all'))
+
+    expect(mockDownloadModel).toHaveBeenCalledWith(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/comfy/test/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      {}
+    )
   })
 
   it('hides Download all when no model is downloadable', () => {

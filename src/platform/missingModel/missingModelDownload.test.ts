@@ -4,6 +4,7 @@ import {
   downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
+  openGatedRepoPage,
   toBrowsableUrl
 } from './missingModelDownload'
 
@@ -89,21 +90,34 @@ describe('fetchModelMetadata', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('returns gatedRepoUrl for gated HuggingFace HEAD requests (403)', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+  it.for([401, 403, 451])(
+    'returns gatedRepoUrl for gated HuggingFace HEAD requests (%s)',
+    async (status) => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status })
 
-    const metadata = await fetchModelMetadata(
-      `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${testId}.safetensors`
-    )
-    expect(metadata.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
-    expect(metadata.fileSize).toBeNull()
-  })
+      const metadata = await fetchModelMetadata(
+        `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}-${testId}.safetensors`
+      )
+      expect(metadata.gatedRepoUrl).toBe('https://huggingface.co/bfl/FLUX.1')
+      expect(metadata.fileSize).toBeNull()
+    }
+  )
 
   it('does not treat HuggingFace 404/500 as gated', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 404 })
 
     const metadata = await fetchModelMetadata(
       `https://huggingface.co/org/model/resolve/main/notfound-${testId}.safetensors`
+    )
+    expect(metadata.gatedRepoUrl).toBeNull()
+    expect(metadata.fileSize).toBeNull()
+  })
+
+  it('does not treat non-HuggingFace hosts as gated', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+
+    const metadata = await fetchModelMetadata(
+      `https://huggingface.co.evil.com/org/model/resolve/main/gated-${testId}.safetensors`
     )
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(metadata.fileSize).toBeNull()
@@ -188,6 +202,11 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl(url)).toBe(url)
   })
 
+  it('does not rewrite URLs just because the path contains huggingface.co', () => {
+    const url = 'https://example.com/huggingface.co/org/model/resolve/main/file'
+    expect(toBrowsableUrl(url)).toBe(url)
+  })
+
   it('preserves query params in HuggingFace URLs', () => {
     expect(
       toBrowsableUrl(
@@ -217,6 +236,25 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
       'https://civitai.red/models/12345'
     )
+  })
+})
+
+describe('openGatedRepoPage', () => {
+  it('opens gated repo pages without a download attribute', () => {
+    const clickedAnchors: HTMLAnchorElement[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      function (this: HTMLAnchorElement) {
+        clickedAnchors.push(this)
+      }
+    )
+
+    openGatedRepoPage('https://huggingface.co/bfl/FLUX.1')
+
+    expect(clickedAnchors).toHaveLength(1)
+    expect(clickedAnchors[0]?.href).toBe('https://huggingface.co/bfl/FLUX.1')
+    expect(clickedAnchors[0]?.target).toBe('_blank')
+    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+    expect(clickedAnchors[0]?.getAttribute('download')).toBeNull()
   })
 })
 

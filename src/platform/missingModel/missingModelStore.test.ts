@@ -262,6 +262,9 @@ describe('missingModelStore', () => {
       ])
       store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
+      store.gatedRepoUrls[
+        'https://huggingface.co/org/model/resolve/main/a.safetensors'
+      ] = 'https://huggingface.co/org/model'
       expect(store.missingModelCandidates).not.toBeNull()
 
       store.clearMissingModels()
@@ -270,6 +273,19 @@ describe('missingModelStore', () => {
       expect(store.hasMissingModels).toBe(false)
       expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
+      expect(store.gatedRepoUrls).toEqual({})
+    })
+  })
+
+  describe('setGatedRepoUrl', () => {
+    it('stores gated repo URLs by model download URL', () => {
+      const store = useMissingModelStore()
+      const url =
+        'https://huggingface.co/org/model/resolve/main/model.safetensors'
+
+      store.setGatedRepoUrl(url, 'https://huggingface.co/org/model')
+
+      expect(store.gatedRepoUrls[url]).toBe('https://huggingface.co/org/model')
     })
   })
 
