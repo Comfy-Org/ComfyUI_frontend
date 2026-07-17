@@ -1,7 +1,9 @@
 /**
  * Reads a file (optionally capped to its first `maxBytes`) into an ArrayBuffer.
  * Resolves `null` when the read errors, aborts, or yields no result, so callers
- * can guard with a single truthiness check before parsing.
+ * can guard with a single truthiness check before parsing. The underlying
+ * `FileReader` error reason is intentionally not surfaced; callers treat any
+ * failure as "no metadata" rather than distinguishing causes.
  * @param file - The file to read.
  * @param maxBytes - Optional cap; when set, only the first `maxBytes` are read.
  */

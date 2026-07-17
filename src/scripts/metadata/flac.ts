@@ -7,8 +7,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const signature = String.fromCharCode(...new Uint8Array(buffer, 0, 4))
   if (signature !== 'fLaC') {
     console.error('Not a valid FLAC file')
-    // @ts-expect-error fixme ts strict error
-    return
+    return {}
   }
 
   // Parse metadata blocks
@@ -31,8 +30,7 @@ export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
     if (isLastBlock) break
   }
 
-  // @ts-expect-error fixme ts strict error
-  return vorbisComment
+  return vorbisComment ?? {}
 }
 
 export async function getFromFlacFile(

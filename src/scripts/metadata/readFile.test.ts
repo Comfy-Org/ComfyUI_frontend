@@ -27,6 +27,15 @@ describe('readFileAsArrayBuffer', () => {
     expect(buffer?.byteLength).toBe(10)
   })
 
+  it('returns an empty ArrayBuffer (not null) when maxBytes is 0', async () => {
+    const file = new File([new Uint8Array(10)], 'test.bin')
+
+    const buffer = await readFileAsArrayBuffer(file, 0)
+
+    expect(buffer).toBeInstanceOf(ArrayBuffer)
+    expect(buffer?.byteLength).toBe(0)
+  })
+
   it('resolves null when the read fires an error', async () => {
     mockFileReaderError('readAsArrayBuffer')
 
