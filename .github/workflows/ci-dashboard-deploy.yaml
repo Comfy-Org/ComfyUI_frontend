@@ -1,15 +1,7 @@
-# Description: Deploys the internal CI dashboard (a static index page linking out to
-# CI-generated reports) together with the merged Playwright HTML report to GitHub
-# Pages, giving both a stable, persistent URL instead of ephemeral PR artifacts.
-#
 # Triggered by workflow_run (not push) so this only runs after 'CI: Tests E2E' has
 # finished merging its sharded blob reports into an HTML report on main — the
 # 'playwright-report-chromium' artifact this job downloads doesn't exist until that
 # merge-reports job completes.
-#
-# NOTE: GitHub Pages must be enabled for this repo (Settings -> Pages -> Source:
-# "GitHub Actions") for this job's deploy step to actually publish anything; until
-# then it will fail at the deploy-pages step. See the PR description for details.
 name: 'CI: Dashboard Deploy'
 
 on:
