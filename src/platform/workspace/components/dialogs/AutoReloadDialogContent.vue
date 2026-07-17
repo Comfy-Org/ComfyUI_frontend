@@ -25,17 +25,28 @@
         >
           {{ $t('workspacePanel.autoReload.dialog.thresholdLabel') }}
         </label>
-        <div :class="fieldClass">
+        <div :class="cn(fieldClass, thresholdError && 'ring-1 ring-red-500')">
           <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           <input
             id="auto-reload-threshold"
             :value="thresholdModel"
             inputmode="numeric"
+            :aria-invalid="!!thresholdError"
+            :aria-describedby="
+              thresholdError ? 'auto-reload-threshold-error' : undefined
+            "
             class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
             @input="onThresholdInput"
             @blur="formatThresholdModel"
           />
         </div>
+        <p
+          v-if="thresholdError"
+          id="auto-reload-threshold-error"
+          class="m-0 text-xs text-red-500"
+        >
+          {{ thresholdError }}
+        </p>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -49,7 +60,9 @@
             v-if="unit === 'credits'"
             class="icon-[lucide--coins] size-4 shrink-0 text-credit"
           />
-          <span v-else class="shrink-0 text-sm text-muted-foreground">$</span>
+          <span v-else class="shrink-0 text-sm text-muted-foreground">
+            {{ usdSymbol }}
+          </span>
           <input
             id="auto-reload-amount"
             :value="reloadModel"
@@ -108,17 +121,31 @@
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('workspacePanel.autoReload.dialog.budgetToggleHint') }}
       </p>
-      <div :class="cn(fieldClass, !budgetEnabled && 'opacity-50')">
+      <div
+        :class="
+          cn(
+            fieldClass,
+            !budgetEnabled && 'opacity-50',
+            budgetError && 'ring-1 ring-red-500'
+          )
+        "
+      >
         <i
           v-if="unit === 'credits'"
           class="icon-[lucide--coins] size-4 shrink-0 text-credit"
         />
-        <span v-else class="shrink-0 text-sm text-muted-foreground">$</span>
+        <span v-else class="shrink-0 text-sm text-muted-foreground">
+          {{ usdSymbol }}
+        </span>
         <input
           :value="budgetModel"
           :disabled="!budgetEnabled"
           aria-labelledby="auto-reload-budget-label"
           inputmode="numeric"
+          :aria-invalid="!!budgetError"
+          :aria-describedby="
+            budgetError ? 'auto-reload-budget-error' : undefined
+          "
           :placeholder="budgetPlaceholder"
           class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
           @input="onBudgetInput"
@@ -143,6 +170,13 @@
         class="m-0 text-xs text-muted-foreground"
       >
         {{ allowsReloadsLabel }}
+      </p>
+      <p
+        v-if="budgetError"
+        id="auto-reload-budget-error"
+        class="m-0 text-xs text-red-500"
+      >
+        {{ budgetError }}
       </p>
     </div>
 
@@ -345,6 +379,16 @@ const budgetPlaceholder = computed(() =>
     ? t('workspacePanel.autoReload.dialog.budgetPlaceholderCredits')
     : t('workspacePanel.autoReload.dialog.budgetPlaceholderUsd')
 )
+const usdSymbol = computed(
+  () =>
+    new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency: 'USD'
+    })
+      .formatToParts(0)
+      .find((part) => part.type === 'currency')?.value ??
+    t('workspacePanel.autoReload.dialog.usd')
+)
 
 const allowsReloadsLabel = computed(() => {
   const reloads =
@@ -358,7 +402,7 @@ const MIN_RELOAD_CENTS = 500
 const MIN_RELOAD_CREDITS = usdToCredits(5)
 
 const reloadBelowMinimum = computed(
-  () => reloadCredits.value > 0 && reloadCredits.value < MIN_RELOAD_CREDITS
+  () => reloadCredits.value < MIN_RELOAD_CREDITS
 )
 const reloadError = computed(() => {
   if (!reloadBelowMinimum.value) return ''
@@ -368,12 +412,19 @@ const reloadError = computed(() => {
       : fmtUsd(MIN_RELOAD_CENTS)
   return t('workspacePanel.autoReload.dialog.minReload', { amount })
 })
+const thresholdError = computed(() =>
+  thresholdCredits.value > 0
+    ? ''
+    : t('workspacePanel.autoReload.dialog.thresholdRequired')
+)
+const budgetError = computed(() =>
+  budgetEnabled.value && budgetCents.value <= 0
+    ? t('workspacePanel.autoReload.dialog.budgetRequired')
+    : ''
+)
 
 const canUpdate = computed(
-  () =>
-    thresholdCredits.value > 0 &&
-    reloadCredits.value >= MIN_RELOAD_CREDITS &&
-    (!budgetEnabled.value || budgetCents.value > 0)
+  () => !thresholdError.value && !reloadError.value && !budgetError.value
 )
 
 function onClose() {

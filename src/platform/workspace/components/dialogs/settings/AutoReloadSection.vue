@@ -114,6 +114,9 @@
               :value="budgetUsedFraction"
               :aria-label="$t('workspacePanel.autoReload.tile.monthlyBudget')"
             />
+            <span v-if="isWarning" class="sr-only" role="status">
+              {{ $t('workspacePanel.autoReload.tile.nearLimitStatus') }}
+            </span>
             <div class="flex justify-end text-sm">
               <span class="text-muted-foreground tabular-nums">
                 {{ budgetSpentLabel }}

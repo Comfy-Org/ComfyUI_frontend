@@ -101,6 +101,8 @@ describe('AutoReloadDialogContent', () => {
     const budget = screen.getByRole('textbox', { name: 'Monthly budget' })
 
     expect(budget).toBeEnabled()
+    expect(budget).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Enter a monthly budget')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
 
     await user.type(budget, '11000')
@@ -174,6 +176,15 @@ describe('AutoReloadDialogContent', () => {
     })
   })
 
+  it('localizes the USD currency indicator', async () => {
+    const user = userEvent.setup()
+    renderDialog('pt-BR')
+
+    await user.click(screen.getByText('USD'))
+
+    expect(screen.getAllByText('US$')).toHaveLength(2)
+  })
+
   it('accepts localized non-Latin digits', async () => {
     const user = userEvent.setup()
     renderDialog('fa')
@@ -205,6 +216,11 @@ describe('AutoReloadDialogContent', () => {
 
     await user.clear(screen.getByLabelText('When credits drop below:'))
 
+    expect(screen.getByLabelText('When credits drop below:')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByText('Enter a credit threshold')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
   })
 

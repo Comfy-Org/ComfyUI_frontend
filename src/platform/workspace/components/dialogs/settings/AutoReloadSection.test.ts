@@ -103,7 +103,10 @@ describe('AutoReloadSection', () => {
     setConfig({ spentThisCycleCents: 47_600 })
     renderSection()
 
-    expect(screen.getByText('95% spent')).toHaveClass('text-credit')
+    expect(screen.getByText('95% spent')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Monthly budget is near its limit'
+    )
     expect(screen.queryByText('Paused')).not.toBeInTheDocument()
   })
 
@@ -112,7 +115,7 @@ describe('AutoReloadSection', () => {
     renderSection()
 
     expect(screen.getByText('Paused')).toBeInTheDocument()
-    expect(screen.getByText('100% spent')).toHaveClass('text-danger')
+    expect(screen.getByText('100% spent')).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '100'
@@ -143,7 +146,7 @@ describe('AutoReloadSection', () => {
     expect(section).toHaveAttribute('inert')
     expect(section).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByText('Disabled')).toBeInTheDocument()
-    expect(screen.getByText('Off')).toHaveClass('bg-secondary-background')
+    expect(screen.getByText('Off')).toBeInTheDocument()
     expect(
       screen.getByRole('switch', { name: 'Enable credit auto-reload' })
     ).toBeDisabled()

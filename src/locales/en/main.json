@@ -2921,6 +2921,7 @@
       "dialog": {
         "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
         "amountLabel": "Add this amount of credits:",
+        "budgetRequired": "Enter a monthly budget",
         "budgetPlaceholderCredits": "Enter an amount of credits",
         "budgetPlaceholderUsd": "Enter an amount of dollars",
         "budgetToggleHint": "Limit how much is auto-reloaded per month",
@@ -2929,6 +2930,7 @@
         "credits": "Credits",
         "minReload": "Minimum amount is {amount}",
         "thresholdLabel": "When credits drop below:",
+        "thresholdRequired": "Enter a credit threshold",
         "title": "Auto-reload credits",
         "unitLabel": "Display unit",
         "update": "Update",
@@ -2945,6 +2947,7 @@
       "tile": {
         "label": "Auto-reload",
         "monthlyBudget": "Monthly budget",
+        "nearLimitStatus": "Monthly budget is near its limit",
         "percentSpent": "{percent}% spent",
         "spentOfBudget": "{spent} of {budget}",
         "whenBelow": "when credits drop below"

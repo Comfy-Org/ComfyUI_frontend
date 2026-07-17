@@ -46,6 +46,17 @@ describe('deriveAutoReloadState', () => {
       isWarning: true
     })
 
+    const cannotFundReload = deriveAutoReloadState({
+      ...configured,
+      spentThisCycleCents: 47_700
+    })
+    expect(cannotFundReload).toMatchObject({
+      budgetLeftCents: 2300,
+      reloadsLeft: 0,
+      isPaused: true,
+      isWarning: false
+    })
+
     const exhausted = deriveAutoReloadState({
       ...configured,
       spentThisCycleCents: 50_000

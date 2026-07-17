@@ -31,9 +31,8 @@ export function deriveAutoReloadState(config: AutoReloadConfig) {
       ? Math.floor(budgetLeftCents / reloadCostCents)
       : 0
     : null
-  const isPaused = config.enabled && hasBudget && budgetLeftCents <= 0
-  const isWarning =
-    config.enabled && hasBudget && !isPaused && (reloadsLeft ?? Infinity) <= 1
+  const isPaused = config.enabled && hasBudget && reloadsLeft === 0
+  const isWarning = config.enabled && hasBudget && reloadsLeft === 1
 
   return {
     isConfigured: config.configured,
