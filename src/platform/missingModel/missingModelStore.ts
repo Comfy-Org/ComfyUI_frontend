@@ -60,6 +60,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
   const activeMissingModelGraphIds = computed(() =>
     computeActiveGraphIds(
+      app.rootGraph,
       canvasStore.currentGraph,
       missingModelAncestorExecutionIds.value
     )

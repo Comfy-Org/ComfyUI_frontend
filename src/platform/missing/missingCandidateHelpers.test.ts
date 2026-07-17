@@ -7,16 +7,7 @@ import {
 } from './missingCandidateHelpers'
 
 const mocks = vi.hoisted(() => ({
-  rootGraph: null as unknown,
   getActiveGraphNodeIds: vi.fn()
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    get rootGraph() {
-      return mocks.rootGraph
-    }
-  }
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -50,6 +41,19 @@ describe('createVerificationAbortController', () => {
     manager.abort()
     expect(() => manager.abort()).not.toThrow()
   })
+
+  it('cold abort before any create is a no-op', () => {
+    const manager = createVerificationAbortController()
+    expect(() => manager.abort()).not.toThrow()
+  })
+
+  it('create can be re-used after abort', () => {
+    const manager = createVerificationAbortController()
+    manager.create()
+    manager.abort()
+    const controller = manager.create()
+    expect(controller.signal.aborted).toBe(false)
+  })
 })
 
 describe('computeAncestorExecutionIds', () => {
@@ -60,7 +64,7 @@ describe('computeAncestorExecutionIds', () => {
 
   it('deduplicates shared ancestor prefixes across node ids', () => {
     const result = computeAncestorExecutionIds(['65:70', '65:71'])
-    expect([...result]).toEqual(['65', '65:70', '65:71'])
+    expect(result).toEqual(new Set(['65', '65:70', '65:71']))
   })
 
   it('returns an empty set for no node ids', () => {
@@ -70,12 +74,11 @@ describe('computeAncestorExecutionIds', () => {
 
 describe('computeActiveGraphIds', () => {
   beforeEach(() => {
-    mocks.rootGraph = null
     mocks.getActiveGraphNodeIds.mockReset()
   })
 
   it('returns an empty set when the root graph is unavailable', () => {
-    const result = computeActiveGraphIds(null, new Set())
+    const result = computeActiveGraphIds(null, null, new Set())
     expect(result.size).toBe(0)
     expect(mocks.getActiveGraphNodeIds).not.toHaveBeenCalled()
   })
@@ -83,11 +86,14 @@ describe('computeActiveGraphIds', () => {
   it('delegates to getActiveGraphNodeIds with the current graph', () => {
     const rootGraph = { id: 'root' }
     const currentGraph = { id: 'current' }
-    mocks.rootGraph = rootGraph
     mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['1']))
 
     const ancestors = computeAncestorExecutionIds(['65'])
-    const result = computeActiveGraphIds(currentGraph as never, ancestors)
+    const result = computeActiveGraphIds(
+      rootGraph as never,
+      currentGraph as never,
+      ancestors
+    )
 
     expect(result).toEqual(new Set(['1']))
     expect(mocks.getActiveGraphNodeIds).toHaveBeenCalledWith(
@@ -99,11 +105,11 @@ describe('computeActiveGraphIds', () => {
 
   it('falls back to the root graph when no current graph is given', () => {
     const rootGraph = { id: 'root' }
-    mocks.rootGraph = rootGraph
-    mocks.getActiveGraphNodeIds.mockReturnValue(new Set<string>())
+    mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['9']))
 
-    computeActiveGraphIds(null, new Set())
+    const result = computeActiveGraphIds(rootGraph as never, null, new Set())
 
+    expect(result).toEqual(new Set(['9']))
     expect(mocks.getActiveGraphNodeIds).toHaveBeenCalledWith(
       rootGraph,
       rootGraph,

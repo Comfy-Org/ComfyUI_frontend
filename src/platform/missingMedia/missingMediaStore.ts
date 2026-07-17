@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   computeActiveGraphIds,
@@ -38,6 +39,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   const activeMissingMediaGraphIds = computed(() =>
     computeActiveGraphIds(
+      app.rootGraph,
       canvasStore.currentGraph,
       missingMediaAncestorExecutionIds.value
     )

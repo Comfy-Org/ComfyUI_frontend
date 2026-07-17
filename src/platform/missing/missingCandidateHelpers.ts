@@ -1,10 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
-interface VerificationAbortController {
+export interface VerificationAbortController {
   create(): AbortController
   abort(): void
 }
@@ -43,13 +42,14 @@ export function computeAncestorExecutionIds(
 }
 
 export function computeActiveGraphIds(
+  rootGraph: LGraph | null,
   currentGraph: LGraph | null,
   ancestorExecutionIds: Set<NodeExecutionId>
 ): Set<string> {
-  if (!app.rootGraph) return new Set()
+  if (!rootGraph) return new Set()
   return getActiveGraphNodeIds(
-    app.rootGraph,
-    currentGraph ?? app.rootGraph,
+    rootGraph,
+    currentGraph ?? rootGraph,
     ancestorExecutionIds
   )
 }
