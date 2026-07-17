@@ -4549,5 +4549,11 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "processToast": {
+    "expand": "Show details",
+    "collapse": "Hide details",
+    "failedCount": "{count} FAILED",
+    "stop": "Stop"
   }
 }
