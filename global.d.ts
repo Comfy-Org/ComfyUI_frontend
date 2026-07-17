@@ -41,6 +41,16 @@ interface GtagFunction {
   (...args: unknown[]): void
 }
 
+interface DatadogRumDurationVitalOptions {
+  startTime: number
+  duration: number
+  context?: Record<string, unknown>
+}
+
+interface DatadogRumClient {
+  addDurationVital(name: string, options: DatadogRumDurationVitalOptions): void
+}
+
 type SyftDataTraits = Record<string, string | number | null | undefined>
 
 interface SyftDataPendingFetch {
@@ -101,6 +111,7 @@ interface Window {
   }
   dataLayer?: Array<Record<string, unknown>>
   gtag?: GtagFunction
+  DD_RUM?: DatadogRumClient
   syft?: SyftDataClient | SyftDisabledClient
   syftc?: { sourceId?: string; enabled?: boolean }
   ire_o?: string
