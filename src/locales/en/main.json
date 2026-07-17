@@ -2919,7 +2919,22 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "allowlist": "Allowlist"
+    },
+    "allowlist": {
+      "title": "Partner nodes",
+      "description": "Choose which partner nodes are allowed when workspace enforcement is enabled.",
+      "searchPlaceholder": "Search partner nodes...",
+      "loading": "Loading partner node policy...",
+      "loadError": "Partner node policy could not be loaded.",
+      "retry": "Try again",
+      "empty": "No partner nodes are available.",
+      "noMatches": "No partner nodes match your search.",
+      "allowedCount": "{enabled} of {total} allowed",
+      "nodeToggle": "Allow {name}",
+      "saved": "Allowlist saved",
+      "saveError": "Allowlist could not be saved."
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"

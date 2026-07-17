@@ -9,18 +9,26 @@ import WorkspacePanelContent from './WorkspacePanelContent.vue'
 const mockFetchMembers = vi.fn()
 const mockFetchPendingInvites = vi.fn()
 
-const { mockHasTeamPlan, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
+const {
+  mockGovernedWorkspaceId,
+  mockHasTeamPlan,
+  mockIsPlanLoading,
+  mockMembers,
+  mockWorkspaceRole,
+  mockWorkspaceType
+} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
 
-    return {
-      mockHasTeamPlan: ref(true),
-      mockIsPlanLoading: ref(false),
-      mockMembers: ref<WorkspaceMember[]>([]),
-      mockWorkspaceType: ref<'personal' | 'team'>('team')
-    }
-  })
+  return {
+    mockGovernedWorkspaceId: ref<string | null>('workspace-one'),
+    mockHasTeamPlan: ref(true),
+    mockIsPlanLoading: ref(false),
+    mockMembers: ref<WorkspaceMember[]>([]),
+    mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
+    mockWorkspaceType: ref<'personal' | 'team'>('team')
+  }
+})
 
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
@@ -51,15 +59,19 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
 })
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
   return {
     useWorkspaceUI: () => ({
       workspaceType: mockWorkspaceType,
-      workspaceRole: ref('owner')
+      workspaceRole: mockWorkspaceRole
     })
   }
 })
+
+vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
+  usePartnerNodeGovernanceStore: () => ({
+    governedWorkspaceId: mockGovernedWorkspaceId
+  })
+}))
 
 vi.mock(
   '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
@@ -83,6 +95,11 @@ vi.mock(
       template: '<div data-testid="billing-banner" />'
     }
   })
+)
+
+vi.mock(
+  '@/platform/workspace/components/dialogs/settings/PartnerNodeAllowlistPanel.vue',
+  () => ({ default: { template: '<div />' } })
 )
 
 const i18n = createI18n({
@@ -117,6 +134,8 @@ describe('WorkspacePanelContent billing banner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMembers.value = []
+    mockGovernedWorkspaceId.value = 'workspace-one'
+    mockWorkspaceRole.value = 'owner'
     mockWorkspaceType.value = 'team'
   })
 
@@ -138,6 +157,8 @@ describe('WorkspacePanelContent members tab label', () => {
     mockHasTeamPlan.value = true
     mockIsPlanLoading.value = false
     mockMembers.value = []
+    mockGovernedWorkspaceId.value = 'workspace-one'
+    mockWorkspaceRole.value = 'owner'
     mockWorkspaceType.value = 'team'
   })
 
@@ -183,5 +204,40 @@ describe('WorkspacePanelContent members tab label', () => {
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
     expect(mockFetchPendingInvites).not.toHaveBeenCalled()
+  })
+})
+
+describe('WorkspacePanelContent allowlist tab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGovernedWorkspaceId.value = 'workspace-one'
+    mockWorkspaceRole.value = 'owner'
+    mockWorkspaceType.value = 'team'
+  })
+
+  it('shows the allowlist for an eligible workspace owner', () => {
+    renderComponent()
+
+    expect(
+      screen.getByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
+    ).toBeInTheDocument()
+  })
+
+  it('hides the allowlist from workspace members', () => {
+    mockWorkspaceRole.value = 'member'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
+    ).toBeNull()
+  })
+
+  it('hides the allowlist when governance is ineligible', () => {
+    mockGovernedWorkspaceId.value = null
+    renderComponent()
+
+    expect(
+      screen.queryByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
+    ).toBeNull()
   })
 })

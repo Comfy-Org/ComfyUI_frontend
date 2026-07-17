@@ -4,7 +4,8 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getPartnerNodePolicy,
-  PartnerNodePolicyApiError
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -124,6 +125,22 @@ export const usePartnerNodeGovernanceStore = defineStore(
       }
     }
 
+    async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<boolean> {
+      const workspaceId = governedWorkspaceId.value
+      if (!workspaceId || policyWorkspaceId.value !== workspaceId) {
+        throw new Error('Partner node governance is not ready')
+      }
+
+      const savedPolicy = await updatePartnerNodePolicy(nextPolicy)
+      if (governedWorkspaceId.value !== workspaceId) return false
+
+      policy.value = savedPolicy
+      policyWorkspaceId.value = workspaceId
+      status.value = 'configured'
+      error.value = null
+      return true
+    }
+
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
 
     return {
@@ -133,7 +150,8 @@ export const usePartnerNodeGovernanceStore = defineStore(
       governedWorkspaceId,
       partnerNodes,
       isNodeDisabled,
-      loadPolicy
+      loadPolicy,
+      savePolicy
     }
   }
 )

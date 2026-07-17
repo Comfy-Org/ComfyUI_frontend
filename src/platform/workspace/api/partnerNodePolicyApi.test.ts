@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getPartnerNodePolicy,
-  PartnerNodePolicyApiError
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 
 const mockFetchApi = vi.fn()
@@ -66,5 +67,55 @@ describe('partnerNodePolicyApi', () => {
     await expect(getPartnerNodePolicy()).rejects.toMatchObject({
       name: 'ZodError'
     })
+  })
+
+  it('serializes and validates a whole-policy update', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({
+        enforcement_enabled: false,
+        nodes: { AllowedNode: true, DisabledNode: true }
+      })
+    )
+
+    await expect(
+      updatePartnerNodePolicy({
+        enforcementEnabled: false,
+        nodes: { AllowedNode: true, DisabledNode: true }
+      })
+    ).resolves.toEqual({
+      enforcementEnabled: false,
+      nodes: { AllowedNode: true, DisabledNode: true }
+    })
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/workspace/partner-node-policy',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enforcement_enabled: false,
+          nodes: { AllowedNode: true, DisabledNode: true }
+        })
+      }
+    )
+  })
+
+  it('preserves update failures for the editor', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({}, { status: 409, statusText: 'Conflict' })
+    )
+
+    await expect(
+      updatePartnerNodePolicy({ enforcementEnabled: false, nodes: {} })
+    ).rejects.toEqual(new PartnerNodePolicyApiError(409, 'Conflict'))
+  })
+
+  it('rejects malformed update responses', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({ enforcement_enabled: false, nodes: [] })
+    )
+
+    await expect(
+      updatePartnerNodePolicy({ enforcementEnabled: false, nodes: {} })
+    ).rejects.toMatchObject({ name: 'ZodError' })
   })
 })
