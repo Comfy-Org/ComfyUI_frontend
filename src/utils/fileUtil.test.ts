@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   mockFileReaderAbort,
   mockFileReaderError
-} from './__fixtures__/helpers'
-import { readFileAsArrayBuffer } from './readFile'
+} from '@/scripts/metadata/__fixtures__/helpers'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 
 describe('readFileAsArrayBuffer', () => {
   afterEach(() => vi.restoreAllMocks())
