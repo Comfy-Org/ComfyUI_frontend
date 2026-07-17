@@ -41,6 +41,7 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
   }
@@ -575,6 +576,22 @@ describe('useCoreCommands', () => {
       )
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
+
+    it.for([
+      { id: 'Comfy.Canvas.Lock', from: false, to: true },
+      { id: 'Comfy.Canvas.Unlock', from: true, to: false },
+      { id: 'Comfy.Canvas.ToggleLock', from: false, to: true },
+      { id: 'Comfy.Canvas.ToggleLock', from: true, to: false }
+    ] as const)(
+      '$id changes read-only state from $from to $to',
+      async ({ id, from, to }) => {
+        app.canvas.read_only = from
+
+        await findCmd(id).function()
+
+        expect(app.canvas.read_only).toBe(to)
+      }
+    )
   })
 
   describe('Workflow lifecycle commands', () => {

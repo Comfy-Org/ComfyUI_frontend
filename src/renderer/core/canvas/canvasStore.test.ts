@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -45,10 +46,10 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
-  return {
+  return fromPartial<LGraphCanvas>({
     read_only: readOnly,
     canvas: document.createElement('canvas')
-  } as unknown as LGraphCanvas
+  })
 }
 
 describe('useCanvasStore', () => {
@@ -147,7 +148,7 @@ describe('useCanvasStore', () => {
     it('syncs initial read_only value when canvas is set', async () => {
       const mockCanvas = createMockCanvas(true)
 
-      store.canvas = mockCanvas as unknown as LGraphCanvas
+      store.canvas = mockCanvas
       await nextTick()
 
       expect(store.isReadOnly).toBe(true)
@@ -156,12 +157,11 @@ describe('useCanvasStore', () => {
     it('updates isReadOnly when litegraph:read-only-changed event fires', async () => {
       const mockCanvas = createMockCanvas(false)
 
-      store.canvas = mockCanvas as unknown as LGraphCanvas
+      store.canvas = mockCanvas
       await nextTick()
 
       expect(store.isReadOnly).toBe(false)
 
-      // Simulate space key press → LGraphCanvas sets read_only = true
       mockCanvas.canvas.dispatchEvent(
         new CustomEvent('litegraph:read-only-changed', {
           detail: { readOnly: true }
@@ -170,7 +170,6 @@ describe('useCanvasStore', () => {
 
       expect(store.isReadOnly).toBe(true)
 
-      // Simulate space key release
       mockCanvas.canvas.dispatchEvent(
         new CustomEvent('litegraph:read-only-changed', {
           detail: { readOnly: false }
