@@ -132,7 +132,7 @@ export function useChart(
   const chartInstance = ref<Chart | null>(null)
 
   function createChart() {
-    if (!canvasRef.value) return
+    if (canvasRef.value === null) return
 
     chartInstance.value?.destroy()
 
