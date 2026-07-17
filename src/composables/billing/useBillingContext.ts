@@ -6,6 +6,7 @@ import {
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -128,6 +129,16 @@ function useBillingContextInternal(): BillingContext {
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
+
+  const freeTierQuota = useFreeTierQuota()
+
+  const canRunWorkflows = computed(
+    () =>
+      isActiveSubscription.value &&
+      (!isFreeTier.value ||
+        !freeTierQuota.quotaEnabled.value ||
+        freeTierQuota.freeTierExecutionPermitted.value)
+  )
 
   const isLegacyTeamPlan = computed(
     () =>
@@ -297,6 +308,7 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
     billingStatus,

@@ -1,7 +1,7 @@
 <template>
   <component
     :is="currentButton"
-    :key="isActiveSubscription ? 'queue' : 'subscribe'"
+    :key="canRunWorkflows ? 'queue' : 'subscribe'"
   />
 </template>
 <script setup lang="ts">
@@ -11,9 +11,9 @@ import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueBu
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 
-const { isActiveSubscription } = useBillingContext()
+const { canRunWorkflows } = useBillingContext()
 
 const currentButton = computed(() =>
-  isActiveSubscription.value ? ComfyQueueButton : SubscribeToRunButton
+  canRunWorkflows.value ? ComfyQueueButton : SubscribeToRunButton
 )
 </script>
