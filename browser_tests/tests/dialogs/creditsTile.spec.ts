@@ -185,7 +185,10 @@ async function openPlanAndCredits(page: Page) {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+  await dialog
+    .locator('nav')
+    .getByRole('button', { name: 'Plan & Credits' })
+    .click()
 
   return dialog.getByRole('main')
 }

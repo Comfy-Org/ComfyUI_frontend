@@ -17,7 +17,7 @@ import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMo
 // devtools backend during setup.
 
 /**
- * Member role change (Settings ▸ Workspace ▸ Members) — Figma 2993-15512.
+ * Member role change (Settings ▸ Members) — Figma 2993-15512.
  *
  * The viewer is a promoted owner (not the workspace creator), so the spec can
  * distinguish the creator guard from the self guard: the creator row and the
@@ -40,10 +40,9 @@ async function openMembersTab(page: Page): Promise<Locator> {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+  await dialog.locator('nav').getByRole('button', { name: 'Members' }).click()
 
   const content = dialog.getByRole('main')
-  await content.getByRole('tab', { name: /Members/ }).click()
   await expect(content.getByText('4 of 30 members')).toBeVisible()
   return content
 }
