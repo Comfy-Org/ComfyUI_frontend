@@ -254,6 +254,9 @@ export type BillingStatus =
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {

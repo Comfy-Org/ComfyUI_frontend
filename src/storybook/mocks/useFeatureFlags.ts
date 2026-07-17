@@ -26,14 +26,14 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled'
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled'
 }
 
 export function useFeatureFlags() {
   return {
     flags: {
       teamWorkspacesEnabled: true,
-      consolidatedBillingEnabled: true
+      billingControlEnabled: true
     }
   }
 }
