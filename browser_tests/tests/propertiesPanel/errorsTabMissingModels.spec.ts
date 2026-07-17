@@ -221,7 +221,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
           .click()
         const accessPage = await pagePromise
 
-        expect(accessPage.url()).toBe(GATED_MODEL_REPO_URL)
+        await expect(accessPage).toHaveURL(GATED_MODEL_REPO_URL)
       })
     })
 
@@ -229,16 +229,33 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       test('Should not show gated guidance when no row can act on it', async ({
         comfyPage
       }) => {
-        let gatedHeadRequests = 0
+        let releaseGatedHead: () => void
+        const gatedHeadServed = new Promise<void>((resolve) => {
+          releaseGatedHead = resolve
+        })
+
         await comfyPage.page
           .context()
           .route('https://huggingface.co/**', async (route) => {
             if (route.request().method() !== 'HEAD') return route.abort()
 
-            gatedHeadRequests += 1
+            if (route.request().url().endsWith('.bin')) {
+              await route.fulfill({
+                status: 403,
+                headers: { 'Access-Control-Allow-Origin': '*' }
+              })
+              releaseGatedHead()
+              return
+            }
+
+            await gatedHeadServed
             return route.fulfill({
-              status: 403,
-              headers: { 'Access-Control-Allow-Origin': '*' }
+              status: 200,
+              headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Expose-Headers': 'content-length',
+                'content-length': '1024'
+              }
             })
           })
         await loadWorkflowAndOpenErrorsTab(
@@ -252,14 +269,10 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         await expect(
           getModelLabel(modelsGroup, UNSUPPORTED_MODEL_NAME)
         ).toBeVisible()
-
-        // The pipeline HEADs any candidate with a url and directory, so the
-        // gated response lands before the extension is ever considered.
-        await expect.poll(() => gatedHeadRequests).toBeGreaterThan(0)
-
         await expect(
-          comfyPage.page.getByTestId(TestIds.dialogs.missingModelDownload)
-        ).toHaveCount(0)
+          modelsGroup.getByText('checkpoints · 1 KB', { exact: true })
+        ).toBeVisible()
+
         await expect(
           comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
         ).toHaveCount(0)

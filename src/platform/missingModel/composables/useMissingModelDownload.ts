@@ -25,13 +25,15 @@ export function useMissingModelDownload() {
     downloadModel(model, store.folderPaths)
   }
 
-  // Use the bridge regardless of isRemote() so provider cookies land in the
-  // host session reused by downloads.
+  // Always try the bridge: it opens in the user's Electron session. isRemote()
+  // describes the backend server, not the user, so it must not gate this. The
+  // anchor fallback inside Electron hits shell.openExternal and strands the
+  // provider cookies in the system browser.
   async function openModelAccessPage(repoUrl: string): Promise<void> {
     const openInHost = window.__comfyDesktop2?.openModelAccessPage
     if (openInHost) {
       try {
-        if (await openInHost(repoUrl)) return
+        if ((await openInHost(repoUrl)) === true) return
       } catch (error: unknown) {
         console.error('Failed to open model access page in Desktop:', error)
       }
