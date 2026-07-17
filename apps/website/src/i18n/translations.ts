@@ -768,6 +768,11 @@ const translations = {
     'zh-CN':
       '最简单的 ComfyUI 入门方式。预加载模型。预安装自定义节点。并发任务。在 Blackwell RTX 6000 Pro 上体验 ComfyUI 的全部能力。打开标签页，开始创作。'
   },
+  'cloud.meta.description': {
+    en: 'ComfyUI Cloud runs on Blackwell RTX 6000 Pro GPUs with pre-loaded models and concurrent workflow support via API.',
+    'zh-CN':
+      'ComfyUI Cloud 运行在 Blackwell RTX 6000 Pro GPU 上，预加载模型，并通过 API 支持并发工作流。'
+  },
   'cloud.hero.cta': {
     en: 'TRY COMFY CLOUD FOR FREE',
     'zh-CN': '免费试用 COMFY CLOUD'
@@ -911,8 +916,8 @@ const translations = {
 
   // Cloud – ReasonSection
   'cloud.reason.heading': {
-    en: 'Why\nprofessionals\nchoose ',
-    'zh-CN': '专业人士为何\n选择'
+    en: 'What is ComfyUI Cloud, and how many concurrent jobs can it run?',
+    'zh-CN': 'ComfyUI Cloud 是什么，它能同时运行多少个任务？'
   },
   'cloud.reason.headingHighlight': {
     en: 'Cloud',
@@ -923,9 +928,9 @@ const translations = {
     'zh-CN': '强大 GPU\n端到端安全内置'
   },
   'cloud.reason.1.description': {
-    en: 'Comfy Cloud works on any device. Pay only for running workflows, not idle time. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
+    en: 'Comfy Cloud works on any device. Pay only for running workflows, not idle time. Run workflows concurrently via API. With Comfy Cloud, you get security and infrastructure built-in with access to the most popular custom nodes.',
     'zh-CN':
-      'Comfy Cloud 可在任何设备上使用。只需为运行工作流付费，无需为闲置时间付费。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
+      'Comfy Cloud 可在任何设备上使用。只需为运行工作流付费，无需为闲置时间付费。通过 API 并发运行工作流。使用 Comfy Cloud，您可获得内置的安全性和基础设施，并访问最流行的自定义节点。'
   },
   'cloud.reason.2.title': {
     en: 'All models. Commercial\nlicense guaranteed.',
@@ -1330,8 +1335,8 @@ const translations = {
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
   'pricing.plan.pro.feature2': {
-    en: 'Run up to 5 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 5 个工作流'
+    en: 'Run workflows concurrently (via API)',
+    'zh-CN': '通过 API 并发运行工作流'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
