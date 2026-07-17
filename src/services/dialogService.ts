@@ -648,6 +648,15 @@ export const useDialogService = () => {
     })
   }
 
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const { launchCancellationFlow } =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return launchCancellationFlow({
+      cancelAt,
+      showFallback: () => showCancelSubscriptionDialog(cancelAt)
+    })
+  }
+
   /**
    * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
    * understand" confirm dialog when the workspace has no other members;
@@ -758,6 +767,7 @@ export const useDialogService = () => {
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showDowngradeToPersonalDialog
   }
 }

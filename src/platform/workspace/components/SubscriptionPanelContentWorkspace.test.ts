@@ -76,7 +76,7 @@ const mockManageSubscription = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockResubscribe = vi.fn()
 const mockShowLeaveWorkspaceDialog = vi.fn()
-const mockShowCancelSubscriptionDialog = vi.fn()
+const mockShowCancelSubscriptionFlow = vi.fn()
 const mockShowEditWorkspaceDialog = vi.fn()
 const mockShowDeleteWorkspaceDialog = vi.fn()
 
@@ -198,7 +198,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
-    showCancelSubscriptionDialog: mockShowCancelSubscriptionDialog,
+    showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
     showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
     showEditWorkspaceDialog: mockShowEditWorkspaceDialog,
     showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog
@@ -635,7 +635,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
-    expect(mockShowCancelSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(mockShowCancelSubscriptionFlow).toHaveBeenCalledWith(END_DATE_ISO)
   })
 
   it('enables Delete for the original owner once the plan is cancelled', () => {

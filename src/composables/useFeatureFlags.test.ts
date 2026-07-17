@@ -339,6 +339,26 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('churnkeyAppId', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfig.value = {}
+    })
+
+    it('is disabled outside the cloud distribution', () => {
+      remoteConfig.value = { churnkey_app_id: 'app_test' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
+    })
+
+    it('reads and trims the cloud remote-config value', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      remoteConfig.value = { churnkey_app_id: ' app_test ' }
+
+      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
+    })
+  })
+
   describe('unifiedCloudAuthEnabled', () => {
     afterEach(() => {
       localStorage.clear()

@@ -335,6 +335,75 @@ describe('workspaceApi', () => {
       })
       expect(result).toEqual(data)
     })
+
+    it('getChurnkeyAuth() returns the direct-mode subscription snapshot', async () => {
+      const data = {
+        customer_id: 'workspace-1',
+        auth_hash: 'hash-1',
+        mode: 'test',
+        subscription: {
+          id: 'subscription-1',
+          started_at: '2026-01-01T00:00:00Z',
+          status: 'active',
+          current_period_start: '2026-07-01T00:00:00Z',
+          current_period_end: '2026-08-01T00:00:00Z',
+          plan: {
+            id: 'creator-monthly',
+            name: 'Creator',
+            amount_cents: 3500,
+            currency: 'usd',
+            interval: 'month',
+            interval_count: 1
+          },
+          quantity: 1
+        }
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/churnkey/auth',
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('getChurnkeyAuth() falls back when the subscription snapshot is absent', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          customer_id: 'workspace-1',
+          auth_hash: 'hash-1',
+          mode: 'test'
+        }
+      })
+
+      await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+    })
+
+    it.for([404, 503])(
+      'getChurnkeyAuth() falls back on HTTP %s',
+      async (status) => {
+        mockAxiosInstance.get.mockRejectedValue({
+          isAxiosError: true,
+          response: { status },
+          message: 'Request failed'
+        })
+
+        await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+      }
+    )
+
+    it('getChurnkeyAuth() preserves unexpected API failures', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        isAxiosError: true,
+        response: { status: 500, data: { message: 'Server Error' } },
+        message: 'Request failed'
+      })
+
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 500
+      })
+    })
   })
 
   describe('subscription', () => {
