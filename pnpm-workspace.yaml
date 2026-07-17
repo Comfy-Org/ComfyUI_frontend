@@ -127,7 +127,7 @@ catalog:
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
-  typescript: ^5.9.3
+  typescript: ^6.0.3
   typescript-eslint: ^8.64.0
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
