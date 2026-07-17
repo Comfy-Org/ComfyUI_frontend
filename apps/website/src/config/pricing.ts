@@ -46,7 +46,7 @@ function offersFrom(locale: Locale, education: boolean): PricingOffer[] {
     const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
     if (!match) {
       console.warn(
-        `pricingOffers: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
+        `${education ? 'educationOffers' : 'pricingOffers'}: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
       )
       return []
     }

@@ -105,21 +105,32 @@ test.describe('Education landing — desktop @smoke', () => {
 type JsonLdNode = Record<string, unknown>
 
 // The page emits one connected @graph, so every node (FAQPage, Product,
-// breadcrumbs) is read from that single ld+json block.
+// breadcrumbs) is read from that single ld+json block. Blocks are selected by
+// parsed structure, not text matching, and the "exactly one" assumption is
+// asserted rather than assumed.
 const readJsonLdGraph = async (page: Page): Promise<JsonLdNode[]> => {
-  const raw = await page.evaluate(() => {
+  const graphs = await page.evaluate(() => {
     const scripts = Array.from(
       document.querySelectorAll<HTMLScriptElement>(
         'script[type="application/ld+json"]'
       )
     )
-    const graph = scripts.find((s) =>
-      (s.textContent ?? '').includes('"@graph"')
-    )
-    return graph?.textContent ?? null
+    return scripts
+      .map((script) => {
+        try {
+          return JSON.parse(script.textContent ?? '') as unknown
+        } catch {
+          return null
+        }
+      })
+      .filter(
+        (parsed): parsed is { '@graph': unknown[] } =>
+          parsed !== null &&
+          Array.isArray((parsed as Record<string, unknown>)['@graph'])
+      )
   })
-  expect(raw, 'JSON-LD @graph script').not.toBeNull()
-  return (JSON.parse(raw!) as { '@graph': JsonLdNode[] })['@graph']
+  expect(graphs, 'exactly one JSON-LD @graph block').toHaveLength(1)
+  return graphs[0]['@graph'] as JsonLdNode[]
 }
 
 test.describe('Education landing — desktop interactions', () => {
@@ -146,14 +157,16 @@ test.describe('Education landing — desktop interactions', () => {
     expect(product, 'Product node').toBeTruthy()
     expect(webPage?.mainEntity).toEqual({ '@id': product!['@id'] })
 
+    // The discounted education prices, not the list prices — a regression to
+    // pricingOffers would still pass a positive-USD check.
     const offers = product!.offers as JsonLdNode[]
-    expect(offers.length).toBeGreaterThan(0)
+    expect(offers.map((offer) => offer.price)).toEqual(['18', '31.50', '90'])
     for (const offer of offers) {
       expect(offer.priceCurrency).toBe('USD')
-      expect(Number(offer.price)).toBeGreaterThan(0)
     }
 
     const breadcrumb = graph.find((node) => node['@type'] === 'BreadcrumbList')
+    expect(breadcrumb, 'BreadcrumbList node').toBeTruthy()
     const names = (breadcrumb!.itemListElement as JsonLdNode[]).map(
       (item) => item.name
     )
