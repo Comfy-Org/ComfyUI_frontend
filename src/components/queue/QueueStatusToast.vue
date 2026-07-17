@@ -32,7 +32,9 @@
         v-tooltip.bottom="expandTooltip"
         variant="textonly"
         size="icon-sm"
-        :aria-label="expanded ? t('processToast.collapse') : t('processToast.expand')"
+        :aria-label="
+          expanded ? t('processToast.collapse') : t('processToast.expand')
+        "
         data-testid="queue-status-expand"
         @click="expanded = !expanded"
       >
@@ -59,10 +61,10 @@
             {{ t('queueStatus.activeGenerations') }}
           </span>
           <Button
-            v-if="runningCount > 0"
+            v-if="hasRunningJob"
             variant="textonly"
             size="sm"
-            class="text-text-secondary"
+            class="font-medium text-base-foreground"
             data-testid="queue-status-cancel-all"
             @click="interruptAll"
           >
@@ -75,34 +77,50 @@
             v-for="job in activeJobs"
             :key="job.id"
             data-testid="queue-status-row"
-            class="flex items-center justify-between gap-3 overflow-clip rounded-lg bg-secondary-background px-4 py-3"
+            class="flex flex-col gap-2 rounded-lg bg-secondary-background px-4 py-3"
           >
-            <span class="truncate text-sm text-base-foreground">
-              {{ job.title }}
-            </span>
-            <div class="flex shrink-0 items-center gap-2">
-              <template v-if="isRunning(job)">
-                <Loader
-                  size="sm"
-                  variant="loader-circle"
-                  class="text-text-secondary"
-                />
-                <span class="text-xs tabular-nums text-base-foreground">
-                  {{ jobPercent(job) }}%
-                </span>
-              </template>
+            <div class="flex items-start justify-between gap-2">
               <span
-                v-else-if="job.state === 'pending'"
-                class="text-xs text-muted-foreground"
+                class="min-w-0 flex-1 truncate text-sm font-medium text-base-foreground"
               >
-                {{ t('queueStatus.pending') }}
+                {{ job.title }}
               </span>
-              <template v-else-if="job.state === 'failed'">
-                <i
-                  class="icon-[lucide--circle-alert] size-4 text-destructive-background"
-                />
-                <StatusBadge severity="danger" :label="t('queueStatus.failed')" />
-              </template>
+              <div class="flex shrink-0 items-center gap-0.5">
+                <Button
+                  v-tooltip.bottom="locateTooltip"
+                  variant="textonly"
+                  size="icon-sm"
+                  :aria-label="t('queueStatus.locate')"
+                  data-testid="queue-status-row-view"
+                  @click="viewJob(job)"
+                >
+                  <i class="icon-[lucide--locate] size-4 text-text-secondary" />
+                </Button>
+                <Button
+                  v-tooltip.bottom="cancelTooltip"
+                  variant="textonly"
+                  size="icon-sm"
+                  :aria-label="t('queueStatus.cancel')"
+                  data-testid="queue-status-row-cancel"
+                  @click="cancelJob(job)"
+                >
+                  <i class="icon-[lucide--x] size-4 text-text-secondary" />
+                </Button>
+              </div>
+            </div>
+
+            <span class="text-xs text-muted-foreground">
+              {{ jobSubtitle(job) }}
+            </span>
+
+            <div
+              v-if="isRunning(job)"
+              class="h-1.5 w-full overflow-hidden rounded-full bg-white/10"
+            >
+              <div
+                class="h-full rounded-full bg-base-foreground transition-[width] duration-200 ease-out"
+                :style="{ width: `${jobPercent(job)}%` }"
+              />
             </div>
           </div>
 
@@ -116,6 +134,11 @@
       </div>
     </template>
   </ProcessToast>
+
+  <MediaLightbox
+    v-model:active-index="galleryActiveIndex"
+    :all-gallery-items="galleryItems"
+  />
 </template>
 
 <script setup lang="ts">
@@ -123,16 +146,17 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ProcessToast from '@/components/common/ProcessToast.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import Loader from '@/components/loader/Loader.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -158,14 +182,21 @@ const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
 const activeJobs = computed(() =>
   jobItems.value.filter((job) => ACTIVE_STATES.has(job.state))
 )
+
 const failedCount = computed(
   () => activeJobs.value.filter((job) => job.state === 'failed').length
 )
+const hasRunningJob = computed(() => activeJobs.value.some(isRunning))
 
 const isRunning = (job: JobListItem) =>
   job.state === 'running' || job.state === 'initialization'
 const jobPercent = (job: JobListItem) =>
   Math.round(job.progressTotalPercent ?? 0)
+const jobSubtitle = (job: JobListItem) => {
+  if (isRunning(job)) return `${t('g.running')} · ${jobPercent(job)}%`
+  if (job.state === 'failed') return t('queueStatus.jobFailed')
+  return t('queueStatus.queued')
+}
 
 const stopTooltip = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
@@ -175,6 +206,28 @@ const expandTooltip = computed(() =>
     expanded.value ? t('processToast.collapse') : t('processToast.expand')
   )
 )
+const locateTooltip = computed(() =>
+  buildTooltipConfig(t('queueStatus.locate'))
+)
+const cancelTooltip = computed(() => buildTooltipConfig(t('queueStatus.cancel')))
+
+const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
+  activeJobs.value
+    .map((job) => job.taskRef)
+    .filter((task): task is TaskItemImpl => !!task)
+)
+
+const viewJob = (job: JobListItem) => {
+  void onViewItem(job)
+}
+
+const cancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
+  const jobId = job.taskRef?.jobId
+  if (!jobId) return
+  await api.cancelJob(String(jobId))
+  executionStore.clearInitializationByJobId(String(jobId))
+  await queueStore.update()
+})
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
   const jobIds = queueStore.runningTasks
