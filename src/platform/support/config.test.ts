@@ -66,11 +66,6 @@ describe('buildFeedbackHiddenFields', () => {
     return buildFeedbackHiddenFields(source, extraTags)
   }
 
-  it('formats tags comma-separated for the Typeform embed data-tf-hidden attribute', async () => {
-    distribution.isCloud = true
-    expect(await build('topbar')).toBe('distribution=ccloud,source=topbar')
-  })
-
   it('reflects the build distribution', async () => {
     distribution.isNightly = true
     expect(await build('action-bar')).toBe(

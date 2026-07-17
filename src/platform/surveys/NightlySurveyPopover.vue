@@ -25,7 +25,7 @@
           </Button>
         </div>
 
-        <div class="min-h-[300px]">
+        <div class="min-h-75">
           <TypeformEmbed :typeform-id="config.typeformId" auto-resize />
         </div>
 
