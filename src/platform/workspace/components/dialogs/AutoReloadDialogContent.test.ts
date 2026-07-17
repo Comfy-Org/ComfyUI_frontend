@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { creditsToCents, usdToCredits } from '@/base/credits/comfyCredits'
@@ -16,13 +16,22 @@ const dialogStoreMocks = vi.hoisted(() => ({
   closeDialog: vi.fn()
 }))
 
+const mockCanAccess = ref(true)
+const mockAccessFrozen = ref(false)
+
+vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
+  useAutoReloadAccess: () => ({
+    canConfigure: computed(() => mockCanAccess.value && !mockAccessFrozen.value)
+  })
+}))
+
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => dialogStoreMocks
 }))
 
 const autoReload = useAutoReload()
 
-function renderDialog(locale = 'en') {
+function renderDialog(locale = 'en', workspaceId = 'workspace-a') {
   const i18n = createI18n({
     legacy: false,
     locale,
@@ -36,6 +45,7 @@ function renderDialog(locale = 'en') {
     }
   })
   const result = render(AutoReloadDialogContent, {
+    props: { workspaceId },
     global: { plugins: [pinia, i18n] }
   })
   return { ...result, pinia }
@@ -56,6 +66,8 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 describe('AutoReloadDialogContent', () => {
   beforeEach(() => {
     dialogStoreMocks.closeDialog.mockReset()
+    mockCanAccess.value = true
+    mockAccessFrozen.value = false
     autoReload.scopeToWorkspace('workspace-a')
     setConfig()
   })
@@ -114,6 +126,33 @@ describe('AutoReloadDialogContent', () => {
     expect(autoReload.config.monthlyBudgetCents).toBe(creditsToCents(11_000))
   })
 
+  it('uses the runtime cents calculation for the displayed reload count', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByRole('switch', { name: 'Monthly budget' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Monthly budget' }),
+      '15000'
+    )
+
+    expect(screen.getByText('Allows 2 reloads /mo')).toBeInTheDocument()
+  })
+
+  it('keeps a positive budget smaller than one reload valid', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByRole('switch', { name: 'Monthly budget' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Monthly budget' }),
+      '1000'
+    )
+
+    expect(screen.getByText('Allows 0 reloads /mo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
+  })
+
   it('removes a budget without disabling auto-reload', async () => {
     const user = userEvent.setup()
     setConfig({
@@ -164,9 +203,9 @@ describe('AutoReloadDialogContent', () => {
     setConfig({ monthlyBudgetCents: 50_000 })
     renderDialog('pt-BR')
 
-    expect(screen.getByLabelText('Add this amount of credits:')).toHaveValue(
-      '5.000'
-    )
+    const amount = screen.getByLabelText('Add this amount of credits:')
+    expect(amount).toHaveValue('5.000')
+    await fireEvent.update(amount, '5.000')
     await user.click(screen.getByRole('button', { name: 'Update' }))
 
     expect(autoReload.config).toMatchObject({
@@ -174,6 +213,16 @@ describe('AutoReloadDialogContent', () => {
       reloadCredits: 5000,
       monthlyBudgetCents: 50_000
     })
+  })
+
+  it('rejects non-canonical locale grouping', async () => {
+    renderDialog('pt-BR')
+
+    const amount = screen.getByLabelText('Add this amount of credits:')
+    await fireEvent.update(amount, '5.00')
+
+    expect(amount).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
   })
 
   it('localizes the USD currency indicator', async () => {
@@ -194,6 +243,47 @@ describe('AutoReloadDialogContent', () => {
     await user.click(screen.getByRole('button', { name: 'Update' }))
 
     expect(autoReload.config.reloadCredits).toBe(1055)
+  })
+
+  it.for(['-10', '1abc2', '1e3'])(
+    'rejects malformed whole-number input: %s',
+    async (raw) => {
+      renderDialog()
+
+      const amount = screen.getByLabelText('Add this amount of credits:')
+      await fireEvent.update(amount, raw)
+
+      expect(amount).toHaveAttribute('aria-invalid', 'true')
+      expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
+    }
+  )
+
+  it('rejects fractional USD input instead of saving a hidden amount', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByText('USD'))
+    const amount = screen.getByLabelText('Add this amount of credits:')
+    await fireEvent.update(amount, '5.49')
+
+    expect(amount).toHaveValue('5.49')
+    expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
+  })
+
+  it('rejects USD values that would overflow safe integer cents', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByText('USD'))
+    await user.click(screen.getByRole('switch', { name: 'Monthly budget' }))
+    const budget = screen.getByRole('textbox', { name: 'Monthly budget' })
+    await fireEvent.update(budget, String(Number.MAX_SAFE_INTEGER))
+
+    expect(budget).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Enter a valid whole number')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Update' })).toBeDisabled()
   })
 
   it('cancels without changing the configuration', async () => {
@@ -243,5 +333,46 @@ describe('AutoReloadDialogContent', () => {
     expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
       key: 'auto-reload'
     })
+  })
+
+  it('closes and rejects saving when access is revoked', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+    dialogStoreMocks.closeDialog.mockClear()
+
+    mockCanAccess.value = false
+    await nextTick()
+
+    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+      key: 'auto-reload'
+    })
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+    expect(autoReload.config.configured).toBe(false)
+  })
+
+  it('closes and rejects saving when billing becomes frozen', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+    dialogStoreMocks.closeDialog.mockClear()
+
+    mockAccessFrozen.value = true
+    await nextTick()
+
+    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+      key: 'auto-reload'
+    })
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+    expect(autoReload.config.configured).toBe(false)
+  })
+
+  it('closes and rejects saving when opened for a stale workspace', async () => {
+    const user = userEvent.setup()
+    renderDialog('en', 'workspace-b')
+
+    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+      key: 'auto-reload'
+    })
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+    expect(autoReload.config.configured).toBe(false)
   })
 })

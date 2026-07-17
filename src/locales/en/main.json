@@ -2934,7 +2934,8 @@
         "title": "Auto-reload credits",
         "unitLabel": "Display unit",
         "update": "Update",
-        "usd": "USD"
+        "usd": "USD",
+        "wholeNumberRequired": "Enter a valid whole number"
       },
       "disabled": "Disabled",
       "edit": "Edit",

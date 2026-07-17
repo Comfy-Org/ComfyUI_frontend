@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   deriveAutoReloadState,
+  getAffordableReloadCount,
   useAutoReload
 } from '@/platform/workspace/composables/useAutoReload'
 import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoReload'
@@ -14,6 +15,28 @@ const configured: AutoReloadConfig = {
   monthlyBudgetCents: 50_000,
   spentThisCycleCents: 4_800
 }
+
+describe('getAffordableReloadCount', () => {
+  it('uses the rounded credit cost in cents', () => {
+    expect(getAffordableReloadCount(7_109, 5_000)).toBe(2)
+    expect(getAffordableReloadCount(7_110, 5_000)).toBe(3)
+  })
+
+  it.for([
+    [Number.NaN, 5_000],
+    [Number.POSITIVE_INFINITY, 5_000],
+    [-1, 5_000],
+    [50_000, Number.NaN],
+    [50_000, Number.POSITIVE_INFINITY],
+    [50_000, -1],
+    [50_000, 0]
+  ])(
+    'returns zero for invalid inputs (%s, %s)',
+    ([budgetCents, reloadCredits]) => {
+      expect(getAffordableReloadCount(budgetCents, reloadCredits)).toBe(0)
+    }
+  )
+})
 
 describe('deriveAutoReloadState', () => {
   it('derives an enabled configuration without a budget', () => {
@@ -80,6 +103,55 @@ describe('deriveAutoReloadState', () => {
       budgetUsedFraction: 1,
       isPaused: false,
       isWarning: false
+    })
+  })
+
+  it('lower-clamps progress and guards invalid usage values', () => {
+    const negativeUsage = deriveAutoReloadState({
+      ...configured,
+      spentThisCycleCents: -1
+    })
+    expect(negativeUsage).toMatchObject({
+      budgetLeftCents: 50_000,
+      budgetUsedFraction: 0
+    })
+
+    const nonFiniteUsage = deriveAutoReloadState({
+      ...configured,
+      spentThisCycleCents: Number.POSITIVE_INFINITY
+    })
+    expect(nonFiniteUsage).toMatchObject({
+      budgetTotalCents: 50_000,
+      budgetSpentCents: 50_000,
+      budgetLeftCents: 0,
+      budgetUsedFraction: 1,
+      reloadsLeft: 0,
+      isPaused: true
+    })
+  })
+
+  it('fails closed for invalid budgets and reload amounts', () => {
+    const invalidBudget = deriveAutoReloadState({
+      ...configured,
+      monthlyBudgetCents: Number.NaN
+    })
+    expect(invalidBudget).toMatchObject({
+      hasBudget: true,
+      budgetTotalCents: 0,
+      budgetLeftCents: 0,
+      budgetUsedFraction: 1,
+      reloadsLeft: 0,
+      isPaused: true
+    })
+
+    const invalidReload = deriveAutoReloadState({
+      ...configured,
+      reloadCredits: Number.POSITIVE_INFINITY
+    })
+    expect(invalidReload).toMatchObject({
+      reloadCostCents: 0,
+      reloadsLeft: 0,
+      isPaused: true
     })
   })
 })

@@ -91,13 +91,34 @@ describe('dialogService Reka renderer opt-in', () => {
   })
 
   it('showAutoReloadDialog() uses the headless workspace dialog chrome', async () => {
-    await useDialogService().showAutoReloadDialog()
+    const canOpen = vi.fn(() => true)
+    await useDialogService().showAutoReloadDialog({
+      workspaceId: 'workspace-a',
+      canOpen
+    })
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('auto-reload')
+    expect(args.props).toEqual({ workspaceId: 'workspace-a' })
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.headless).toBe(true)
     expect(args.dialogComponentProps.contentClass).toContain('w-fit')
     expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
+    expect(canOpen).toHaveBeenCalledTimes(2)
+  })
+
+  it('showAutoReloadDialog() rejects a guard that becomes stale during lazy loading', async () => {
+    const canOpen = vi
+      .fn<() => boolean>()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+
+    await useDialogService().showAutoReloadDialog({
+      workspaceId: 'workspace-a',
+      canOpen
+    })
+
+    expect(canOpen).toHaveBeenCalledTimes(2)
+    expect(showDialog).not.toHaveBeenCalled()
   })
 
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {

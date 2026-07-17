@@ -131,13 +131,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, onScopeDispose, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import ProgressBar from '@/platform/workspace/components/dialogs/settings/ProgressBar.vue'
+import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -154,6 +155,8 @@ const {
   isConfigured,
   isEnabled,
   hasBudget,
+  budgetTotalCents,
+  budgetSpentCents,
   budgetUsedFraction,
   isPaused,
   isWarning,
@@ -161,21 +164,34 @@ const {
   scopeToWorkspace
 } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
+const { canConfigureNow } = useAutoReloadAccess()
 
 scopeToWorkspace(activeWorkspaceId.value)
 watch(activeWorkspaceId, scopeToWorkspace)
 
 const displayEnabled = computed(() => !frozen && isEnabled.value)
+let isAlive = true
+onScopeDispose(() => {
+  isAlive = false
+})
 
 const { showAutoReloadDialog } = useDialogService()
 
 function openConfig() {
-  if (frozen) return
-  void showAutoReloadDialog()
+  if (frozen || !canConfigureNow()) return
+  const workspaceId = activeWorkspaceId.value
+  void showAutoReloadDialog({
+    workspaceId,
+    canOpen: () =>
+      isAlive &&
+      activeWorkspaceId.value === workspaceId &&
+      canConfigureNow() &&
+      !frozen
+  })
 }
 
 function handleEnabledChange(value: boolean) {
-  if (frozen) return
+  if (frozen || !canConfigureNow()) return
   setEnabled(value)
 }
 
@@ -225,8 +241,8 @@ const percentSpentClass = computed(() =>
 )
 const budgetSpentLabel = computed(() =>
   t('workspacePanel.autoReload.tile.spentOfBudget', {
-    spent: fmtUsd(config.spentThisCycleCents),
-    budget: fmtUsd(config.monthlyBudgetCents ?? 0)
+    spent: fmtUsd(budgetSpentCents.value),
+    budget: fmtUsd(budgetTotalCents.value)
   })
 )
 </script>

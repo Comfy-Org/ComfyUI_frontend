@@ -53,9 +53,7 @@
         <label for="auto-reload-amount" class="text-sm text-muted-foreground">
           {{ $t('workspacePanel.autoReload.dialog.amountLabel') }}
         </label>
-        <div
-          :class="cn(fieldClass, reloadBelowMinimum && 'ring-1 ring-red-500')"
-        >
+        <div :class="cn(fieldClass, reloadError && 'ring-1 ring-red-500')">
           <i
             v-if="unit === 'credits'"
             class="icon-[lucide--coins] size-4 shrink-0 text-credit"
@@ -67,7 +65,7 @@
             id="auto-reload-amount"
             :value="reloadModel"
             inputmode="numeric"
-            :aria-invalid="reloadBelowMinimum"
+            :aria-invalid="!!reloadError"
             :aria-describedby="
               reloadError ? 'auto-reload-amount-error' : undefined
             "
@@ -231,16 +229,25 @@ import Button from '@/components/ui/button/Button.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
-import { useAutoReload } from '@/platform/workspace/composables/useAutoReload'
+import {
+  getAffordableReloadCount,
+  useAutoReload
+} from '@/platform/workspace/composables/useAutoReload'
+import { useAutoReloadAccess } from '@/platform/workspace/composables/useAutoReloadAccess'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 
 const { t, n: fmtNumber, locale } = useI18n()
+const { workspaceId } = defineProps<{ workspaceId: string | null }>()
 const dialogStore = useDialogStore()
 const { config, save, scopeToWorkspace } = useAutoReload()
 const { activeWorkspaceId } = storeToRefs(useTeamWorkspaceStore())
+const { canConfigure } = useAutoReloadAccess()
+const canConfigureWorkspace = computed(
+  () => canConfigure.value && activeWorkspaceId.value === workspaceId
+)
 scopeToWorkspace(activeWorkspaceId.value)
 
 type Unit = 'credits' | 'usd'
@@ -266,11 +273,7 @@ function fmtUsd(cents: number) {
   })
 }
 
-function parseNum(raw: string) {
-  const numberFormat = new Intl.NumberFormat(locale.value)
-  const parts = numberFormat.formatToParts(12_345.6)
-  const group = parts.find((part) => part.type === 'group')?.value
-  const decimal = parts.find((part) => part.type === 'decimal')?.value
+function normalizeLocaleDigits(raw: string) {
   let normalized = raw
   const digitFormat = new Intl.NumberFormat(locale.value, {
     useGrouping: false
@@ -278,11 +281,43 @@ function parseNum(raw: string) {
   for (let digit = 0; digit <= 9; digit++) {
     normalized = normalized.split(digitFormat.format(digit)).join(String(digit))
   }
-  if (group) normalized = normalized.split(group).join('')
-  if (decimal && decimal !== '.') normalized = normalized.replace(decimal, '.')
+  return normalized
+}
 
-  const parsed = Number(normalized.replace(/[^0-9.]/g, ''))
-  return Number.isFinite(parsed) ? parsed : 0
+function parseWholeNumber(raw: string) {
+  const trimmed = raw.trim()
+  if (trimmed === '') return { value: 0, invalid: false }
+
+  const numberFormat = new Intl.NumberFormat(locale.value, {
+    maximumFractionDigits: 0
+  })
+  const group = numberFormat
+    .formatToParts(12_345)
+    .find((part) => part.type === 'group')?.value
+  const localized = normalizeLocaleDigits(trimmed)
+  const ungrouped = group ? localized.split(group).join('') : localized
+
+  if (!/^\d+$/.test(ungrouped)) return { value: 0, invalid: true }
+
+  const value = Number(ungrouped)
+  if (!Number.isSafeInteger(value)) return { value: 0, invalid: true }
+
+  if (group && localized.includes(group)) {
+    const canonicalGrouped = normalizeLocaleDigits(numberFormat.format(value))
+    if (canonicalGrouped !== localized) return { value: 0, invalid: true }
+  }
+
+  return { value, invalid: false }
+}
+
+function normalizeInput(raw: string, convert: (value: number) => number) {
+  const parsed = parseWholeNumber(raw)
+  if (parsed.invalid) return parsed
+
+  const value = convert(parsed.value)
+  return Number.isSafeInteger(value) && value >= 0
+    ? { value, invalid: false }
+    : { value: 0, invalid: true }
 }
 
 const thresholdModel = ref(
@@ -294,6 +329,9 @@ const reloadModel = ref(
 const budgetModel = ref(
   budgetCents.value === 0 ? '' : fmtInt(centsToCredits(budgetCents.value))
 )
+const thresholdInputInvalid = ref(false)
+const reloadInputInvalid = ref(false)
+const budgetInputInvalid = ref(false)
 
 function inputValue(event: Event) {
   return (event.target as HTMLInputElement).value
@@ -301,23 +339,27 @@ function inputValue(event: Event) {
 
 function onThresholdInput(event: Event) {
   thresholdModel.value = inputValue(event)
-  thresholdCredits.value = Math.round(parseNum(thresholdModel.value))
+  const parsed = normalizeInput(thresholdModel.value, (value) => value)
+  thresholdCredits.value = parsed.value
+  thresholdInputInvalid.value = parsed.invalid
 }
 
 function onReloadInput(event: Event) {
   reloadModel.value = inputValue(event)
-  const parsed = parseNum(reloadModel.value)
-  reloadCredits.value =
-    unit.value === 'credits' ? Math.round(parsed) : usdToCredits(parsed)
+  const parsed = normalizeInput(reloadModel.value, (value) =>
+    unit.value === 'credits' ? value : usdToCredits(value)
+  )
+  reloadCredits.value = parsed.value
+  reloadInputInvalid.value = parsed.invalid
 }
 
 function onBudgetInput(event: Event) {
   budgetModel.value = inputValue(event)
-  const parsed = parseNum(budgetModel.value)
-  budgetCents.value =
-    unit.value === 'credits'
-      ? creditsToCents(Math.round(parsed))
-      : usdToCents(parsed)
+  const parsed = normalizeInput(budgetModel.value, (value) =>
+    unit.value === 'credits' ? creditsToCents(value) : usdToCents(value)
+  )
+  budgetCents.value = parsed.value
+  budgetInputInvalid.value = parsed.invalid
 }
 
 function onUnitChange(value: unknown) {
@@ -325,6 +367,8 @@ function onUnitChange(value: unknown) {
   if (value === unit.value) return
 
   unit.value = value
+  reloadInputInvalid.value = false
+  budgetInputInvalid.value = false
   reloadModel.value =
     reloadCredits.value === 0
       ? ''
@@ -340,11 +384,13 @@ function onUnitChange(value: unknown) {
 }
 
 function formatThresholdModel() {
+  if (thresholdInputInvalid.value) return
   thresholdModel.value =
     thresholdCredits.value === 0 ? '' : fmtInt(thresholdCredits.value)
 }
 
 function formatReloadModel() {
+  if (reloadInputInvalid.value) return
   if (reloadCredits.value === 0) {
     reloadModel.value = ''
     return
@@ -356,6 +402,7 @@ function formatReloadModel() {
 }
 
 function formatBudgetModel() {
+  if (budgetInputInvalid.value) return
   if (budgetCents.value === 0) {
     budgetModel.value = ''
     return
@@ -391,10 +438,10 @@ const usdSymbol = computed(
 )
 
 const allowsReloadsLabel = computed(() => {
-  const reloads =
-    reloadCredits.value > 0
-      ? Math.floor(centsToCredits(budgetCents.value) / reloadCredits.value)
-      : 0
+  const reloads = getAffordableReloadCount(
+    budgetCents.value,
+    reloadCredits.value
+  )
   return t('workspacePanel.autoReload.dialog.allowsReloads', reloads)
 })
 
@@ -405,6 +452,9 @@ const reloadBelowMinimum = computed(
   () => reloadCredits.value < MIN_RELOAD_CREDITS
 )
 const reloadError = computed(() => {
+  if (reloadInputInvalid.value) {
+    return t('workspacePanel.autoReload.dialog.wholeNumberRequired')
+  }
   if (!reloadBelowMinimum.value) return ''
   const amount =
     unit.value === 'credits'
@@ -412,16 +462,23 @@ const reloadError = computed(() => {
       : fmtUsd(MIN_RELOAD_CENTS)
   return t('workspacePanel.autoReload.dialog.minReload', { amount })
 })
-const thresholdError = computed(() =>
-  thresholdCredits.value > 0
+const thresholdError = computed(() => {
+  if (thresholdInputInvalid.value) {
+    return t('workspacePanel.autoReload.dialog.wholeNumberRequired')
+  }
+  return thresholdCredits.value > 0
     ? ''
     : t('workspacePanel.autoReload.dialog.thresholdRequired')
-)
-const budgetError = computed(() =>
-  budgetEnabled.value && budgetCents.value <= 0
+})
+const budgetError = computed(() => {
+  if (!budgetEnabled.value) return ''
+  if (budgetInputInvalid.value) {
+    return t('workspacePanel.autoReload.dialog.wholeNumberRequired')
+  }
+  return budgetCents.value <= 0
     ? t('workspacePanel.autoReload.dialog.budgetRequired')
     : ''
-)
+})
 
 const canUpdate = computed(
   () => !thresholdError.value && !reloadError.value && !budgetError.value
@@ -436,7 +493,19 @@ watch(activeWorkspaceId, (workspaceId) => {
   onClose()
 })
 
+watch(
+  canConfigureWorkspace,
+  (allowed) => {
+    if (!allowed) onClose()
+  },
+  { immediate: true }
+)
+
 function onUpdate() {
+  if (!canConfigureWorkspace.value) {
+    onClose()
+    return
+  }
   if (!canUpdate.value) return
   save({
     thresholdCredits: thresholdCredits.value,

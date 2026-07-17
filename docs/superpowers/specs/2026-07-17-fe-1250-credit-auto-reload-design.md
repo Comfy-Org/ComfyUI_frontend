@@ -24,8 +24,10 @@ integration because no auto-reload API exists in the current frontend schema.
 - Gate the mount with both `flags.billingControlEnabled` and
   `permissions.canManageSubscription`. When the flag is false, no new
   component or state is mounted and the existing billing UX is unchanged.
-- Freeze the section when the billing status is `paused` or the team plan has
-  lapsed. Frozen content is dimmed, reports Disabled, and cannot receive input.
+- Freeze the section when billing is `paused` or `inactive`, or when the
+  subscription has `ended`. A canceled subscription that is still active in
+  its paid-through period remains interactive. Frozen content is dimmed,
+  reports Disabled, and cannot receive input.
 - Keep the prototype's `useAutoReload` composable as the typed frontend wiring
   seam. It starts unconfigured and intentionally does not claim persistence.
   A later backend adapter can replace its in-memory mutations without changing
@@ -46,7 +48,8 @@ visible states are:
 - near limit, with amber percentage text;
 - budget exhausted, with red percentage text and a Paused badge;
 - configured but Off, with the inner tile dimmed;
-- subscription paused or lapsed, with the entire section frozen;
+- billing paused or inactive, or subscription ended, with the entire section
+  frozen; a canceled-but-still-active subscription remains interactive;
 - payment at risk, represented only by the existing shared billing banner;
 - member access, where the section is absent.
 
@@ -58,6 +61,26 @@ allowed by the budget. Removing a budget keeps auto-reload enabled.
 The section uses the prototype's container-query breakpoint. The integration
 container supplies `@container`, preserving the stacked narrow layout and the
 two-column wide layout without tying it to the viewport.
+
+## Adversarial hardening
+
+- Eligibility comes from live state rather than click-time snapshots. Capture
+  the current workspace identity on Setup or Update, then, after the lazy
+  dialog import resolves and again before save, verify that the workspace is
+  unchanged, `billing_control_enabled` is still on, the current user can still
+  manage the subscription, and the lifecycle is still interactive. Abort a
+  stale lazy open or close without mutation when any check fails.
+- Use one strict localized whole-number normalization path for validation and
+  save. Accept locale digits and canonical locale grouping, but reject signs,
+  decimals, exponents, non-finite or malformed values. USD inputs represent
+  whole dollars and are rejected when conversion would overflow safe integer
+  cents. Use the same rounded credit cost in cents for the dialog's allowed-
+  reload count and the configured-state calculation.
+- Preserve the prototype/source semantics: eligibility remains permission-
+  based so a Personal Free owner can configure auto-reload when the flag and
+  permission pass; a positive monthly budget smaller than one reload remains
+  valid and derives zero full reloads with a Paused state; and a configured Off
+  state continues to offer Update rather than Setup.
 
 ## Backend boundary
 

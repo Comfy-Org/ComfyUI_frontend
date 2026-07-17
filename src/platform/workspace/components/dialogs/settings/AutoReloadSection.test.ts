@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -12,6 +12,15 @@ import type { AutoReloadConfig } from '@/platform/workspace/composables/useAutoR
 
 const dialogMocks = vi.hoisted(() => ({
   showAutoReloadDialog: vi.fn()
+}))
+
+const mockCanAccess = ref(true)
+const mockAccessFrozen = ref(false)
+
+vi.mock('@/platform/workspace/composables/useAutoReloadAccess', () => ({
+  useAutoReloadAccess: () => ({
+    canConfigureNow: () => mockCanAccess.value && !mockAccessFrozen.value
+  })
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -55,6 +64,8 @@ function setConfig(overrides: Partial<AutoReloadConfig> = {}) {
 describe('AutoReloadSection', () => {
   beforeEach(() => {
     dialogMocks.showAutoReloadDialog.mockReset()
+    mockCanAccess.value = true
+    mockAccessFrozen.value = false
     autoReload.scopeToWorkspace('workspace-a')
     setConfig({ configured: false, enabled: false, monthlyBudgetCents: null })
   })
@@ -72,6 +83,25 @@ describe('AutoReloadSection', () => {
     await user.click(screen.getByRole('button', { name: 'Set up auto-reload' }))
 
     expect(dialogMocks.showAutoReloadDialog).toHaveBeenCalledOnce()
+    const [options] = dialogMocks.showAutoReloadDialog.mock.calls[0]
+    expect(options.workspaceId).toBe('workspace-a')
+    expect(options.canOpen()).toBe(true)
+
+    mockCanAccess.value = false
+    expect(options.canOpen()).toBe(false)
+  })
+
+  it('invalidates a pending lazy-open guard when the section unmounts', async () => {
+    const user = userEvent.setup()
+    const section = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Set up auto-reload' }))
+    const [options] = dialogMocks.showAutoReloadDialog.mock.calls[0]
+    expect(options.canOpen()).toBe(true)
+
+    section.unmount()
+
+    expect(options.canOpen()).toBe(false)
   })
 
   it('renders an enabled configuration without a budget', async () => {
@@ -122,6 +152,19 @@ describe('AutoReloadSection', () => {
     )
   })
 
+  it('renders normalized values for malformed financial state', () => {
+    setConfig({
+      monthlyBudgetCents: Number.NaN,
+      spentThisCycleCents: Number.POSITIVE_INFINITY
+    })
+    renderSection()
+
+    expect(screen.getByText('Paused')).toBeInTheDocument()
+    expect(screen.getByText('100% spent')).toBeInTheDocument()
+    expect(screen.getByText('$0 of $0')).toBeInTheDocument()
+    expect(screen.queryByText(/NaN|∞|Infinity/)).not.toBeInTheDocument()
+  })
+
   it('retains the configured values when switched off', async () => {
     const user = userEvent.setup()
     setConfig({ enabled: false })
@@ -134,6 +177,19 @@ describe('AutoReloadSection', () => {
     await user.click(
       screen.getByRole('switch', { name: 'Enable credit auto-reload' })
     )
+    expect(autoReload.isEnabled.value).toBe(true)
+  })
+
+  it('rejects an enabled-state change after access is revoked', async () => {
+    const user = userEvent.setup()
+    setConfig({ enabled: true })
+    renderSection()
+
+    mockCanAccess.value = false
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable credit auto-reload' })
+    )
+
     expect(autoReload.isEnabled.value).toBe(true)
   })
 

@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -53,7 +53,9 @@ const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
 const mockBillingControlEnabled = ref(false)
-const mockBillingStatus = ref<'paid' | 'paused' | 'payment_failed'>('paid')
+const mockBillingStatus = ref<
+  'paid' | 'paused' | 'payment_failed' | 'inactive'
+>('paid')
 const mockBillingSubscriptionStatus = ref<'active' | 'canceled' | 'ended'>(
   'active'
 )
@@ -154,17 +156,6 @@ vi.mock('@/composables/useFeatureFlags', () => ({
         return mockBillingControlEnabled.value
       }
     }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
-  useTeamPlan: () => ({
-    hasLapsedTeamPlan: computed(
-      () =>
-        !mockIsInPersonalWorkspace.value &&
-        (mockBillingSubscriptionStatus.value === 'canceled' ||
-          mockBillingSubscriptionStatus.value === 'ended')
-    )
   })
 }))
 
@@ -349,6 +340,30 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
+  it('removes auto-reload when the billing control kill switch turns off', async () => {
+    mockBillingControlEnabled.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    mockBillingControlEnabled.value = false
+    await nextTick()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('removes auto-reload when subscription management permission is revoked', async () => {
+    mockBillingControlEnabled.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    mockCanManageSubscription.value = false
+    await nextTick()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
   it('keeps auto-reload hidden from members', () => {
     mockBillingControlEnabled.value = true
     mockCanManageSubscription.value = false
@@ -368,19 +383,39 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
-  it.for(['canceled', 'ended'] as const)(
-    'freezes auto-reload for a %s team subscription',
-    (status) => {
-      mockBillingControlEnabled.value = true
-      mockBillingSubscriptionStatus.value = status
-      renderComponent()
+  it('keeps auto-reload interactive while an active cancellation runs to term', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = true
+    renderComponent()
 
-      expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
-        'data-frozen',
-        'true'
-      )
-    }
-  )
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'false'
+    )
+  })
+
+  it('freezes auto-reload after the subscription has ended', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingSubscriptionStatus.value = 'ended'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
+  })
+
+  it('freezes auto-reload while billing is inactive', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingStatus.value = 'inactive'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
+  })
 
   it('leaves auto-reload interactive when payment is at risk', () => {
     mockBillingControlEnabled.value = true
