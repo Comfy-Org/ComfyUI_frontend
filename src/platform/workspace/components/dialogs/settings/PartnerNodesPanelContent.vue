@@ -3,7 +3,7 @@
     <BillingStatusBanner />
 
     <div
-      class="flex min-h-16 items-center justify-between gap-4 rounded-xl border border-interface-stroke/60 bg-secondary-background/20 px-4 py-3"
+      class="flex min-h-16 flex-col items-start gap-4 rounded-xl bg-secondary-background/20 px-4 py-3 @2xl:flex-row @2xl:items-center @2xl:justify-between"
     >
       <div class="min-w-0">
         <div
@@ -16,15 +16,30 @@
           id="partner-node-restrictions-description"
           class="mt-1 text-sm text-muted-foreground"
         >
-          {{ $t('workspacePanel.partnerNodes.restrictions.description') }}
+          {{
+            $t(
+              restrictionsEnabled
+                ? 'workspacePanel.partnerNodes.restrictions.descriptions.restricted'
+                : 'workspacePanel.partnerNodes.restrictions.descriptions.allowAll'
+            )
+          }}
         </div>
       </div>
-      <Switch
-        :model-value="restrictionsEnabled"
+      <ToggleGroup
+        type="single"
+        :model-value="restrictionsEnabled ? 'restricted' : 'allowAll'"
+        class="w-full shrink-0 rounded-lg bg-secondary-background p-0.5 @2xl:w-auto"
         aria-labelledby="partner-node-restrictions-label"
         aria-describedby="partner-node-restrictions-description"
         @update:model-value="requestRestrictionsChange"
-      />
+      >
+        <ToggleGroupItem value="allowAll" size="lg">
+          {{ $t('workspacePanel.partnerNodes.restrictions.modes.allowAll') }}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="restricted" size="lg">
+          {{ $t('workspacePanel.partnerNodes.restrictions.modes.restricted') }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <template v-if="restrictionsEnabled">
@@ -303,6 +318,8 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerBadge from '@/platform/workspace/components/dialogs/settings/PartnerBadge.vue'
 import { usePartnerNodes } from '@/platform/workspace/composables/usePartnerNodes'
@@ -359,11 +376,12 @@ function applyBulk(value: boolean) {
   void setSelectedEnabled(value)
 }
 
-async function requestRestrictionsChange(enabled: boolean) {
-  if (!enabled) {
+async function requestRestrictionsChange(mode: unknown) {
+  if (mode === 'allowAll' && restrictionsEnabled.value) {
     await setRestrictionsEnabled(false)
     return
   }
+  if (mode !== 'restricted' || restrictionsEnabled.value) return
 
   const confirmed = await confirm({
     title: t('workspacePanel.partnerNodes.restrictions.confirm.title'),

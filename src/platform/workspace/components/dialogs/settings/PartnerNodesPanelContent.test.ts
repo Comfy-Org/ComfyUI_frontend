@@ -132,11 +132,21 @@ describe('PartnerNodesPanelContent', () => {
     mockRestrictionsEnabled.value = false
     renderComponent()
 
+    expect(screen.getByRole('group')).toHaveAccessibleName(
+      'Partner node access'
+    )
     expect(
-      screen.getByRole('switch', {
-        name: 'Restrict access to partner nodes'
-      })
-    ).toHaveAttribute('aria-checked', 'false')
+      screen.getByRole('button', { name: 'Unrestricted' })
+    ).toHaveAttribute('data-state', 'on')
+    expect(screen.getByRole('button', { name: 'Restricted' })).toHaveAttribute(
+      'data-state',
+      'off'
+    )
+    expect(
+      screen.getByText(
+        'All partner nodes are available, including new releases.'
+      )
+    ).toBeInTheDocument()
     expect(
       screen.queryByPlaceholderText('Search partner nodes')
     ).not.toBeInTheDocument()
@@ -150,11 +160,7 @@ describe('PartnerNodesPanelContent', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(
-      screen.getByRole('switch', {
-        name: 'Restrict access to partner nodes'
-      })
-    )
+    await user.click(screen.getByRole('button', { name: 'Restricted' }))
 
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,11 +180,7 @@ describe('PartnerNodesPanelContent', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(
-      screen.getByRole('switch', {
-        name: 'Restrict access to partner nodes'
-      })
-    )
+    await user.click(screen.getByRole('button', { name: 'Restricted' }))
 
     expect(mockSetRestrictionsEnabled).not.toHaveBeenCalled()
   })
@@ -187,13 +189,28 @@ describe('PartnerNodesPanelContent', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(
-      screen.getByRole('switch', {
-        name: 'Restrict access to partner nodes'
-      })
-    )
+    expect(
+      screen.getByText(
+        'Only enabled partner nodes are available. New releases start disabled.'
+      )
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Unrestricted' }))
 
     expect(mockSetRestrictionsEnabled).toHaveBeenCalledWith(false)
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  it('keeps the current mode when its selected option is clicked', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    const restricted = screen.getByRole('button', { name: 'Restricted' })
+    expect(restricted).toHaveAttribute('data-state', 'on')
+
+    await user.click(restricted)
+
+    expect(mockSetRestrictionsEnabled).not.toHaveBeenCalled()
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 

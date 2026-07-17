@@ -2888,8 +2888,15 @@
         "enabled": "Enabled"
       },
       "restrictions": {
-        "label": "Restrict access to partner nodes",
-        "description": "Choose which partner nodes members of this workspace can use.",
+        "label": "Partner node access",
+        "descriptions": {
+          "allowAll": "All partner nodes are available, including new releases.",
+          "restricted": "Only enabled partner nodes are available. New releases start disabled."
+        },
+        "modes": {
+          "allowAll": "Unrestricted",
+          "restricted": "Restricted"
+        },
         "confirm": {
           "title": "Restrict access to partner nodes?",
           "message": "Once restrictions are enabled, newly released models will be unavailable until you enable them manually.",
