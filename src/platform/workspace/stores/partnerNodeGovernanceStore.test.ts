@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type * as PartnerNodePolicyApi from '@/platform/workspace/api/partnerNodePolicyApi'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
@@ -106,6 +107,7 @@ describe('partnerNodeGovernanceStore', () => {
   })
 
   afterEach(() => {
+    delete LiteGraph.registered_node_types.LegacyGovernedNode
     store?.$dispose()
     store = undefined
   })
@@ -158,6 +160,47 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isNodeDisabled('DisabledNode')).toBe(true)
     expect(store.isNodeDisabled('UnreviewedNode')).toBe(true)
     expect(store.isNodeDisabled('CoreNode')).toBe(false)
+  })
+
+  it('filters disabled nodes out of discovery', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      nodes: { AllowedNode: true, DisabledNode: false }
+    } satisfies PartnerNodePolicy)
+
+    store = await createLoadedStore()
+    const nodeDefStore = useNodeDefStore()
+
+    expect(nodeDefStore.visibleNodeDefs.map((node) => node.name)).toEqual([
+      'AllowedNode',
+      'CoreNode'
+    ])
+    expect(nodeDefStore.nodeSearchService.searchNode('DisabledNode')).toEqual(
+      []
+    )
+  })
+
+  it('keeps the litegraph legacy menu in sync with policy changes', async () => {
+    class LegacyGovernedNode extends LGraphNode {}
+    LiteGraph.registered_node_types.LegacyGovernedNode = LegacyGovernedNode
+    useNodeDefStore().addNodeDef(nodeDef('LegacyGovernedNode'))
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      nodes: { LegacyGovernedNode: false }
+    } satisfies PartnerNodePolicy)
+
+    store = await createLoadedStore()
+
+    expect(LegacyGovernedNode.skip_list).toBe(true)
+
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: false,
+      nodes: { LegacyGovernedNode: false }
+    } satisfies PartnerNodePolicy)
+    await store.loadPolicy()
+    await nextTick()
+
+    expect(LegacyGovernedNode.skip_list).toBe(false)
   })
 
   it('fails closed for a 503 from an enforcing workspace', async () => {

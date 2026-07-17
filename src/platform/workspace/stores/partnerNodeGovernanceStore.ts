@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   getPartnerNodePolicy,
   PartnerNodePolicyApiError,
@@ -24,6 +25,8 @@ export type PartnerNodePolicyStatus =
   | 'configured'
   | 'unavailable'
   | 'error'
+
+const DISCOVERY_FILTER_ID = 'workspace.partner-node-governance'
 
 export const usePartnerNodeGovernanceStore = defineStore(
   'partnerNodeGovernance',
@@ -71,6 +74,34 @@ export const usePartnerNodeGovernanceStore = defineStore(
         policy.value.nodes[nodeType] !== true
       )
     }
+
+    nodeDefStore.registerNodeDefFilter({
+      id: DISCOVERY_FILTER_ID,
+      name: 'Workspace partner-node governance',
+      predicate: (nodeDef) => !isNodeDisabled(nodeDef.name)
+    })
+
+    const legacyHiddenNodeTypes = new Set<string>()
+    watchEffect(() => {
+      const showDevOnly = nodeDefStore.showDevOnly
+      for (const nodeDef of Object.values(nodeDefStore.nodeDefsByName)) {
+        if (!nodeDef.api_node) continue
+        const nodeType = LiteGraph.registered_node_types[nodeDef.name]
+        if (!nodeType) continue
+
+        if (isNodeDisabled(nodeDef.name)) {
+          if (!nodeType.skip_list) {
+            nodeType.skip_list = true
+            legacyHiddenNodeTypes.add(nodeDef.name)
+          }
+          continue
+        }
+
+        if (legacyHiddenNodeTypes.delete(nodeDef.name)) {
+          nodeType.skip_list = nodeDef.dev_only && !showDevOnly
+        }
+      }
+    })
 
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
