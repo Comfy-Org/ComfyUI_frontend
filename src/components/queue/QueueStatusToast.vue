@@ -8,7 +8,8 @@
     status="progress"
     :failed-count="failedCount"
     :expanded="expanded"
-    @toggle-expand="expanded = !expanded"
+    hide-chevron
+    progress-class="bg-base-foreground"
   >
     <template #action>
       <div
@@ -26,6 +27,25 @@
       >
         <i class="icon-[lucide--square] size-4 shrink-0" />
         {{ t('processToast.stop') }}
+      </Button>
+      <Button
+        v-tooltip.bottom="expandTooltip"
+        variant="textonly"
+        size="icon-sm"
+        :aria-label="expanded ? t('processToast.collapse') : t('processToast.expand')"
+        data-testid="queue-status-expand"
+        @click="expanded = !expanded"
+      >
+        <i
+          :class="
+            cn(
+              'size-3.5',
+              expanded
+                ? 'icon-[lucide--chevron-up]'
+                : 'icon-[lucide--chevron-down]'
+            )
+          "
+        />
       </Button>
     </template>
 
@@ -114,6 +134,7 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const queueStore = useQueueStore()
@@ -148,6 +169,11 @@ const jobPercent = (job: JobListItem) =>
 
 const stopTooltip = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
+)
+const expandTooltip = computed(() =>
+  buildTooltipConfig(
+    expanded.value ? t('processToast.collapse') : t('processToast.expand')
+  )
 )
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
