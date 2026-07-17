@@ -12,17 +12,8 @@ const curatedIds = Object.keys(templateOverrides) as CuratedTemplateId[]
 
 const baseUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-/**
- * The resolver's curated overrides were once guarded by committed copies of the
- * upstream template JSONs, which drifted silently from what the backend serves.
- * Instead we fetch each real template the backend serves and verify the resolver
- * against it: the overrides must point at nodes that exist on the live graph, and
- * the pure heuristics must still agree with the overrides. A divergence means an
- * upstream restructure or a stale override — fix `templateOverrides`.
- *
- * This only fetches JSON and runs the pure resolver, so it uses the base request
- * fixture rather than booting the app.
- */
+// Verifies the resolver against the real templates the backend serves, so a
+// stale override or an upstream restructure fails loudly instead of drifting.
 test.describe(
   'first-run tour resolver — live curated templates',
   { tag: ['@slow', '@workflow'] },
@@ -33,8 +24,6 @@ test.describe(
       }) => {
         const templateUrl = new URL(`/templates/${id}.json`, baseUrl).toString()
 
-        // A curated template the tour depends on must be served; a 404 is a real
-        // failure (a stale curated id or a backend that dropped it), not a skip.
         const response = await request.get(templateUrl)
         expect(
           response.ok(),
@@ -55,16 +44,14 @@ test.describe(
         if (pin.sourceNodeId) {
           expect(overridden.source?.nodeId).toBe(pin.sourceNodeId)
         }
-        // The prompt spotlights a root-graph host (the widget lives in a subgraph),
-        // so the target must be a real top-level node, not the pinned inner id.
+        // The prompt spotlight targets the root-graph host, not the inner node.
         if (overridden.prompt) {
           expect(nodeIds.has(String(overridden.prompt.subgraphNodeId))).toBe(
             true
           )
         }
 
-        // Drift guard: the pure heuristics must independently agree with the
-        // pinned override on the live template.
+        // Drift guard: heuristics must independently agree with the override.
         const heuristic = resolveRoles(workflow)
         expect(heuristic.prompt?.innerNodeId).toBe(pin.promptNodeId)
         expect(heuristic.engine?.nodeId).toBe(pin.engineNodeId)
