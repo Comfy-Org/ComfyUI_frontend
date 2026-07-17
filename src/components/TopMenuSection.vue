@@ -91,7 +91,7 @@
         </div>
         <ErrorOverlay />
         <QueueProgressOverlay
-          v-if="isQueueProgressOverlayEnabled"
+          v-if="showLegacyQueueUi && isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
           :menu-hovered="isTopMenuHovered"
         />
@@ -99,23 +99,26 @@
     </div>
 
     <div class="flex flex-col items-end gap-1">
-      <Teleport
-        v-if="inlineProgressSummaryTarget"
-        :to="inlineProgressSummaryTarget"
-      >
-        <div
-          class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
+      <QueueStatusToast v-if="isActionbarEnabled" class="pr-1" />
+      <template v-if="showLegacyQueueUi">
+        <Teleport
+          v-if="inlineProgressSummaryTarget"
+          :to="inlineProgressSummaryTarget"
         >
-          <QueueInlineProgressSummary
-            :hidden="shouldHideInlineProgressSummary"
-          />
-        </div>
-      </Teleport>
-      <QueueInlineProgressSummary
-        v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
-        class="pr-1"
-        :hidden="shouldHideInlineProgressSummary"
-      />
+          <div
+            class="pointer-events-none absolute inset-x-0 top-full mt-1 flex justify-end pr-1"
+          >
+            <QueueInlineProgressSummary
+              :hidden="shouldHideInlineProgressSummary"
+            />
+          </div>
+        </Teleport>
+        <QueueInlineProgressSummary
+          v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
+          class="pr-1"
+          :hidden="shouldHideInlineProgressSummary"
+        />
+      </template>
       <QueueNotificationBannerHost
         v-if="shouldShowQueueNotificationBanners"
         class="pr-1"
@@ -132,6 +135,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueStatusToast from '@/components/queue/QueueStatusToast.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
@@ -227,6 +231,9 @@ const isIntegratedTabBar = computed(
 )
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
+// Replaced by the separate QueueStatusToast (ProcessToast) below the run bar.
+// Toggle back on to restore the legacy in-bar queue overlay / inline summary.
+const showLegacyQueueUi = false
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
