@@ -57,7 +57,7 @@ const parseInfeBox = (
     const { str: item_name, length: name_len } = readNullTerminatedString(
       dataView,
       offset,
-      dataView.byteLength
+      end
     )
     offset += name_len
 
@@ -118,6 +118,23 @@ const parseIinfBox = (
   }
 }
 
+function readIlocInteger(
+  dataView: DataView,
+  offset: number,
+  size: number
+): number {
+  if (size === 0) return 0
+  if (size === 4) return dataView.getUint32(offset)
+  if (size === 8) {
+    const value = dataView.getBigUint64(offset)
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error('iloc integer exceeds JavaScript safe integer range')
+    }
+    return Number(value)
+  }
+  throw new Error(`Unsupported iloc integer size: ${size}`)
+}
+
 const parseIlocBox = (
   dataView: DataView,
   range: IsobmffBoxContentRange
@@ -154,7 +171,7 @@ const parseIlocBox = (
     const data_reference_index = dataView.getUint16(offset)
     offset += 2
 
-    const base_offset = base_offset_size > 0 ? dataView.getUint32(offset) : 0 // Simplified
+    const base_offset = readIlocInteger(dataView, offset, base_offset_size)
     offset += base_offset_size
 
     const extent_count = dataView.getUint16(offset)
@@ -163,11 +180,12 @@ const parseIlocBox = (
     const extents = []
     for (let j = 0; j < extent_count; j++) {
       if ((version === 1 || version === 2) && index_size > 0) {
+        readIlocInteger(dataView, offset, index_size)
         offset += index_size
       }
-      const extent_offset = dataView.getUint32(offset) // Simplified
+      const extent_offset = readIlocInteger(dataView, offset, offset_size)
       offset += offset_size
-      const extent_length = dataView.getUint32(offset) // Simplified
+      const extent_length = readIlocInteger(dataView, offset, length_size)
       offset += length_size
       extents.push({ extent_offset, extent_length })
     }
@@ -271,7 +289,9 @@ function setXmpMetadataValue(
   localName: string,
   value: string
 ) {
-  const metadataKey = localName.toLowerCase()
+  const metadataKey = localName
+    .slice(localName.lastIndexOf(':') + 1)
+    .toLowerCase()
 
   try {
     if (metadataKey === ComfyMetadataTags.PROMPT.toLowerCase()) {
