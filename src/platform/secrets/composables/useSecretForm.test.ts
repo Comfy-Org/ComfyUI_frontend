@@ -1,7 +1,11 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SecretMetadata, SecretProvider } from '../types'
+import type {
+  SecretMetadata,
+  SecretProvider,
+  SecretProviderInfo
+} from '../types'
 import { useSecretForm } from './useSecretForm'
 
 vi.mock('vue-i18n', () => ({
@@ -184,6 +188,203 @@ describe('useSecretForm', () => {
       expect(civitai?.disabled).toBe(false)
     })
 
+    it('falls back to all base providers when availableProviders is not loaded', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => null,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
+    it('shows no options when the server returns an empty allowlist', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([])
+    })
+
+    it('restricts options to the providers returned by the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'civitai' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['civitai'])
+    })
+
+    it('dedupes repeated provider ids from the server', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [
+          { id: 'civitai' },
+          { id: 'civitai' },
+          { id: 'huggingface' }
+        ],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'civitai',
+        'huggingface'
+      ])
+    })
+
+    it('renders server-listed BYOK providers with labels and logos', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'runway' }, { id: 'gemini' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'runway',
+          label: 'Runway',
+          logo: '/assets/images/runway.svg',
+          disabled: false
+        },
+        {
+          value: 'gemini',
+          label: 'Google Gemini',
+          logo: '/assets/images/gemini.svg',
+          disabled: false
+        }
+      ])
+    })
+
+    it('passes a server-listed provider absent from the local registry through with its raw id as label and no logo', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'brand-new-provider' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toEqual([
+        {
+          value: 'brand-new-provider',
+          label: 'brand-new-provider',
+          logo: undefined,
+          disabled: false
+        }
+      ])
+      expect(providerOptions.value[0]?.logo).toBeUndefined()
+    })
+
+    it('omits BYOK providers the server does not list', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'huggingface' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const values = providerOptions.value.map((o) => o.value)
+      expect(values).toEqual(['huggingface'])
+      expect(values).not.toContain('runway')
+      expect(values).not.toContain('gemini')
+    })
+
+    it('reacts to availableProviders changing', () => {
+      const visible = ref(true)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value).toHaveLength(2)
+
+      availableProviders.value = [{ id: 'huggingface' }]
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+    })
+
+    it('clears a selection the resolved allowlist no longer offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
+      const { form, providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'civitai'
+      availableProviders.value = [{ id: 'huggingface' }]
+      await nextTick()
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
+      expect(form.provider).toBeNull()
+    })
+
+    it('keeps a selection the resolved allowlist still offers', async () => {
+      const visible = ref(true)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
+      const { form } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => availableProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      availableProviders.value = [{ id: 'huggingface' }, { id: 'civitai' }]
+      await nextTick()
+
+      expect(form.provider).toBe('huggingface')
+    })
+
+    it('ignores the availableProviders filter in edit mode', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'edit',
+        secret: () => createMockSecret({ provider: 'huggingface' }),
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'civitai' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(providerOptions.value.map((o) => o.value)).toEqual([
+        'huggingface',
+        'civitai'
+      ])
+    })
+
     it('updates disabled state when existingProviders changes', () => {
       const visible = ref(true)
       const existingProviders = ref<SecretProvider[]>(['huggingface'])
@@ -203,6 +404,281 @@ describe('useSecretForm', () => {
       expect(
         providerOptions.value.find((o) => o.value === 'huggingface')?.disabled
       ).toBe(false)
+    })
+  })
+
+  describe('providerHelp', () => {
+    it('uses the generic hint when no provider is selected', () => {
+      const visible = ref(true)
+      const { providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      // t() is mocked to echo the key.
+      expect(providerHelp.value).toBe('secrets.providerHint')
+    })
+
+    it('uses provider-specific help when a BYOK provider is selected', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'runway' }, { id: 'gemini' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'runway'
+      expect(providerHelp.value).toBe('secrets.providerHelp.runway')
+
+      form.provider = 'gemini'
+      expect(providerHelp.value).toBe('secrets.providerHelp.gemini')
+    })
+
+    it('falls back to the generic hint for a provider without a help key', () => {
+      const visible = ref(true)
+      const { form, providerHelp } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'huggingface'
+      expect(providerHelp.value).toBe('secrets.providerHint')
+    })
+  })
+
+  describe('server-driven provider metadata', () => {
+    it('prefers the server-provided label over the registry label', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini', label: 'Gemini (Vertex)' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(
+        providerOptions.value.find((o) => o.value === 'gemini')?.label
+      ).toBe('Gemini (Vertex)')
+    })
+
+    it('defaults selectedInputType to text', () => {
+      const visible = ref(true)
+      const { form, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(selectedInputType.value).toBe('text')
+      form.provider = 'gemini'
+      expect(selectedInputType.value).toBe('text')
+    })
+
+    it('reports json_file input type for a json_file provider', () => {
+      const visible = ref(true)
+      const { form, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      expect(selectedInputType.value).toBe('json_file')
+    })
+  })
+
+  describe('json_file credential input', () => {
+    const vertexProviders: SecretProviderInfo[] = [
+      { id: 'gemini', input_type: 'json_file' }
+    ]
+
+    it('loads file contents into the secret value', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const file = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(file)
+
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+      expect(fileName.value).toBe('sa.json')
+    })
+
+    it('rejects invalid JSON for a json_file provider', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      form.secretValue = 'not json'
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+    })
+
+    it('rejects JSON that is not an object for a json_file provider', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      form.secretValue = '["not", "an", "object"]'
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+    })
+
+    it('rejects a file larger than the size cap', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const oversized = new File(['x'.repeat(1024 * 1024 + 1)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('reports an error when the file read fails', async () => {
+      const visible = ref(true)
+      const { errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const unreadable = {
+        name: 'sa.json',
+        size: 20,
+        text: () => Promise.reject(new Error('read failed'))
+      } as unknown as File
+      await loadSecretFromFile(unreadable)
+
+      expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
+    })
+
+    it('clears an uploaded credential when the provider changes', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      const file = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(file)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      form.provider = 'huggingface'
+      await nextTick()
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('discards a file read superseded by a provider change', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+      form.provider = 'huggingface'
+      await nextTick()
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('submits valid JSON for a json_file provider', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+      const { form, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      form.secretValue = '{"type":"service_account"}'
+
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Vertex SA',
+        secret_value: '{"type":"service_account"}',
+        provider: 'gemini'
+      })
     })
   })
 

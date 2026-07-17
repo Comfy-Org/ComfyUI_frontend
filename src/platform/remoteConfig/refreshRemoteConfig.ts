@@ -1,8 +1,14 @@
 import {
+  cachedBillingControlEnabled,
   cachedTeamWorkspacesEnabled,
   remoteConfig,
   remoteConfigState
 } from './remoteConfig'
+
+// Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
+// A same-origin GET against the local comfyui server should resolve in well under a second;
+// on timeout the catch below clears remoteConfig and consumers fall back to build-time defaults.
+const FEATURES_FETCH_TIMEOUT_MS = 5_000
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -12,10 +18,14 @@ interface RefreshRemoteConfigOptions {
   useAuth?: boolean
 }
 
-async function fetchRemoteConfig(useAuth: boolean): Promise<Response> {
-  if (!useAuth) return fetch('/api/features', { cache: 'no-store' })
-
+async function fetchRemoteConfig(
+  useAuth: boolean,
+  signal?: AbortSignal
+): Promise<Response> {
   const { api } = await import('@/scripts/api')
+  if (!useAuth) {
+    return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
+  }
   return api.fetchApi('/features', { cache: 'no-store' })
 }
 
@@ -33,18 +43,27 @@ export async function refreshRemoteConfig(
 ): Promise<void> {
   const { useAuth = true } = options
 
+  const controller = useAuth ? null : new AbortController()
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), FEATURES_FETCH_TIMEOUT_MS)
+    : null
+
   try {
-    const response = await fetchRemoteConfig(useAuth)
+    const response = await fetchRemoteConfig(useAuth, controller?.signal)
 
     if (response.ok) {
       const config = await response.json()
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
-      if (useAuth)
+      if (useAuth) {
         cachedTeamWorkspacesEnabled.value = Boolean(
           config.team_workspaces_enabled
         )
+        cachedBillingControlEnabled.value = Boolean(
+          config.billing_control_enabled
+        )
+      }
       return
     }
 
@@ -59,5 +78,7 @@ export async function refreshRemoteConfig(
     window.__CONFIG__ = {}
     remoteConfig.value = {}
     remoteConfigState.value = 'error'
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId)
   }
 }

@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
   test('Displays linear controls when app mode active', async ({
@@ -16,7 +17,9 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
   test('Run button visible in linear mode', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([])
 
-    await expect(comfyPage.page.getByTestId('linear-run-button')).toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.linear.runButton)
+    ).toBeVisible()
   })
 
   test('Workflow info section visible', async ({ comfyPage }) => {

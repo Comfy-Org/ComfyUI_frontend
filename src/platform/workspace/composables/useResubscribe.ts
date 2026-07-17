@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
 
 /**
  * Reactivates a cancelled-but-still-active subscription and surfaces success or
@@ -16,6 +17,9 @@ export function useResubscribe() {
   const isResubscribing = ref(false)
 
   async function handleResubscribe() {
+    useTelemetry()?.trackResubscribeClicked({
+      source: 'settings_billing_panel'
+    })
     isResubscribing.value = true
     try {
       await resubscribe()

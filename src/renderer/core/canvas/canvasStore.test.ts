@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
@@ -8,9 +9,13 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
+const { appModeState } = vi.hoisted(() => ({
+  appModeState: {} as { isAppMode: Ref<boolean> }
+}))
+
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
-    isAppMode: { value: false },
+    isAppMode: appModeState.isAppMode,
     setMode: vi.fn()
   })
 }))
@@ -43,6 +48,7 @@ describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
+    appModeState.isAppMode = ref(false)
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
     vi.clearAllMocks()

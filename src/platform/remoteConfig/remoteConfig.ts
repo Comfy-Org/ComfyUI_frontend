@@ -59,3 +59,8 @@ export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
   'team_workspaces_enabled' satisfies `${ServerFeatureFlag.TEAM_WORKSPACES_ENABLED}`,
   undefined
 )
+
+export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
+  'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
+  undefined
+)

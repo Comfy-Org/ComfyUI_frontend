@@ -5,7 +5,9 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -18,7 +20,7 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 // Lazy loaders for dialogs - components are loaded on first use
@@ -339,6 +341,28 @@ export const useDialogService = () => {
       return
     }
 
+    // Members can't top up a team workspace, so they get a read-only
+    // "ask your workspace admins" notice instead of the purchase dialog.
+    if (
+      type.value === 'workspace' &&
+      !useWorkspaceUI().permissions.value.canTopUp
+    ) {
+      return dialogStore.showDialog({
+        key: 'insufficient-credits-member',
+        component: InsufficientCreditsMemberDialog,
+        props: {
+          onClose: () =>
+            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
+    }
+
     const component =
       type.value === 'workspace'
         ? TopUpCreditsDialogContentWorkspace
@@ -442,9 +466,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }

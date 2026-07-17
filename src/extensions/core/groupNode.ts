@@ -815,8 +815,10 @@ export class GroupNodeConfig {
  * `configure`. The load-time migration unpacks each instance via
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
-class GroupNodeHandler {
+export class GroupNodeHandler {
   node: LGraphNode
   groupData: GroupNodeConfig
 

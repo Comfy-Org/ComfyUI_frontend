@@ -1,7 +1,9 @@
 import { computed, reactive, readonly } from 'vue'
+import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedBillingControlEnabled,
   cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -30,6 +32,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
@@ -44,6 +48,26 @@ function resolveFlag<T>(
   const override = getDevOverride<T>(flagKey)
   if (override !== undefined) return override
   return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
+}
+
+/**
+ * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
+ * Cloud build it is always false; during the auth window it falls back to the
+ * cached session value so anonymous bootstrap config cannot route the user to
+ * the wrong backend before authenticated config confirms the flag.
+ */
+function resolveAuthGatedFlag(
+  flagKey: string,
+  remoteConfigValue: boolean | undefined,
+  cachedValue: Ref<boolean | undefined>
+): boolean {
+  const override = getDevOverride<boolean>(flagKey)
+  if (override !== undefined) return override
+
+  if (!isCloud) return false
+  if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
+
+  return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
 
 /**
@@ -104,18 +128,10 @@ export function useFeatureFlags() {
      * and prevents race conditions during initialization.
      */
     get teamWorkspacesEnabled() {
-      const override = getDevOverride<boolean>(
-        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED
-      )
-      if (override !== undefined) return override
-
-      if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value)
-        return cachedTeamWorkspacesEnabled.value ?? false
-
-      return (
-        remoteConfig.value.team_workspaces_enabled ??
-        api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
+        remoteConfig.value.team_workspaces_enabled,
+        cachedTeamWorkspacesEnabled
       )
     },
     get userSecretsEnabled() {
@@ -172,6 +188,28 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
+        false
+      )
+    },
+    /**
+     * Whether personal workspaces use the workspace-scoped billing flow. While
+     * false (default), personal workspaces stay on the legacy per-user billing
+     * flow; team workspaces are unaffected.
+     */
+    get billingControlEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.BILLING_CONTROL_ENABLED,
+        remoteConfig.value.billing_control_enabled,
+        cachedBillingControlEnabled
+      )
+    },
+    get freeTierJobAllowanceEnabled() {
+      const config = remoteConfig.value as typeof remoteConfig.value & {
+        free_tier_job_allowance_enabled?: boolean
+      }
+      return resolveFlag(
+        ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
+        config.free_tier_job_allowance_enabled,
         false
       )
     },

@@ -38,7 +38,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
         label: 'English'
       }
     ],
-    // href: '#',
+    href: 'https://comfy.org/workflows/8f2cf0df5da6-8f2cf0df5da6/',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {

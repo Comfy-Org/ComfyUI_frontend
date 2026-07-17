@@ -84,7 +84,7 @@ function reconcileNodeErrorFlags(
 }
 
 export function useNodeErrorFlagSync(
-  lastNodeErrors: Ref<Record<string, NodeError> | null>,
+  nodeErrors: Ref<Record<string, NodeError> | null>,
   missingModelStore: ReturnType<typeof useMissingModelStore>,
   missingMediaStore: ReturnType<typeof useMissingMediaStore>
 ): () => void {
@@ -95,7 +95,7 @@ export function useNodeErrorFlagSync(
 
   const stop = watch(
     [
-      lastNodeErrors,
+      nodeErrors,
       () => missingModelStore.missingModelNodeIds,
       () => missingMediaStore.missingMediaNodeIds,
       showErrorsTab
@@ -108,7 +108,7 @@ export function useNodeErrorFlagSync(
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
         app.rootGraph,
-        lastNodeErrors.value,
+        nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
           : new Set(),

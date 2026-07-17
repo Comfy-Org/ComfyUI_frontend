@@ -25,13 +25,15 @@ export enum ServerFeatureFlag {
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth'
+  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled'
 }
 
 export function useFeatureFlags() {
   return {
     flags: {
-      teamWorkspacesEnabled: true
+      teamWorkspacesEnabled: true,
+      billingControlEnabled: true
     }
   }
 }

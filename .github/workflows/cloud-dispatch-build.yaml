@@ -32,12 +32,13 @@ jobs:
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name != 'pull_request' ||
-       (github.event.action == 'labeled' &&
-        contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)) ||
-       (github.event.action == 'synchronize' &&
-        (contains(github.event.pull_request.labels.*.name, 'preview') ||
-         contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
-         contains(github.event.pull_request.labels.*.name, 'preview-gpu'))))
+       (github.event.pull_request.head.repo.fork == false &&
+        ((github.event.action == 'labeled' &&
+          contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)) ||
+         (github.event.action == 'synchronize' &&
+          (contains(github.event.pull_request.labels.*.name, 'preview') ||
+           contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
+           contains(github.event.pull_request.labels.*.name, 'preview-gpu'))))))
     runs-on: ubuntu-latest
     steps:
       - name: Build client payload

@@ -10,14 +10,24 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
+  PaymentIntentSource,
+  SubscriptionCheckoutType
+} from '@/platform/telemetry/types'
+import type {
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+interface SelectedTeamCheckout {
+  stop: TeamPlanSelection
+  checkoutType: SubscriptionCheckoutType
+}
 
 /**
  * Which screen the `preview` step shows. Only a change prorates: a team change
@@ -45,9 +55,12 @@ export function findPlanSlug(
   return plan?.slug ?? null
 }
 
-export function useSubscriptionCheckout(emit: {
-  (e: 'close', subscribed: boolean): void
-}) {
+export function useSubscriptionCheckout(
+  emit: {
+    (e: 'close', subscribed: boolean): void
+  },
+  paymentIntentSource?: PaymentIntentSource
+) {
   const { t } = useI18n()
   const toast = useToast()
   const {
@@ -68,13 +81,16 @@ export function useSubscriptionCheckout(emit: {
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
-  const selectedTeamStop = ref<TeamPlanSelection | null>(null)
+  const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
-  const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
+  const selectedTeamStop = computed(
+    () => selectedTeamCheckout.value?.stop ?? null
+  )
+  const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
 
   const previewVariant = computed<PreviewVariant>(() => {
-    if (selectedTeamStop.value) {
+    if (selectedTeamCheckout.value) {
       return previewData.value ? 'team-change' : 'team-new'
     }
     if (previewData.value) {
@@ -154,7 +170,10 @@ export function useSubscriptionCheckout(emit: {
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
-    selectedTeamStop.value = payload.stop
+    selectedTeamCheckout.value = {
+      stop: payload.stop,
+      checkoutType: payload.isChange ? 'change' : 'new'
+    }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
@@ -182,7 +201,7 @@ export function useSubscriptionCheckout(emit: {
   function handleBackToPricing() {
     checkoutStep.value = 'pricing'
     previewData.value = null
-    selectedTeamStop.value = null
+    selectedTeamCheckout.value = null
   }
 
   function handleSuccessClose() {
@@ -190,20 +209,34 @@ export function useSubscriptionCheckout(emit: {
   }
 
   async function handleSubscription() {
-    if (!selectedTierKey.value) return
+    const tierKey = selectedTierKey.value
+    if (!tierKey) return
+
+    const billingCycle = selectedBillingCycle.value
+    const checkoutType =
+      previewData.value &&
+      previewData.value.transition_type !== 'new_subscription'
+        ? 'change'
+        : 'new'
 
     isSubscribing.value = true
     try {
-      const planSlug = getApiPlanSlug(
-        selectedTierKey.value,
-        selectedBillingCycle.value
-      )
+      const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
 
+      if (response) {
+        trackWorkspaceCheckoutStarted({
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType,
+          billingOpId: response.billing_op_id,
+          paymentIntentSource
+        })
+      }
       await handleSubscribeResponse(response)
     } catch (error) {
       showSubscribeError(error)
@@ -269,8 +302,8 @@ export function useSubscriptionCheckout(emit: {
   }
 
   async function handleTeamSubscription() {
-    const stop = selectedTeamStop.value
-    if (!stop?.id) {
+    const teamCheckout = selectedTeamCheckout.value
+    if (!teamCheckout?.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -279,16 +312,28 @@ export function useSubscriptionCheckout(emit: {
       return
     }
 
+    const { stop, checkoutType } = teamCheckout
+    const billingCycle = selectedBillingCycle.value
+
     isSubscribing.value = true
     try {
-      const planSlug = getTeamPlanSlug(selectedBillingCycle.value)
+      const planSlug = getTeamPlanSlug(billingCycle)
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
-        billingCycle: selectedBillingCycle.value,
+        billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
 
+      if (response) {
+        trackWorkspaceCheckoutStarted({
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType,
+          billingOpId: response.billing_op_id,
+          paymentIntentSource
+        })
+      }
       await handleSubscribeResponse(response)
     } catch (error) {
       showSubscribeError(error)
@@ -298,6 +343,10 @@ export function useSubscriptionCheckout(emit: {
   }
 
   async function handleResubscribe() {
+    telemetry?.trackResubscribeClicked({
+      source: 'pricing_dialog',
+      payment_intent_source: paymentIntentSource
+    })
     isResubscribing.value = true
     try {
       await resubscribe()

@@ -140,7 +140,10 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
 
     // Shows loading affordances
@@ -169,7 +172,10 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      {
+        openInNewTab: false,
+        paymentIntentSource: 'deep_link'
+      }
     )
   })
 
@@ -180,7 +186,8 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
     expect(mockPerformTeamSubscriptionCheckout).toHaveBeenCalledWith(
       'team_700',
-      'yearly'
+      'yearly',
+      { paymentIntentSource: 'deep_link' }
     )
     // Team never goes through the personal checkout path
     expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
