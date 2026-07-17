@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -121,8 +122,9 @@ function createMember(id: string): WorkspaceMember {
   }
 }
 
-function renderComponent() {
+function renderComponent(defaultTab?: string) {
   return render(WorkspacePanelContent, {
+    props: { defaultTab },
     global: {
       plugins: [i18n],
       stubs: { WorkspaceProfilePic: true }
@@ -239,5 +241,23 @@ describe('WorkspacePanelContent allowlist tab', () => {
     expect(
       screen.queryByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
     ).toBeNull()
+  })
+
+  it('falls back to a valid tab when allowlist access is lost', async () => {
+    renderComponent('allowlist')
+
+    expect(
+      screen.getByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
+    ).toHaveAttribute('aria-selected', 'true')
+
+    mockWorkspaceRole.value = 'member'
+    await nextTick()
+
+    expect(
+      screen.queryByRole('tab', { name: 'workspacePanel.tabs.allowlist' })
+    ).toBeNull()
+    expect(
+      screen.getByRole('tab', { name: 'workspacePanel.tabs.planCredits' })
+    ).toHaveAttribute('aria-selected', 'true')
   })
 })

@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
@@ -108,6 +108,12 @@ const showAllowlistTab = computed(
   () => !!governedWorkspaceId.value && workspaceRole.value === 'owner'
 )
 const activeTab = ref(defaultTab)
+
+watch(showAllowlistTab, (isVisible) => {
+  if (!isVisible && activeTab.value === 'allowlist') {
+    activeTab.value = defaultTab === 'allowlist' ? 'plan' : defaultTab
+  }
+})
 
 const showMembersTabCount = computed(
   () => hasTeamPlan.value && members.value.length > 1

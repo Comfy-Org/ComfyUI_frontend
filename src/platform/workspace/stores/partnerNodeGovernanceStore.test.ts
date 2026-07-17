@@ -320,6 +320,60 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.policy).toBeNull()
   })
 
+  it('does not install a save response after switching away and back', async () => {
+    store = await createLoadedStore()
+    let resolveSave!: (policy: PartnerNodePolicy) => void
+    mockUpdatePartnerNodePolicy.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSave = resolve
+      })
+    )
+
+    const save = store.savePolicy({
+      enforcementEnabled: true,
+      nodes: { AllowedNode: true }
+    })
+    activateWorkspace('workspace-two')
+    await vi.waitFor(() =>
+      expect(store?.governedWorkspaceId).toBe('workspace-two')
+    )
+    activateWorkspace('workspace-one')
+    await vi.waitFor(() =>
+      expect(store?.governedWorkspaceId).toBe('workspace-one')
+    )
+    resolveSave({
+      enforcementEnabled: true,
+      nodes: { AllowedNode: true }
+    })
+
+    await expect(save).resolves.toBe(false)
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+    expect(store.policy).toBeNull()
+  })
+
+  it('ignores a stale save rejection after switching workspaces', async () => {
+    store = await createLoadedStore()
+    let rejectSave!: (error: Error) => void
+    mockUpdatePartnerNodePolicy.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectSave = reject
+      })
+    )
+
+    const save = store.savePolicy({
+      enforcementEnabled: true,
+      nodes: { AllowedNode: true }
+    })
+    activateWorkspace('workspace-two')
+    await vi.waitFor(() =>
+      expect(store?.governedWorkspaceId).toBe('workspace-two')
+    )
+    rejectSave(new Error('Conflict'))
+
+    await expect(save).resolves.toBe(false)
+    expect(store.error).toBeNull()
+  })
+
   it('refuses to save before governance is ready', async () => {
     mockFlags.partnerNodeGovernanceEnabled = false
     store = usePartnerNodeGovernanceStore()

@@ -9,6 +9,10 @@ const partnerNodePolicyResponseSchema = z.object({
   nodes: z.record(z.string(), z.boolean())
 })
 
+export type PartnerNodePolicyResponse = z.infer<
+  typeof partnerNodePolicyResponseSchema
+>
+
 export interface PartnerNodePolicy {
   enforcementEnabled: boolean
   nodes: Readonly<Record<string, boolean>>

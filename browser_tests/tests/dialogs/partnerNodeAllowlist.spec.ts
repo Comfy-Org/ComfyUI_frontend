@@ -1,7 +1,9 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+
+import type { PartnerNodePolicyResponse } from '@/platform/workspace/api/partnerNodePolicyApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
@@ -80,17 +82,23 @@ test.describe('Partner node allowlist', { tag: '@cloud' }, () => {
       )
     )
     await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
-      route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
+      route.fulfill(
+        jsonRoute({
+          assets: [],
+          total: 0,
+          has_more: false
+        } satisfies ListAssetsResponse)
+      )
     )
 
-    let policy = {
+    let policy: PartnerNodePolicyResponse = {
       enforcement_enabled: false,
       nodes: { FluxFill: false, FluxExpand: true, VeoVideo: true }
-    }
+    } satisfies PartnerNodePolicyResponse
     const updates: unknown[] = []
     await page.route('**/api/workspace/partner-node-policy', (route) => {
       if (route.request().method() === 'PUT') {
-        policy = route.request().postDataJSON() as typeof policy
+        policy = route.request().postDataJSON() as PartnerNodePolicyResponse
         updates.push(policy)
       }
       return route.fulfill(jsonRoute(policy))
@@ -112,9 +120,6 @@ test.describe('Partner node allowlist', { tag: '@cloud' }, () => {
         enforcement_enabled: false,
         nodes: { FluxFill: true, FluxExpand: true, VeoVideo: true }
       }
-    ] satisfies Array<{
-      enforcement_enabled: PartnerNodePolicy['enforcementEnabled']
-      nodes: PartnerNodePolicy['nodes']
-    }>)
+    ] satisfies PartnerNodePolicyResponse[])
   })
 })

@@ -37,6 +37,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
     const status = ref<PartnerNodePolicyStatus>('inactive')
     const error = shallowRef<Error | null>(null)
     let loadVersion = 0
+    let workspaceVersion = 0
 
     const governedWorkspaceId = computed(() => {
       const workspace = workspaceStore.activeWorkspace
@@ -127,12 +128,29 @@ export const usePartnerNodeGovernanceStore = defineStore(
 
     async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<boolean> {
       const workspaceId = governedWorkspaceId.value
+      const version = workspaceVersion
       if (!workspaceId || policyWorkspaceId.value !== workspaceId) {
         throw new Error('Partner node governance is not ready')
       }
 
-      const savedPolicy = await updatePartnerNodePolicy(nextPolicy)
-      if (governedWorkspaceId.value !== workspaceId) return false
+      let savedPolicy: PartnerNodePolicy
+      try {
+        savedPolicy = await updatePartnerNodePolicy(nextPolicy)
+      } catch (saveError) {
+        if (
+          workspaceVersion !== version ||
+          governedWorkspaceId.value !== workspaceId
+        ) {
+          return false
+        }
+        throw saveError
+      }
+      if (
+        workspaceVersion !== version ||
+        governedWorkspaceId.value !== workspaceId
+      ) {
+        return false
+      }
 
       policy.value = savedPolicy
       policyWorkspaceId.value = workspaceId
@@ -141,7 +159,14 @@ export const usePartnerNodeGovernanceStore = defineStore(
       return true
     }
 
-    watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
+    watch(
+      governedWorkspaceId,
+      () => {
+        workspaceVersion++
+        void loadPolicy()
+      },
+      { immediate: true, flush: 'sync' }
+    )
 
     return {
       policy,
