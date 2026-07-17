@@ -12,9 +12,9 @@ type SubgraphInputLinkContext = {
  * Resolves the interior link of a subgraph input.
  *
  * Accepts either the input name or the concrete `SubgraphInput` slot. Pass the
- * slot when the caller already holds it: resolving by name matches the first
- * slot sharing that name, which is the wrong target when subgraph inputs have
- * duplicate names (user rename or imported graph).
+ * slot whenever the caller holds it: string lookup is first-match only, so
+ * resolving by name silently walks the wrong slot's links when subgraph inputs
+ * share a name (user rename or imported graph).
  */
 export function resolveSubgraphInputLink<TResult>(
   node: LGraphNode,

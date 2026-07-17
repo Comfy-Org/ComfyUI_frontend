@@ -167,7 +167,7 @@ function isSamePromotedInput(
       subgraphNode,
       linkedInput,
       ({ getTargetWidget }) =>
-        getTargetWidget() === orderedWidget || matchesHostWidgetId || undefined
+        matchesHostWidgetId || getTargetWidget() === orderedWidget || undefined
     ) ?? false
   )
 }
