@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 
 test.describe('Image Crop', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -95,15 +96,15 @@ test.describe('Image Crop', () => {
       const newBounds = { x: 50, y: 100, width: 200, height: 300 }
 
       await comfyPage.page.evaluate(
-        ({ bounds }) => {
-          const node = window.app!.graph.getNodeById(1)
+        ({ nodeId, bounds }) => {
+          const node = window.app!.graph.getNodeById(nodeId)
           const widget = node?.widgets?.find((w) => w.type === 'imagecrop')
           if (widget) {
             widget.value = bounds
             widget.callback?.(bounds)
           }
         },
-        { bounds: newBounds }
+        { nodeId: toNodeId(1), bounds: newBounds }
       )
       await comfyPage.nextFrame()
 

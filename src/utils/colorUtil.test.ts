@@ -9,8 +9,11 @@ import {
   hsbToRgb,
   hsvaToHex,
   isTransparent,
+  luminance,
   parseToRgb,
+  readableTextColor,
   rgbToHex,
+  textOnColor,
   toHexFromFormat
 } from '@/utils/colorUtil'
 
@@ -282,6 +285,28 @@ describe('colorUtil conversions', () => {
 
     it('prefixes a bare 6-digit hex with #', () => {
       expect(toHexFromFormat('abcdef', 'hex')).toBe('#abcdef')
+    })
+  })
+
+  describe('luminance', () => {
+    it('computes perceptual luminance', () => {
+      expect(luminance({ r: 255, g: 0, b: 0 })).toBeCloseTo(76.245, 2)
+      expect(luminance({ r: 255, g: 255, b: 255 })).toBeCloseTo(255, 2)
+    })
+  })
+
+  describe('readableTextColor / textOnColor', () => {
+    it('lightens dark colors', () => {
+      expect(readableTextColor('#000000')).not.toBe('rgb(0,0,0)')
+    })
+
+    it('leaves already-light colors unchanged', () => {
+      expect(readableTextColor('#ffffff')).toBe('rgb(255,255,255)')
+    })
+
+    it('flips text color for contrast', () => {
+      expect(textOnColor('#ffffff')).toBe('#000')
+      expect(textOnColor('#000000')).toBe('#fff')
     })
   })
 })

@@ -2,6 +2,8 @@ import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
+import { toNodeId } from '@/types/nodeId'
+
 const lastProps = ref<Record<string, unknown> | null>(null)
 
 vi.mock('@/components/load3d/Load3D.vue', () => ({
@@ -39,9 +41,10 @@ describe('Load3DAdvanced', () => {
   })
 
   it('forwards widget and nodeId to the inner Load3D', () => {
+    const nodeId = toNodeId('a')
     const widget = { node: { id: 'a', type: 'Load3DAdvanced' } }
-    render(Load3DAdvanced, { props: { widget: widget as never, nodeId: 'a' } })
+    render(Load3DAdvanced, { props: { widget: widget as never, nodeId } })
     expect(lastProps.value?.widget).toEqual(widget)
-    expect(lastProps.value?.nodeId).toBe('a')
+    expect(lastProps.value?.nodeId).toBe(nodeId)
   })
 })

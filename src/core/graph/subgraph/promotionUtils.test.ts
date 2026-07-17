@@ -13,6 +13,7 @@ import {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toLinkId } from '@/types/linkId'
 import type { WidgetId } from '@/types/widgetId'
 
 function promotedInputNames(host: {
@@ -522,6 +523,22 @@ describe('hasUnpromotedWidgets', () => {
 
     expect(hasUnpromotedWidgets(subgraphNode)).toBe(false)
   })
+
+  it('returns false (does not throw) when SubgraphNode is detached', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+    const interiorNode = new LGraphNode('InnerNode')
+    subgraph.add(interiorNode)
+    interiorNode.addWidget('text', 'seed', '123', () => {})
+
+    parentGraph.remove(subgraphNode)
+
+    expect(subgraphNode.graph).toBeNull()
+    expect(() => hasUnpromotedWidgets(subgraphNode)).not.toThrow()
+    expect(hasUnpromotedWidgets(subgraphNode)).toBe(false)
+  })
 })
 
 describe('isLinkedPromotion', () => {
@@ -784,7 +801,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
   it('drops projection but keeps slot and external link when host slot is externally connected', () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
     const hostInput = host.inputs[0]
-    hostInput.link = 9999
+    hostInput.link = toLinkId(9999)
     const promotedInputId = hostInput.widgetId
 
     expect(host.subgraph.inputs).toHaveLength(1)

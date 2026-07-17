@@ -169,10 +169,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
-    const dialogStore = useDialogStore()
-    dialogStore.closeDialog({ key: 'subscription-required' })
-    dialogStore.closeDialog({ key: 'top-up-credits' })
-    useSettingsDialog().show('workspace')
+    // A subscription checkout shows its own success step in the pricing dialog,
+    // so leave it open. Top-ups have no such step: close and surface settings.
+    if (operation.type === 'topup') {
+      useDialogStore().closeDialog({ key: 'top-up-credits' })
+      useSettingsDialog().show('workspace')
+    }
 
     const toastStore = useToastStore()
     const messageKey =

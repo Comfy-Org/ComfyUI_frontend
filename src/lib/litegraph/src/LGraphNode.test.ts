@@ -18,6 +18,7 @@ import {
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -118,7 +119,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing inputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.inputs.length).toEqual(1)
   })
 
@@ -138,7 +139,7 @@ describe('LGraphNode', () => {
 
     // Should not override existing outputs
     node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    expect(node.id).toEqual(toNodeId(1))
     expect(node.outputs.length).toEqual(1)
   })
   test('should not allow configuring id to -1', () => {
@@ -184,7 +185,7 @@ describe('LGraphNode', () => {
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
       expect(node1.outputs[0].links?.length).toBe(0)
-      expect(graph._links.has(link?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
       node1.connect(0, node2, 0)
@@ -247,8 +248,8 @@ describe('LGraphNode', () => {
       expect(disconnectedSpecific).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(sourceNode.outputs[0].links?.length).toBe(1)
-      expect(graph._links.has(link1?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link2?.id ?? -1)).toBe(true)
+      expect(graph._links.has(link1!.id)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(true)
 
       // Test disconnecting by slot name
       const link3 = sourceNode.connect(1, targetNode1, 0)
@@ -270,8 +271,8 @@ describe('LGraphNode', () => {
       expect(sourceNode.outputs[0].links).toBeNull()
       expect(targetNode1.inputs[0].link).toBeNull()
       expect(targetNode2.inputs[0].link).toBeNull()
-      expect(graph._links.has(link2?.id ?? -1)).toBe(false)
-      expect(graph._links.has(link4?.id ?? -1)).toBe(false)
+      expect(graph._links.has(link2!.id)).toBe(false)
+      expect(graph._links.has(link4!.id)).toBe(false)
 
       // Test disconnecting non-existent slot
       const invalidDisconnect = sourceNode.disconnectOutput(999)

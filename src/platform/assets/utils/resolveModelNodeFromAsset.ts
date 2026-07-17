@@ -17,7 +17,7 @@ export interface ResolveModelNodeError {
   details?: Record<string, unknown>
 }
 
-export interface ResolvedModelNode {
+interface ResolvedModelNode {
   provider: ModelNodeProvider
   filename: string
 }

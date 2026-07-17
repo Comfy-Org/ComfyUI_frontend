@@ -8,6 +8,10 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
+  login: vi.fn().mockResolvedValue(undefined),
+  loginWithGoogle: vi.fn().mockResolvedValue(undefined),
+  loginWithGithub: vi.fn().mockResolvedValue(undefined),
+  register: vi.fn().mockResolvedValue(undefined),
   logout: vi.fn().mockResolvedValue(undefined)
 }))
 
@@ -28,10 +32,12 @@ const mockDialogService = vi.hoisted(() => ({
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
-  'auth/email-already-in-use'
+  'auth/email-already-in-use',
+  'auth/user-not-found'
 ])
 
 vi.mock('@/i18n', () => ({
@@ -48,7 +54,9 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => undefined)
+  useTelemetry: vi.fn(() => ({
+    trackAuthFailed: mockTrackAuthFailed
+  }))
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -81,9 +89,19 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: <TArgs extends unknown[], TReturn>(
-      action: (...args: TArgs) => Promise<TReturn> | TReturn
-    ) => action,
+    wrapWithErrorHandlingAsync:
+      <TArgs extends unknown[], TReturn>(
+        action: (...args: TArgs) => Promise<TReturn> | TReturn,
+        errorHandler?: (error: unknown) => void
+      ) =>
+      async (...args: TArgs) => {
+        try {
+          return await action(...args)
+        } catch (error) {
+          ;(errorHandler ?? mockToastErrorHandler)(error)
+          return undefined
+        }
+      },
     toastErrorHandler: mockToastErrorHandler
   })
 }))
@@ -156,10 +174,13 @@ describe('useAuthActions.logout', () => {
     )
     const { logout } = useAuthActions()
 
-    await expect(logout()).rejects.toThrow('auth.signOut.saveFailed:a.json')
+    await logout()
 
     expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(1)
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
+    expect(mockToastErrorHandler).toHaveBeenCalledExactlyOnceWith(
+      new Error('auth.signOut.saveFailed:a.json')
+    )
   })
 
   it('saves every modified workflow before signing out when user picks Save (true)', async () => {
@@ -206,6 +227,85 @@ describe('useAuthActions.logout', () => {
   })
 })
 
+describe('useAuthActions auth flow error telemetry', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    mockWorkflowStore.modifiedWorkflows = []
+  })
+
+  it('tracks email sign-in Firebase failures and still shows the error toast', async () => {
+    const error = new FirebaseError('auth/user-not-found', 'msg')
+    mockAuthStore.login.mockRejectedValueOnce(error)
+    const { signInWithEmail } = useAuthActions()
+
+    await expect(
+      signInWithEmail('user@example.com', 'password')
+    ).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'auth/user-not-found',
+      auth_action: 'email_sign_in'
+    })
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.auth/user-not-found'
+    })
+  })
+
+  it('tracks unknown errors for email sign-up failures', async () => {
+    const error = new Error('network failed')
+    mockAuthStore.register.mockRejectedValueOnce(error)
+    const { signUpWithEmail } = useAuthActions()
+
+    await expect(
+      signUpWithEmail('user@example.com', 'password')
+    ).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'unknown',
+      auth_action: 'email_sign_up'
+    })
+  })
+
+  it('tracks Google sign-up failures separately from sign-in failures', async () => {
+    const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
+    mockAuthStore.loginWithGoogle.mockRejectedValueOnce(error)
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle({ isNewUser: true })).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'google_sign_up'
+    })
+  })
+
+  it('tracks GitHub sign-up failures separately from sign-in failures', async () => {
+    const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
+    mockAuthStore.loginWithGithub.mockRejectedValueOnce(error)
+    const { signInWithGithub } = useAuthActions()
+
+    await expect(signInWithGithub({ isNewUser: true })).resolves.toBeUndefined()
+
+    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'github_sign_up'
+    })
+  })
+
+  it('does not track auth failures for logout failures', async () => {
+    const error = new FirebaseError('auth/network-request-failed', 'msg')
+    mockAuthStore.logout.mockRejectedValueOnce(error)
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockTrackAuthFailed).not.toHaveBeenCalled()
+  })
+})
+
 describe('useAuthActions.reportError', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -223,6 +323,40 @@ describe('useAuthActions.reportError', () => {
       detail: 'auth.errors.auth/invalid-credential'
     })
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('shows the signupBlocked message when the error carries the signup_blocked token', () => {
+    const { reportError } = useAuthActions()
+
+    // The backend wraps the rejection in a generic code; we match the token in
+    // the message, so it must win over the auth.errors.${code} fallback.
+    reportError(
+      new FirebaseError(
+        'auth/internal-error',
+        'Account creation is temporarily unavailable. (ref: signup_blocked)'
+      )
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('matches the signup_blocked token case-insensitively', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('auth/internal-error', 'rejected: SIGNUP_BLOCKED')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
   })
 
   it('shows the generic fallback for an unknown Firebase auth code', () => {

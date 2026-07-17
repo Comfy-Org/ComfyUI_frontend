@@ -1,20 +1,24 @@
 # Appendix: ECS Pattern Survey
 
-_A survey of mainstream Entity Component System libraries — bitECS, miniplex,
-koota, ECSY, Thyseus, and Bevy — captured during the world-consolidation
-analysis that shipped slice 1 of
-[ADR 0008](../adr/0008-entity-component-system.md). This appendix records
-which structural patterns our `src/world/` substrate adopts, which it
-deliberately departs from, and where the trade-offs are load-bearing rather
-than incidental. Thyseus is called out specifically because it is the most
-Bevy-shaped of the TypeScript ECSs surveyed — its `Commands` parameter is the
-closest external analog to the command layer ADR 0003 / ADR 0008 are
-converging on, so it gets dedicated treatment in §2.5 and §3.5._
+> **Superseded (PR 12617).** The single `src/world/` substrate this appendix
+> analyzes was removed; the project adopted dedicated Pinia stores
+> (`widgetValueStore`, `domWidgetStore`, `layoutStore`, `nodeOutputStore`,
+> `subgraphNavigationStore`, `previewExposureStore`) keyed by string IDs. §1
+> (the external library survey) remains valid reference material and supports
+> the dedicated-store direction — its first unanimous finding, that components
+> live with the code that owns them, is exactly what per-domain stores do. §2–§4
+> describe the deleted `src/world/` substrate (`world.ts`, `entityIds.ts`,
+> `widgetComponents.ts`, `WidgetEntityId`) and are retained for historical
+> rationale only; read their references to "the World" as "the relevant
+> dedicated store."
 
-The in-code anchors for the load-bearing constraints discussed below are the
-doc-comments in [src/world/world.ts](../../src/world/world.ts) (storage
-strategy) and [src/world/entityIds.ts](../../src/world/entityIds.ts) (identity
-contract) — see §3 below.
+_A survey of mainstream Entity Component System libraries — bitECS, miniplex,
+koota, ECSY, Thyseus, and Bevy. This appendix records which structural patterns
+the surveyed libraries share, which the project departs from, and where the
+trade-offs carry weight. Thyseus is called out specifically because it is the
+most Bevy-shaped of the TypeScript ECSs surveyed — its `Commands` parameter is
+the closest external analog to the command layer ADR 0003 / ADR 0008 converge
+on, so it gets dedicated treatment in §2.5 and §3.5._
 
 ---
 
@@ -49,9 +53,9 @@ Two structural patterns are unanimous across the surveyed libraries:
    because it commits to a full system-execution runtime, not just
    storage.
 
-Our slice-1 end state — five source files under
-[src/world/](../../src/world/), ~14 exported names total — sits squarely in
-this band.
+The dedicated-store end state — each store a small, focused module keyed by a
+string ID — sits squarely in this band: a small surface per store, with
+component shapes defined next to the store that owns them.
 
 ---
 
@@ -141,12 +145,11 @@ export function spawnEntities(commands: Commands) {
 ```
 
 `commands.spawn()`, `.add(component)`, and `.remove(component)` enqueue
-deferred mutations against a command buffer; the World applies them at
+deferred mutations against a command buffer; the substrate applies them at
 defined sync points in the schedule. This is the same shape Bevy uses
-and is the closest direct external analog to the mutation layer
-[ADR 0003](../adr/0003-crdt-based-layout-system.md) and the
-[World API and Command Layer](./ecs-world-command-api.md) describe for
-this codebase.
+and is the closest direct external analog to the per-store mutation layer
+[ADR 0003](../adr/0003-crdt-based-layout-system.md) describes for this
+codebase (realized as store mutation APIs such as `useLayoutMutations()`).
 
 We deliberately match the **shape** of this pattern: external callers
 submit commands; only the executor calls the World's imperative
@@ -172,8 +175,8 @@ yet:
 
 The point of calling Thyseus out separately is that when ADR 0008 lands
 its command executor slice, "what does this look like in Thyseus?" is a
-load-bearing comparison point — not a curiosity. Diverging from the
-Bevy/Thyseus shape there should require an explicit justification, not
+comparison point worth taking seriously. Diverging from the
+Bevy/Thyseus shape there should require an explicit justification rather than
 silent drift.
 
 ---
@@ -181,7 +184,7 @@ silent drift.
 ## 3. Patterns We Explicitly Do NOT Adopt
 
 Each of the following is a real industry idiom we considered and rejected
-on load-bearing grounds. None of these are pure performance trade-offs.
+on structural grounds. None of these are pure performance trade-offs.
 
 ### 3.1 Replace-on-write usage idioms
 
@@ -215,8 +218,8 @@ SoA storage spreads each component's fields across parallel typed arrays,
 so the per-entity "row object" is reconstructed on read. **A future
 migration to SoA would lose the proxy on the row object** — and with it
 the shared-reactive-identity contract that `BaseWidget._state` and the
-`widgetValueStore` facade rely on. This is a load-bearing constraint, not
-just a perf optimization decision.
+`widgetValueStore` facade rely on. This constraint carries real weight
+beyond a perf optimization decision.
 
 The contract is pinned in the doc-comment at the top of
 [src/world/world.ts](../../src/world/world.ts) — copied here for
@@ -261,7 +264,7 @@ The contract is pinned in the doc-comment at the top of
  * Entity IDs are deterministic, content-addressed, and string-prefix
  * encoded — NOT opaque numeric IDs (cf. bitECS, koota, miniplex).
  *
- * `widgetEntityId(rootGraphId, nodeId, name)` is load-bearing:
+ * `widgetEntityId(rootGraphId, nodeId, name)` carries real weight:
  * consumers consistently pass `rootGraph.id` so widgets viewed at
  * different subgraph depths share identity. Migrating to numeric IDs
  * would break cross-subgraph value sharing. See ADR 0008 and

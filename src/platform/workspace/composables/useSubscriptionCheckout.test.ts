@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
@@ -74,7 +75,10 @@ const {
   mockFetchBalance,
   mockPlans,
   mockResubscribe,
-  mockToastAdd
+  mockToastAdd,
+  mockStartOperation,
+  mockTrackBeginCheckout,
+  mockUserId
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockPreviewSubscribe: vi.fn(),
@@ -82,7 +86,10 @@ const {
   mockFetchBalance: vi.fn(),
   mockPlans: { value: [] as Plan[] },
   mockResubscribe: vi.fn(),
-  mockToastAdd: vi.fn()
+  mockToastAdd: vi.fn(),
+  mockStartOperation: vi.fn(),
+  mockTrackBeginCheckout: vi.fn(),
+  mockUserId: { value: 'user-1' as string | null }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -101,6 +108,13 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { resubscribe: mockResubscribe }
 }))
 
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    startOperation: mockStartOperation,
+    hasPendingOperations: false
+  })
+}))
+
 vi.mock('@/config/comfyApi', () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -109,8 +123,18 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
+const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackMonthlySubscriptionSucceeded: vi.fn() })
+  useTelemetry: () => ({
+    trackMonthlySubscriptionSucceeded: vi.fn(),
+    trackResubscribeClicked: mockTrackResubscribeClicked,
+    trackBeginCheckout: mockTrackBeginCheckout
+  })
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) })
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -126,16 +150,18 @@ vi.mock('vue-i18n', async (importOriginal) => {
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
 
-  async function setup() {
+  async function setup(paymentIntentSource?: PaymentIntentSource) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
-    return useSubscriptionCheckout(emit as never)
+    return useSubscriptionCheckout(emit as never, paymentIntentSource)
   }
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockPlans.value = allPlans()
+    mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+    mockUserId.value = 'user-1'
     emit = vi.fn()
   })
 
@@ -236,23 +262,353 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleSubscribeTeamClick', () => {
-    it('transitions to preview with the selected team stop', async () => {
+    it('transitions to preview with the selected team stop and cycle', async () => {
       const checkout = await setup()
 
-      checkout.handleSubscribeTeamClick({
-        usd: 400,
-        credits: 84_400,
-        discountedUsd: 380
+      await checkout.handleSubscribeTeamClick({
+        stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
+        billingCycle: 'yearly'
       })
 
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.selectedTeamStop.value).toStrictEqual({
+        id: 'team_400',
         usd: 400,
         credits: 84_400,
         discountedUsd: 380
       })
+      expect(checkout.selectedBillingCycle.value).toBe('yearly')
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.selectedTierKey.value).toBeNull()
+    })
+
+    it('previews a prorated transition when an existing subscriber changes stop', async () => {
+      const checkout = await setup()
+      const transition = {
+        allowed: true,
+        transition_type: 'upgrade' as const,
+        is_immediate: true,
+        cost_today_cents: 105_000
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(transition)
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
+      )
+      expect(checkout.previewData.value).toStrictEqual(transition)
+    })
+
+    it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+    })
+
+    it('falls back to the display-only confirm when the preview request fails', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('does not preview a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.previewData.value).toBeNull()
+    })
+  })
+
+  describe('previewVariant', () => {
+    it('is null on the initial pricing step', async () => {
+      const checkout = await setup()
+      expect(checkout.previewVariant.value).toBeNull()
+    })
+
+    it('is personal-new for a fresh personal subscription preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-new')
+    })
+
+    it('is personal-change for a personal plan transition preview', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade'
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.previewVariant.value).toBe('personal-change')
+    })
+
+    it('is team-new for a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-new')
+    })
+
+    it('is team-change once an immediate team transition preview resolves', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        cost_today_cents: 105_000
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewVariant.value).toBe('team-change')
+    })
+  })
+
+  describe('handleTeamSubscribe', () => {
+    it('subscribes with the team plan slug, stop id and billing cycle', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
+        teamCreditStopId: 'team_700',
+        billingCycle: 'monthly',
+        returnUrl: 'https://platform.comfy.org/payment/success',
+        cancelUrl: 'https://platform.comfy.org/payment/failed'
+      })
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tier: 'team',
+          checkout_type: 'new',
+          billing_op_id: 'op-team-1'
+        })
+      )
+    })
+
+    it('uses the annual plan slug for the yearly cycle', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-2'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_annual',
+        expect.objectContaining({
+          teamCreditStopId: 'team_700',
+          billingCycle: 'yearly'
+        })
+      )
+    })
+
+    it('opens the payment URL when the team subscribe needs a payment method', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-team-3',
+        payment_method_url: 'https://stripe.com/team-pay'
+      })
+
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+      await checkout.handleTeamSubscribe()
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://stripe.com/team-pay',
+        '_blank'
+      )
+      openSpy.mockRestore()
+    })
+
+    it('does not subscribe and shows an error when the stop has no id', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: { usd: 700, credits: 147_700, discountedUsd: 630 },
+        billingCycle: 'yearly'
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('shows an error toast when the team subscribe fails', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(new Error('Team payment failed'))
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Team payment failed'
+        })
+      )
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+    })
+
+    it('keeps team checkout_type as change when the preview request fails', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-change'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tier: 'team',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          billing_op_id: 'op-team-change'
+        })
+      )
     })
   })
 
@@ -270,10 +626,9 @@ describe('useSubscriptionCheckout', () => {
 
     it('clears the selected team stop', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
-        usd: 400,
-        credits: 84_400,
-        discountedUsd: 380
+      await checkout.handleSubscribeTeamClick({
+        stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
+        billingCycle: 'yearly'
       })
 
       checkout.handleBackToPricing()
@@ -297,12 +652,52 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'standard-yearly',
-        'https://platform.comfy.org/payment/success',
-        'https://platform.comfy.org/payment/failed'
-      )
+      expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
+        returnUrl: 'https://platform.comfy.org/payment/success',
+        cancelUrl: 'https://platform.comfy.org/payment/failed'
+      })
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+
+    it('skips begin_checkout when no user id is available', async () => {
+      mockUserId.value = null
+      const checkout = await setup('subscribe_to_run')
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      mockUserId.value = 'user-1'
+    })
+
+    it('fires begin_checkout carrying the payment intent source', async () => {
+      const checkout = await setup('subscribe_to_run')
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+        user_id: 'user-1',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        billing_op_id: 'op-1',
+        payment_intent_source: 'subscribe_to_run'
+      })
     })
 
     it('opens payment URL when needs_payment_method', async () => {
@@ -322,6 +717,92 @@ describe('useSubscriptionCheckout', () => {
       openSpy.mockRestore()
     })
 
+    it('warns when the payment popup is blocked', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-blocked',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'subscription.preview.paymentPopupBlocked'
+        })
+      )
+      openSpy.mockRestore()
+    })
+
+    it('polls the operation without opening a window when needs_payment_method has no URL', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-no-url'
+      })
+      mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+      await checkout.handleAddCreditCard()
+
+      expect(openSpy).not.toHaveBeenCalled()
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-no-url',
+        'subscription'
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+      openSpy.mockRestore()
+    })
+
+    it('advances to success once the async payment operation succeeds', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-async-1',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+      mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-async-1',
+        'subscription'
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+      openSpy.mockRestore()
+    })
+
+    it('stays on the confirm step when the async operation does not succeed', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.checkoutStep.value = 'preview'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-async-2'
+      })
+      mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-async-2',
+        'subscription'
+      )
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
     it('shows error toast on subscribe failure', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
@@ -336,6 +817,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Payment failed'
         })
       )
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
     })
   })
 
@@ -375,7 +857,7 @@ describe('useSubscriptionCheckout', () => {
 
   describe('handleResubscribe', () => {
     it('emits close on success', async () => {
-      const checkout = await setup()
+      const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({
         billing_op_id: 'op-4',
         status: 'active'
@@ -387,6 +869,10 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockResubscribe).toHaveBeenCalled()
       expect(emit).toHaveBeenCalledWith('close', true)
+      expect(mockTrackResubscribeClicked).toHaveBeenCalledWith({
+        source: 'pricing_dialog',
+        payment_intent_source: 'subscribe_to_run'
+      })
     })
 
     it('shows error toast on failure', async () => {

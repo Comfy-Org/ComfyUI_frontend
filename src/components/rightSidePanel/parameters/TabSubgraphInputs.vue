@@ -82,7 +82,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
-        sourceNodeId: String(interiorNode.id),
+        sourceNodeId: interiorNode.id,
         sourceWidgetName: getWidgetName(widget)
       })
   )

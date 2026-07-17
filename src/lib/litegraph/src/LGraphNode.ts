@@ -8,6 +8,9 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -16,7 +19,10 @@ import {
   toClass
 } from '@/lib/litegraph/src/utils/type'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
@@ -97,8 +103,6 @@ import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
-
-export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
@@ -498,10 +502,11 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+    mutations.moveNode(this.id, { x: value[0], y: value[1] })
   }
 
   /**
@@ -520,10 +525,11 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(String(this.id), {
+    mutations.resizeNode(this.id, {
       width: value[0],
       height: value[1]
     })
@@ -810,7 +816,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = -1
+    this.id = UNASSIGNED_NODE_ID
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -833,7 +839,6 @@ export class LGraphNode
     if (this.graph) {
       this.graph.incrementVersion()
     }
-    if (info.id === -1) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -841,6 +846,12 @@ export class LGraphNode
           this.properties[k] = info.properties[k]
           this.onPropertyChanged?.(k, info.properties[k])
         }
+        continue
+      }
+
+      if (j === 'id') {
+        const id = toNodeId(info.id)
+        if (id !== UNASSIGNED_NODE_ID) this.id = id
         continue
       }
 
@@ -944,7 +955,7 @@ export class LGraphNode
   serialize(): ISerialisedNode {
     // create serialization object
     const o: ISerialisedNode = {
-      id: this.id,
+      id: serializeNodeId(this.id),
       type: this.type,
       pos: [this.pos[0], this.pos[1]],
       size: [this.size[0], this.size[1]],
@@ -2001,7 +2012,7 @@ export class LGraphNode
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
     // when the node is added via LGraph.add() -> node.onAdded.
-    if (this.id !== -1 && isNodeBindable(widget)) {
+    if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
 
@@ -2930,8 +2941,11 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
+    const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+    graph.state.lastLinkId = linkId
+
     const link = new LLink(
-      ++graph.state.lastLinkId,
+      linkId,
       maybeCommonType || input.type || output.type,
       this.id,
       outputIndex,
@@ -3041,7 +3055,7 @@ export class LGraphNode
     // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
     if (afterRerouteId == null || !fromLastFloatingReroute) {
       const link = new LLink(
-        -1,
+        toLinkId(-1),
         slot.type,
         outputIndex === -1 ? -1 : id,
         outputIndex,
@@ -3272,7 +3286,7 @@ export class LGraphNode
       const link_info = graph._links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
-        if (link_info.origin_id === -10 && 'inputNode' in graph) {
+        if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
           return true
         }

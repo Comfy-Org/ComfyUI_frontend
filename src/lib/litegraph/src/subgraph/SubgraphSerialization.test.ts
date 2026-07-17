@@ -4,6 +4,10 @@
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -17,6 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
+import { toNodeId } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -27,6 +32,8 @@ class DummyNode extends LGraphNode {}
 
 const DUPLICATE_ID_SUBGRAPH_A = '11111111-1111-4111-8111-111111111111'
 const DUPLICATE_ID_SUBGRAPH_B = '22222222-2222-4222-8222-222222222222'
+const LEGACY_SUBGRAPH_INPUT_ID = -10
+const LEGACY_SUBGRAPH_OUTPUT_ID = -20
 
 function createRegisteredNode(
   graph: LGraph | Subgraph,
@@ -282,11 +289,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -298,6 +305,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
       expect(subgraph.outputs.length).toBe(1)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -312,11 +321,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -329,6 +338,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
       expect(Array.isArray(subgraph.outputs)).toBe(true)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -345,11 +356,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: [],
@@ -361,6 +372,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 })
@@ -492,16 +505,19 @@ describe('SubgraphSerialization - Data Integrity', () => {
     graph.configure(structuredClone(duplicateSubgraphNodeIds))
 
     const rootIds = graph.nodes
-      .map((node) => node.id)
-      .filter((id): id is number => typeof id === 'number')
+      .map((node) => Number(node.id))
       .sort((a, b) => a - b)
     expect(rootIds).toEqual([102, 103])
 
     const subgraphAIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_A)!.nodes.map((node) => node.id)
+      graph.subgraphs
+        .get(DUPLICATE_ID_SUBGRAPH_A)!
+        .nodes.map((node) => Number(node.id))
     )
     const subgraphBIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!.nodes.map((node) => node.id)
+      graph.subgraphs
+        .get(DUPLICATE_ID_SUBGRAPH_B)!
+        .nodes.map((node) => Number(node.id))
     )
 
     expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
@@ -522,13 +538,15 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
+    const rootProxyWidgetsA = graph.getNodeById(toNodeId(102))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
     for (const entry of rootProxyWidgetsA as string[][]) {
       expect(subgraphAIds.has(String(entry[0]))).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
+    const rootProxyWidgetsB = graph.getNodeById(toNodeId(103))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
     for (const entry of rootProxyWidgetsB as string[][]) {
       expect(subgraphBIds.has(String(entry[0]))).toBe(true)

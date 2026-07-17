@@ -8,6 +8,7 @@
         v-model="filters['global'].value"
         class="max-w-96"
         size="lg"
+        autofocus
         :placeholder="
           $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
         "

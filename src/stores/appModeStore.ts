@@ -4,7 +4,6 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
@@ -25,8 +24,11 @@ import {
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import type { ViewMode } from '@/utils/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -49,10 +51,31 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
+  const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
+
+  const viewMode = computed<ViewMode>(() => (isAppMode.value ? 'app' : 'graph'))
+
+  /**
+   * Frame-lagged mirror of {@link viewMode} driving the view-mode toggle's
+   * segment morph. The two-frame lag lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate in. Kept in the store so it
+   * outlives the graph-mode toggle unmounting as the app toggle replaces it.
+   */
+  const displayViewMode = ref<ViewMode>(viewMode.value)
+  let outerFrame: number | undefined
+  let innerFrame: number | undefined
+  watch(viewMode, (next) => {
+    if (outerFrame !== undefined) cancelAnimationFrame(outerFrame)
+    if (innerFrame !== undefined) cancelAnimationFrame(innerFrame)
+    outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        displayViewMode.value = next
+      })
+    })
+  })
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
@@ -64,20 +87,33 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
+  function pruneLinearData(data: Partial<LinearData> | undefined): {
+    inputs: LinearInput[]
+    outputs: NodeId[]
+  } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
     if (!rootGraph) {
-      return { inputs: rawInputs, outputs: rawOutputs }
+      return {
+        inputs: rawInputs,
+        outputs: rawOutputs.flatMap((nodeId) => {
+          const parsedNodeId = parseNodeId(nodeId)
+          return parsedNodeId ? [parsedNodeId] : []
+        })
+      }
     }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
         .filter((entry): entry is LinearInput => entry !== null),
-      outputs: ChangeTracker.isLoadingGraph
-        ? rawOutputs
-        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      outputs: rawOutputs.flatMap((nodeId) => {
+        const parsedNodeId = parseNodeId(nodeId)
+        if (!parsedNodeId) return []
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+          ? [parsedNodeId]
+          : []
+      })
     }
   }
 
@@ -111,7 +147,10 @@ export const useAppModeStore = defineStore('appMode', () => {
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
-    const directNode = rootGraph.getNodeById?.(storedId)
+    const directNodeId = parseNodeId(storedId)
+    const directNode = directNodeId
+      ? rootGraph.getNodeById?.(directNodeId)
+      : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
@@ -275,6 +314,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs,
     selectedOutputs,
     updateInputConfig,
-    showVueNodeSwitchPopup
+    showVueNodeSwitchPopup,
+    viewMode,
+    displayViewMode
   }
 })

@@ -56,11 +56,10 @@ export function useDowngradeToPersonal() {
       }
     }
 
-    const response = await subscribe(
-      planSlug,
-      `${getComfyPlatformBaseUrl()}/payment/success`,
-      `${getComfyPlatformBaseUrl()}/payment/failed`
-    )
+    const response = await subscribe(planSlug, {
+      returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+      cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+    })
     if (!response) {
       throw new Error(
         membersToRemove.length > 0

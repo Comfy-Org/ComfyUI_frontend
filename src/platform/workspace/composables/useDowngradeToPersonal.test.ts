@@ -166,11 +166,10 @@ describe('useDowngradeToPersonal', () => {
       expect(mockRemoveMember).toHaveBeenCalledWith('m1')
       expect(mockRemoveMember).toHaveBeenCalledWith('m2')
       expect(mockRemoveMember).not.toHaveBeenCalledWith('owner')
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'founder-monthly',
-        'https://platform.test/payment/success',
-        'https://platform.test/payment/failed'
-      )
+      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
+        returnUrl: 'https://platform.test/payment/success',
+        cancelUrl: 'https://platform.test/payment/failed'
+      })
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 

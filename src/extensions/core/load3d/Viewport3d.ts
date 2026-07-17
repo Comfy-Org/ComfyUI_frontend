@@ -1,5 +1,8 @@
 import * as THREE from 'three'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+import { normalize } from '@/utils/mathUtil'
+
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
 import type { EventManager } from './EventManager'
@@ -15,10 +18,17 @@ import type {
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
-import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import type { LetterboxNdc } from './load3dViewport'
+import {
+  clientPointToLetterboxNdc,
+  computeLetterboxedViewport,
+  isLoad3dActive
+} from './load3dViewport'
+
+const VIEW_HELPER_SIZE = 128
 
 export type Viewport3dDeps = {
-  renderer: THREE.WebGLRenderer
+  view: RendererView
   eventManager: EventManager
   sceneManager: SceneManager
   cameraManager: CameraManager
@@ -28,7 +38,7 @@ export type Viewport3dDeps = {
 }
 
 export class Viewport3d {
-  renderer: THREE.WebGLRenderer
+  protected readonly view: RendererView
   protected clock: THREE.Clock
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
@@ -52,17 +62,18 @@ export class Viewport3d {
   isViewerMode: boolean = false
 
   private disposeContextMenuGuard: (() => void) | null = null
-  private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
   private externalActiveCamera: THREE.Camera | null = null
   private overlay: SceneOverlay | null = null
   private initialRenderTimer: ReturnType<typeof setTimeout> | null = null
+  private viewPixelScale = 1
 
   constructor(
-    container: Element | HTMLElement,
+    container: HTMLElement,
     deps: Viewport3dDeps,
     options: Load3DOptions = {}
   ) {
+    this.view = deps.view
     this.clock = new THREE.Clock()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
@@ -73,7 +84,6 @@ export class Viewport3d {
       this.applyTargetSize(options.width, options.height)
     }
 
-    this.renderer = deps.renderer
     this.eventManager = deps.eventManager
     this.sceneManager = deps.sceneManager
     this.cameraManager = deps.cameraManager
@@ -94,7 +104,15 @@ export class Viewport3d {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
-    this.initResizeObserver(container)
+    this.view.observeResize(container, () => this.handleResize())
+  }
+
+  get renderer(): THREE.WebGLRenderer {
+    return this.view.renderer
+  }
+
+  get domElement(): HTMLCanvasElement {
+    return this.view.canvas
   }
 
   start(): void {
@@ -118,19 +136,9 @@ export class Viewport3d {
     this.targetAspectRatio = width / height
   }
 
-  private initResizeObserver(container: Element | HTMLElement): void {
-    if (typeof ResizeObserver === 'undefined') return
-
-    this.resizeObserver?.disconnect()
-    this.resizeObserver = new ResizeObserver(() => {
-      this.handleResize()
-    })
-    this.resizeObserver.observe(container)
-  }
-
   private initContextMenu(): void {
     this.disposeContextMenuGuard = attachContextMenuGuard(
-      this.renderer.domElement,
+      this.view.canvas,
       (event) => this.onContextMenuCallback?.(event),
       { isDisabled: () => this.isViewerMode }
     )
@@ -169,15 +177,21 @@ export class Viewport3d {
   forceRender(): void {
     const delta = this.clock.getDelta()
     this.tickPerFrame(delta)
-
-    this.renderMainScene()
-    this.resetViewport()
-
-    if (this.viewHelperManager.viewHelper.render) {
-      this.viewHelperManager.viewHelper.render(this.renderer)
-    }
-
+    this.renderView()
     this.INITIAL_RENDER_DONE = true
+  }
+
+  private renderView(): void {
+    this.view.beginRender()
+    this.renderMainScene()
+
+    this.renderer.setScissorTest(false)
+    this.viewHelperManager.render(
+      this.renderer,
+      VIEW_HELPER_SIZE * this.viewPixelScale
+    )
+
+    this.view.blit()
   }
 
   protected tickPerFrame(delta: number): void {
@@ -229,8 +243,8 @@ export class Viewport3d {
   }
 
   renderMainScene(): void {
-    const containerWidth = this.renderer.domElement.clientWidth
-    const containerHeight = this.renderer.domElement.clientHeight
+    const viewWidth = this.view.width
+    const viewHeight = this.view.height
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -239,15 +253,16 @@ export class Viewport3d {
       }
     }
 
+    this.renderer.setViewport(0, 0, viewWidth, viewHeight)
+    this.renderer.setScissor(0, 0, viewWidth, viewHeight)
+    this.renderer.setScissorTest(true)
+
     if (this.shouldMaintainAspectRatio()) {
       const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
-        { width: containerWidth, height: containerHeight },
+        { width: viewWidth, height: viewHeight },
         this.targetAspectRatio
       )
 
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
       this.renderer.setClearColor(0x0a0a0a)
       this.renderer.clear()
 
@@ -256,22 +271,26 @@ export class Viewport3d {
 
       this.cameraManager.updateAspectRatio(width / height)
     } else {
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
+      this.renderer.setClearColor(
+        this.view.state.clearColor,
+        this.view.state.clearAlpha
+      )
+      this.renderer.clear()
     }
 
     this.sceneManager.renderBackground()
     this.renderer.render(this.sceneManager.scene, this.getRenderCamera())
   }
 
-  resetViewport(): void {
-    const width = this.renderer.domElement.clientWidth
-    const height = this.renderer.domElement.clientHeight
-
-    this.renderer.setViewport(0, 0, width, height)
-    this.renderer.setScissor(0, 0, width, height)
-    this.renderer.setScissorTest(false)
+  clientPointToNdc(clientX: number, clientY: number): LetterboxNdc | null {
+    const rect = this.domElement.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return null
+    return clientPointToLetterboxNdc(
+      normalize(clientX, rect.left, rect.right),
+      normalize(clientY, rect.top, rect.bottom),
+      { width: rect.width, height: rect.height },
+      this.shouldMaintainAspectRatio() ? this.targetAspectRatio : null
+    )
   }
 
   protected startAnimation(): void {
@@ -279,11 +298,7 @@ export class Viewport3d {
       tick: () => {
         const delta = this.clock.getDelta()
         this.tickPerFrame(delta)
-        this.renderMainScene()
-        this.resetViewport()
-        if (this.viewHelperManager.viewHelper.render) {
-          this.viewHelperManager.viewHelper.render(this.renderer)
-        }
+        this.renderView()
       },
       isActive: () => this.isActive()
     })
@@ -356,7 +371,7 @@ export class Viewport3d {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement?.parentElement
+    const parentElement = this.view.canvas.parentElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
@@ -367,7 +382,7 @@ export class Viewport3d {
     const containerHeight = parentElement.clientHeight
 
     const zoomScale = this.getZoomScaleCallback?.() ?? 1
-    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
+    this.viewPixelScale = Math.min(zoomScale, 3)
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -376,17 +391,20 @@ export class Viewport3d {
       }
     }
 
+    this.view.setSize(
+      containerWidth * this.viewPixelScale,
+      containerHeight * this.viewPixelScale
+    )
+
     if (this.shouldMaintainAspectRatio()) {
       const { width, height } = computeLetterboxedViewport(
         { width: containerWidth, height: containerHeight },
         this.targetAspectRatio
       )
 
-      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(width, height)
       this.sceneManager.handleResize(width, height)
     } else {
-      this.renderer.setSize(containerWidth, containerHeight)
       this.cameraManager.handleResize(containerWidth, containerHeight)
       this.sceneManager.handleResize(containerWidth, containerHeight)
     }
@@ -400,29 +418,15 @@ export class Viewport3d {
       this.initialRenderTimer = null
     }
 
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect()
-      this.resizeObserver = null
-    }
-
     this.disposeContextMenuGuard?.()
     this.disposeContextMenuGuard = null
-
-    this.renderer.forceContextLoss()
-    const canvas = this.renderer.domElement
-    const event = new Event('webglcontextlost', {
-      bubbles: true,
-      cancelable: true
-    })
-    canvas.dispatchEvent(event)
 
     this.renderLoop?.stop()
     this.renderLoop = null
 
     this.disposeManagers()
 
-    this.renderer.dispose()
-    this.renderer.domElement.remove()
+    this.view.dispose()
   }
 
   protected disposeManagers(): void {

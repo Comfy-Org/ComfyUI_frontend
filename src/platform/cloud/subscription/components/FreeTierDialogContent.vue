@@ -52,7 +52,7 @@
           </p>
 
           <p
-            v-if="!reason || reason === 'subscription_required'"
+            v-if="!isCreditsBlockedVariant"
             class="m-0 text-sm text-text-secondary"
           >
             {{
@@ -65,10 +65,7 @@
           </p>
 
           <p
-            v-if="
-              (!reason || reason === 'subscription_required') &&
-              formattedRenewalDate
-            "
+            v-if="!isCreditsBlockedVariant && formattedRenewalDate"
             class="m-0 text-sm text-text-secondary"
           >
             {{
@@ -88,7 +85,7 @@
           @click="$emit('upgrade')"
         >
           {{
-            reason === 'out_of_credits' || reason === 'top_up_blocked'
+            isCreditsBlockedVariant
               ? $t('subscription.freeTier.upgradeCta')
               : $t('subscription.freeTier.subscribeCta')
           }}
@@ -102,13 +99,13 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 
-defineProps<{
-  reason?: SubscriptionDialogReason
+const { reason } = defineProps<{
+  reason?: PaymentIntentSource
 }>()
 
 defineEmits<{
@@ -116,7 +113,23 @@ defineEmits<{
   upgrade: []
 }>()
 
-const { formattedRenewalDate } = useSubscription()
+const { renewalDate } = useBillingContext()
+
+const formattedRenewalDate = computed(() => {
+  if (!renewalDate.value) return ''
+
+  return new Date(renewalDate.value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
 
 const freeTierCredits = computed(() => getTierCredits('free'))
+
+// Only these two variants replace the generic free-tier copy; any other
+// intent reason (subscribe_to_run, deep_link, ...) keeps the default pitch.
+const isCreditsBlockedVariant = computed(
+  () => reason === 'out_of_credits' || reason === 'top_up_blocked'
+)
 </script>

@@ -27,6 +27,8 @@ vi.mock('@/scripts/domWidget', () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
+import { toNodeId } from '@/types/nodeId'
+
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
 
@@ -53,7 +55,7 @@ describe('WidgetDOM', () => {
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'n1'
+        nodeId: toNodeId('n1')
       }
     })
   }
@@ -80,7 +82,7 @@ describe('WidgetDOM', () => {
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'missing'
+        nodeId: toNodeId('missing')
       }
     })
 
@@ -109,7 +111,7 @@ describe('WidgetDOM', () => {
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'n1'
+        nodeId: toNodeId('n1')
       }
     })
 

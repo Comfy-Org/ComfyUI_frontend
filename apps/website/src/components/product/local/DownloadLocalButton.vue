@@ -72,6 +72,7 @@ const buttons = computed<ButtonSpec[]>(() => {
     size="lg"
     :class="customClass"
     :aria-label="btn.ariaLabel"
+    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
     @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">

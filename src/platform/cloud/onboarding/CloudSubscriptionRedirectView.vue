@@ -10,8 +10,18 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import { performTeamSubscriptionCheckout } from '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
+
+function isBillingCycle(value: string): value is BillingCycle {
+  return value === 'monthly' || value === 'yearly'
+}
+
+// Only paid personal tiers can be checked out via this redirect.
+function isCheckoutTierKey(value: string): value is TierKey {
+  return ['standard', 'creator', 'pro', 'founder'].includes(value)
+}
 
 const { t } = useI18n()
 const route = useRoute()
@@ -34,6 +44,12 @@ const tierDisplayName = computed(() => {
   }
   return names[selectedTierKey.value]
 })
+
+const isTeamCheckout = ref(false)
+
+const planLabel = computed(() =>
+  isTeamCheckout.value ? t('subscription.teamPlan.name') : tierDisplayName.value
+)
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const rawType = route.query.tier
@@ -58,21 +74,38 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  // Only paid tiers can be checked out via redirect
-  const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
-  if (!(validTierKeys as string[]).includes(tierKeyParam)) {
+  const billingCycle: BillingCycle = isBillingCycle(cycleParam)
+    ? cycleParam
+    : 'monthly'
+
+  // Team is a per-credit plan picked on a slider, so it carries a `stop` (the
+  // chosen credit commitment) instead of a tier and checks out through the
+  // workspace billing endpoint rather than the personal one.
+  if (tierKeyParam === 'team') {
+    const rawStop = route.query.stop
+    const stopId =
+      typeof rawStop === 'string'
+        ? rawStop
+        : Array.isArray(rawStop)
+          ? rawStop[0]
+          : null
+    if (!stopId) {
+      await router.push('/')
+      return
+    }
+    isTeamCheckout.value = true
+    await performTeamSubscriptionCheckout(stopId, billingCycle, {
+      paymentIntentSource: 'deep_link'
+    })
+    return
+  }
+
+  if (!isCheckoutTierKey(tierKeyParam)) {
     await router.push('/')
     return
   }
 
-  const tierKey = tierKeyParam as TierKey
-
-  selectedTierKey.value = tierKey
-
-  const validCycles: BillingCycle[] = ['monthly', 'yearly']
-  if (!cycleParam || !(validCycles as string[]).includes(cycleParam)) {
-    cycleParam = 'monthly'
-  }
+  selectedTierKey.value = tierKeyParam
 
   if (!isInitialized.value) {
     await initialize()
@@ -81,11 +114,10 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)
   } else {
-    await performSubscriptionCheckout(
-      tierKey,
-      cycleParam as BillingCycle,
-      false
-    )
+    await performSubscriptionCheckout(tierKeyParam, billingCycle, {
+      openInNewTab: false,
+      paymentIntentSource: 'deep_link'
+    })
   }
 }, reportError)
 
@@ -105,18 +137,18 @@ onMounted(() => {
         class="size-16"
       />
       <p
-        v-if="selectedTierKey"
+        v-if="planLabel"
         class="font-inter text-base/normal font-normal text-base-foreground"
       >
         {{
           t('subscription.subscribeTo', {
-            plan: tierDisplayName
+            plan: planLabel
           })
         }}
       </p>
-      <ProgressSpinner v-if="selectedTierKey" class="size-8" stroke-width="4" />
+      <ProgressSpinner v-if="planLabel" class="size-8" stroke-width="4" />
       <Button
-        v-if="selectedTierKey"
+        v-if="planLabel"
         as="a"
         href="/"
         link

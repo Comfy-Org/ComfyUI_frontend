@@ -2,6 +2,8 @@ import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -40,7 +42,7 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
   })
 }))
 
-const NODE_ID = 'test-node'
+const NODE_ID = toNodeId('test-node')
 const SLOT_INDEX = 0
 
 function createTestSetup(type: 'input' | 'output') {

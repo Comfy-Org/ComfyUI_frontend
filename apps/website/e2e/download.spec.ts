@@ -16,7 +16,7 @@ test.describe('Download page @smoke', () => {
 
   test('has correct title', async ({ page }) => {
     await expect(page).toHaveTitle(
-      'Download Comfy Desktop — Run AI on Your Hardware'
+      'Download Comfy Desktop - Run AI on Your Hardware'
     )
   })
 
@@ -47,6 +47,11 @@ test.describe('Download page @smoke', () => {
     const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     await expect(downloadBtn).toBeVisible()
     await expect(downloadBtn).toHaveAttribute('target', '_blank')
+    await expect(downloadBtn).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/windows/nsis/x64'
+    )
+    await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
 
     const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     await expect(githubBtn).toBeVisible()
@@ -73,7 +78,7 @@ test.describe('Download page @smoke', () => {
     })
 
     const windowsBtn = hero.locator(
-      'a[href="https://download.comfy.org/windows/nsis/x64"]'
+      'a[href="https://comfy.org/download/windows/nsis/x64"]'
     )
     await expect(windowsBtn).toBeVisible()
     await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)

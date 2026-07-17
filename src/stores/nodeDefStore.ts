@@ -24,7 +24,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -163,11 +163,8 @@ export class ComfyNodeDefImpl
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
     this.price_badge = obj.price_badge
-    this.essentials_category = obj.essentials_category
-      ? (ESSENTIALS_CATEGORY_CANONICAL.get(
-          obj.essentials_category.toLowerCase()
-        ) ?? obj.essentials_category)
-      : undefined
+    this.essentials_category =
+      NODE_TO_ESSENTIALS_CATEGORY[obj.name] ?? obj.essentials_category
     this.isGlobal = obj.isGlobal
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
@@ -377,6 +374,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
     return map
   })
+  const allNodeDefsByDisplayName = computed(() => {
+    return Object.fromEntries(nodeDefs.value.map((d) => [d.display_name, d]))
+  })
 
   const visibleNodeDefs = computed(() => {
     return nodeDefs.value.filter((nodeDef) =>
@@ -511,6 +511,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
+    allNodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
     showDevOnly,

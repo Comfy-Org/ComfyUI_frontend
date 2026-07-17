@@ -11,9 +11,14 @@ import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISlotType,
-  NodeId,
   UUID
 } from '@/lib/litegraph/src/litegraph'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   LGraph,
   LGraphNode,
@@ -77,9 +82,26 @@ interface TestSubgraphOptions {
 
 interface TestSubgraphNodeOptions {
   parentGraph?: LGraph | Subgraph
-  id?: NodeId
+  id?: SerializedNodeId
   pos?: [number, number]
   size?: [number, number]
+}
+
+interface BoundaryLinkedSubgraphOptions {
+  rootGraph?: LGraph
+  hostId?: SerializedNodeId
+  interiorId?: SerializedNodeId
+  boundaryName?: string
+  inputName?: string
+  hostTitle?: string
+  interiorType?: string
+}
+
+export interface BoundaryLinkedSubgraphFixture {
+  rootGraph: LGraph
+  subgraph: Subgraph
+  host: SubgraphNode
+  interior: LGraphNode
 }
 
 interface NestedSubgraphOptions {
@@ -176,12 +198,12 @@ export function createTestSubgraph(
     name: options.name || 'Test Subgraph',
 
     inputNode: {
-      id: -10,
+      id: SUBGRAPH_INPUT_ID,
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: SUBGRAPH_OUTPUT_ID,
       bounding: [400, 100, 140, 126],
       pinned: false
     },
@@ -263,6 +285,32 @@ export function createTestSubgraphNode(
   }
 
   return new SubgraphNode(parentGraph, subgraph, instanceData)
+}
+
+export function createBoundaryLinkedSubgraph({
+  rootGraph = createTestRootGraph(),
+  hostId = 12,
+  interiorId = 5,
+  boundaryName = 'seed',
+  inputName = 'seed_input',
+  hostTitle = 'Host Subgraph',
+  interiorType = 'InteriorNode'
+}: BoundaryLinkedSubgraphOptions = {}): BoundaryLinkedSubgraphFixture {
+  const subgraph = createTestSubgraph({
+    rootGraph,
+    inputs: [{ name: boundaryName, type: '*' }]
+  })
+  const host = createTestSubgraphNode(subgraph, { id: hostId })
+  host.title = hostTitle
+  rootGraph.add(host)
+
+  const interior = new LGraphNode(interiorType)
+  interior.id = toNodeId(interiorId)
+  const input = interior.addInput(inputName, '*')
+  subgraph.add(interior)
+  subgraph.inputNode.slots[0].connect(input, interior)
+
+  return { rootGraph, subgraph, host, interior }
 }
 
 export function setupComplexPromotionFixture(): {
@@ -400,12 +448,12 @@ export function assertSubgraphStructure(
 
   if (expected.hasInputNode !== false) {
     expect(subgraph.inputNode).toBeDefined()
-    expect(subgraph.inputNode.id).toBe(-10)
+    expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
   }
 
   if (expected.hasOutputNode !== false) {
     expect(subgraph.outputNode).toBeDefined()
-    expect(subgraph.outputNode.id).toBe(-20)
+    expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
   }
 }
 
@@ -470,12 +518,12 @@ export function createTestSubgraphData(
     name: 'Test Data Subgraph',
 
     inputNode: {
-      id: -10,
+      id: SUBGRAPH_INPUT_ID,
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: SUBGRAPH_OUTPUT_ID,
       bounding: [400, 100, 140, 126],
       pinned: false
     },

@@ -132,13 +132,14 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: checkoutUrl })
     } as Response)
 
-    await performSubscriptionCheckout('pro', 'yearly', true)
+    await performSubscriptionCheckout('pro', 'yearly')
 
     expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'yearly',
       checkout_type: 'new',
+      checkout_attempt_id: expect.any(String),
       ga_client_id: 'ga-client-id',
       ga_session_id: 'ga-session-id',
       ga_session_number: 'ga-session-number',
@@ -150,6 +151,12 @@ describe('performSubscriptionCheckout', () => {
       gbraid: 'gbraid-456',
       wbraid: 'wbraid-789'
     })
+    const beginCheckoutMetadata =
+      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
+      JSON.parse(storedAttempt).attempt_id
+    )
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining(
         '/customers/cloud-subscription-checkout/pro-yearly'
@@ -186,7 +193,7 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: checkoutUrl })
     } as Response)
 
-    await performSubscriptionCheckout('pro', 'monthly', true)
+    await performSubscriptionCheckout('pro', 'monthly')
 
     expect(warnSpy).toHaveBeenCalledWith(
       '[SubscriptionCheckout] Failed to collect checkout attribution',
@@ -203,9 +210,41 @@ describe('performSubscriptionCheckout', () => {
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'monthly',
-      checkout_type: 'new'
+      checkout_type: 'new',
+      checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    const openSpy = vi
+      .spyOn(window, 'open')
+      .mockImplementation(() => window as unknown as Window)
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    await performSubscriptionCheckout('pro', 'monthly', {
+      paymentIntentSource: 'out_of_credits'
+    })
+
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_intent_source: 'out_of_credits' })
+    )
+    const beginCheckoutMetadata =
+      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
+    const pendingAttempt = JSON.parse(storedAttempt)
+    expect(pendingAttempt).toMatchObject({
+      payment_intent_source: 'out_of_credits'
+    })
+    expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
+      pendingAttempt.attempt_id
+    )
+    openSpy.mockRestore()
   })
 
   it('uses the latest userId when it changes after checkout starts', async () => {
@@ -222,7 +261,7 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: checkoutUrl })
     } as Response)
 
-    const checkoutPromise = performSubscriptionCheckout('pro', 'yearly', true)
+    const checkoutPromise = performSubscriptionCheckout('pro', 'yearly')
 
     mockUserId.value = 'user-late'
     authHeader.resolve({ Authorization: 'Bearer test-token' })
@@ -235,13 +274,14 @@ describe('performSubscriptionCheckout', () => {
         user_id: 'user-late',
         tier: 'pro',
         cycle: 'yearly',
-        checkout_type: 'new'
+        checkout_type: 'new',
+        checkout_attempt_id: expect.any(String)
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
 
-  it('does not persist a pending attempt when the checkout popup is blocked', async () => {
+  it('does not persist the pending attempt when the checkout popup is blocked', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
@@ -250,11 +290,18 @@ describe('performSubscriptionCheckout', () => {
       json: async () => ({ checkout_url: checkoutUrl })
     } as Response)
 
-    await performSubscriptionCheckout('pro', 'monthly', true)
+    await performSubscriptionCheckout('pro', 'monthly')
 
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    expect(
-      window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    ).toBeNull()
+    const storedAttempt = window.localStorage.getItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+    )
+    expect(storedAttempt).toBeNull()
+    expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        checkout_attempt_id: expect.any(String)
+      })
+    )
   })
 })

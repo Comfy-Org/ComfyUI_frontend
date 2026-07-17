@@ -21,6 +21,7 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -1130,13 +1131,24 @@ describe('SubgraphWidgetPromotion', () => {
 
     describe('previewExposures round-trip', () => {
       const CANVAS = '$$canvas-image-preview'
-      const exposure12 = { sourceNodeId: '12', sourcePreviewName: CANVAS }
+      const exposure12 = {
+        sourceNodeId: toNodeId('12'),
+        sourcePreviewName: CANVAS
+      }
       const exposure14 = {
+        sourceNodeId: toNodeId('14'),
+        sourcePreviewName: 'videopreview'
+      }
+      const serializedExposure12 = {
+        sourceNodeId: '12',
+        sourcePreviewName: CANVAS
+      }
+      const serializedExposure14 = {
         sourceNodeId: '14',
         sourcePreviewName: 'videopreview'
       }
-      const named12 = { name: CANVAS, ...exposure12 }
-      const named14 = { name: 'videopreview', ...exposure14 }
+      const named12 = { name: CANVAS, ...serializedExposure12 }
+      const named14 = { name: 'videopreview', ...serializedExposure14 }
 
       it('hydrates previewExposures into the store during configure', () => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())

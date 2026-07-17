@@ -1,41 +1,34 @@
 ---
-import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
+import CustomerArticle from '../../../components/customers/CustomerArticle.astro'
 import DetailHeroSection from '../../../components/customers/DetailHeroSection.vue'
-import ContentSection from '../../../components/common/ContentSection.vue'
 import WhatsNextSection from '../../../components/customers/WhatsNextSection.vue'
-import { customerStories, getNextStory, getStoryBySlug } from '../../../config/customerStories'
-import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { nextStory, storySlug } from '../../../utils/customers'
+import { loadStories } from '../../../utils/loadStories'
 
-export const getStaticPaths: GetStaticPaths = () => {
-  return customerStories.map((story) => ({
-    params: { slug: story.slug }
+export async function getStaticPaths() {
+  const stories = await loadStories('zh-CN')
+  return stories.map((entry) => ({
+    params: { slug: storySlug(entry.id) },
+    props: { entry, next: nextStory(stories, storySlug(entry.id)) }
   }))
 }
 
-const { slug } = Astro.params
-const story = getStoryBySlug(slug as string)!
-const title = t(story.title, 'zh-CN')
-const nextStory = getNextStory(slug as string)
+const { entry, next } = Astro.props
 ---
 
-<BaseLayout title={`${title} — Comfy`}>
+<BaseLayout title={`${entry.data.title} - Comfy`}>
   <DetailHeroSection
-    label={t(story.category, 'zh-CN')}
-    title={title}
-    description={t(story.body, 'zh-CN')}
-    image={story.image}
+    label={entry.data.category}
+    title={entry.data.title}
+    description={entry.data.description}
+    image={entry.data.cover}
   />
-  <ContentSection
-    prefix={story.detailPrefix}
-    locale="zh-CN"
-    readMoreHref={story.readMoreHref}
-    client:load
-  />
+  <CustomerArticle entry={entry} locale="zh-CN" />
   <WhatsNextSection
-    title={t(nextStory.title, 'zh-CN')}
-    image={nextStory.image}
-    href={`/zh-CN/customers/${nextStory.slug}`}
+    title={next.data.title}
+    image={next.data.cover}
+    href={`/zh-CN/customers/${storySlug(next.id)}`}
     locale="zh-CN"
   />
 </BaseLayout>

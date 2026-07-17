@@ -2,6 +2,7 @@ issue_enrichment:
   auto_enrich:
     enabled: true
 reviews:
+  profile: assertive
   high_level_summary: false
   request_changes_workflow: true
   auto_review:
@@ -15,6 +16,11 @@ reviews:
       - github-actions[bot]
   pre_merge_checks:
     override_requested_reviewers_only: true
+    # Explicitly disable the built-in docstring coverage check, which is
+    # enabled via organization-level settings. This repo opts out at the
+    # repo level without affecting other org repos.
+    docstrings:
+      mode: 'off'
     custom_checks:
       - name: End-to-end regression coverage for fixes
         mode: error
@@ -57,3 +63,14 @@ reviews:
           Pass if none of these patterns are found in the diff.
 
           When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.
+
+  path_instructions:
+    - path: '**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/vitest.md` as required review context for every changed Vitest test file.
+    - path: 'src/lib/litegraph/**/*.test.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, `docs/guidance/vitest.md`, and `docs/testing/litegraph-testing.md` as required review context for every changed litegraph Vitest test file.
+    - path: '{browser_tests,apps/website/e2e}/**/*.spec.ts'
+      instructions: |
+        Treat `.agents/checks/test-quality.md`, `docs/testing/README.md`, and `docs/guidance/playwright.md` as required review context for every changed Playwright test file.

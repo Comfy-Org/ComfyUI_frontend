@@ -19,13 +19,13 @@
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
-        <div
-          v-if="teamPlan"
-          class="flex items-center gap-1 text-sm text-muted-foreground"
-        >
-          <i class="icon-[comfy--credits] size-3.5 shrink-0 bg-amber-400" />
-          <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
-        </div>
+        <span class="text-muted-foreground">
+          {{
+            isYearly
+              ? $t('subscription.billedYearly', { total: annualTotalFormatted })
+              : $t('subscription.billedMonthly')
+          }}
+        </span>
         <span class="text-muted-foreground">
           {{ $t('subscription.preview.startingToday') }}
         </span>
@@ -35,12 +35,12 @@
       <div class="flex flex-col gap-3 pt-16 pb-8">
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">
-            {{ $t('subscription.preview.eachMonthCreditsRefill') }}
+            {{ $t(creditsRefillLabelKey) }}
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
             <span class="font-bold text-base-foreground">
-              {{ displayCredits }}
+              {{ refillCredits }}
             </span>
           </div>
         </div>
@@ -138,7 +138,7 @@
 
       <!-- Add Credit Card Button -->
       <Button
-        variant="secondary"
+        variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
@@ -171,6 +171,7 @@ import {
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -210,16 +211,39 @@ const tierName = computed(() =>
     : t(`subscription.tiers.${tierKey}.name`)
 )
 
+const isYearly = computed(() =>
+  isYearlyCheckout(previewData?.new_plan.duration, billingCycle)
+)
+
 const displayPrice = computed(() => {
   if (teamPlan) return teamPlan.discountedUsd
   if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
+    const cents = previewData.new_plan.price_cents
+    return ((isYearly.value ? cents / 12 : cents) / 100).toFixed(0)
   }
-  return tierKey ? getTierPrice(tierKey, billingCycle === 'yearly') : 0
+  return tierKey ? getTierPrice(tierKey, isYearly.value) : 0
 })
 
-const displayCredits = computed(() =>
-  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
+const annualTotalUsd = computed(() => {
+  if (teamPlan) return teamPlan.discountedUsd * 12
+  if (previewData?.new_plan) return previewData.new_plan.price_cents / 100
+  return tierKey ? getTierPrice(tierKey, true) * 12 : 0
+})
+
+const annualTotalFormatted = computed(() => `$${n(annualTotalUsd.value)}`)
+
+const monthlyCredits = computed(() =>
+  teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0
+)
+
+const refillCredits = computed(() =>
+  n(isYearly.value ? monthlyCredits.value * 12 : monthlyCredits.value)
+)
+
+const creditsRefillLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.preview.eachYearCreditsRefill'
+    : 'subscription.preview.eachMonthCreditsRefill'
 )
 
 const teamPerks = computed(() => [
@@ -235,16 +259,18 @@ const hasCustomLoRAs = computed(() =>
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
-  if (teamPlan) return teamPlan.discountedUsd.toFixed(2)
+  if (teamPlan) {
+    const total = isYearly.value
+      ? teamPlan.discountedUsd * 12
+      : teamPlan.discountedUsd
+    return total.toFixed(2)
+  }
   if (previewData) {
     return (previewData.cost_today_cents / 100).toFixed(2)
   }
   if (!tierKey) return '0.00'
-  const priceValue = getTierPrice(tierKey, billingCycle === 'yearly')
-  if (billingCycle === 'yearly') {
-    return (priceValue * 12).toFixed(2)
-  }
-  return priceValue.toFixed(2)
+  const priceValue = getTierPrice(tierKey, isYearly.value)
+  return (isYearly.value ? priceValue * 12 : priceValue).toFixed(2)
 })
 
 const nextPaymentDate = computed(() => {

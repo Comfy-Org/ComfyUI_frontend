@@ -135,8 +135,8 @@ import {
   boundsExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 

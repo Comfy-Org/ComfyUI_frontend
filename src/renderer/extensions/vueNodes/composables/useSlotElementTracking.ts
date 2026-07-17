@@ -15,6 +15,8 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
 import {
   isBoundsEqual,
   isPointEqual,
@@ -24,12 +26,12 @@ import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
-const pendingNodes = new Set<string>()
+const pendingNodes = new Set<NodeId>()
 const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
-export function scheduleSlotLayoutSync(nodeId: string) {
+export function scheduleSlotLayoutSync(nodeId: NodeId) {
   // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
   // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
   if (!useNodeSlotRegistryStore().getNode(nodeId)) return
@@ -70,7 +72,7 @@ export function requestSlotLayoutSyncForAllNodes(): void {
 }
 
 function createSlotLayout(options: {
-  nodeId: string
+  nodeId: NodeId
   index: number
   type: 'input' | 'output'
   centerCanvas: { x: number; y: number }
@@ -118,7 +120,7 @@ export function flushScheduledSlotLayoutSync() {
   completePendingSlotSync()
 }
 
-export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
+export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
@@ -159,7 +161,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
     return
   }
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     const rect = getSlotElementRect(entry.el)
@@ -224,14 +226,14 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 
-function updateNodeSlotsFromCache(nodeId: string) {
+function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
-  const batch: Array<{ key: string; layout: SlotLayout }> = []
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
 
   for (const [slotKey, entry] of node.slots) {
     if (!entry.cachedOffset) {
@@ -260,7 +262,7 @@ function updateNodeSlotsFromCache(nodeId: string) {
 }
 
 export function useSlotElementTracking(options: {
-  nodeId: string
+  nodeId?: NodeId
   index: number
   type: 'input' | 'output'
   element: Ref<HTMLElement | null>
@@ -317,7 +319,7 @@ export function useSlotElementTracking(options: {
           layoutStore.deleteSlotLayout(slotKey)
         }
 
-        el.dataset.slotKey = slotKey
+        el.dataset.slotKey = String(slotKey)
         node.slots.set(slotKey, { el, index, type })
 
         // Seed initial sync from DOM
@@ -352,6 +354,8 @@ export function useSlotElementTracking(options: {
   })
 
   return {
-    requestSlotLayoutSync: () => scheduleSlotLayoutSync(nodeId)
+    requestSlotLayoutSync: () => {
+      if (nodeId) scheduleSlotLayoutSync(nodeId)
+    }
   }
 }

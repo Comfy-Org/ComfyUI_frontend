@@ -68,7 +68,7 @@ describe('Node Reactivity', () => {
     const onValueChange = vi.fn()
 
     graph.trigger('node:slot-links:changed', {
-      nodeId: String(node.id),
+      nodeId: node.id,
       slotType: NodeSlotType.INPUT
     })
     await nextTick()
@@ -116,7 +116,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     expect(widgetData?.slotMetadata).toBeDefined()
@@ -127,7 +127,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     // Verify initially linked
@@ -155,7 +155,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
 
     // Mimic what processedWidgets does in NodeWidgets.vue:
     // derive disabled from slotMetadata.linked
@@ -204,7 +204,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
       throw new Error('Expected SubgraphInput.connect to produce a link')
 
     const { vueNodeData } = useGraphNodeManager(subgraph)
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
     expect(widgetData?.slotMetadata?.linked).toBe(true)
@@ -230,7 +230,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     graph.add(subgraphNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
 
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'value')
     expect(widgetData).toBeDefined()
@@ -242,7 +242,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { graph, node } = createWidgetInputGraph()
     const { vueNodeData } = useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(String(node.id))!
+    const nodeData = vueNodeData.get(node.id)!
     const widgetData = nodeData.widgets!.find((w) => w.name === 'prompt')!
 
     expect(widgetData.slotMetadata?.linked).toBe(true)
@@ -278,7 +278,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = String(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.outputs) throw new Error('Expected output data to exist')
 
@@ -306,7 +306,7 @@ describe('Subgraph output slot label reactivity', () => {
     graph.add(node)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = String(node.id)
+    const nodeId = node.id
     const nodeData = vueNodeData.get(nodeId)
     if (!nodeData?.inputs) throw new Error('Expected input data to exist')
 
@@ -369,7 +369,7 @@ describe('Nested promoted widget mapping', () => {
     graph.add(subgraphNodeB)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNodeB.id))
+    const nodeData = vueNodeData.get(subgraphNodeB.id)
     const mappedWidget = nodeData?.widgets?.[0]
 
     expect(mappedWidget).toBeDefined()
@@ -406,7 +406,7 @@ describe('Nested promoted widget mapping', () => {
     graph.add(subgraphNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
@@ -452,7 +452,7 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const nodeData = vueNodeData.get(subgraphNode.id)
     const promotedWidget = nodeData?.widgets?.find(
       (w) => w.name === 'ckpt_input'
     )
@@ -475,7 +475,7 @@ describe('Promoted widget sourceExecutionId', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(node.id))
+    const nodeData = vueNodeData.get(node.id)
     const widget = nodeData?.widgets?.find((w) => w.name === 'steps')
 
     expect(widget).toBeDefined()
@@ -701,5 +701,58 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+})
+
+describe('Pre-remove vueNodeData drain', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('drops vueNodeData entry before node.onRemoved fires', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const id = node.id
+
+    expect(vueNodeData.has(id)).toBe(true)
+
+    let dataPresentInOnRemoved: boolean | undefined
+    node.onRemoved = () => {
+      dataPresentInOnRemoved = vueNodeData.has(id)
+    }
+
+    graph.remove(node)
+
+    expect(
+      dataPresentInOnRemoved,
+      'vueNodeData entry must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+    ).toBe(false)
+  })
+
+  it('clears vueNodeData when LGraph.clear() dispatches node:before-removed for each node', () => {
+    const graph = new LGraph()
+    const nodeA = new LGraphNode('a')
+    const nodeB = new LGraphNode('b')
+    graph.add(nodeA)
+    graph.add(nodeB)
+    const { vueNodeData } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.size).toBe(2)
+
+    const beforeRemovedSpy = vi.fn()
+    graph.events.addEventListener('node:before-removed', beforeRemovedSpy)
+
+    graph.clear()
+
+    expect(
+      beforeRemovedSpy,
+      'clear() must dispatch node:before-removed so reactive consumers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      vueNodeData.size,
+      'node:before-removed listener must drain vueNodeData when clear() removes every node'
+    ).toBe(0)
   })
 })

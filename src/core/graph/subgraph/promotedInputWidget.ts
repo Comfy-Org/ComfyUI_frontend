@@ -3,6 +3,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
 
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
@@ -13,7 +14,7 @@ import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
  * on the projected widget.
  */
 export interface PromotedSource {
-  nodeId: string
+  nodeId: NodeId
   widgetName: string
 }
 
@@ -109,7 +110,6 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
   }
 }
 
-/** Every promoted subgraph input on a node, projected to ordinary widgets. */
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
     const widget = promotedInputWidget(input)

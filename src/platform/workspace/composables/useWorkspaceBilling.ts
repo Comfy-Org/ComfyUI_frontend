@@ -2,11 +2,14 @@ import { computed, ref, shallowRef } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
   CreateTopupResponse,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -65,9 +68,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     return {
       amountMicros: data.amount_micros,
       currency: data.currency,
-      effectiveBalanceMicros: data.effective_balance_micros,
-      prepaidBalanceMicros: data.prepaid_balance_micros,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros
+      effectiveBalanceMicros:
+        data.effective_balance_micros ?? data.amount_micros,
+      prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
   })
 
@@ -138,17 +142,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options?: SubscribeOptions
   ): Promise<SubscribeResponse> {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(
-        planSlug,
-        returnUrl,
-        cancelUrl
-      )
+      const response = await workspaceApi.subscribe(planSlug, options)
 
       // Refresh is non-fatal: the subscribe write already succeeded, so a failed
       // refresh must not reject and prompt a retry of an active subscription.
@@ -173,12 +172,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function previewSubscribe(
-    planSlug: string
+    planSlug: string,
+    options?: PreviewSubscribeOptions
   ): Promise<PreviewSubscribeResponse | null> {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.previewSubscribe(planSlug)
+      return await workspaceApi.previewSubscribe(planSlug, options)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to preview subscription'
@@ -276,12 +276,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
     if (!isActiveSubscription.value) {
-      subscriptionDialog.show()
+      subscriptionDialog.show({ reason: 'subscription_required' })
     }
   }
 
-  function showSubscriptionDialog(): void {
-    subscriptionDialog.show()
+  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
+    subscriptionDialog.show(options)
   }
 
   return {

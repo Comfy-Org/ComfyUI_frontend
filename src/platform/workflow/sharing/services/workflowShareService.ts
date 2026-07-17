@@ -45,6 +45,8 @@ interface PrefillMetadataFields {
   description?: string | null
   tags?: string[] | null
   thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
+  thumbnail_url?: string | null
+  thumbnail_comparison_url?: string | null
   sample_image_urls?: string[] | null
 }
 
@@ -52,18 +54,29 @@ function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
   const description = fields.description ?? undefined
   const tags = fields.tags ?? undefined
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
+  const thumbnailUrl = fields.thumbnail_url ?? undefined
+  const thumbnailComparisonUrl = fields.thumbnail_comparison_url ?? undefined
   const sampleImageUrls = fields.sample_image_urls ?? undefined
 
   if (
     !description &&
     !tags?.length &&
     !thumbnailType &&
+    !thumbnailUrl &&
+    !thumbnailComparisonUrl &&
     !sampleImageUrls?.length
   ) {
     return null
   }
 
-  return { description, tags, thumbnailType, sampleImageUrls }
+  return {
+    description,
+    tags,
+    thumbnailType,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    sampleImageUrls
+  }
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {

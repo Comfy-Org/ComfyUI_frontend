@@ -11,7 +11,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
 const mockFocusNode = vi.hoisted(() => vi.fn())
-const mockEnterSubgraph = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -35,16 +34,9 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   }))
 }))
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: vi.fn(() => ({
-    fitView: vi.fn()
-  }))
-}))
-
 vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: vi.fn(() => ({
-    focusNode: mockFocusNode,
-    enterSubgraph: mockEnterSubgraph
+    focusNode: mockFocusNode
   }))
 }))
 
