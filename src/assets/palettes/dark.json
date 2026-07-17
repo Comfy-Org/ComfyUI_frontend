@@ -21,7 +21,7 @@
       "TAESD": "#DCC274"
     },
     "litegraph_base": {
-      "BACKGROUND_IMAGE": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTI0IDBIMFYyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4wNyIvPjwvc3ZnPg==",
+      "BACKGROUND_IMAGE": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTI0IDBIMFYyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iMC4xIi8+PC9zdmc+",
       "CLEAR_BACKGROUND_COLOR": "#09090A",
       "NODE_TITLE_COLOR": "#999",
       "NODE_SELECTED_TITLE_COLOR": "#FFF",
