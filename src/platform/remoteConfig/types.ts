@@ -107,7 +107,6 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
-  member_credit_limits_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number

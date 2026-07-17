@@ -200,7 +200,7 @@ export function useMembersPanel() {
         })
     }
 
-    const creditLimitEnabled = flags.memberCreditLimitsEnabled
+    const creditLimitEnabled = flags.billingControlEnabled
 
     // The creator and the current user can't change their own role or be
     // removed; their only possible action is capping their own usage, so they

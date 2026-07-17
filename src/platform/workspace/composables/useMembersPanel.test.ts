@@ -397,13 +397,13 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: true }))
+const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get memberCreditLimitsEnabled() {
-        return mockMemberCreditLimitsEnabled.value
+      get billingControlEnabled() {
+        return mockBillingControlEnabled.value
       }
     }
   })
@@ -412,7 +412,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 describe('useMembersPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockMemberCreditLimitsEnabled.value = true
+    mockBillingControlEnabled.value = true
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
@@ -686,7 +686,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      mockMemberCreditLimitsEnabled.value = false
+      mockBillingControlEnabled.value = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -698,7 +698,7 @@ describe('useMembersPanel', () => {
     })
 
     it('gives the creator no menu when the flag is disabled', async () => {
-      mockMemberCreditLimitsEnabled.value = false
+      mockBillingControlEnabled.value = false
       mockOriginalOwnerId.value = 'creator-1'
       const panel = await setup()
 

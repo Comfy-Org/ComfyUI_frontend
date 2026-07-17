@@ -46,13 +46,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
+const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get memberCreditLimitsEnabled() {
-        return mockMemberCreditLimitsEnabled.value
+      get billingControlEnabled() {
+        return mockBillingControlEnabled.value
       }
     }
   })
@@ -98,7 +98,7 @@ function resetStore() {
   mockUserEmail.value = null
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
-  mockMemberCreditLimitsEnabled.value = false
+  mockBillingControlEnabled.value = false
 }
 
 describe('useWorkspaceUI', () => {
@@ -218,7 +218,7 @@ describe('useWorkspaceUI', () => {
     })
 
     it('adds the credits column when the credit-limit flag is enabled', async () => {
-      mockMemberCreditLimitsEnabled.value = true
+      mockBillingControlEnabled.value = true
       const ui = await loadComposable()
       expect(ui.uiConfig.value.showCreditsColumn).toBe(true)
       expect(ui.uiConfig.value.membersGridCols).toBe(

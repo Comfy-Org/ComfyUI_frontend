@@ -210,7 +210,7 @@ function useWorkspaceUIInternal() {
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
     const showCreditsColumn =
-      flags.memberCreditLimitsEnabled &&
+      flags.billingControlEnabled &&
       workspaceType.value === 'team' &&
       workspaceRole.value === 'owner'
     if (!showCreditsColumn) return base
