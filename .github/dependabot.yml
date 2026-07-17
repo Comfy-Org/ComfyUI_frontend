@@ -1,85 +1,85 @@
 version: 2
 
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 15
     labels:
-      - "dependencies"
+      - 'dependencies'
     groups:
       vue:
         patterns:
-          - "vue*"
-          - "@vue/*"
-          - "@vueuse/*"
+          - 'vue*'
+          - '@vue/*'
+          - '@vueuse/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       vite-vitest:
         patterns:
-          - "vite*"
-          - "@vitejs/*"
-          - "vitest*"
-          - "@vitest/*"
+          - 'vite*'
+          - '@vitejs/*'
+          - 'vitest*'
+          - '@vitest/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       eslint:
         patterns:
-          - "eslint*"
-          - "@eslint/*"
-          - "eslint-plugin-*"
-          - "eslint-config-*"
-          - "typescript-eslint"
+          - 'eslint*'
+          - '@eslint/*'
+          - 'eslint-plugin-*'
+          - 'eslint-config-*'
+          - 'typescript-eslint'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       types:
         patterns:
-          - "@types/*"
+          - '@types/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       storybook:
         patterns:
-          - "storybook*"
-          - "@storybook/*"
+          - 'storybook*'
+          - '@storybook/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       production-dependencies:
-        dependency-type: "production"
+        dependency-type: 'production'
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       development-dependencies:
-        dependency-type: "development"
+        dependency-type: 'development'
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
     ignore:
       # 20.10.x throws a sync NotSupportedError on external <script> append,
       # breaking GTM/Typeform loader tests (see #13733).
-      - dependency-name: "happy-dom"
-        versions: [">=20.10.0"]
+      - dependency-name: 'happy-dom'
+        versions: ['>=20.10.0']
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     labels:
-      - "dependencies"
-      - "github-actions"
+      - 'dependencies'
+      - 'github-actions'
     groups:
       github-actions:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
