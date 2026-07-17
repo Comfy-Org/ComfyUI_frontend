@@ -150,10 +150,14 @@ export function useMaskEditorLoader() {
         }
       }
 
-      // Layer files live next to the painted-masked image the widget points
-      // at: the input root for saves under the unified upload contract
-      // (#12318), or the clipspace subfolder for saves made before it.
-      const layerSubfolder = nodeImageRef.subfolder ?? ''
+      // Pattern-matched layer files live next to the painted-masked image the
+      // widget points at: the input root for saves under the unified upload
+      // contract (#12318), or the clipspace subfolder for saves made before
+      // it. Cloud resolves the hash filenames from its mask-layers API
+      // server-side, so its refs keep the subfolder they always used.
+      const layerSubfolder = maskLayersFromApi
+        ? 'clipspace'
+        : (nodeImageRef.subfolder ?? '')
 
       const layeredBaseUrl = imageLayerFilenames?.maskedImage
         ? mkFileUrl({

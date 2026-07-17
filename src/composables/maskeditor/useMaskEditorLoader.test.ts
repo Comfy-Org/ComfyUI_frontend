@@ -2,7 +2,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
+
+// ---- Module Mocks ----
 
 const mockDataStore: Record<string, unknown> = {
   inputData: null,
@@ -20,7 +23,13 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -36,6 +45,9 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+// Mock Image constructor so the loader's image fetches resolve without a
+// network. Records every requested URL; URLs matching failUrlPattern reject
+// like a 404 would (reset per test in beforeEach).
 const requestedUrls: string[] = []
 let failUrlPattern: RegExp | null = null
 
@@ -71,11 +83,16 @@ function subfolderOf(url: string): string | null {
   return new URL(url).searchParams.get('subfolder')
 }
 
+function requestedLayerUrls(layerFilename: string): string[] {
+  return requestedUrls.filter((url) => url.includes(layerFilename))
+}
+
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     requestedUrls.length = 0
     failUrlPattern = null
+    distribution.isCloud = false
     mockDataStore.inputData = null
     mockDataStore.sourceNode = null
     vi.stubGlobal('Image', MockImage)
@@ -90,12 +107,15 @@ describe('useMaskEditorLoader', () => {
 
     await useMaskEditorLoader().loadFromNode(node)
 
-    const layerUrls = requestedUrls.filter((url) =>
-      url.includes('clipspace-mask-123.png')
-    )
-    expect(layerUrls.length).toBeGreaterThan(0)
-    for (const url of layerUrls) {
-      expect(subfolderOf(url)).toBeNull()
+    for (const layerFilename of [
+      'clipspace-mask-123.png',
+      'clipspace-paint-123.png'
+    ]) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBeNull()
+      }
     }
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-mask-123.png', type: 'input' },
@@ -110,12 +130,40 @@ describe('useMaskEditorLoader', () => {
 
     await useMaskEditorLoader().loadFromNode(node)
 
-    const layerUrls = requestedUrls.filter((url) =>
-      url.includes('clipspace-mask-123.png')
-    )
-    expect(layerUrls.length).toBeGreaterThan(0)
-    for (const url of layerUrls) {
-      expect(subfolderOf(url)).toBe('clipspace')
+    for (const layerFilename of [
+      'clipspace-mask-123.png',
+      'clipspace-paint-123.png'
+    ]) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBe('clipspace')
+      }
+    }
+  })
+
+  it('keeps the clipspace subfolder for cloud-resolved layer files', async () => {
+    distribution.isCloud = true
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          painted_masked: 'hash-painted-masked.png',
+          painted: 'hash-painted.png',
+          paint: 'hash-paint.png',
+          mask: 'hash-mask.png'
+        })
+    } as Response)
+    const node = createLoadImageNode('clipspace-painted-masked-123.png [input]')
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    for (const layerFilename of ['hash-painted-masked.png', 'hash-paint.png']) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBe('clipspace')
+      }
     }
   })
 
