@@ -14,6 +14,9 @@ outputs:
   prev_version:
     description: Previous version derived from the parent commit
     value: ${{ steps.build.outputs.prev_version }}
+  new_version:
+    description: Current version read from the version file
+    value: ${{ steps.build.outputs.new_version }}
 
 runs:
   using: composite
