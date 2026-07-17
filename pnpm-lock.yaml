@@ -27,6 +27,9 @@ catalogs:
     '@customerio/cdp-analytics-browser':
       specifier: ^0.5.3
       version: 0.5.3
+    '@datadog/browser-rum':
+      specifier: ^6.33.0
+      version: 6.33.0
     '@eslint/js':
       specifier: ^10.0.1
       version: 10.0.1
@@ -468,6 +471,9 @@ importers:
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.3
+      '@datadog/browser-rum':
+        specifier: 'catalog:'
+        version: 6.33.0
       '@formkit/auto-animate':
         specifier: 'catalog:'
         version: 0.9.0
@@ -1506,6 +1512,20 @@ packages:
 
   '@cyberalien/svg-utils@1.2.15':
     resolution: {integrity: sha512-ZbKU6npzW5PNocdoLVJYfKzaP+c/RpT6JUkoaKrW1DOcw6lyXub8XtcNpI3xok6FnyNjS6ZbsrrtjTnS9yeZAQ==}
+
+  '@datadog/browser-core@6.33.0':
+    resolution: {integrity: sha512-h/xuBuY4Xi32CbBHkChMMWlOQ4al/mFF08x3o0hqrderfJvX7VO5tD3OVNwF+pfMXOGlDtBCIhwazr9sn24h3g==}
+
+  '@datadog/browser-rum-core@6.33.0':
+    resolution: {integrity: sha512-Ais4x7zQBrBI6JyILYwFAmjUsqy0iQp2C7JcEEfzU4YYYcVO3DGpyVuYYrqHT27jY1QToHY8EnQUr3Yaj6saDA==}
+
+  '@datadog/browser-rum@6.33.0':
+    resolution: {integrity: sha512-zdxs1PyKt1RQ/fdxsmaCJUeBhB+leCIaPJBcum7uDi/DL8nuu9A9NUc5qGVPlY9zc12v7t2NI8bLpOrMjv+jTg==}
+    peerDependencies:
+      '@datadog/browser-logs': 6.33.0
+    peerDependenciesMeta:
+      '@datadog/browser-logs':
+        optional: true
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -9790,6 +9810,17 @@ snapshots:
   '@cyberalien/svg-utils@1.2.15':
     dependencies:
       '@iconify/types': 2.0.0
+
+  '@datadog/browser-core@6.33.0': {}
+
+  '@datadog/browser-rum-core@6.33.0':
+    dependencies:
+      '@datadog/browser-core': 6.33.0
+
+  '@datadog/browser-rum@6.33.0':
+    dependencies:
+      '@datadog/browser-core': 6.33.0
+      '@datadog/browser-rum-core': 6.33.0
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
