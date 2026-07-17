@@ -218,4 +218,121 @@ describe('keybindingService - Canvas Keybindings', () => {
     expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
     outsideDiv.remove()
   })
+
+  it('should execute SelectAll for Cmd+A (metaKey) on canvas', async () => {
+    const event = createTestKeyboardEvent('a', {
+      metaKey: true,
+      target: canvasChild
+    })
+
+    await keybindingService.keybindHandler(event)
+
+    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      'Comfy.Canvas.SelectAll'
+    )
+  })
+
+  describe('Ctrl/Cmd+A outside canvas container', () => {
+    it('prevents browser text selection when target is a non-input element (e.g. sidebar)', async () => {
+      const sidebarDiv = document.createElement('div')
+      document.body.appendChild(sidebarDiv)
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: sidebarDiv
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+      sidebarDiv.remove()
+    })
+
+    it('does not prevent default when target is an input element (allows native text selection)', async () => {
+      const inputEl = document.createElement('input')
+      document.body.appendChild(inputEl)
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: inputEl
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      inputEl.remove()
+    })
+
+    it('does not prevent default when target is a select element (allows native selection)', async () => {
+      const selectEl = document.createElement('select')
+      document.body.appendChild(selectEl)
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: selectEl
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      selectEl.remove()
+    })
+  })
+
+  describe('canvas keybindings suppressed when an overlay is open', () => {
+    it('does not execute SelectAll when a LiteGraph context menu is visible', async () => {
+      const contextMenu = document.createElement('div')
+      contextMenu.className = 'litecontextmenu'
+      document.body.appendChild(contextMenu)
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: canvasChild
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+      contextMenu.remove()
+    })
+
+    it('does not execute SelectAll when a Reka UI popover is visible', async () => {
+      const popover = document.createElement('div')
+      popover.setAttribute('data-reka-popper-content-wrapper', '')
+      document.body.appendChild(popover)
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: canvasChild
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+      popover.remove()
+    })
+
+    it('resumes executing canvas keybindings once the overlay is removed', async () => {
+      const contextMenu = document.createElement('div')
+      contextMenu.className = 'litecontextmenu'
+      document.body.appendChild(contextMenu)
+      contextMenu.remove()
+
+      const event = createTestKeyboardEvent('a', {
+        ctrlKey: true,
+        target: canvasChild
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+        'Comfy.Canvas.SelectAll'
+      )
+    })
+  })
 })
