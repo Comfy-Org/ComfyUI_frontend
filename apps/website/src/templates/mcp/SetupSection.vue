@@ -139,13 +139,13 @@ const copiedLabel = t('ui.copied', locale)
     >
       <TabsList
         :aria-label="t('mcp.setup.manual.tabsLabel', locale)"
-        class="flex max-w-full flex-nowrap gap-px overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 lg:inline-flex lg:overflow-visible"
+        class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
       >
         <TabsTrigger
           v-for="client in clients"
           :key="client.id"
           :value="client.id"
-          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer bg-white/8 px-6 py-2.5 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors first:rounded-l-xl last:rounded-r-xl hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
         >
           {{ client.name }}
         </TabsTrigger>
