@@ -43,8 +43,9 @@
         class="ml-0.5 shrink-0"
       />
 
-      <!-- Expand / collapse -->
+      <!-- Expand / collapse (hidden when the consumer renders its own) -->
       <Button
+        v-if="!hideChevron"
         v-tooltip.bottom="expandTooltip"
         variant="textonly"
         size="icon-sm"
@@ -83,7 +84,12 @@
       <div
         v-if="showPercent"
         data-testid="process-toast-progress"
-        class="absolute -bottom-px -left-px h-0.5 rounded-r-full bg-primary-background transition-[width] duration-200 ease-out"
+        :class="
+          cn(
+            'absolute -bottom-px -left-px h-0.5 rounded-r-full transition-[width] duration-200 ease-out',
+            progressClass
+          )
+        "
         :style="{ width: `${displayPercent}%` }"
       />
     </div>
@@ -112,6 +118,8 @@ const {
   status = 'progress',
   failedCount = 0,
   expanded = false,
+  hideChevron = false,
+  progressClass = 'bg-primary-background',
   pillClass
 } = defineProps<{
   /** Status verb, e.g. "Running", "Downloading", "Completed", "Failed". */
@@ -123,6 +131,10 @@ const {
   /** Count of failed jobs alongside active work; shows a danger badge when > 0. */
   failedCount?: number
   expanded?: boolean
+  /** Hide the built-in expand chevron (e.g. when the consumer renders its own in #action). */
+  hideChevron?: boolean
+  /** Tailwind bg class for the progress bar. */
+  progressClass?: string
   pillClass?: string
 }>()
 
