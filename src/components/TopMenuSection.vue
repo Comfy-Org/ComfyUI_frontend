@@ -53,10 +53,6 @@
               class="shrink-0"
             />
             <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
-            <div
-              class="h-5 w-px shrink-0 self-center bg-border-subtle"
-              aria-hidden="true"
-            />
             <Button
               v-if="isCloud && flags.workflowSharingEnabled"
               v-tooltip.bottom="shareTooltipConfig"
@@ -213,7 +209,7 @@ const isActionbarContainerEmpty = computed(
 )
 const actionbarContainerClass = computed(() => {
   const base =
-    'actionbar-container pointer-events-auto relative flex h-[var(--workflow-tabs-height)] items-center gap-2 rounded-lg bg-comfy-menu-bg shadow-interface'
+    'actionbar-container pointer-events-auto relative flex min-h-[var(--workflow-tabs-height)] items-center gap-2 rounded-lg bg-comfy-menu-bg shadow-interface'
 
   if (isActionbarContainerEmpty.value) {
     return cn(
@@ -224,7 +220,7 @@ const actionbarContainerClass = computed(() => {
     )
   }
 
-  return cn(base, 'px-1')
+  return cn(base, 'p-1')
 })
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
