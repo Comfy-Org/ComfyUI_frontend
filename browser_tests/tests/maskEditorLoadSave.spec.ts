@@ -67,6 +67,19 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeVisible()
   })
 
+  test('Reopening the editor after save restores the drawn mask', async ({
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+
+    await dialog.getByRole('button', { name: 'Save' }).click()
+    await expect(dialog).toBeHidden()
+
+    await maskEditor.reopenDialog()
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBeGreaterThan(0)
+  })
+
   test('Save failure keeps dialog open', async ({ comfyPage, maskEditor }) => {
     const dialog = await maskEditor.openDialog()
     await maskEditor.drawStrokeAndExpectPixels(dialog)
