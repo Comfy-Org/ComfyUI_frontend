@@ -91,6 +91,8 @@ test.describe('Model library sidebar - asset mode', () => {
     // checkpoints registers ['.safetensors', '.gguf'], so the .gguf model
     // shows even though the legacy fixed list would have hidden it.
     await tab.getFolderRowByLabel('checkpoints').click()
+    // .gguf keeps its extension intentionally: only .safetensors is stripped by
+    // the display-name formatter, so this is the correct label to assert.
     await expect(tab.getLeafByLabel('flux_quantized.gguf')).toBeVisible()
 
     // loras is registered match-all (empty allowlist); the FE substitutes
@@ -137,6 +139,10 @@ test.describe('Model library sidebar - asset mode', () => {
     await expect(tab.getLeafByLabel('freshly_scanned')).toBeVisible()
   })
 
+  // Distinct from the tree-update test above: this exercises the debounced
+  // search pipeline specifically. The tree re-render and the search re-query
+  // are separate reactive paths; removing this test would silently drop
+  // coverage of the search update on scan completion.
   test('Active search results update when the scan fast-phase completes', async ({
     comfyPage,
     assetApi
@@ -190,7 +196,7 @@ test.describe('Model library sidebar - asset mode', () => {
     )
     expect(loader).toBeDefined()
     const widget = await loader.getWidgetByName('ckpt_name')
-    expect(await widget.getValue()).toBe('SDXL/sd_xl_base_1.0.safetensors')
+    expect(await widget.getValue()).toBe(MODEL_TYPE_CHECKPOINT_NESTED.loader_path)
   })
 })
 

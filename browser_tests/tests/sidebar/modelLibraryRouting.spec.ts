@@ -22,7 +22,7 @@ test.describe('Model library tab routing', () => {
     await comfyPage.menu.modelLibraryTab.tabButton.click()
 
     await expect(comfyPage.page.locator(assetBrowserModal)).toBeVisible()
-    await expect(comfyPage.menu.modelLibraryTab.modelTree).toBeHidden()
+    await expect(comfyPage.menu.modelLibraryTab.modelTree).toHaveCount(0)
   })
 
   test('Keeps the sidebar tree when the asset API is disabled', async ({
@@ -38,7 +38,7 @@ test.describe('Model library tab routing', () => {
     await comfyPage.menu.modelLibraryTab.open()
 
     await expect(comfyPage.menu.modelLibraryTab.modelTree).toBeVisible()
-    await expect(comfyPage.page.locator(assetBrowserModal)).toBeHidden()
+    await expect(comfyPage.page.locator(assetBrowserModal)).toHaveCount(0)
   })
 
   test('Keeps the sidebar tree when only the asset API is enabled', async ({
@@ -55,7 +55,7 @@ test.describe('Model library tab routing', () => {
     await comfyPage.menu.modelLibraryTab.open()
 
     await expect(comfyPage.menu.modelLibraryTab.modelTree).toBeVisible()
-    await expect(comfyPage.page.locator(assetBrowserModal)).toBeHidden()
+    await expect(comfyPage.page.locator(assetBrowserModal)).toHaveCount(0)
   })
 })
 
@@ -67,7 +67,14 @@ test.describe('Model library tab routing on cloud', { tag: '@cloud' }, () => {
 
     await comfyPage.menu.modelLibraryTab.tabButton.click()
 
+    // Assert the defaults themselves, not only the routing result.
+    expect(await comfyPage.settings.getSetting('Comfy.Assets.UseAssetAPI')).toBe(
+      true
+    )
+    expect(
+      await comfyPage.settings.getSetting('Comfy.ModelLibrary.UseAssetBrowser')
+    ).toBe(true)
     await expect(comfyPage.page.locator(assetBrowserModal)).toBeVisible()
-    await expect(comfyPage.menu.modelLibraryTab.modelTree).toBeHidden()
+    await expect(comfyPage.menu.modelLibraryTab.modelTree).toHaveCount(0)
   })
 })

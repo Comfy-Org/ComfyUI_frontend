@@ -7,7 +7,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
  * field that `supports_model_type_tags` backends emit (see
  * `src/platform/assets/schemas/assetSchema.ts`).
  */
-export type CoreModelAsset = Asset & Pick<AssetItem, 'loader_path'>
+type CoreModelAsset = Asset & Pick<AssetItem, 'loader_path'>
 function createModelAsset(
   overrides: Partial<Asset> = {}
 ): Asset & { hash?: string } {
