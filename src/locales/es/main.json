@@ -366,6 +366,7 @@
     "typeText": "texto"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "Modo {mode}, acciones del flujo de trabajo",
     "app": "Aplicación",
     "blueprint": "Plano",
     "clearWorkflow": "Limpiar flujo de trabajo",
@@ -2078,7 +2079,10 @@
       "appBuilder": "Constructor de aplicaciones",
       "apps": "Aplicaciones",
       "appsEmptyMessage": "Las aplicaciones guardadas aparecerán aquí.\nHaz clic abajo para crear tu primera aplicación.",
-      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación."
+      "appsEmptyMessageAction": "Haz clic abajo para crear tu primera aplicación.",
+      "buildAnApp": "Crear una aplicación",
+      "create": "Crear",
+      "createApp": "Crear aplicación"
     },
     "arrange": {
       "atLeastOne": "al menos uno",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "Cambiar a Salidas"
     },
     "backToWorkflow": "Volver al flujo de trabajo",
-    "beta": "Modo App Beta - Enviar comentarios",
-    "buildAnApp": "Crear una aplicación",
     "builder": {
       "exit": "Salir del constructor",
       "exitConfirmMessage": "Tienes cambios sin guardar que se perderán\n¿Salir sin guardar?",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "Algo salió mal durante la generación. Esto puede deberse a entradas ocultas no válidas, recursos faltantes o problemas de configuración del flujo de trabajo.",
       "support": "contacta a nuestro soporte"
     },
+    "feedbackLoadError": "No se pudo cargar el formulario de comentarios. Por favor, inténtalo de nuevo más tarde.",
     "giveFeedback": "Enviar comentarios",
     "graphMode": "Modo gráfico",
     "hasCreditCost": "Requiere créditos adicionales",
@@ -2198,6 +2201,7 @@
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
     "materialModes": {
+      "clay": "Arcilla",
       "depth": "Profundidad",
       "lineart": "Arte lineal",
       "normal": "Normal",
@@ -2205,7 +2209,29 @@
       "pointCloud": "Nube de puntos",
       "wireframe": "Malla"
     },
+    "menuBar": {
+      "bgColor": "Color de fondo",
+      "bgImage": "Imagen de fondo",
+      "deleteRecording": "Eliminar grabación",
+      "downloadRecording": "Descargar grabación",
+      "fov": "FOV",
+      "intensity": "Intensidad",
+      "material": "Material",
+      "originalMaterialOnly": "Solo material original",
+      "panorama": "Panorama",
+      "record": "Grabar",
+      "recording": "Grabando",
+      "removeBackground": "Quitar fondo",
+      "showGrid": "Mostrar cuadrícula",
+      "skeleton": "Esqueleto",
+      "startNewRecording": "Iniciar nueva grabación",
+      "stopRecording": "Detener grabación",
+      "switchProjection": "Cambiar proyección",
+      "upDirection": "Dirección arriba",
+      "videoRecordingTooltip": "Grabación de video de la escena [mp4]"
+    },
     "model": "Modelo",
+    "model3d": "Modelo 3D",
     "openIn3DViewer": "Abrir en Visor 3D",
     "panoramaMode": "Panorama",
     "previewOutput": "Vista previa de salida",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "texto",
     "training": "entrenamiento",
     "transform": "transformar",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "Ya existe un secreto con este nombre",
       "duplicateProvider": "Ya existe un secreto para este proveedor",
+      "fileReadFailed": "No se pudo leer el archivo seleccionado",
+      "fileTooLarge": "El archivo es demasiado grande. Sube unas credenciales JSON de menos de 1 MB",
+      "invalidJson": "El archivo debe contener un objeto JSON válido",
       "nameRequired": "El nombre es obligatorio",
       "nameTooLong": "El nombre debe tener 255 caracteres o menos",
       "providerRequired": "El proveedor es obligatorio",
       "secretValueRequired": "El valor secreto es obligatorio"
     },
+    "jsonFileHint": "Pega el JSON o sube un archivo. Será cifrado y no podrá verse de nuevo.",
+    "jsonFileHintEdit": "Déjalo en blanco para mantener el valor actual, o sube un nuevo archivo JSON para reemplazarlo.",
+    "jsonFilePlaceholder": "Sube o pega las credenciales JSON del proveedor",
     "lastUsed": "Último uso el {date}",
     "modelProviders": "Proveedores de modelos",
     "name": "Nombre",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "Déjalo en blanco para mantener el valor actual.",
     "secretValuePlaceholder": "Introduce tu clave API",
     "secretValuePlaceholderEdit": "Introduce un nuevo valor para cambiarlo",
-    "title": "Claves API y Secretos"
+    "title": "Claves API y Secretos",
+    "uploadJsonFile": "Subir archivo JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Omitir nodos de grupo",

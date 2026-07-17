@@ -780,7 +780,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {

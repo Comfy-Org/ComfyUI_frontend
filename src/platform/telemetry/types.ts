@@ -33,6 +33,7 @@ export type PaymentIntentSource =
   | 'invite_member_upsell'
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
+  | 'free_tier_quota'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -52,7 +53,27 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-/** Survey field ids → answers. Fields are backend-overridable, so all optional. */
+export type AuthFlowAction =
+  | 'email_sign_in'
+  | 'email_sign_up'
+  | 'google_sign_in'
+  | 'google_sign_up'
+  | 'github_sign_in'
+  | 'github_sign_up'
+  | 'password_reset'
+
+/**
+ * Metadata for failed authentication attempts
+ */
+export interface AuthErrorMetadata {
+  error_code: string
+  auth_action: AuthFlowAction
+}
+
+/**
+ * Survey field ids mapped to answers. Fields are backend-overridable, so all
+ * are optional.
+ */
 export interface SurveyResponses {
   // Current default schema (see defaultSurveySchema.ts)
   intent?: string | string[]
@@ -556,6 +577,7 @@ export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
+  trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -674,6 +696,7 @@ export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_AUTH_FAILED: 'app:user_auth_failed',
   USER_LOGGED_IN: 'app:user_logged_in',
 
   // Subscription Flow
@@ -797,6 +820,7 @@ export type ExecutionTriggerSource =
 export type TelemetryEventProperties =
   | AuthMetadata
   | OnboardingTourMetadata
+  | AuthErrorMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
