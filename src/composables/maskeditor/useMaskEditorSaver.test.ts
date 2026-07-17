@@ -1,7 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -21,8 +29,9 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-function createMockCtx(): CanvasRenderingContext2D {
+function createMockCtx(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return fromPartial<CanvasRenderingContext2D>({
+    canvas,
     drawImage: vi.fn(),
     getImageData: vi.fn(() => ({
       data: new Uint8ClampedArray(4 * 4 * 4),
@@ -38,7 +47,9 @@ function createMockCanvas(): HTMLCanvasElement {
   return fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
-    getContext: vi.fn(() => createMockCtx()),
+    getContext(this: HTMLCanvasElement) {
+      return createMockCtx(this)
+    },
     toBlob: vi.fn((cb: BlobCallback) => {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),
@@ -89,6 +100,15 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode
   const originalCreateElement = document.createElement.bind(document)
+
+  beforeAll(async () => {
+    // happy-dom lacks CompressionStream; Node's implementation is spec-compliant
+    if (typeof globalThis.CompressionStream === 'undefined') {
+      const { CompressionStream } = await import('node:stream/web')
+      globalThis.CompressionStream =
+        CompressionStream as typeof globalThis.CompressionStream
+    }
+  })
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -200,5 +220,26 @@ describe('useMaskEditorSaver', () => {
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
     expect(body.get('subfolder')).toBeNull()
+  })
+
+  it('uploads the masked layers as directly encoded PNGs, not canvas blobs', async () => {
+    // canvas.toBlob() zeroes RGB under transparent pixels (premultiplied
+    // alpha), so the masked layers must come from the straight-alpha encoder.
+    // uploadAllLayers uploads in fixed order:
+    // maskedImage, paintLayer, paintedImage, paintedMaskedImage.
+    const fetchApiMock = vi.mocked(api.fetchApi)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(4)
+
+    const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+    for (const uploadIndex of [0, 3]) {
+      const body = fetchApiMock.mock.calls[uploadIndex][1]?.body as FormData
+      const file = body.get('image') as Blob
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      expect(Array.from(bytes.subarray(0, 8))).toEqual(pngSignature)
+    }
   })
 })
