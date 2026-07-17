@@ -1814,7 +1814,7 @@ export class ComfyApp {
             })
           }
           this.canvas.draw(true, true)
-          await this.ui.queue.update()
+          void this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
