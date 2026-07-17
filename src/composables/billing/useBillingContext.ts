@@ -36,8 +36,8 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
  *
  * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
  * - Team workspaces enabled: workspace billing via /api/billing/* for team
- *   workspaces, and for personal workspaces once consolidated billing is
- *   enabled; personal workspaces otherwise stay on legacy billing
+ *   workspaces, and for personal workspaces once billing control is enabled;
+ *   personal workspaces otherwise stay on legacy billing
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -152,6 +152,21 @@ function useBillingContextInternal(): BillingContext {
         false)
   )
 
+  // Plan identity, independent of subscription health: the per-credit Team plan
+  // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
+  // isActiveSubscription on purpose — paused and payment_failed both force
+  // is_active=false, which is exactly when callers still need to know this is a
+  // team plan.
+  const isTeamPlan = computed(
+    () =>
+      type.value === 'workspace' &&
+      (currentTeamCreditStop.value !== null ||
+        (currentPlanSlug.value
+          ?.toLowerCase()
+          .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
+          false))
+  )
+
   const billingStatus = computed(() =>
     toValue(activeContext.value.billingStatus)
   )
@@ -202,9 +217,9 @@ function useBillingContextInternal(): BillingContext {
     error.value = null
   }
 
-  // type flips when the team-workspaces or consolidated-billing flag resolves
-  // from authenticated config, swapping the active backend. Reset then reinit
-  // on every workspace-id or type change.
+  // type flips when the team-workspaces or billing-control flag resolves from
+  // authenticated config, swapping the active backend. Reset then reinit on
+  // every workspace-id or type change.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
@@ -311,6 +326,7 @@ function useBillingContextInternal(): BillingContext {
     canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
+    isTeamPlan,
     billingStatus,
     subscriptionStatus,
     tier,

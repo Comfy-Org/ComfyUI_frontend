@@ -1,5 +1,6 @@
 <template>
   <SidebarTabTemplate
+    ref="panelRef"
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
@@ -100,18 +101,19 @@
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
-        <AssetsSidebarGridView
-          v-else
-          :assets="displayAssets"
-          :is-selected="isSelected"
-          :show-output-count="shouldShowOutputCount"
-          :get-output-count="getOutputCount"
-          @select-asset="handleAssetSelect"
-          @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
-          @zoom="handleZoomClick"
-          @output-count-click="enterFolderView"
-        />
+        <div v-else class="size-full">
+          <AssetsSidebarGridView
+            :assets="displayAssets"
+            :is-selected
+            :show-output-count
+            :get-output-count
+            @select-asset="handleAssetSelect"
+            @context-menu="handleAssetContextMenu"
+            @approach-end="handleApproachEnd"
+            @zoom="handleZoomClick"
+            @output-count-click="enterFolderView"
+          />
+        </div>
       </div>
     </template>
     <template #footer>
@@ -125,6 +127,13 @@
       />
     </template>
   </SidebarTabTemplate>
+  <Teleport to="body">
+    <div
+      v-if="marqueeStyle"
+      class="pointer-events-none fixed z-9999 border border-primary-background bg-primary-background/20"
+      :style="marqueeStyle"
+    />
+  </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -151,6 +160,7 @@
 
 <script setup lang="ts">
 import {
+  unrefElement,
   useAsyncState,
   useDebounceFn,
   useStorage,
@@ -164,6 +174,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -182,6 +193,7 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -239,7 +251,7 @@ const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
-const shouldShowOutputCount = (item: AssetItem): boolean => {
+const showOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
   }
@@ -259,7 +271,10 @@ const outputAssets = useAssetsApi('output')
 // Asset selection
 const {
   isSelected,
+  selectedIds,
   handleAssetClick,
+  selectAll,
+  setSelectedIds,
   hasSelection,
   clearSelection,
   getSelectedAssets,
@@ -269,6 +284,12 @@ const {
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
+
+const panelRef = useTemplateRef('panelRef')
+const marqueePanelRef = computed(() => {
+  const el = unrefElement(panelRef)
+  return el instanceof HTMLElement ? el : undefined
+})
 
 const {
   downloadAssets,
@@ -335,6 +356,16 @@ const {
 const visibleAssets = computed(() => {
   if (!isListView.value) return displayAssets.value
   return listViewSelectableAssets.value
+})
+
+const { marqueeStyle } = useAssetGridSelection({
+  marqueeContainerRef: marqueePanelRef,
+  hoverTargetRef: marqueePanelRef,
+  getAssets: () => visibleAssets.value,
+  getSelectedIds: () => [...selectedIds.value],
+  setSelectedIds,
+  selectAll,
+  isEnabled: () => !isListView.value
 })
 
 const previewableVisibleAssets = computed(() =>
@@ -575,7 +606,7 @@ const handleDeselectAll = () => {
 }
 
 const handleEmptySpaceClick = () => {
-  if (hasSelection) {
+  if (hasSelection.value) {
     clearSelection()
   }
 }
