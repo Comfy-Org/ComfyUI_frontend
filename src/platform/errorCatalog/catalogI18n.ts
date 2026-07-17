@@ -1,10 +1,4 @@
-import { i18n, t, te } from '@/i18n'
-
-// vue-i18n 11's te() consults the fallback locale; scope the check to the
-// active locale so missing catalog keys fall back to raw API copy.
-function hasCatalogKey(key: string): boolean {
-  return te(key, i18n.global.locale.value)
-}
+import { t, te } from '@/i18n'
 
 // Shared i18n helpers for error catalog resolvers. These preserve the raw API
 // message/details as fallbacks when a catalog key is not available. Keep this
@@ -21,7 +15,7 @@ export function translateCatalogMessage(
   fallback: string,
   params?: CatalogParams
 ): string {
-  if (hasCatalogKey(key)) return params ? t(key, params) : t(key)
+  if (te(key)) return params ? t(key, params) : t(key)
   if (!params) return fallback
 
   return fallback.replace(/\{(\w+)\}/g, (match, paramName) =>
@@ -34,7 +28,7 @@ export function translateOptionalCatalogMessage(
   fallback?: string,
   params?: CatalogParams
 ): string | undefined {
-  if (hasCatalogKey(key)) return params ? t(key, params) : t(key)
+  if (te(key)) return params ? t(key, params) : t(key)
   return fallback?.trim() ? fallback : undefined
 }
 
