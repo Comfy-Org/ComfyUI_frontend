@@ -240,6 +240,9 @@ catalogs:
     eslint-plugin-vue:
       specifier: ^10.9.2
       version: 10.9.2
+    fallow:
+      specifier: ^2.102.0
+      version: 2.104.0
     fast-check:
       specifier: ^4.5.3
       version: 4.9.0
@@ -763,6 +766,9 @@ importers:
       eslint-plugin-vue:
         specifier: 'catalog:'
         version: 10.9.2(@typescript-eslint/parser@8.64.0(eslint@10.7.0(jiti@2.7.0))(typescript@5.9.3))(eslint@10.7.0(jiti@2.7.0))(vue-eslint-parser@10.4.1(eslint@10.7.0(jiti@2.7.0)))
+      fallow:
+        specifier: 'catalog:'
+        version: 2.104.0
       fast-check:
         specifier: 'catalog:'
         version: 4.9.0
@@ -1958,6 +1964,46 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fallow-cli/darwin-arm64@2.104.0':
+    resolution: {integrity: sha512-5kKt3JuoYVz5/9PpHdu8u41vOZ6CzIu+5SqNBR8MktGLVMBSERm85+NN63XqgbZrVwIC/5uiP8eHQ0RYw0qhHg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@fallow-cli/darwin-x64@2.104.0':
+    resolution: {integrity: sha512-BEwwYccutb8RxyAm3uE8vwCJ3JSLYYeREj3fpLPFFCjh9eXBBo3Q1Mu5pxBjjUeehfbR6r/FLJb9JV28bCia9g==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@fallow-cli/linux-arm64-gnu@2.104.0':
+    resolution: {integrity: sha512-IyIkmwxm0AfVKXfHYuSBO6Fzt6fgZsRE0arbtObeDlKSv7zZMzqHZPpbSGZxPEmVODBMScdSxxaFSli9xFHBTA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@fallow-cli/linux-arm64-musl@2.104.0':
+    resolution: {integrity: sha512-YskAeLCUUPnbwqtMC452ksI+miw6hN4K6peTFRJ0j2gSpkTriJfUgkudFB1+JX2/YqV41yDAqe5XeDYhuXxjOA==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@fallow-cli/linux-x64-gnu@2.104.0':
+    resolution: {integrity: sha512-v3Um0fXwTPg7kGRD1hKeS36A7P/3J7h3TiQ2KAzE8ThKkDViHYjKGEkajtGGSIj/Tv+GVnJBOvJ7i752/6iSBA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@fallow-cli/linux-x64-musl@2.104.0':
+    resolution: {integrity: sha512-wMVyeSp5uHvzVUgNHk6xuTCisVOAUv8FTC6z1swANdLQlQgd4Trnu8GYwhJhO7cU9RuL85yn1XksCs6+PkRM8A==}
+    cpu: [x64]
+    os: [linux]
+
+  '@fallow-cli/win32-arm64-msvc@2.104.0':
+    resolution: {integrity: sha512-qDRn7zoRKVAHVz+BqKUnUPa8H4gD/g26Fs/hqH9futbthecgjXmPyRJwycE8HTQBNlVwck5d5w36a+PEPsCYaQ==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@fallow-cli/win32-x64-msvc@2.104.0':
+    resolution: {integrity: sha512-irER9HuZ9DXunl4H9RNsWQ9AvGmHs/Zp1+Yr2ATmgSNumERPXvgXa2IiGtCvKFqI72639TlhUj8+2WqIXZ54WQ==}
+    cpu: [x64]
+    os: [win32]
 
   '@firebase/ai@1.4.1':
     resolution: {integrity: sha512-bcusQfA/tHjUjBTnMx6jdoPMpDl3r8K15Z+snHz9wq0Foox0F/V+kNLXucEOHoTL2hTc9l+onZCyBJs2QoIC3g==}
@@ -5922,6 +5968,11 @@ packages:
 
   extendable-media-recorder@9.2.38:
     resolution: {integrity: sha512-HD5IqjYtSmwr6p0pTd6AG3fEYmILOrURguEqyoSCQvTtS426OwijJqnbCOtg7/UzgN9Rrdin24rziEkz+OX8cQ==}
+
+  fallow@2.104.0:
+    resolution: {integrity: sha512-UX6Q10Feyb7epe5tTI0sHCHPReOhuKOtxdVpkbqr1lLSZirv2PJiLTTrJr7gKeLHbztE9CHR1y7YARSe0rNYag==}
+    engines: {node: '>=16'}
+    hasBin: true
 
   fast-check@4.9.0:
     resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
@@ -10339,6 +10390,30 @@ snapshots:
 
   '@exodus/bytes@1.15.1': {}
 
+  '@fallow-cli/darwin-arm64@2.104.0':
+    optional: true
+
+  '@fallow-cli/darwin-x64@2.104.0':
+    optional: true
+
+  '@fallow-cli/linux-arm64-gnu@2.104.0':
+    optional: true
+
+  '@fallow-cli/linux-arm64-musl@2.104.0':
+    optional: true
+
+  '@fallow-cli/linux-x64-gnu@2.104.0':
+    optional: true
+
+  '@fallow-cli/linux-x64-musl@2.104.0':
+    optional: true
+
+  '@fallow-cli/win32-arm64-msvc@2.104.0':
+    optional: true
+
+  '@fallow-cli/win32-x64-msvc@2.104.0':
+    optional: true
+
   '@firebase/ai@1.4.1(@firebase/app-types@0.9.3)(@firebase/app@0.13.2)':
     dependencies:
       '@firebase/app': 0.13.2
@@ -14455,6 +14530,19 @@ snapshots:
       standardized-audio-context: 25.3.77
       subscribable-things: 2.1.60
       tslib: 2.8.1
+
+  fallow@2.104.0:
+    dependencies:
+      detect-libc: 2.1.2
+    optionalDependencies:
+      '@fallow-cli/darwin-arm64': 2.104.0
+      '@fallow-cli/darwin-x64': 2.104.0
+      '@fallow-cli/linux-arm64-gnu': 2.104.0
+      '@fallow-cli/linux-arm64-musl': 2.104.0
+      '@fallow-cli/linux-x64-gnu': 2.104.0
+      '@fallow-cli/linux-x64-musl': 2.104.0
+      '@fallow-cli/win32-arm64-msvc': 2.104.0
+      '@fallow-cli/win32-x64-msvc': 2.104.0
 
   fast-check@4.9.0:
     dependencies:
