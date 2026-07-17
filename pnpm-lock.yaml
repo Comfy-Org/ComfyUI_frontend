@@ -30,6 +30,9 @@ catalogs:
     '@eslint/js':
       specifier: ^10.0.1
       version: 10.0.1
+    '@floating-ui/vue':
+      specifier: ^1.1.11
+      version: 1.1.11
     '@formkit/auto-animate':
       specifier: ^0.9.0
       version: 0.9.0
@@ -471,6 +474,9 @@ importers:
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.3
+      '@floating-ui/vue':
+        specifier: 'catalog:'
+        version: 1.1.11(vue@3.5.34(typescript@5.9.3))
       '@formkit/auto-animate':
         specifier: 'catalog:'
         version: 0.9.0

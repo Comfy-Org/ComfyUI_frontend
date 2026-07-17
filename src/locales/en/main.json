@@ -4582,5 +4582,37 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "onboardingCoachmarks": {
+    "stepLabel": "Step {current} of {total}",
+    "skip": "Skip",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "loadError": "Something went wrong showing this tour",
+    "appMode": {
+      "replay": "Take a tour of App Mode",
+      "landing": {
+        "title": "Welcome to Apps",
+        "body": "A quick tour of the essentials, in about a minute. We'll show you where to add inputs, run your app, and find your results.",
+        "primary": "Start tutorial"
+      },
+      "inputs": {
+        "title": "Add your inputs",
+        "body": "Add what you want to work with. Your inputs are what the app turns into results."
+      },
+      "run": {
+        "title": "Run your app",
+        "body": "Happy with your inputs? Hit Run and your result appears in the center the moment it's ready."
+      },
+      "outputs": {
+        "title": "Get your results",
+        "body": "Your finished results show up here in the center. Download them, or tweak an input and run again."
+      },
+      "assets": {
+        "title": "Find all your assets",
+        "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    }
   }
 }
