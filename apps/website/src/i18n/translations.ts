@@ -1919,41 +1919,47 @@ const translations = {
     'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'Two ways to connect: ask your agent to install it, or add the server yourself. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    en: 'Two ways to connect: add the server yourself, or ask your agent to install it. Sign in once, and the full ComfyUI toolset is available right in your chat.',
     'zh-CN':
-      '两种接入方式：让你的智能体自动安装，或自行添加服务器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+      '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
   },
-  'mcp.setup.option1.label': { en: 'OPTION 1', 'zh-CN': '方式一' },
-  'mcp.setup.option1.title': {
-    en: 'Ask your agent to install Comfy MCP',
-    'zh-CN': '让你的智能体安装 Comfy MCP'
-  },
-  'mcp.setup.option1.command': {
-    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
-    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
-  },
-  'mcp.setup.option1.description': {
-    en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
-    'zh-CN':
-      '将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
-  },
-  'mcp.setup.option2.label': { en: 'OPTION 2', 'zh-CN': '方式二' },
-  'mcp.setup.option2.title': {
+  'mcp.setup.manual.title': {
     en: 'Install manually',
     'zh-CN': '手动安装'
   },
-  'mcp.setup.option2.description': {
-    en: 'Prefer manual setup? Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
+  'mcp.setup.manual.description': {
+    en: 'Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
     'zh-CN':
-      '想手动配置？将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
+      '将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
   },
-  'mcp.setup.option2.tabsLabel': {
+  'mcp.setup.manual.tabsLabel': {
     en: 'Pick your client',
     'zh-CN': '选择你的客户端'
+  },
+  'mcp.setup.agent.title': {
+    en: 'Ask your agent to install Comfy MCP',
+    'zh-CN': '让你的智能体安装 Comfy MCP'
+  },
+  'mcp.setup.agent.command': {
+    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
+    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
+  },
+  'mcp.setup.agent.description': {
+    en: 'Prefer to let your agent do it? Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
+    'zh-CN':
+      '想让智能体代劳？将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
   },
   'mcp.setup.clients.claudeCode.step': {
     en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
     'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
+  },
+  'mcp.setup.walkthroughAlt': {
+    en: '{client} setup walkthrough',
+    'zh-CN': '{client} 设置演示'
+  },
+  'mcp.setup.clients.claudeDesktop.manualTitle': {
+    en: 'Add Custom Connector',
+    'zh-CN': '添加自定义连接器'
   },
   'mcp.setup.clients.claudeDesktop.step': {
     en: 'Click Customize in the sidebar, open Connectors, choose Add custom connector, paste the URL above, and sign in.',
@@ -1973,9 +1979,13 @@ const translations = {
     en: 'Run this in your terminal, then codex mcp login comfy-cloud to sign in.',
     'zh-CN': '在终端运行以下命令，然后执行 codex mcp login comfy-cloud 登录。'
   },
+  'mcp.setup.clients.openclaw.step': {
+    en: 'Run these in your terminal, then openclaw mcp login comfy to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 openclaw mcp login comfy 登录。'
+  },
   'mcp.setup.clients.other.name': {
-    en: 'Other clients',
-    'zh-CN': '其他客户端'
+    en: 'Others',
+    'zh-CN': '其他'
   },
   'mcp.setup.clients.other.step': {
     en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the ',
@@ -2190,9 +2200,9 @@ const translations = {
     'zh-CN': '我需要 API 密钥吗？'
   },
   'mcp.faq.3.a': {
-    en: 'Not for Claude Code, Claude Desktop, or Codex. You need a Comfy API key for Cursor, Hermes, and OpenClaw for now. Just copy https://docs.comfy.org/agent-tools/cloud and your agent will figure out the installation for you.',
+    en: 'Not for Claude Code, Claude Desktop, Codex, or OpenClaw. You need a Comfy API key for Cursor and Hermes for now. Just copy https://docs.comfy.org/agent-tools/cloud and your agent will figure out the installation for you.',
     'zh-CN':
-      'Claude Code、Claude Desktop 和 Codex 不需要。Cursor、Hermes 和 OpenClaw 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/cloud，你的智能体就会为你完成安装。'
+      'Claude Code、Claude Desktop、Codex 和 OpenClaw 不需要。Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/cloud，你的智能体就会为你完成安装。'
   },
   'mcp.faq.4.q': {
     en: 'Does it cost anything?',
