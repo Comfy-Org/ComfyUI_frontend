@@ -20,7 +20,7 @@ on:
 
 concurrency:
   group: dashboard-deploy-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -31,7 +31,7 @@ jobs:
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
