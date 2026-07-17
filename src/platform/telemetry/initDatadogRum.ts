@@ -9,7 +9,9 @@ const DATADOG_ENV_BY_HOSTNAME = new Map([
 ])
 
 export function initDatadogRum(hostname = window.location.hostname): void {
-  const env = DATADOG_ENV_BY_HOSTNAME.get(hostname)
+  const env =
+    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
+    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
   if (!env || datadogRum.getInitConfiguration()) return
 
   datadogRum.init({

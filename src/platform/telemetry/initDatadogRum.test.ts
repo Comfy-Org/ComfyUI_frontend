@@ -21,7 +21,8 @@ describe('initDatadogRum', () => {
   it.for([
     { hostname: 'cloud.comfy.org', env: 'prod-v2' },
     { hostname: 'stagingcloud.comfy.org', env: 'stg-v2' },
-    { hostname: 'testcloud.comfy.org', env: 'test-v2' }
+    { hostname: 'testcloud.comfy.org', env: 'test-v2' },
+    { hostname: 'fe-pr-13691.testenvs.comfy.org', env: 'test-v2' }
   ])('initializes $hostname with the $env environment', ({ hostname, env }) => {
     initDatadogRum(hostname)
 
@@ -39,8 +40,13 @@ describe('initDatadogRum', () => {
     })
   })
 
-  it('does not initialize on an unknown hostname', () => {
-    initDatadogRum('localhost')
+  it.for([
+    'localhost',
+    'testenvs.comfy.org',
+    'eviltestenvs.comfy.org',
+    'preview.testenvs.comfy.org.example.com'
+  ])('does not initialize on unknown hostname %s', (hostname) => {
+    initDatadogRum(hostname)
 
     expect(hoisted.init).not.toHaveBeenCalled()
   })
