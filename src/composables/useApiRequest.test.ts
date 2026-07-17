@@ -38,6 +38,29 @@ describe('useApiRequest', () => {
     expect(error.value).toBeNull()
   })
 
+  it('stays loading until every concurrent request settles', async () => {
+    const { isLoading, executeRequest } = useApiRequest({
+      client,
+      mapError: vi.fn()
+    })
+
+    let resolveFirst!: (value: AxiosResponse<string>) => void
+    const first = executeRequest(
+      () => new Promise<AxiosResponse<string>>((res) => (resolveFirst = res)),
+      { errorContext: 'ctx' }
+    )
+    const second = executeRequest(async () => response('second'), {
+      errorContext: 'ctx'
+    })
+
+    await second
+    expect(isLoading.value).toBe(true)
+
+    resolveFirst(response('first'))
+    await first
+    expect(isLoading.value).toBe(false)
+  })
+
   it('passes the injected client to the api call', async () => {
     const apiCall = vi.fn(async () => response(1))
     const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
