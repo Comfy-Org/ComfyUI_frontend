@@ -68,6 +68,10 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import {
+  overlayPriceBadges,
+  startPriceBadgeFetch
+} from '@/services/priceBadgeService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -898,6 +902,10 @@ export class ComfyApp {
 
     this.canvasElRef.value = canvasEl
 
+    // Kick off the price badge fetch early so it runs concurrently with
+    // extension loading and the /object_info request (see getNodeDefs).
+    startPriceBadgeFetch()
+
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
@@ -1086,7 +1094,11 @@ export class ComfyApp {
       }
     }
 
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    const defs = _.mapValues(await api.getNodeDefs(), (def) =>
+      translateNodeDef(def)
+    )
+    await overlayPriceBadges(defs)
+    return defs
   }
 
   /**
