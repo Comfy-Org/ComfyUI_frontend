@@ -2933,8 +2933,13 @@
       "noMatches": "No partner nodes match your search.",
       "allowedCount": "{enabled} of {total} allowed",
       "nodeToggle": "Allow {name}",
-      "saved": "Allowlist saved",
-      "saveError": "Allowlist could not be saved."
+      "saved": "Partner node policy saved",
+      "saveError": "Partner node policy could not be saved.",
+      "enforcement": {
+        "title": "Enforce partner node allowlist",
+        "description": "Block partner nodes that are not explicitly allowed.",
+        "toggle": "Enforce partner node allowlist"
+      }
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"

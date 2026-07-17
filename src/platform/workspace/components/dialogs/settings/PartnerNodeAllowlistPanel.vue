@@ -22,6 +22,26 @@
       </div>
 
       <div
+        v-if="isReady"
+        class="flex min-h-14 items-center gap-4 rounded-xl border border-interface-stroke/60 px-4 py-3"
+      >
+        <div class="min-w-0 flex-1">
+          <div class="text-sm text-base-foreground">
+            {{ $t('workspacePanel.allowlist.enforcement.title') }}
+          </div>
+          <div class="mt-0.5 text-xs text-muted-foreground">
+            {{ $t('workspacePanel.allowlist.enforcement.description') }}
+          </div>
+        </div>
+        <ToggleSwitch
+          :model-value="draftEnforcementEnabled"
+          :disabled="isSaving"
+          :aria-label="$t('workspacePanel.allowlist.enforcement.toggle')"
+          @update:model-value="setEnforcementEnabled"
+        />
+      </div>
+
+      <div
         v-if="status === 'loading'"
         role="status"
         class="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground"
@@ -157,6 +177,7 @@ const toastStore = useToastStore()
 
 const searchQuery = ref('')
 const draftNodes = ref<Record<string, boolean>>({})
+const draftEnforcementEnabled = ref(false)
 const isSaving = ref(false)
 const saveError = ref(false)
 let saveGeneration = 0
@@ -170,6 +191,7 @@ function originalNodeValue(nodeId: string): boolean {
 }
 
 function resetDraft(): void {
+  draftEnforcementEnabled.value = policy.value?.enforcementEnabled ?? false
   draftNodes.value = Object.fromEntries(
     partnerNodes.value.map((node) => [node.id, originalNodeValue(node.id)])
   )
@@ -196,10 +218,13 @@ watch(
   { flush: 'sync' }
 )
 
-const hasChanges = computed(() =>
-  partnerNodes.value.some(
-    (node) => draftNodes.value[node.id] !== originalNodeValue(node.id)
-  )
+const hasChanges = computed(
+  () =>
+    draftEnforcementEnabled.value !==
+      (policy.value?.enforcementEnabled ?? false) ||
+    partnerNodes.value.some(
+      (node) => draftNodes.value[node.id] !== originalNodeValue(node.id)
+    )
 )
 
 const groups = computed<PartnerNodeGroup[]>(() => {
@@ -241,6 +266,11 @@ function setNodeEnabled(nodeId: string, enabled: boolean): void {
   saveError.value = false
 }
 
+function setEnforcementEnabled(enabled: boolean): void {
+  draftEnforcementEnabled.value = enabled
+  saveError.value = false
+}
+
 async function save(): Promise<void> {
   if (!hasChanges.value || isSaving.value) return
 
@@ -249,7 +279,7 @@ async function save(): Promise<void> {
   saveError.value = false
   try {
     const applied = await governanceStore.savePolicy({
-      enforcementEnabled: policy.value?.enforcementEnabled ?? false,
+      enforcementEnabled: draftEnforcementEnabled.value,
       nodes: {
         ...(policy.value?.nodes ?? {}),
         ...draftNodes.value

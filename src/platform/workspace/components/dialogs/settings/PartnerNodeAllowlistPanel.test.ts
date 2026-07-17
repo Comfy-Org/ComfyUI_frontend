@@ -140,6 +140,11 @@ describe('PartnerNodeAllowlistPanel', () => {
     expect(screen.getByText('BFL')).toBeInTheDocument()
     expect(screen.getByText('Google')).toBeInTheDocument()
     expect(
+      screen.getByRole('switch', {
+        name: 'Enforce partner node allowlist'
+      })
+    ).toBeChecked()
+    expect(
       screen.getByRole('switch', { name: 'Allow Flux Fill' })
     ).not.toBeChecked()
     expect(
@@ -166,8 +171,39 @@ describe('PartnerNodeAllowlistPanel', () => {
     })
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'success',
-      summary: 'Allowlist saved',
+      summary: 'Partner node policy saved',
       life: 2000
+    })
+  })
+
+  it('saves enforcement with the existing allowlist', async () => {
+    const user = userEvent.setup()
+    state.policy.value = {
+      enforcementEnabled: false,
+      nodes: {
+        FluxFill: false,
+        FluxExpand: true,
+        VeoVideo: true,
+        RetiredNode: false
+      }
+    }
+    renderPanel()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Enforce partner node allowlist'
+      })
+    )
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(mockSavePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      nodes: {
+        FluxFill: false,
+        FluxExpand: true,
+        VeoVideo: true,
+        RetiredNode: false
+      }
     })
   })
 
@@ -177,8 +213,14 @@ describe('PartnerNodeAllowlistPanel', () => {
     renderPanel()
     await nextTick()
 
-    expect(screen.getAllByRole('switch')).toHaveLength(3)
-    for (const toggle of screen.getAllByRole('switch')) {
+    expect(
+      screen.getByRole('switch', {
+        name: 'Enforce partner node allowlist'
+      })
+    ).not.toBeChecked()
+    const nodeToggles = screen.getAllByRole('switch', { name: /^Allow / })
+    expect(nodeToggles).toHaveLength(3)
+    for (const toggle of nodeToggles) {
       expect(toggle).toBeChecked()
     }
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
@@ -235,7 +277,7 @@ describe('PartnerNodeAllowlistPanel', () => {
 
     expect(toggle).toBeChecked()
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Allowlist could not be saved.'
+      'Partner node policy could not be saved.'
     )
   })
 

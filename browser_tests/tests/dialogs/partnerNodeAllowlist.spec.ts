@@ -59,9 +59,7 @@ async function openAllowlist(page: Page) {
 test.describe('Partner node allowlist', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
-  test('saves a whole policy from the workspace settings tab', async ({
-    page
-  }) => {
+  test('saves enforcement and allowlist as one policy', async ({ page }) => {
     await new CloudWorkspaceMockHelper(page).setup()
 
     await page.route('**/api/features', (route) =>
@@ -111,13 +109,16 @@ test.describe('Partner node allowlist', { tag: '@cloud' }, () => {
       content.getByRole('switch', { name: 'Allow Flux Expand' })
     ).toBeChecked()
 
+    await content
+      .getByRole('switch', { name: 'Enforce partner node allowlist' })
+      .click()
     await fluxFill.click()
     await content.getByRole('button', { name: 'Save' }).click()
 
-    await expect(page.getByText('Allowlist saved')).toBeVisible()
+    await expect(page.getByText('Partner node policy saved')).toBeVisible()
     expect(updates).toEqual([
       {
-        enforcement_enabled: false,
+        enforcement_enabled: true,
         nodes: { FluxFill: true, FluxExpand: true, VeoVideo: true }
       }
     ] satisfies PartnerNodePolicyResponse[])
