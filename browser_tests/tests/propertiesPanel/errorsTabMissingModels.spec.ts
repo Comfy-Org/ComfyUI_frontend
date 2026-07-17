@@ -14,6 +14,7 @@ import {
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const GATED_MODEL_REPO_URL = 'https://huggingface.co/comfy-e2e/gated-test'
+const UNSUPPORTED_MODEL_NAME = 'gated_model.bin'
 
 function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
   return group.getByRole('button', { name: modelName, exact: true })
@@ -221,6 +222,50 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const accessPage = await pagePromise
 
         expect(accessPage.url()).toBe(GATED_MODEL_REPO_URL)
+      })
+    })
+
+    test.describe('Gated model with an unsupported extension', () => {
+      test('Should not show gated guidance when no row can act on it', async ({
+        comfyPage
+      }) => {
+        let gatedHeadRequests = 0
+        await comfyPage.page
+          .context()
+          .route('https://huggingface.co/**', async (route) => {
+            if (route.request().method() !== 'HEAD') return route.abort()
+
+            gatedHeadRequests += 1
+            return route.fulfill({
+              status: 403,
+              headers: { 'Access-Control-Allow-Origin': '*' }
+            })
+          })
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_models_gated_unsupported'
+        )
+
+        const modelsGroup = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelsGroup
+        )
+        await expect(
+          getModelLabel(modelsGroup, UNSUPPORTED_MODEL_NAME)
+        ).toBeVisible()
+
+        // The pipeline HEADs any candidate with a url and directory, so the
+        // gated response lands before the extension is ever considered.
+        await expect.poll(() => gatedHeadRequests).toBeGreaterThan(0)
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelDownload)
+        ).toHaveCount(0)
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toHaveCount(0)
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedHint)
+        ).toHaveCount(0)
       })
     })
   })
