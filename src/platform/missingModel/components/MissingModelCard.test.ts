@@ -359,15 +359,29 @@ describe('MissingModelCard (OSS)', () => {
 
   it('routes Download all through the shared missing-model download handler', async () => {
     mountCard({
-      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+      missingModelGroups: [
+        makeGroup({
+          withDownloadUrls: true,
+          modelNames: ['first.safetensors', 'second.safetensors']
+        })
+      ]
     })
 
     await userEvent.click(screen.getByTestId('missing-model-download-all'))
 
+    expect(mockDownloadModel).toHaveBeenCalledTimes(2)
     expect(mockDownloadModel).toHaveBeenCalledWith(
       {
-        name: 'model.safetensors',
-        url: 'https://huggingface.co/comfy/test/resolve/main/model.safetensors',
+        name: 'first.safetensors',
+        url: 'https://huggingface.co/comfy/test/resolve/main/first.safetensors',
+        directory: 'checkpoints'
+      },
+      {}
+    )
+    expect(mockDownloadModel).toHaveBeenCalledWith(
+      {
+        name: 'second.safetensors',
+        url: 'https://huggingface.co/comfy/test/resolve/main/second.safetensors',
         directory: 'checkpoints'
       },
       {}

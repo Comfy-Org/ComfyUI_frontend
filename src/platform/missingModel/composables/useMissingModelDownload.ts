@@ -30,10 +30,10 @@ export function useMissingModelDownload() {
   // anchor fallback inside Electron hits shell.openExternal and strands the
   // provider cookies in the system browser.
   async function openModelAccessPage(repoUrl: string): Promise<void> {
-    const openInHost = window.__comfyDesktop2?.openModelAccessPage
-    if (openInHost) {
+    const bridge = window.__comfyDesktop2
+    if (bridge?.openModelAccessPage) {
       try {
-        if ((await openInHost(repoUrl)) === true) return
+        if ((await bridge.openModelAccessPage(repoUrl)) === true) return
       } catch (error: unknown) {
         console.error('Failed to open model access page in Desktop:', error)
       }
