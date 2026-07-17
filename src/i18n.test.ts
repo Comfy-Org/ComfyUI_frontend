@@ -7,6 +7,7 @@ let loadLocale: typeof I18nModule.loadLocale
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
+let te: typeof I18nModule.te
 
 async function importI18nModule() {
   const i18nModule = await import('./i18n')
@@ -15,10 +16,13 @@ async function importI18nModule() {
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
+  te = i18nModule.te
 }
 
 // Mock the JSON imports before importing i18n module
-vi.mock('./locales/en/main.json', () => ({ default: { welcome: 'Welcome' } }))
+vi.mock('./locales/en/main.json', () => ({
+  default: { welcome: 'Welcome', enOnly: 'English only' }
+}))
 vi.mock('./locales/en/nodeDefs.json', () => ({
   default: { testNode: 'Test Node' }
 }))
@@ -225,6 +229,16 @@ describe('i18n', () => {
     it('honors prioritized navigator.languages', async () => {
       // First preference unsupported, second shipped — should land on French.
       expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+    })
+  })
+
+  describe('te', () => {
+    it('checks only the active locale, never the fallback locale', async () => {
+      expect(te('enOnly')).toBe(true)
+
+      await setActiveLocale('zh')
+      expect(te('welcome')).toBe(true)
+      expect(te('enOnly')).toBe(false)
     })
   })
 
