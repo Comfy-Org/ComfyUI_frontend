@@ -81,6 +81,7 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
+  docsInAppAgent: 'https://docs.comfy.org/agent-tools/in-app-agent',
   docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',

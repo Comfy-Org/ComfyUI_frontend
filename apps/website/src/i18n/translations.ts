@@ -2258,6 +2258,19 @@ const translations = {
     'zh-CN':
       '是的。Comfy Cloud MCP 目前处于公开测试阶段，任何拥有 Comfy 账户的人都可以使用。'
   },
+  'mcp.faq.9.q': {
+    en: 'Is there an agent inside ComfyUI itself?',
+    'zh-CN': 'ComfyUI 里有内置智能体吗？'
+  },
+  'mcp.faq.9.a': {
+    en: 'Yes. Comfy In-App Agent runs in Comfy Cloud and builds or edits workflows directly on your canvas, with your confirmation before anything changes. It is in private alpha — join the waitlist from the docs.',
+    'zh-CN':
+      '有。Comfy In-App Agent 在 Comfy Cloud 中运行，直接在您的画布上构建或编辑工作流，任何更改都需经您确认。目前处于私测阶段，可通过文档页面加入候补名单。'
+  },
+  'mcp.faq.9.link': {
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
 
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },

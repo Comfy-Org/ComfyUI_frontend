@@ -169,23 +169,24 @@ export const drops: readonly Drop[] = [
     }
   },
   {
-    id: 'supported-nodes',
-    category: MODELS_AND_NODES,
-    media: videoFor('Drops_3x3card_supported nodes.mp4', {
-      en: 'Supported Nodes',
-      'zh-CN': '支持的节点'
+    id: 'in-app-agent',
+    badge: { en: 'PRIVATE ALPHA', 'zh-CN': '私测' },
+    category: CLOUD,
+    media: imageFor('Drops_3x3card_InAppAgent.jpg', {
+      en: 'Comfy In-App Agent',
+      'zh-CN': 'Comfy 应用内智能体'
     }),
-    title: { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
+    title: { en: 'Comfy In-App Agent', 'zh-CN': 'Comfy 应用内智能体' },
     description: {
-      en: 'Thousands of community and partner nodes, curated and verified to run on Comfy Cloud.',
+      en: 'Describe the workflow; the agent builds it on your canvas in Comfy Cloud — every change confirmed by you.',
       'zh-CN':
-        '数千个社区与合作伙伴节点，经过精选与验证，可在 Comfy Cloud 上运行。'
+        '描述您要的工作流，智能体直接在 Comfy Cloud 画布上构建，任何更改都需经您确认。'
     },
     cta: {
-      label: EXPLORE,
+      label: { en: 'LEARN MORE', 'zh-CN': '了解更多' },
       href: {
-        en: '/cloud/supported-nodes',
-        'zh-CN': '/zh-CN/cloud/supported-nodes'
+        en: externalLinks.docsInAppAgent,
+        'zh-CN': 'https://docs.comfy.org/zh/agent-tools/in-app-agent'
       }
     }
   },
