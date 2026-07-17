@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -80,7 +80,7 @@ describe('useComfyManagerStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockManagerService = {
-      isLoading: ref(false),
+      isLoading: computed(() => false),
       error: ref(null),
       startQueue: vi.fn().mockResolvedValue(null),
       getQueueStatus: vi.fn().mockResolvedValue(null),

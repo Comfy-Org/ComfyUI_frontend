@@ -1,5 +1,5 @@
 import type { AxiosInstance, AxiosResponse } from 'axios'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -33,7 +33,8 @@ export function useApiRequest({
   client: AxiosInstance
   mapError: ApiErrorMapper
 }) {
-  const isLoading = ref(false)
+  const pendingCount = ref(0)
+  const isLoading = computed(() => pendingCount.value > 0)
   const error = ref<string | null>(null)
 
   async function executeRequest<T>(
@@ -42,7 +43,7 @@ export function useApiRequest({
   ): Promise<T | null> {
     const { errorContext, routeSpecificErrors, onSuccess } = options
 
-    isLoading.value = true
+    pendingCount.value++
     error.value = null
 
     try {
@@ -55,7 +56,7 @@ export function useApiRequest({
       error.value = mapError(err, errorContext, routeSpecificErrors)
       return null
     } finally {
-      isLoading.value = false
+      pendingCount.value--
     }
   }
 
