@@ -167,6 +167,25 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isNodeDisabled('CoreNode')).toBe(false)
   })
 
+  it('fails open during initial loading and a generic failure', async () => {
+    let rejectLoad!: (error: Error) => void
+    mockGetPartnerNodePolicy.mockReturnValue(
+      new Promise((_, reject) => {
+        rejectLoad = reject
+      })
+    )
+
+    store = usePartnerNodeGovernanceStore()
+
+    expect(store.status).toBe('loading')
+    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
+
+    rejectLoad(new Error('Network error'))
+    await vi.waitFor(() => expect(store?.status).toBe('error'))
+
+    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
+  })
+
   it('stays fail-closed while retrying an unavailable policy', async () => {
     mockGetPartnerNodePolicy.mockRejectedValueOnce(
       new PartnerNodePolicyApiError(503, 'Service Unavailable')
