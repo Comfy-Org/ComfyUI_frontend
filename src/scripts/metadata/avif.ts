@@ -230,23 +230,37 @@ function getIlocItemData(
   )
     return null
 
-  const totalLength = item.extents.reduce(
-    (length, extent) => length + extent.extent_length,
-    0
-  )
-  const itemData = new Uint8Array(totalLength)
-  let destinationOffset = 0
+  const sourceRanges: { offset: number; length: number }[] = []
+  let totalLength = 0
 
   for (const extent of item.extents) {
     const sourceOffset = item.base_offset + extent.extent_offset
     const sourceEnd = sourceOffset + extent.extent_length
-    if (sourceOffset < 0 || sourceEnd > buffer.byteLength) return null
+    totalLength += extent.extent_length
 
+    if (
+      !Number.isSafeInteger(sourceOffset) ||
+      !Number.isSafeInteger(sourceEnd) ||
+      !Number.isSafeInteger(totalLength) ||
+      sourceOffset < 0 ||
+      sourceEnd < sourceOffset ||
+      sourceEnd > buffer.byteLength ||
+      totalLength > buffer.byteLength
+    )
+      return null
+
+    sourceRanges.push({ offset: sourceOffset, length: extent.extent_length })
+  }
+
+  const itemData = new Uint8Array(totalLength)
+  let destinationOffset = 0
+
+  for (const sourceRange of sourceRanges) {
     itemData.set(
-      new Uint8Array(buffer, sourceOffset, extent.extent_length),
+      new Uint8Array(buffer, sourceRange.offset, sourceRange.length),
       destinationOffset
     )
-    destinationOffset += extent.extent_length
+    destinationOffset += sourceRange.length
   }
 
   return itemData

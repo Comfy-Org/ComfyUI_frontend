@@ -500,4 +500,34 @@ describe('getFromAvifFile', () => {
     expect(result.workflow).toBe(xmpWorkflow)
     expect(result.prompt).toBe(prompt)
   })
+
+  it('retains EXIF metadata when the XMP packet is malformed', async () => {
+    const workflow = '{"source":"exif"}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${workflow}`, `prompt:${prompt}`],
+        xmp: '<x:xmpmeta'
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('retains EXIF metadata when XMP JSON is malformed', async () => {
+    const workflow = '{"source":"exif"}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${workflow}`, `prompt:${prompt}`],
+        xmp: buildXmpPacket('{invalid-workflow', '{invalid-prompt')
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
 })
