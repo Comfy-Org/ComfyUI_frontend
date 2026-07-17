@@ -182,6 +182,30 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('partnerNodeGovernanceEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('uses the workspace eligibility flag', () => {
+      remoteConfig.value = { partner_node_governance_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(true)
+    })
+
+    it('defaults to false when the remote flag is unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.partnerNodeGovernanceEnabled).toBe(false)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
