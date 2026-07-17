@@ -1,5 +1,5 @@
 <template>
-  <div class="@container flex grow flex-col overflow-auto pt-6">
+  <div class="flex grow flex-col overflow-auto pt-6">
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -293,11 +293,9 @@
         </div>
       </div>
 
-      <AutoReloadSection
-        v-if="showAutoReload"
-        class="mt-4"
-        :frozen="autoReloadFrozen"
-      />
+      <div v-if="showAutoReload" class="@container mt-4">
+        <AutoReloadSection :frozen="autoReloadFrozen" />
+      </div>
 
       <!-- View More Details - Outside main content -->
       <div v-if="permissions.canManageSubscription" class="py-6">

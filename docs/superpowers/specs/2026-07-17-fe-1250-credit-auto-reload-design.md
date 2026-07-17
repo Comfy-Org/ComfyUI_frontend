@@ -20,7 +20,9 @@ integration because no auto-reload API exists in the current frontend schema.
 ## Architecture
 
 - Mount `AutoReloadSection` in `SubscriptionPanelContentWorkspace` after the
-  plan card and before the existing details/footer controls.
+  plan card and before the existing details/footer controls. Place its
+  container-query root in the same feature-gated branch so no containment style
+  reaches the existing billing panel while the feature is disabled.
 - Gate the mount with both `flags.billingControlEnabled` and
   `permissions.canManageSubscription`. When the flag is false, no new
   component or state is mounted and the existing billing UX is unchanged.
@@ -56,11 +58,15 @@ visible states are:
 The dialog supports credit/USD units, positive whole-credit threshold and
 reload values, an optional positive monthly budget, the prototype's minimum
 reload validation, approximate conversions, and the number of full reloads
-allowed by the budget. Removing a budget keeps auto-reload enabled.
+allowed by the budget. Removing a budget keeps auto-reload enabled. Saving a
+new configuration or updating an existing Off configuration enables
+auto-reload, matching the prototype interaction.
 
-The section uses the prototype's container-query breakpoint. The integration
-container supplies `@container`, preserving the stacked narrow layout and the
-two-column wide layout without tying it to the viewport.
+The section uses the prototype's container-query breakpoint. A feature-gated,
+unpadded wrapper supplies `@container`, preserving the original breakpoint,
+the stacked narrow layout, and the two-column wide layout without tying it to
+the viewport or changing the legacy panel's CSS containment while the feature
+is disabled.
 
 ## Adversarial hardening
 
@@ -76,11 +82,12 @@ two-column wide layout without tying it to the viewport.
   whole dollars and are rejected when conversion would overflow safe integer
   cents. Use the same rounded credit cost in cents for the dialog's allowed-
   reload count and the configured-state calculation.
-- Preserve the prototype/source semantics: eligibility remains permission-
-  based so a Personal Free owner can configure auto-reload when the flag and
-  permission pass; a positive monthly budget smaller than one reload remains
-  valid and derives zero full reloads with a Paused state; and a configured Off
-  state continues to offer Update rather than Setup.
+- Preserve the intended interaction semantics while hardening prototype state
+  transitions: eligibility remains permission-based so a Personal Free owner
+  can configure auto-reload when the flag and permission pass; a positive
+  monthly budget smaller than one reload remains valid and derives zero full
+  reloads with a Paused state; and a configured Off state continues to offer
+  Update rather than Setup and turns back on when updated.
 
 ## Backend boundary
 
@@ -96,8 +103,8 @@ separate BE/integration ticket and do not block visual delivery.
 - Component tests cover every section state and setup/edit behavior.
 - Integration tests cover flag on/off, owner/member permissions, and frozen
   lifecycle routing.
-- Dialog tests cover unit switching, optional budget behavior, validation, and
-  save/cancel.
+- Dialog tests cover unit switching, optional budget behavior, validation,
+  save/cancel, first-time enablement, and Off-to-Enabled transition on edit.
 - Typecheck, lint, formatting, knip, and focused unit tests must pass.
 - After the PR preview is available, capture every visible variation from the
   same authenticated Chrome/CDP session and embed the evidence in the PR

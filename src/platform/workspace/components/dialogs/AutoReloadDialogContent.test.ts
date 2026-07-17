@@ -300,6 +300,26 @@ describe('AutoReloadDialogContent', () => {
     })
   })
 
+  it('enables auto-reload when updating a disabled configuration', async () => {
+    const user = userEvent.setup()
+    setConfig({ configured: true, enabled: false, thresholdCredits: 2500 })
+    renderDialog()
+
+    const threshold = screen.getByLabelText('When credits drop below:')
+    await user.clear(threshold)
+    await user.type(threshold, '3000')
+    await user.click(screen.getByRole('button', { name: 'Update' }))
+
+    expect(autoReload.config).toMatchObject({
+      configured: true,
+      enabled: true,
+      thresholdCredits: 3000
+    })
+    expect(dialogStoreMocks.closeDialog).toHaveBeenCalledWith({
+      key: 'auto-reload'
+    })
+  })
+
   it('keeps Update disabled when the threshold is empty', async () => {
     const user = userEvent.setup()
     renderDialog()
