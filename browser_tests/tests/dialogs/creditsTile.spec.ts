@@ -63,14 +63,17 @@ const mockBillingStatus: BillingStatusResponse = {
   has_funds: true
 }
 
-async function mockCloudBoot(page: Page) {
+async function mockCloudBoot(page: Page, billingControlEnabled = true) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
   // `/api/features` is the remote-config source: production builds resolve
-  // `teamWorkspacesEnabled` from it (the `ff:` localStorage override is
-  // dev-only), and the flag gates the Workspace settings panel.
+  // workspace availability and the billing UX rollout from it (the `ff:`
+  // localStorage override is dev-only).
   await page.route('**/api/features', (r) =>
     r.fulfill(
-      jsonRoute({ team_workspaces_enabled: true } satisfies RemoteConfig)
+      jsonRoute({
+        team_workspaces_enabled: true,
+        billing_control_enabled: billingControlEnabled
+      } satisfies RemoteConfig)
     )
   )
   await page.route('**/api/system_stats', (r) =>
@@ -163,8 +166,7 @@ async function mockBalance(
   )
 }
 
-/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
-async function openPlanAndCredits(page: Page) {
+async function openSettings(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
 
@@ -185,6 +187,13 @@ async function openPlanAndCredits(page: Page) {
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
+
+  return dialog
+}
+
+/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
+async function openPlanAndCredits(page: Page) {
+  const dialog = await openSettings(page)
   await dialog
     .locator('nav')
     .getByRole('button', { name: 'Plan & Credits' })
@@ -194,6 +203,36 @@ async function openPlanAndCredits(page: Page) {
 }
 
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
+  test('keeps the legacy Workspace UX when billing controls are disabled', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, false)
+    const dialog = await openSettings(page)
+    const nav = dialog.locator('nav')
+
+    await expect(
+      nav.getByRole('button', { name: 'Workspace', exact: true })
+    ).toBeVisible()
+    await expect(
+      nav.getByRole('button', { name: 'Plan & Credits', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      nav.getByRole('button', { name: 'Members', exact: true })
+    ).toHaveCount(0)
+
+    await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
+    const content = dialog.getByRole('main')
+    await expect(
+      content.getByRole('tab', { name: 'Plan & Credits' })
+    ).toBeVisible()
+    await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
+    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
+      0
+    )
+  })
+
   test('renders the unified tile with breakdown and add-credits', async ({
     page
   }) => {

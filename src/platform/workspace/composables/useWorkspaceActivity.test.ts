@@ -73,6 +73,40 @@ describe('useWorkspaceActivity', () => {
     expect(pagedItems.value[0].id).toBe('evt-09') // 760, lowest
   })
 
+  it('sorts detail counts by their numeric value', () => {
+    const source: ActivityEvent[] = [
+      {
+        id: 'two-runs',
+        date: new Date('2026-07-14T09:32:00Z'),
+        userName: 'Ada Lovelace',
+        eventType: 'Partner node usage',
+        detail: '2 runs',
+        credits: 1
+      },
+      {
+        id: 'ten-runs',
+        date: new Date('2026-07-14T09:31:00Z'),
+        userName: 'Ada Lovelace',
+        eventType: 'Partner node usage',
+        detail: '10 runs',
+        credits: 1
+      }
+    ]
+    const { pagedItems, toggleSort } = setup({ source })
+
+    toggleSort('detail')
+    expect(pagedItems.value.map(({ id }) => id)).toEqual([
+      'ten-runs',
+      'two-runs'
+    ])
+
+    toggleSort('detail')
+    expect(pagedItems.value.map(({ id }) => id)).toEqual([
+      'two-runs',
+      'ten-runs'
+    ])
+  })
+
   it('slices to the current page size', () => {
     const { pagedItems, total } = setup({ pageSize: ref(5) })
     expect(total.value).toBe(activityFixture.length)

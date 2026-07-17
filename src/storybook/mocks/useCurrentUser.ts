@@ -9,8 +9,10 @@ import { computed, ref } from 'vue'
  * display name / email (e.g. WorkspaceActivityContent's member self-scope)
  * render without any auth.
  */
-export const useCurrentUser = () => ({
-  userDisplayName: ref('Ada Lovelace'),
-  userEmail: ref('ada@example.com'),
-  isLoggedIn: computed(() => true)
-})
+export function useCurrentUser() {
+  return {
+    userDisplayName: ref('Ada Lovelace'),
+    userEmail: ref('ada@example.com'),
+    isLoggedIn: computed(() => true)
+  }
+}

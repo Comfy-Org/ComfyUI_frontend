@@ -181,6 +181,11 @@ const activePanel = computed(() => {
   return findPanelByKey(activeCategoryKey.value)
 })
 
+watch([activePanel, activeCategoryKey], ([panel, key]) => {
+  if (panel || key !== 'workspace-members') return
+  if (findPanelByKey('workspace')) activeCategoryKey.value = 'workspace'
+})
+
 const getGroupSortOrder = (group: SettingTreeNode): number =>
   Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
 

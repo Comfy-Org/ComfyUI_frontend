@@ -34,7 +34,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   'server-config': 'icon-[lucide--server]',
   subscription: 'icon-[lucide--credit-card]',
   user: 'icon-[lucide--user]',
-  workspace: 'icon-[lucide--receipt-text]'
+  workspace: 'icon-[lucide--building-2]'
 }
 
 interface SettingPanelItem {
@@ -176,19 +176,31 @@ export function useSettingUI(
     )
   }
 
-  // Workspace panels: only available on cloud with team workspaces enabled.
-  // The old single "Workspace" panel is split into two sidebar entries; the
-  // Plan & Credits entry keeps the 'workspace' key so existing deep links land.
+  const workspacePanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Workspace',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/WorkspacePanelContent.vue')
+    )
+  }
+
+  const workspaceSettingsPanelComponent = defineAsyncComponent(
+    () =>
+      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+  )
+
   const planCreditsPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
       label: 'PlanCredits',
       children: []
     },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue')
-    )
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'planCredits' }
   }
 
   const membersPanel: SettingPanelItem = {
@@ -197,15 +209,20 @@ export function useSettingUI(
       label: 'Members',
       children: []
     },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue')
-    )
+    component: workspaceSettingsPanelComponent,
+    props: { section: 'members' }
   }
 
   const shouldShowWorkspacePanel = computed(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
+
+  const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
+    if (!shouldShowWorkspacePanel.value) return []
+    return flags.billingControlEnabled
+      ? [planCreditsPanel, membersPanel]
+      : [workspacePanel]
+  })
 
   const secretsPanel: SettingPanelItem = {
     node: {
@@ -260,9 +277,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value
-        ? [planCreditsPanel, membersPanel]
-        : []),
+      ...visibleWorkspacePanels.value,
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
@@ -312,12 +327,10 @@ export function useSettingUI(
       key: 'workspace',
       label: 'Workspace',
       children: [
-        ...(shouldShowWorkspacePanel.value
-          ? [planCreditsPanel.node, membersPanel.node]
-          : []),
+        ...visibleWorkspacePanels.value.map((panel) => panel.node),
         // The legacy per-account Credits panel is redundant once the workspace
         // Plan & Credits panel is present, which now owns the credit balance.
-        ...(!shouldShowWorkspacePanel.value &&
+        ...(!flags.billingControlEnabled &&
         isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -410,9 +423,11 @@ export function useSettingUI(
           (child as SettingTreeNode & { translatedLabel?: string })
             .translatedLabel ?? child.label,
         icon:
-          CATEGORY_ICONS[child.key] ??
-          CATEGORY_ICONS[child.label] ??
-          'icon-[lucide--plug]'
+          child.key === 'workspace' && flags.billingControlEnabled
+            ? CATEGORY_ICONS.PlanCredits
+            : (CATEGORY_ICONS[child.key] ??
+              CATEGORY_ICONS[child.label] ??
+              'icon-[lucide--plug]')
       }))
     }))
   )

@@ -1,15 +1,5 @@
 <template>
-  <div class="@container flex size-full min-h-0 flex-col">
-    <header class="mb-6 flex items-center gap-4">
-      <WorkspaceProfilePic
-        class="size-12 text-3xl!"
-        :workspace-name="workspaceName"
-      />
-      <h1 class="text-3xl font-semibold text-base-foreground">
-        {{ workspaceName }}
-      </h1>
-    </header>
-
+  <div class="flex min-h-0 flex-1 flex-col">
     <div
       class="mb-4 flex w-full flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-9"
     >
@@ -39,23 +29,17 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceActivityContent from '@/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.vue'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
 
 const { t } = useI18n()
-
-const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName } = storeToRefs(workspaceStore)
 
 // The Invoices tab (owner/admin only) is added by FE-1245, which owns the
 // next-invoice banner + Stripe portal link that fill it.

@@ -1,19 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => reactive({ workspaceName: 'Acme Team' })
-}))
-
 const stubs = {
-  WorkspaceProfilePic: { template: '<div />' },
   SubscriptionPanelContentWorkspace: {
     template: '<div data-testid="credits-body" />'
   },

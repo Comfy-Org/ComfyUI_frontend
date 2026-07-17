@@ -17,6 +17,7 @@ const env = vi.hoisted(() => {
     isDesktop: false,
     isLoggedIn: false,
     teamWorkspacesEnabled: false,
+    billingControlEnabled: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
     billingType: 'legacy' as 'legacy' | 'workspace'
@@ -49,6 +50,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return env.state.teamWorkspacesEnabled
+      },
+      get billingControlEnabled() {
+        return env.state.billingControlEnabled
       },
       get userSecretsEnabled() {
         return env.state.userSecretsEnabled
@@ -114,6 +118,7 @@ describe('useSettingUI', () => {
       isDesktop: false,
       isLoggedIn: false,
       teamWorkspacesEnabled: false,
+      billingControlEnabled: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
       billingType: 'legacy'
@@ -178,6 +183,63 @@ describe('useSettingUI', () => {
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
+  })
+
+  describe('billing-controlled workspace panels', () => {
+    beforeEach(() => {
+      Object.assign(env.state, {
+        isCloud: true,
+        isLoggedIn: true,
+        teamWorkspacesEnabled: true,
+        isActiveSubscription: true,
+        billingType: 'workspace'
+      })
+      window.__CONFIG__ = {
+        subscription_required: false
+      } as typeof window.__CONFIG__
+    })
+
+    it('keeps the legacy Workspace panel and standalone Credits when disabled', () => {
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'Workspace'
+      })
+    })
+
+    it('uses the split workspace shell and hides standalone Credits when enabled', () => {
+      env.state.billingControlEnabled = true
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+      const planCreditsPanel = findPanelByKey('workspace')
+      const membersPanel = findPanelByKey('workspace-members')
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
+      expect(planCreditsPanel?.component).toBe(membersPanel?.component)
+      expect(planCreditsPanel?.props).toEqual({ section: 'planCredits' })
+      expect(membersPanel?.props).toEqual({ section: 'members' })
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'PlanCredits'
+      })
+    })
   })
 
   describe('legacy billing in the workspace layout', () => {

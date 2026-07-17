@@ -72,8 +72,13 @@ export function useWorkspaceActivity(
         return dir * a.userName.localeCompare(b.userName)
       if (sortField.value === 'eventType')
         return dir * a.eventType.localeCompare(b.eventType)
-      if (sortField.value === 'detail')
+      if (sortField.value === 'detail') {
+        const aCount = Number.parseInt(a.detail, 10)
+        const bCount = Number.parseInt(b.detail, 10)
+        if (!Number.isNaN(aCount) && !Number.isNaN(bCount))
+          return dir * (aCount - bCount)
         return dir * a.detail.localeCompare(b.detail)
+      }
       return dir * (a.date.getTime() - b.date.getTime())
     })
   })
