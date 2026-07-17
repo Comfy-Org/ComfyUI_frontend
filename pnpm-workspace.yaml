@@ -27,7 +27,7 @@ catalog:
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
   '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
-  '@pinia/testing': ^1.0.3
+  '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
@@ -111,7 +111,7 @@ catalog:
   oxlint: ^1.74.0
   oxlint-tsgolint: ^0.24.0
   picocolors: ^1.1.1
-  pinia: ^3.0.4
+  pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
