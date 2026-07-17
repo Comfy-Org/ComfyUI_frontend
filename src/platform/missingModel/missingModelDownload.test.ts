@@ -93,7 +93,11 @@ describe('fetchModelMetadata', () => {
   it.for([401, 403, 451])(
     'returns gatedRepoUrl for gated HuggingFace HEAD requests (%s)',
     async (status) => {
-      fetchMock.mockResolvedValueOnce({ ok: false, status })
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status,
+        headers: new Headers({ 'x-error-code': 'GatedRepo' })
+      })
 
       const metadata = await fetchModelMetadata(
         `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}-${testId}.safetensors`
@@ -103,10 +107,14 @@ describe('fetchModelMetadata', () => {
     }
   )
 
-  it.for([404, 500])(
-    'does not treat HuggingFace %s as gated',
+  it.for([401, 403, 451, 404, 500])(
+    'does not treat HuggingFace %s as gated without the GatedRepo error code',
     async (status) => {
-      fetchMock.mockResolvedValueOnce({ ok: false, status })
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status,
+        headers: new Headers()
+      })
 
       const metadata = await fetchModelMetadata(
         `https://huggingface.co/org/model/resolve/main/not-gated-${status}-${testId}.safetensors`
@@ -117,7 +125,11 @@ describe('fetchModelMetadata', () => {
   )
 
   it('does not treat non-HuggingFace hosts as gated', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 })
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
 
     const metadata = await fetchModelMetadata(
       `https://huggingface.co.evil.com/org/model/resolve/main/gated-${testId}.safetensors`

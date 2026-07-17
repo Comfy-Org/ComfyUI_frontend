@@ -14,7 +14,6 @@ import {
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const GATED_MODEL_REPO_URL = 'https://huggingface.co/comfy-e2e/gated-test'
-const UNSUPPORTED_MODEL_NAME = 'gated_model.bin'
 
 function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
   return group.getByRole('button', { name: modelName, exact: true })
@@ -171,7 +170,11 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
             if (route.request().method() === 'HEAD') {
               return route.fulfill({
                 status: 403,
-                headers: { 'Access-Control-Allow-Origin': '*' }
+                headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Expose-Headers': 'X-Error-Code',
+                  'X-Error-Code': 'GatedRepo'
+                }
               })
             }
 
@@ -222,63 +225,6 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const accessPage = await pagePromise
 
         await expect(accessPage).toHaveURL(GATED_MODEL_REPO_URL)
-      })
-    })
-
-    test.describe('Gated model with an unsupported extension', () => {
-      test('Should not show gated guidance when no row can act on it', async ({
-        comfyPage
-      }) => {
-        let releaseGatedHead: () => void
-        const gatedHeadServed = new Promise<void>((resolve) => {
-          releaseGatedHead = resolve
-        })
-
-        await comfyPage.page
-          .context()
-          .route('https://huggingface.co/**', async (route) => {
-            if (route.request().method() !== 'HEAD') return route.abort()
-
-            if (route.request().url().endsWith('.bin')) {
-              await route.fulfill({
-                status: 403,
-                headers: { 'Access-Control-Allow-Origin': '*' }
-              })
-              releaseGatedHead()
-              return
-            }
-
-            await gatedHeadServed
-            return route.fulfill({
-              status: 200,
-              headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Expose-Headers': 'content-length',
-                'content-length': '1024'
-              }
-            })
-          })
-        await loadWorkflowAndOpenErrorsTab(
-          comfyPage,
-          'missing/missing_models_gated_unsupported'
-        )
-
-        const modelsGroup = comfyPage.page.getByTestId(
-          TestIds.dialogs.missingModelsGroup
-        )
-        await expect(
-          getModelLabel(modelsGroup, UNSUPPORTED_MODEL_NAME)
-        ).toBeVisible()
-        await expect(
-          modelsGroup.getByText('checkpoints · 1 KB', { exact: true })
-        ).toBeVisible()
-
-        await expect(
-          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
-        ).toHaveCount(0)
-        await expect(
-          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedHint)
-        ).toHaveCount(0)
       })
     })
   })

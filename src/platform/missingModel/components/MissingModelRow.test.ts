@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -188,6 +188,10 @@ describe('MissingModelRow', () => {
       fileSize: null,
       gatedRepoUrl: null
     })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('opens the model import dialog from the cloud row', async () => {
@@ -468,14 +472,20 @@ describe('MissingModelRow', () => {
     )
   })
 
-  it('delegates the gated repo action to the Desktop bridge when available', async () => {
+  it('delegates the gated repo action to the Desktop bridge with its receiver', async () => {
     mockIsCloud.value = false
     const user = userEvent.setup()
-    const openModelAccessPage = vi.fn().mockResolvedValue(true)
-    window.__comfyDesktop2 = {
-      isRemote: () => false,
-      openModelAccessPage
+    let receiver: unknown
+    let openedUrl: string | undefined
+    const bridge = {
+      isRemote: () => true,
+      async openModelAccessPage(this: unknown, url: string) {
+        receiver = this
+        openedUrl = url
+        return true
+      }
     }
+    window.__comfyDesktop2 = bridge
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
@@ -490,9 +500,8 @@ describe('MissingModelRow', () => {
 
     await user.click(screen.getByTestId('missing-model-gated-access'))
 
-    expect(openModelAccessPage).toHaveBeenCalledWith(
-      'https://huggingface.co/bfl/FLUX.1'
-    )
+    expect(receiver).toBe(bridge)
+    expect(openedUrl).toBe('https://huggingface.co/bfl/FLUX.1')
     expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
   })
 
@@ -559,7 +568,6 @@ describe('MissingModelRow', () => {
       'Failed to open model access page in Desktop:',
       error
     )
-    consoleErrorSpy.mockRestore()
   })
 
   it('shows unknown category metadata for models without a directory', () => {

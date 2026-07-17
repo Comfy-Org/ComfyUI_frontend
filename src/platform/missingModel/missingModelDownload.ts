@@ -166,6 +166,7 @@ async function fetchCivitaiMetadata(url: string): Promise<ModelMetadata> {
 }
 
 const GATED_STATUS_CODES = new Set([401, 403, 451])
+const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 
 async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
   try {
@@ -174,7 +175,8 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
     if (!response.ok) {
       if (
         isHuggingFaceRepoUrl(url) &&
-        GATED_STATUS_CODES.has(response.status)
+        GATED_STATUS_CODES.has(response.status) &&
+        response.headers.get('x-error-code') === HUGGING_FACE_GATED_ERROR_CODE
       ) {
         return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
       }
