@@ -77,61 +77,64 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(dialog).toBeHidden()
 
-    const widgetValue = await comfyPage.page.evaluate(() => {
+    // The saver records the uploaded file as a structured ref on the node.
+    const savedRef = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'LoadImage')!
-      return String(node.widgets!.find((w) => w.name === 'image')!.value)
+      const ref = node.images?.[0]
+      return ref
+        ? { filename: ref.filename, subfolder: ref.subfolder ?? '' }
+        : null
     })
+    expect(savedRef).not.toBeNull()
 
     // Compare the saved file's RGB (channel=rgb strips alpha server-side,
     // immune to canvas premultiply) against the original image inside the
     // masked region (taken from the saved file's alpha channel).
-    const stats = await comfyPage.page.evaluate(async (annotatedValue) => {
-      const [pathPart] = annotatedValue.split(' [')
-      const slash = pathPart.lastIndexOf('/')
-      const filename = slash === -1 ? pathPart : pathPart.slice(slash + 1)
-      const subfolder = slash === -1 ? '' : pathPart.slice(0, slash)
-
-      const loadPixels = async (params: Record<string, string>) => {
-        const url = window.app!.api.apiURL(
-          `/view?${new URLSearchParams(params)}`
-        )
-        const resp = await fetch(url)
-        if (!resp.ok) throw new Error(`${url} -> ${resp.status}`)
-        const bmp = await createImageBitmap(await resp.blob())
-        const canvas = document.createElement('canvas')
-        canvas.width = bmp.width
-        canvas.height = bmp.height
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(bmp, 0, 0)
-        return ctx.getImageData(0, 0, canvas.width, canvas.height).data
-      }
-
-      const saved = { filename, subfolder, type: 'input' }
-      const [savedRgb, savedAlpha, original] = await Promise.all([
-        loadPixels({ ...saved, channel: 'rgb' }),
-        loadPixels({ ...saved, channel: 'a' }),
-        loadPixels({
-          filename: 'image64x64.webp',
-          subfolder: '',
-          type: 'input'
-        })
-      ])
-
-      let maskedCount = 0
-      let maxAbsoluteError = 0
-      for (let i = 0; i < savedAlpha.length; i += 4) {
-        const masked = savedAlpha[i + 3] < 128
-        if (!masked) continue
-        maskedCount++
-        for (let channel = 0; channel < 3; channel++) {
-          maxAbsoluteError = Math.max(
-            maxAbsoluteError,
-            Math.abs(savedRgb[i + channel] - original[i + channel])
+    const stats = await comfyPage.page.evaluate(
+      async ({ filename, subfolder }) => {
+        const loadPixels = async (params: Record<string, string>) => {
+          const url = window.app!.api.apiURL(
+            `/view?${new URLSearchParams(params)}`
           )
+          const resp = await fetch(url)
+          if (!resp.ok) throw new Error(`${url} -> ${resp.status}`)
+          const bmp = await createImageBitmap(await resp.blob())
+          const canvas = document.createElement('canvas')
+          canvas.width = bmp.width
+          canvas.height = bmp.height
+          const ctx = canvas.getContext('2d')!
+          ctx.drawImage(bmp, 0, 0)
+          return ctx.getImageData(0, 0, canvas.width, canvas.height).data
         }
-      }
-      return { maskedCount, maxAbsoluteError }
-    }, widgetValue)
+
+        const saved = { filename, subfolder, type: 'input' }
+        const [savedRgb, savedAlpha, original] = await Promise.all([
+          loadPixels({ ...saved, channel: 'rgb' }),
+          loadPixels({ ...saved, channel: 'a' }),
+          loadPixels({
+            filename: 'image64x64.webp',
+            subfolder: '',
+            type: 'input'
+          })
+        ])
+
+        let maskedCount = 0
+        let maxAbsoluteError = 0
+        for (let i = 0; i < savedAlpha.length; i += 4) {
+          const masked = savedAlpha[i + 3] < 128
+          if (!masked) continue
+          maskedCount++
+          for (let channel = 0; channel < 3; channel++) {
+            maxAbsoluteError = Math.max(
+              maxAbsoluteError,
+              Math.abs(savedRgb[i + channel] - original[i + channel])
+            )
+          }
+        }
+        return { maskedCount, maxAbsoluteError }
+      },
+      savedRef!
+    )
 
     expect(stats.maskedCount).toBeGreaterThan(0)
     expect(stats.maxAbsoluteError).toBe(0)
