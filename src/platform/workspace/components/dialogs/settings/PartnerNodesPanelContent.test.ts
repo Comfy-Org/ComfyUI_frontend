@@ -29,13 +29,24 @@ const mockSelectedIds = ref(new Set<string>())
 const mockSelectedCount = ref(0)
 const mockSelectedEnabled = ref(false)
 const mockAllFilteredSelected = ref(false)
+const enabledNode = {
+  id: 'a',
+  name: 'Zeta Node',
+  partner: 'BFL',
+  last_modified: null,
+  enabled: true
+}
+const disabledNode = {
+  id: 'b',
+  name: 'Flux Node',
+  partner: 'BFL',
+  last_modified: null,
+  enabled: false
+}
+const mockNodes = ref([enabledNode, disabledNode])
 const mockFilteredNodes = ref([
   {
-    id: 'a',
-    name: 'Zeta Node',
-    partner: 'BFL',
-    last_modified: null,
-    enabled: true
+    ...enabledNode
   }
 ])
 const mockGroups = ref([
@@ -53,6 +64,7 @@ const mockGroups = ref([
 vi.mock('@/platform/workspace/composables/usePartnerNodes', () => ({
   usePartnerNodes: () => ({
     restrictionsEnabled: mockRestrictionsEnabled,
+    nodes: mockNodes,
     searchQuery: mockSearchQuery,
     sortField: mockSortField,
     sortDirection: mockSortDirection,
@@ -111,6 +123,7 @@ describe('PartnerNodesPanelContent', () => {
     mockSelectedCount.value = 0
     mockSelectedEnabled.value = false
     mockAllFilteredSelected.value = false
+    mockNodes.value = [enabledNode, disabledNode]
     mockGroups.value = [
       {
         partner: 'BFL',
@@ -185,7 +198,7 @@ describe('PartnerNodesPanelContent', () => {
     expect(mockSetRestrictionsEnabled).not.toHaveBeenCalled()
   })
 
-  it('removes restrictions without confirmation', async () => {
+  it('confirms before making restricted nodes available to everyone', async () => {
     const user = userEvent.setup()
     renderComponent()
 
@@ -194,6 +207,34 @@ describe('PartnerNodesPanelContent', () => {
         'Only enabled partner nodes are available. New releases start disabled.'
       )
     ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Unrestricted' }))
+
+    expect(mockConfirm).toHaveBeenCalledWith({
+      title: 'Allow access to all partner nodes?',
+      message:
+        'All currently restricted partner-node models will become available to every workspace member.',
+      hint: 'New partner-node models will also be available automatically.'
+    })
+    await waitFor(() =>
+      expect(mockSetRestrictionsEnabled).toHaveBeenCalledWith(false)
+    )
+  })
+
+  it('keeps restrictions when allowing all is cancelled', async () => {
+    mockConfirm.mockResolvedValue(false)
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Unrestricted' }))
+
+    expect(mockSetRestrictionsEnabled).not.toHaveBeenCalled()
+  })
+
+  it('removes restrictions immediately when every current node is enabled', async () => {
+    mockNodes.value = [enabledNode, { ...disabledNode, enabled: true }]
+    const user = userEvent.setup()
+    renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Unrestricted' }))
 

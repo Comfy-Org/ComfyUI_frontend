@@ -329,6 +329,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const { confirm } = useDialogService()
 const {
+  nodes,
   restrictionsEnabled,
   searchQuery,
   sortField,
@@ -378,6 +379,19 @@ function applyBulk(value: boolean) {
 
 async function requestRestrictionsChange(mode: unknown) {
   if (mode === 'allowAll' && restrictionsEnabled.value) {
+    if (nodes.value.some((node) => !node.enabled)) {
+      const confirmed = await confirm({
+        title: t(
+          'workspacePanel.partnerNodes.restrictions.allowAllConfirm.title'
+        ),
+        message: t(
+          'workspacePanel.partnerNodes.restrictions.allowAllConfirm.message'
+        ),
+        hint: t('workspacePanel.partnerNodes.restrictions.allowAllConfirm.hint')
+      })
+      if (!confirmed) return
+    }
+
     await setRestrictionsEnabled(false)
     return
   }

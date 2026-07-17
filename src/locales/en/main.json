@@ -2901,6 +2901,11 @@
           "title": "Restrict access to partner nodes?",
           "message": "Once restrictions are enabled, newly released models will be unavailable until you enable them manually.",
           "hint": "Existing partner-node models will remain available until you turn them off."
+        },
+        "allowAllConfirm": {
+          "title": "Allow access to all partner nodes?",
+          "message": "All currently restricted partner-node models will become available to every workspace member.",
+          "hint": "New partner-node models will also be available automatically."
         }
       },
       "neverModified": "—",
