@@ -555,4 +555,119 @@ describe('useBillingContext', () => {
       expect(isLegacyTeamPlan.value).toBe(true)
     })
   })
+
+  describe('isTeamPlan', () => {
+    it('is false for a personal workspace', () => {
+      const { isTeamPlan } = useBillingContext()
+      expect(isTeamPlan.value).toBe(false)
+    })
+
+    it('is true for a credit-slider team sub, which carries a credit stop', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        plan_slug: 'team_per_credit_monthly',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 700,
+          stop_usd: 332
+        }
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is true for a per-credit Team plan in a personal workspace before its credit stop is populated', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockConsolidatedBillingEnabled.value = true
+      mockIsPersonal.value = true
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is true for a legacy team sub, identified by slug rather than credit stop', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('stays true for an inactive per-credit Team plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: false,
+        has_funds: true,
+        billing_status: 'inactive',
+        plan_slug: 'team_per_credit_monthly',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 700,
+          stop_usd: 332
+        }
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('stays true for a legacy team plan whose payment failed', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: false,
+        has_funds: true,
+        billing_status: 'payment_failed',
+        subscription_tier: 'STANDARD',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is false for a team workspace on a personal-tier plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'PRO',
+        plan_slug: 'pro-monthly'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(false)
+    })
+  })
 })
