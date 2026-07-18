@@ -55,12 +55,12 @@ export const useSubscriptionDialog = () => {
 
     // Members can't manage the workspace subscription, so a blocked run shows a
     // small read-only "ask your owner to reactivate" modal instead of the
-    // pricing table. Out-of-credits still routes everyone to the credits flow.
+    // pricing table — including out-of-credits, whose member recovery path is
+    // also owner-only (FE-1246).
     if (
       shouldUseWorkspaceBilling.value &&
       !workspaceStore.isInPersonalWorkspace &&
-      !permissions.value.canManageSubscription &&
-      options?.reason !== 'out_of_credits'
+      !permissions.value.canManageSubscription
     ) {
       dialogService.showLayoutDialog({
         key: DIALOG_KEY,
@@ -80,24 +80,17 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
-    // Shared dialog shell styling for both variants.
-    const dialogComponentProps = {
-      style: 'width: min(1328px, 95vw); max-height: 958px;',
-      pt: {
-        root: {
-          class: 'rounded-2xl bg-transparent h-full'
-        },
-        content: {
-          class:
-            '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-        }
-      }
-    }
+    const legacyPricingDialogProps = {
+      renderer: 'reka',
+      size: 'full',
+      contentClass:
+        'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+    } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) for workspaces on the consolidated billing flow. Replaces
-    // the old personal-vs-team workspace fork. Personal workspaces still on the
-    // legacy flow (consolidated billing disabled) get the legacy table.
+    // one workspace) for workspaces on the workspace-scoped billing flow.
+    // Replaces the old personal-vs-team workspace fork. Personal workspaces
+    // still on the legacy flow (billing control disabled) get the legacy table.
     if (shouldUseWorkspaceBilling.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
@@ -120,7 +113,10 @@ export const useSubscriptionDialog = () => {
           // The legacy table hosts a PrimeVue Popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
           // unclickable. The unified table has no such overlay.
-          dialogComponentProps: { ...dialogComponentProps, modal: false }
+          dialogComponentProps: {
+            ...legacyPricingDialogProps,
+            modal: false
+          }
         })
         return
       }
@@ -144,7 +140,7 @@ export const useSubscriptionDialog = () => {
         dialogComponentProps: {
           // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
           // `style` width is ignored here and collapses the table to the default
-          // `md` frame. `w-fit` lets each step hug its content — the pricing
+          // `md` frame. `w-fit` lets each step hug its content -- the pricing
           // table fills its 1280px content while the compact confirm/success
           // steps shrink (the content root sets its own width per checkoutStep).
           renderer: 'reka',
@@ -167,7 +163,7 @@ export const useSubscriptionDialog = () => {
         reason: options?.reason,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
-      dialogComponentProps
+      dialogComponentProps: legacyPricingDialogProps
     })
   }
 

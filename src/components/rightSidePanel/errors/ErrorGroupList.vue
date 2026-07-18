@@ -239,7 +239,11 @@
                           )
                         "
                         :aria-label="
-                          t('rightSidePanel.infoFor', { item: item.label })
+                          t(
+                            'rightSidePanel.infoFor',
+                            { item: item.label },
+                            { escapeParameter: false }
+                          )
                         "
                         :aria-controls="getExecutionItemDetailId(item.key)"
                         :aria-expanded="isExecutionItemDetailExpanded(item.key)"
@@ -250,9 +254,13 @@
                     </span>
                     <LocateNodeButton
                       :label="
-                        t('rightSidePanel.locateNodeFor', {
-                          item: item.label
-                        })
+                        t(
+                          'rightSidePanel.locateNodeFor',
+                          {
+                            item: item.label
+                          },
+                          { escapeParameter: false }
+                        )
                       "
                       @locate="handleLocateNode(item.nodeId)"
                     />

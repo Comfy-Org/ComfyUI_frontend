@@ -157,9 +157,13 @@
       <LocateNodeButton
         v-if="primaryLocatableNodeType"
         :label="
-          t('rightSidePanel.locateNodeFor', {
-            item: getLabel(primaryLocatableNodeType)
-          })
+          t(
+            'rightSidePanel.locateNodeFor',
+            {
+              item: getLabel(primaryLocatableNodeType)
+            },
+            { escapeParameter: false }
+          )
         "
         @locate="handleLocateNode(primaryLocatableNodeType)"
       />
@@ -205,7 +209,11 @@
             <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
               :label="
-                t('rightSidePanel.locateNodeFor', { item: getLabel(nodeType) })
+                t(
+                  'rightSidePanel.locateNodeFor',
+                  { item: getLabel(nodeType) },
+                  { escapeParameter: false }
+                )
               "
               @locate="handleLocateNode(nodeType)"
             />
