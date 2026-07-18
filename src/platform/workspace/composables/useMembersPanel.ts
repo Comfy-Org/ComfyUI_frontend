@@ -105,17 +105,79 @@ export function useMembersPanel() {
     pendingInvites,
     originalOwnerId,
     totalMemberSlots,
-    isInviteLimitReached,
-    isInPersonalWorkspace: isPersonalWorkspace
+    isInviteLimitReached
   } = storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
-  const { permissions, uiConfig } = useWorkspaceUI()
-  const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
+  const {
+    permissions: workspacePermissions,
+    uiConfig: workspaceUiConfig,
+    workspaceRole
+  } = useWorkspaceUI()
+  const {
+    hasTeamPlan,
+    isOnTeamPlan,
+    isCancelled,
+    hasLapsedTeamPlan,
+    isPlanLoading
+  } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.
   const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
+
+  const permissions = computed(() => {
+    const canManageMembers =
+      hasTeamPlan.value && workspaceRole.value === 'owner'
+
+    return {
+      ...workspacePermissions.value,
+      canViewOtherMembers: hasTeamPlan.value,
+      canViewPendingInvites: canManageMembers,
+      canInviteMembers: canManageMembers,
+      canManageInvites: canManageMembers,
+      canManageMembers
+    }
+  })
+
+  const uiConfig = computed(() => {
+    if (!hasTeamPlan.value) {
+      return {
+        ...workspaceUiConfig.value,
+        showMembersList: false,
+        showPendingTab: false,
+        showSearch: false,
+        showRoleColumn: false,
+        membersGridCols: 'grid-cols-1',
+        pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+        headerGridCols: 'grid-cols-1'
+      }
+    }
+
+    if (workspaceRole.value === 'owner') {
+      return {
+        ...workspaceUiConfig.value,
+        showMembersList: true,
+        showPendingTab: true,
+        showSearch: true,
+        showRoleColumn: true,
+        membersGridCols: 'grid-cols-[50%_40%_10%]',
+        pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+        headerGridCols: 'grid-cols-[50%_40%_10%]'
+      }
+    }
+
+    return {
+      ...workspaceUiConfig.value,
+      showMembersList: true,
+      showPendingTab: false,
+      showSearch: true,
+      showRoleColumn: true,
+      membersGridCols: 'grid-cols-[1fr_auto]',
+      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+      headerGridCols: 'grid-cols-[1fr_auto]'
+    }
+  })
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
@@ -129,9 +191,7 @@ export function useMembersPanel() {
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  const showInviteButton = computed(
-    () => permissions.value.canInviteMembers || isPersonalWorkspace.value
-  )
+  const showInviteButton = computed(() => workspaceRole.value === 'owner')
 
   // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
   const isMemberLimitReached = computed(
@@ -141,7 +201,11 @@ export function useMembersPanel() {
   // Invite is allowed only on an active (non-cancelled) team plan that is under
   // the member cap.
   const isInviteDisabled = computed(
-    () => !isOnTeamPlan.value || isCancelled.value || isMemberLimitReached.value
+    () =>
+      isPlanLoading.value ||
+      !isOnTeamPlan.value ||
+      isCancelled.value ||
+      isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
@@ -151,6 +215,7 @@ export function useMembersPanel() {
   })
 
   function handleInviteMember() {
+    if (isPlanLoading.value) return
     if (!isOnTeamPlan.value) {
       void showInviteMemberUpsellDialog()
       return
@@ -286,8 +351,10 @@ export function useMembersPanel() {
     sortField,
     sortDirection,
     maxSeats,
+    hasTeamPlan,
     isOnTeamPlan,
     hasLapsedTeamPlan,
+    isPlanLoading,
     hasMultipleMembers,
     showSearch,
     showViewTabs,
@@ -300,7 +367,6 @@ export function useMembersPanel() {
     filteredPendingInvites,
     memberMenuItems,
     memberMenus,
-    isPersonalWorkspace,
     members,
     pendingInvites,
     permissions,
