@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "sync.so を使用して、ビデオ内の口の動きを新しい音声に合わせて再同期します。クローズアップ、横顔、遮蔽物にも自動対応し、話者の表情を維持します。コストは出力時間に比例します。",
+    "display_name": "sync.so リップシンク",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "口の動きと同期させる音声。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so の生成モデル。"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seedはノードの再実行を制御しますが、結果はseedに関わらず非決定的です。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "再同期する話者の映像。最大4K（4096x2160）対応。フレームレートは24/25/30 fpsの固定が最適です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "sync.so の sync-3 モデルを使い、静止画像のポートレートを音声に合わせて話す動画にアニメーション化します。出力時間は音声と一致します。コストは出力時間に比例します。",
+    "display_name": "sync.so トーキングイメージ",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "話す動画を駆動する音声。出力時間はこの音声と一致します。TTSノードをここに接続すればテキストからアニメーションを生成できます。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "顔がはっきり写っている単一画像。最大4K（4096x2160）対応。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so の生成モデル。画像入力は sync-3 専用です。"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ポートレートの動き方のガイダンス（例：「被写体を笑顔にしてカメラを見るように」）。空欄の場合は自然な話し方になります。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seedはノードの再実行を制御しますが、結果はseedに関わらず非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5TokenizerOptions",
     "inputs": {

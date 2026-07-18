@@ -112,6 +112,24 @@ describe('missingModelStore', () => {
       expect(store.isRefreshingMissingModels).toBe(false)
     })
 
+    it('forwards the node definition reload option to the app', async () => {
+      const store = useMissingModelStore()
+      const refreshSpy = vi
+        .spyOn(app, 'refreshMissingModels')
+        .mockResolvedValue({
+          missingModels: [],
+          confirmedCandidates: []
+        })
+
+      await store.refreshMissingModels({ reloadDefs: false })
+
+      expect(refreshSpy).toHaveBeenCalledWith({
+        silent: true,
+        reloadDefs: false
+      })
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
     it('ignores overlapping refresh requests', async () => {
       const store = useMissingModelStore()
       let resolveRefresh: () => void = () => {}

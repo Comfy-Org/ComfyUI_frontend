@@ -41,6 +41,8 @@
         </TabsTrigger>
       </TabsList>
 
+      <BillingStatusBanner class="mt-4" />
+
       <TabsContent value="plan" class="mt-4">
         <SubscriptionPanelContentWorkspace />
       </TabsContent>
@@ -58,6 +60,7 @@ import { computed, onMounted, ref } from 'vue'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'

@@ -107,15 +107,21 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
+  partner_node_governance_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
+  free_tier_balance?: {
+    allowance: number
+    used: number
+    remaining: number
+  }
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
-  consolidated_billing_enabled?: boolean
+  billing_control_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).

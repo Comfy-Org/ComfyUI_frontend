@@ -19,7 +19,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 
 const {
   mockTeamWorkspacesEnabled,
-  mockConsolidatedBillingEnabled,
+  mockBillingControlEnabled,
   mockIsPersonal,
   mockPlans,
   mockPurchaseCredits,
@@ -27,7 +27,7 @@ const {
   mockBillingStatus
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
-  mockConsolidatedBillingEnabled: { value: false },
+  mockBillingControlEnabled: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
   mockPurchaseCredits: vi.fn(),
@@ -59,13 +59,11 @@ vi.mock('@/composables/useFeatureFlags', async () => {
       teamWorkspacesEnabledRef.value = value
     }
   })
-  const consolidatedBillingEnabledRef = ref(
-    mockConsolidatedBillingEnabled.value
-  )
-  Object.defineProperty(mockConsolidatedBillingEnabled, 'value', {
-    get: () => consolidatedBillingEnabledRef.value,
+  const billingControlEnabledRef = ref(mockBillingControlEnabled.value)
+  Object.defineProperty(mockBillingControlEnabled, 'value', {
+    get: () => billingControlEnabledRef.value,
     set: (value: boolean) => {
-      consolidatedBillingEnabledRef.value = value
+      billingControlEnabledRef.value = value
     }
   })
   return {
@@ -74,8 +72,8 @@ vi.mock('@/composables/useFeatureFlags', async () => {
         get teamWorkspacesEnabled() {
           return mockTeamWorkspacesEnabled.value
         },
-        get consolidatedBillingEnabled() {
-          return mockConsolidatedBillingEnabled.value
+        get billingControlEnabled() {
+          return mockBillingControlEnabled.value
         }
       }
     })
@@ -165,7 +163,7 @@ describe('useBillingContext', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockTeamWorkspacesEnabled.value = false
-    mockConsolidatedBillingEnabled.value = false
+    mockBillingControlEnabled.value = false
     mockIsPersonal.value = true
     mockPlans.value = []
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
@@ -177,27 +175,27 @@ describe('useBillingContext', () => {
     expect(type.value).toBe('legacy')
   })
 
-  it('keeps personal on legacy when consolidated billing is disabled', () => {
+  it('keeps personal on legacy when billing control is disabled', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockConsolidatedBillingEnabled.value = false
+    mockBillingControlEnabled.value = false
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('legacy')
   })
 
-  it('selects workspace type for personal when consolidated billing is enabled', () => {
+  it('selects workspace type for personal when billing control is enabled', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockConsolidatedBillingEnabled.value = true
+    mockBillingControlEnabled.value = true
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
   })
 
-  it('selects workspace type for team regardless of consolidated billing', () => {
+  it('selects workspace type for team regardless of billing control', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockConsolidatedBillingEnabled.value = false
+    mockBillingControlEnabled.value = false
     mockIsPersonal.value = false
 
     const { type } = useBillingContext()
@@ -298,7 +296,7 @@ describe('useBillingContext', () => {
     expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
 
     // Authenticated remote config resolves the flag on for the same workspace
-    mockConsolidatedBillingEnabled.value = true
+    mockBillingControlEnabled.value = true
     mockTeamWorkspacesEnabled.value = true
 
     await vi.waitFor(() => {
@@ -307,16 +305,16 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('moves a personal workspace to workspace billing when consolidated billing flips on', async () => {
+  it('moves a personal workspace to workspace billing when billing control flips on', async () => {
     mockTeamWorkspacesEnabled.value = true
-    mockConsolidatedBillingEnabled.value = false
+    mockBillingControlEnabled.value = false
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     await nextTick()
     expect(type.value).toBe('legacy')
 
-    mockConsolidatedBillingEnabled.value = true
+    mockBillingControlEnabled.value = true
 
     await vi.waitFor(() => {
       expect(type.value).toBe('workspace')
@@ -325,9 +323,9 @@ describe('useBillingContext', () => {
   })
 
   describe('subscription mirror to workspace store', () => {
-    it('mirrors subscription for personal workspaces on the consolidated billing flow', async () => {
+    it('mirrors subscription for personal workspaces on the billing control flow', async () => {
       mockTeamWorkspacesEnabled.value = true
-      mockConsolidatedBillingEnabled.value = true
+      mockBillingControlEnabled.value = true
       mockIsPersonal.value = true
 
       const { initialize } = useBillingContext()
@@ -553,6 +551,130 @@ describe('useBillingContext', () => {
       await initialize()
 
       expect(isLegacyTeamPlan.value).toBe(true)
+    })
+  })
+
+  describe('isTeamPlan', () => {
+    it('is false for a personal workspace', () => {
+      const { isTeamPlan } = useBillingContext()
+      expect(isTeamPlan.value).toBe(false)
+    })
+
+    // subscription_tier is omitted throughout: the backend sends 'TEAM' here, but
+    // the FE's SubscriptionTier resolves to the registry spec, which has no TEAM
+    // (tierPricing.ts imports comfyRegistryTypes for what is an ingest field).
+    // isTeamPlan reads the credit stop and the slug, never the tier — which is
+    // what keeps it working despite that divergence.
+    it('is true for a credit-slider team sub, which carries a credit stop', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        plan_slug: 'team_per_credit_monthly',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 700,
+          stop_usd: 332
+        }
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is true for a per-credit Team plan in a personal workspace before its credit stop is populated', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockBillingControlEnabled.value = true
+      mockIsPersonal.value = true
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is true for a legacy team sub, identified by slug rather than credit stop', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    // The banner states that need isTeamPlan most — paused and payment_failed —
+    // are exactly the ones the backend reports with is_active=false, because the
+    // spend gate folds billing_status into it. Coupling isTeamPlan to an active
+    // subscription would blank the banner precisely when it is needed.
+    it('stays true for a paused team plan, which the backend reports inactive', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: false,
+        has_funds: true,
+        billing_status: 'paused',
+        plan_slug: 'team_per_credit_monthly',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 700,
+          stop_usd: 332
+        }
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('stays true for a legacy team plan whose payment failed', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: false,
+        has_funds: true,
+        billing_status: 'payment_failed',
+        subscription_tier: 'STANDARD',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is false for a team workspace on a personal-tier plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'PRO',
+        plan_slug: 'pro-monthly'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(false)
     })
   })
 })

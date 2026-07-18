@@ -33,6 +33,7 @@ export type PaymentIntentSource =
   | 'invite_member_upsell'
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
+  | 'free_tier_quota'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'

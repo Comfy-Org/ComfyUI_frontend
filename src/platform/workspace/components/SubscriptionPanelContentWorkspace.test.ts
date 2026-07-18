@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
+import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   CurrentTeamCreditStop,
   TeamCreditStops
@@ -105,19 +106,26 @@ const personalUiConfig: MenuUiConfig = {
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
+const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
+const mockPlanSlug = ref('team-monthly')
+const mockHasTeamPlan = ref(true)
+
 const mockSubscription = computed<SubscriptionInfo | null>(() =>
   mockHasSubscription.value
     ? {
         isActive: true,
-        tier: 'PRO',
+        tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
-        planSlug: 'team-monthly',
+        planSlug: mockPlanSlug.value,
         renewalDate: RENEWAL_DATE_ISO,
         endDate: END_DATE_ISO,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
       }
     : null
+)
+const mockIsTeamPlan = computed(
+  () => mockHasSubscription.value && mockHasTeamPlan.value
 )
 
 const mockInitialize = vi.fn()
@@ -128,6 +136,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
@@ -262,6 +271,10 @@ function renderComponent() {
 }
 
 describe('SubscriptionPanelContentWorkspace', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
@@ -284,6 +297,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ]
     mockUserEmail.value = 'me@example.com'
     mockUiConfig.value = ownerUiConfig
+    mockSubscriptionTier.value = 'PRO'
+    mockPlanSlug.value = 'team-monthly'
+    mockHasTeamPlan.value = true
     mockSubscriptionDuration.value = 'MONTHLY'
     mockTeamCreditStops.value = teamCreditStops
     mockCurrentTeamCreditStop.value = {
@@ -553,6 +569,44 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeDisabled()
     expect(
       screen.queryByRole('button', { name: 'Leave Workspace' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the personal plan identity when a team workspace holds a personal subscription', () => {
+    const getTierPriceSpy = vi
+      .spyOn(tierPricing, 'getTierPrice')
+      .mockReturnValue(42)
+    mockSubscriptionTier.value = 'STANDARD'
+    mockPlanSlug.value = 'standard-annual'
+    mockHasTeamPlan.value = false
+    mockSubscriptionDuration.value = 'ANNUAL'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Standard Yearly')).toBeInTheDocument()
+    expect(screen.queryByText('Team')).not.toBeInTheDocument()
+    expect(getTierPriceSpy).toHaveBeenCalledWith('standard', true)
+    expect(screen.getByText('$42')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo')).toBeInTheDocument()
+    expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
+    expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
+    expect(screen.queryByText('Invite members')).not.toBeInTheDocument()
+  })
+
+  it('shows the Team plan identity when a personal workspace holds a Team subscription', () => {
+    mockIsInPersonalWorkspace.value = true
+    renderComponent()
+
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Pro' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('$665')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo')).toBeInTheDocument()
+    expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
+    expect(screen.getByText('Invite members')).toBeInTheDocument()
+    expect(
+      screen.queryByText('RTX 6000 Pro (96GB VRAM)')
     ).not.toBeInTheDocument()
   })
 

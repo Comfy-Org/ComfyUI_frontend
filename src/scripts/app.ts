@@ -24,6 +24,7 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1527,11 +1528,12 @@ export class ComfyApp {
   }
 
   async refreshMissingModels(
-    options: { silent?: boolean } = {}
+    options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
-      reloadNodeDefs: () => this.reloadNodeDefs(),
+      reloadNodeDefs:
+        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
@@ -1813,6 +1815,7 @@ export class ComfyApp {
               isPartialExecution
             })
           }
+          useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

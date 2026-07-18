@@ -79,6 +79,17 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+function expectRekaPricingDialogProps(
+  dialogComponentProps: Record<string, unknown>
+) {
+  expect(dialogComponentProps).toMatchObject({
+    renderer: 'reka',
+    size: 'full'
+  })
+  expect(dialogComponentProps).not.toHaveProperty('style')
+  expect(dialogComponentProps).not.toHaveProperty('pt')
+}
+
 describe('useSubscriptionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -136,11 +147,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
-      // `style` width is silently ignored and collapses the wide table to the
-      // default md (576px) frame.
-      expect(dialogComponentProps).toHaveProperty('contentClass')
-      expect(dialogComponentProps).not.toHaveProperty('style')
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -174,6 +181,8 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props).toHaveProperty('onChooseTeam')
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
@@ -192,6 +201,21 @@ describe('useSubscriptionDialog', () => {
       expect(props).toHaveProperty('reason')
       expect(props).not.toHaveProperty('initialPlanMode')
       expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
+    it('sizes the legacy workspace pricing dialog via Reka contentClass', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockIsLegacyTeamPlan.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(dialogComponentProps).toMatchObject({
+        modal: false
+      })
+      expectRekaPricingDialogProps(dialogComponentProps)
     })
 
     it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {
@@ -240,6 +264,21 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
       expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+
+    it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'out_of_credits' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onClose')
+      expect(props).not.toHaveProperty('reason')
+      expect(props).not.toHaveProperty('initialPlanMode')
     })
 
     it('does not track on non-cloud', () => {

@@ -366,6 +366,7 @@
     "typeText": "текст"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} режим, действия с рабочим процессом",
     "app": "Приложение",
     "blueprint": "Чертёж",
     "clearWorkflow": "Очистить рабочий процесс",
@@ -2078,7 +2079,10 @@
       "appBuilder": "Конструктор приложений",
       "apps": "Приложения",
       "appsEmptyMessage": "Сохранённые приложения появятся здесь.\nНажмите ниже, чтобы создать своё первое приложение.",
-      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение."
+      "appsEmptyMessageAction": "Нажмите ниже, чтобы создать первое приложение.",
+      "buildAnApp": "Создать приложение",
+      "create": "Создать",
+      "createApp": "Создать приложение"
     },
     "arrange": {
       "atLeastOne": "хотя бы один",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "Перейти к выводам"
     },
     "backToWorkflow": "Вернуться к рабочему процессу",
-    "beta": "Режим приложения Бета - Оставить отзыв",
-    "buildAnApp": "Создать приложение",
     "builder": {
       "exit": "Выйти из конструктора",
       "exitConfirmMessage": "У вас есть несохранённые изменения, которые будут потеряны\nВыйти без сохранения?",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "Что-то пошло не так во время генерации. Возможные причины: неверные скрытые входные данные, отсутствующие ресурсы или ошибки конфигурации рабочего процесса.",
       "support": "связаться с поддержкой"
     },
+    "feedbackLoadError": "Не удалось загрузить форму обратной связи. Пожалуйста, попробуйте позже.",
     "giveFeedback": "Оставить отзыв",
     "graphMode": "Графовый режим",
     "hasCreditCost": "Требуются дополнительные кредиты",
@@ -2198,6 +2201,7 @@
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
+      "clay": "Глина",
       "depth": "Глубина",
       "lineart": "Линейный арт",
       "normal": "Нормальный",
@@ -2205,7 +2209,29 @@
       "pointCloud": "Облако точек",
       "wireframe": "Каркас"
     },
+    "menuBar": {
+      "bgColor": "Цвет фона",
+      "bgImage": "Фоновое изображение",
+      "deleteRecording": "Удалить запись",
+      "downloadRecording": "Скачать запись",
+      "fov": "Угол обзора",
+      "intensity": "Интенсивность",
+      "material": "Материал",
+      "originalMaterialOnly": "Только оригинальный материал",
+      "panorama": "Панорама",
+      "record": "Запись",
+      "recording": "Идёт запись",
+      "removeBackground": "Удалить фон",
+      "showGrid": "Показать сетку",
+      "skeleton": "Скелет",
+      "startNewRecording": "Начать новую запись",
+      "stopRecording": "Остановить запись",
+      "switchProjection": "Сменить проекцию",
+      "upDirection": "Направление вверх",
+      "videoRecordingTooltip": "Видеозапись сцены [mp4]"
+    },
     "model": "Модель",
+    "model3d": "3D-модель",
     "openIn3DViewer": "Открыть в 3D просмотрщике",
     "panoramaMode": "Панорама",
     "previewOutput": "Предварительный просмотр",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "текст",
     "training": "обучение",
     "transform": "преобразование",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "Секрет с таким именем уже существует",
       "duplicateProvider": "Секрет для этого провайдера уже существует",
+      "fileReadFailed": "Не удалось прочитать выбранный файл.",
+      "fileTooLarge": "Файл слишком большой. Загрузите JSON-учётные данные размером до 1 МБ",
+      "invalidJson": "Файл должен содержать корректный JSON-объект",
       "nameRequired": "Имя обязательно",
       "nameTooLong": "Имя должно содержать не более 255 символов",
       "providerRequired": "Провайдер обязателен",
       "secretValueRequired": "Значение секрета обязательно"
     },
+    "jsonFileHint": "Вставьте JSON или загрузите файл. Он будет зашифрован и не может быть просмотрен повторно.",
+    "jsonFileHintEdit": "Оставьте пустым, чтобы сохранить текущее значение, или загрузите новый JSON-файл для замены.",
+    "jsonFilePlaceholder": "Загрузите или вставьте JSON-учётные данные провайдера",
     "lastUsed": "Последнее использование {date}",
     "modelProviders": "Провайдеры моделей",
     "name": "Имя",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "Оставьте пустым, чтобы сохранить текущее значение.",
     "secretValuePlaceholder": "Введите ваш API-ключ",
     "secretValuePlaceholderEdit": "Введите новое значение для изменения",
-    "title": "API-ключи и секреты"
+    "title": "API-ключи и секреты",
+    "uploadJsonFile": "Загрузить JSON-файл"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Обойти групповые узлы",

@@ -344,6 +344,7 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
+  isTeamPlan,
   subscription,
   isLoading,
   error,
@@ -376,7 +377,7 @@ const isPersonalFree = computed(
 )
 
 const isTeamActive = computed(
-  () => !isInPersonalWorkspace.value && isActiveSubscription.value
+  () => isTeamPlan.value && isActiveSubscription.value
 )
 
 const isMemberView = computed(
@@ -440,9 +441,7 @@ const subscriptionTierName = computed(() => {
 })
 
 const planDisplayName = computed(() =>
-  isInPersonalWorkspace.value
-    ? subscriptionTierName.value
-    : t('subscription.teamPlanName')
+  isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
 )
 
 const tierKey = computed(() => {

@@ -1,11 +1,13 @@
 import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
+import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 
 const {
   cloneSkinnedMock,
@@ -351,7 +353,10 @@ describe('Load3d', () => {
       expect(sceneResize).toHaveBeenCalledWith(800, 400)
     })
 
-    it('renderMainScene applies the letterboxed viewport and feeds aspect to the camera', () => {
+    function makeRenderMainSceneContext(
+      backgroundType: 'color' | 'image' = 'color',
+      activeCamera: THREE.Camera = ctx.cameraManager.activeCamera
+    ) {
       const setViewport = vi.fn()
       const setScissor = vi.fn()
       const setScissorTest = vi.fn()
@@ -360,6 +365,10 @@ describe('Load3d', () => {
       const render = vi.fn()
       const updateAspectRatio = vi.fn()
       const renderBackground = vi.fn()
+      const getCurrentBackgroundInfo = vi.fn(() => ({
+        type: backgroundType,
+        value: ''
+      }))
 
       const scene = {} as THREE.Scene
 
@@ -381,19 +390,133 @@ describe('Load3d', () => {
         targetHeight: 200,
         targetAspectRatio: 2,
         isViewerMode: false,
-        cameraManager: { ...ctx.cameraManager, updateAspectRatio },
-        sceneManager: { ...ctx.sceneManager, renderBackground, scene }
+        cameraManager: {
+          ...ctx.cameraManager,
+          updateAspectRatio,
+          activeCamera
+        },
+        sceneManager: {
+          ...ctx.sceneManager,
+          renderBackground,
+          getCurrentBackgroundInfo,
+          scene
+        }
+      })
+
+      return {
+        setViewport,
+        setScissor,
+        setScissorTest,
+        clear,
+        render,
+        updateAspectRatio,
+        renderBackground,
+        scene
+      }
+    }
+
+    it('renderMainScene renders the full canvas with an extrapolated view offset so the letterboxed rect is unchanged', () => {
+      const r = makeRenderMainSceneContext()
+      const camera = ctx.cameraManager.activeCamera as THREE.PerspectiveCamera
+
+      let viewAtRender: THREE.PerspectiveCamera['view'] = null
+      r.render.mockImplementationOnce(() => {
+        viewAtRender = camera.view ? { ...camera.view } : null
       })
 
       ctx.load3d.renderMainScene()
 
-      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(updateAspectRatio).toHaveBeenCalledWith(2)
-      expect(setScissorTest).toHaveBeenCalledWith(true)
-      expect(render).toHaveBeenCalledWith(scene, ctx.cameraManager.activeCamera)
+      // Container 800x600, target aspect 2:1 → letterboxed rect 800x400 at y=100
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissorTest).toHaveBeenCalledWith(true)
+      expect(r.clear).toHaveBeenCalledOnce()
+      expect(r.updateAspectRatio).toHaveBeenCalledWith(2)
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+
+      expect(viewAtRender).not.toBeNull()
+      expect(viewAtRender!.enabled).toBe(true)
+      expect(viewAtRender!.fullWidth).toBe(800)
+      expect(viewAtRender!.fullHeight).toBe(400)
+      expect(viewAtRender!.offsetX).toBeCloseTo(0)
+      expect(viewAtRender!.offsetY).toBe(-100)
+      expect(viewAtRender!.width).toBe(800)
+      expect(viewAtRender!.height).toBe(600)
+
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene dims the letterbox bars after rendering the scene', () => {
+      const r = makeRenderMainSceneContext()
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenCalledTimes(3)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+    })
+
+    it('renderMainScene keeps a color background covering the whole canvas', () => {
+      const r = makeRenderMainSceneContext('color')
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.renderBackground).toHaveBeenCalledWith()
+      // No viewport narrowing before the bars are dimmed.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+    })
+
+    it('renderMainScene confines an image background to the letterboxed rect', () => {
+      const r = makeRenderMainSceneContext('image')
+
+      ctx.load3d.renderMainScene()
+
+      // Viewport/scissor narrow to the letterbox rect for the background
+      // pass, then restore to the full canvas for the scene pass.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+
+      const backgroundOrder = r.renderBackground.mock.invocationCallOrder[0]
+      expect(backgroundOrder).toBeGreaterThan(
+        r.setViewport.mock.invocationCallOrder[1]
+      )
+      expect(backgroundOrder).toBeLessThan(
+        r.setViewport.mock.invocationCallOrder[2]
+      )
+    })
+
+    it('renderMainScene applies the view offset to orthographic cameras too', () => {
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1)
+      const r = makeRenderMainSceneContext('color', camera)
+
+      let viewEnabledAtRender = false
+      r.render.mockImplementationOnce(() => {
+        viewEnabledAtRender = camera.view?.enabled ?? false
+      })
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+      expect(viewEnabledAtRender).toBe(true)
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene falls back to the letterboxed viewport for cameras without view-offset support', () => {
+      const camera = new THREE.Camera()
+      const r = makeRenderMainSceneContext('color', camera)
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.render).toHaveBeenCalledTimes(1)
+      expect(r.render).toHaveBeenCalledWith(r.scene, camera)
+      expect(r.renderBackground).toHaveBeenCalledWith()
     })
 
     it('setBackgroundImage updates background size with letterbox dimensions when a texture is loaded', async () => {
@@ -1258,6 +1381,104 @@ describe('Load3d', () => {
       expect(detectFormatFromURLMock).toHaveBeenCalledWith(
         'http://example.com/api/view?filename=scene.spz'
       )
+    })
+  })
+
+  describe('constructor wiring', () => {
+    function makeConstructorDeps() {
+      const container = document.createElement('div')
+      const canvas = document.createElement('canvas')
+      container.appendChild(canvas)
+
+      const view = {
+        canvas,
+        renderer: {
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          setScissorTest: vi.fn(),
+          setClearColor: vi.fn(),
+          clear: vi.fn(),
+          render: vi.fn()
+        },
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const gizmoManager = {
+        setPointerNdcSource: vi.fn(),
+        init: vi.fn(),
+        dispose: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera(),
+          handleResize: vi.fn(),
+          dispose: vi.fn()
+        },
+        controlsManager: { init: vi.fn(), update: vi.fn(), dispose: vi.fn() },
+        lightingManager: { init: vi.fn(), dispose: vi.fn() },
+        viewHelperManager: {
+          createViewHelper: vi.fn(),
+          init: vi.fn(),
+          update: vi.fn(),
+          render: vi.fn(),
+          dispose: vi.fn()
+        },
+        hdriManager: { dispose: vi.fn() },
+        loaderManager: { init: vi.fn(), dispose: vi.fn() },
+        modelManager: { dispose: vi.fn() },
+        recordingManager: {
+          getIsRecording: vi.fn(() => false),
+          dispose: vi.fn()
+        },
+        animationManager: {
+          init: vi.fn(),
+          update: vi.fn(),
+          isAnimationPlaying: false,
+          dispose: vi.fn()
+        },
+        gizmoManager,
+        adapterRef: { current: null, capabilities: null }
+      }
+      return { container, deps: deps as unknown as Load3dDeps, gizmoManager }
+    }
+
+    it('wires the gizmo pointer NDC source to clientPointToNdc on every construction path', () => {
+      const { container, deps, gizmoManager } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+
+      expect(gizmoManager.setPointerNdcSource).toHaveBeenCalledOnce()
+
+      const ndc = { x: 0.25, y: -0.5, inside: true }
+      const clientPointToNdc = vi
+        .spyOn(load3d, 'clientPointToNdc')
+        .mockReturnValue(ndc)
+      const source = gizmoManager.setPointerNdcSource.mock
+        .calls[0][0] as PointerNdcSource
+
+      expect(source(12, 34)).toBe(ndc)
+      expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+
+      load3d.remove()
     })
   })
 })

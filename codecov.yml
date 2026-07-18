@@ -1,3 +1,9 @@
+coverage:
+  status:
+    patch:
+      default:
+        informational: true
+
 comment:
   layout: 'header, diff, flags, files'
   behavior: default

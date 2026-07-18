@@ -1168,7 +1168,7 @@
   },
   "ByteDanceSeedAudio": {
     "display_name": "ByteDance Seed Audio 1.0",
-    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged @Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
+    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged {'@'}Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
     "inputs": {
       "text_prompt": {
         "name": "text_prompt",
@@ -17740,7 +17740,7 @@
   },
   "SaveVideo": {
     "display_name": "Save Video",
-    "description": "Saves the input images to your ComfyUI output directory.",
+    "description": "Saves the input videos to your ComfyUI output directory.",
     "inputs": {
       "video": {
         "name": "video",
@@ -19132,6 +19132,97 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "display_name": "sync.so Lip Sync",
+    "description": "Re-sync mouth movement in a video to new speech audio using sync.so. Handles close-ups, profiles and obstructions automatically while preserving the speaker's expression. Cost scales with output duration.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Footage of the speaker to re-sync. Up to 4K (4096x2160); a constant frame rate of 24/25/30 fps works best."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech audio to sync the mouth to."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so generation model."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "display_name": "sync.so Talking Image",
+    "description": "Animate a still portrait into a talking video driven by speech audio, using sync.so's sync-3 model. The output duration matches the audio. Cost scales with output duration.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "A single image with a clearly visible face, up to 4K (4096x2160)."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech audio driving the talking video; the output duration matches it. Chain any TTS node here to drive the animation from text."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional guidance for how the portrait comes to life, e.g. 'make the subject smile and look at the camera'. Leave empty for natural talking motion."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so generation model. Image input is exclusive to sync-3."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

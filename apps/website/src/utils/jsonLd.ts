@@ -194,6 +194,8 @@ export interface SoftwareAppInput {
   authorName?: string
   isFree?: boolean
   sameAs?: string[]
+  mainEntityOfPage?: string
+  isBasedOnId?: string
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
@@ -219,6 +221,8 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     author,
     publisher: input.firstParty ? orgRef : undefined,
     sameAs: input.sameAs,
+    mainEntityOfPage: input.mainEntityOfPage,
+    isBasedOn: input.isBasedOnId ? { '@id': input.isBasedOnId } : undefined,
     offers: input.isFree
       ? {
           '@type': 'Offer',
@@ -257,6 +261,10 @@ export function comfyUiSoftwareId(siteUrl: string): string {
   return `${siteUrl}/#software`
 }
 
+function comfyUiSourceCodeId(siteUrl: string): string {
+  return `${siteUrl}/#sourcecode`
+}
+
 export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
   return softwareApplicationNode({
     siteUrl,
@@ -267,14 +275,16 @@ export function comfyUiApplicationNode(siteUrl: string): JsonLdNode {
     applicationCategory: 'MultimediaApplication',
     operatingSystem: 'Windows, macOS, Linux',
     isFree: true,
-    sameAs: comfyUiSameAs
+    sameAs: comfyUiSameAs,
+    mainEntityOfPage: `${siteUrl}/`,
+    isBasedOnId: comfyUiSourceCodeId(siteUrl)
   })
 }
 
 export function comfyUiSourceCodeNode(siteUrl: string): JsonLdNode {
   return softwareSourceCodeNode({
     siteUrl,
-    id: `${siteUrl}/#sourcecode`,
+    id: comfyUiSourceCodeId(siteUrl),
     name: 'ComfyUI',
     codeRepository: externalLinks.github,
     programmingLanguage: 'Python',

@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "sync.so를 사용하여 비디오에서 입 모양 움직임을 새로운 음성 오디오에 맞게 다시 동기화합니다. 클로즈업, 측면, 장애물 상황에서도 자동으로 처리하며, 화자의 표정을 그대로 유지합니다. 비용은 출력 길이에 따라 달라집니다.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "입 모양을 동기화할 음성 오디오입니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 생성 모델입니다."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "동기화할 화자의 영상입니다. 최대 4K(4096x2160)까지 지원하며, 24/25/30 fps의 일정한 프레임 속도가 가장 적합합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "sync.so의 sync-3 모델을 사용하여 정지된 인물 사진을 음성 오디오에 맞춰 말하는 비디오로 애니메이션화합니다. 출력 길이는 오디오와 일치합니다. 비용은 출력 길이에 따라 달라집니다.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "말하는 비디오를 구동할 음성 오디오입니다. 출력 길이는 오디오와 일치합니다. 텍스트에서 애니메이션을 구동하려면 TTS 노드를 연결하세요."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "얼굴이 명확하게 보이는 단일 이미지입니다. 최대 4K(4096x2160)까지 지원합니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 생성 모델입니다. 이미지 입력은 sync-3에서만 지원됩니다."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "인물 사진이 어떻게 살아 움직일지에 대한 선택적 안내입니다. 예: '피사체가 미소를 짓고 카메라를 바라보게 해주세요'. 비워두면 자연스러운 말하기 동작이 생성됩니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5 토큰생성기 옵션",
     "inputs": {

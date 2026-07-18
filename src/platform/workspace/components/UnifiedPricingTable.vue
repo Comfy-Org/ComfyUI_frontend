@@ -166,7 +166,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex flex-row items-center gap-2">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -244,7 +244,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex flex-row items-center gap-2">
                   <i
-                    class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                    class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span

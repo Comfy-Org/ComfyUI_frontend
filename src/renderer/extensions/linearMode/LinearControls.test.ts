@@ -12,7 +12,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
 const billingMock = vi.hoisted(() => ({
-  isActiveSubscription: true
+  canRunWorkflows: true
 }))
 
 const overlayMock = vi.hoisted(() => ({
@@ -22,7 +22,7 @@ const overlayMock = vi.hoisted(() => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: billingMock.isActiveSubscription
+    canRunWorkflows: billingMock.canRunWorkflows
   })
 }))
 
@@ -77,14 +77,14 @@ const nodeErrors: Record<string, NodeError> = {
 
 function renderControls({
   hasError = false,
-  isActiveSubscription = true,
+  canRunWorkflows = true,
   mobile = false
 }: {
   hasError?: boolean
-  isActiveSubscription?: boolean
+  canRunWorkflows?: boolean
   mobile?: boolean
 } = {}) {
-  billingMock.isActiveSubscription = isActiveSubscription
+  billingMock.canRunWorkflows = canRunWorkflows
 
   const pinia = createTestingPinia({
     createSpy: vi.fn,
@@ -120,7 +120,7 @@ function renderControls({
 describe('LinearControls', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    billingMock.isActiveSubscription = true
+    billingMock.canRunWorkflows = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
   })
@@ -187,7 +187,7 @@ describe('LinearControls', () => {
     ({ mobile }) => {
       renderControls({
         hasError: true,
-        isActiveSubscription: false,
+        canRunWorkflows: false,
         mobile
       })
 

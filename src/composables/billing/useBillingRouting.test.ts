@@ -5,7 +5,7 @@ import { useBillingRouting } from './useBillingRouting'
 const { mockFlags, mockActiveWorkspace } = vi.hoisted(() => ({
   mockFlags: {
     teamWorkspacesEnabled: false,
-    consolidatedBillingEnabled: false
+    billingControlEnabled: false
   },
   mockActiveWorkspace: {
     value: null as { id: string; type: 'personal' | 'team' } | null
@@ -30,7 +30,7 @@ const team = { id: 'w-team', type: 'team' as const }
 describe('useBillingRouting', () => {
   beforeEach(() => {
     mockFlags.teamWorkspacesEnabled = false
-    mockFlags.consolidatedBillingEnabled = false
+    mockFlags.billingControlEnabled = false
     mockActiveWorkspace.value = personal
   })
 
@@ -44,9 +44,9 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(false)
   })
 
-  it('keeps personal on legacy when consolidated billing is disabled', () => {
+  it('keeps personal on legacy when billing control is disabled', () => {
     mockFlags.teamWorkspacesEnabled = true
-    mockFlags.consolidatedBillingEnabled = false
+    mockFlags.billingControlEnabled = false
     mockActiveWorkspace.value = personal
 
     const { type } = useBillingRouting()
@@ -54,9 +54,9 @@ describe('useBillingRouting', () => {
     expect(type.value).toBe('legacy')
   })
 
-  it('moves personal to workspace billing when consolidated billing is enabled', () => {
+  it('moves personal to workspace billing when billing control is enabled', () => {
     mockFlags.teamWorkspacesEnabled = true
-    mockFlags.consolidatedBillingEnabled = true
+    mockFlags.billingControlEnabled = true
     mockActiveWorkspace.value = personal
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
@@ -65,9 +65,9 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('uses workspace billing for team workspaces regardless of consolidated billing', () => {
+  it('uses workspace billing for team workspaces regardless of billing control', () => {
     mockFlags.teamWorkspacesEnabled = true
-    mockFlags.consolidatedBillingEnabled = false
+    mockFlags.billingControlEnabled = false
     mockActiveWorkspace.value = team
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
@@ -76,9 +76,9 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('uses workspace billing for team workspaces with consolidated billing enabled', () => {
+  it('uses workspace billing for team workspaces with billing control enabled', () => {
     mockFlags.teamWorkspacesEnabled = true
-    mockFlags.consolidatedBillingEnabled = true
+    mockFlags.billingControlEnabled = true
     mockActiveWorkspace.value = team
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
@@ -89,7 +89,7 @@ describe('useBillingRouting', () => {
 
   it('defaults to legacy while the workspace has not loaded', () => {
     mockFlags.teamWorkspacesEnabled = true
-    mockFlags.consolidatedBillingEnabled = true
+    mockFlags.billingControlEnabled = true
     mockActiveWorkspace.value = null
 
     const { type } = useBillingRouting()
