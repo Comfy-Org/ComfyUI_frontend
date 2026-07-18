@@ -577,7 +577,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('Standard Yearly')).toBeInTheDocument()
     expect(screen.queryByText('Team')).not.toBeInTheDocument()
-    expect(screen.getByText('$16')).toBeInTheDocument()
+    expect(screen.getByText('$42')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
     expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
