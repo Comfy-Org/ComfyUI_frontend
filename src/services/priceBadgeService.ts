@@ -42,17 +42,23 @@ const DEF_LOAD_RACE_TIMEOUT_MS = 2500
 let badgeMapPromise: Promise<PriceBadgeMap | null> | null = null
 let raceLostForSession = false
 
-async function resolveComfyUIVersion(): Promise<string> {
+async function resolveSystemStats() {
   const systemStatsStore = useSystemStatsStore()
   await until(
     () => systemStatsStore.isInitialized || !!systemStatsStore.error
   ).toBe(true)
-  return systemStatsStore.systemStats?.system?.comfyui_version || 'nightly'
+  return systemStatsStore.systemStats
 }
 
 async function fetchPriceBadgeMap(): Promise<PriceBadgeMap | null> {
   try {
-    const version = await resolveComfyUIVersion()
+    const stats = await resolveSystemStats()
+    // --disable-api-nodes promises no frontend internet access; honor it
+    // (same contract as releaseStore).
+    if (stats?.system?.argv?.includes('--disable-api-nodes')) {
+      return null
+    }
+    const version = stats?.system?.comfyui_version || 'nightly'
     const base = getComfyApiBaseUrl().replace(/\/+$/, '')
     const params = new URLSearchParams({
       comfyui_version: version,

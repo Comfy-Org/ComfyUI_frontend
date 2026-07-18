@@ -9,7 +9,9 @@ const mockSystemStatsStore = vi.hoisted(() => ({
   error: null as Error | null,
   systemStats: {
     system: { comfyui_version: '0.3.50' }
-  } as { system: { comfyui_version?: string } } | null
+  } as {
+    system: { comfyui_version?: string; argv?: string[] }
+  } | null
 }))
 
 vi.mock('@sentry/vue', () => ({
@@ -125,6 +127,22 @@ describe('priceBadgeService', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.com/nodes/pricing/badges?comfyui_version=0.3.50&platform=local'
     )
+  })
+
+  it('never fetches when --disable-api-nodes is among the server args', async () => {
+    mockSystemStatsStore.systemStats = {
+      system: {
+        comfyui_version: '0.3.50',
+        argv: ['main.py', '--disable-api-nodes', '--listen']
+      }
+    }
+    const fetchMock = mockFetchResponse({ PartnerNode: validBadge })
+    vi.stubGlobal('fetch', fetchMock)
+    const { applyPriceBadges } = await importService()
+    const defs = makeDefs()
+    await applyPriceBadges(defs)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
   })
 
   it('falls back to nightly when the version is unavailable', async () => {
