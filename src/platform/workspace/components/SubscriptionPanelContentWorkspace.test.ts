@@ -54,6 +54,7 @@ const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
+const mockCanLeaveWorkspace = ref(true)
 const mockIsOriginalOwner = ref(false)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
@@ -162,7 +163,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
       canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
@@ -264,6 +266,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
     mockCanManageSubscriptionLifecycle.value = true
+    mockCanLeaveWorkspace.value = true
     mockIsOriginalOwner.value = false
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
@@ -368,6 +371,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = true
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
+    mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -379,6 +383,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Edit workspace details' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
     expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
       'data-show-invoice-history',

@@ -136,15 +136,27 @@ describe('useWorkspaceUI', () => {
       })
     })
 
-    it('withholds billing actions from a member', async () => {
+    it('gives a Team-plan member only member actions', async () => {
       mockStore.activeWorkspace = personalMemberWorkspace
+      mockIsTeamPlan.value = true
       const ui = await loadComposable()
 
       expect(ui.permissions.value).toMatchObject({
+        canViewOtherMembers: true,
+        canViewPendingInvites: false,
+        canInviteMembers: false,
+        canManageInvites: false,
+        canManageMembers: false,
+        canLeaveWorkspace: true,
+        canAccessWorkspaceMenu: true,
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
         canDowngradeToPersonal: false,
         canTopUp: false
+      })
+      expect(ui.uiConfig.value).toMatchObject({
+        showEditWorkspaceMenuItem: false,
+        workspaceMenuAction: 'leave'
       })
     })
 

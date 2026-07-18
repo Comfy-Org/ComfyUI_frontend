@@ -64,7 +64,7 @@ export function useWorkspaceMenuItems() {
   )
 
   const canLeaveWorkspace = computed(
-    () => !isInPersonalWorkspace.value && !isOriginalOwner.value
+    () => permissions.value.canLeaveWorkspace && !isOriginalOwner.value
   )
 
   const deleteTooltip = computed(() => {

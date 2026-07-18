@@ -49,6 +49,19 @@ function getPermissions(
     canTopUp: canManageBilling
   }
 
+  if (role === 'member') {
+    return {
+      canViewOtherMembers: true,
+      canViewPendingInvites: false,
+      canInviteMembers: false,
+      canManageInvites: false,
+      canManageMembers: false,
+      canLeaveWorkspace: true,
+      canAccessWorkspaceMenu: true,
+      ...billingPermissions
+    }
+  }
+
   if (type === 'personal') {
     return {
       canViewOtherMembers: false,
@@ -62,26 +75,12 @@ function getPermissions(
     }
   }
 
-  if (role === 'owner') {
-    return {
-      canViewOtherMembers: true,
-      canViewPendingInvites: true,
-      canInviteMembers: true,
-      canManageInvites: true,
-      canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      ...billingPermissions
-    }
-  }
-
-  // member role
   return {
     canViewOtherMembers: true,
-    canViewPendingInvites: false,
-    canInviteMembers: false,
-    canManageInvites: false,
-    canManageMembers: false,
+    canViewPendingInvites: true,
+    canInviteMembers: true,
+    canManageInvites: true,
+    canManageMembers: true,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
@@ -92,6 +91,21 @@ function getUIConfig(
   type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspaceUIConfig {
+  if (role === 'member') {
+    return {
+      showMembersList: true,
+      showPendingTab: false,
+      showSearch: true,
+      showRoleColumn: true,
+      membersGridCols: 'grid-cols-[1fr_auto]',
+      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+      headerGridCols: 'grid-cols-[1fr_auto]',
+      showEditWorkspaceMenuItem: false,
+      workspaceMenuAction: 'leave',
+      workspaceMenuDisabledTooltip: null
+    }
+  }
+
   if (type === 'personal') {
     return {
       showMembersList: false,
@@ -107,34 +121,18 @@ function getUIConfig(
     }
   }
 
-  if (role === 'owner') {
-    return {
-      showMembersList: true,
-      showPendingTab: true,
-      showSearch: true,
-      showRoleColumn: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
-      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete',
-      workspaceMenuDisabledTooltip:
-        'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
-    }
-  }
-
-  // member role
   return {
     showMembersList: true,
-    showPendingTab: false,
+    showPendingTab: true,
     showSearch: true,
     showRoleColumn: true,
-    membersGridCols: 'grid-cols-[1fr_auto]',
+    membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-    headerGridCols: 'grid-cols-[1fr_auto]',
-    showEditWorkspaceMenuItem: false,
-    workspaceMenuAction: 'leave',
-    workspaceMenuDisabledTooltip: null
+    headerGridCols: 'grid-cols-[50%_40%_10%]',
+    showEditWorkspaceMenuItem: true,
+    workspaceMenuAction: 'delete',
+    workspaceMenuDisabledTooltip:
+      'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
   }
 }
 
