@@ -65,7 +65,7 @@ vi.mock('./useFirstRunTourController', () => ({
 }))
 
 import GettingStartedScreen from './GettingStartedScreen.vue'
-import { tutorialCards } from './tutorialCards'
+import { FALLBACK_TEMPLATE_IDS, tutorialCards } from './tutorialCards'
 import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboardingEntryStore'
 
 import enMessages from '@/locales/en/main.json'
@@ -104,6 +104,51 @@ describe('GettingStartedScreen', () => {
     for (const id of CARD_IDS) {
       expect(screen.getByTestId(`getting-started-card-${id}`)).toBeTruthy()
     }
+  })
+
+  it('backfills only the shortfall when curated templates are missing', () => {
+    mocks.templatesByName.delete('video_ltx2_3_i2v')
+    FALLBACK_TEMPLATE_IDS.forEach((id) =>
+      mocks.templatesByName.set(id, makeTemplate(id, id))
+    )
+    renderScreen()
+
+    expect(screen.getAllByTestId(/^getting-started-card-/)).toHaveLength(
+      CARD_IDS.length
+    )
+    expect(
+      screen.getByTestId(`getting-started-card-${FALLBACK_TEMPLATE_IDS[0]}`)
+    ).toBeTruthy()
+    expect(
+      screen.queryByTestId(`getting-started-card-${FALLBACK_TEMPLATE_IDS[1]}`)
+    ).toBeNull()
+  })
+
+  it('leaves the grid untouched when every curated template resolves', () => {
+    FALLBACK_TEMPLATE_IDS.forEach((id) =>
+      mocks.templatesByName.set(id, makeTemplate(id, id))
+    )
+    renderScreen()
+
+    for (const id of CARD_IDS) {
+      expect(screen.getByTestId(`getting-started-card-${id}`)).toBeTruthy()
+    }
+    expect(
+      screen.queryByTestId(`getting-started-card-${FALLBACK_TEMPLATE_IDS[0]}`)
+    ).toBeNull()
+  })
+
+  it('keeps tutorial thumbnails resolvable when their template is missing', async () => {
+    mocks.templatesByName.delete('video_ltx2_3_i2v')
+    renderScreen()
+    mocks.getTemplateThumbnailUrl.mockClear()
+    await userEvent.click(screen.getByRole('tab', { name: /tutorials/i }))
+
+    // Every tutorial resolves a thumbnail from some loaded template, so none
+    // renders an empty src.
+    expect(mocks.getTemplateThumbnailUrl).toHaveBeenCalledTimes(
+      tutorialCards.length
+    )
   })
 
   it('loads the templates store when opened unloaded so cards can resolve', () => {

@@ -80,9 +80,11 @@
                 class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4"
               >
                 <GettingStartedCard
-                  v-for="tutorial in tutorialCards"
+                  v-for="(tutorial, index) in tutorialCards"
                   :key="tutorial.id"
-                  :image-src="tutorialThumbnail(tutorial.thumbnailTemplate)"
+                  :image-src="
+                    tutorialThumbnail(tutorial.thumbnailTemplate, index)
+                  "
                   :title="t(tutorial.titleKey)"
                   :badge-icon="TUTORIAL_BADGE_ICON"
                   :testid="`getting-started-tutorial-${tutorial.id}`"
@@ -118,6 +120,7 @@ import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
 import type { TutorialCard } from './tutorialCards'
 import {
   CURATED_TEMPLATE_IDS,
+  FALLBACK_TEMPLATE_IDS,
   TUTORIAL_BADGE_ICON,
   tutorialCards
 } from './tutorialCards'
@@ -153,11 +156,21 @@ const loadFailed = ref(false)
 
 const screenRef = useTemplateRef<HTMLElement>('screenRef')
 
-const cards = computed(() =>
-  CURATED_TEMPLATE_IDS.map((id) => templatesStore.getTemplateByName(id)).filter(
-    (template) => template !== undefined
+function resolveTemplates(ids: readonly string[]) {
+  return ids
+    .map((id) => templatesStore.getTemplateByName(id))
+    .filter((template) => template !== undefined)
+}
+
+/** Tops the grid back up to its skeleton count when curated data is incomplete. */
+const cards = computed(() => {
+  const curated = resolveTemplates(CURATED_TEMPLATE_IDS)
+  const chosen = new Set(curated.map((template) => template.name))
+  const backfill = resolveTemplates(FALLBACK_TEMPLATE_IDS).filter(
+    (template) => !chosen.has(template.name)
   )
-)
+  return [...curated, ...backfill].slice(0, CURATED_TEMPLATE_IDS.length)
+})
 
 // Cards and per-card loads no-op until the templates store is loaded; nothing
 // else loads it on this path, so load it (and focus the takeover) on open.
@@ -177,8 +190,13 @@ watch(
   { immediate: true }
 )
 
-function tutorialThumbnail(id: TutorialCard['thumbnailTemplate']) {
-  const template = templatesStore.getTemplateByName(id)
+function tutorialThumbnail(
+  id: TutorialCard['thumbnailTemplate'],
+  index: number
+) {
+  const template =
+    templatesStore.getTemplateByName(id) ??
+    cards.value[index % cards.value.length]
   return template ? getTemplateThumbnailUrl(template, 'default') : ''
 }
 

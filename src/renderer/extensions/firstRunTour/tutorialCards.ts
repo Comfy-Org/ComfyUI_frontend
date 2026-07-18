@@ -11,6 +11,14 @@ export const CURATED_TEMPLATE_IDS = [
   'video_wan2_2_14B_i2v'
 ] as const satisfies readonly CuratedTemplateId[]
 
+/** Fills the grid, in order, when a curated template is missing from the data. */
+export const FALLBACK_TEMPLATE_IDS = [
+  'gsc_advanced_3_2',
+  'image_qwen_image_edit_2509',
+  'templates-qwen_multiangle.app',
+  'gsc_advanced_3_1'
+] as const
+
 type LoadedTemplateId = (typeof CURATED_TEMPLATE_IDS)[number]
 
 /**
