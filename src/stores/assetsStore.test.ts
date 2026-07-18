@@ -623,7 +623,9 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(
+          new JobsApiError(400, '{"code":"INVALID_CURSOR"}')
+        )
         .mockResolvedValueOnce(
           mockHistoryPage(
             Array.from({ length: 10 }, (_, i) => createMockJobItem(10 + i)),
@@ -672,7 +674,9 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(
+          new JobsApiError(400, '{"code":"INVALID_CURSOR"}')
+        )
         .mockRejectedValueOnce(new Error('network down'))
 
       await store.updateHistory()
@@ -719,7 +723,9 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(
+          new JobsApiError(400, '{"code":"INVALID_CURSOR"}')
+        )
         .mockResolvedValueOnce(mockHistoryPage(serverStateAfterDeletions))
 
       await store.updateHistory()
@@ -755,14 +761,43 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.loadMoreHistory()
 
       // No offset fallback for transient failures, just a recorded error.
-      // Asserting the concrete 500 guards the recover-vs-not classification:
-      // only a 400 should drop to the offset fallback.
+      // Only an INVALID_CURSOR error should drop to the offset fallback; a 500
+      // with no such code must preserve the cursor.
       expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
       expect(store.historyError).toBeInstanceOf(JobsApiError)
       expect(store.historyError).toMatchObject({ status: 500 })
       expect(store.hasMoreHistory).toBe(true)
 
       // The still-valid cursor is retried on the next attempt
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+    })
+
+    it('preserves the cursor for a 400 that is not an INVALID_CURSOR rejection', async () => {
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+            { hasMore: true, nextCursor: 'cursor-1' }
+          )
+        )
+        .mockRejectedValueOnce(
+          new JobsApiError(400, '{"code":"INVALID_STATUS_FILTER"}')
+        )
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      // A non-cursor 400 must not reset the walk to the offset fallback.
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
+      expect(store.historyError).toBeInstanceOf(JobsApiError)
+      expect(store.hasMoreHistory).toBe(true)
+
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
       await store.loadMoreHistory()
       expect(fetchHistoryPage).toHaveBeenLastCalledWith(
@@ -844,7 +879,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
       await store.updateHistory()
 
-      rejectStale!(new JobsApiError(400, 'INVALID_CURSOR'))
+      rejectStale!(new JobsApiError(400, '{"code":"INVALID_CURSOR"}'))
       await staleLoad
 
       // The superseded walk neither nulled the fresh cursor nor fired an
