@@ -420,7 +420,7 @@ function buildXmpPacket(workflow: string, prompt?: string): string {
     '<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
     '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
     '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
-    `    <rdf:Description xmlns:comfy="https://example.com/comfyui/metadata/1.0/" rdf:about=""${promptAttribute}>`,
+    `    <rdf:Description xmlns:comfy="https://github.com/Comfy-Org/ComfyUI" rdf:about=""${promptAttribute}>`,
     `      <comfy:workflow>${escapeXmlText(workflow)}</comfy:workflow>`,
     '    </rdf:Description>',
     '  </rdf:RDF>',
