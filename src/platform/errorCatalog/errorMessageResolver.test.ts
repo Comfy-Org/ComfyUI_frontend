@@ -160,6 +160,27 @@ describe('errorMessageResolver', () => {
     expect(result.displayDetails).not.toMatch(/&(?:amp|lt|gt);/)
   })
 
+  it('preserves slashes and ampersands in received values for value_not_in_list', () => {
+    expect(
+      te('errorCatalog.validationErrors.value_not_in_list.detailsWithValue')
+    ).toBe(true)
+    const receivedValue =
+      "Wan22_FunReward/Wan2.2-Fun-A14B-InP-HIGH-MPS_resized_dynamic_avg_rank_21_bf16.safetensors & Bob's model"
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('value_not_in_list', 'lora_0', 'lora_0', {
+        received_value: receivedValue
+      }),
+      nodeDisplayName: 'WanVideo Lora Select Multi'
+    })
+    const interpolatedCopy = [result.displayDetails, result.toastMessage].join(
+      ' '
+    )
+
+    expect(interpolatedCopy).toContain(receivedValue)
+    expect(interpolatedCopy).not.toMatch(/&(?:amp|lt|gt|#x2F|#39|#x27);/)
+  })
+
   it('uses catalog fallbacks when required_input_missing lacks node or input labels', () => {
     expect(
       resolveRunErrorMessage({
