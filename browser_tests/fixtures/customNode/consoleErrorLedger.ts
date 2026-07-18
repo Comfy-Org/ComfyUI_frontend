@@ -40,17 +40,20 @@ export const CONSOLE_ERROR_ALLOWLIST: Record<
       reason: 'loader preview fetches undefined filename on empty input dir'
     },
     {
-      // createContextMenu (editor_base.js:727) replaceChild-es a menu element
-      // it assumes is attached; repeat instantiation within one page (the
-      // wiring sweep creates the node once per planned pair) finds it gone
-      // and throws at construction. Single creation is clean - the mount
-      // tier passes. Latent pack bug, surfaced 2026-07-18 when new core
-      // partner nodes (HeyGen/Gemini) grew the corpus and reshuffled the
-      // sweep's pair plan. Console-only; upstream-report candidate.
+      // The SHARED editor base (editor_base.js:727 createContextMenu)
+      // replaceChild-es a menu element it assumes is attached; repeat
+      // instantiation within one page (the wiring sweep creates a node once
+      // per planned pair) finds it gone and throws at construction - for
+      // EVERY editor subclass (SplineEditor and PointsEditor observed), so
+      // the pattern matches the mechanism, not one class name. Single
+      // creation is clean - the mount tier passes. Latent pack bug,
+      // surfaced 2026-07-18 when new core partner nodes (HeyGen/Gemini)
+      // grew the corpus and reshuffled the sweep's pair plan. Console-only;
+      // upstream-report candidate.
       pattern:
-        /Error creating SplineEditor: TypeError: Cannot read properties of null \(reading 'replaceChild'\)/,
+        /Error creating \w+Editor: TypeError: Cannot read properties of null \(reading 'replaceChild'\)/,
       reason:
-        'SplineEditor editor JS crashes on repeat instantiation in one page'
+        'KJNodes editor_base createContextMenu crashes on repeat instantiation (all editor subclasses)'
     }
   ],
   'ComfyUI-Custom-Scripts': [

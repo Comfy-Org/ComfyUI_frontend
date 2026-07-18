@@ -40,19 +40,22 @@ test.describe('consoleErrorLedger', () => {
   })
 
   test('cross-pack variant filters only via packs in scope', () => {
-    const kjError =
-      "Error creating SplineEditor: TypeError: Cannot read properties of null (reading 'replaceChild')"
+    // Both observed editor_base subclasses match the mechanism pattern.
+    const kjErrors = [
+      "Error creating SplineEditor: TypeError: Cannot read properties of null (reading 'replaceChild')",
+      "Error creating PointsEditor: TypeError: Cannot read properties of null (reading 'replaceChild')"
+    ]
     // Owning pack in scope: ledgered. Absent: the error surfaces, so a pack
     // outside the sweep corpus can never vouch for an error.
     expect(
       unallowlistedErrorsForPacks(
         ['ComfyUI-Impact-Pack', 'ComfyUI-KJNodes'],
-        [kjError, 'boom']
+        [...kjErrors, 'boom']
       )
     ).toEqual(['boom'])
     expect(
-      unallowlistedErrorsForPacks(['ComfyUI-Impact-Pack'], [kjError])
-    ).toEqual([kjError])
+      unallowlistedErrorsForPacks(['ComfyUI-Impact-Pack'], kjErrors)
+    ).toEqual(kjErrors)
   })
 })
 
