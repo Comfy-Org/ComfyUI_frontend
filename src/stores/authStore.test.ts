@@ -149,9 +149,7 @@ describe('useAuthStore', () => {
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
-  const mockAuth: MockAuth = {
-    /* mock Auth object */
-  }
+  const mockAuth: MockAuth = {/* mock Auth object */}
 
   const mockUser: MockUser = {
     uid: 'test-user-id',

@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "Vuelve a sincronizar el movimiento de la boca en un video con un nuevo audio de voz usando sync.so. Maneja automáticamente primeros planos, perfiles y obstrucciones, preservando la expresión del hablante. El costo escala según la duración del resultado.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de voz para sincronizar con la boca."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de generación de sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Metraje del hablante para volver a sincronizar. Hasta 4K (4096x2160); una tasa de fotogramas constante de 24/25/30 fps funciona mejor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Anima un retrato estático en un video parlante impulsado por audio de voz, usando el modelo sync-3 de sync.so. La duración del resultado coincide con el audio. El costo escala según la duración del resultado.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de voz que impulsa el video parlante; la duración del resultado coincide con él. Encadena cualquier nodo TTS aquí para animar desde texto."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Una sola imagen con un rostro claramente visible, hasta 4K (4096x2160)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de generación de sync.so. La entrada de imagen es exclusiva de sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Orientación opcional sobre cómo cobra vida el retrato, por ejemplo: 'haz que el sujeto sonría y mire a la cámara'. Déjalo vacío para un movimiento natural al hablar."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5TokenizerOptions",
     "inputs": {

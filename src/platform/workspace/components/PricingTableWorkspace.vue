@@ -129,7 +129,7 @@
                 {{ t('subscription.monthlyCreditsPerMemberLabel') }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i class="icon-[lucide--component] text-sm text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
@@ -534,7 +534,7 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 }
 
 function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
+  window.open('https://discord.com/invite/comfyorg', '_blank')
 }
 
 function handleViewEnterprise() {
