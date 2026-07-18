@@ -103,6 +103,42 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 const FLAT_OUTPUT_PAGE_SIZE = 200
 
+/**
+ * Coalesce concurrent calls to an async `run` into a single leading run plus
+ * at most one trailing run. Calls arriving while a run is in flight share that
+ * run; the first such call schedules exactly one trailing run to pick up any
+ * state the in-flight run was dispatched too early to observe.
+ *
+ * The leading rejection is swallowed before scheduling the trailing run so a
+ * failed run can never latch a settled-rejected promise in the trailing slot,
+ * which would freeze every future call. The leading caller still observes the
+ * rejection via the returned promise.
+ */
+export function createTrailingRefreshCoalescer(
+  run: () => Promise<void>
+): () => Promise<void> {
+  let inFlight: Promise<void> | null = null
+  let trailing: Promise<void> | null = null
+
+  const invoke = (): Promise<void> => {
+    if (!inFlight) {
+      inFlight = run().finally(() => {
+        inFlight = null
+      })
+      return inFlight
+    }
+    trailing ??= inFlight
+      .catch(() => {})
+      .then(() => {
+        trailing = null
+        return invoke()
+      })
+    return trailing
+  }
+
+  return invoke
+}
+
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
@@ -373,32 +409,18 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMoreHistory.value = page.hasMore
   }
 
-  let headRefreshInFlight: Promise<void> | null = null
-  let headRefreshTrailing: Promise<void> | null = null
-
   /**
    * Merge newly completed jobs into the top of the list without resetting
-   * pagination state, so items loaded via infinite scroll survive the
-   * refresh. Cursors only walk toward older items, so new completions are
-   * picked up by re-fetching the head page and deduplicating. Bursts of
-   * status events share the in-flight refresh, and a call arriving
-   * mid-flight schedules exactly one trailing refresh — the shared response
-   * was dispatched before that caller's event, so it could miss the very
-   * completion the caller is reacting to.
+   * pagination state, so items loaded via infinite scroll survive the refresh.
+   * Cursors only walk toward older items, so new completions are picked up by
+   * re-fetching the head page and deduplicating. Bursts of status events share
+   * the in-flight refresh, and a call arriving mid-flight schedules exactly one
+   * trailing refresh — the shared response was dispatched before that caller's
+   * event, so it could miss the very completion the caller is reacting to.
    */
-  const refreshHistoryHead = (): Promise<void> => {
-    if (!headRefreshInFlight) {
-      headRefreshInFlight = doRefreshHistoryHead().finally(() => {
-        headRefreshInFlight = null
-      })
-      return headRefreshInFlight
-    }
-    headRefreshTrailing ??= headRefreshInFlight.then(() => {
-      headRefreshTrailing = null
-      return refreshHistoryHead()
-    })
-    return headRefreshTrailing
-  }
+  const refreshHistoryHead = createTrailingRefreshCoalescer(() =>
+    doRefreshHistoryHead()
+  )
 
   const doRefreshHistoryHead = async () => {
     historyError.value = null

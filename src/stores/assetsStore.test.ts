@@ -3,7 +3,10 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import { useAssetsStore } from '@/stores/assetsStore'
+import {
+  createTrailingRefreshCoalescer,
+  useAssetsStore
+} from '@/stores/assetsStore'
 import type {
   AssetItem,
   AssetResponse
@@ -2762,5 +2765,71 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+})
+
+describe('createTrailingRefreshCoalescer', () => {
+  const deferred = () => {
+    let resolve!: () => void
+    let reject!: (reason?: unknown) => void
+    const promise = new Promise<void>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+
+  it('coalesces a burst into one leading run plus a single trailing run', async () => {
+    const leading = deferred()
+    const run = vi
+      .fn<() => Promise<void>>()
+      .mockReturnValueOnce(leading.promise)
+      .mockResolvedValue(undefined)
+    const refresh = createTrailingRefreshCoalescer(run)
+
+    const first = refresh()
+    const second = refresh()
+    const third = refresh()
+
+    expect(run).toHaveBeenCalledTimes(1)
+
+    leading.resolve()
+    await Promise.all([first, second, third])
+
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('runs a fresh run for sequentially separated calls', async () => {
+    const run = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    const refresh = createTrailingRefreshCoalescer(run)
+
+    await refresh()
+    await refresh()
+
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps refreshing after a rejected leading run instead of freezing', async () => {
+    const leading = deferred()
+    const run = vi
+      .fn<() => Promise<void>>()
+      .mockReturnValueOnce(leading.promise)
+      .mockResolvedValue(undefined)
+    const refresh = createTrailingRefreshCoalescer(run)
+
+    const first = refresh()
+    const trailing = refresh()
+
+    leading.reject(new Error('leading refresh failed'))
+
+    // The leading caller still observes the rejection...
+    await expect(first).rejects.toThrow('leading refresh failed')
+    // ...but the trailing run is scheduled anyway and completes normally.
+    await expect(trailing).resolves.toBeUndefined()
+    expect(run).toHaveBeenCalledTimes(2)
+
+    // A subsequent call still runs a fresh fetch; the mechanism is not frozen.
+    await refresh()
+    expect(run).toHaveBeenCalledTimes(3)
   })
 })
