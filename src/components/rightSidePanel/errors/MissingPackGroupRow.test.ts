@@ -164,6 +164,9 @@ describe('MissingPackGroupRow', () => {
       expect(
         screen.queryByRole('button', { name: 'Locate OnlyNode' })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
+      ).toHaveLength(0)
     })
 
     it('renders node count', () => {
@@ -293,6 +296,9 @@ describe('MissingPackGroupRow', () => {
       expect(
         screen.queryByRole('button', { name: 'Locate NoId' })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
+      ).toHaveLength(0)
     })
 
     it('handles mixed nodeTypes with and without nodeId', async () => {
@@ -313,6 +319,9 @@ describe('MissingPackGroupRow', () => {
       expect(
         screen.queryByRole('button', { name: 'Locate WithoutId' })
       ).not.toBeInTheDocument()
+      expect(
+        screen.queryAllByRole('button', { name: /^Locate / })
+      ).toHaveLength(1)
     })
   })
 

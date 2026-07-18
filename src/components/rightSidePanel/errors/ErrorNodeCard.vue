@@ -36,10 +36,7 @@
         >
           <i class="icon-[lucide--monitor-x] size-4" />
         </Button>
-        <LocateNodeButton
-          :label="t('rightSidePanel.locateNode')"
-          @locate="handleLocateNode"
-        />
+        <LocateNodeButton :label="locateLabel" @locate="handleLocateNode" />
       </div>
     </div>
 
@@ -195,6 +192,12 @@ const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
+const locateLabel = computed(() => {
+  const item = card.nodeTitle || card.title
+  return item
+    ? t('rightSidePanel.locateNodeFor', { item }, { escapeParameter: false })
+    : t('rightSidePanel.locateNode')
+})
 const runtimeDetailsControlIds = computed(() =>
   card.errors
     .map((error, idx) => (error.isRuntimeError ? getRuntimeDetailsId(idx) : ''))
