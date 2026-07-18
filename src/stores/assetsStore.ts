@@ -284,11 +284,15 @@ export const useAssetsStore = defineStore('assets', () => {
     // advance it while still in offset mode; otherwise the offset used by the
     // recovery fallback would drift past valid rows.
     if (!historyCursorMode) historyOffset.value += page.jobs.length
-    historyNextCursor.value = cursorStuck ? null : (page.nextCursor ?? null)
     hasMoreHistory.value =
       page.hasMore &&
       !cursorStuck &&
       (page.jobs.length > 0 || page.nextCursor != null)
+    // Drop the cursor once paging terminates so state never carries a live
+    // cursor alongside `hasMoreHistory === false`.
+    historyNextCursor.value = hasMoreHistory.value
+      ? (page.nextCursor ?? null)
+      : null
 
     trimHistoryToLimit()
 
@@ -333,6 +337,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const epoch = historyFetchEpoch
     try {
       await fetchHistoryAssets(true)
+      if (epoch !== historyFetchEpoch) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       if (epoch !== historyFetchEpoch) return
@@ -350,6 +355,9 @@ export const useAssetsStore = defineStore('assets', () => {
    * A head page with no further rows spans the whole timeline, so replacing
    * local state with it also prunes jobs deleted server-side (e.g. after the
    * queue history is cleared from another surface).
+   *
+   * Bumps `historyFetchEpoch`, which cancels any concurrent
+   * `loadMoreHistory`/`fetchHistoryAssets` continuation.
    */
   const replaceHistoryWithHeadPage = (page: FetchHistoryPageResult) => {
     historyFetchEpoch += 1
@@ -393,13 +401,13 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   const doRefreshHistoryHead = async () => {
+    historyError.value = null
     if (!allHistoryItems.value.length) {
       await updateHistory()
       return
     }
 
-    historyError.value = null
-    const epoch = historyFetchEpoch
+    let epoch = historyFetchEpoch
     try {
       const page = await fetchHistoryJobsPage({ offset: 0 })
       if (epoch !== historyFetchEpoch) return
@@ -425,6 +433,9 @@ export const useAssetsStore = defineStore('assets', () => {
         trimHistoryToLimit()
       } else {
         replaceHistoryWithHeadPage(page)
+        // replaceHistoryWithHeadPage bumps the epoch; re-sync so the catch
+        // guard below suppresses stale continuations, not genuine errors.
+        epoch = historyFetchEpoch
       }
       historyAssets.value = allHistoryItems.value
     } catch (err) {

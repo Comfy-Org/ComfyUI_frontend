@@ -907,6 +907,56 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
+    it('does not blank historyAssets when a stale loadMore resolves mid-reload', async () => {
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(
+          Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+          { hasMore: true, nextCursor: 'cursor-1' }
+        )
+      )
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(10)
+
+      let resolveStale: (page: FetchHistoryPageResult) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((resolve) => {
+          resolveStale = resolve
+        })
+      )
+      const staleLoad = store.loadMoreHistory()
+
+      // Second reload is still in flight: it has reset allHistoryItems to []
+      // and bumped the epoch, but has not repopulated historyAssets yet.
+      let resolveFresh: (page: FetchHistoryPageResult) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((resolve) => {
+          resolveFresh = resolve
+        })
+      )
+      const freshUpdate = store.updateHistory()
+
+      resolveStale!(
+        mockHistoryPage([createMockJobItem(50)], {
+          hasMore: true,
+          nextCursor: 'cursor-stale'
+        })
+      )
+      await staleLoad
+
+      // The superseded loadMore must not overwrite the visible list with the
+      // transient empty snapshot of the in-flight reload.
+      expect(store.historyAssets).toHaveLength(10)
+
+      resolveFresh!(
+        mockHistoryPage(
+          Array.from({ length: 5 }, (_, i) => createMockJobItem(100 + i)),
+          { hasMore: true, nextCursor: 'cursor-fresh' }
+        )
+      )
+      await freshUpdate
+      expect(store.historyAssets).toHaveLength(5)
+    })
+
     it('terminates the walk when the backend returns the same cursor it was given (stuck cursor)', async () => {
       // Page 1: initial load mints cursor-1
       const firstBatch = Array.from({ length: 10 }, (_, i) =>
