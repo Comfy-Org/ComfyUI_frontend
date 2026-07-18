@@ -99,13 +99,21 @@ export function classifyAutoRunnable(
       }
     if (kind === 'socket') {
       const type = socketType(spec)
-      if (!synthTypes.has(type))
+      // Union-typed sockets ("IMAGE,MASK") accept any member (same semantics
+      // isTypeCompatible applies in typePairing), so one synthesizable member
+      // makes the socket wireable. Push the MEMBER, not the union string -
+      // the chain builder synthesizes a producer for exactly this type.
+      const member = type
+        .split(',')
+        .map((candidate) => candidate.trim())
+        .find((candidate) => synthTypes.has(candidate))
+      if (member === undefined)
         return {
           key,
           verdict: 'NEEDS_WIRES',
           reason: `required input "${name}" (${type}) has no model-free producer`
         }
-      sockets.push({ name, type })
+      sockets.push({ name, type: member })
     }
   }
   const terminus =

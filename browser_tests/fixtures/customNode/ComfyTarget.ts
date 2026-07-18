@@ -191,9 +191,7 @@ export class LocalDesktopTarget {
       (typeof result === 'object' && result !== null && '__cnThrew' in result)
     let queued = await queueOnce()
     if (refused(queued)) {
-      await page.evaluate(
-        () => new Promise((resolve) => setTimeout(resolve, 250))
-      )
+      await new Promise((resolve) => setTimeout(resolve, 250))
       queued = await queueOnce()
       if (refused(queued)) {
         stopCapture()
