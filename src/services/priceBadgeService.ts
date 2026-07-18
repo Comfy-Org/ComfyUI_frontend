@@ -40,6 +40,8 @@ type PriceBadgeMap = Record<string, PriceBadge>
 const DEF_LOAD_RACE_TIMEOUT_MS = 2500
 
 let badgeMapPromise: Promise<PriceBadgeMap | null> | null = null
+let badgeMapSettled = false
+let fetchDeadline = 0
 let raceLostForSession = false
 
 async function resolveSystemStats() {
@@ -104,10 +106,17 @@ async function fetchPriceBadgeMap(): Promise<PriceBadgeMap | null> {
 /**
  * Kick off the price badge fetch chain (system_stats version -> badge map).
  * Idempotent; safe to call before node defs load so the fetch runs
- * concurrently with /object_info.
+ * concurrently with /object_info. The def-load race deadline is anchored
+ * here, so time spent fetching before defs arrive counts against the
+ * budget instead of delaying node registration.
  */
 export function startPriceBadgeFetch(): void {
-  badgeMapPromise ??= fetchPriceBadgeMap()
+  if (badgeMapPromise) return
+  fetchDeadline = Date.now() + DEF_LOAD_RACE_TIMEOUT_MS
+  badgeMapPromise = fetchPriceBadgeMap()
+  void badgeMapPromise.finally(() => {
+    badgeMapSettled = true
+  })
 }
 
 type WidgetTypeBucket = 'number' | 'boolean' | 'string'
@@ -206,35 +215,56 @@ function validateBadgeAgainstDef(
   return null
 }
 
+function markRaceLost(): void {
+  if (raceLostForSession) return
+  raceLostForSession = true
+  console.warn(
+    '[pricing/badges] fetch lost the def-load race; no core-node badges this session'
+  )
+  captureMessage('price badge fetch lost def-load race', {
+    level: 'warning'
+  })
+}
+
 /**
  * Apply remotely fetched price badges to node defs, mutating them in place.
  *
- * Awaits the badge fetch for at most DEF_LOAD_RACE_TIMEOUT_MS; on timeout the
- * result is dropped for the whole session so badge state stays deterministic
- * (compiled-rule and label caches are keyed by node name and never
- * invalidated). Badges that fail validation against the def are skipped per
- * node: no badge beats a wrong one.
+ * The fetch gets a DEF_LOAD_RACE_TIMEOUT_MS budget measured from
+ * startPriceBadgeFetch(), not from here, so it never delays node
+ * registration by more than what remains of that budget once /object_info
+ * has resolved — typically nothing, since the prefetch runs concurrently
+ * with extension loading and /object_info. A result that settled before
+ * apply is used even past the deadline (it costs no extra wait). On
+ * timeout the result is dropped for the whole session so badge state stays
+ * deterministic (compiled-rule and label caches are keyed by node name and
+ * never invalidated). Badges that fail validation against the def are
+ * skipped per node: no badge beats a wrong one.
  */
 export async function applyPriceBadges(
   defs: Record<string, ComfyNodeDef>
 ): Promise<void> {
   if (raceLostForSession) return
   startPriceBadgeFetch()
-  const result = await Promise.race([
-    badgeMapPromise,
-    new Promise<'timeout'>((resolve) =>
-      setTimeout(() => resolve('timeout'), DEF_LOAD_RACE_TIMEOUT_MS)
-    )
-  ])
-  if (result === 'timeout') {
-    raceLostForSession = true
-    console.warn(
-      '[pricing/badges] fetch lost the def-load race; no core-node badges this session'
-    )
-    captureMessage('price badge fetch lost def-load race', {
-      level: 'warning'
-    })
-    return
+  let result: PriceBadgeMap | null
+  if (badgeMapSettled) {
+    result = await badgeMapPromise!
+  } else {
+    const remaining = fetchDeadline - Date.now()
+    if (remaining <= 0) {
+      markRaceLost()
+      return
+    }
+    const raced = await Promise.race([
+      badgeMapPromise,
+      new Promise<'timeout'>((resolve) =>
+        setTimeout(() => resolve('timeout'), remaining)
+      )
+    ])
+    if (raced === 'timeout') {
+      markRaceLost()
+      return
+    }
+    result = raced ?? null
   }
   // A concurrent apply call may have timed out and marked the session lost
   // while we were awaiting; honor the all-or-nothing session invariant.

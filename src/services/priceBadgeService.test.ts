@@ -502,8 +502,8 @@ describe('priceBadgeService', () => {
     const apply1 = applyPriceBadges(defs1)
     await vi.advanceTimersByTimeAsync(1000)
     const apply2 = applyPriceBadges(defs2)
-    // apply1's timer fires at 2500ms and marks the session lost;
-    // apply2's timer would fire at 3500ms.
+    // The deadline is anchored at the prefetch, so both apply calls' timers
+    // fire at 2500ms and mark the session lost.
     await vi.advanceTimersByTimeAsync(1600)
     await apply1
     // The fetch resolves after the session is lost but before apply2's
@@ -516,6 +516,36 @@ describe('priceBadgeService', () => {
     await apply2
     expect(defs1['PartnerNode'].price_badge).toBeUndefined()
     expect(defs2['PartnerNode'].price_badge).toBeUndefined()
+  })
+
+  it('measures the race deadline from the prefetch, not from apply', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(new Promise(() => {})) // never settles
+    )
+    const { applyPriceBadges, startPriceBadgeFetch } = await importService()
+    startPriceBadgeFetch()
+    await vi.advanceTimersByTimeAsync(3000)
+    const defs = makeDefs()
+    // The budget is already spent: apply must return without waiting on a
+    // fresh timer.
+    await applyPriceBadges(defs)
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('applies a result that settled before apply, even past the deadline', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: validBadge }))
+    const { applyPriceBadges, startPriceBadgeFetch } = await importService()
+    startPriceBadgeFetch()
+    await vi.advanceTimersByTimeAsync(10_000)
+    const defs = makeDefs()
+    await applyPriceBadges(defs)
+    expect(defs['PartnerNode'].price_badge).toMatchObject({
+      expr: validBadge.expr
+    })
   })
 
   it('reuses the same fetch across apply calls', async () => {
