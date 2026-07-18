@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -138,22 +138,57 @@ describe('FirstRunTourNudge', () => {
     })
   })
 
-  it('leads with the generated image when the result media is an image', async () => {
+  const FALLBACK_MEDIA = '/assets/images/og-image.png'
+
+  const mediaSources = () =>
+    screen
+      .getAllByRole('img', { name: nudgeTitle })
+      .map((img) => img.getAttribute('src'))
+
+  it('shows only the default image until a result has been captured', async () => {
+    renderNudge()
+    store.showNudge()
+
+    await screen.findByRole('status')
+    expect(mediaSources()).toEqual([FALLBACK_MEDIA])
+  })
+
+  it('keeps the default image until the generated image has decoded', async () => {
     renderNudge()
     store.resultMedia = { url: 'result.png', kind: 'image' }
     store.showNudge()
 
-    const image = await screen.findByRole('img', { name: nudgeTitle })
-    expect(image).toHaveAttribute('src', 'result.png')
+    await screen.findByRole('status')
+    expect(mediaSources()).toContain(FALLBACK_MEDIA)
+
+    await fireEvent.load(screen.getByTestId('onboarding-nudge-image'))
+    expect(mediaSources()).toEqual(['result.png'])
   })
 
-  it('leads with a looping video when the result media is a video', async () => {
+  it('drops back to the default image when a decoded image later fails', async () => {
+    renderNudge()
+    store.resultMedia = { url: 'gone.png', kind: 'image' }
+    store.showNudge()
+
+    await screen.findByRole('status')
+    await fireEvent.load(screen.getByTestId('onboarding-nudge-image'))
+    expect(mediaSources()).toEqual(['gone.png'])
+
+    await fireEvent.error(screen.getByTestId('onboarding-nudge-image'))
+    expect(mediaSources()).toEqual([FALLBACK_MEDIA])
+    expect(screen.queryByTestId('onboarding-nudge-image')).toBeNull()
+  })
+
+  it('keeps the default image until the looping video has data', async () => {
     renderNudge()
     store.resultMedia = { url: 'result.mp4', kind: 'video' }
     store.showNudge()
 
     const video = await screen.findByTestId('onboarding-nudge-video')
     expect(video).toHaveAttribute('src', 'result.mp4')
+    expect(mediaSources()).toEqual([FALLBACK_MEDIA])
+
+    await fireEvent(video, new Event('loadeddata'))
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
