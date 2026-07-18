@@ -546,7 +546,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
@@ -554,20 +553,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
-  // Tracks which team workspaces have already loaded their members so the
+  // Tracks which workspaces have already loaded their members so the
   // lifecycle gate resolves without redundant or duplicate fetches.
   const loadedMemberWorkspaceIds = new Set<string>()
   let inFlightMembersWorkspaceId: string | null = null
 
   /**
-   * Load the active team workspace's members once. No-ops for personal or
-   * already-loaded workspaces and dedupes concurrent calls. A failed request is
-   * logged and leaves the workspace unloaded so a later call retries.
+   * Load the active workspace's members once. No-ops for already-loaded
+   * workspaces and dedupes concurrent calls. A failed request is logged and
+   * leaves the workspace unloaded so a later call retries.
    */
   async function ensureMembersLoaded(): Promise<void> {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return
-    if (activeWorkspace.value?.type === 'personal') return
     if (loadedMemberWorkspaceIds.has(workspaceId)) return
     if (inFlightMembersWorkspaceId === workspaceId) return
 
@@ -626,7 +624,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
