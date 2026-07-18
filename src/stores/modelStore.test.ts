@@ -8,9 +8,19 @@ import { api } from '@/scripts/api'
 import {
   ResourceState,
   effectiveModelExtensions,
+  getModelPreviewUrl,
   matchesModelExtension,
   useModelStore
 } from '@/stores/modelStore'
+
+const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  get isCloud() {
+    return isCloudRef.value
+  }
+}))
 
 // Mock the api
 vi.mock('@/scripts/api', () => ({
@@ -99,6 +109,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
+    isCloudRef.value = false
   })
 
   it('should load models', async () => {
@@ -265,6 +276,44 @@ describe('useModelStore', () => {
     })
   })
 
+  it('retries the folder load when a concurrent newer load superseded it', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    // First structure load is superseded before it resolves; the retry commits.
+    let resolveSuperseded!: (
+      value: { name: string; folders: string[] }[]
+    ) => void
+    vi.mocked(api.getModelFolders).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSuperseded = resolve
+      })
+    )
+    const eagerLoad = store.loadModels()
+    const supersedingLoad = store.loadModelFolders()
+    resolveSuperseded([{ name: 'checkpoints', folders: ['/p'] }])
+
+    await Promise.all([eagerLoad, supersedingLoad])
+
+    expect(store.models.length).toBeGreaterThan(0)
+  })
+
+  it('allows a folder to retry loading after a transient failure', async () => {
+    enableMocks()
+    vi.mocked(api.getModels).mockRejectedValueOnce(new Error('transient'))
+    store = useModelStore()
+    await store.loadModelFolders()
+
+    const failing = store.modelFolders.find(
+      (f) => f.directory === 'checkpoints'
+    )!
+    await expect(failing.load()).rejects.toThrow('transient')
+    expect(failing.state).toBe(ResourceState.Uninitialized)
+
+    const folder = await store.getLoadedModelFolder('checkpoints')
+    expect(Object.keys(folder!.models)).toHaveLength(3)
+  })
+
   it('eager-loading before boot loads the folder structure first', async () => {
     enableMocks()
     store = useModelStore()
@@ -302,6 +351,45 @@ describe('useModelStore', () => {
       const folder = await store.getLoadedModelFolder('checkpoints')
       expect(folder!.models['0/newer.safetensors']).toBeDefined()
       expect(folder!.models['0/older.safetensors']).toBeUndefined()
+    })
+
+    it('discards a refresh that raced a structure rebuild started earlier', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+
+      // The rebuild starts (and bumps the request id) BEFORE the refresh
+      // snapshots it, so an id check alone cannot catch this interleaving.
+      let resolveRebuild!: (
+        value: { name: string; folders: string[] }[]
+      ) => void
+      vi.mocked(api.getModelFolders).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRebuild = resolve
+        })
+      )
+      const rebuild = store.loadModelFolders()
+
+      let resolveContents!: (
+        value: { name: string; pathIndex: number }[]
+      ) => void
+      vi.mocked(api.getModels).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveContents = resolve
+        })
+      )
+      const refresh = store.refreshModelFolder('checkpoints')
+
+      resolveRebuild([{ name: 'checkpoints', folders: ['/p'] }])
+      await rebuild
+      resolveContents([{ name: 'stale.safetensors', pathIndex: 0 }])
+      await refresh
+
+      const entry = store.modelFolders.find(
+        (f) => f.directory === 'checkpoints'
+      )!
+      expect(entry.state).toBe(ResourceState.Uninitialized)
     })
 
     it('does not resurrect a stale folder over a fresher structure', async () => {
@@ -402,6 +490,44 @@ describe('useModelStore', () => {
         )
       })
       error.mockRestore()
+    })
+  })
+
+  describe('cloud gating', () => {
+    beforeEach(() => {
+      isCloudRef.value = true
+    })
+
+    it('does not read safetensors metadata from disk on cloud', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folderStore = await store.getLoadedModelFolder('checkpoints')
+      const model = folderStore!.models['0/sdxl.safetensors']
+
+      await model.load()
+
+      expect(api.viewMetadata).not.toHaveBeenCalled()
+      expect(model.title).toBe('sdxl')
+    })
+
+    it('resolves no preview url on cloud', async () => {
+      enableMocks(true)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folderStore = await store.getLoadedModelFolder('checkpoints')
+      const model = folderStore!.models['0/sdxl.safetensors']
+
+      expect(getModelPreviewUrl(model)).toBe('')
+    })
+
+    it('does not trigger a disk scan on cloud', async () => {
+      enableMocks(true)
+      store = useModelStore()
+
+      await store.refresh()
+
+      expect(assetService.seedModelAssets).not.toHaveBeenCalled()
     })
   })
 
@@ -524,5 +650,17 @@ describe(effectiveModelExtensions, () => {
     expect(effectiveModelExtensions(undefined)).toEqual(
       effectiveModelExtensions([])
     )
+  })
+
+  it('treats a sentinel-only allowlist like match-all', () => {
+    // The `'folder'`/`''` sentinels are not real extensions; both helpers
+    // must agree these lists mean match-all so noise stays filtered.
+    expect(effectiveModelExtensions(['folder'])).toEqual(
+      effectiveModelExtensions([])
+    )
+    expect(effectiveModelExtensions([''])).toEqual(effectiveModelExtensions([]))
+    expect(
+      matchesModelExtension('readme.md', effectiveModelExtensions(['folder']))
+    ).toBe(false)
   })
 })

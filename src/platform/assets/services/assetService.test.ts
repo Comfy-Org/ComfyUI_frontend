@@ -459,6 +459,33 @@ describe(assetService.getAssetModels, () => {
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 
+  it('deduplicates concurrent reads into a single in-flight walk', async () => {
+    let resolveWalk!: (response: Response) => void
+    fetchApiMock.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        resolveWalk = resolve
+      })
+    )
+
+    const checkpointsRead = assetService.getAssetModels('checkpoints')
+    const lorasRead = assetService.getAssetModels('loras')
+
+    resolveWalk(
+      buildAssetListResponse([
+        validAsset({ id: 'a', tags: ['models', 'model_type:checkpoints'] }),
+        validAsset({
+          id: 'b',
+          name: 'l.safetensors',
+          tags: ['models', 'model_type:loras']
+        })
+      ])
+    )
+
+    expect((await checkpointsRead).length).toBe(1)
+    expect((await lorasRead).length).toBe(1)
+    expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
   it('buckets by bare tags when model_type tags are unsupported', async () => {
     mockSupportsModelTypeTags.value = false
     fetchApiMock.mockResolvedValueOnce(
@@ -543,6 +570,14 @@ describe(assetService.getAssetModels, () => {
           id: 'evil',
           name: 'evil.safetensors',
           loader_path: '../../secrets/evil.safetensors',
+          tags: ['models', 'model_type:checkpoints']
+        }),
+        validAsset({
+          id: 'evil-whitespace',
+          name: 'evil2.safetensors',
+          // Leading whitespace must not smuggle an absolute path past the
+          // anchored validation.
+          loader_path: ' /etc/passwd.safetensors',
           tags: ['models', 'model_type:checkpoints']
         }),
         validAsset({

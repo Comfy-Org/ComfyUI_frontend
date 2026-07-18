@@ -70,13 +70,15 @@ const zAsyncUploadResponse = z.discriminatedUnion('type', [
   z.object({ type: z.literal('async'), task: zAsyncUploadTask })
 ])
 
-// Filename validation schema
+// Filename validation schema. Trim runs FIRST so the anchored checks see the
+// trimmed value — trailing-position trim let ' /etc/passwd' bypass the
+// absolute-path block.
 export const assetFilenameSchema = z
   .string()
+  .trim()
   .min(1, 'Filename cannot be empty')
   .regex(/^[^\\:*?"<>|]+$/, 'Invalid filename characters') // Allow forward slashes, block backslashes and other unsafe chars
   .regex(/^(?!\/|.*\.\.)/, 'Path must not start with / or contain ..') // Prevent absolute paths and directory traversal
-  .trim()
 
 // Export schemas following repository patterns
 export const assetItemSchema = zAsset

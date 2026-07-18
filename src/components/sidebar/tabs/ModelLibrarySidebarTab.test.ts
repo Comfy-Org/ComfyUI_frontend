@@ -51,6 +51,11 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
+}))
+
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
 }))
@@ -321,6 +326,21 @@ describe('ModelLibrarySidebarTab', () => {
   })
 
   describe('asset mode', () => {
+    it('surfaces an error toast when the eager load fails on mount', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      settingState.useAssetAPI = true
+      mockLoadModels.mockRejectedValueOnce(new Error('walk failed'))
+
+      renderComponent()
+      await nextTick()
+      await nextTick()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      error.mockRestore()
+    })
+
     it('hides the load-all button and eager-loads models on mount', async () => {
       settingState.useAssetAPI = true
       renderComponent()

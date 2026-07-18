@@ -6,7 +6,7 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="modelStore.refresh"
+        @click="withLoadFailureToast(() => modelStore.refresh())"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
@@ -16,7 +16,7 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.loadAllFolders')"
-        @click="modelStore.loadModels"
+        @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
         <i class="icon-[lucide--cloud-download] size-4" />
       </Button>
@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { Divider } from 'primevue'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
@@ -67,6 +68,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
@@ -78,6 +80,8 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const toastStore = useToastStore()
+const { t } = useI18n()
 const usesAssetAPI = computed(() =>
   settingStore.get('Comfy.Assets.UseAssetAPI')
 )
@@ -198,6 +202,20 @@ watch(
   }
 )
 
+async function withLoadFailureToast(action: () => Promise<unknown>) {
+  try {
+    await action()
+  } catch (error) {
+    console.error('Model library load failed', error)
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('sideToolbar.modelLibraryLoadFailed'),
+      life: 5000
+    })
+  }
+}
+
 onMounted(async () => {
   searchBoxRef.value?.focus()
   // In asset mode the whole library resolves from one cached walk, so eager
@@ -207,7 +225,7 @@ onMounted(async () => {
     usesAssetAPI.value ||
     settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
   ) {
-    await modelStore.loadModels()
+    await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
 </script>

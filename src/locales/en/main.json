@@ -975,6 +975,7 @@
       "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
+    "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
       "title": "Queue Progress",

@@ -174,7 +174,7 @@ export function getModelPreviewUrl(model: ComfyModelDef): string {
   const extension = model.file_name.split('.').pop()
   const filename = model.file_name.replace(`.${extension}`, '.webp')
   const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
-  return `/api/experiment/models/preview/${model.directory}/${model.path_index}/${encodedFilename}`
+  return `/api/experiment/models/preview/${encodeURIComponent(model.directory)}/${model.path_index}/${encodedFilename}`
 }
 
 /**
@@ -195,31 +195,40 @@ const DEFAULT_MODEL_EXTENSIONS = [
 ]
 
 /**
+ * Real (`.`-prefixed) entries of a registered allowlist. Non-prefixed
+ * entries (`'folder'`, `''`) are backend sentinels, not extensions — a list
+ * containing only sentinels means match-all, the same as an empty list.
+ */
+function realExtensions(extensions: string[]): string[] {
+  return extensions.filter((ext) => ext.startsWith('.'))
+}
+
+/**
  * Resolves a folder's display allowlist from its raw registered `extensions`
- * (`/experiment/models`): non-empty is used verbatim; an empty array
- * (match-all) or an absent field (older backends) takes the FE default list,
- * reproducing the legacy sidebar's global-set behavior so nothing that used
- * to be hidden starts showing.
+ * (`/experiment/models`): a list with real extensions is used verbatim; a
+ * match-all list (empty, sentinel-only, or absent on older backends) takes
+ * the FE default list, reproducing the legacy sidebar's global-set behavior
+ * so nothing that used to be hidden starts showing.
  */
 export function effectiveModelExtensions(
   extensions: string[] | undefined
 ): string[] {
-  return extensions?.length ? extensions : DEFAULT_MODEL_EXTENSIONS
+  if (extensions && realExtensions(extensions).length > 0) return extensions
+  return DEFAULT_MODEL_EXTENSIONS
 }
 
 /**
- * Whether a model file belongs in a folder given its display allowlist. An
- * empty list, or a list with no real (`.`-prefixed) extensions (the
- * `'folder'`/`''` sentinels), leaves the folder unfiltered.
+ * Whether a model file belongs in a folder given its display allowlist. A
+ * list with no real extensions leaves the folder unfiltered.
  */
 export function matchesModelExtension(
   fileName: string,
   extensions: string[]
 ): boolean {
-  const realExtensions = extensions.filter((ext) => ext.startsWith('.'))
-  if (realExtensions.length === 0) return true
+  const real = realExtensions(extensions)
+  if (real.length === 0) return true
   const lower = fileName.toLowerCase()
-  return realExtensions.some((ext) => lower.endsWith(ext.toLowerCase()))
+  return real.some((ext) => lower.endsWith(ext.toLowerCase()))
 }
 
 export class ModelFolder {
@@ -245,17 +254,24 @@ export class ModelFolder {
       return this
     }
     this.state = ResourceState.Loading
-    const models = await this.getModelsFunc(this.directory)
-    for (const model of models) {
-      if (!matchesModelExtension(model.name, this.extensions)) continue
-      this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
-        model.name,
-        this.directory,
-        model.pathIndex
-      )
+    try {
+      const models = await this.getModelsFunc(this.directory)
+      for (const model of models) {
+        if (!matchesModelExtension(model.name, this.extensions)) continue
+        this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
+          model.name,
+          this.directory,
+          model.pathIndex
+        )
+      }
+      this.state = ResourceState.Loaded
+      return this
+    } catch (error) {
+      // Reset instead of sticking at Loading so the guard above does not
+      // permanently block a retry after a transient failure.
+      this.state = ResourceState.Uninitialized
+      throw error
     }
-    this.state = ResourceState.Loaded
-    return this
   }
 }
 
@@ -273,9 +289,17 @@ export const useModelStore = defineStore('models', () => {
     modelFolders.value.flatMap((folder) => Object.values(folder.models))
   )
 
+  /**
+   * Whether model contents come from the asset API. Named to avoid confusion
+   * with assetService.isAssetAPIEnabled(), which is cloud-gated and governs
+   * the asset browser surfaces, not this store's data source.
+   */
+  function usesAssetApi(): boolean {
+    return !!settingStore.get('Comfy.Assets.UseAssetAPI')
+  }
+
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
-    return useAssetAPI
+    return usesAssetApi()
       ? (folder) => assetService.getAssetModels(folder)
       : (folder) => api.getModels(folder)
   }
@@ -292,13 +316,12 @@ export const useModelStore = defineStore('models', () => {
    * only the newest request so a slow stale response cannot overwrite a
    * fresher folder structure.
    */
-  async function loadModelFolders() {
+  async function loadModelFolders(): Promise<boolean> {
     const requestId = ++modelFoldersRequestId
     const resData = await api.getModelFolders()
-    if (requestId !== modelFoldersRequestId) return
+    if (requestId !== modelFoldersRequestId) return false
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
-    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
     const getModelsFunc = createGetModelsFunc()
     for (const folder of resData) {
       modelFolderByName.value[folder.name] = new ModelFolder(
@@ -306,9 +329,10 @@ export const useModelStore = defineStore('models', () => {
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        useAssetAPI ? effectiveModelExtensions(folder.extensions) : []
+        usesAssetApi() ? effectiveModelExtensions(folder.extensions) : []
       )
     }
+    return true
   }
 
   async function getLoadedModelFolder(
@@ -325,8 +349,13 @@ export const useModelStore = defineStore('models', () => {
    * empty folder list would silently load nothing.
    */
   async function loadModels() {
-    if (modelFolderNames.value.length === 0) {
-      await loadModelFolders()
+    // A load superseded by a newer concurrent one commits nothing, which
+    // would leave the folder list empty and silently load no models; retry
+    // until a load of ours commits (even a genuinely empty result) or a
+    // concurrent one has populated the list. Bounded as a safety net.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (modelFolderNames.value.length > 0) break
+      if (await loadModelFolders()) break
     }
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
@@ -349,17 +378,21 @@ export const useModelStore = defineStore('models', () => {
     const requestId = modelFoldersRequestId
     const refreshId = (folderRefreshIds.get(folderName) ?? 0) + 1
     folderRefreshIds.set(folderName, refreshId)
+    const priorFolder = modelFolderByName.value[folderName]
     const folder = new ModelFolder(
       folderName,
       createGetModelsFunc(),
-      modelFolderByName.value[folderName].extensions
+      priorFolder.extensions
     )
     await folder.load()
     // A full reload may have rebuilt the folder structure while this folder
     // refreshed, and a newer refresh of the same folder may have already
-    // committed; committing then would resurrect a stale folder object.
+    // committed; committing then would resurrect a stale folder object. The
+    // identity check also covers a rebuild whose folder load started before
+    // this refresh snapshotted the request id.
     if (requestId !== modelFoldersRequestId) return
     if (folderRefreshIds.get(folderName) !== refreshId) return
+    if (modelFolderByName.value[folderName] !== priorFolder) return
     modelFolderByName.value[folderName] = folder
   }
 
@@ -394,7 +427,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function requestModelScan() {
     if (isCloud) return
-    if (!settingStore.get('Comfy.Assets.UseAssetAPI')) return
+    if (!usesAssetApi()) return
     try {
       await assetService.seedModelAssets()
     } catch (error) {
