@@ -382,6 +382,29 @@ describe('ComfyApp', () => {
       await mockRefreshMissingModelPipeline.mock.calls[0][0].reloadNodeDefs()
       expect(app.reloadNodeDefs).toHaveBeenCalled()
     })
+
+    it('omits the node definition reload when reloadDefs is false', async () => {
+      const graph = {
+        nodes: [],
+        serialize: vi.fn(() => createWorkflowGraphData())
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      mockRefreshMissingModelPipeline.mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: []
+      })
+
+      await app.refreshMissingModels({ reloadDefs: false })
+
+      expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
+        graph,
+        reloadNodeDefs: undefined,
+        missingModelStore: useMissingModelStore(),
+        silent: true
+      })
+      expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleFileList', () => {
