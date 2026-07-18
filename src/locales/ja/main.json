@@ -359,12 +359,14 @@
     "colors": "カラーパレット",
     "descLabel": "説明",
     "descPlaceholder": "この領域の説明",
+    "grid": "グリッド",
     "textLabel": "テキスト",
     "textPlaceholder": "表示するテキスト（そのまま）",
     "typeObj": "obj",
     "typeText": "テキスト"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}モード、ワークフローアクション",
     "app": "アプリ",
     "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "回答は{max}文字以内で入力してください。",
         "chooseAnOption": "オプションを選択してください。",
         "describeAnswer": "回答を記述してください。",
         "selectAtLeastOne": "少なくとも1つ選択してください。"
       },
       "intro": "ComfyUIの体験をより最適化するためにご協力ください。",
       "options": {
-        "familiarity": {
-          "advanced": "上級ユーザー（カスタムワークフロー）",
-          "basics": "基本操作に慣れている",
-          "expert": "エキスパート（他者を支援）",
-          "new": "ComfyUI初心者（使用経験なし）",
-          "starting": "使い始め（チュートリアルをフォロー中）"
+        "experience": {
+          "new": "ComfyUIは初めて",
+          "pro": "上級ユーザー",
+          "some": "ある程度使い方が分かる"
+        },
+        "focus": {
+          "custom_nodes": "カスタムノード",
+          "pipelines": "自動パイプライン",
+          "products": "他者向けプロダクト"
         },
         "intent": {
-          "3d_game": "3Dアセット／ゲームアセット",
-          "api": "ワークフロー実行用APIエンドポイント",
-          "apps": "ワークフローから簡易アプリ作成",
-          "audio": "音声／音楽",
-          "custom_nodes": "カスタムノード",
+          "apps_api": "アプリ・API",
+          "exploring": "探索中",
           "images": "画像",
-          "not_sure": "まだ分からない",
-          "videos": "動画",
+          "other": "その他",
+          "otherPlaceholder": "何を作りたいですか？",
+          "video": "動画",
           "workflows": "カスタムワークフローやパイプライン"
         },
         "source": {
-          "conference": "カンファレンスやイベント",
-          "discord": "Discord／コミュニティ",
+          "community": "コミュニティ・フォーラム",
           "friend": "友人または同僚",
-          "github": "GitHub",
+          "other": "その他",
+          "otherPlaceholder": "どこで私たちを知りましたか？",
+          "search": "Google／検索",
+          "social": "ソーシャルメディア"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "ニュースレターやブログ",
-          "other": "その他",
           "reddit": "Reddit",
-          "search": "Google／検索",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（Twitter）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育（学生または教育者）",
-          "personal": "個人利用",
-          "work": "仕事"
         }
       },
+      "otherPlaceholder": "詳細をお聞かせください",
       "placeholder": "アンケート質問のプレースホルダー",
-      "steps": {
-        "familiarity": "ComfyUIの使用経験はどの程度ですか？",
-        "intent": "ComfyUIで何を作成したいですか？",
-        "source": "ComfyUIをどこで知りましたか？",
-        "usage": "ComfyUIをどのように利用する予定ですか？"
-      },
       "title": "クラウドアンケート"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "クラウドについて学ぶ",
   "cloudStart_title": "数秒で作成を開始",
   "cloudStart_wantToRun": "代わりにローカルでComfyUIを実行したいですか？",
-  "cloudSurvey_steps_familiarity": "ComfyUIにどの程度精通していますか？",
+  "cloudSurvey_steps_experience": "ComfyUIの知識レベルは？",
+  "cloudSurvey_steps_focus": "何を作成していますか？",
   "cloudSurvey_steps_intent": "ComfyUIで何を作成したいですか？",
   "cloudSurvey_steps_source": "ComfyUIをどこで知りましたか？",
-  "cloudSurvey_steps_usage": "ComfyUIをどのように利用する予定ですか？",
+  "cloudSurvey_steps_source_social": "どのプラットフォームですか？",
   "cloudWaitlist_contactLink": "こちら",
   "cloudWaitlist_questionsText": "質問がありますか？お問い合わせください",
   "color": {
@@ -957,6 +955,16 @@
       "message": "無効なダイアログIDが指定されました。",
       "title": "無効なダイアログ"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
+    "confirmSummary": "デスクトップサインインを承認しますか？",
+    "expiredDetail": "サインインリクエストの有効期限が切れたか、すでに使用されています。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "expiredSummary": "デスクトップサインインに失敗しました",
+    "failedDetail": "デスクトップサインインの完了中に問題が発生しました。ComfyUIデスクトップアプリから再度サインインを開始してください。",
+    "failedSummary": "デスクトップサインインに失敗しました",
+    "successDetail": "ComfyUIデスクトップアプリに戻ることができます。",
+    "successSummary": "サインインしました"
   },
   "desktopMenu": {
     "confirmQuit": "保存されていないワークフローを終了しようとしています。保存されていない変更はすべて失われます。これを無視して終了しますか？",
@@ -2071,7 +2079,10 @@
       "appBuilder": "アプリビルダー",
       "apps": "アプリ",
       "appsEmptyMessage": "保存されたアプリはここに表示されます。\n下をクリックして最初のアプリを作成しましょう。",
-      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。"
+      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。",
+      "buildAnApp": "アプリを作成",
+      "create": "作成",
+      "createApp": "アプリを作成"
     },
     "arrange": {
       "atLeastOne": "少なくとも1つ",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "出力に切り替え"
     },
     "backToWorkflow": "ワークフローに戻る",
-    "beta": "アプリモード ベータ版 - フィードバックを送る",
-    "buildAnApp": "アプリを作成",
     "builder": {
       "exit": "ビルダーを終了",
       "exitConfirmMessage": "保存されていない変更は失われます。\n保存せずに終了しますか？",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "生成中に問題が発生しました。無効な非表示入力、リソースの不足、またはワークフロー設定の問題が原因の可能性があります。",
       "support": "サポートに連絡"
     },
+    "feedbackLoadError": "フィードバックフォームの読み込みに失敗しました。後でもう一度お試しください。",
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "hasCreditCost": "追加クレジットが必要です",
@@ -2191,6 +2201,7 @@
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {
+      "clay": "クレイ",
       "depth": "深度",
       "lineart": "線画",
       "normal": "ノーマル",
@@ -2198,7 +2209,29 @@
       "pointCloud": "ポイントクラウド",
       "wireframe": "ワイヤーフレーム"
     },
+    "menuBar": {
+      "bgColor": "背景色",
+      "bgImage": "背景画像",
+      "deleteRecording": "録画を削除",
+      "downloadRecording": "録画をダウンロード",
+      "fov": "視野角 (FOV)",
+      "intensity": "強度",
+      "material": "マテリアル",
+      "originalMaterialOnly": "オリジナルマテリアルのみ",
+      "panorama": "パノラマ",
+      "record": "録画",
+      "recording": "録画中",
+      "removeBackground": "背景を削除",
+      "showGrid": "グリッドを表示",
+      "skeleton": "スケルトン",
+      "startNewRecording": "新しい録画を開始",
+      "stopRecording": "録画を停止",
+      "switchProjection": "投影を切り替え",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "シーンのビデオ録画 [mp4]"
+    },
     "model": "モデル",
+    "model3d": "3Dモデル",
     "openIn3DViewer": "3Dビューアで開く",
     "panoramaMode": "パノラマ",
     "previewOutput": "出力のプレビュー",
@@ -2858,6 +2891,8 @@
     "phantom subject": "ファントムサブジェクト",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "ポストプロセッサー",
+    "pre-processors": "プリプロセッサー",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "テキスト",
     "training": "トレーニング",
     "transform": "変換",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "この名前のシークレットはすでに存在します",
       "duplicateProvider": "このプロバイダーのシークレットはすでに存在します",
+      "fileReadFailed": "選択したファイルを読み取れませんでした",
+      "fileTooLarge": "ファイルが大きすぎます。1MB未満のJSON認証情報をアップロードしてください",
+      "invalidJson": "ファイルは有効なJSONオブジェクトを含む必要があります",
       "nameRequired": "名前は必須です",
       "nameTooLong": "名前は255文字以内で入力してください",
       "providerRequired": "プロバイダーは必須です",
       "secretValueRequired": "シークレット値は必須です"
     },
+    "jsonFileHint": "JSONを貼り付けるか、ファイルをアップロードしてください。暗号化され、再度表示することはできません。",
+    "jsonFileHintEdit": "現在の値を保持する場合は空欄のままにしてください。新しいJSONファイルをアップロードすると置き換えられます。",
+    "jsonFilePlaceholder": "プロバイダーのJSON認証情報をアップロードまたは貼り付けてください",
     "lastUsed": "最終使用日：{date}",
     "modelProviders": "モデルプロバイダー",
     "name": "名前",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "現在の値を保持する場合は空欄のままにしてください。",
     "secretValuePlaceholder": "APIキーを入力してください",
     "secretValuePlaceholderEdit": "変更する場合は新しい値を入力",
-    "title": "APIキーとシークレット"
+    "title": "APIキーとシークレット",
+    "uploadJsonFile": "JSONファイルをアップロード"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "グループノードをバイパス",
@@ -4127,6 +4170,7 @@
       "newest": "新着順",
       "popular": "人気",
       "recommended": "おすすめ",
+      "relevance": "関連性",
       "searchPlaceholder": "検索..."
     },
     "sorting": "並び替え",

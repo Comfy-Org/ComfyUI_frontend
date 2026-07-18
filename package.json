@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.48.0",
+  "version": "1.48.3",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -29,6 +29,8 @@
     "dev:test": "cross-env VITE_USE_LEGACY_DEFAULT_GRAPH=true vite --config vite.config.mts",
     "dev": "vite --config vite.config.mts",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
+    "fallow": "fallow",
+    "fallow:audit": "fallow audit",
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
     "json-schema": "tsx scripts/generate-json-schema.ts",
@@ -95,7 +97,7 @@
     "@vee-validate/zod": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
-    "@vueuse/router": "^14.2.0",
+    "@vueuse/router": "^14.3.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
@@ -109,11 +111,12 @@
     "extendable-media-recorder": "^9.2.27",
     "extendable-media-recorder-wav-encoder": "^7.0.129",
     "firebase": "catalog:",
-    "fuse.js": "^7.0.0",
+    "fuse.js": "7.0.0",
     "glob": "catalog:",
     "jsonata": "catalog:",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
+    "minisearch": "catalog:",
     "pinia": "catalog:",
     "posthog-js": "catalog:",
     "primeicons": "catalog:",
@@ -171,6 +174,7 @@
     "eslint-plugin-testing-library": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
     "eslint-plugin-vue": "catalog:",
+    "fallow": "catalog:",
     "fast-check": "catalog:",
     "fs-extra": "^11.2.0",
     "globals": "catalog:",
@@ -215,5 +219,5 @@
     "node": ">=25 <26",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.3.0"
+  "packageManager": "pnpm@11.13.1"
 }

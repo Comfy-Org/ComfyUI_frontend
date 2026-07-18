@@ -359,12 +359,14 @@
     "colors": "色彩調色盤",
     "descLabel": "描述",
     "descPlaceholder": "此區域的描述",
+    "grid": "網格",
     "textLabel": "文字",
     "textPlaceholder": "要呈現的文字（原文）",
     "typeObj": "物件",
     "typeText": "文字"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} 模式，工作流程操作",
     "app": "應用程式",
     "blueprint": "藍圖",
     "clearWorkflow": "清除工作流程",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "請將您的回答控制在 {max} 個字以內。",
         "chooseAnOption": "請選擇一個選項。",
         "describeAnswer": "請描述您的答案。",
         "selectAtLeastOne": "請至少選擇一個選項。"
       },
       "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
-        "familiarity": {
-          "advanced": "進階使用者（自訂工作流程）",
-          "basics": "熟悉基礎操作",
-          "expert": "專家（協助他人）",
-          "new": "ComfyUI 新手（從未使用過）",
-          "starting": "剛開始（正在跟隨教學）"
+        "experience": {
+          "new": "ComfyUI 新手",
+          "pro": "我是進階使用者",
+          "some": "我已經熟悉操作"
+        },
+        "focus": {
+          "custom_nodes": "自訂節點",
+          "pipelines": "自動化流程",
+          "products": "為他人打造產品"
         },
         "intent": {
-          "3d_game": "3D 素材／遊戲素材",
-          "api": "執行工作流程的 API 端點",
-          "apps": "由工作流程簡化的應用程式",
-          "audio": "音訊／音樂",
-          "custom_nodes": "自訂節點",
+          "apps_api": "應用程式與 API",
+          "exploring": "只是探索",
           "images": "圖像",
-          "not_sure": "尚未確定",
-          "videos": "影片",
+          "other": "其他",
+          "otherPlaceholder": "您想製作什麼？",
+          "video": "影片",
           "workflows": "自訂工作流程或管線"
         },
         "source": {
-          "conference": "研討會或活動",
-          "discord": "Discord／社群",
+          "community": "社群或論壇",
           "friend": "朋友或同事",
-          "github": "GitHub",
+          "other": "其他",
+          "otherPlaceholder": "您是在哪裡發現我們的？",
+          "search": "Google／搜尋引擎",
+          "social": "社群媒體"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "電子報或部落格",
-          "other": "其他",
           "reddit": "Reddit",
-          "search": "Google／搜尋引擎",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X（Twitter）",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "教育用途（學生或教育者）",
-          "personal": "個人用途",
-          "work": "工作用途"
         }
       },
+      "otherPlaceholder": "請告訴我們更多",
       "placeholder": "問卷問題佔位符",
-      "steps": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "intent": "您想用 ComfyUI 創作什麼？",
-        "source": "您是從哪裡得知 ComfyUI 的？",
-        "usage": "您打算如何使用 ComfyUI？"
-      },
       "title": "雲端問卷"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "了解雲端服務",
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
-  "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
+  "cloudSurvey_steps_experience": "您對 ComfyUI 的熟悉程度？",
+  "cloudSurvey_steps_focus": "您正在製作什麼？",
   "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
   "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
-  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
+  "cloudSurvey_steps_source_social": "哪個平台？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -957,6 +955,16 @@
       "message": "提供的對話框 ID 無效。",
       "title": "無效對話框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
+    "confirmSummary": "批准桌面端登入？",
+    "expiredDetail": "登入請求已過期或已被使用。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "expiredSummary": "桌面端登入失敗",
+    "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
+    "failedSummary": "桌面端登入失敗",
+    "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
+    "successSummary": "登入成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未儲存的工作流程，任何未儲存的變更都將遺失。確定要退出嗎？",
@@ -2071,7 +2079,10 @@
       "appBuilder": "應用建立器",
       "apps": "應用",
       "appsEmptyMessage": "已儲存的應用程式將顯示在這裡。\n點擊下方開始建立您的第一個應用程式。",
-      "appsEmptyMessageAction": "點擊下方開始建立你的第一個應用程式。"
+      "appsEmptyMessageAction": "點擊下方開始建立你的第一個應用程式。",
+      "buildAnApp": "建立應用程式",
+      "create": "建立",
+      "createApp": "建立應用程式"
     },
     "arrange": {
       "atLeastOne": "至少一個",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "切換到輸出"
     },
     "backToWorkflow": "返回工作流程",
-    "beta": "App 模式 Beta - 提供回饋",
-    "buildAnApp": "建立應用程式",
     "builder": {
       "exit": "離開建構器",
       "exitConfirmMessage": "您有尚未儲存的變更將會遺失\n確定要不儲存直接離開嗎？",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "產生過程中發生錯誤。可能原因包括無效的隱藏輸入、缺少資源或工作流程設定問題。",
       "support": "聯絡我們的支援"
     },
+    "feedbackLoadError": "意見回饋表單載入失敗。請稍後再試。",
     "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
     "hasCreditCost": "需要額外點數",
@@ -2191,6 +2201,7 @@
     "loadingModel": "正在載入 3D 模型...",
     "materialMode": "材質模式",
     "materialModes": {
+      "clay": "陶土",
       "depth": "深度",
       "lineart": "線稿",
       "normal": "一般",
@@ -2198,7 +2209,29 @@
       "pointCloud": "點雲",
       "wireframe": "線框"
     },
+    "menuBar": {
+      "bgColor": "背景顏色",
+      "bgImage": "背景圖片",
+      "deleteRecording": "刪除錄影",
+      "downloadRecording": "下載錄影",
+      "fov": "視野(FOV)",
+      "intensity": "強度",
+      "material": "材質",
+      "originalMaterialOnly": "僅原始材質",
+      "panorama": "全景",
+      "record": "錄製",
+      "recording": "錄製中",
+      "removeBackground": "移除背景",
+      "showGrid": "顯示格線",
+      "skeleton": "骨架",
+      "startNewRecording": "開始新錄製",
+      "stopRecording": "停止錄製",
+      "switchProjection": "切換投影",
+      "upDirection": "上方方向",
+      "videoRecordingTooltip": "場景錄影 [mp4]"
+    },
     "model": "模型",
+    "model3d": "3D模型",
     "openIn3DViewer": "在 3D 檢視器中開啟",
     "panoramaMode": "全景",
     "previewOutput": "預覽輸出",
@@ -2858,6 +2891,8 @@
     "phantom subject": "幻影主體",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "後處理器",
+    "pre-processors": "前處理器",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "文字",
     "training": "訓練",
     "transform": "轉換",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "已存在同名的機密",
       "duplicateProvider": "此供應商已存在機密",
+      "fileReadFailed": "無法讀取所選檔案。請再試一次",
+      "fileTooLarge": "檔案過大。請上傳小於1 MB的JSON憑證",
+      "invalidJson": "檔案必須包含有效的JSON物件",
       "nameRequired": "名稱為必填項目",
       "nameTooLong": "名稱長度必須在 255 個字元以內",
       "providerRequired": "供應商為必填項目",
       "secretValueRequired": "機密值為必填項目"
     },
+    "jsonFileHint": "請貼上JSON或上傳檔案。將會加密儲存且無法再次檢視。",
+    "jsonFileHintEdit": "若要保留目前的值請留空，或上傳新的JSON檔案以取代。",
+    "jsonFilePlaceholder": "上傳或貼上提供者的JSON憑證",
     "lastUsed": "上次使用 {date}",
     "modelProviders": "模型供應商",
     "name": "名稱",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "若要保留目前的值，請留空。",
     "secretValuePlaceholder": "請輸入您的 API 金鑰",
     "secretValuePlaceholderEdit": "輸入新值以變更",
-    "title": "API 金鑰與機密"
+    "title": "API 金鑰與機密",
+    "uploadJsonFile": "上傳JSON檔案"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "繞過群組節點",
@@ -4127,6 +4170,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
+      "relevance": "相關性",
       "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",

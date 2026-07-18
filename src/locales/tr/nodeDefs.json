@@ -1325,6 +1325,10 @@
         "name": "tohum",
         "tooltip": "Üretim için kullanılacak tohum."
       },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Modelin istem optimizasyonu mantığını ('düşünme') etkinleştirerek daha iyi uyum sağlar. Üretim süresini önemli ölçüde artırabilir — özellikle Seedream 5.0 Pro'da. Sadece metinden-görüntüye işlemlerinde devre dışı bırakılabilir (referans görseller sağlandığında devre dışı bırakılamaz)."
+      },
       "watermark": {
         "name": "filigran",
         "tooltip": "Görüntüye \"Yapay Zeka ile oluşturuldu\" filigranı eklenip eklenmeyeceği."
@@ -2831,6 +2835,10 @@
         "name": "arka plan",
         "tooltip": "Tuvalde ve önizlemede arka plan olarak kullanılan isteğe bağlı görüntü."
       },
+      "bboxes": {
+        "name": "sınırlayıcı kutular",
+        "tooltip": "Sınırlayıcı kutular, öğeler veya tuvali başlatmak için bir JSON dizesi. Yeni bir yukarı akış değeri tuvali başlatır; tuvalde yapılan düzenlemeler önceliklidir ve yukarı akış değeri tekrar değişene kadar korunur."
+      },
       "editor_state": {
         "name": "düzenleyici durumu",
         "tooltip": "Sınır kutuları çizin ve her kutunun türünü, metnini, açıklamasını, renk paletini ayarlayın. Önce arka plan öğesiyle başlayın, en son ön planı ekleyin."
@@ -2838,6 +2846,10 @@
       "height": {
         "name": "yükseklik",
         "tooltip": "Tuvalin ve sınır kutuları için piksel ızgarasının yüksekliği."
+      },
+      "last_incoming": {
+        "name": "son gelen",
+        "tooltip": "Tuval tarafından yönetilen dahili durum: onu en son başlatan yukarı akış sınırlayıcı kutular değeri. Bir sonraki çalıştırmada sınırlayıcı kutular girişinden tuvali yeniden başlatmak için boş bırakın."
       },
       "width": {
         "name": "genişlik",
@@ -10565,6 +10577,12 @@
       "mask": {
         "name": "maske"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14573,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Bir 3D model dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
     "display_name": "3D Önizleme",
     "inputs": {
       "bg_image": {
@@ -14591,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Bir 3D model dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
     "display_name": "3D Önizleme (Gelişmiş)",
     "inputs": {
       "camera_info": {
@@ -14637,6 +14657,7 @@
     }
   },
   "PreviewAny": {
+    "description": "Herhangi bir giriş değerini metin olarak önizleyin.",
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
       "preview_mode": "Önizleme modu",
@@ -14647,6 +14668,7 @@
     }
   },
   "PreviewAudio": {
+    "description": "Sesi ComfyUI çıktı dizinine kaydetmeden önizleyin.",
     "display_name": "Sesi Önizle",
     "inputs": {
       "audio": {
@@ -14664,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Bir gaussian splat 3D dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
     "display_name": "Splat Önizleme",
     "inputs": {
       "camera_info": {
@@ -14724,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Bir nokta bulutu 3D dosyasını ComfyUI çıktı dizinine kaydetmeden önizleyin.",
     "display_name": "Nokta Bulutu Önizleme",
     "inputs": {
       "camera_info": {
@@ -17501,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "3D Kaydet (Gelişmiş)",
+    "inputs": {
+      "camera_info": {
+        "name": "kamera bilgisi"
+      },
+      "filename_prefix": {
+        "name": "dosya adı ön eki"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "model_3d": {
+        "name": "3D model",
+        "tooltip": "Yukarı akıştaki bir 3D düğümden gelen 3D model dosyası."
+      },
+      "model_3d_info": {
+        "name": "3D model bilgisi"
+      },
+      "viewport_state": {
+        "name": "görünüm durumu"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "3D model bilgisi",
+        "tooltip": null
+      },
+      "2": {
+        "name": "kamera bilgisi",
+        "tooltip": null
+      },
+      "3": {
+        "name": "genişlik",
+        "tooltip": null
+      },
+      "4": {
+        "name": "yükseklik",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "Animasyonlu PNG Kaydet",
     "inputs": {
@@ -17661,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Splat'ı Kaydet",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Bir gaussian splat 3D dosyası."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Giriş görüntülerini ComfyUI çıktı dizininize kaydeder.",
     "display_name": "Görüntüyü Kaydet",
@@ -17799,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Nokta Bulutunu Kaydet",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Nokta bulutu dosyası (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "SVG dosyalarını diske kaydet.",
     "display_name": "SVGDüğümünüKaydet",
@@ -17814,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Metin içeriğini çıktı dizinine bir dosyaya kaydet.",
+    "display_name": "Metni Kaydet",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17942,6 +18136,117 @@
       "0": {
         "name": "tohum",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Bir VAE latent'inden SeedVR2 pozitif/negatif koşullandırma oluştur.",
+    "display_name": "SeedVR2 Koşullandırma Uygula",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "SeedVR2 modeli."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Örnekleme için pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Örnekleme için negatif koşullandırma."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Oluşturulan görseli orijinal yeniden boyutlandırılmış görselle hizala ve renk düzeltmesi uygula.",
+    "display_name": "SeedVR2 Çıktısını Sonradan İşle",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Oluşturulan görselin renklerini orijinal görsele eşleştirme yöntemi. lab: Ayrıntıyı koruyarak CIELAB uzayında renk aktarımı (en sadık). wavelet: Düşük frekanslı renk aktarımı, yüksek frekanslı ayrıntıyı korur. adain: Kanal başına ortalama/std eşleştirir (en hızlı, genel tonlama). none: Renk aktarımı yok (sadece geometrik hizalama)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "İşlenecek oluşturulan görsel."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "Ön işleme öncesi orijinal yeniden boyutlandırılmış görsel, referans olarak kullanılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Hizalanmış, renk düzeltmesi yapılmış görsel."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "SeedVR2 modeli için yeniden boyutlandırılmış bir görseli kenarlardan doldur. Alfa kanalı kaldırılır. Post-Process SeedVR2 Output düğümü, orijinal yeniden boyutlandırılmış görselden tekrar uygular.",
+    "display_name": "SeedVR2 Girdisini Ön İşle",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "İşlenecek yeniden boyutlandırılmış görsel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "VAE kodlaması için kenarlardan doldurulmuş görsel."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Bir SeedVR2 video latent'ini, VRAM'e sığacak kadar küçük, üst üste binen zamansal parçalara ayırır. Latent çıktıları hem Apply SeedVR2 Conditioning'e hem de örnekleyici latent girişine bağlanır, ardından Merge SeedVR2 Latents ile tekrar birleştirilir.",
+    "display_name": "SeedVR2 Latent'ini Böl",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = Tam olarak frames_per_chunk kullanılır; auto = Boş VRAM'e sığacak en büyük parça tahmin edilir."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Bölünecek VAE ile kodlanmış SeedVR2 latent'i."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Birleştirme sırasında bitişik parçalar arasında paylaşılan latent kareler; 0 = üst üste binme yok."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Zamansal parçalar sıralı olarak."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "Bitişik parçalar arasındaki etkin latent-kare üst üste binmesi, Merge SeedVR2 Latents için."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Örneklenmiş SeedVR2 latent zamansal parçalarını tek bir latent'te birleştirir, her üst üste binmeyi Split SeedVR2 Latent'ten gelen temporal_overlap ile boyutlandırılmış Hann penceresiyle geçişli olarak birleştirir.",
+    "display_name": "SeedVR2 Latent'lerini Birleştir",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Sıralı olarak örneklenmiş zamansal parçalar."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Split SeedVR2 Latent'in temporal_overlap çıktısı. 0 = doğrudan birleştirme."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "Tekrar birleştirilmiş tam uzunlukta latent."
       }
     }
   },
@@ -18827,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "stil_modeli_adı"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Bir videodaki ağız hareketini yeni konuşma sesine sync.so ile yeniden senkronize edin. Yakın planlar, profiller ve engelleri otomatik olarak işler ve konuşmacının ifadesini korur. Maliyet, çıktı süresiyle orantılıdır.",
+    "display_name": "sync.so Dudak Senkronizasyonu",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Ağız hareketinin senkronize edileceği konuşma sesi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so üretim modeli."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Yeniden senkronize edilecek konuşmacının videosu. 4K'ya kadar (4096x2160); sabit bir 24/25/30 fps kare hızı en iyi sonucu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Bir portreyi, sync.so'nun sync-3 modeliyle konuşma sesiyle yönlendirilen konuşan bir videoya dönüştürün. Çıktı süresi sesle eşleşir. Maliyet, çıktı süresiyle orantılıdır.",
+    "display_name": "sync.so Konuşan Görsel",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Konuşan videoyu yönlendiren konuşma sesi; çıktı süresi bununla eşleşir. Animasyonu metinden yönlendirmek için buraya herhangi bir TTS düğümü zincirleyin."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Yüzü net bir şekilde görünen tek bir görsel, 4K'ya kadar (4096x2160)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so üretim modeli. Görsel girişi yalnızca sync-3 ile kullanılabilir."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Portreye hayat verme konusunda isteğe bağlı yönlendirme, örn. 'konu gülümsesin ve kameraya baksın'. Doğal konuşma hareketi için boş bırakın."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
