@@ -55,12 +55,12 @@ export const useSubscriptionDialog = () => {
 
     // Members can't manage the workspace subscription, so a blocked run shows a
     // small read-only "ask your owner to reactivate" modal instead of the
-    // pricing table. Out-of-credits still routes everyone to the credits flow.
+    // pricing table — including out-of-credits, whose member recovery path is
+    // also owner-only (FE-1246).
     if (
       shouldUseWorkspaceBilling.value &&
       !workspaceStore.isInPersonalWorkspace &&
-      !permissions.value.canManageSubscription &&
-      options?.reason !== 'out_of_credits'
+      !permissions.value.canManageSubscription
     ) {
       dialogService.showLayoutDialog({
         key: DIALOG_KEY,
@@ -88,9 +88,9 @@ export const useSubscriptionDialog = () => {
     } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) for workspaces on the consolidated billing flow. Replaces
-    // the old personal-vs-team workspace fork. Personal workspaces still on the
-    // legacy flow (consolidated billing disabled) get the legacy table.
+    // one workspace) for workspaces on the workspace-scoped billing flow.
+    // Replaces the old personal-vs-team workspace fork. Personal workspaces
+    // still on the legacy flow (billing control disabled) get the legacy table.
     if (shouldUseWorkspaceBilling.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.

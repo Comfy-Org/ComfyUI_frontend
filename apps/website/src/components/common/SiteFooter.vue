@@ -85,6 +85,7 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   links: [
     { label: t('footer.about', locale), href: routes.about },
     { label: t('nav.careers', locale), href: routes.careers },
+    { label: t('nav.brand', locale), href: routes.brand },
     { label: t('footer.termsOfService', locale), href: routes.termsOfService },
     { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
     { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy }

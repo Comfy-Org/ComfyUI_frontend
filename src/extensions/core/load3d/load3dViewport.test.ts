@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   clientPointToLetterboxNdc,
+  computeLetterboxBars,
   computeLetterboxedViewport,
   isLoad3dActive
 } from './load3dViewport'
@@ -79,6 +80,53 @@ describe('computeLetterboxedViewport', () => {
 
     expect(wide.width / wide.height).toBeCloseTo(target)
     expect(tall.width / tall.height).toBeCloseTo(target)
+  })
+})
+
+describe('computeLetterboxBars', () => {
+  it('returns left and right bars for a pillarboxed viewport', () => {
+    const container = { width: 800, height: 400 }
+    const bars = computeLetterboxBars(
+      container,
+      computeLetterboxedViewport(container, 1)
+    )
+
+    expect(bars).toEqual([
+      { x: 0, y: 0, width: 200, height: 400 },
+      { x: 600, y: 0, width: 200, height: 400 }
+    ])
+  })
+
+  it('returns bottom and top bars for a letterboxed viewport', () => {
+    const container = { width: 400, height: 800 }
+    const bars = computeLetterboxBars(
+      container,
+      computeLetterboxedViewport(container, 1)
+    )
+
+    expect(bars).toEqual([
+      { x: 0, y: 0, width: 400, height: 200 },
+      { x: 0, y: 600, width: 400, height: 200 }
+    ])
+  })
+
+  it('returns no bars when the viewport fills the container', () => {
+    const container = { width: 1024, height: 768 }
+    const bars = computeLetterboxBars(
+      container,
+      computeLetterboxedViewport(container, 1024 / 768)
+    )
+
+    expect(bars).toEqual([])
+  })
+
+  it('ignores sub-pixel offsets', () => {
+    const bars = computeLetterboxBars(
+      { width: 800, height: 400.5 },
+      { offsetX: 0, offsetY: 0.25, width: 800, height: 400 }
+    )
+
+    expect(bars).toEqual([])
   })
 })
 

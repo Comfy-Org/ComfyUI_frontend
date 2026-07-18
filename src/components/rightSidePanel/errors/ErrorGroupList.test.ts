@@ -236,4 +236,27 @@ describe('ErrorGroupList selection emphasis', () => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
   })
+
+  it('preserves special characters in execution item accessible names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<LGraphNode, unknown>(
+        String(nodeId) === '1'
+          ? { ...SAMPLER_NODE, title: nodeDisplayName }
+          : LOADER_NODE
+      )
+    )
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+
+    renderList(pinia)
+
+    expect(
+      screen.getByRole('button', { name: /Info for A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Locate A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
+  })
 })
