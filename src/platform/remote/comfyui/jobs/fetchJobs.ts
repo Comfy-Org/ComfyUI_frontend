@@ -6,6 +6,8 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { z } from 'zod'
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
@@ -30,26 +32,38 @@ export type JobsPageRequest =
 
 const MAX_ERROR_BODY_LENGTH = 200
 
-/**
- * Non-ok response from the jobs API. Carries the HTTP status so callers can
- * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
- */
-export class JobsApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
-    super(message)
-    this.name = 'JobsApiError'
+const zJobsErrorBody = z.object({ code: z.string() })
+
+function parseErrorCode(body: string): string | undefined {
+  try {
+    return zJobsErrorBody.safeParse(JSON.parse(body)).data?.code
+  } catch {
+    return undefined
   }
 }
 
-function jobsApiErrorMessage(status: number, body: string): string {
-  const truncated =
-    body.length > MAX_ERROR_BODY_LENGTH
-      ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
-      : body
-  return `[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim()
+/**
+ * Non-ok response from the jobs API. Carries the HTTP status and the parsed
+ * machine-readable `errorCode` (from the JSON error body) so callers can tell a
+ * rejected cursor (`INVALID_CURSOR`) apart from other 400s and transient
+ * failures. `errorCode` is undefined when the body isn't the structured error
+ * shape (e.g. a proxy error page).
+ */
+export class JobsApiError extends Error {
+  readonly errorCode?: string
+
+  constructor(
+    readonly status: number,
+    body: string
+  ) {
+    const truncated =
+      body.length > MAX_ERROR_BODY_LENGTH
+        ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
+        : body
+    super(`[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim())
+    this.name = 'JobsApiError'
+    this.errorCode = parseErrorCode(body)
+  }
 }
 
 interface FetchJobsRawResult {
@@ -91,7 +105,7 @@ async function fetchJobsRaw(
   const res = await fetchApi(url)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new JobsApiError(jobsApiErrorMessage(res.status, body), res.status)
+    throw new JobsApiError(res.status, body)
   }
   const parsed = zJobsListResponse.safeParse(await res.json())
   if (!parsed.success) {
