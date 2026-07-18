@@ -123,7 +123,7 @@
               </span>
               <div class="flex flex-row items-center gap-1">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span

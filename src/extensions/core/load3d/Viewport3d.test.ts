@@ -13,6 +13,7 @@ type CameraStub = {
   getCurrentCameraType: ReturnType<typeof vi.fn>
   handleResize: ReturnType<typeof vi.fn>
   updateAspectRatio: ReturnType<typeof vi.fn>
+  dispose: ReturnType<typeof vi.fn>
   activeCamera: THREE.Camera
 }
 
@@ -48,6 +49,7 @@ function makeViewportInstance() {
     getCurrentCameraType: vi.fn(() => 'perspective' as const),
     handleResize: vi.fn(),
     updateAspectRatio: vi.fn(),
+    dispose: vi.fn(),
     activeCamera: new THREE.PerspectiveCamera()
   }
   const sceneManager: SceneStub = {
@@ -444,6 +446,82 @@ describe('Viewport3d', () => {
         y: expect.closeTo(1),
         inside: true
       })
+    })
+  })
+
+  describe('letterbox dimmer lifecycle', () => {
+    type DimmerInternals = {
+      dimLetterboxBars(
+        bars: { x: number; y: number; width: number; height: number }[]
+      ): void
+      disposeManagers(): void
+      letterboxDimmer: {
+        scene: THREE.Scene
+        camera: THREE.OrthographicCamera
+        geometry: THREE.PlaneGeometry
+        material: THREE.MeshBasicMaterial
+      } | null
+    }
+
+    it('does not create the dim overlay when there are no letterbox bars', () => {
+      const render = vi.fn()
+      Object.assign(ctx.viewport, {
+        view: {
+          renderer: { setViewport: vi.fn(), setScissor: vi.fn(), render }
+        }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([])
+
+      expect(render).not.toHaveBeenCalled()
+      expect(internals.letterboxDimmer ?? null).toBeNull()
+    })
+
+    it('renders each bar with a lazily created dim overlay', () => {
+      const setViewport = vi.fn()
+      const setScissor = vi.fn()
+      const render = vi.fn()
+      Object.assign(ctx.viewport, {
+        view: { renderer: { setViewport, setScissor, render } }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([
+        { x: 0, y: 0, width: 100, height: 20 },
+        { x: 0, y: 80, width: 100, height: 20 }
+      ])
+
+      const dimmer = internals.letterboxDimmer
+      expect(dimmer).not.toBeNull()
+      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 100, 20)
+      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 80, 100, 20)
+      expect(render).toHaveBeenCalledTimes(2)
+      expect(render).toHaveBeenCalledWith(dimmer!.scene, dimmer!.camera)
+    })
+
+    it('disposeManagers disposes the dim overlay resources', () => {
+      Object.assign(ctx.viewport, {
+        view: {
+          renderer: {
+            setViewport: vi.fn(),
+            setScissor: vi.fn(),
+            render: vi.fn()
+          }
+        }
+      })
+      const internals = ctx.viewport as unknown as DimmerInternals
+
+      internals.dimLetterboxBars([{ x: 0, y: 0, width: 100, height: 20 }])
+      const dimmer = internals.letterboxDimmer!
+      const geometryDispose = vi.spyOn(dimmer.geometry, 'dispose')
+      const materialDispose = vi.spyOn(dimmer.material, 'dispose')
+
+      internals.disposeManagers()
+
+      expect(geometryDispose).toHaveBeenCalledOnce()
+      expect(materialDispose).toHaveBeenCalledOnce()
+      expect(internals.letterboxDimmer).toBeNull()
     })
   })
 

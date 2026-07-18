@@ -33,6 +33,7 @@ const {
   minimal = false,
   hideControls = false,
   fit = 'cover',
+  ariaLabel,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -44,6 +45,7 @@ const {
   minimal?: boolean
   hideControls?: boolean
   fit?: 'cover' | 'contain'
+  ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
 
@@ -92,6 +94,28 @@ function syncNativeDuration() {
 watch(videoEl, syncNativeDuration)
 useEventListener(videoEl, 'loadedmetadata', syncNativeDuration)
 useEventListener(videoEl, 'durationchange', syncNativeDuration)
+
+// The muted attribute only sets defaultMuted, so SSR-rendered autoplay
+// videos count as unmuted and get blocked; force the property and kick
+// playback. Scoped to hideControls (decorative) clips so chrome-visible
+// consumers keep native semantics. flush: 'post' guarantees this runs
+// after useMediaControls' internal muted watcher on the same source.
+watch(
+  [videoEl, () => src],
+  ([el]) => {
+    if (!el || !autoplay || !hideControls) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.pause()
+      return
+    }
+    el.muted = true
+    el.play().catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'AbortError') return
+      console.warn('VideoPlayer autoplay failed', error)
+    })
+  },
+  { flush: 'post' }
+)
 
 const effectiveDuration = computed(() => duration.value || nativeDuration.value)
 
@@ -207,6 +231,7 @@ function toggleFullscreen() {
     <video
       v-if="src"
       ref="videoEl"
+      :aria-label="ariaLabel"
       :class="
         cn('size-full', fit === 'contain' ? 'object-contain' : 'object-cover')
       "

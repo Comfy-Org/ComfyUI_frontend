@@ -3182,12 +3182,17 @@
     "description": "You've been using this feature. Would you take a moment to share your feedback?",
     "accept": "Sure, I'll help!",
     "notNow": "Not Now",
-    "dontAskAgain": "Don't Ask Again",
-    "loadError": "Failed to load survey. Please try again later."
+    "dontAskAgain": "Don't Ask Again"
   },
   "errorPanelSurvey": {
     "ctaText": "How's the new error panel?",
     "ctaButton": "Give feedback"
+  },
+  "feedback": {
+    "title": "Share Feedback"
+  },
+  "typeform": {
+    "loadError": "Failed to load the form. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -3587,6 +3592,9 @@
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
+    "freeTierRunsExhausted": "No runs left",
+    "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
   },

@@ -132,9 +132,9 @@ export function fixBadLinks(
       // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {
         logger.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode[
-            'inputs'
-          ]![slot]!} Skipping.`
+          ` > Already set ${node.id}.inputs[${slot}] to ${
+            patchedNode['inputs']![slot]!
+          } Skipping.`
         )
         return false
       }
