@@ -2473,6 +2473,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "insufficient": {
+      "memberTitle": "This workspace is out of credits",
+      "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
+      "memberCta": "Ok, got it"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -2882,6 +2887,32 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingStatus": {
+      "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "outOfCredits": {
+        "title": "Out of credits",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "addCredits": "Add credits",
+        "dismiss": "Dismiss"
+      },
+      "ending": {
+        "title": "Your team plan ends on {date}",
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan"
+      },
+      "updatePayment": "Update payment"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
@@ -3151,12 +3182,17 @@
     "description": "You've been using this feature. Would you take a moment to share your feedback?",
     "accept": "Sure, I'll help!",
     "notNow": "Not Now",
-    "dontAskAgain": "Don't Ask Again",
-    "loadError": "Failed to load survey. Please try again later."
+    "dontAskAgain": "Don't Ask Again"
   },
   "errorPanelSurvey": {
     "ctaText": "How's the new error panel?",
     "ctaButton": "Give feedback"
+  },
+  "feedback": {
+    "title": "Share Feedback"
+  },
+  "typeform": {
+    "loadError": "Failed to load the form. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -3556,6 +3592,9 @@
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
+    "freeTierRunsExhausted": "No runs left",
+    "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
