@@ -31,7 +31,11 @@ function assignRect(target: ScreenRect, rect: ScreenRect): void {
   target.height = rect.height
 }
 
-/** Whether two rect lists hold the same geometry, so an unchanged frame can bail. */
+/**
+ * Whether two rect lists hold the same geometry, so an unchanged frame can bail.
+ * Hand-rolled rather than a deep-equal: this runs twice per frame on a flat shape
+ * of four numbers, where a generic recursive compare would dominate the cost.
+ */
 function sameRects(
   a: readonly ScreenRect[],
   b: readonly ScreenRect[]

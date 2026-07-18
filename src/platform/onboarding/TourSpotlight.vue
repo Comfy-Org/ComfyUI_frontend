@@ -14,7 +14,12 @@
       class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
       :style="spotlightStyle"
     />
-    <FocusScope as-child trapped loop @mount-auto-focus.prevent>
+    <FocusScope
+      as-child
+      :trapped="!waitingForTarget"
+      loop
+      @mount-auto-focus.prevent
+    >
       <div
         ref="cardRef"
         role="dialog"

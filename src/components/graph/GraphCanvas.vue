@@ -505,9 +505,11 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
-  let templateFromUrl: Awaited<
-    ReturnType<typeof workflowPersistence.loadTemplateFromUrlIfPresent>
-  >
+  let templateFromUrl:
+    | Awaited<
+        ReturnType<typeof workflowPersistence.loadTemplateFromUrlIfPresent>
+      >
+    | undefined
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -586,7 +588,7 @@ onMounted(async () => {
         console.error('[onboardingTour] failed to start from URL', error)
       })
 
-  if (templateFromUrl.loaded) {
+  if (templateFromUrl?.loaded) {
     void startTourFromUrl({
       templateId: templateFromUrl.templateId,
       entry: 'template_url'
