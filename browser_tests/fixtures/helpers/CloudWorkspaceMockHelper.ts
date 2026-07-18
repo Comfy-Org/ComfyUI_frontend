@@ -140,7 +140,10 @@ export class CloudWorkspaceMockHelper {
     )
     await page.route('**/api/billing/plans', (r) =>
       r.fulfill(
-        jsonRoute({ current_plan_slug: 'pro-monthly', plans: [TEAM_PRO_PLAN] })
+        jsonRoute({
+          current_plan_slug: TEAM_PRO_PLAN.slug,
+          plans: [TEAM_PRO_PLAN]
+        })
       )
     )
 
