@@ -527,6 +527,8 @@ describe('appModeStore', () => {
         [`${rootGraphId}:5:upscaler_resolution`, 'upscaler_resolution'],
         [`${rootGraphId}:5:upscaler_creativity`, 'upscaler_creativity']
       ])
+      // intentional: the same node is referenced in both int and string form;
+      // duplicates are preserved and left for downstream consumers to dedupe
       expect(result.outputs).toEqual([toNodeId(5), toNodeId(5)])
     })
   })
@@ -564,6 +566,52 @@ describe('appModeStore', () => {
 
       store.loadSelections({ inputs: [[1, 'seed']], outputs: [toNodeId(1)] })
 
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when only inputs resolve (partial resolution is success)', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
+      store.loadSelections({ inputs: [[1, 'seed']], outputs: [99] })
+
+      expect(store.selectedInputs.length).toBeGreaterThan(0)
+      expect(store.selectedOutputs).toEqual([])
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when only outputs resolve (partial resolution is success)', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [1] })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs.length).toBeGreaterThan(0)
       expect(warnSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
