@@ -175,6 +175,12 @@ describe('priceBadgeService', () => {
     {
       case: 'an unknown engine',
       badge: { ...validBadge, engine: 'python' }
+    },
+    {
+      // The wire schema is deliberately stricter than the canonical
+      // zPriceBadge, which allows an empty expr.
+      case: 'an empty expression',
+      badge: { ...validBadge, expr: '' }
     }
   ])('skips a badge with $case, applying valid siblings', async ({ badge }) => {
     vi.stubGlobal(
