@@ -30,6 +30,7 @@ export function useBillingContext(): BillingContext {
     canRunWorkflows: computed(() => false),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
+    isTeamPlan: computed(() => false),
     billingStatus: computed(() => null),
     subscriptionStatus: computed(() => null),
     tier: computed(() => null),
