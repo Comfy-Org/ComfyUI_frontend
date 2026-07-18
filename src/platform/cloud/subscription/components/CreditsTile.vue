@@ -147,7 +147,7 @@
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
         v-if="isFreeTier"
-        variant="gradient"
+        variant="subscribe"
         size="lg"
         class="w-full font-normal"
         @click="handleUpgradeToAddCredits"
