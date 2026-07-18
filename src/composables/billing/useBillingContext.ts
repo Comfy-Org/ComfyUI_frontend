@@ -30,6 +30,15 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // carries a team_credit_stop. The hyphen prefix alone separates the two, so a
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
+const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
+
+function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
+  const normalizedSlug = planSlug?.toLowerCase()
+  return (
+    normalizedSlug?.startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) === true ||
+    normalizedSlug?.startsWith(PER_CREDIT_TEAM_PLAN_SLUG_PREFIX) === true
+  )
+}
 
 /**
  * Unified billing context that selects the billing implementation by build/flag.
@@ -161,10 +170,7 @@ function useBillingContextInternal(): BillingContext {
     () =>
       type.value === 'workspace' &&
       (currentTeamCreditStop.value !== null ||
-        (currentPlanSlug.value
-          ?.toLowerCase()
-          .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
-          false))
+        isTeamPlanSlug(currentPlanSlug.value))
   )
 
   const billingStatus = computed(() =>
