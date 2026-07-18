@@ -1528,11 +1528,12 @@ export class ComfyApp {
   }
 
   async refreshMissingModels(
-    options: { silent?: boolean } = {}
+    options: { silent?: boolean; reloadDefs?: boolean } = {}
   ): Promise<MissingModelPipelineResult> {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
-      reloadNodeDefs: () => this.reloadNodeDefs(),
+      reloadNodeDefs:
+        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
