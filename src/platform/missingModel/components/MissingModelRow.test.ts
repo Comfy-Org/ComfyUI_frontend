@@ -330,6 +330,21 @@ describe('MissingModelRow', () => {
     expect(onLocateModel).toHaveBeenCalledWith('1')
   })
 
+  it('gives the header locate button a node-specific accessible name', async () => {
+    const user = userEvent.setup()
+    const { onLocateModel } = renderRow(
+      makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    )
+
+    const locateButton = screen.getByRole('button', {
+      name: 'Locate CheckpointLoaderSimple'
+    })
+    expect(locateButton).toBeInTheDocument()
+
+    await user.click(locateButton)
+    expect(onLocateModel).toHaveBeenCalledWith('1')
+  })
+
   it('moves locate actions to expanded child rows when a cloud model has multiple references', async () => {
     const user = userEvent.setup()
     const { onLocateModel } = renderRow(
