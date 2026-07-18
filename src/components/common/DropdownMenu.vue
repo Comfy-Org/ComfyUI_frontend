@@ -82,6 +82,7 @@ const contentStyle = computed(() => {
             :key="toValue(item.label) ?? index"
             :item-class
             :content-class
+            :content-style
             :item
           />
         </slot>
