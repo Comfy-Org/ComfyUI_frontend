@@ -66,7 +66,9 @@ const menuItems = computed<MenuItem[]>(() => {
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
       icon: 'pi pi-trash',
-      class: isDeleteDisabled.value ? 'text-danger/50' : 'text-danger',
+      class: isDeleteDisabled.value
+        ? 'text-destructive-background/50'
+        : 'text-destructive-background',
       disabled: isDeleteDisabled.value,
       tooltip: deleteTooltip.value,
       command: isDeleteDisabled.value
