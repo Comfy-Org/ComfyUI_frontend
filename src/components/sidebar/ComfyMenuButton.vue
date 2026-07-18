@@ -76,24 +76,10 @@
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
         <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
-        <ToggleSwitch
+        <Switch
           v-model="nodes2Enabled"
           class="ml-4"
           :aria-label="item.label"
-          :pt="{
-            root: {
-              style: {
-                width: '38px',
-                height: '20px'
-              }
-            },
-            handle: {
-              style: {
-                width: '16px',
-                height: '16px'
-              }
-            }
-          }"
           @click.stop
           @update:model-value="onNodes2ToggleChange"
         />
@@ -107,11 +93,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType } from '@/platform/settings/types'

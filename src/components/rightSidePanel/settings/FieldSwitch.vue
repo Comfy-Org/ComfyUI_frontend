@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ToggleSwitch from 'primevue/toggleswitch'
+import Switch from '@/components/ui/switch/Switch.vue'
 
 import LayoutField from './LayoutField.vue'
 
@@ -13,8 +13,9 @@ const modelValue = defineModel<boolean>({ default: false })
 
 <template>
   <LayoutField singleline :label :tooltip>
-    <ToggleSwitch
+    <Switch
       v-model="modelValue"
+      :aria-label="label"
       class="transition-transform active:scale-90"
     />
   </LayoutField>
