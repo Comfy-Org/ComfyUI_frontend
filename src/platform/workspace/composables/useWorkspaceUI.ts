@@ -1,11 +1,9 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import type { WorkspaceMember } from '../stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
@@ -18,10 +16,8 @@ interface WorkspacePermissions {
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
-  // Creator-only subscription lifecycle: cancel / reactivate / downgrade.
-  // Any owner has `canManageSubscription` (manage payment, top-up, change
-  // commit); only the original owner gets `canManageSubscriptionLifecycle`.
   canManageSubscriptionLifecycle: boolean
+  canDowngradeToPersonal: boolean
   canTopUp: boolean
 }
 
@@ -42,8 +38,17 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  isOriginalOwner: boolean
+  isOriginalOwner: boolean,
+  hasActiveWorkspace: boolean
 ): WorkspacePermissions {
+  const canManageBilling = hasActiveWorkspace && role === 'owner'
+  const billingPermissions = {
+    canManageSubscription: canManageBilling,
+    canManageSubscriptionLifecycle: canManageBilling,
+    canDowngradeToPersonal: canManageBilling && isOriginalOwner,
+    canTopUp: canManageBilling
+  }
+
   if (type === 'personal') {
     return {
       canViewOtherMembers: false,
@@ -53,10 +58,7 @@ function getPermissions(
       canManageMembers: false,
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
-      canManageSubscription: true,
-      // Personal workspace is single-member: the user is the sole owner/creator.
-      canManageSubscriptionLifecycle: true,
-      canTopUp: true
+      ...billingPermissions
     }
   }
 
@@ -69,9 +71,7 @@ function getPermissions(
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: isOriginalOwner,
-      canTopUp: true
+      ...billingPermissions
     }
   }
 
@@ -84,9 +84,7 @@ function getPermissions(
     canManageMembers: false,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
-    canManageSubscription: false,
-    canManageSubscriptionLifecycle: false,
-    canTopUp: false
+    ...billingPermissions
   }
 }
 
@@ -141,32 +139,14 @@ function getUIConfig(
 }
 
 /**
- * The original owner is the earliest-joined member. Ties on join date are
- * broken by the stable member id so exactly one member is the original owner.
- */
-function isOriginalOwnerByEmail(
-  members: WorkspaceMember[],
-  email: string
-): boolean {
-  if (members.length === 0) return false
-  const original = [...members].sort(
-    (a, b) =>
-      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
-  )[0]
-  return original.email.toLowerCase() === email
-}
-
-/**
  * Internal implementation of UI configuration composable.
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { userEmail } = useCurrentUser()
-  const { isActiveSubscription, subscription } = useBillingContext()
+  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
   const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
-  const members = computed(() => store.members)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -176,14 +156,10 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  // The original-owner signal lives on the members-list self-row, so a team
-  // workspace's members must be loaded before its lifecycle gate can resolve.
-  // The store dedupes in-flight/already-loaded requests and logs failures;
-  // until members arrive the getter fails closed.
   watch(
-    () => store.activeWorkspace?.id,
+    [() => store.activeWorkspace?.id, () => store.activeWorkspace?.role],
     () => {
-      if (store.activeWorkspace?.type === 'team') {
+      if (store.activeWorkspace?.role === 'owner') {
         void store.ensureMembersLoaded()
       }
     },
@@ -194,7 +170,8 @@ function useWorkspaceUIInternal() {
     getPermissions(
       workspaceType.value,
       workspaceRole.value,
-      store.isCurrentUserOriginalOwner
+      store.isCurrentUserOriginalOwner,
+      store.activeWorkspace !== null
     )
   )
 
@@ -202,19 +179,14 @@ function useWorkspaceUIInternal() {
     getUIConfig(workspaceType.value, workspaceRole.value)
   )
 
-  // Cancel / reactivate / delete are original-owner-only; personal workspaces
-  // are single-member, so the user is always their own original owner.
-  const isOriginalOwner = computed(() => {
-    if (isInPersonalWorkspace.value) return true
-    const email = userEmail.value?.toLowerCase()
-    return !!email && isOriginalOwnerByEmail(members.value, email)
-  })
+  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
 
-  // Cancellation is meaningful only for team (workspace) billing; personal plans
-  // use legacy billing with different semantics.
+  const isSubscriptionCancelled = computed(
+    () => subscription.value?.isCancelled ?? false
+  )
+
   const isTeamPlanCancelled = computed(
-    () =>
-      !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
+    () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
   // A workspace can't be deleted while its subscription is active and not yet
@@ -239,6 +211,7 @@ function useWorkspaceUIInternal() {
     isWorkspaceSubscribed,
     isActiveSubscription,
     isOriginalOwner,
+    isSubscriptionCancelled,
     isTeamPlanCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey

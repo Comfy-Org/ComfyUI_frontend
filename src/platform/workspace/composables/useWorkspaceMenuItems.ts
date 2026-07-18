@@ -17,11 +17,12 @@ export function useWorkspaceMenuItems() {
   const { t } = useI18n()
   const { isFreeTier, subscription } = useBillingContext()
   const {
+    permissions,
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
     isOriginalOwner,
-    isTeamPlanCancelled,
+    isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
@@ -50,9 +51,9 @@ export function useWorkspaceMenuItems() {
 
   const canCancelPlan = computed(
     () =>
-      isOriginalOwner.value &&
+      permissions.value.canManageSubscriptionLifecycle &&
       isActiveSubscription.value &&
-      !isTeamPlanCancelled.value &&
+      !isSubscriptionCancelled.value &&
       !isFreeTier.value
   )
 

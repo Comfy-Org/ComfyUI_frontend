@@ -269,6 +269,18 @@ describe('BillingStatusBanner', () => {
     ).toBeInTheDocument()
   })
 
+  it('does not expose payment controls to members', () => {
+    paymentFailedState()
+    state.canManageSubscription = false
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
+    expect(state.manageSubscription).not.toHaveBeenCalled()
+  })
+
   it('falls back to the no-date payment-declined copy when there is no renewal date', () => {
     paymentFailedState()
     state.renewalDate = null
@@ -281,7 +293,7 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('{date}')
   })
 
-  it('shows the ending banner with a Reactivate action', async () => {
+  it('lets a promoted owner reactivate an ending plan', async () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
@@ -298,18 +310,17 @@ describe('BillingStatusBanner', () => {
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the ending banner read-only to a non-original owner (Reactivate is lifecycle-gated)', () => {
+  it('does not expose reactivation controls to a member', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
+    state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
-    )
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()

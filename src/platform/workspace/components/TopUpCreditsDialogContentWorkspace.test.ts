@@ -13,6 +13,7 @@ const mockTopup = vi.fn<(amountCents: number) => Promise<CreateTopupResponse>>()
 const mockStartOperation = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
+const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -26,6 +27,16 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     hasPendingOperations: false,
     startOperation: mockStartOperation
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return { canTopUp: mockCanTopUp.value }
+      }
+    }
   })
 }))
 
@@ -127,6 +138,7 @@ async function clickAddCredits() {
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCanTopUp.value = true
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
   })
@@ -161,5 +173,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('does not top up after the workspace role loses permission', async () => {
+    renderDialog()
+    mockCanTopUp.value = false
+
+    await clickAddCredits()
+
+    expect(mockTopup).not.toHaveBeenCalled()
   })
 })
