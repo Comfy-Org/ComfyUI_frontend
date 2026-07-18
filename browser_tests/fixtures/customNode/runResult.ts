@@ -1,4 +1,4 @@
-export type CustomNodeOutcome =
+type CustomNodeOutcome =
   | 'NOT_INSTALLED'
   | 'IMPORT_ERROR'
   | 'MISSING_NODE'
