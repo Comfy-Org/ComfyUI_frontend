@@ -2832,4 +2832,45 @@ describe('createTrailingRefreshCoalescer', () => {
     await refresh()
     expect(run).toHaveBeenCalledTimes(3)
   })
+
+  it('does not start a second leading run for a call landing as the leading run settles', async () => {
+    const leading = deferred()
+    const run = vi
+      .fn<() => Promise<void>>()
+      .mockReturnValueOnce(leading.promise)
+      .mockResolvedValue(undefined)
+    const refresh = createTrailingRefreshCoalescer(run)
+
+    const first = refresh()
+    const second = refresh()
+
+    // Fire a third call in the microtask gap after the leading run clears
+    // `inFlight` but before the trailing run clears its slot. Registering on
+    // `leading.promise` after the coalescer's internal `.finally` guarantees
+    // this callback runs once `inFlight` is already null.
+    const third = leading.promise.then(() => refresh())
+
+    leading.resolve()
+    await Promise.all([first, second, third])
+
+    // Leading plus exactly one trailing run: the gap call coalesces into the
+    // already-scheduled trailing rather than starting a fresh leading run.
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('surfaces a synchronous throw as a rejected promise without freezing', async () => {
+    const run = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(() => {
+        throw new Error('synchronous failure')
+      })
+      .mockResolvedValue(undefined)
+    const refresh = createTrailingRefreshCoalescer(run)
+
+    await expect(refresh()).rejects.toThrow('synchronous failure')
+
+    // The failed leading run cleared its slot, so the mechanism keeps working.
+    await refresh()
+    expect(run).toHaveBeenCalledTimes(2)
+  })
 })

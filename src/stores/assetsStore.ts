@@ -113,6 +113,11 @@ const FLAT_OUTPUT_PAGE_SIZE = 200
  * failed run can never latch a settled-rejected promise in the trailing slot,
  * which would freeze every future call. The leading caller still observes the
  * rejection via the returned promise.
+ *
+ * A queued trailing run is returned before anything else so that a call landing
+ * in the microtask gap after the leading run clears `inFlight` but before the
+ * trailing run clears its slot coalesces into that trailing run rather than
+ * starting a second leading run, preserving the at-most-one-trailing guarantee.
  */
 export function createTrailingRefreshCoalescer(
   run: () => Promise<void>
@@ -121,13 +126,20 @@ export function createTrailingRefreshCoalescer(
   let trailing: Promise<void> | null = null
 
   const invoke = (): Promise<void> => {
+    if (trailing) return trailing
     if (!inFlight) {
-      inFlight = run().finally(() => {
+      let started: Promise<void>
+      try {
+        started = run()
+      } catch (error) {
+        started = Promise.reject(error)
+      }
+      inFlight = started.finally(() => {
         inFlight = null
       })
       return inFlight
     }
-    trailing ??= inFlight
+    trailing = inFlight
       .catch(() => {})
       .then(() => {
         trailing = null
