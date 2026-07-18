@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
+import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   CurrentTeamCreditStop,
   TeamCreditStops
@@ -270,6 +271,10 @@ function renderComponent() {
 }
 
 describe('SubscriptionPanelContentWorkspace', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
@@ -568,6 +573,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('shows the personal plan identity when a team workspace holds a personal subscription', () => {
+    const getTierPriceSpy = vi
+      .spyOn(tierPricing, 'getTierPrice')
+      .mockReturnValue(42)
     mockSubscriptionTier.value = 'STANDARD'
     mockPlanSlug.value = 'standard-annual'
     mockHasTeamPlan.value = false
@@ -577,7 +585,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('Standard Yearly')).toBeInTheDocument()
     expect(screen.queryByText('Team')).not.toBeInTheDocument()
-    expect(screen.getByText('$16')).toBeInTheDocument()
+    expect(getTierPriceSpy).toHaveBeenCalledWith('standard', true)
+    expect(screen.getByText('$42')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
     expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
