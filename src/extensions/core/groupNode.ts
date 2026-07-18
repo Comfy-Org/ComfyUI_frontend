@@ -566,7 +566,7 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     slots: string[],
     linksTo: Record<number, GroupNodeLink>,
-    inputMap: Record<number, number>,
+    inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
     const nodeIdx = node.index ?? -1
@@ -593,7 +593,7 @@ export class GroupNodeConfig {
         // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
-      inputMap[i] = this.inputCount++
+      inputMap[inputName] = this.inputCount++
     }
   }
 
@@ -603,7 +603,7 @@ export class GroupNodeConfig {
     slots: string[],
     converted: Map<number, string>,
     linksTo: Record<number, GroupNodeLink>,
-    inputMap: Record<number, number>,
+    inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
     // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
@@ -645,7 +645,7 @@ export class GroupNodeConfig {
       }
       this.oldToNewWidgetMap[nodeIndex][inputName] = name
 
-      inputMap[slots.length + i] = this.inputCount++
+      inputMap[inputName] = this.inputCount++
     }
   }
 
@@ -668,7 +668,7 @@ export class GroupNodeConfig {
     )
     const nodeIndex = node.index ?? -1
     const linksTo = this.linksTo[nodeIndex] ?? {}
-    const inputMap: Record<number, number> = (this.oldToNewInputMap[nodeIndex] =
+    const inputMap: Record<string, number> = (this.oldToNewInputMap[nodeIndex] =
       {})
     this.processInputSlots(
       inputs as unknown as Record<string, unknown[]>,
@@ -917,15 +917,18 @@ export class GroupNodeHandler {
           : null
         if (!newNode) continue
         const map = oldToNewInputMap[Number(innerNodeIndex)]
-        for (const innerInputId in map) {
-          const groupSlotId = map[Number(innerInputId)]
+        for (const innerInputName in map) {
+          const groupSlotId = map[innerInputName]
           if (groupSlotId == null) continue
           const slot = node.inputs[groupSlotId]
           if (slot.link == null) continue
           const link = app.rootGraph.links[slot.link]
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
-          originNode?.connect(link.origin_slot, newNode, +innerInputId)
+          const innerInputId = newNode.findInputSlot(innerInputName)
+          if (innerInputId !== -1) {
+            originNode?.connect(link.origin_slot, newNode, innerInputId)
+          }
         }
       }
     }
