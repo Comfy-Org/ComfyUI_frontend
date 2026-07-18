@@ -1205,6 +1205,84 @@ describe('assetsStore - Refactored (Option A)', () => {
         'prompt_2'
       ])
     })
+
+    it('does not restart the walk when the head page overlaps only previously loaded non-asset jobs', async () => {
+      const failedJob = (index: number): JobListItem => ({
+        ...createMockJobItem(index),
+        status: 'failed' as const,
+        preview_output: null
+      })
+
+      // Initial page: one displayable asset plus a failed job that maps to no
+      // asset but is still part of the loaded timeline.
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([createMockJobItem(0), failedJob(1)], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(1)
+
+      // Head refresh returns a burst of failed jobs; the only overlap with the
+      // loaded timeline is the previously seen failed job, which never entered
+      // the displayable-asset set.
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([failedJob(2), failedJob(1)], { hasMore: true })
+      )
+      await store.refreshHistoryHead()
+
+      // Gap detection must recognise the overlap and merge, not trigger a full
+      // reload (which would refetch from offset 0 and drop scroll position).
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
+      expect(store.historyAssets.map((a) => a.id)).toEqual(['prompt_0'])
+    })
+
+    it('discards a stale head refresh when a reset bumps the epoch mid-flight', async () => {
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true, nextCursor: 'cursor-1' })
+      )
+      await store.updateHistory()
+
+      let resolveHead: (page: FetchHistoryPageResult) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((resolve) => {
+          resolveHead = resolve
+        })
+      )
+      const staleRefresh = store.refreshHistoryHead()
+
+      // A concurrent full reload bumps the fetch epoch while the head fetch is
+      // still in flight.
+      const freshBatch = Array.from({ length: 5 }, (_, i) =>
+        createMockJobItem(100 + i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(freshBatch)
+      )
+      await store.updateHistory()
+
+      // The now-stale head page resolves with pre-reset data.
+      resolveHead!(
+        mockHistoryPage(
+          Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+          { hasMore: true }
+        )
+      )
+      await staleRefresh
+
+      // Epoch guard must drop the stale head result so only the reload survives.
+      expect(store.historyAssets.map((a) => a.id)).toEqual([
+        'prompt_100',
+        'prompt_101',
+        'prompt_102',
+        'prompt_103',
+        'prompt_104'
+      ])
+    })
   })
 
   describe('Sorting', () => {

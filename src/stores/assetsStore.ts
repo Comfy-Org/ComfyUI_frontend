@@ -132,6 +132,12 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const loadedIds = shallowReactive(new Set<string>())
 
+  // Ids of every raw job walked so far, including ones that map to no
+  // displayable asset (failed, cancelled, preview-less). Head-refresh gap
+  // detection needs the full set: a burst of non-asset jobs at the top would
+  // otherwise never overlap `loadedIds` and trigger a needless full reload.
+  const loadedJobIds = new Set<string>()
+
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
@@ -221,6 +227,7 @@ export const useAssetsStore = defineStore('assets', () => {
       historyOffset.value = 0
       allHistoryItems.value = []
       loadedIds.clear()
+      loadedJobIds.clear()
       return fetchHistoryJobsPage({ offset: 0 })
     }
   }
@@ -252,6 +259,7 @@ export const useAssetsStore = defineStore('assets', () => {
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
+      loadedJobIds.clear()
     }
 
     const epoch = historyFetchEpoch
@@ -259,6 +267,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const page = await fetchHistoryPageWithCursorRecovery(requestedAfter, epoch)
     if (epoch !== historyFetchEpoch) return allHistoryItems.value
 
+    page.jobs.forEach((job) => loadedJobIds.add(job.id))
     const newAssets = mapHistoryToAssets(page.jobs)
 
     if (loadMore) {
@@ -271,7 +280,10 @@ export const useAssetsStore = defineStore('assets', () => {
     const cursorStuck =
       page.nextCursor != null && page.nextCursor === requestedAfter
     if (page.nextCursor != null) historyCursorMode = true
-    historyOffset.value += page.jobs.length
+    // The server ignores `offset` once the walk is keyset-paginated, so only
+    // advance it while still in offset mode; otherwise the offset used by the
+    // recovery fallback would drift past valid rows.
+    if (!historyCursorMode) historyOffset.value += page.jobs.length
     historyNextCursor.value = cursorStuck ? null : (page.nextCursor ?? null)
     hasMoreHistory.value =
       page.hasMore &&
@@ -345,6 +357,8 @@ export const useAssetsStore = defineStore('assets', () => {
     allHistoryItems.value = newAssets
     loadedIds.clear()
     newAssets.forEach((asset) => loadedIds.add(asset.id))
+    loadedJobIds.clear()
+    page.jobs.forEach((job) => loadedJobIds.add(job.id))
     historyOffset.value = page.jobs.length
     historyNextCursor.value = page.nextCursor ?? null
     historyCursorMode = page.nextCursor != null
@@ -390,7 +404,9 @@ export const useAssetsStore = defineStore('assets', () => {
       const page = await fetchHistoryJobsPage({ offset: 0 })
       if (epoch !== historyFetchEpoch) return
 
-      const reachesLoadedItems = page.jobs.some((job) => loadedIds.has(job.id))
+      const reachesLoadedItems = page.jobs.some((job) =>
+        loadedJobIds.has(job.id)
+      )
       if (page.hasMore && !reachesLoadedItems) {
         await updateHistory()
         return
@@ -404,6 +420,7 @@ export const useAssetsStore = defineStore('assets', () => {
       // completions), so rebuild from the head page — which resets
       // historyOffset to a position consistent with that page.
       if (page.hasMore && historyCursorMode) {
+        page.jobs.forEach((job) => loadedJobIds.add(job.id))
         mergeHistoryAssets(mapHistoryToAssets(page.jobs))
         trimHistoryToLimit()
       } else {
