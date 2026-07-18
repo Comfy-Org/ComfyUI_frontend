@@ -190,6 +190,10 @@ vi.mock(
 vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
 vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
 vi.mock('@/components/MenuHamburger.vue', () => stubModule)
+vi.mock(
+  '@/components/errorResolution/ErrorResolutionOverlay.vue',
+  () => stubModule
+)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
 
 describe('GraphView - reconnect wiring', () => {

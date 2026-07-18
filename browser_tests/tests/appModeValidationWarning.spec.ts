@@ -61,10 +61,10 @@ test.describe(
 
       await expect(comfyPage.appMode.linearWidgets).toBeHidden()
       await expect(
-        comfyPage.page.getByTestId(TestIds.propertiesPanel.root)
+        comfyPage.page.getByTestId(TestIds.errorResolution.panel)
       ).toBeVisible()
       await expect(
-        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+        comfyPage.page.getByTestId(TestIds.errorResolution.back)
       ).toBeVisible()
     })
 

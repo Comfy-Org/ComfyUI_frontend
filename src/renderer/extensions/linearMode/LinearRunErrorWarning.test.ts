@@ -31,9 +31,7 @@ const i18n = createI18n({
   messages: {
     en: {
       linearMode: {
-        error: {
-          goto: 'Show errors in graph'
-        }
+        fixErrors: 'Fix errors'
       }
     }
   }
@@ -76,16 +74,14 @@ describe('LinearRunErrorWarning', () => {
     expect(description).toHaveTextContent(
       'KSampler is missing a required input: model'
     )
-    expect(description).not.toHaveTextContent('Show errors in graph')
+    expect(description).not.toHaveTextContent('Fix errors')
     expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
   })
 
   it('opens graph errors when the action is clicked', async () => {
     const { user } = renderWarning()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Show errors in graph' })
-    )
+    await user.click(screen.getByRole('button', { name: 'Fix errors' }))
 
     expect(mocks.viewErrorsInGraph).toHaveBeenCalledOnce()
   })

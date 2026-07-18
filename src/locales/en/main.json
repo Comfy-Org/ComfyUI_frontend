@@ -2008,6 +2008,14 @@
     "coreNodesFromVersion": "Core nodes from version {version}:",
     "unknownVersion": "unknown"
   },
+  "errorResolution": {
+    "title": "Fix workflow errors",
+    "backToApp": "Back to App Mode",
+    "allResolved": "All errors resolved",
+    "allResolvedDesc": "You're ready to go back to App Mode and run this workflow.",
+    "showErrors": "Show errors",
+    "hideErrors": "Hide errors"
+  },
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
@@ -3786,7 +3794,7 @@
     "cancelThisRun": "Cancel this run",
     "deleteAllAssets": "Delete all assets from this run",
     "hasCreditCost": "Requires additional credits",
-    "viewGraph": "View node graph",
+    "fixErrors": "Fix errors",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
     "welcome": {
       "title": "App Mode",
@@ -3842,7 +3850,6 @@
       "requiresGraph": "Something went wrong during generation. This could be due to invalid hidden inputs, missing resources, or workflow configuration issues.",
       "promptVisitGraph": "View the node graph to see the full error.",
       "getHelp": "For help, view our {0}, {1}, or {2} with the copied error.",
-      "goto": "Show errors in graph",
       "github": "submit a GitHub issue",
       "guide": "troubleshooting guide",
       "support": "contact our support",

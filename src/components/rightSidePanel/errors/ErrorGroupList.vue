@@ -2,6 +2,7 @@
   <div class="flex min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div
+      v-if="showSearch"
       class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
       <AsyncSearchInput v-model="searchQuery" class="flex-1" />
@@ -26,10 +27,16 @@
 
       <div
         v-else
-        class="overflow-hidden rounded-lg border border-secondary-background"
+        :class="
+          cn(
+            !carousel &&
+              'overflow-hidden rounded-lg border border-secondary-background'
+          )
+        "
       >
         <!-- Errors summary hero -->
         <div
+          v-if="!carousel"
           data-testid="errors-summary-hero"
           class="flex items-center gap-2 bg-base-foreground/5 p-2"
         >
@@ -56,7 +63,14 @@
         <div
           data-testid="selection-context-strip"
           role="status"
-          class="flex items-center border-t border-secondary-background px-3 pt-3.5 pb-1.5"
+          :class="
+            cn(
+              'flex items-center px-3',
+              carousel
+                ? 'mb-2 rounded-md border border-secondary-background py-1.5'
+                : 'border-t border-secondary-background pt-3.5 pb-1.5'
+            )
+          "
         >
           <i18n-t
             :keypath="strip.keypath"
@@ -78,246 +92,308 @@
         </div>
 
         <!-- Group by Class Type -->
-        <TransitionGroup tag="div" name="list-scale" class="relative">
-          <ErrorCardSection
-            v-for="group in filteredGroups"
-            :key="group.groupKey"
-            :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
-            :title="group.displayTitle"
-            :count="group.count"
-            :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
-            class="border-t border-secondary-background first:border-t-0"
-            @update:collapse="setSectionCollapsed(group.groupKey, $event)"
+        <div
+          ref="carouselRef"
+          :class="
+            cn(
+              carousel && 'scrollbar-hide snap-x snap-mandatory overflow-x-auto'
+            )
+          "
+        >
+          <TransitionGroup
+            tag="div"
+            name="list-scale"
+            :class="cn('relative', carousel && 'flex gap-2')"
           >
-            <template #actions>
-              <Button
-                v-if="
-                  group.type === 'missing_node' &&
-                  missingNodePacks.length > 0 &&
-                  shouldShowInstallButton
-                "
-                variant="secondary"
-                size="sm"
-                class="shrink-0"
-                :disabled="isInstallingAll"
-                @click.stop="installAll"
-              >
-                <DotSpinner v-if="isInstallingAll" duration="1s" :size="12" />
-                {{
-                  isInstallingAll
-                    ? t('rightSidePanel.missingNodePacks.installing')
-                    : t('rightSidePanel.missingNodePacks.installAll')
-                }}
-              </Button>
-              <Button
-                v-else-if="group.type === 'swap_nodes'"
-                v-tooltip.top="
-                  t(
-                    'nodeReplacement.replaceAllWarning',
-                    'Replaces all available nodes in this group.'
-                  )
-                "
-                variant="secondary"
-                size="sm"
-                class="shrink-0"
-                @click.stop="handleReplaceAll()"
-              >
-                {{ t('nodeReplacement.replaceAll', 'Replace All') }}
-              </Button>
-              <Button
-                v-else-if="
-                  group.type === 'missing_model' &&
-                  showMissingModelHeaderRefresh
-                "
-                data-testid="missing-model-header-refresh"
-                variant="muted-textonly"
-                size="icon"
-                class="shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
-                :aria-label="t('rightSidePanel.missingModels.refresh')"
-                :aria-busy="missingModelStore.isRefreshingMissingModels"
-                :aria-disabled="missingModelStore.isRefreshingMissingModels"
-                @click.stop="handleMissingModelRefresh"
-              >
-                <DotSpinner
-                  v-if="missingModelStore.isRefreshingMissingModels"
-                  aria-hidden="true"
-                  duration="1s"
-                  :size="12"
-                />
-                <i
-                  v-else
-                  aria-hidden="true"
-                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
-                />
-              </Button>
-              <span
-                v-if="
-                  group.type === 'missing_model' &&
-                  showMissingModelHeaderRefresh
-                "
-                role="status"
-                aria-live="polite"
-                class="sr-only"
-              >
-                {{
-                  missingModelStore.isRefreshingMissingModels
-                    ? t('rightSidePanel.missingModels.refreshing')
-                    : ''
-                }}
-              </span>
-            </template>
-
-            <div
-              v-if="group.displayMessage"
-              data-testid="error-group-display-message"
-              class="px-3 py-1"
+            <ErrorCardSection
+              v-for="group in filteredGroups"
+              :key="group.groupKey"
+              :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
+              :title="group.displayTitle"
+              :count="group.count"
+              :collapsible="!carousel"
+              :collapse="
+                !carousel && isSectionCollapsed(group.groupKey) && !isSearching
+              "
+              :class="
+                cn(
+                  carousel
+                    ? 'max-h-[30vh] w-full shrink-0 snap-center overflow-y-auto rounded-lg border border-secondary-background'
+                    : 'border-t border-secondary-background first:border-t-0'
+                )
+              "
+              @update:collapse="setSectionCollapsed(group.groupKey, $event)"
             >
-              <p
-                class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+              <template #actions>
+                <Button
+                  v-if="
+                    group.type === 'missing_node' &&
+                    missingNodePacks.length > 0 &&
+                    shouldShowInstallButton
+                  "
+                  variant="secondary"
+                  size="sm"
+                  class="shrink-0"
+                  :disabled="isInstallingAll"
+                  @click.stop="installAll"
+                >
+                  <DotSpinner v-if="isInstallingAll" duration="1s" :size="12" />
+                  {{
+                    isInstallingAll
+                      ? t('rightSidePanel.missingNodePacks.installing')
+                      : t('rightSidePanel.missingNodePacks.installAll')
+                  }}
+                </Button>
+                <Button
+                  v-else-if="group.type === 'swap_nodes'"
+                  v-tooltip.top="
+                    t(
+                      'nodeReplacement.replaceAllWarning',
+                      'Replaces all available nodes in this group.'
+                    )
+                  "
+                  variant="secondary"
+                  size="sm"
+                  class="shrink-0"
+                  @click.stop="handleReplaceAll()"
+                >
+                  {{ t('nodeReplacement.replaceAll', 'Replace All') }}
+                </Button>
+                <Button
+                  v-else-if="
+                    group.type === 'missing_model' &&
+                    showMissingModelHeaderRefresh
+                  "
+                  data-testid="missing-model-header-refresh"
+                  variant="muted-textonly"
+                  size="icon"
+                  class="shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
+                  :aria-label="t('rightSidePanel.missingModels.refresh')"
+                  :aria-busy="missingModelStore.isRefreshingMissingModels"
+                  :aria-disabled="missingModelStore.isRefreshingMissingModels"
+                  @click.stop="handleMissingModelRefresh"
+                >
+                  <DotSpinner
+                    v-if="missingModelStore.isRefreshingMissingModels"
+                    aria-hidden="true"
+                    duration="1s"
+                    :size="12"
+                  />
+                  <i
+                    v-else
+                    aria-hidden="true"
+                    class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                  />
+                </Button>
+                <span
+                  v-if="
+                    group.type === 'missing_model' &&
+                    showMissingModelHeaderRefresh
+                  "
+                  role="status"
+                  aria-live="polite"
+                  class="sr-only"
+                >
+                  {{
+                    missingModelStore.isRefreshingMissingModels
+                      ? t('rightSidePanel.missingModels.refreshing')
+                      : ''
+                  }}
+                </span>
+              </template>
+
+              <div
+                v-if="group.displayMessage"
+                data-testid="error-group-display-message"
+                class="px-3 py-1"
               >
-                {{ group.displayMessage }}
-              </p>
-            </div>
+                <p
+                  class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+                >
+                  {{ group.displayMessage }}
+                </p>
+              </div>
 
-            <!-- Missing Node Packs -->
-            <MissingNodeCard
-              v-if="group.type === 'missing_node'"
-              :show-info-button="shouldShowManagerButtons"
-              :missing-pack-groups="missingPackGroups"
-              :highlighted-node-ids="selectionMatchedAssetNodeIds"
-              @locate-node="handleLocateMissingNode"
-              @open-manager-info="handleOpenManagerInfo"
-            />
+              <!-- Missing Node Packs -->
+              <MissingNodeCard
+                v-if="group.type === 'missing_node'"
+                :show-info-button="shouldShowManagerButtons"
+                :missing-pack-groups="missingPackGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
+                @locate-node="handleLocateMissingNode"
+                @open-manager-info="handleOpenManagerInfo"
+              />
 
-            <!-- Swap Nodes -->
-            <SwapNodesCard
-              v-if="group.type === 'swap_nodes'"
-              :swap-node-groups="swapNodeGroups"
-              :highlighted-node-ids="selectionMatchedAssetNodeIds"
-              @locate-node="handleLocateMissingNode"
-              @replace="handleReplaceGroup"
-            />
+              <!-- Swap Nodes -->
+              <SwapNodesCard
+                v-if="group.type === 'swap_nodes'"
+                :swap-node-groups="swapNodeGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
+                @locate-node="handleLocateMissingNode"
+                @replace="handleReplaceGroup"
+              />
 
-            <!-- Execution Errors -->
-            <div v-if="isExecutionItemListGroup(group)" class="px-3">
-              <ul class="m-0 list-none space-y-1 p-0">
-                <li
-                  v-for="item in getExecutionItemList(group)"
-                  :key="item.key"
+              <!-- Execution Errors -->
+              <div v-if="isExecutionItemListGroup(group)" class="px-3">
+                <ul class="m-0 list-none space-y-1 p-0">
+                  <li
+                    v-for="item in getExecutionItemList(group)"
+                    :key="item.key"
+                    :aria-current="
+                      isCardInSelection(item.cardId) ? 'true' : undefined
+                    "
+                    :class="
+                      cn(
+                        'min-w-0',
+                        selectionEmphasisClass(isCardInSelection(item.cardId))
+                      )
+                    "
+                  >
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="flex min-w-0 flex-1 items-center gap-1">
+                        <button
+                          v-tooltip.top="{
+                            value: item.displayDetails || undefined,
+                            showDelay: 300
+                          }"
+                          type="button"
+                          class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+                          @click="handleLocateNode(item.nodeId)"
+                        >
+                          {{ item.label }}
+                        </button>
+                        <Button
+                          v-if="item.displayDetails"
+                          variant="textonly"
+                          size="icon-sm"
+                          :class="
+                            cn(
+                              'size-6 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset',
+                              isExecutionItemDetailExpanded(item.key) &&
+                                'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
+                            )
+                          "
+                          :aria-label="
+                            t('rightSidePanel.infoFor', { item: item.label })
+                          "
+                          :aria-controls="getExecutionItemDetailId(item.key)"
+                          :aria-expanded="
+                            isExecutionItemDetailExpanded(item.key)
+                          "
+                          @click.stop="toggleExecutionItemDetail(item.key)"
+                        >
+                          <i class="icon-[lucide--info] size-3.5" />
+                        </Button>
+                      </span>
+                      <Button
+                        variant="textonly"
+                        size="icon-sm"
+                        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+                        :aria-label="
+                          t('rightSidePanel.locateNodeFor', {
+                            item: item.label
+                          })
+                        "
+                        @click.stop="handleLocateNode(item.nodeId)"
+                      >
+                        <i class="icon-[lucide--locate] size-4" />
+                      </Button>
+                    </div>
+                    <TransitionCollapse>
+                      <p
+                        v-if="
+                          item.displayDetails &&
+                          isExecutionItemDetailExpanded(item.key)
+                        "
+                        :id="getExecutionItemDetailId(item.key)"
+                        class="m-0 mt-0.5 pr-10 text-2xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+                      >
+                        {{ item.displayDetails }}
+                      </p>
+                    </TransitionCollapse>
+                  </li>
+                </ul>
+              </div>
+              <div
+                v-else-if="group.type === 'execution'"
+                class="space-y-3 px-3"
+              >
+                <ErrorNodeCard
+                  v-for="card in group.cards"
+                  :key="card.id"
+                  :card="card"
                   :aria-current="
-                    isCardInSelection(item.cardId) ? 'true' : undefined
+                    isCardInSelection(card.id) ? 'true' : undefined
                   "
                   :class="
                     cn(
-                      'min-w-0',
-                      selectionEmphasisClass(isCardInSelection(item.cardId))
+                      selectionEmphasisClass(isCardInSelection(card.id)),
+                      isCardInSelection(card.id) && '-my-1 py-1'
                     )
                   "
-                >
-                  <div class="flex min-w-0 items-center gap-2">
-                    <span class="flex min-w-0 flex-1 items-center gap-1">
-                      <button
-                        v-tooltip.top="{
-                          value: item.displayDetails || undefined,
-                          showDelay: 300
-                        }"
-                        type="button"
-                        class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
-                        @click="handleLocateNode(item.nodeId)"
-                      >
-                        {{ item.label }}
-                      </button>
-                      <Button
-                        v-if="item.displayDetails"
-                        variant="textonly"
-                        size="icon-sm"
-                        :class="
-                          cn(
-                            'size-6 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset',
-                            isExecutionItemDetailExpanded(item.key) &&
-                              'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
-                          )
-                        "
-                        :aria-label="
-                          t('rightSidePanel.infoFor', { item: item.label })
-                        "
-                        :aria-controls="getExecutionItemDetailId(item.key)"
-                        :aria-expanded="isExecutionItemDetailExpanded(item.key)"
-                        @click.stop="toggleExecutionItemDetail(item.key)"
-                      >
-                        <i class="icon-[lucide--info] size-3.5" />
-                      </Button>
-                    </span>
-                    <Button
-                      variant="textonly"
-                      size="icon-sm"
-                      class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-                      :aria-label="
-                        t('rightSidePanel.locateNodeFor', {
-                          item: item.label
-                        })
-                      "
-                      @click.stop="handleLocateNode(item.nodeId)"
-                    >
-                      <i class="icon-[lucide--locate] size-4" />
-                    </Button>
-                  </div>
-                  <TransitionCollapse>
-                    <p
-                      v-if="
-                        item.displayDetails &&
-                        isExecutionItemDetailExpanded(item.key)
-                      "
-                      :id="getExecutionItemDetailId(item.key)"
-                      class="m-0 mt-0.5 pr-10 text-2xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
-                    >
-                      {{ item.displayDetails }}
-                    </p>
-                  </TransitionCollapse>
-                </li>
-              </ul>
-            </div>
-            <div v-else-if="group.type === 'execution'" class="space-y-3 px-3">
-              <ErrorNodeCard
-                v-for="card in group.cards"
-                :key="card.id"
-                :card="card"
-                :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
-                :class="
-                  cn(
-                    selectionEmphasisClass(isCardInSelection(card.id)),
-                    isCardInSelection(card.id) && '-my-1 py-1'
-                  )
-                "
-                @locate-node="handleLocateNode"
-                @copy-to-clipboard="copyToClipboard"
+                  @locate-node="handleLocateNode"
+                  @copy-to-clipboard="copyToClipboard"
+                />
+              </div>
+
+              <!-- Missing Models -->
+              <MissingModelCard
+                v-if="group.type === 'missing_model'"
+                :missing-model-groups="missingModelGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
+                @locate-model="handleLocateAssetNode"
               />
-            </div>
 
-            <!-- Missing Models -->
-            <MissingModelCard
-              v-if="group.type === 'missing_model'"
-              :missing-model-groups="missingModelGroups"
-              :highlighted-node-ids="selectionMatchedAssetNodeIds"
-              @locate-model="handleLocateAssetNode"
-            />
+              <!-- Missing Media -->
+              <MissingMediaCard
+                v-if="group.type === 'missing_media'"
+                :missing-media-groups="missingMediaGroups"
+                :highlighted-node-ids="selectionMatchedAssetNodeIds"
+                @locate-node="handleLocateAssetNode"
+              />
+            </ErrorCardSection>
+          </TransitionGroup>
+        </div>
 
-            <!-- Missing Media -->
-            <MissingMediaCard
-              v-if="group.type === 'missing_media'"
-              :missing-media-groups="missingMediaGroups"
-              :highlighted-node-ids="selectionMatchedAssetNodeIds"
-              @locate-node="handleLocateAssetNode"
+        <!-- Carousel position indicator -->
+        <div
+          v-if="carousel && filteredGroups.length > 1"
+          data-testid="error-carousel-dots"
+          class="flex justify-center pt-0.5"
+        >
+          <button
+            v-for="(group, index) in filteredGroups"
+            :key="group.groupKey"
+            type="button"
+            :aria-label="group.displayTitle"
+            :aria-current="index === activeSlide ? 'true' : undefined"
+            class="flex size-6 cursor-pointer appearance-none items-center justify-center border-0 bg-transparent p-0"
+            @click="scrollToSlide(index)"
+          >
+            <span
+              :class="
+                cn(
+                  'rounded-full transition-all',
+                  index === activeSlide ? 'size-2' : 'size-1.5',
+                  hasSelectionEmphasis &&
+                    selectionMatchedGroupKeys.has(group.groupKey)
+                    ? 'bg-primary-background-hover'
+                    : index === activeSlide
+                      ? 'bg-base-foreground'
+                      : 'bg-base-foreground/30'
+                )
+              "
             />
-          </ErrorCardSection>
-        </TransitionGroup>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { useElementSize, useScroll } from '@vueuse/core'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -356,6 +432,12 @@ interface ExecutionItemListEntry {
   label: string
   displayDetails?: string
 }
+
+const { showSearch = true, carousel } = defineProps<{
+  showSearch?: boolean
+  /** Render error groups as horizontally swipeable cards (narrow screens). */
+  carousel?: boolean
+}>()
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -484,6 +566,35 @@ const strip = computed(() => {
   }
 })
 
+// Matches the carousel track's gap-2 (8px) between slides
+const CAROUSEL_SLIDE_GAP_PX = 8
+const carouselRef = useTemplateRef<HTMLElement>('carouselRef')
+const { x: carouselScrollX } = useScroll(carouselRef)
+const { width: carouselWidth } = useElementSize(carouselRef)
+
+const activeSlide = computed(() => {
+  if (carouselWidth.value === 0) return 0
+  const stride = carouselWidth.value + CAROUSEL_SLIDE_GAP_PX
+  return Math.max(
+    0,
+    Math.min(
+      filteredGroups.value.length - 1,
+      Math.round(carouselScrollX.value / stride)
+    )
+  )
+})
+
+function scrollToSlide(index: number) {
+  const track = carouselRef.value
+  if (!track) return
+  // clientWidth, not the ResizeObserver-driven carouselWidth: on the
+  // immediate-watch mount path the observer has not delivered yet
+  track.scrollTo({
+    left: index * (track.clientWidth + CAROUSEL_SLIDE_GAP_PX),
+    behavior: 'smooth'
+  })
+}
+
 function isCardInSelection(cardId: string): boolean {
   return selectionMatchedCardIds.value.has(cardId)
 }
@@ -498,23 +609,32 @@ const selectionEmphasisSignature = computed(() =>
     : ''
 )
 
-/**
- * Selection acts as emphasis, not a filter: expand the groups containing
- * the selected nodes' errors and collapse the rest. When the emphasis ends
- * (selection cleared or moved to a node without errors), re-expand all
- * groups so the tab reads as the workflow overview again.
- */
+// Emphasis per layout: the list expands matched groups and collapses the
+// rest; the carousel never collapses (a collapsed slide reads as an empty
+// card) and snaps to the first matched slide instead.
 watch(
   selectionEmphasisSignature,
   (signature, previousSignature) => {
     if (!signature) {
       if (!previousSignature) return
+      // Restore regardless of layout: collapse state persists across the
+      // carousel (which ignores it), so a stale emphasis must not resurface
+      // when the panel returns to the list layout.
       for (const groupKey of Object.keys(collapseState)) {
         setSectionCollapsed(groupKey, false)
       }
       return
     }
     const matchedKeys = selectionMatchedGroupKeys.value
+    if (carousel) {
+      const matchedIndex = filteredGroups.value.findIndex((group) =>
+        matchedKeys.has(group.groupKey)
+      )
+      if (matchedIndex < 0) return
+      // nextTick: with immediate:true the carousel element isn't mounted yet
+      void nextTick(() => scrollToSlide(matchedIndex))
+      return
+    }
     for (const group of allErrorGroups.value) {
       setSectionCollapsed(group.groupKey, !matchedKeys.has(group.groupKey))
     }

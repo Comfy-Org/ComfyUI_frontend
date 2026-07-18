@@ -89,9 +89,10 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
   })
 }
 
-function renderList(pinia: TestingPinia) {
+function renderList(pinia: TestingPinia, props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
-  render(ErrorGroupList, {
+  const { rerender } = render(ErrorGroupList, {
+    props,
     global: {
       plugins: [PrimeVue, testI18n, pinia],
       stubs: {
@@ -101,7 +102,7 @@ function renderList(pinia: TestingPinia) {
       }
     }
   })
-  return { user }
+  return { user, rerender }
 }
 
 function createPinia() {
@@ -235,5 +236,69 @@ describe('ErrorGroupList selection emphasis', () => {
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  it('carousel ignores collapse state, renders no toggles, and snaps to matches', async () => {
+    const scrollTo = vi
+      .spyOn(Element.prototype, 'scrollTo')
+      .mockImplementation(() => {})
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+    const { user, rerender } = renderList(pinia)
+    const canvasStore = useCanvasStore(pinia)
+
+    const loaderSection = getSectionByTitle('Validation failed')
+    const [loaderHeader] = within(loaderSection).getAllByRole('button')
+    await user.click(loaderHeader)
+    expect(isSectionExpanded(loaderSection)).toBe(false)
+
+    await rerender({ carousel: true })
+
+    expect(
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode'),
+      'the carousel ignores collapse state carried over from the list'
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Collapse'),
+      'the carousel renders no collapse affordances'
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Expand')).not.toBeInTheDocument()
+
+    const sections = screen.getAllByTestId('error-group-execution')
+    const matchedIndex = 1
+    const nodeInSecondSlide = within(sections[matchedIndex]).queryByText(
+      'Missing connection'
+    )
+      ? SAMPLER_NODE
+      : LOADER_NODE
+
+    canvasStore.selectedItems = fromAny<
+      typeof canvasStore.selectedItems,
+      unknown
+    >([nodeInSecondSlide])
+    await waitFor(() => {
+      expect(
+        scrollTo,
+        'selection snaps to the matched slide, not slide 0'
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ left: matchedIndex * 8 })
+      )
+    })
+    expect(
+      within(getSectionByTitle('Validation failed')).getByText('LoaderNode'),
+      'slides stay expanded instead of collapsing'
+    ).toBeInTheDocument()
+
+    const dots = within(screen.getByTestId('error-carousel-dots')).getAllByRole(
+      'button'
+    )
+    expect(dots).toHaveLength(2)
+    scrollTo.mockClear()
+    await user.click(dots[0])
+    expect(scrollTo, 'dot buttons scroll to their slide').toHaveBeenCalledWith(
+      expect.objectContaining({ left: 0 })
+    )
+
+    scrollTo.mockRestore()
   })
 })

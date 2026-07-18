@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 import Dialogue from '@/components/common/Dialogue.vue'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import Button from '@/components/ui/button/Button.vue'
-import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -17,7 +17,7 @@ defineEmits<{ navigateControls: [] }>()
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
-const { setMode } = useAppMode()
+const { viewErrorsInGraph } = useViewErrorsInGraph()
 const executionErrorStore = useExecutionErrorStore()
 const { buildDocsUrl, staticUrls } = useExternalLink()
 const { allErrorGroups } = useErrorGroups('')
@@ -177,8 +177,8 @@ function copy(obj: unknown) {
       >
         {{ t('g.dismiss') }}
       </Button>
-      <Button variant="textonly" size="lg" @click="setMode('graph')">
-        {{ t('linearMode.viewGraph') }}
+      <Button variant="textonly" size="lg" @click="viewErrorsInGraph()">
+        {{ t('linearMode.fixErrors') }}
       </Button>
       <Button
         v-if="accessibleErrors.length"

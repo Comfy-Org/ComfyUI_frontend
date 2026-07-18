@@ -70,7 +70,7 @@
             :pt:gutter="
               cn(
                 'rounded-t-lg',
-                !(bottomPanelVisible && !focusMode) && 'hidden'
+                !(bottomPanelVisible && !isChromeHidden) && 'hidden'
               )
             "
             state-key="bottom-panel-splitter"
@@ -81,7 +81,7 @@
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
             <SplitterPanel
-              v-show="bottomPanelVisible && !focusMode"
+              v-show="bottomPanelVisible && !isChromeHidden"
               class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
             >
               <slot name="bottom-panel" />
@@ -131,6 +131,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useChromeVisibility } from '@/composables/useChromeVisibility'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -141,9 +142,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
@@ -156,7 +155,7 @@ const unifiedWidth = computed(() =>
   settingStore.get('Comfy.Sidebar.UnifiedWidth')
 )
 
-const { focusMode } = storeToRefs(workspaceStore)
+const { isChromeHidden } = useChromeVisibility()
 
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
@@ -189,7 +188,9 @@ const lastPanelVisible = computed(
  */
 const bothSidePanelsVisible = computed(
   () =>
-    !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
+    !isChromeHidden.value &&
+    sidebarPanelVisible.value &&
+    showOffsideSplitter.value
 )
 
 const centerPanelDefaultSize = computed(() =>
@@ -264,7 +265,7 @@ const splitterRefreshKey = computed(() => {
 })
 
 const firstPanelStyle = computed(() => {
-  if (focusMode.value) return { display: 'none' }
+  if (isChromeHidden.value) return { display: 'none' }
   if (sidebarLocation.value === 'left') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -272,7 +273,7 @@ const firstPanelStyle = computed(() => {
 })
 
 const lastPanelStyle = computed(() => {
-  if (focusMode.value) return { display: 'none' }
+  if (isChromeHidden.value) return { display: 'none' }
   if (sidebarLocation.value === 'right') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -296,7 +297,9 @@ const lastPanelStyle = computed(() => {
   [data-pc-name='splitterpanel'][style*='display: none'] + .p-splitter-gutter
 ),
 :deep(
-  .p-splitter-gutter + [data-pc-name='splitterpanel'][style*='display: none']
+  .p-splitter-gutter:has(
+    + [data-pc-name='splitterpanel'][style*='display: none']
+  )
 ) {
   display: none;
 }

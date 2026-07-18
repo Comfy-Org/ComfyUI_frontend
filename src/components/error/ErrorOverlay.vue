@@ -41,7 +41,7 @@
           >
             {{
               appMode
-                ? t('linearMode.error.goto')
+                ? t('linearMode.fixErrors')
                 : t('errorOverlay.viewDetails')
             }}
           </Button>

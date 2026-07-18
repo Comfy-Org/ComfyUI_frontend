@@ -56,7 +56,7 @@ const { overlayMessage, overlayTitle } = useErrorOverlayState()
         data-testid="linear-view-errors"
         @click="viewErrorsInGraph"
       >
-        {{ t('linearMode.error.goto') }}
+        {{ t('linearMode.fixErrors') }}
       </Button>
     </div>
   </div>

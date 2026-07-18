@@ -168,6 +168,10 @@ export const TestIds = {
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
   },
+  errorResolution: {
+    panel: 'error-resolution-panel',
+    back: 'error-resolution-back'
+  },
   linear: {
     centerPanel: 'linear-center-panel',
     mobile: 'linear-mobile',

@@ -39,9 +39,7 @@ const i18n = createI18n({
   messages: {
     en: {
       linearMode: {
-        error: {
-          goto: 'Show errors in graph'
-        },
+        fixErrors: 'Fix errors',
         mobileNoWorkflow: 'No workflow',
         runCount: 'Run count',
         viewJob: 'View job'
@@ -139,7 +137,7 @@ describe('LinearControls', () => {
       within(warning).getByText('KSampler is missing a required input: model')
     ).toBeInTheDocument()
     expect(
-      within(warning).getByRole('button', { name: 'Show errors in graph' })
+      within(warning).getByRole('button', { name: 'Fix errors' })
     ).toBeInTheDocument()
     expect(within(warning).queryByLabelText('Close')).not.toBeInTheDocument()
     const runButton = screen.getByRole('button', { name: 'Run' })
@@ -158,7 +156,7 @@ describe('LinearControls', () => {
     expect(description).toHaveTextContent(
       'KSampler is missing a required input: model'
     )
-    expect(description).not.toHaveTextContent('Show errors in graph')
+    expect(description).not.toHaveTextContent('Fix errors')
   })
 
   it.for([
@@ -171,7 +169,7 @@ describe('LinearControls', () => {
 
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'Show errors in graph' })
+        screen.queryByRole('button', { name: 'Fix errors' })
       ).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Run' })).not.toHaveAttribute(
         'aria-describedby'

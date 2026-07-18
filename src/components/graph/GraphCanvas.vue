@@ -161,6 +161,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
+import { useChromeVisibility } from '@/composables/useChromeVisibility'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
@@ -248,9 +249,8 @@ const selectionToolboxEnabled = computed(() =>
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
 })
-const showUI = computed(
-  () => !workspaceStore.focusMode && betaMenuEnabled.value
-)
+const { isChromeHidden } = useChromeVisibility()
+const showUI = computed(() => !isChromeHidden.value && betaMenuEnabled.value)
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 

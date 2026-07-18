@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="!workspaceStore.focusMode"
+    v-if="!isChromeHidden"
     class="ml-1 flex flex-col gap-1 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
@@ -159,6 +159,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import { useChromeVisibility } from '@/composables/useChromeVisibility'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
@@ -169,7 +170,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -183,7 +183,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
-const workspaceStore = useWorkspaceStore()
+const { isChromeHidden } = useChromeVisibility()
 const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
