@@ -69,7 +69,7 @@ function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
   const next = computed(() => {
     const index: OriginIndex = new Map()
     for (const t of graphTopologies(graphId)) {
-      if (t.originNodeId === UNASSIGNED_NODE_ID) continue
+      if (isFloatingTopology(t)) continue
       const key = originKey(t.originNodeId, t.originSlot)
       const links = index.get(key) ?? new Set<LinkTopology>()
       links.add(t)
@@ -83,9 +83,10 @@ function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
 ```
 
 The index spans both collections that `graphTopologies` yields, the keyed
-targets and the unkeyed side set, so a floating link with an assigned
-origin (one endpoint only) still reports its output as connected. A
-`SUBGRAPH_INPUT_ID` origin indexes like any other id.
+targets and the unkeyed side set. Floating links are skipped
+(`isFloatingTopology`): the queries see fully-assigned links only,
+matching the mirror they replace (Decision 6). A `SUBGRAPH_INPUT_ID`
+origin indexes like any other id.
 
 ## Decision 3: Two public queries, mirroring the input pair
 
@@ -122,6 +123,24 @@ disconnect check (`useSlotLinkInteraction`, where one store query replaces
 a mirror read plus a `slotFloatingLinks` scan), widget value propagation
 (`widgetValuePropagation`), and matchType link revalidation
 (`dynamicWidgets.changeOutputType`).
+
+## Decision 5: Wire connected state into the dots (the payoff)
+
+`NodeSlots.vue` passes `connected` to each slot:
+
+- input: `linkStore.isInputSlotConnected(rootGraphId, nodeId, index)`
+  (already available)
+- output: `linkStore.isOutputSlotConnected(rootGraphId, nodeId, index)`
+  (Decision 3)
+
+`InputSlot` and `OutputSlot` already forward `connected` to the
+`lg-slot--connected` class. `SlotConnectionDot` needs no prop of its own:
+the wrapper class is an ancestor styling hook
+(`.lg-slot--connected .slot-dot`), so the visual is one CSS rule away once
+the design-standards check (open question 3) picks it. Threading a
+`connected` prop into the dot before that would be plumbing with no
+consumer. `compatible` stays driven by the existing drag state
+(`useSlotLinkDragUIState`), which this phase leaves alone.
 
 ## Decision 6: Delete the mirror (implemented)
 
@@ -160,26 +179,10 @@ the pure helpers in `node/slotLinks.ts` (`outputHasLinks`,
 
 Extension migration map: presence → `node.isOutputConnected(slot)` /
 `slot.isConnected`; enumerate targets → `node.getOutputNodes(slot)`;
-mutate → `node.connect(...)` / `node.disconnectOutput(slot, target?)`.
-App/Vue code uses `useLinkStore().getOutputSlotLinks(...)` (reactive).
-
-## Decision 5: Wire connected state into the dots (the payoff)
-
-`NodeSlots.vue` passes `connected` to each slot:
-
-- input: `linkStore.isInputSlotConnected(rootGraphId, nodeId, index)`
-  (already available)
-- output: `linkStore.isOutputSlotConnected(rootGraphId, nodeId, index)`
-  (Decision 3)
-
-`InputSlot` and `OutputSlot` already forward `connected` to the
-`lg-slot--connected` class. `SlotConnectionDot` needs no prop of its own:
-the wrapper class is an ancestor styling hook
-(`.lg-slot--connected .slot-dot`), so the visual is one CSS rule away once
-the design-standards check (open question 3) picks it. Threading a
-`connected` prop into the dot before that would be plumbing with no
-consumer. `compatible` stays driven by the existing drag state
-(`useSlotLinkDragUIState`), which this phase leaves alone.
+enumerate links → `outputLinks(graph, node.id, slot)` / `outputLinkIds`
+(`node/slotLinks.ts`); mutate → `node.connect(...)` /
+`node.disconnectOutput(slot, target?)`. App/Vue code uses
+`useLinkStore().getOutputSlotLinks(...)` (reactive).
 
 ## Scope
 

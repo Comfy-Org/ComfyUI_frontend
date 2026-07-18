@@ -1128,13 +1128,8 @@ export class LGraphNode
 
     if (!this.graph) throw new NullGraphError()
 
-    // if there are connections, pass the data to the connections
-    const { links } = outputs[slot]
-    if (links) {
-      for (const id of links) {
-        const link = this.graph._links.get(id)
-        if (link) link.data = data
-      }
+    for (const link of outputLinks(this.graph, this.id, slot)) {
+      link.data = data
     }
   }
 
@@ -1152,13 +1147,8 @@ export class LGraphNode
 
     if (!this.graph) throw new NullGraphError()
 
-    // if there are connections, pass the data to the connections
-    const { links } = outputs[slot]
-    if (links) {
-      for (const id of links) {
-        const link = this.graph._links.get(id)
-        if (link) link.type = type
-      }
+    for (const link of outputLinks(this.graph, this.id, slot)) {
+      link.type = type
     }
   }
 

@@ -31,7 +31,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkTopology } from '@/types/linkTopology'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
@@ -624,17 +624,14 @@ function repairPrimitive(
   }
 
   const baseName = userRenamedTitle(primitiveNode) ?? validated.sourceWidgetName
-  const snapshot: SnapshotLink[] = (primitiveOutput.links ?? [])
-    .map((id) => subgraph.links.get(id))
-    .filter(
-      (l): l is NonNullable<typeof l> =>
-        l !== undefined && l.target_id !== UNASSIGNED_NODE_ID
-    )
-    .map((l) => ({
-      primitiveSlot: l.origin_slot,
-      targetNodeId: l.target_id,
-      targetSlot: l.target_slot
-    }))
+  const snapshot: SnapshotLink[] = primitiveOutputTopologies(
+    hostNode,
+    primitiveNode
+  ).map((topology) => ({
+    primitiveSlot: topology.originSlot,
+    targetNodeId: topology.targetNodeId,
+    targetSlot: topology.targetSlot
+  }))
 
   let newSubgraphInput: SubgraphInput | undefined
   try {

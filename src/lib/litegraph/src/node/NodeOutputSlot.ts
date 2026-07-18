@@ -21,7 +21,7 @@ import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   /** @deprecated Derived from the link store via a warning prototype getter; never written. */
-  declare readonly links?: readonly LinkId[] | null
+  declare readonly links: readonly LinkId[] | null
   _data?: unknown
   slot_index?: number
 
@@ -110,7 +110,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
  * writes throw in strict mode. First-party code uses the slotLinks helpers.
  */
 Object.defineProperty(NodeOutputSlot.prototype, 'links', {
-  get(this: NodeOutputSlot): LinkId[] | null {
+  get(this: NodeOutputSlot): readonly LinkId[] | null {
     warnDeprecated(
       'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
     )
@@ -121,7 +121,7 @@ Object.defineProperty(NodeOutputSlot.prototype, 'links', {
       this._node.id,
       this._node.outputs.indexOf(this)
     )
-    return ids.length ? ids : null
+    return ids.length ? Object.freeze(ids) : null
   },
   configurable: true,
   enumerable: false
