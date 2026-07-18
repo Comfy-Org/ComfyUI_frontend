@@ -108,7 +108,7 @@
         </ul>
 
         <div class="mt-4">
-          <a href="https://comfy.org/privacy" target="_blank">
+          <a href="https://comfy.org/privacy-policy" target="_blank">
             {{ $t('install.settings.dataCollectionDialog.viewFullPolicy') }}
           </a>
         </div>
