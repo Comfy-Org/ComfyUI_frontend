@@ -112,5 +112,6 @@ export interface BillingContext extends BillingState, BillingActions {
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
 }
