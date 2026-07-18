@@ -148,8 +148,12 @@ function _useFirstRunTourController() {
     stopRunClick?.()
     const onClick = (event: MouseEvent) => {
       const target = event.target
-      if (target instanceof Element && target.closest(RUN_BUTTON_SELECTOR))
-        void advance()
+      if (!(target instanceof Element)) return
+      if (!target.closest(RUN_BUTTON_SELECTOR)) return
+      if (gateRunClick()) return
+      // A terminal Run has no next step; the run outcome ends the tour.
+      if (runIsTerminalStep()) return
+      void advance()
     }
     document.addEventListener('click', onClick, true)
     stopRunClick = () => document.removeEventListener('click', onClick, true)
@@ -270,12 +274,13 @@ function _useFirstRunTourController() {
   }
 
   /**
-   * Gate the Run step: no-funds users get the upgrade modal and the tour ends, with
-   * the nudge deferring itself until that modal closes.
+   * Gate the Run click: no-funds users get the upgrade modal and the tour ends, with
+   * the nudge deferring itself until that modal closes. Keyed to the click rather
+   * than to arriving at the step, so a funded user is never paywalled on entry.
    *
    * @returns True when gated.
    */
-  function gateRunStep(): boolean {
+  function gateRunClick(): boolean {
     if (hasFunds()) return false
 
     useBillingContext().showSubscriptionDialog({ reason: 'out_of_credits' })
@@ -284,7 +289,7 @@ function _useFirstRunTourController() {
     return true
   }
 
-  /** Set up the current step: gate the run, arm the run-click, spotlight the prompt. */
+  /** Set up the current step: arm the run-click, spotlight the prompt. */
   async function enterStep() {
     stopRunClick?.()
     stopRunClick = undefined
@@ -292,11 +297,7 @@ function _useFirstRunTourController() {
     const step = store.currentStep
     if (!step) return
 
-    if (step.kind === 'run') {
-      if (gateRunStep()) return
-      // A terminal Run has no next step; let the run outcome end the tour.
-      if (!runIsTerminalStep()) listenForRunClick()
-    }
+    if (step.kind === 'run') listenForRunClick()
 
     // Defensive: the tour never enters a subgraph, but the user may have opened one.
     restoreView()

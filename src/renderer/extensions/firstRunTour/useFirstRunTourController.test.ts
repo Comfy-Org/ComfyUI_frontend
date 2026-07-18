@@ -463,13 +463,61 @@ describe('useFirstRunTourController.start', () => {
     expect(tourReports('completed')).toHaveLength(1)
   })
 
-  it('spotlights the collapsed port on the prompt step without entering a subgraph', async () => {
+  it('reports the step the user skipped on', async () => {
+    mocks.steps = [
+      { kind: 'upload', nodeId: toNodeId(1) },
+      { kind: 'run', nodeId: null }
+    ]
+
+    const controller = useFirstRunTourController()
+    await controller.start('image_z_image_turbo')
+    controller.end('skip')
+
+    expect(tourReports('skipped')).toEqual([
+      {
+        tour: 'firstRun',
+        template_id: 'image_z_image_turbo',
+        step_key: 'upload',
+        step_number: 1,
+        step_count: 2
+      }
+    ])
+  })
+
+  it('reports no skip when the tour has no current step', () => {
+    mocks.steps = []
+    mocks.isActive.value = true
+
+    useFirstRunTourController().end('skip')
+
+    expect(tourReports('skipped')).toHaveLength(0)
+  })
+
+  it('reports each step as it is shown', async () => {
+    mocks.steps = [
+      { kind: 'upload', nodeId: toNodeId(1) },
+      { kind: 'run', nodeId: null }
+    ]
+
+    const controller = useFirstRunTourController()
+    await controller.start('image_z_image_turbo')
+
+    expect(tourReports('step_shown')).toEqual([
+      {
+        tour: 'firstRun',
+        template_id: 'image_z_image_turbo',
+        step_key: 'upload',
+        step_number: 1,
+        step_count: 2
+      }
+    ])
+  })
+
+  it('restores the root view on the prompt step so a manually opened subgraph cannot strand it', async () => {
     mocks.steps = [{ kind: 'prompt', nodeId: null, prompt: promptRole }]
 
     await useFirstRunTourController().start()
 
-    // The tour never opens the subgraph; the prompt step restores the root view
-    // so the collapsed host's exposed port stays spotlit.
     expect(mocks.restoreView).toHaveBeenCalled()
   })
 
@@ -487,7 +535,7 @@ describe('useFirstRunTourController.start', () => {
     expect(mocks.engineNext).not.toHaveBeenCalled()
   })
 
-  it('gates a no-funds user at the Run step: upgrade modal, nudge, end', async () => {
+  it('gates a no-funds user when they click Run: upgrade modal, nudge, end', async () => {
     mocks.hasFunds = false
     mocks.steps = [{ kind: 'run', nodeId: null }]
     // The gate opens the real upgrade modal, so the paywall watcher fires too;
@@ -497,6 +545,11 @@ describe('useFirstRunTourController.start', () => {
     })
 
     await useFirstRunTourController().start('image_z_image_turbo')
+
+    // Arriving at the Run step must not paywall the user on its own.
+    expect(mocks.showSubscriptionDialog).not.toHaveBeenCalled()
+
+    clickRunButton()
     await nextTick()
 
     expect(mocks.showSubscriptionDialog).toHaveBeenCalledWith({
@@ -517,8 +570,22 @@ describe('useFirstRunTourController.start', () => {
     mocks.steps = [{ kind: 'run', nodeId: null }]
 
     await useFirstRunTourController().start()
+    clickRunButton()
 
     expect(mocks.storeEnd).toHaveBeenCalled()
+  })
+
+  it('does not advance past Run when the click is gated', async () => {
+    mocks.hasFunds = false
+    mocks.steps = [
+      { kind: 'run', nodeId: null },
+      { kind: 'result', nodeId: toNodeId(9) }
+    ]
+
+    await useFirstRunTourController().start()
+    clickRunButton()
+
+    expect(mocks.engineNext).not.toHaveBeenCalled()
   })
 
   it('lets a funded user reach the Run step without reporting a run yet', async () => {
