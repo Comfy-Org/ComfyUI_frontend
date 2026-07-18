@@ -105,19 +105,31 @@ const personalUiConfig: MenuUiConfig = {
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
+const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
+const mockPlanSlug = ref('team-monthly')
+
 const mockSubscription = computed<SubscriptionInfo | null>(() =>
   mockHasSubscription.value
     ? {
         isActive: true,
-        tier: 'PRO',
+        tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
-        planSlug: 'team-monthly',
+        planSlug: mockPlanSlug.value,
         renewalDate: RENEWAL_DATE_ISO,
         endDate: END_DATE_ISO,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
       }
     : null
+)
+
+// Mirrors useBillingContext's plan-identity derivation: a credit stop or a
+// legacy `team-` slug marks a team plan.
+const mockIsTeamPlan = computed(
+  () =>
+    !mockIsInPersonalWorkspace.value &&
+    (mockCurrentTeamCreditStop.value !== null ||
+      (mockSubscription.value?.planSlug?.startsWith('team-') ?? false))
 )
 
 const mockInitialize = vi.fn()
@@ -128,6 +140,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
@@ -284,6 +297,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ]
     mockUserEmail.value = 'me@example.com'
     mockUiConfig.value = ownerUiConfig
+    mockSubscriptionTier.value = 'PRO'
+    mockPlanSlug.value = 'team-monthly'
     mockSubscriptionDuration.value = 'MONTHLY'
     mockTeamCreditStops.value = teamCreditStops
     mockCurrentTeamCreditStop.value = {
@@ -554,6 +569,23 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Leave Workspace' })
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the personal plan identity when a team workspace holds a personal subscription', () => {
+    mockSubscriptionTier.value = 'STANDARD'
+    mockPlanSlug.value = 'standard-annual'
+    mockSubscriptionDuration.value = 'ANNUAL'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Standard Yearly')).toBeInTheDocument()
+    expect(screen.queryByText('Team')).not.toBeInTheDocument()
+    // Standard yearly per-month price, without the per-member team unit.
+    expect(screen.getByText('$16')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo')).toBeInTheDocument()
+    expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
+    expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
+    expect(screen.queryByText('Invite members')).not.toBeInTheDocument()
   })
 
   it('lists the four team perks under the Pro-inclusive heading', () => {
