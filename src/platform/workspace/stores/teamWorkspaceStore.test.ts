@@ -674,14 +674,18 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].name).toBe('User One')
     })
 
-    it('fetchMembers returns empty for personal workspace', async () => {
+    it('fetchMembers supports a personal workspace with Team entitlement', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [],
+        pagination: { offset: 0, limit: 50, total: 0 }
+      })
       const store = useTeamWorkspaceStore()
       await store.initialize()
 
       const result = await store.fetchMembers()
 
       expect(result).toEqual([])
-      expect(mockWorkspaceApi.listMembers).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalled()
     })
 
     it('removeMember removes from local list', async () => {
@@ -1004,13 +1008,15 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
     })
 
-    it('does not load members for a personal workspace', async () => {
+    it('loads members for an entitled personal workspace', async () => {
+      mockMembersResponse()
       const store = useTeamWorkspaceStore()
       await store.initialize()
 
       await store.ensureMembersLoaded()
 
-      expect(mockWorkspaceApi.listMembers).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+      expect(store.members).toHaveLength(1)
     })
 
     it('logs a failed request and retries on the next call', async () => {
@@ -1158,6 +1164,17 @@ describe('useTeamWorkspaceStore', () => {
   })
 
   describe('invite actions', () => {
+    it('fetchPendingInvites supports a personal workspace with Team entitlement', async () => {
+      mockWorkspaceApi.listInvites.mockResolvedValue({ invites: [] })
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const result = await store.fetchPendingInvites()
+
+      expect(result).toEqual([])
+      expect(mockWorkspaceApi.listInvites).toHaveBeenCalled()
+    })
+
     it('fetchPendingInvites updates active workspace invites', async () => {
       const mockInvites = [
         {
