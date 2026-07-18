@@ -141,18 +141,52 @@ function declaredInputBucket(spec: unknown): WidgetTypeBucket | null {
   return bucketOfType(getInputSpecType(spec as InputSpec))
 }
 
+/**
+ * Dynamic container inputs (DynamicCombo, Autogrow, ... — all COMFY_*_V3
+ * io types) are the only inputs that expand into dotted runtime slot names
+ * like 'model.images.image_1'.
+ */
+function isDynamicContainerSpec(spec: unknown): boolean {
+  return (
+    Array.isArray(spec) &&
+    typeof spec[0] === 'string' &&
+    spec[0].startsWith('COMFY_')
+  )
+}
+
+/**
+ * Check a dependency name against def inputs. An undotted name must be an
+ * exact def input key; a dotted name references a runtime-expanded slot,
+ * which cannot be resolved statically, so its first segment must be a
+ * dynamic container input.
+ */
+function dependencyProblem(
+  name: string,
+  inputs: Record<string, unknown>
+): string | null {
+  const dotIndex = name.indexOf('.')
+  if (dotIndex === -1) {
+    return inputs[name] ? null : `has no def input '${name}'`
+  }
+  const parent = name.slice(0, dotIndex)
+  const spec = inputs[parent]
+  if (!spec) return `has no def input '${parent}'`
+  if (!isDynamicContainerSpec(spec)) {
+    return `parent def input '${parent}' is not a dynamic input`
+  }
+  return null
+}
+
 function validateBadgeAgainstDef(
   badge: PriceBadge,
   def: ComfyNodeDef
 ): string | null {
   const inputs = { ...def.input?.required, ...def.input?.optional }
   for (const widget of badge.depends_on.widgets) {
-    const [parent] = widget.name.split('.')
-    const spec = inputs[parent]
-    if (!spec) return `widget '${widget.name}' has no def input '${parent}'`
-    const isNested = widget.name.includes('.')
-    if (!isNested) {
-      const declared = declaredInputBucket(spec)
+    const problem = dependencyProblem(widget.name, inputs)
+    if (problem) return `widget '${widget.name}' ${problem}`
+    if (!widget.name.includes('.')) {
+      const declared = declaredInputBucket(inputs[widget.name])
       if (declared === null) {
         return `widget '${widget.name}' def input spec is malformed`
       }
@@ -161,13 +195,13 @@ function validateBadgeAgainstDef(
       }
     }
   }
-  for (const name of [
-    ...badge.depends_on.inputs,
-    ...badge.depends_on.input_groups
-  ]) {
-    const [parent] = name.split('.')
-    if (!inputs[parent])
-      return `dependency '${name}' has no def input '${parent}'`
+  for (const name of badge.depends_on.inputs) {
+    const problem = dependencyProblem(name, inputs)
+    if (problem) return `input '${name}' ${problem}`
+  }
+  for (const name of badge.depends_on.input_groups) {
+    const problem = dependencyProblem(name, inputs)
+    if (problem) return `input group '${name}' ${problem}`
   }
   return null
 }

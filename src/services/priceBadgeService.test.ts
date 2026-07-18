@@ -346,20 +346,87 @@ describe('priceBadgeService', () => {
     expect(defs['PartnerNode'].price_badge).toBeUndefined()
   })
 
-  it('validates dotted dependencies against the first segment', async () => {
-    const badge = {
-      ...validBadge,
-      depends_on: {
-        widgets: [],
-        inputs: ['resolution.width'],
-        input_groups: []
-      }
+  describe('input and input_group dependency validation', () => {
+    // Def with a plain combo (resolution), a plain INT (seed), a dynamic
+    // combo (model), and a top-level autogrow group (videos).
+    function makeDynamicDefs(): Record<string, ComfyNodeDef> {
+      const defs = makeDefs()
+      const required = (
+        defs['PartnerNode'] as unknown as {
+          input: { required: Record<string, unknown> }
+        }
+      ).input.required
+      required['model'] = ['COMFY_DYNAMICCOMBO_V3', { options: [] }]
+      required['videos'] = ['COMFY_AUTOGROW_V3', { template: {} }]
+      return defs
     }
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
-    expect(defs['PartnerNode'].price_badge).toBeDefined()
+
+    it.for([
+      {
+        case: 'accepts an input matching a def key exactly',
+        depends: { inputs: ['seed'] },
+        applied: true
+      },
+      {
+        case: 'rejects a dotted input whose parent is not a dynamic input',
+        depends: { inputs: ['resolution.width'] },
+        applied: false
+      },
+      {
+        case: 'accepts a dotted input under a dynamic combo',
+        depends: { inputs: ['model.style_reference'] },
+        applied: true
+      },
+      {
+        case: 'accepts a group matching a top-level autogrow def key',
+        depends: { input_groups: ['videos'] },
+        applied: true
+      },
+      {
+        case: 'accepts a dotted group under a dynamic combo',
+        depends: { input_groups: ['model.images'] },
+        applied: true
+      },
+      {
+        case: 'rejects a group with no matching def input',
+        depends: { input_groups: ['missing_group'] },
+        applied: false
+      },
+      {
+        case: 'rejects a dotted group whose parent is not a dynamic input',
+        depends: { input_groups: ['seed.videos'] },
+        applied: false
+      },
+      {
+        case: 'rejects a dotted widget whose parent is not a dynamic input',
+        depends: { widgets: [{ name: 'resolution.width', type: 'INT' }] },
+        applied: false
+      },
+      {
+        case: 'accepts a dotted widget under a dynamic combo',
+        depends: { widgets: [{ name: 'model.duration', type: 'COMBO' }] },
+        applied: true
+      }
+    ])('$case', async ({ depends, applied }) => {
+      const badge = {
+        ...validBadge,
+        depends_on: {
+          widgets: [],
+          inputs: [],
+          input_groups: [],
+          ...depends
+        }
+      }
+      vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
+      const { applyPriceBadges } = await importService()
+      const defs = makeDynamicDefs()
+      await applyPriceBadges(defs)
+      if (applied) {
+        expect(defs['PartnerNode'].price_badge).toBeDefined()
+      } else {
+        expect(defs['PartnerNode'].price_badge).toBeUndefined()
+      }
+    })
   })
 
   it('fails open on HTTP error', async () => {
