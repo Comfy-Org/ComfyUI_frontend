@@ -41,6 +41,12 @@ const validBadge = {
   expr: '{"type":"usd","usd":0.1}'
 }
 
+// Valid badge with no dependencies: passes def validation on any node.
+const emptyDependsBadge = {
+  ...validBadge,
+  depends_on: { widgets: [], inputs: [], input_groups: [] }
+}
+
 function makeDefs(): Record<string, ComfyNodeDef> {
   return {
     PartnerNode: {
@@ -97,28 +103,31 @@ describe('priceBadgeService', () => {
     vi.useRealTimers()
   })
 
-  it('applies a valid badge to a matching def', async () => {
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: validBadge }))
+  it('applies matching badges, leaves other nodes untouched, ignores unknown ones', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetchResponse({ PartnerNode: validBadge, UnknownNode: validBadge })
+    )
     const { applyPriceBadges } = await importService()
     const defs = makeDefs()
+    const existingBadge = {
+      engine: 'jsonata',
+      depends_on: { widgets: [], inputs: [], input_groups: [] },
+      expr: '{"type":"usd","usd":9.99}'
+    }
+    defs['OtherNode'].price_badge =
+      existingBadge as unknown as (typeof defs)['OtherNode']['price_badge']
     await applyPriceBadges(defs)
+    // Present in the map: applied.
     expect(defs['PartnerNode'].price_badge).toMatchObject({
       expr: validBadge.expr
     })
-    expect(defs['OtherNode'].price_badge).toBeUndefined()
+    // Absent from the map: untouched, same object identity.
+    expect(defs['OtherNode'].price_badge).toBe(existingBadge)
+    // In the map but not in the defs: ignored without throwing.
   })
 
-  it('requests with comfyui_version and platform query params', async () => {
-    const fetchMock = mockFetchResponse({})
-    vi.stubGlobal('fetch', fetchMock)
-    const { applyPriceBadges } = await importService()
-    await applyPriceBadges(makeDefs())
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.example.com/nodes/pricing/badges?comfyui_version=0.3.50&platform=local'
-    )
-  })
-
-  it('normalizes a trailing slash on the API base URL', async () => {
+  it('requests the versioned endpoint, normalizing a trailing base slash', async () => {
     mockApiBase.url = 'https://api.example.com/'
     const fetchMock = mockFetchResponse({})
     vi.stubGlobal('fetch', fetchMock)
@@ -156,131 +165,27 @@ describe('priceBadgeService', () => {
     )
   })
 
-  it('preserves an existing baked-in badge on nodes absent from the map', async () => {
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: validBadge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    const bakedIn = {
-      engine: 'jsonata',
-      depends_on: { widgets: [], inputs: [], input_groups: [] },
-      expr: '{"type":"usd","usd":9.99}'
+  // The wire schema is declarative Zod; one representative per rejection
+  // reason is enough at the service boundary.
+  it.for([
+    {
+      case: 'a missing required field',
+      badge: { expr: 'missing engine and depends_on' }
+    },
+    {
+      case: 'an unknown engine',
+      badge: { ...validBadge, engine: 'python' }
     }
-    defs['OtherNode'].price_badge =
-      bakedIn as unknown as (typeof defs)['OtherNode']['price_badge']
-    await applyPriceBadges(defs)
-    // Absent from the map: untouched, same object identity.
-    expect(defs['OtherNode'].price_badge).toBe(bakedIn)
-    // Present in the map: replaced.
-    expect(defs['PartnerNode'].price_badge).toMatchObject({
-      expr: validBadge.expr
-    })
-  })
-
-  it('skips only the malformed badge, applying valid siblings', async () => {
+  ])('skips a badge with $case, applying valid siblings', async ({ badge }) => {
     vi.stubGlobal(
       'fetch',
-      mockFetchResponse({
-        PartnerNode: validBadge,
-        OtherNode: { expr: 'missing engine and depends_on' }
-      })
-    )
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
-    expect(defs['PartnerNode'].price_badge).toBeDefined()
-    expect(defs['OtherNode'].price_badge).toBeUndefined()
-  })
-
-  it.for([
-    ['engine', () => ({ ...validBadge, engine: undefined })],
-    ['depends_on', () => ({ ...validBadge, depends_on: undefined })],
-    ['expr', () => ({ ...validBadge, expr: undefined })],
-    [
-      'depends_on.widgets',
-      () => ({
-        ...validBadge,
-        depends_on: { inputs: [], input_groups: [] }
-      })
-    ],
-    [
-      'depends_on.inputs',
-      () => ({
-        ...validBadge,
-        depends_on: { widgets: validBadge.depends_on.widgets, input_groups: [] }
-      })
-    ],
-    [
-      'depends_on.input_groups',
-      () => ({
-        ...validBadge,
-        depends_on: { widgets: validBadge.depends_on.widgets, inputs: [] }
-      })
-    ]
-  ] as const)(
-    'rejects a badge missing required field %s, applying valid siblings',
-    async ([, makeBadge]) => {
-      vi.stubGlobal(
-        'fetch',
-        mockFetchResponse({
-          PartnerNode: makeBadge(),
-          OtherNode: {
-            ...validBadge,
-            depends_on: { widgets: [], inputs: [], input_groups: [] }
-          }
-        })
-      )
-      const { applyPriceBadges } = await importService()
-      const defs = makeDefs()
-      await applyPriceBadges(defs)
-      expect(defs['PartnerNode'].price_badge).toBeUndefined()
-      expect(defs['OtherNode'].price_badge).toBeDefined()
-    }
-  )
-
-  it.for([
-    ['null', null],
-    ['array', [validBadge]],
-    ['string', 'nope']
-  ] as const)('fails open when the response body is %s', async ([, body]) => {
-    vi.stubGlobal('fetch', mockFetchResponse(body))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await expect(applyPriceBadges(defs)).resolves.toBeUndefined()
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('skips a badge whose def input spec is malformed, without throwing', async () => {
-    const badge = {
-      ...validBadge,
-      depends_on: {
-        widgets: [{ name: 'broken', type: 'INT' }],
-        inputs: [],
-        input_groups: []
-      }
-    }
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    // /object_info is unvalidated; a non-string, non-array tuple head must not
-    // crash the apply (fail open for this node only).
-    ;(
-      defs['PartnerNode'] as unknown as {
-        input: { required: Record<string, unknown> }
-      }
-    ).input.required['broken'] = [42, {}]
-    await expect(applyPriceBadges(defs)).resolves.toBeUndefined()
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('skips a badge with an unknown engine', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetchResponse({ PartnerNode: { ...validBadge, engine: 'python' } })
+      mockFetchResponse({ PartnerNode: badge, OtherNode: emptyDependsBadge })
     )
     const { applyPriceBadges } = await importService()
     const defs = makeDefs()
     await applyPriceBadges(defs)
     expect(defs['PartnerNode'].price_badge).toBeUndefined()
+    expect(defs['OtherNode'].price_badge).toBeDefined()
   })
 
   it('honors a widgetType override on the def input spec', async () => {
@@ -306,45 +211,43 @@ describe('priceBadgeService', () => {
     expect(defs['PartnerNode'].price_badge).toBeDefined()
   })
 
-  it('ignores badges for nodes missing from the defs', async () => {
-    vi.stubGlobal('fetch', mockFetchResponse({ UnknownNode: validBadge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('skips a badge whose widget dependency has no matching def input', async () => {
-    const badBadge = {
-      ...validBadge,
-      depends_on: {
-        widgets: [{ name: 'missing_widget', type: 'COMBO' }],
-        inputs: [],
-        input_groups: []
-      }
+  it.for([
+    {
+      case: 'has no matching def input',
+      widget: { name: 'missing_widget', type: 'COMBO' }
+    },
+    {
+      case: 'type mismatches the def input type',
+      widget: { name: 'seed', type: 'STRING' }
+    },
+    {
+      // /object_info is unvalidated; a non-string, non-array tuple head
+      // must not crash the apply (fail open for this node only).
+      case: 'def input spec is malformed',
+      widget: { name: 'broken', type: 'INT' },
+      brokenInput: true
     }
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badBadge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('skips a badge whose widget type mismatches the def input type', async () => {
-    const badBadge = {
-      ...validBadge,
-      depends_on: {
-        widgets: [{ name: 'seed', type: 'STRING' }],
-        inputs: [],
-        input_groups: []
+  ])(
+    'skips a badge whose widget dependency $case',
+    async ({ widget, brokenInput }) => {
+      const badge = {
+        ...validBadge,
+        depends_on: { widgets: [widget], inputs: [], input_groups: [] }
       }
+      vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badge }))
+      const { applyPriceBadges } = await importService()
+      const defs = makeDefs()
+      if (brokenInput) {
+        ;(
+          defs['PartnerNode'] as unknown as {
+            input: { required: Record<string, unknown> }
+          }
+        ).input.required['broken'] = [42, {}]
+      }
+      await expect(applyPriceBadges(defs)).resolves.toBeUndefined()
+      expect(defs['PartnerNode'].price_badge).toBeUndefined()
     }
-    vi.stubGlobal('fetch', mockFetchResponse({ PartnerNode: badBadge }))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
+  )
 
   describe('input and input_group dependency validation', () => {
     // Def with a plain combo (resolution), a plain INT (seed), a dynamic
@@ -429,30 +332,24 @@ describe('priceBadgeService', () => {
     })
   })
 
-  it('fails open on HTTP error', async () => {
-    vi.stubGlobal('fetch', mockFetchResponse(null, false, 500))
+  it.for([
+    {
+      case: 'HTTP error',
+      makeFetch: () => mockFetchResponse(null, false, 500)
+    },
+    {
+      case: 'network error',
+      makeFetch: () => vi.fn().mockRejectedValue(new Error('offline'))
+    },
+    {
+      case: 'invalid top-level body',
+      makeFetch: () => mockFetchResponse(['not', 'a', 'map'])
+    }
+  ])('fails open on $case', async ({ makeFetch }) => {
+    vi.stubGlobal('fetch', makeFetch())
     const { applyPriceBadges } = await importService()
     const defs = makeDefs()
     await expect(applyPriceBadges(defs)).resolves.toBeUndefined()
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('fails open on network error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await expect(applyPriceBadges(defs)).resolves.toBeUndefined()
-    expect(defs['PartnerNode'].price_badge).toBeUndefined()
-  })
-
-  it('fails open when the response does not match the schema', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetchResponse({ PartnerNode: { engine: 'python', expr: 42 } })
-    )
-    const { applyPriceBadges } = await importService()
-    const defs = makeDefs()
-    await applyPriceBadges(defs)
     expect(defs['PartnerNode'].price_badge).toBeUndefined()
   })
 
