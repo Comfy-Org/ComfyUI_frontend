@@ -482,7 +482,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://www.comfy.org/discord',
+        'https://discord.com/invite/comfyorg',
         '_blank',
         'noopener,noreferrer'
       )
