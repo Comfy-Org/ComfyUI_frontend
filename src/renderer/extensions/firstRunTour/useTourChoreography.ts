@@ -18,15 +18,14 @@ const SETTLE_WATCHDOG_MS = TOUR_FOCUS_DURATION_MS + 200
 
 interface ChoreographyOptions {
   reduceMotion: Ref<boolean>
-  /** Frame the current step's target. Called once the mark has finished gliding. */
+  /** Called once the mark has finished gliding. */
   frameTarget: () => void
   /** True when the step points at the toolbar, so the camera must not move. */
   isStatic: Ref<boolean>
 }
 
 /**
- * Sequences a step's motion so only one thing moves at a time: the mark glides, the
- * camera frames it, then the copy fades in once the transform holds still.
+ * Sequences a step's motion so only one thing moves at a time.
  *
  * The camera is watched rather than counted out: `animateToBounds` reports no
  * completion and cannot be cancelled, so an unchanged transform is the only honest
@@ -37,10 +36,10 @@ export function useTourChoreography({
   frameTarget,
   isStatic
 }: ChoreographyOptions) {
-  /** Scrim and rings are drawn; false during the intro preview. */
+  /** False during the intro preview, so the workflow shows undimmed first. */
   const revealed = ref(false)
   const copyVisible = ref(false)
-  /** True once this step's framing is final, so the mark's side can latch. */
+  /** The mark's side latches only once framing is final. */
   const cameraSettled = ref(false)
   /** Pinned while the canvas moves, so the mark rides it rather than chasing it. */
   const markGlides = ref(false)
@@ -111,7 +110,6 @@ export function useTourChoreography({
     cameraSettled.value = false
   }
 
-  /** Open a fresh tour on the undimmed workflow before dimming to the first target. */
   function openTour() {
     resetStep()
     revealed.value = false

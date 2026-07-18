@@ -64,11 +64,8 @@ interface SpotlightRectsOptions {
 }
 
 /**
- * Per-frame source of the rects the overlay draws: the scrim's holes, the current
- * step's rings, and the region the mark may occupy.
- *
- * Rects are only published when the geometry actually changes, so a still canvas costs
- * one layout read per frame and no re-render.
+ * Per-frame source of the rects the overlay draws. Published only when the geometry
+ * changes, so a still canvas costs one layout read per frame and no re-render.
  */
 export function useTourSpotlightRects({
   isRunStep,

@@ -45,7 +45,6 @@ function roleAnchorIds(roles: ResolvedRoles): NodeId[] {
   ].filter((id): id is NodeId => id != null)
 }
 
-/** The live graph holds the resolved anchors and the canvas has a usable transform. */
 function liveGraphReady(roles: ResolvedRoles): boolean {
   return nodesPresent(roleAnchorIds(roles)) && canvasTransformValid()
 }
@@ -69,7 +68,6 @@ function _useFirstRunTourController() {
     desktop: useDesktopLayout()
   }
 
-  /** True while the loader is up: template chosen, tour not yet started. */
   const isPreparing = ref(false)
 
   /** Retained from `start` so completion/skip telemetry carries the same tags. */
@@ -77,23 +75,15 @@ function _useFirstRunTourController() {
   let activeShape: OnboardingTourShape = 'other'
   /** Guards RunTriggered against re-firing on a second run. */
   let runReported = false
-  /** Stops the per-tour run watcher; set while a tour is live. */
   let stopRunListener: (() => void) | undefined
-  /** Stops the Run-button click listener; set only while on the Run step. */
   let stopRunClick: (() => void) | undefined
   /** Guards the post-run outcome so only the first finished run acts. */
   let runOutcomeHandled = false
 
-  /** True when the sequence has no step after Run, so a finished run ends the tour. */
   function runIsTerminalStep(): boolean {
     return store.steps.at(-1)?.kind === 'run'
   }
 
-  /**
-   * Handle the run finishing: capture the media on success, report the real status,
-   * and surface the nudge. When Run is the last step, this completes the tour;
-   * otherwise the Result step does.
-   */
   function handleRunOutcome(status: OnboardingTourRunStatus) {
     // The Run click advances to Result before the run reports, so accept either.
     const step = store.currentStep?.kind
@@ -173,18 +163,12 @@ function _useFirstRunTourController() {
     return isOnboardingCandidate(onboardingDeps)
   }
 
-  /** Mirror the engine's position into our view store (the engine owns the sequence). */
+  /** The engine owns the sequence; this store only mirrors its position. */
   function syncFromEngine() {
     store.isActive = engine.activeTour === 'firstRun'
     store.stepIndex = engine.countedStepIdx
   }
 
-  /**
-   * Serialize the loaded graph and run the tour on it. Aborts cleanly if gating fails
-   * or no workflow is active.
-   *
-   * @param entry Where the tour was launched from, for telemetry.
-   */
   async function start(
     templateId?: string,
     entry: OnboardingTourEntry = 'getting_started'
@@ -273,13 +257,7 @@ function _useFirstRunTourController() {
     return useBillingContext().subscription.value?.hasFunds === true
   }
 
-  /**
-   * Gate the Run click: no-funds users get the upgrade modal and the tour ends, with
-   * the nudge deferring itself until that modal closes. Keyed to the click rather
-   * than to arriving at the step, so a funded user is never paywalled on entry.
-   *
-   * @returns True when gated.
-   */
+  /** Keyed to the click, not step entry, so a funded user is never paywalled early. */
   function gateRunClick(): boolean {
     if (hasFunds()) return false
 
@@ -289,7 +267,6 @@ function _useFirstRunTourController() {
     return true
   }
 
-  /** Set up the current step: arm the run-click, spotlight the prompt. */
   async function enterStep() {
     stopRunClick?.()
     stopRunClick = undefined
