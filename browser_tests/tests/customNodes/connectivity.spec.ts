@@ -39,6 +39,18 @@ const CONNECT_REJECTED_ALLOWLIST: string[] = [
 // A pack's own serialize/configure hooks may drop links it manages itself
 // (reproducible manually: wire, save, reload - link gone). Pack behavior on
 // record, not frontend regressions.
+// Pairs whose creation/wiring THROWS inside the pack's own JS. Same
+// committed-and-stale-guarded discipline as the other allowlists: the pair
+// must keep failing exactly this way or the entry reds as stale.
+const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
+  // TimerNodeKJ's widget JS throws `null.replace` when instantiated in the
+  // sweep (single-creation mount stays clean). Part of the 2026-07-18
+  // core-drift incident that also surfaced the editor_base crash: the
+  // HeyGen/Gemini partner nodes reshuffled the pair plan and exposed the
+  // latent pack bug. Upstream-report candidate.
+  'TimerNodeKJ.timer -> TimerNodeKJ.timer',
+  'TimerNodeKJ.time -> AddLabel.text_x'
+]
 const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
   // rgthree SDXL Power Prompt rebuilds its dimension widget-inputs during
   // configure and drops inbound links to them.
@@ -188,6 +200,11 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
         ROUNDTRIP_LOST_ALLOWLIST.includes(result.key)
+      ) &&
+      !(
+        result.outcome ===
+          ('SLOT_CONTRACT_MISMATCH' satisfies ConnectivityOutcome) &&
+        SLOT_CONTRACT_MISMATCH_ALLOWLIST.includes(result.key)
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
@@ -207,7 +224,8 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const staleEntries: string[] = []
   for (const [allowlist, expected] of [
     [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
-    [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
+    [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST'],
+    [SLOT_CONTRACT_MISMATCH_ALLOWLIST, 'SLOT_CONTRACT_MISMATCH']
   ] as const)
     for (const key of allowlist) {
       const observed = outcomeByKey.get(key)
