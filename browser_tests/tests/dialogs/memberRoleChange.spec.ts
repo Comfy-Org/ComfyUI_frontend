@@ -6,11 +6,13 @@ import type { Member } from '@/platform/workspace/api/workspaceApi'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   CREATOR,
+  DEFAULT_TEAM_MEMBERS,
   MEMBER_JANE,
   MEMBER_JOHN,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -69,6 +71,39 @@ async function openChangeRoleSubmenu(page: Page) {
     page.getByRole('menuitemradio', { name: 'Owner', exact: true })
   ).toBeVisible()
 }
+
+test.describe('Members plan gating', { tag: '@cloud' }, () => {
+  test('personal workspace with a Team plan gets member management', async ({
+    page
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS,
+      workspace('personal', 'owner')
+    )
+    const content = await openMembersTab(page)
+
+    const inviteButton = content.getByRole('button', {
+      name: 'Invite member'
+    })
+    await expect(inviteButton).toBeEnabled()
+    await expect(
+      content.getByRole('button', { name: 'Role', exact: true })
+    ).toBeVisible()
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Upgrade to Team' })
+    ).toHaveCount(0)
+
+    await inviteButton.click()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Invite members to this workspace'
+      })
+    ).toBeVisible()
+  })
+})
 
 test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
