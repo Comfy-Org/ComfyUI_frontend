@@ -232,31 +232,47 @@ describe('useWidgetValueStore', () => {
     // A custom node can register a widget with an empty/malformed name (spacer,
     // header, preview, button). Such an id cannot be keyed; the store must
     // decline it rather than throw and blank every widget on the node.
-    const namelessId = widgetId(graphA, toNodeId('node-1'), '') as WidgetId
+    const malformedIds = [
+      widgetId(graphA, toNodeId('node-1'), '') as WidgetId, // empty name
+      'no-colons' as WidgetId,
+      `${graphA}:node-1` as WidgetId, // missing name segment
+      `${graphA}:node-1:seed:extra` as WidgetId, // extra segment
+      `:node-1:seed` as WidgetId, // empty graphId
+      `${graphA}::seed` as WidgetId // empty nodeId
+    ]
 
-    it('registerWidget declines an un-keyable id instead of throwing', () => {
+    it('registerWidget declines every un-keyable id instead of throwing', () => {
       const store = useWidgetValueStore()
-      expect(() =>
-        store.registerWidget(namelessId, state('button', null))
-      ).not.toThrow()
-      expect(
-        store.registerWidget(namelessId, state('button', null))
-      ).toBeUndefined()
+      for (const id of malformedIds) {
+        expect(() =>
+          store.registerWidget(id, state('button', null))
+        ).not.toThrow()
+        expect(store.registerWidget(id, state('button', null))).toBeUndefined()
+      }
     })
 
-    it('getWidget / setValue / deleteWidget tolerate an un-keyable id', () => {
+    it('getWidget / setValue / deleteWidget tolerate un-keyable ids', () => {
       const store = useWidgetValueStore()
-      expect(store.getWidget(namelessId)).toBeUndefined()
-      expect(store.setValue(namelessId, 1)).toBe(false)
-      expect(store.deleteWidget(namelessId)).toBe(false)
+      for (const id of malformedIds) {
+        expect(store.getWidget(id)).toBeUndefined()
+        expect(store.setValue(id, 1)).toBe(false)
+        expect(store.deleteWidget(id)).toBe(false)
+      }
     })
 
-    it('a declined widget does not block valid siblings on the same node', () => {
+    it('declined operations never disturb a valid sibling on the same node', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(namelessId, state('button', null))
       store.registerWidget(seedA, state('number', 7))
 
+      for (const id of malformedIds) {
+        store.registerWidget(id, state('button', null))
+        store.setValue(id, 999)
+        store.deleteWidget(id)
+      }
+
       expect(store.getWidget(seedA)?.value).toBe(7)
+      expect(store.setValue(seedA, 8)).toBe(true)
+      expect(store.getWidget(seedA)?.value).toBe(8)
     })
   })
 })

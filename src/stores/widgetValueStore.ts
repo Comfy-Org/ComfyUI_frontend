@@ -28,7 +28,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>
   ): WidgetState<TValue> | undefined {
-    if (!isWidgetId(widgetId)) return undefined
+    if (!isWidgetId(widgetId)) {
+      console.warn(
+        'widgetValueStore.registerWidget: ignoring un-keyable widget id',
+        widgetId
+      )
+      return undefined
+    }
 
     const existing = getWidget(widgetId)
     if (existing) return existing as WidgetState<TValue>
