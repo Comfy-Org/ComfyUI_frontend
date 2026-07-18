@@ -359,12 +359,14 @@
     "colors": "색상 팔레트",
     "descLabel": "설명",
     "descPlaceholder": "이 영역에 대한 설명",
+    "grid": "그리드",
     "textLabel": "텍스트",
     "textPlaceholder": "표시할 텍스트 (원문 그대로)",
     "typeObj": "obj",
     "typeText": "텍스트"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} 모드, 워크플로우 작업",
     "app": "앱",
     "blueprint": "블루프린트",
     "clearWorkflow": "워크플로 내용 지우기",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "답변은 {max}자 이내로 작성해 주세요.",
         "chooseAnOption": "옵션을 선택해 주세요.",
         "describeAnswer": "답변을 설명해 주세요.",
         "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
       },
       "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
-        "familiarity": {
-          "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
-          "basics": "기본 기능에 익숙함",
-          "expert": "전문가 (다른 사용자 도움)",
-          "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
-          "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
+        "experience": {
+          "new": "ComfyUI가 처음이에요",
+          "pro": "전문 사용자입니다",
+          "some": "기본적인 사용법을 알아요"
+        },
+        "focus": {
+          "custom_nodes": "커스텀 노드",
+          "pipelines": "자동화 파이프라인",
+          "products": "타인을 위한 제품"
         },
         "intent": {
-          "3d_game": "3D 에셋 / 게임 에셋",
-          "api": "워크플로우 실행용 API 엔드포인트",
-          "apps": "워크플로우 기반 간소화 앱",
-          "audio": "오디오 / 음악",
-          "custom_nodes": "커스텀 노드",
+          "apps_api": "앱 및 API",
+          "exploring": "그냥 둘러보는 중",
           "images": "이미지",
-          "not_sure": "잘 모르겠음",
-          "videos": "비디오",
+          "other": "기타",
+          "otherPlaceholder": "무엇을 만들고 싶으신가요?",
+          "video": "비디오",
           "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
         "source": {
-          "conference": "컨퍼런스 또는 이벤트",
-          "discord": "Discord / 커뮤니티",
+          "community": "커뮤니티 또는 포럼",
           "friend": "친구 또는 동료",
-          "github": "GitHub",
+          "other": "기타",
+          "otherPlaceholder": "어디서 저희를 알게 되셨나요?",
+          "search": "Google / 검색",
+          "social": "소셜 미디어"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "뉴스레터 또는 블로그",
-          "other": "기타",
           "reddit": "Reddit",
-          "search": "Google / 검색",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "교육용(학생 또는 교육자)",
-          "personal": "개인용",
-          "work": "업무용"
         }
       },
+      "otherPlaceholder": "자세히 알려주세요",
       "placeholder": "설문 질문 자리표시자",
-      "steps": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
-        "source": "ComfyUI를 어디에서 알게 되셨나요?",
-        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
-      },
       "title": "클라우드 설문"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "클라우드 알아보기",
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
-  "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
+  "cloudSurvey_steps_experience": "ComfyUI를 얼마나 잘 알고 계신가요?",
+  "cloudSurvey_steps_focus": "무엇을 만들고 계신가요?",
   "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
   "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
-  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
+  "cloudSurvey_steps_source_social": "어떤 플랫폼에서 알게 되셨나요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {
@@ -957,6 +955,16 @@
       "message": "잘못된 대화상자 ID가 제공되었습니다.",
       "title": "잘못된 대화상자"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 데스크톱 앱이 귀하의 계정으로 로그인 대기 중입니다. ComfyUI 데스크톱 앱에서 로그인을 시작한 경우에만 계속 진행하세요.",
+    "confirmSummary": "데스크톱 로그인 승인하시겠습니까?",
+    "expiredDetail": "로그인 요청이 만료되었거나 이미 사용되었습니다. ComfyUI 데스크톱 앱에서 다시 로그인을 시작하세요.",
+    "expiredSummary": "데스크톱 로그인 실패",
+    "failedDetail": "데스크톱 로그인 완료 중 오류가 발생했습니다. ComfyUI 데스크톱 앱에서 다시 로그인을 시작하세요.",
+    "failedSummary": "데스크톱 로그인 실패",
+    "successDetail": "ComfyUI 데스크톱 앱으로 돌아가실 수 있습니다.",
+    "successSummary": "로그인 완료"
   },
   "desktopMenu": {
     "confirmQuit": "저장되지 않은 워크플로가 열려 있습니다. 저장되지 않은 변경 사항은 모두 손실됩니다. 이를 무시하고 종료하시겠습니까?",
@@ -2071,7 +2079,10 @@
       "appBuilder": "앱 빌더",
       "apps": "앱",
       "appsEmptyMessage": "저장된 앱이 여기에 표시됩니다.\n아래를 클릭하여 첫 번째 앱을 만들어보세요.",
-      "appsEmptyMessageAction": "아래를 클릭하여 첫 번째 앱을 만들어보세요."
+      "appsEmptyMessageAction": "아래를 클릭하여 첫 번째 앱을 만들어보세요.",
+      "buildAnApp": "앱 만들기",
+      "create": "생성",
+      "createApp": "앱 생성"
     },
     "arrange": {
       "atLeastOne": "최소 한 개",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "출력으로 전환"
     },
     "backToWorkflow": "워크플로우로 돌아가기",
-    "beta": "앱 모드 베타 - 피드백 보내기",
-    "buildAnApp": "앱 만들기",
     "builder": {
       "exit": "빌더 종료",
       "exitConfirmMessage": "저장되지 않은 변경사항이 사라집니다\n저장하지 않고 종료하시겠습니까?",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "생성 중 문제가 발생했습니다. 잘못된 숨겨진 입력, 누락된 리소스 또는 워크플로우 구성 문제일 수 있습니다.",
       "support": "고객 지원 문의"
     },
+    "feedbackLoadError": "피드백 폼을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
     "giveFeedback": "피드백 보내기",
     "graphMode": "그래프 모드",
     "hasCreditCost": "추가 크레딧 필요",
@@ -2191,6 +2201,7 @@
     "loadingModel": "3D 모델 로딩 중...",
     "materialMode": "재질 모드",
     "materialModes": {
+      "clay": "클레이",
       "depth": "깊이",
       "lineart": "라인아트",
       "normal": "노멀(normal)",
@@ -2198,7 +2209,29 @@
       "pointCloud": "포인트 클라우드",
       "wireframe": "와이어프레임"
     },
+    "menuBar": {
+      "bgColor": "배경색",
+      "bgImage": "배경 이미지",
+      "deleteRecording": "녹화 삭제",
+      "downloadRecording": "녹화 다운로드",
+      "fov": "시야각",
+      "intensity": "강도",
+      "material": "재질",
+      "originalMaterialOnly": "원본 재질만",
+      "panorama": "파노라마",
+      "record": "녹화",
+      "recording": "녹화 중",
+      "removeBackground": "배경 제거",
+      "showGrid": "그리드 표시",
+      "skeleton": "스켈레톤",
+      "startNewRecording": "새 녹화 시작",
+      "stopRecording": "녹화 중지",
+      "switchProjection": "투영 방식 전환",
+      "upDirection": "위쪽 방향",
+      "videoRecordingTooltip": "장면 비디오 녹화 [mp4]"
+    },
     "model": "모델",
+    "model3d": "3D 모델",
     "openIn3DViewer": "3D 뷰어에서 열기",
     "panoramaMode": "파노라마",
     "previewOutput": "출력 미리보기",
@@ -2858,6 +2891,8 @@
     "phantom subject": "팬텀 서브젝트",
     "photomaker": "포토메이커",
     "pixart": "pixart",
+    "post-processors": "후처리기",
+    "pre-processors": "전처리기",
     "preprocessors": "전처리기",
     "primitive": "기본 입력",
     "qwen": "qwen",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3D",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "텍스트",
     "training": "학습",
     "transform": "변환",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "이 이름의 시크릿이 이미 존재합니다",
       "duplicateProvider": "이 공급자의 시크릿이 이미 존재합니다",
+      "fileReadFailed": "선택한 파일을 읽을 수 없습니다. 다시 시도해 주세요",
+      "fileTooLarge": "파일이 너무 큽니다. 1MB 미만의 JSON 자격 증명을 업로드하세요",
+      "invalidJson": "파일에는 올바른 JSON 객체가 포함되어야 합니다",
       "nameRequired": "이름은 필수 항목입니다",
       "nameTooLong": "이름은 255자 이하여야 합니다",
       "providerRequired": "공급자는 필수 항목입니다",
       "secretValueRequired": "시크릿 값은 필수 항목입니다"
     },
+    "jsonFileHint": "JSON을 붙여넣거나 파일을 업로드하세요. 암호화되어 다시 볼 수 없습니다.",
+    "jsonFileHintEdit": "현재 값을 유지하려면 비워 두거나, 새 JSON 파일을 업로드하여 교체하세요.",
+    "jsonFilePlaceholder": "프로바이더 JSON 자격 증명을 업로드하거나 붙여넣으세요",
     "lastUsed": "마지막 사용: {date}",
     "modelProviders": "모델 공급자",
     "name": "이름",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "현재 값을 유지하려면 비워 두세요.",
     "secretValuePlaceholder": "API 키를 입력하세요",
     "secretValuePlaceholderEdit": "변경하려면 새 값을 입력하세요",
-    "title": "API 키 및 시크릿"
+    "title": "API 키 및 시크릿",
+    "uploadJsonFile": "JSON 파일 업로드"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "그룹 노드 우회",
@@ -4127,6 +4170,7 @@
       "newest": "최신순",
       "popular": "인기",
       "recommended": "권장",
+      "relevance": "관련성",
       "searchPlaceholder": "검색..."
     },
     "sorting": "정렬 기준",

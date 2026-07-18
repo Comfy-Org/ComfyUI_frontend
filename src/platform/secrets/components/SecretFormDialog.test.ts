@@ -1,9 +1,12 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
+
+const mockState = vi.hoisted(() => ({ inputType: 'text' as string }))
 
 vi.mock('../composables/useSecretForm', () => ({
   useSecretForm: () => ({
@@ -13,6 +16,9 @@ vi.mock('../composables/useSecretForm', () => ({
     apiError: '',
     providerOptions: [],
     providerHelp: '',
+    selectedInputType: computed(() => mockState.inputType),
+    fileName: ref(''),
+    loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
   })
 }))
@@ -83,6 +89,7 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 describe('SecretFormDialog', () => {
   beforeEach(() => {
     capturedPointerDownOutside = null
+    mockState.inputType = 'text'
   })
 
   it('prevents backdrop pointer-down-outside from closing the dialog', () => {
@@ -95,5 +102,54 @@ describe('SecretFormDialog', () => {
     const event = new CustomEvent('pointerDownOutside', { cancelable: true })
     capturedPointerDownOutside!(event)
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('does not render the JSON upload control for a text provider', () => {
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.queryByText('secrets.uploadJsonFile')).toBeNull()
+    expect(
+      screen.queryByPlaceholderText('secrets.jsonFilePlaceholder')
+    ).toBeNull()
+  })
+
+  it('renders a file upload and textarea for a json_file provider', () => {
+    mockState.inputType = 'json_file'
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(screen.getByText('secrets.uploadJsonFile')).toBeTruthy()
+    expect(
+      screen.getByPlaceholderText('secrets.jsonFilePlaceholder')
+    ).toBeTruthy()
+  })
+
+  it('opens the file dialog when the JSON upload button is activated by keyboard', async () => {
+    mockState.inputType = 'json_file'
+
+    const fileClickSpy = vi
+      .spyOn(HTMLInputElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    const uploadButton = screen.getByRole('button', {
+      name: 'secrets.uploadJsonFile'
+    })
+    expect(uploadButton.tabIndex).not.toBe(-1)
+
+    uploadButton.focus()
+    await userEvent.keyboard('{Enter}')
+
+    expect(fileClickSpy).toHaveBeenCalledOnce()
   })
 })

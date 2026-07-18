@@ -359,12 +359,14 @@
     "colors": "פלטת צבעים",
     "descLabel": "תיאור",
     "descPlaceholder": "תיאור האזור הזה",
+    "grid": "רשת",
     "textLabel": "טקסט",
     "textPlaceholder": "טקסט להצגה (מילולי)",
     "typeObj": "אובייקט",
     "typeText": "טקסט"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "מצב {mode}, פעולות תהליך עבודה",
     "app": "יישום",
     "blueprint": "תבנית",
     "clearWorkflow": "ניקוי תהליך העבודה",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "אנא שמרו את התשובה שלכם עד {max} תווים.",
         "chooseAnOption": "אנא בחר אפשרות.",
         "describeAnswer": "אנא תאר את תשובתך.",
         "selectAtLeastOne": "אנא בחר לפחות אפשרות אחת."
       },
       "intro": "עזרו לנו להתאים את חוויית ה-ComfyUI שלך.",
       "options": {
-        "familiarity": {
-          "advanced": "מתקדם — בונה ועורך תהליכי עבודה",
-          "basics": "בינוני — מרגיש בנוח עם היסודות",
-          "expert": "מומחה — אני עוזר לאחרים",
-          "new": "חדש — מעולם לא השתמשתי",
-          "starting": "מתחיל — עוקב אחר מדריכים"
+        "experience": {
+          "new": "חדש/ה ב-ComfyUI",
+          "pro": "משתמש/ת מתקדם/ת",
+          "some": "מכיר/ה את המערכת"
+        },
+        "focus": {
+          "custom_nodes": "צמתים מותאמים אישית",
+          "pipelines": "צינורות עבודה אוטומטיים",
+          "products": "מוצרים לאחרים"
         },
         "intent": {
-          "3d_game": "נכסי תלת-ממד / נכסי משחקים",
-          "api": "נקודות קצה של API להרצת תהליכי עבודה",
-          "apps": "יישומים מפושטים מתהליכי עבודה",
-          "audio": "שמע / מוזיקה",
-          "custom_nodes": "צמתים מותאמים",
+          "apps_api": "אפליקציות ו-API",
+          "exploring": "רק בודק/ת",
           "images": "תמונות",
-          "not_sure": "לא בטוח",
-          "videos": "סרטונים",
+          "other": "משהו אחר",
+          "otherPlaceholder": "מה תרצו ליצור?",
+          "video": "וידאו",
           "workflows": "תהליכי עבודה או צינורות (pipelines) מותאמים"
         },
         "source": {
-          "conference": "כנס או אירוע",
-          "discord": "Discord / קהילה",
+          "community": "קהילה או פורום",
           "friend": "חבר או עמית",
-          "github": "GitHub",
+          "other": "אחר",
+          "otherPlaceholder": "היכן שמעתם עלינו?",
+          "search": "Google / חיפוש",
+          "social": "רשתות חברתיות"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "ניוזלטר או בלוג",
-          "other": "אחר",
           "reddit": "Reddit",
-          "search": "Google / חיפוש",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "חינוך (סטודנט או מרצה)",
-          "personal": "שימוש אישי",
-          "work": "עבודה"
         }
       },
+      "otherPlaceholder": "ספרו לנו עוד",
       "placeholder": "מציין מיקום לשאלות הסקר",
-      "steps": {
-        "familiarity": "עד כמה אתה מכיר את ComfyUI?",
-        "intent": "מה ברצונך ליצור עם ComfyUI?",
-        "source": "היכן שמעת על ComfyUI?",
-        "usage": "כיצד אתה מתכנן להשתמש ב-ComfyUI?"
-      },
       "title": "סקר ענן"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "למד על הענן",
   "cloudStart_title": "התחל ליצור תוך שניות",
   "cloudStart_wantToRun": "מעדיף להריץ את ComfyUI מקומית?",
-  "cloudSurvey_steps_familiarity": "עד כמה אתה מכיר את ComfyUI?",
+  "cloudSurvey_steps_experience": "עד כמה אתם מכירים את ComfyUI?",
+  "cloudSurvey_steps_focus": "מה אתם בונים?",
   "cloudSurvey_steps_intent": "מה ברצונך ליצור עם ComfyUI?",
   "cloudSurvey_steps_source": "היכן שמעת על ComfyUI?",
-  "cloudSurvey_steps_usage": "כיצד אתה מתכנן להשתמש ב-ComfyUI?",
+  "cloudSurvey_steps_source_social": "באיזו פלטפורמה?",
   "cloudWaitlist_contactLink": "כאן",
   "cloudWaitlist_questionsText": "שאלות? צור איתנו קשר",
   "color": {
@@ -957,6 +955,16 @@
       "message": "סופק מזהה חלון לא תקין.",
       "title": "חלון לא תקין"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "confirmSummary": "לאשר כניסה משולחן העבודה?",
+    "expiredDetail": "בקשת הכניסה פגה או כבר נוצלה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "expiredSummary": "הכניסה משולחן העבודה נכשלה",
+    "failedDetail": "אירעה שגיאה במהלך השלמת הכניסה משולחן העבודה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
+    "failedSummary": "הכניסה משולחן העבודה נכשלה",
+    "successDetail": "ניתן לחזור לאפליקציית ComfyUI במחשב.",
+    "successSummary": "הכניסה בוצעה בהצלחה"
   },
   "desktopMenu": {
     "confirmQuit": "ישנם תהליכי עבודה פתוחים שלא נשמרו; כל שינוי שלא נשמר יאבד. להתעלם מכך ולצאת?",
@@ -2071,7 +2079,10 @@
       "appBuilder": "בונה היישומים",
       "apps": "יישומים",
       "appsEmptyMessage": "יישומים שנשמרו יופיעו כאן.",
-      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך."
+      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך.",
+      "buildAnApp": "בנה אפליקציה",
+      "create": "צור",
+      "createApp": "צור אפליקציה"
     },
     "arrange": {
       "atLeastOne": "לפחות אחד",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "מעבר לפלטים"
     },
     "backToWorkflow": "חזרה לתהליך העבודה",
-    "beta": "מצב יישום בבטא",
-    "buildAnApp": "בניית יישום",
     "builder": {
       "exit": "יציאה מהבונה",
       "exitConfirmMessage": "יש לך שינויים שלא נשמרו אשר יאבדו\nלצאת מבלי לשמור?",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "משהו השתבש במהלך היצירה. הדבר עשוי לנבוע מקלטים מוסתרים לא תקינים, משאבים חסרים או בעיות בהגדרת תהליך העבודה.",
       "support": "צור קשר עם התמיכה שלנו"
     },
+    "feedbackLoadError": "טעינת טופס המשוב נכשלה. נסה שוב מאוחר יותר.",
     "giveFeedback": "שליחת משוב",
     "graphMode": "מצב גרף",
     "hasCreditCost": "דורש קרדיטים נוספים",
@@ -2191,6 +2201,7 @@
     "loadingModel": "טוען מודל תלת-ממד...",
     "materialMode": "מצב חומר",
     "materialModes": {
+      "clay": "חימר",
       "depth": "עומק",
       "lineart": "ציור קווי (Lineart)",
       "normal": "רגיל",
@@ -2198,7 +2209,29 @@
       "pointCloud": "ענן נקודות",
       "wireframe": "מסגרת חוטים (Wireframe)"
     },
+    "menuBar": {
+      "bgColor": "צבע רקע",
+      "bgImage": "תמונת רקע",
+      "deleteRecording": "מחק הקלטה",
+      "downloadRecording": "הורד הקלטה",
+      "fov": "שדה ראייה (FOV)",
+      "intensity": "עוצמה",
+      "material": "חומר",
+      "originalMaterialOnly": "חומר מקורי בלבד",
+      "panorama": "פנורמה",
+      "record": "הקלט",
+      "recording": "בהקלטה",
+      "removeBackground": "הסר רקע",
+      "showGrid": "הצג רשת",
+      "skeleton": "שלד",
+      "startNewRecording": "התחל הקלטה חדשה",
+      "stopRecording": "הפסק הקלטה",
+      "switchProjection": "החלף הקרנה",
+      "upDirection": "כיוון מעלה",
+      "videoRecordingTooltip": "הקלטת וידאו של הסצנה [mp4]"
+    },
     "model": "מודל",
+    "model3d": "מודל תלת-ממד",
     "openIn3DViewer": "פתיחה במציג התלת-ממד",
     "panoramaMode": "פנורמה",
     "previewOutput": "תצוגה מקדימה של הפלט",
@@ -2858,6 +2891,8 @@
     "phantom subject": "phantom subject",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "מעבדי פוסט",
+    "pre-processors": "מעבדי פרה",
     "preprocessors": "preprocessors",
     "primitive": "primitive",
     "qwen": "qwen",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "text",
     "training": "training",
     "transform": "transform",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "כבר קיים סוד עם שם זה",
       "duplicateProvider": "כבר קיים סוד עבור ספק זה",
+      "fileReadFailed": "לא ניתן לקרוא את הקובץ שנבחר",
+      "fileTooLarge": "הקובץ גדול מדי. העלה אישור JSON קטן מ-1 מגה-בייט",
+      "invalidJson": "הקובץ חייב להכיל אובייקט JSON תקני",
       "nameRequired": "שם הוא שדה חובה",
       "nameTooLong": "השם חייב להכיל 255 תווים או פחות",
       "providerRequired": "ספק הוא שדה חובה",
       "secretValueRequired": "ערך הסוד הוא שדה חובה"
     },
+    "jsonFileHint": "הדבק את ה-JSON או העלה קובץ. הוא יוצפן ולא יהיה ניתן לצפייה חוזרת.",
+    "jsonFileHintEdit": "השאר ריק כדי לשמור את הערך הנוכחי, או העלה קובץ JSON חדש להחלפה.",
+    "jsonFilePlaceholder": "העלה או הדבק את אישור ה-JSON של הספק",
     "lastUsed": "שימוש אחרון {date}",
     "modelProviders": "ספקי מודלים",
     "name": "שם",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "השאר ריק כדי לשמור על הערך הנוכחי.",
     "secretValuePlaceholder": "הזן את מפתח ה-API שלך",
     "secretValuePlaceholderEdit": "הזן ערך חדש כדי לשנות",
-    "title": "מפתחות API וסודות"
+    "title": "מפתחות API וסודות",
+    "uploadJsonFile": "העלה קובץ JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "עקיפת צמתי הקבוצה",
@@ -4139,6 +4182,7 @@
       "newest": "החדשים ביותר",
       "popular": "פופולרי",
       "recommended": "מומלץ",
+      "relevance": "רלוונטיות",
       "searchPlaceholder": "חיפוש..."
     },
     "sorting": "מיון לפי",

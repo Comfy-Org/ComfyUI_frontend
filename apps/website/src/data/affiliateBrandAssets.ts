@@ -1,14 +1,13 @@
 import type { LocalizedText } from '../i18n/translations'
 
+import { BRAND_ASSETS_ZIP } from './brandAssets'
+
 interface AffiliateBrandAsset {
   id: string
   title: LocalizedText
   download: string
   preview: string
 }
-
-const BRAND_ASSETS_ZIP =
-  'https://media.comfy.org/website/comfy-org-brand-assets.zip'
 
 export const affiliateBrandAssets: readonly AffiliateBrandAsset[] = [
   {

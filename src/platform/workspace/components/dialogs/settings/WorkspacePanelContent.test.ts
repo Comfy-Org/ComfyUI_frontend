@@ -65,6 +65,16 @@ vi.mock(
   })
 )
 
+vi.mock(
+  '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue',
+  () => ({
+    default: {
+      name: 'BillingStatusBanner',
+      template: '<div data-testid="billing-banner" />'
+    }
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -92,6 +102,25 @@ function renderComponent() {
     }
   })
 }
+
+describe('WorkspacePanelContent billing banner', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockMembers.value = []
+    mockWorkspaceType.value = 'team'
+  })
+
+  it('hosts a single banner slot above the tab content, so it shows on every tab', () => {
+    renderComponent()
+
+    const banner = screen.getByTestId('billing-banner')
+    const planPanel = screen.getByText('workspacePanel.tabs.planCredits')
+    expect(
+      planPanel.compareDocumentPosition(banner) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+})
 
 describe('WorkspacePanelContent members tab label', () => {
   beforeEach(() => {

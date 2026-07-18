@@ -14,23 +14,22 @@ import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
-import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
-const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
+const { runButtonClick, mobile } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
-  typeformWidgetId?: string
 }>()
 
 const selectedItem = ref<AssetItem>()
@@ -147,28 +146,9 @@ async function rerun(e: Event) {
   <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
-  <div
-    v-if="!mobile"
-    class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
-  >
-    <LinearFeedback
-      v-if="typeformWidgetId"
-      side="left"
-      :widget-id="typeformWidgetId"
-    />
-    <OutputHistory
-      v-if="!isBuilderMode"
-      class="z-10 min-w-0"
-      @update-selection="handleSelection"
-    />
-    <LinearFeedback
-      v-if="typeformWidgetId"
-      side="right"
-      :widget-id="typeformWidgetId"
-    />
-  </div>
   <OutputHistory
-    v-else-if="!isBuilderMode"
+    v-if="!isBuilderMode"
+    :class="cn(!mobile && 'z-10 min-w-0')"
     @update-selection="handleSelection"
   />
 </template>

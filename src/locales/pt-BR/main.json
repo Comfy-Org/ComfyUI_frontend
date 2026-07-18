@@ -359,12 +359,14 @@
     "colors": "paleta_de_cores",
     "descLabel": "descrição",
     "descPlaceholder": "descrição desta região",
+    "grid": "Grade",
     "textLabel": "Texto",
     "textPlaceholder": "texto a ser exibido (literal)",
     "typeObj": "obj",
     "typeText": "texto"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "Modo {mode}, ações do fluxo de trabalho",
     "app": "App",
     "blueprint": "Blueprint",
     "clearWorkflow": "Limpar Fluxo de Trabalho",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Por favor, mantenha sua resposta com menos de {max} caracteres.",
         "chooseAnOption": "Por favor, escolha uma opção.",
         "describeAnswer": "Por favor, descreva sua resposta.",
         "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
       },
       "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
       "options": {
-        "familiarity": {
-          "advanced": "Usuário avançado (fluxos de trabalho personalizados)",
-          "basics": "Confortável com o básico",
-          "expert": "Especialista (ajuda outras pessoas)",
-          "new": "Novo no ComfyUI (nunca usei antes)",
-          "starting": "Começando agora (seguindo tutoriais)"
+        "experience": {
+          "new": "Novo no ComfyUI",
+          "pro": "Sou um usuário avançado",
+          "some": "Já conheço um pouco"
+        },
+        "focus": {
+          "custom_nodes": "Nós personalizados",
+          "pipelines": "Pipelines automatizados",
+          "products": "Produtos para outros"
         },
         "intent": {
-          "3d_game": "Assets 3D / assets para jogos",
-          "api": "Endpoints de API para executar workflows",
-          "apps": "Apps simplificados a partir de workflows",
-          "audio": "Áudio / música",
-          "custom_nodes": "Nodes personalizados",
+          "apps_api": "Apps e APIs",
+          "exploring": "Só explorando",
           "images": "Imagens",
-          "not_sure": "Não tenho certeza",
-          "videos": "Vídeos",
+          "other": "Outra coisa",
+          "otherPlaceholder": "O que você quer criar?",
+          "video": "Vídeo",
           "workflows": "Workflows ou pipelines personalizados"
         },
         "source": {
-          "conference": "Conferência ou evento",
-          "discord": "Discord / comunidade",
+          "community": "Uma comunidade ou fórum",
           "friend": "Amigo ou colega",
-          "github": "GitHub",
+          "other": "Outro",
+          "otherPlaceholder": "Onde você nos encontrou?",
+          "search": "Google / busca",
+          "social": "Mídias sociais"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Newsletter ou blog",
-          "other": "Outro",
           "reddit": "Reddit",
-          "search": "Google / busca",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Educação (estudante ou educador)",
-          "personal": "Uso pessoal",
-          "work": "Trabalho"
         }
       },
+      "otherPlaceholder": "Conte-nos mais",
       "placeholder": "Espaço reservado para perguntas da pesquisa",
-      "steps": {
-        "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "intent": "O que você deseja criar com o ComfyUI?",
-        "source": "Onde você ouviu falar do ComfyUI?",
-        "usage": "Como você pretende usar o ComfyUI?"
-      },
       "title": "Pesquisa da Nuvem"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "Saiba mais sobre a Nuvem",
   "cloudStart_title": "comece a criar em segundos",
   "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
-  "cloudSurvey_steps_familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
+  "cloudSurvey_steps_experience": "Qual o seu nível de conhecimento do ComfyUI?",
+  "cloudSurvey_steps_focus": "O que você está construindo?",
   "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
   "cloudSurvey_steps_source": "Onde você ouviu falar do ComfyUI?",
-  "cloudSurvey_steps_usage": "Como você pretende usar o ComfyUI?",
+  "cloudSurvey_steps_source_social": "Em qual plataforma?",
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {
@@ -957,6 +955,16 @@
       "message": "ID de diálogo inválido fornecido.",
       "title": "Diálogo inválido"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "O aplicativo desktop do ComfyUI está aguardando para entrar com sua conta. Continue apenas se você acabou de iniciar o login pelo aplicativo desktop do ComfyUI.",
+    "confirmSummary": "Aprovar login no desktop?",
+    "expiredDetail": "A solicitação de login expirou ou já foi utilizada. Inicie o login novamente pelo aplicativo desktop do ComfyUI.",
+    "expiredSummary": "Falha no login do desktop",
+    "failedDetail": "Algo deu errado ao concluir o login no desktop. Inicie o login novamente pelo aplicativo desktop do ComfyUI.",
+    "failedSummary": "Falha no login do desktop",
+    "successDetail": "Você pode retornar ao aplicativo desktop do ComfyUI.",
+    "successSummary": "Login realizado"
   },
   "desktopMenu": {
     "confirmQuit": "Existem fluxos de trabalho não salvos abertos; quaisquer alterações não salvas serão perdidas. Ignorar isso e sair?",
@@ -2071,7 +2079,10 @@
       "appBuilder": "Construtor de aplicativos",
       "apps": "Aplicativos",
       "appsEmptyMessage": "Os aplicativos salvos aparecerão aqui.\nClique abaixo para criar seu primeiro aplicativo.",
-      "appsEmptyMessageAction": "Clique abaixo para criar seu primeiro app."
+      "appsEmptyMessageAction": "Clique abaixo para criar seu primeiro app.",
+      "buildAnApp": "Criar um app",
+      "create": "Criar",
+      "createApp": "Criar app"
     },
     "arrange": {
       "atLeastOne": "pelo menos um",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "Ir para Saídas"
     },
     "backToWorkflow": "Voltar para o fluxo de trabalho",
-    "beta": "Modo App Beta - Envie seu feedback",
-    "buildAnApp": "Criar um app",
     "builder": {
       "exit": "Sair do construtor",
       "exitConfirmMessage": "Você tem alterações não salvas que serão perdidas\nSair sem salvar?",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "Algo deu errado durante a geração. Isso pode ser devido a entradas ocultas inválidas, recursos ausentes ou problemas de configuração do fluxo de trabalho.",
       "support": "contate nosso suporte"
     },
+    "feedbackLoadError": "Falha ao carregar o formulário de feedback. Por favor, tente novamente mais tarde.",
     "giveFeedback": "Enviar feedback",
     "graphMode": "Modo Gráfico",
     "hasCreditCost": "Requer créditos adicionais",
@@ -2191,6 +2201,7 @@
     "loadingModel": "Carregando Modelo 3D...",
     "materialMode": "Modo de Material",
     "materialModes": {
+      "clay": "Argila",
       "depth": "Profundidade",
       "lineart": "Lineart",
       "normal": "Normal",
@@ -2198,7 +2209,29 @@
       "pointCloud": "Nuvem de Pontos",
       "wireframe": "Wireframe"
     },
+    "menuBar": {
+      "bgColor": "Cor de fundo",
+      "bgImage": "Imagem de fundo",
+      "deleteRecording": "Excluir gravação",
+      "downloadRecording": "Baixar gravação",
+      "fov": "Campo de visão",
+      "intensity": "Intensidade",
+      "material": "Material",
+      "originalMaterialOnly": "Apenas material original",
+      "panorama": "Panorama",
+      "record": "Gravar",
+      "recording": "Gravando",
+      "removeBackground": "Remover fundo",
+      "showGrid": "Mostrar grade",
+      "skeleton": "Esqueleto",
+      "startNewRecording": "Iniciar nova gravação",
+      "stopRecording": "Parar gravação",
+      "switchProjection": "Alternar projeção",
+      "upDirection": "Direção para cima",
+      "videoRecordingTooltip": "Gravação de vídeo da cena [mp4]"
+    },
     "model": "Modelo",
+    "model3d": "Modelo 3D",
     "openIn3DViewer": "Abrir no Visualizador 3D",
     "panoramaMode": "Panorama",
     "previewOutput": "Visualizar Saída",
@@ -2858,6 +2891,8 @@
     "phantom subject": "phantom subject",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "pós-processadores",
+    "pre-processors": "pré-processadores",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "texto",
     "training": "treinamento",
     "transform": "transformar",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "Já existe um segredo com este nome",
       "duplicateProvider": "Já existe um segredo para este provedor",
+      "fileReadFailed": "Não foi possível ler o arquivo selecionado.",
+      "fileTooLarge": "O arquivo é muito grande. Envie uma credencial JSON com menos de 1 MB",
+      "invalidJson": "O arquivo deve conter um objeto JSON válido",
       "nameRequired": "O nome é obrigatório",
       "nameTooLong": "O nome deve ter no máximo 255 caracteres",
       "providerRequired": "O provedor é obrigatório",
       "secretValueRequired": "O valor do segredo é obrigatório"
     },
+    "jsonFileHint": "Cole o JSON ou envie um arquivo. Ele será criptografado e não poderá ser visualizado novamente.",
+    "jsonFileHintEdit": "Deixe em branco para manter o valor atual ou envie um novo arquivo JSON para substituir.",
+    "jsonFilePlaceholder": "Envie ou cole as credenciais JSON do provedor",
     "lastUsed": "Último uso em {date}",
     "modelProviders": "Provedores de Modelos",
     "name": "Nome",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "Deixe em branco para manter o valor atual.",
     "secretValuePlaceholder": "Digite sua chave de API",
     "secretValuePlaceholderEdit": "Digite um novo valor para alterar",
-    "title": "Chaves de API & Segredos"
+    "title": "Chaves de API & Segredos",
+    "uploadJsonFile": "Enviar arquivo JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Ignorar Nós de Grupo",
@@ -4139,6 +4182,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
+      "relevance": "Relevância",
       "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",

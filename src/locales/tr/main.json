@@ -359,12 +359,14 @@
     "colors": "renk_paleti",
     "descLabel": "açıklama",
     "descPlaceholder": "bu bölgenin açıklaması",
+    "grid": "Izgara",
     "textLabel": "Metin",
     "textPlaceholder": "görüntülenecek metin (aynen)",
     "typeObj": "nesne",
     "typeText": "metin"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} modu, iş akışı eylemleri",
     "app": "Uygulama",
     "blueprint": "Plan",
     "clearWorkflow": "İş Akışını Temizle",
@@ -515,57 +517,52 @@
     },
     "survey": {
       "errors": {
+        "answerTooLong": "Lütfen cevabınızı {max} karakterin altında tutun.",
         "chooseAnOption": "Lütfen bir seçenek seçin.",
         "describeAnswer": "Lütfen cevabınızı açıklayın.",
         "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
       },
       "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
       "options": {
-        "familiarity": {
-          "advanced": "İleri seviye kullanıcı (özel iş akışları)",
-          "basics": "Temel bilgilerde rahatım",
-          "expert": "Uzman (başkalarına yardım ediyorum)",
-          "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
-          "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)"
+        "experience": {
+          "new": "ComfyUI'ye yeni",
+          "pro": "Güçlü bir kullanıcıyım",
+          "some": "Biraz biliyorum"
+        },
+        "focus": {
+          "custom_nodes": "Özel node'lar",
+          "pipelines": "Otomatikleştirilmiş pipeline'lar",
+          "products": "Başkaları için ürünler"
         },
         "intent": {
-          "3d_game": "3D varlıklar / oyun varlıkları",
-          "api": "İş akışlarını çalıştırmak için API uç noktaları",
-          "apps": "İş akışlarından basitleştirilmiş uygulamalar",
-          "audio": "Ses / müzik",
-          "custom_nodes": "Özel node'lar",
+          "apps_api": "Uygulamalar ve API'ler",
+          "exploring": "Sadece keşfediyorum",
           "images": "Görseller",
-          "not_sure": "Emin değilim",
-          "videos": "Videolar",
+          "other": "Başka bir şey",
+          "otherPlaceholder": "Ne yapmak istiyorsunuz?",
+          "video": "Video",
           "workflows": "Özel iş akışları veya boru hatları"
         },
         "source": {
-          "conference": "Konferans veya etkinlik",
-          "discord": "Discord / topluluk",
+          "community": "Bir topluluk veya forum",
           "friend": "Arkadaş veya iş arkadaşı",
-          "github": "GitHub",
+          "other": "Diğer",
+          "otherPlaceholder": "Bizi nereden buldunuz?",
+          "search": "Google / arama",
+          "social": "Sosyal medya"
+        },
+        "source_social": {
+          "discord": "Discord",
           "instagram": "Instagram",
           "linkedin": "LinkedIn",
-          "newsletter": "Bülten veya blog",
-          "other": "Diğer",
           "reddit": "Reddit",
-          "search": "Google / arama",
-          "twitter": "Twitter / X",
+          "tiktok": "TikTok",
+          "twitter": "X (Twitter)",
           "youtube": "YouTube"
-        },
-        "usage": {
-          "education": "Eğitim (öğrenci veya eğitmen)",
-          "personal": "Kişisel kullanım",
-          "work": "İş"
         }
       },
+      "otherPlaceholder": "Daha fazla bilgi verin",
       "placeholder": "Anket soruları yer tutucusu",
-      "steps": {
-        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
-        "source": "ComfyUI'yi nereden duydunuz?",
-        "usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?"
-      },
       "title": "Bulut Anketi"
     }
   },
@@ -578,10 +575,11 @@
   "cloudStart_learnAboutButton": "Cloud hakkında bilgi edinin",
   "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
   "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
-  "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
+  "cloudSurvey_steps_experience": "ComfyUI'yi ne kadar iyi biliyorsunuz?",
+  "cloudSurvey_steps_focus": "Ne inşa ediyorsunuz?",
   "cloudSurvey_steps_intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
   "cloudSurvey_steps_source": "ComfyUI'yi nereden duydunuz?",
-  "cloudSurvey_steps_usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?",
+  "cloudSurvey_steps_source_social": "Hangi platform?",
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {
@@ -957,6 +955,16 @@
       "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
       "title": "Geçersiz İletişim Kutusu"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
+    "confirmSummary": "Masaüstü oturum açmayı onayla?",
+    "expiredDetail": "Oturum açma isteğinin süresi doldu veya zaten kullanıldı. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
+    "expiredSummary": "Masaüstü oturum açma başarısız",
+    "failedDetail": "Masaüstü oturum açma tamamlanırken bir hata oluştu. ComfyUI masaüstü uygulamasından tekrar oturum açmayı başlatın.",
+    "failedSummary": "Masaüstü oturum açma başarısız",
+    "successDetail": "ComfyUI masaüstü uygulamasına dönebilirsiniz.",
+    "successSummary": "Oturum açıldı"
   },
   "desktopMenu": {
     "confirmQuit": "Kaydedilmemiş iş akışları açık; kaydedilmemiş değişiklikler kaybolacaktır. Bunu yoksayıp çıkılsın mı?",
@@ -2071,7 +2079,10 @@
       "appBuilder": "Uygulama oluşturucu",
       "apps": "Uygulamalar",
       "appsEmptyMessage": "Kaydedilen uygulamalar burada görünecek.\nİlk uygulamanızı oluşturmak için aşağıya tıklayın.",
-      "appsEmptyMessageAction": "İlk uygulamanızı oluşturmak için aşağıya tıklayın."
+      "appsEmptyMessageAction": "İlk uygulamanızı oluşturmak için aşağıya tıklayın.",
+      "buildAnApp": "Uygulama Oluştur",
+      "create": "Oluştur",
+      "createApp": "Uygulama Oluştur"
     },
     "arrange": {
       "atLeastOne": "en az bir",
@@ -2084,8 +2095,6 @@
       "switchToOutputsButton": "Çıktılara Geç"
     },
     "backToWorkflow": "Çalışma akışına geri dön",
-    "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
-    "buildAnApp": "Bir uygulama oluştur",
     "builder": {
       "exit": "Oluşturucudan çık",
       "exitConfirmMessage": "Kaydedilmemiş değişiklikleriniz kaybolacak\nKaydetmeden çıkılsın mı?",
@@ -2123,6 +2132,7 @@
       "requiresGraph": "Oluşturma sırasında bir şeyler ters gitti. Bu, geçersiz gizli girdiler, eksik kaynaklar veya iş akışı yapılandırma sorunlarından kaynaklanıyor olabilir.",
       "support": "destek ekibimizle iletişime geçin"
     },
+    "feedbackLoadError": "Geri bildirim formu yüklenemedi. Lütfen daha sonra tekrar deneyin.",
     "giveFeedback": "Geri bildirim ver",
     "graphMode": "Grafik Modu",
     "hasCreditCost": "Ekstra kredi gerektirir",
@@ -2191,6 +2201,7 @@
     "loadingModel": "3D Model Yükleniyor...",
     "materialMode": "Malzeme Modu",
     "materialModes": {
+      "clay": "Kil",
       "depth": "Derinlik",
       "lineart": "Çizgi Sanatı",
       "normal": "Normal",
@@ -2198,7 +2209,29 @@
       "pointCloud": "Nokta Bulutu",
       "wireframe": "Tel Kafes"
     },
+    "menuBar": {
+      "bgColor": "Arka Plan Rengi",
+      "bgImage": "Arka Plan Görseli",
+      "deleteRecording": "Kaydı Sil",
+      "downloadRecording": "Kaydı İndir",
+      "fov": "Görüş Açısı (FOV)",
+      "intensity": "Yoğunluk",
+      "material": "Malzeme",
+      "originalMaterialOnly": "Sadece orijinal malzeme",
+      "panorama": "Panorama",
+      "record": "Kaydet",
+      "recording": "Kayıt Yapılıyor",
+      "removeBackground": "Arka Planı Kaldır",
+      "showGrid": "Izgarayı Göster",
+      "skeleton": "İskelet",
+      "startNewRecording": "Yeni Kayıt Başlat",
+      "stopRecording": "Kaydı Durdur",
+      "switchProjection": "Projeksiyonu Değiştir",
+      "upDirection": "Yukarı Yönü",
+      "videoRecordingTooltip": "Sahnenin video kaydı [mp4]"
+    },
     "model": "Model",
+    "model3d": "3D Model",
     "openIn3DViewer": "3D Görüntüleyicide Aç",
     "panoramaMode": "Panorama",
     "previewOutput": "Çıktıyı Önizle",
@@ -2858,6 +2891,8 @@
     "phantom subject": "hayalet nesne",
     "photomaker": "photomaker",
     "pixart": "pixart",
+    "post-processors": "son işlemciler",
+    "pre-processors": "ön işlemciler",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
     "qwen": "qwen",
@@ -2879,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "metin",
     "training": "eğitim",
     "transform": "dönüştür",
@@ -3229,11 +3265,17 @@
     "errors": {
       "duplicateName": "Bu adla zaten bir gizli bilgi mevcut",
       "duplicateProvider": "Bu sağlayıcı için zaten bir gizli bilgi mevcut",
+      "fileReadFailed": "Seçilen dosya okunamadı.",
+      "fileTooLarge": "Dosya çok büyük. 1 MB altında bir JSON kimlik bilgisi yükleyin",
+      "invalidJson": "Dosya geçerli bir JSON nesnesi içermelidir",
       "nameRequired": "Ad zorunludur",
       "nameTooLong": "Ad 255 karakter veya daha kısa olmalıdır",
       "providerRequired": "Sağlayıcı zorunludur",
       "secretValueRequired": "Gizli değer zorunludur"
     },
+    "jsonFileHint": "JSON'u yapıştırın veya bir dosya yükleyin. Şifrelenir ve tekrar görüntülenemez.",
+    "jsonFileHintEdit": "Mevcut değeri korumak için boş bırakın veya değiştirmek için yeni bir JSON dosyası yükleyin.",
+    "jsonFilePlaceholder": "Sağlayıcı JSON kimlik bilgisini yükleyin veya yapıştırın",
     "lastUsed": "Son kullanım {date}",
     "modelProviders": "Model Sağlayıcıları",
     "name": "Ad",
@@ -3250,7 +3292,8 @@
     "secretValueHintEdit": "Mevcut değeri korumak için boş bırakın.",
     "secretValuePlaceholder": "API anahtarınızı girin",
     "secretValuePlaceholderEdit": "Değiştirmek için yeni değeri girin",
-    "title": "API Anahtarları & Gizli Bilgiler"
+    "title": "API Anahtarları & Gizli Bilgiler",
+    "uploadJsonFile": "JSON Dosyası Yükle"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Bypass Group Nodes",
@@ -4127,6 +4170,7 @@
       "newest": "En Yeni",
       "popular": "Popüler",
       "recommended": "Önerilen",
+      "relevance": "Alaka",
       "searchPlaceholder": "Ara..."
     },
     "sorting": "Sıralama ölçütü",
