@@ -534,7 +534,7 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 }
 
 function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
+  window.open('https://discord.com/invite/comfyorg', '_blank')
 }
 
 function handleViewEnterprise() {
