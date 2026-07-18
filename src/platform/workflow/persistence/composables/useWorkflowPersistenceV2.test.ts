@@ -86,7 +86,8 @@ vi.mock('@/stores/commandStore', () => ({
 }))
 
 const routeMocks = vi.hoisted(() => ({
-  query: {} as Record<string, unknown>
+  query: {} as Record<string, unknown>,
+  replace: vi.fn()
 }))
 
 vi.mock('vue-router', () => ({
@@ -96,7 +97,7 @@ vi.mock('vue-router', () => ({
     }
   }),
   useRouter: () => ({
-    replace: vi.fn()
+    replace: routeMocks.replace
   })
 }))
 
@@ -107,11 +108,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const preservedQueryMocks = vi.hoisted(() => ({
-  payloads: {} as Record<string, Record<string, string> | undefined>
+  payloads: {} as Record<string, Record<string, string> | undefined>,
+  hydrate: vi.fn()
 }))
 
 vi.mock('@/platform/navigation/preservedQueryManager', () => ({
-  hydratePreservedQuery: vi.fn(),
+  hydratePreservedQuery: preservedQueryMocks.hydrate,
   mergePreservedQueryIntoQuery: vi.fn(
     (namespace: string, query: Record<string, unknown> = {}) => {
       const payload = preservedQueryMocks.payloads[namespace]
@@ -818,7 +820,8 @@ describe('useWorkflowPersistenceV2', () => {
       })
     })
 
-    it('hydrates preserved template intent before delegating to the loader', async () => {
+    it('restores a template preserved across login into the route query', async () => {
+      routeMocks.query = {}
       preservedQueryMocks.payloads.template = {
         template: 'image_z_image_turbo'
       }
@@ -830,7 +833,42 @@ describe('useWorkflowPersistenceV2', () => {
       const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
       await loadTemplateFromUrlIfPresent()
 
-      expect(templateLoaderMocks.loadTemplateFromUrl).toHaveBeenCalled()
+      expect(routeMocks.replace).toHaveBeenCalledWith({
+        query: { template: 'image_z_image_turbo' }
+      })
+    })
+
+    it('hydrates preserved template intent before delegating to the loader', async () => {
+      routeMocks.query = {}
+      preservedQueryMocks.payloads.template = {
+        template: 'image_z_image_turbo'
+      }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+      await loadTemplateFromUrlIfPresent()
+
+      const hydrateOrder =
+        preservedQueryMocks.hydrate.mock.invocationCallOrder[0]
+      const loadOrder =
+        templateLoaderMocks.loadTemplateFromUrl.mock.invocationCallOrder[0]
+      expect(hydrateOrder).toBeLessThan(loadOrder)
+    })
+
+    it('leaves the route untouched when there is no preserved intent', async () => {
+      routeMocks.query = { template: 'image_z_image_turbo' }
+      templateLoaderMocks.loadTemplateFromUrl.mockResolvedValue({
+        loaded: true,
+        templateId: 'image_z_image_turbo'
+      })
+
+      const { loadTemplateFromUrlIfPresent } = mountWorkflowPersistence()
+      await loadTemplateFromUrlIfPresent()
+
+      expect(routeMocks.replace).not.toHaveBeenCalled()
     })
   })
 })

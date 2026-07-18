@@ -133,7 +133,7 @@ describe('canvasSpotlightAdapter', () => {
       // getNodeById returns undefined (not null) for ids absent from the graph —
       // e.g. a nested executing node — which must not crash on `.boundingRect`.
       mocks.currentGraph = fromPartial<LGraph>({
-        getNodeById: () => undefined as unknown as null
+        getNodeById: () => undefined
       })
 
       expect(() => maskRectsFor([toNodeId(99)])).not.toThrow()

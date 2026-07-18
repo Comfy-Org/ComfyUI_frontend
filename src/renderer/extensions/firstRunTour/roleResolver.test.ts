@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON,
+  WorkflowJSON04
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadTemplateWorkflow } from './__fixtures__/loadTemplateWorkflow'
@@ -181,20 +185,25 @@ describe('templateOverrides pin the heuristic result', () => {
   })
 })
 
-function workflow(nodes: unknown[], links: unknown[] = []): ComfyWorkflowJSON {
+function workflow(
+  nodes: ComfyNode[],
+  links: WorkflowJSON04['links'] = []
+): WorkflowJSON04 {
   return {
     version: 0.4,
+    last_node_id: Math.max(0, ...nodes.map((n) => Number(n.id))),
+    last_link_id: links.length,
     nodes,
     links,
     extra: {}
-  } as unknown as ComfyWorkflowJSON
+  }
 }
 
 function node(
   id: number,
   type: string,
-  extra: Record<string, unknown> = {}
-): Record<string, unknown> {
+  extra: Partial<ComfyNode> = {}
+): ComfyNode {
   return {
     id,
     type,
@@ -442,16 +451,20 @@ describe('resolveRoles — graceful degradation for any input', () => {
   })
 
   it('skips malformed link entries without throwing', () => {
-    const graph = {
-      ...workflow(
-        [
-          node(9, 'SaveImage', {
-            inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
-          })
-        ],
-        [null, 'garbage', [8, 3, 0, 9, 0, 'IMAGE']]
-      )
-    } as unknown as ComfyWorkflowJSON
+    // Malformed link entries are the point of this test, so only the links
+    // array bypasses the schema.
+    const graph = workflow(
+      [
+        node(9, 'SaveImage', {
+          inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+        })
+      ],
+      [
+        null,
+        'garbage',
+        [8, 3, 0, 9, 0, 'IMAGE']
+      ] as unknown as WorkflowJSON04['links']
+    )
 
     expect(() => resolveRoles(graph)).not.toThrow()
     expect(resolveRoles(graph).sink?.nodeId).toBe(toNodeId(9))
