@@ -165,7 +165,7 @@ function validateBadgeAgainstDef(
 }
 
 /**
- * Overlay remotely fetched price badges onto node defs, in place.
+ * Apply remotely fetched price badges to node defs, mutating them in place.
  *
  * Awaits the badge fetch for at most DEF_LOAD_RACE_TIMEOUT_MS; on timeout the
  * result is dropped for the whole session so badge state stays deterministic
@@ -173,7 +173,7 @@ function validateBadgeAgainstDef(
  * invalidated). Badges that fail validation against the def are skipped per
  * node: no badge beats a wrong one.
  */
-export async function overlayPriceBadges(
+export async function applyPriceBadges(
   defs: Record<string, ComfyNodeDef>
 ): Promise<void> {
   if (raceLostForSession) return
@@ -194,7 +194,7 @@ export async function overlayPriceBadges(
     })
     return
   }
-  // A concurrent overlay call may have timed out and marked the session lost
+  // A concurrent apply call may have timed out and marked the session lost
   // while we were awaiting; honor the all-or-nothing session invariant.
   if (raceLostForSession) return
   if (!result) return
@@ -203,9 +203,7 @@ export async function overlayPriceBadges(
     if (!def) continue
     const problem = validateBadgeAgainstDef(badge, def)
     if (problem) {
-      console.warn(
-        `[pricing/badges] skipping overlay for '${name}': ${problem}`
-      )
+      console.warn(`[pricing/badges] skipping badge for '${name}': ${problem}`)
       continue
     }
     def.price_badge = badge

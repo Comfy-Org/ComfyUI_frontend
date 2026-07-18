@@ -69,7 +69,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
-  overlayPriceBadges,
+  applyPriceBadges,
   startPriceBadgeFetch
 } from '@/services/priceBadgeService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -1097,7 +1097,7 @@ export class ComfyApp {
     const defs = _.mapValues(await api.getNodeDefs(), (def) =>
       translateNodeDef(def)
     )
-    await overlayPriceBadges(defs)
+    await applyPriceBadges(defs)
     return defs
   }
 
