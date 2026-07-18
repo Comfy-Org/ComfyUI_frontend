@@ -7,10 +7,10 @@ globs:
 
 # Engineering Guidelines
 
-General engineering principles for `src/`. File-type-specific conventions live in
-the sibling guidance docs (`typescript.md`, `vue-components.md`, `vitest.md`,
-`playwright.md`); the root `AGENTS.md` holds build/test commands, style, and
-guardrails.
+General engineering principles for the frontend codebase. File-type-specific
+conventions live in the sibling guidance docs (`typescript.md`,
+`vue-components.md`, `vitest.md`, `playwright.md`); the root `AGENTS.md` holds
+build/test commands, style, and guardrails.
 
 ## Development Guidelines
 
