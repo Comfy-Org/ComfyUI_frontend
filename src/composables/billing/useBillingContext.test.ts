@@ -585,6 +585,24 @@ describe('useBillingContext', () => {
       expect(isTeamPlan.value).toBe(true)
     })
 
+    it('is true for a per-credit Team plan in a personal workspace before its credit stop is populated', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockBillingControlEnabled.value = true
+      mockIsPersonal.value = true
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
     it('is true for a legacy team sub, identified by slug rather than credit stop', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockIsPersonal.value = false
