@@ -173,6 +173,19 @@ describe('fetchJobs', () => {
       expect(err.errorCode).toBeUndefined()
     })
 
+    it('leaves errorCode undefined for an oversized body rather than parsing it', async () => {
+      const oversized = `{"code":"INVALID_CURSOR","pad":"${'x'.repeat(20_000)}"}`
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: () => Promise.resolve(oversized)
+      })
+
+      const err = await fetchHistory(mockFetch).catch((e) => e)
+      expect(err).toBeInstanceOf(JobsApiError)
+      expect(err.errorCode).toBeUndefined()
+    })
+
     it('truncates oversized error bodies to 200 chars in the thrown message', async () => {
       const oversized = 'x'.repeat(500)
       const mockFetch = vi.fn().mockResolvedValue({

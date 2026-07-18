@@ -807,6 +807,36 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
+    it('preserves the cursor for an INVALID_CURSOR code carried by a non-400 status', async () => {
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+            { hasMore: true, nextCursor: 'cursor-1' }
+          )
+        )
+        .mockRejectedValueOnce(
+          new JobsApiError(500, '{"code":"INVALID_CURSOR"}')
+        )
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      // A rejected cursor is only ever a 400; the same code on a 500 is a real
+      // server error and must not reset the walk to the offset fallback.
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
+      expect(store.historyError).toMatchObject({ status: 500 })
+      expect(store.hasMoreHistory).toBe(true)
+
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+    })
+
     it('treats a cursorless empty page as terminal even if the server claims more', async () => {
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
         mockHistoryPage([], { hasMore: true })

@@ -39,9 +39,14 @@ export type JobsPageRequest =
  */
 const MAX_ERROR_BODY_LENGTH = 200
 
+// Cap synchronous JSON.parse so an oversized error body can't block the UI
+// thread; the structured error is a few hundred bytes at most.
+const MAX_ERROR_PARSE_LENGTH = 10_000
+
 const zJobsErrorBody = z.object({ code: z.string() })
 
 function parseErrorCode(body: string): string | undefined {
+  if (body.length > MAX_ERROR_PARSE_LENGTH) return undefined
   try {
     return zJobsErrorBody.safeParse(JSON.parse(body)).data?.code
   } catch {
