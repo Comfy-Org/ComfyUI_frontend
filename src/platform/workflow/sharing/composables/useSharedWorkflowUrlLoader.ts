@@ -42,7 +42,7 @@ export function useSharedWorkflowUrlLoader() {
   const { isLoggedIn } = useCurrentUser()
   const { mode, isAppMode } = useAppMode()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
-  const deepLink = usePreservedQueryDeepLink(SHARE_NAMESPACE, 'share')
+  const deepLink = usePreservedQueryDeepLink(SHARE_NAMESPACE)
 
   const clearShareIntent = () => deepLink.strip()
 

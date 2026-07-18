@@ -9,38 +9,42 @@ import {
 
 /**
  * Shared head/tail for URL deep-link loaders that survive a login redirect via
- * the preserved-query (sessionStorage) system. Extracts ONLY the boilerplate:
+ * the preserved-query (sessionStorage) system. `param` names BOTH the URL query
+ * key and its preserved-query namespace — they are always identical. Extracts
+ * ONLY the boilerplate:
  *  - hydrateAndRead(): restore the preserved param, reflect it in the URL, and
- *    return the value of `key` from the (possibly merged) query.
- *  - strip(): remove `key` from the URL and clear the preserved namespace.
+ *    return its value from the (possibly merged) query.
+ *  - strip(): remove `param` from the URL and clear the preserved namespace.
  * Each caller keeps its OWN gate/validation and action explicit — this helper
  * intentionally contains no auth logic.
  */
-export function usePreservedQueryDeepLink(namespace: string, key: string) {
+export function usePreservedQueryDeepLink(param: string) {
   const route = useRoute()
   const router = useRouter()
 
-  const hydrateAndRead = async (): Promise<LocationQuery[string]> => {
-    hydratePreservedQuery(namespace)
-    const merged = mergePreservedQueryIntoQuery(namespace, route.query)
+  const hydrateAndRead = async (): Promise<
+    LocationQuery[string] | undefined
+  > => {
+    hydratePreservedQuery(param)
+    const merged = mergePreservedQueryIntoQuery(param, route.query)
     if (merged) {
       await router.replace({ query: merged })
     }
-    return (merged ?? route.query)[key] as LocationQuery[string]
+    return (merged ?? route.query)[param] as LocationQuery[string] | undefined
   }
 
   const strip = () => {
-    if (key in route.query) {
+    if (param in route.query) {
       const newQuery = { ...route.query }
-      delete newQuery[key]
+      delete newQuery[param]
       router.replace({ query: newQuery }).catch((error) => {
         console.warn(
-          `[usePreservedQueryDeepLink] Failed to clean URL param "${key}":`,
+          `[usePreservedQueryDeepLink] Failed to clean URL param "${param}":`,
           error
         )
       })
     }
-    clearPreservedQuery(namespace)
+    clearPreservedQuery(param)
   }
 
   return { hydrateAndRead, strip }

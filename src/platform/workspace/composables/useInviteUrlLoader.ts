@@ -21,7 +21,7 @@ export function useInviteUrlLoader() {
   const toast = useToast()
   const workspaceStore = useTeamWorkspaceStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
-  const deepLink = usePreservedQueryDeepLink(INVITE_NAMESPACE, 'invite')
+  const deepLink = usePreservedQueryDeepLink(INVITE_NAMESPACE)
 
   /**
    * Loads and accepts workspace invite from URL query parameters if present.

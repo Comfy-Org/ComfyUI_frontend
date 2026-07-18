@@ -16,7 +16,7 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
  */
 export function useCreateWorkspaceUrlLoader() {
   const dialogService = useDialogService()
-  const deepLink = usePreservedQueryDeepLink(NAMESPACE, 'create_workspace')
+  const deepLink = usePreservedQueryDeepLink(NAMESPACE)
 
   /**
    * Opens the team workspaces dialog if `?create_workspace=1` is present.

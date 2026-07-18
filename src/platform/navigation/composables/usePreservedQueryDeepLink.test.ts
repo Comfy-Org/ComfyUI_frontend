@@ -44,7 +44,7 @@ describe('usePreservedQueryDeepLink', () => {
         invite: 'preserved-token'
       })
 
-      const { hydrateAndRead } = usePreservedQueryDeepLink('invite', 'invite')
+      const { hydrateAndRead } = usePreservedQueryDeepLink('invite')
       const value = await hydrateAndRead()
 
       expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
@@ -59,7 +59,7 @@ describe('usePreservedQueryDeepLink', () => {
     it('returns the current route value without replacing when nothing is preserved', async () => {
       mockRouteQuery.value = { invite: 'from-url' }
 
-      const { hydrateAndRead } = usePreservedQueryDeepLink('invite', 'invite')
+      const { hydrateAndRead } = usePreservedQueryDeepLink('invite')
       const value = await hydrateAndRead()
 
       expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
@@ -74,7 +74,7 @@ describe('usePreservedQueryDeepLink', () => {
     it('removes the key from the URL and clears the preserved namespace', () => {
       mockRouteQuery.value = { invite: 'from-url', other: 'keep' }
 
-      const { strip } = usePreservedQueryDeepLink('invite', 'invite')
+      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
 
       expect(mockRouterReplace).toHaveBeenCalledWith({
@@ -88,7 +88,7 @@ describe('usePreservedQueryDeepLink', () => {
     it('clears the preserved namespace without replacing when the key is absent', () => {
       mockRouteQuery.value = { other: 'keep' }
 
-      const { strip } = usePreservedQueryDeepLink('invite', 'invite')
+      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
 
       expect(mockRouterReplace).not.toHaveBeenCalled()
@@ -103,7 +103,7 @@ describe('usePreservedQueryDeepLink', () => {
       mockRouterReplace.mockRejectedValueOnce(replaceError)
       mockRouteQuery.value = { invite: 'from-url' }
 
-      const { strip } = usePreservedQueryDeepLink('invite', 'invite')
+      const { strip } = usePreservedQueryDeepLink('invite')
       strip()
       await vi.waitFor(() =>
         expect(warn).toHaveBeenCalledWith(
