@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const HOST_NODE_TYPE = 'KSampler'
@@ -21,35 +20,21 @@ test.describe(
   { tag: ['@vue-nodes', '@widget'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // Emulate a custom node registering an extra, un-keyable widget: a
-      // `nodeCreated` extension hook pushes a widget with an empty name onto the
-      // host node, alongside its normal schema widgets.
-      await comfyPage.page.evaluate((hostType) => {
-        window.app!.registerExtension({
-          name: 'TestExtension.EmptyNameWidget',
-          nodeCreated(node) {
-            if (node.type !== hostType) return
-            node.addWidget('text', '', '', () => {})
-          }
-        })
-      }, HOST_NODE_TYPE)
-
+      // Emulate a custom node registering an extra, un-keyable widget
       await comfyPage.nodeOps.clearGraph()
-      await comfyPage.nodeOps.addNode(HOST_NODE_TYPE, undefined, {
+      await comfyPage.nodeOps.addNode(HOST_NODE_TITLE, undefined, {
         x: 400,
         y: 200
       })
-      await comfyPage.vueNodes.waitForNodes()
+      await comfyPage.page.evaluate(() =>
+        graph!.nodes[0].addWidget('text', '', '', () => {})
+      )
     })
-
-    function getNode(comfyPage: ComfyPage) {
-      return comfyPage.vueNodes.getNodeByTitle(HOST_NODE_TITLE)
-    }
 
     test('renders schema widgets despite an un-keyable sibling', async ({
       comfyPage
     }) => {
-      const node = getNode(comfyPage)
+      const node = comfyPage.vueNodes.getNodeByTitle(HOST_NODE_TITLE)
       await expect(node).toBeVisible()
 
       // Precondition: the un-keyable empty-name widget really is on the node, so
