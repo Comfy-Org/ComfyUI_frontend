@@ -25,11 +25,13 @@ const zPriceBadgeDepends = z.object({
 
 // Stricter than the canonical zPriceBadge: the wire contract always carries
 // the full shape, so nothing is defaulted and unknown engines are rejected.
+// `satisfies` ties the output to the canonical PriceBadge type so a change
+// to it surfaces here as a compile error.
 const zRemotePriceBadge = z.object({
   engine: z.literal('jsonata'),
   depends_on: zPriceBadgeDepends,
   expr: z.string().min(1)
-})
+}) satisfies z.ZodType<PriceBadge>
 
 const zPriceBadgeMap = z.record(z.unknown())
 
