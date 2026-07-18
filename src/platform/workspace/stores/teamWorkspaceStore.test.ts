@@ -648,13 +648,17 @@ describe('useTeamWorkspaceStore', () => {
           id: 'user-1',
           name: 'User One',
           email: 'one@test.com',
-          joined_at: '2024-01-01T00:00:00Z'
+          joined_at: '2024-01-01T00:00:00Z',
+          role: 'member' as const,
+          credits_used_this_month: 0,
+          monthly_credit_limit: null
         },
         {
           id: 'user-2',
           name: 'User Two',
           email: 'two@test.com',
-          joined_at: '2024-01-02T00:00:00Z'
+          joined_at: '2024-01-02T00:00:00Z',
+          role: 'member' as const
         }
       ]
       mockWorkspaceApi.listMembers.mockResolvedValue({
@@ -672,6 +676,10 @@ describe('useTeamWorkspaceStore', () => {
       expect(result).toHaveLength(2)
       expect(store.members).toHaveLength(2)
       expect(store.members[0].name).toBe('User One')
+      expect(store.members[0].creditsUsedThisMonth).toBe(0)
+      expect(store.members[0].monthlyCreditLimit).toBeNull()
+      expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
+      expect(store.members[1].monthlyCreditLimit).toBeUndefined()
     })
 
     it('fetchMembers returns empty for personal workspace', async () => {

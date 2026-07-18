@@ -108,7 +108,17 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     memberMenus: computed(
       () =>
         new Map(
-          mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
+          mockFilteredMembers.value.map((member) => [
+            member.id,
+            member.email.toLowerCase() === 'owner@example.com' ||
+            member.id === mockOriginalOwnerId.value
+              ? [{ label: 'setCreditLimit' }]
+              : [
+                  { label: 'changeRole' },
+                  { label: 'setCreditLimit' },
+                  { label: 'removeMember' }
+                ]
+          ])
         )
     ),
     isPersonalWorkspace: mockIsPersonalWorkspace,
@@ -313,17 +323,17 @@ describe('MembersPanelContent', () => {
       ).toHaveLength(1)
     })
 
-    it('does not show more options for current user', () => {
+    it('shows a self-cap menu for the current user', () => {
       mockFilteredMembers.value = [
         createMember({ name: 'Owner User', email: 'owner@example.com' })
       ]
       renderComponent()
       expect(
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
-      ).toHaveLength(0)
+      ).toHaveLength(1)
     })
 
-    it('does not show more options on the original owner row', () => {
+    it('shows a menu on both the creator and other rows', () => {
       mockOriginalOwnerId.value = 'creator-1'
       mockFilteredMembers.value = [
         createMember({
@@ -339,8 +349,8 @@ describe('MembersPanelContent', () => {
       const creatorRow = screen.getByTestId('member-row-creator-1')
       const otherRow = screen.getByTestId('member-row-2')
       expect(
-        within(creatorRow).queryByRole('button', { name: 'g.moreOptions' })
-      ).toBeNull()
+        within(creatorRow).getByRole('button', { name: 'g.moreOptions' })
+      ).toBeInTheDocument()
       expect(
         within(otherRow).getByRole('button', { name: 'g.moreOptions' })
       ).toBeInTheDocument()

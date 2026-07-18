@@ -1,11 +1,10 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import type { WorkspaceMember } from '../stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
@@ -31,6 +30,7 @@ interface WorkspaceUIConfig {
   showPendingTab: boolean
   showSearch: boolean
   showRoleColumn: boolean
+  showCreditsColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
@@ -100,6 +100,7 @@ function getUIConfig(
       showPendingTab: false,
       showSearch: false,
       showRoleColumn: false,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
@@ -115,6 +116,7 @@ function getUIConfig(
       showPendingTab: true,
       showSearch: true,
       showRoleColumn: true,
+      showCreditsColumn: false,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -131,6 +133,7 @@ function getUIConfig(
     showPendingTab: false,
     showSearch: true,
     showRoleColumn: true,
+    showCreditsColumn: false,
     membersGridCols: 'grid-cols-[1fr_auto]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[1fr_auto]',
@@ -141,32 +144,14 @@ function getUIConfig(
 }
 
 /**
- * The original owner is the earliest-joined member. Ties on join date are
- * broken by the stable member id so exactly one member is the original owner.
- */
-function isOriginalOwnerByEmail(
-  members: WorkspaceMember[],
-  email: string
-): boolean {
-  if (members.length === 0) return false
-  const original = [...members].sort(
-    (a, b) =>
-      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
-  )[0]
-  return original.email.toLowerCase() === email
-}
-
-/**
  * Internal implementation of UI configuration composable.
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { userEmail } = useCurrentUser()
   const { isActiveSubscription, subscription } = useBillingContext()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
   const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
-  const members = computed(() => store.members)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -198,17 +183,30 @@ function useWorkspaceUIInternal() {
     )
   )
 
-  const uiConfig = computed<WorkspaceUIConfig>(() =>
-    getUIConfig(workspaceType.value, workspaceRole.value)
-  )
+  const { flags } = useFeatureFlags()
+
+  // The per-member credit limit UI (FE-1277) is mock-backed until FE-1278 wires
+  // the backend, so it stays behind a flag: off, the Members panel is unchanged.
+  const uiConfig = computed<WorkspaceUIConfig>(() => {
+    const base = getUIConfig(workspaceType.value, workspaceRole.value)
+    const showCreditsColumn =
+      flags.billingControlEnabled &&
+      workspaceType.value === 'team' &&
+      workspaceRole.value === 'owner'
+    if (!showCreditsColumn) return base
+    return {
+      ...base,
+      showCreditsColumn: true,
+      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      headerGridCols: 'grid-cols-[38%_18%_30%_14%]'
+    }
+  })
 
   // Cancel / reactivate / delete are original-owner-only; personal workspaces
   // are single-member, so the user is always their own original owner.
-  const isOriginalOwner = computed(() => {
-    if (isInPersonalWorkspace.value) return true
-    const email = userEmail.value?.toLowerCase()
-    return !!email && isOriginalOwnerByEmail(members.value, email)
-  })
+  const isOriginalOwner = computed(
+    () => isInPersonalWorkspace.value || store.isCurrentUserOriginalOwner
+  )
 
   // Cancellation is meaningful only for team (workspace) billing; personal plans
   // use legacy billing with different semantics.

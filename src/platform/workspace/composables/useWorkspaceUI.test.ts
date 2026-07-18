@@ -2,15 +2,12 @@ import { ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockStore = vi.hoisted(() => ({
   activeWorkspace: null as WorkspaceWithRole | null,
   isCurrentUserOriginalOwner: false,
   ensureMembersLoaded: vi.fn()
 }))
-const mockMembers = vi.hoisted(() => ({ value: [] as WorkspaceMember[] }))
-const mockUserEmail = vi.hoisted(() => ({ value: null as string | null }))
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 
@@ -25,9 +22,6 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     get isWorkspaceSubscribed() {
       return false
     },
-    get members() {
-      return mockMembers.value
-    },
     get isCurrentUserOriginalOwner() {
       return mockStore.isCurrentUserOriginalOwner
     },
@@ -35,14 +29,22 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail: ref(mockUserEmail.value) })
-}))
-
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: ref(mockIsActiveSubscription.value),
     subscription: ref({ isCancelled: mockIsCancelled.value })
+  })
+}))
+
+const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get billingControlEnabled() {
+        return mockBillingControlEnabled.value
+      }
+    }
   })
 }))
 
@@ -82,10 +84,9 @@ function resetStore() {
   mockStore.activeWorkspace = null
   mockStore.isCurrentUserOriginalOwner = false
   mockStore.ensureMembersLoaded.mockReset()
-  mockMembers.value = []
-  mockUserEmail.value = null
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
+  mockBillingControlEnabled.value = false
 }
 
 describe('useWorkspaceUI', () => {
@@ -195,6 +196,25 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.pendingGridCols).toBe(
         'grid-cols-[50%_20%_20%_10%]'
       )
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+    })
+
+    it('keeps the Members grid unchanged while credit limits are disabled', async () => {
+      const ui = await loadComposable()
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+      expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[50%_40%_10%]')
+    })
+
+    it('adds the credits column when the credit-limit flag is enabled', async () => {
+      mockBillingControlEnabled.value = true
+      const ui = await loadComposable()
+      expect(ui.uiConfig.value.showCreditsColumn).toBe(true)
+      expect(ui.uiConfig.value.membersGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
+      expect(ui.uiConfig.value.headerGridCols).toBe(
+        'grid-cols-[38%_18%_30%_14%]'
+      )
     })
   })
 
@@ -237,23 +257,6 @@ describe('useWorkspaceUI', () => {
   })
 
   describe('isOriginalOwner', () => {
-    const earlier = new Date('2026-01-01T00:00:00Z')
-
-    function member(
-      id: string,
-      email: string,
-      joinDate: Date
-    ): WorkspaceMember {
-      return {
-        id,
-        name: id,
-        email,
-        joinDate,
-        role: 'owner',
-        isOriginalOwner: false
-      }
-    }
-
     beforeEach(() => {
       mockStore.activeWorkspace = teamOwnerWorkspace
     })
@@ -265,31 +268,17 @@ describe('useWorkspaceUI', () => {
       expect(ui.isOriginalOwner.value).toBe(true)
     })
 
-    it('names the earliest-joined member as the original owner', async () => {
-      mockMembers.value = [
-        member('m2', 'late@example.com', new Date('2026-02-01T00:00:00Z')),
-        member('m1', 'early@example.com', earlier)
-      ]
-      mockUserEmail.value = 'early@example.com'
+    it('uses the store original-owner signal for a team workspace', async () => {
+      mockStore.isCurrentUserOriginalOwner = true
       const ui = await loadComposable()
 
       expect(ui.isOriginalOwner.value).toBe(true)
     })
 
-    it('breaks join-date ties with the member id so only one is the owner', async () => {
-      mockMembers.value = [
-        member('m-b', 'b@example.com', earlier),
-        member('m-a', 'a@example.com', earlier)
-      ]
+    it('fails closed when the store does not identify the current user', async () => {
+      const ui = await loadComposable()
 
-      mockUserEmail.value = 'a@example.com'
-      const owner = await loadComposable()
-      expect(owner.isOriginalOwner.value).toBe(true)
-
-      vi.resetModules()
-      mockUserEmail.value = 'b@example.com'
-      const notOwner = await loadComposable()
-      expect(notOwner.isOriginalOwner.value).toBe(false)
+      expect(ui.isOriginalOwner.value).toBe(false)
     })
   })
 
