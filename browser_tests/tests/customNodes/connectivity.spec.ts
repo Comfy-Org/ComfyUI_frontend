@@ -9,7 +9,10 @@ import {
   dismissTemplatesDialog,
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import {
+  isForeignExecutionNoise,
+  unallowlistedErrorsForPacks
+} from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
@@ -143,19 +146,26 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   consoleErrors.stop()
-  // Deliberately raw, not routed through the pack console ledger
-  // (consoleErrorLedger.ts): the sweep holds zero console errors without
-  // exceptions today, and the stricter contract catches noise the moment
-  // wiring provokes it. If a ledgered pattern ever fires here, filter
-  // through unallowlistedErrors with the pack taken from the offending
-  // pair's nodes (the sweep is cross-pack), instead of silently
-  // loosening this assert. The wiring sweep queues no prompts, so a
-  // prompt-execution error here is a prior tier's async stray, not this
-  // test's (isForeignExecutionNoise; ARCHITECTURE section 9 principle).
-  expect(
-    consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
-    'console errors during breadth sweep'
-  ).toEqual([])
+  // Routed through the pack console ledger scoped to the packs actually in
+  // the corpus (the escape hatch this assert always documented): a KJNodes
+  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
+  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
+  // and upstream-report status. Every non-ledgered error still fails. The
+  // wiring sweep queues no prompts, so a prompt-execution error here is a
+  // prior tier's async stray, not this test's (isForeignExecutionNoise;
+  // ARCHITECTURE section 9 principle).
+  const sweepErrors = consoleErrors.errors.filter(
+    (error) => !isForeignExecutionNoise(error)
+  )
+  const unledgered = unallowlistedErrorsForPacks(
+    [...installedPacks],
+    sweepErrors
+  )
+  if (sweepErrors.length > unledgered.length)
+    console.log(
+      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
+    )
+  expect(unledgered, 'console errors during breadth sweep').toEqual([])
 
   const widgetOnly = results.filter(
     (result) =>
