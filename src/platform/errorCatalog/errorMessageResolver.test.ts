@@ -173,12 +173,12 @@ describe('errorMessageResolver', () => {
       }),
       nodeDisplayName: 'WanVideo Lora Select Multi'
     })
-    const interpolatedCopy = [result.displayDetails, result.toastMessage].join(
-      ' '
-    )
+    const htmlEntityPattern = /&(?:#x?[0-9a-f]+|[a-z]+);/i
 
-    expect(interpolatedCopy).toContain(receivedValue)
-    expect(interpolatedCopy).not.toMatch(/&(?:amp|lt|gt|#x2F|#39|#x27);/)
+    expect(result.displayDetails).toContain(receivedValue)
+    expect(result.displayDetails).not.toMatch(htmlEntityPattern)
+    expect(result.toastMessage).toContain(receivedValue)
+    expect(result.toastMessage).not.toMatch(htmlEntityPattern)
   })
 
   it('uses catalog fallbacks when required_input_missing lacks node or input labels', () => {
