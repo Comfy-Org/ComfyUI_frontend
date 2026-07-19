@@ -1,16 +1,19 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import type {
+  BillingBalanceResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { creditsToCents } from '@/base/credits/comfyCredits'
 
 import { cloudBillingApiFixture as test } from '@e2e/fixtures/cloudBillingApiFixture'
 import { SubscriptionCheckoutDialog } from '@e2e/fixtures/components/SubscriptionCheckoutDialog'
 import {
   DEFAULT_BILLING_PLANS,
+  DEFAULT_BILLING_STATUS,
   DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE,
   DEFAULT_SUBSCRIBE_RESPONSE,
   PENDING_BILLING_OPERATION,
@@ -33,6 +36,22 @@ const SETTINGS = {
   'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true,
   'Comfy.RightSidePanel.ShowErrorsTab': false
+}
+const EMPTY_BILLING_BALANCE: BillingBalanceResponse = {
+  amount_micros: 0,
+  currency: 'usd',
+  effective_balance_micros: 0,
+  cloud_credit_balance_micros: 0,
+  prepaid_balance_micros: 0
+}
+const CREATOR_MONTHLY_CREDITS = 7_400
+const creatorMonthlyGrantCents = creditsToCents(CREATOR_MONTHLY_CREDITS)
+const CREATOR_MONTHLY_GRANT: BillingBalanceResponse = {
+  amount_micros: creatorMonthlyGrantCents,
+  currency: 'usd',
+  effective_balance_micros: creatorMonthlyGrantCents,
+  cloud_credit_balance_micros: creatorMonthlyGrantCents,
+  prepaid_balance_micros: 0
 }
 
 function plan(slug: string) {
@@ -116,6 +135,16 @@ async function confirmNewPlan(
   await expect(dialog.successHeading).toBeVisible()
 }
 
+async function closeCheckout(
+  dialog: SubscriptionCheckoutDialog
+): Promise<void> {
+  await dialog.root
+    .getByRole('button', { name: 'Close', exact: true })
+    .last()
+    .click()
+  await expect(dialog.root).toBeHidden()
+}
+
 test.describe('Subscription transitions', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
@@ -160,6 +189,70 @@ test.describe('Subscription transitions', { tag: '@cloud' }, () => {
     expect(billingApi.requests.subscribe[0]).toEqual(
       expect.objectContaining({ plan_slug: 'pro-annual' })
     )
+  })
+
+  test('TB-02 refreshes the granted credits after subscription purchase', async ({
+    billingApi,
+    page
+  }) => {
+    await billingApi.setup({
+      status: DEFAULT_BILLING_STATUS,
+      balance: EMPTY_BILLING_BALANCE,
+      postSubscribeBalance: CREATOR_MONTHLY_GRANT,
+      previewResponse: preview('creator-monthly')
+    })
+    const dialog = await openCheckout(page)
+
+    await dialog.selectBillingCycle('monthly')
+    await confirmNewPlan(dialog, 'Subscribe to Creator', 'Subscribe to Creator')
+    await closeCheckout(dialog)
+    await page.getByRole('button', { name: 'Current user' }).click()
+
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    await expect(popover.getByText('7,400', { exact: true })).toBeVisible()
+    await popover.getByTestId('manage-plan-menu-item').click()
+
+    const settings = page.getByTestId('settings-dialog')
+    await expect(settings).toBeVisible()
+    const content = settings.getByRole('main')
+    await expect(content.getByText('Total credits')).toBeVisible()
+    await expect(content.getByText('7,400', { exact: true })).toBeVisible()
+  })
+
+  test('TB-02 keeps a completed subscription out of retry state when balance refresh fails', async ({
+    billingApi,
+    page
+  }) => {
+    await billingApi.setup({
+      status: DEFAULT_BILLING_STATUS,
+      balance: EMPTY_BILLING_BALANCE,
+      postSubscribeBalance: CREATOR_MONTHLY_GRANT,
+      previewResponse: preview('creator-monthly')
+    })
+    const dialog = await openCheckout(page)
+
+    await dialog.selectBillingCycle('monthly')
+    await dialog.personalPlanButton('Subscribe to Creator').click()
+    await expect(dialog.paymentPreviewHeading).toBeVisible()
+    billingApi.setQueryFailure('balance', {
+      status: 503,
+      message: 'Billing balance temporarily unavailable'
+    })
+    await dialog.personalPlanButton('Subscribe to Creator').click()
+
+    await expect.poll(() => billingApi.requests.subscribe.length).toBe(1)
+    expect(
+      billingApi.state.status,
+      'the mocked subscription write should already be complete'
+    ).toEqual(
+      expect.objectContaining({
+        is_active: true,
+        plan_slug: 'creator-monthly'
+      })
+    )
+    await expect(dialog.successHeading).toBeVisible()
+    await expect(dialog.personalPlanButton('Subscribe to Creator')).toBeHidden()
   })
 
   test('TB-06 sends the selected annual Team stop and shows the refreshed Team plan', async ({

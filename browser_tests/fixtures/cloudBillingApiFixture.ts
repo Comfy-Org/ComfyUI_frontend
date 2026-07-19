@@ -45,6 +45,8 @@ export interface BillingMutationRequests {
   resubscribe: ResubscribeRequest[]
 }
 
+export type BillingQuery = 'status' | 'balance' | 'plans'
+
 export interface CloudBillingState {
   status: BillingStatusResponse
   balance: BillingBalanceResponse
@@ -66,8 +68,10 @@ export interface CloudBillingSetupOptions {
   topupResponse?: CreateTopupResponse
   cancelResponse?: CancelSubscriptionResponse
   resubscribeResponse?: ResubscribeResponse
+  postSubscribeBalance?: BillingBalanceResponse
   operationResponses?: Record<string, readonly BillingOpStatusResponse[]>
   failures?: Partial<Record<keyof BillingMutationRequests, BillingHttpFailure>>
+  queryFailures?: Partial<Record<BillingQuery, BillingHttpFailure>>
 }
 
 type PendingMutation =
@@ -84,14 +88,15 @@ export class CloudBillingApiMock {
     cancel: [],
     resubscribe: []
   }
-
   private _state: CloudBillingState | null = null
   private previewResponse = structuredClone(DEFAULT_PREVIEW_SUBSCRIBE_RESPONSE)
   private subscribeResponse = structuredClone(DEFAULT_SUBSCRIBE_RESPONSE)
   private topupResponse = structuredClone(DEFAULT_TOPUP_RESPONSE)
   private cancelResponse = structuredClone(DEFAULT_CANCEL_RESPONSE)
   private resubscribeResponse = structuredClone(DEFAULT_RESUBSCRIBE_RESPONSE)
+  private postSubscribeBalance: BillingBalanceResponse | null = null
   private failures: CloudBillingSetupOptions['failures'] = {}
+  private readonly queryFailures = new Map<BillingQuery, BillingHttpFailure>()
   private readonly operationResponses = new Map<
     string,
     readonly BillingOpStatusResponse[]
@@ -139,7 +144,16 @@ export class CloudBillingApiMock {
     this.resubscribeResponse = structuredClone(
       options.resubscribeResponse ?? DEFAULT_RESUBSCRIBE_RESPONSE
     )
+    this.postSubscribeBalance = options.postSubscribeBalance
+      ? structuredClone(options.postSubscribeBalance)
+      : null
     this.failures = structuredClone(options.failures ?? {})
+
+    for (const [query, failure] of Object.entries(
+      options.queryFailures ?? {}
+    )) {
+      this.queryFailures.set(query as BillingQuery, structuredClone(failure))
+    }
 
     for (const [operationId, responses] of Object.entries(
       options.operationResponses ?? {}
@@ -149,6 +163,21 @@ export class CloudBillingApiMock {
 
     await this.page.route(BILLING_ROUTE_PATTERN, this.routeHandler)
     return this._state
+  }
+
+  setBalance(balance: BillingBalanceResponse): void {
+    this.state.balance = structuredClone(balance)
+  }
+
+  setQueryFailure(
+    query: BillingQuery,
+    failure: BillingHttpFailure | null
+  ): void {
+    if (failure) {
+      this.queryFailures.set(query, structuredClone(failure))
+      return
+    }
+    this.queryFailures.delete(query)
   }
 
   async dispose(): Promise<void> {
@@ -162,15 +191,15 @@ export class CloudBillingApiMock {
     const pathname = new URL(request.url()).pathname
 
     if (method === 'GET' && pathname.endsWith('/api/billing/status')) {
-      await route.fulfill({ json: this.state.status })
+      await this.handleQuery(route, 'status', this.state.status)
       return
     }
     if (method === 'GET' && pathname.endsWith('/api/billing/balance')) {
-      await route.fulfill({ json: this.state.balance })
+      await this.handleQuery(route, 'balance', this.state.balance)
       return
     }
     if (method === 'GET' && pathname.endsWith('/api/billing/plans')) {
-      await route.fulfill({ json: this.state.plans })
+      await this.handleQuery(route, 'plans', this.state.plans)
       return
     }
     if (
@@ -208,6 +237,26 @@ export class CloudBillingApiMock {
     }
 
     await route.fallback()
+  }
+
+  private async handleQuery(
+    route: Route,
+    query: BillingQuery,
+    response:
+      | BillingStatusResponse
+      | BillingBalanceResponse
+      | BillingPlansResponse
+  ): Promise<void> {
+    const failure = this.queryFailures.get(query)
+    if (failure) {
+      const body: ErrorResponse = {
+        code: failure.code ?? 'billing_mock_error',
+        message: failure.message
+      }
+      await route.fulfill({ status: failure.status, json: body })
+      return
+    }
+    await route.fulfill({ json: response })
   }
 
   private async handlePreviewSubscribe(route: Route): Promise<void> {
@@ -354,6 +403,9 @@ export class CloudBillingApiMock {
           : null
     }
     this.state.plans.current_plan_slug = request.plan_slug
+    if (this.postSubscribeBalance) {
+      this.state.balance = structuredClone(this.postSubscribeBalance)
+    }
   }
 
   private applyTopup(amountCents: number): void {
