@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
@@ -33,6 +34,7 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
 }
@@ -201,6 +203,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
         remoteConfig.value.consolidated_billing_enabled,
         cachedConsolidatedBillingEnabled
+      )
+    },
+    get billingControlEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.BILLING_CONTROL_ENABLED,
+        remoteConfig.value.billing_control_enabled,
+        cachedBillingControlEnabled
       )
     },
     get freeTierJobAllowanceEnabled() {
