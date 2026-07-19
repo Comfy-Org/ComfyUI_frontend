@@ -46,7 +46,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
     useWorkspaceUI: () => ({
       permissions: computed(() => ({
         canManageSubscription: true,
-        canManageSubscriptionLifecycle: true,
         canTopUp: true
       }))
     })

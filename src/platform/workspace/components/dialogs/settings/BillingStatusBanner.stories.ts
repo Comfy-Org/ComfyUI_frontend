@@ -57,7 +57,6 @@ const cancelled: SubscriptionInfo = {
 const owner: Partial<WorkspaceUIMockState> = {}
 const member: Partial<WorkspaceUIMockState> = {
   canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
   canTopUp: false
 }
 
@@ -161,18 +160,4 @@ export const EndingOwner: Story = story(
     subscriptionStatus: 'canceled'
   },
   owner
-)
-
-/**
- * Reactivate is lifecycle-gated to the original owner, so a non-original owner
- * sees the notice read-only.
- */
-export const EndingNonOriginalOwner: Story = story(
-  {
-    subscription: cancelled,
-    isActiveSubscription: true,
-    billingStatus: 'paid',
-    subscriptionStatus: 'canceled'
-  },
-  { canManageSubscriptionLifecycle: false }
 )

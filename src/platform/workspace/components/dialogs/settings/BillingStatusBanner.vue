@@ -84,9 +84,6 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const canManageLifecycle = computed(
-  () => permissions.value.canManageSubscriptionLifecycle
-)
 const canTopUp = computed(() => permissions.value.canTopUp)
 
 const cycleResetDate = computed(() => {
@@ -148,7 +145,7 @@ const banner = computed<BannerView | null>(() => {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
-        action: canManageLifecycle.value ? 'reactivate' : null,
+        action: canManage.value ? 'reactivate' : null,
         dismissible: false
       }
     default:

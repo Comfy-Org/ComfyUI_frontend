@@ -2,15 +2,10 @@ import { ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockStore = vi.hoisted(() => ({
-  activeWorkspace: null as WorkspaceWithRole | null,
-  isCurrentUserOriginalOwner: false,
-  ensureMembersLoaded: vi.fn()
+  activeWorkspace: null as WorkspaceWithRole | null
 }))
-const mockMembers = vi.hoisted(() => ({ value: [] as WorkspaceMember[] }))
-const mockUserEmail = vi.hoisted(() => ({ value: null as string | null }))
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 
@@ -24,19 +19,8 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     },
     get isWorkspaceSubscribed() {
       return false
-    },
-    get members() {
-      return mockMembers.value
-    },
-    get isCurrentUserOriginalOwner() {
-      return mockStore.isCurrentUserOriginalOwner
-    },
-    ensureMembersLoaded: mockStore.ensureMembersLoaded
+    }
   })
-}))
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail: ref(mockUserEmail.value) })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -80,10 +64,6 @@ async function loadComposable() {
 
 function resetStore() {
   mockStore.activeWorkspace = null
-  mockStore.isCurrentUserOriginalOwner = false
-  mockStore.ensureMembersLoaded.mockReset()
-  mockMembers.value = []
-  mockUserEmail.value = null
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
 }
@@ -236,111 +216,29 @@ describe('useWorkspaceUI', () => {
     })
   })
 
-  describe('isOriginalOwner', () => {
-    const earlier = new Date('2026-01-01T00:00:00Z')
-
-    function member(
-      id: string,
-      email: string,
-      joinDate: Date
-    ): WorkspaceMember {
-      return {
-        id,
-        name: id,
-        email,
-        joinDate,
-        role: 'owner',
-        isOriginalOwner: false
-      }
-    }
-
-    beforeEach(() => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-    })
-
-    it('treats the personal owner as their own original owner', async () => {
-      mockStore.activeWorkspace = personalWorkspace
-      const ui = await loadComposable()
-
-      expect(ui.isOriginalOwner.value).toBe(true)
-    })
-
-    it('names the earliest-joined member as the original owner', async () => {
-      mockMembers.value = [
-        member('m2', 'late@example.com', new Date('2026-02-01T00:00:00Z')),
-        member('m1', 'early@example.com', earlier)
-      ]
-      mockUserEmail.value = 'early@example.com'
-      const ui = await loadComposable()
-
-      expect(ui.isOriginalOwner.value).toBe(true)
-    })
-
-    it('breaks join-date ties with the member id so only one is the owner', async () => {
-      mockMembers.value = [
-        member('m-b', 'b@example.com', earlier),
-        member('m-a', 'a@example.com', earlier)
-      ]
-
-      mockUserEmail.value = 'a@example.com'
-      const owner = await loadComposable()
-      expect(owner.isOriginalOwner.value).toBe(true)
-
-      vi.resetModules()
-      mockUserEmail.value = 'b@example.com'
-      const notOwner = await loadComposable()
-      expect(notOwner.isOriginalOwner.value).toBe(false)
-    })
-  })
-
-  // Drives off the members-list self-row original-owner signal, surfaced by the
-  // store getter `isCurrentUserOriginalOwner`.
-  describe('subscription lifecycle (creator-only)', () => {
+  describe('subscription lifecycle', () => {
     it('grants lifecycle to the personal-workspace sole owner', async () => {
       mockStore.activeWorkspace = personalWorkspace
       const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
+      expect(ui.permissions.value.canManageSubscription).toBe(true)
     })
 
     it('grants lifecycle to a team owner who is the original owner', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = true
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
     })
 
-    it('withholds lifecycle from a promoted (non-creator) team owner', async () => {
+    it('grants lifecycle to a promoted team owner', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = false
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
-    })
-
-    it('fails closed while the members list is still loading', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = false
-      const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
     })
 
     it('withholds lifecycle from members', async () => {
       mockStore.activeWorkspace = teamMemberWorkspace
       const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
-    })
-
-    it('delegates member loading to the store when a team workspace becomes active', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      await loadComposable()
-      expect(mockStore.ensureMembersLoaded).toHaveBeenCalled()
-    })
-
-    it('does not load members for a personal workspace', async () => {
-      mockStore.activeWorkspace = personalWorkspace
-      await loadComposable()
-      expect(mockStore.ensureMembersLoaded).not.toHaveBeenCalled()
+      expect(ui.permissions.value.canManageSubscription).toBe(false)
     })
   })
 

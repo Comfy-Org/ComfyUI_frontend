@@ -195,7 +195,9 @@
                   {{ $t('subscription.manageBilling') }}
                 </Button>
                 <Button
-                  v-if="isTeamPlanCancelled && isOriginalOwner"
+                  v-if="
+                    isTeamPlanCancelled && permissions.canManageSubscription
+                  "
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -335,7 +337,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isOriginalOwner, isTeamPlanCancelled } = useWorkspaceUI()
+const { permissions, isTeamPlanCancelled } = useWorkspaceUI()
 const { t, n, locale } = useI18n()
 
 const billingOperationStore = useBillingOperationStore()

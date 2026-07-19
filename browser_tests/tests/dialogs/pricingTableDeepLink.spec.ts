@@ -17,15 +17,8 @@ import {
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * The `?pricing=` deep link opens the pricing table on app load, gated to the
- * original owner (canManageSubscriptionLifecycle). Drives a raw `page` so the
- * cloud app boots against fully mocked endpoints, like the survey-gate spec.
- */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-// CloudAuthHelper.mockAuth() signs in as this email; the original-owner gate
-// matches it against the members self-row.
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
 // consolidated_billing_enabled routes personal workspaces to the unified
@@ -100,10 +93,15 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('opens for a team original owner', async ({ page }) => {
+  test('opens for a promoted team owner', async ({ page }) => {
     test.slow()
     await setupCloudApp(page, workspace('team', 'owner'), [
-      member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
+      member({
+        email: 'creator@test.comfy.org',
+        role: 'owner',
+        is_original_owner: true
+      }),
+      member({ email: SELF_EMAIL, role: 'owner' })
     ])
 
     await page.goto(`${APP_URL}/?pricing=1`)

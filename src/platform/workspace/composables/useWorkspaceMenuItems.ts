@@ -21,7 +21,6 @@ export function useWorkspaceMenuItems() {
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
-    isOriginalOwner,
     isTeamPlanCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
@@ -51,7 +50,7 @@ export function useWorkspaceMenuItems() {
 
   const canCancelPlan = computed(
     () =>
-      isOriginalOwner.value &&
+      permissions.value.canManageSubscription &&
       isActiveSubscription.value &&
       !isTeamPlanCancelled.value &&
       !isFreeTier.value

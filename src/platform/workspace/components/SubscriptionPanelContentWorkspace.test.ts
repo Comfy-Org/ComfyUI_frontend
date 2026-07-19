@@ -53,19 +53,6 @@ const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
-const mockMembers = ref([
-  {
-    id: 'member-1',
-    email: 'creator@example.com',
-    joinDate: new Date('2026-01-01T00:00:00Z')
-  },
-  {
-    id: 'member-2',
-    email: 'me@example.com',
-    joinDate: new Date('2026-02-01T00:00:00Z')
-  }
-])
-const mockUserEmail = ref<string | null>('me@example.com')
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
   id: 'team_700',
@@ -152,23 +139,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    members: mockMembers
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
 }))
-
-// Mirrors useWorkspaceUI's original-owner derivation (earliest join date, ties
-// broken by member id) so member/email toggles still drive owner-only menus.
-const mockIsOriginalOwner = computed(() => {
-  if (mockIsInPersonalWorkspace.value) return true
-  const email = mockUserEmail.value?.toLowerCase()
-  if (!email || mockMembers.value.length === 0) return false
-  const original = [...mockMembers.value].sort(
-    (a, b) =>
-      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
-  )[0]
-  return original.email.toLowerCase() === email
-})
 
 const mockIsTeamPlanCancelled = computed(
   () =>
@@ -190,7 +163,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    isOriginalOwner: mockIsOriginalOwner,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,
     deleteDisabledTooltipKey: computed(() =>
@@ -283,19 +255,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
-    mockMembers.value = [
-      {
-        id: 'member-1',
-        email: 'creator@example.com',
-        joinDate: new Date('2026-01-01T00:00:00Z')
-      },
-      {
-        id: 'member-2',
-        email: 'me@example.com',
-        joinDate: new Date('2026-02-01T00:00:00Z')
-      }
-    ]
-    mockUserEmail.value = 'me@example.com'
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
     mockPlanSlug.value = 'team-monthly'
@@ -405,39 +364,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText('Invite members')).toBeInTheDocument()
   })
 
-  it('reactivates a cancelled plan as the original owner, keeping Manage billing', async () => {
+  it('reactivates a cancelled plan as a promoted owner', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
-    mockUserEmail.value = 'creator@example.com'
     renderComponent()
 
     expect(
-      screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
-    ).not.toBeInTheDocument()
-    expect(
       screen.getByRole('button', { name: 'Manage billing' })
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Change plan' })
-    ).not.toBeInTheDocument()
-
     await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
     expect(mockResubscribe).toHaveBeenCalledOnce()
-  })
-
-  it('hides Reactivate plan from a promoted owner on a cancelled plan', () => {
-    mockSubscriptionStatus.value = 'canceled'
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Manage billing' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
-    ).not.toBeInTheDocument()
   })
 
   it('shows the zero-state subscribe prompt to unsubscribed team owners', () => {
@@ -656,37 +592,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a promoted owner Edit, Leave, and subscription-locked Delete', () => {
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Edit workspace details' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Cancel plan' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
-  })
-
-  it('offers the original owner Edit, Cancel plan, and a subscription-locked Delete', async () => {
+  it('offers a promoted owner Edit, Cancel plan, Leave, and subscription-locked Delete', async () => {
     const user = userEvent.setup()
-    mockUserEmail.value = 'creator@example.com'
     renderComponent()
 
     expect(
       screen.getByRole('button', { name: 'Edit workspace details' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
-    expect(
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete Workspace' })
+    ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
     expect(mockShowCancelSubscriptionDialog).toHaveBeenCalledOnce()

@@ -29,7 +29,6 @@ const state = vi.hoisted(() => ({
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
-  canManageSubscriptionLifecycle: true,
   canTopUp: true,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
@@ -63,7 +62,6 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
       canTopUp: state.canTopUp
     })),
     workspaceType: computed(() => state.workspaceType as WorkspaceType)
@@ -166,7 +164,6 @@ describe('BillingStatusBanner', () => {
     state.renewalDate = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
-    state.canManageSubscriptionLifecycle = true
     state.canTopUp = true
     vi.clearAllMocks()
   })
@@ -298,20 +295,15 @@ describe('BillingStatusBanner', () => {
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the ending banner read-only to a non-original owner (Reactivate is lifecycle-gated)', () => {
+  it('hides the ending banner from a member', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
       endDate: '2026-08-01T00:00:00Z'
     }
-    state.canManageSubscriptionLifecycle = false
+    state.canManageSubscription = false
     renderBanner()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
-    )
-    expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
