@@ -53,13 +53,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -79,17 +81,17 @@ const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName, members } = storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
-const { workspaceType, workspaceRole } = useWorkspaceUI()
-const isPersonalWorkspace = computed(() => workspaceType.value === 'personal')
+const { workspaceRole } = useWorkspaceUI()
+const { hasTeamPlan, isPlanLoading } = useTeamPlan()
 const activeTab = ref(defaultTab)
 
-// Per design, the tab counts members only when there is more than the owner
 const showMembersTabCount = computed(
-  () => !isPersonalWorkspace.value && members.value.length > 1
+  () => hasTeamPlan.value && members.value.length > 1
 )
 
-onMounted(() => {
-  fetchMembers()
-  fetchPendingInvites()
-})
+whenever(
+  () => hasTeamPlan.value && !isPlanLoading.value,
+  () => Promise.allSettled([fetchMembers(), fetchPendingInvites()]),
+  { immediate: true }
+)
 </script>
