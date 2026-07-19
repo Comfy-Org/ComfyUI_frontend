@@ -15,6 +15,9 @@
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
+/* Safelist monochrome (masked) comfy provider brand icons used in template cards */
+@source inline("icon-mask-[comfy--{bfl,bria,bytedance,elevenlabs,gemini,grok,hitpaw,ideogram,kling,ltxv,luma,magnific,minimax,openai,pixverse,recraft,rodin,runway,sora,stability-ai,tencent,topaz,tripo,veo,vidu,wan,wavespeed}]");
+
 @custom-variant touch (@media (hover: none));
 
 @theme {
