@@ -18,16 +18,6 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
 // devtools backend during setup.
 
-/**
- * Member role change (Settings ▸ Workspace ▸ Members) — Figma 2993-15512.
- *
- * The viewer is a promoted owner (not the workspace creator), so the spec can
- * distinguish the creator guard from the self guard: the creator row and the
- * viewer's own row hide the row menu, every other row exposes
- * "Change role ›" (Owner / Member) plus "Remove member". Promoting a member
- * sends PATCH /api/workspace/members/:id {role}, flips the Role column,
- * re-sorts the row under the creator, and the promoted owner stays demotable.
- */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 async function openMembersTab(page: Page): Promise<Locator> {
@@ -95,6 +85,7 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Upgrade to Team' })
     ).toHaveCount(0)
+    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
 
     await inviteButton.click()
     await expect(
@@ -108,28 +99,47 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
 test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
-  test('row menus respect creator and self guards', async ({ page }) => {
-    await new CloudWorkspaceMockHelper(page).setup()
+  test('additional workspace creator has actions while self does not', async ({
+    page
+  }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup()
     const content = await openMembersTab(page)
+    const creatorRow = memberRow(content, CREATOR.email)
 
-    // US8/US9 — no row actions on the creator row (Liz) nor on the viewer's
-    // own row; the two plain members each expose a menu.
     await expect(
       menuButton(memberRow(content, MEMBER_JOHN.email))
     ).toBeVisible()
     await expect(
       menuButton(memberRow(content, MEMBER_JANE.email))
     ).toBeVisible()
-    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
+    await expect(menuButton(creatorRow)).toBeVisible()
     await expect(menuButton(memberRow(content, VIEWER.email))).toHaveCount(0)
 
-    // US1/US12 — the row menu exposes Change role and the FE-768 remove flow.
-    await menuButton(memberRow(content, MEMBER_JANE.email)).click()
+    await menuButton(creatorRow).click()
     await expect(
       page.getByRole('menuitem', { name: 'Change role' })
     ).toBeVisible()
     await page.getByRole('menuitem', { name: 'Remove member' }).click()
     await expect(page.getByText('Remove this member?')).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+    await menuButton(creatorRow).click()
+    await openChangeRoleSubmenu(page)
+    await page
+      .getByRole('menuitemradio', { name: 'Member', exact: true })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Demote Liz to member?' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Demote to member' }).click()
+
+    await expect(creatorRow.getByText('Member', { exact: true })).toBeVisible()
+    expect(state.patches).toEqual([
+      {
+        url: expect.stringContaining('/api/workspace/members/u-liz'),
+        role: 'member'
+      }
+    ])
   })
 
   // Skipped on cloud/1.45: confirm dialog renders on legacy PrimeVue (pre-Reka-cutover) — mask enter-transition race. Un-fixme after backporting the Reka dialog cutover.
@@ -183,9 +193,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       page.getByText('Manage members, payment methods, and workspace settings')
     ).toBeVisible()
     await expect(
-      page.getByText(
-        'Promote and demote other owners (except the workspace creator).'
-      )
+      page.getByText('Promote members and demote eligible owners.')
     ).toBeVisible()
 
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()

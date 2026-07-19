@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -20,6 +21,7 @@ export function useDowngradeToPersonal() {
   const { subscribe, previewSubscribe } = useBillingContext()
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
+  const { permissions } = useWorkspaceUI()
 
   const removableMembers = computed(() => {
     const hasFlag = members.value.some((m) => m.isOriginalOwner)
@@ -32,18 +34,31 @@ export function useDowngradeToPersonal() {
 
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
+  function ensureCanDowngrade(): void {
+    if (!permissions.value.canDowngradeToPersonal) {
+      throw new Error(t('subscription.downgrade.notAllowed'))
+    }
+  }
+
   async function refreshMembers(): Promise<void> {
+    if (!permissions.value.canManageSubscription) {
+      throw new Error(t('subscription.downgrade.notAllowed'))
+    }
     await workspaceStore.fetchMembers()
+    ensureCanDowngrade()
   }
 
   async function downgradeToPersonal(planSlug: string): Promise<void> {
+    ensureCanDowngrade()
     const preview = await previewSubscribe(planSlug)
     if (!preview?.allowed) {
       throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
     }
+    ensureCanDowngrade()
 
     const membersToRemove = removableMembers.value
     for (const member of membersToRemove) {
+      ensureCanDowngrade()
       try {
         await workspaceStore.removeMember(member.id)
       } catch (error) {
@@ -56,6 +71,7 @@ export function useDowngradeToPersonal() {
       }
     }
 
+    ensureCanDowngrade()
     const response = await subscribe(planSlug, {
       returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
       cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`

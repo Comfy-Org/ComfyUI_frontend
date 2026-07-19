@@ -515,25 +515,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     await renameWorkspace(activeWorkspaceId.value, name)
   }
 
-  /**
-   * Leave the current workspace.
-   * Switches to personal workspace after leaving.
-   */
   async function leaveWorkspace(): Promise<void> {
     const current = activeWorkspace.value
-    if (!current || current.type === 'personal') {
-      throw new Error('Cannot leave personal workspace')
-    }
+    if (!current) throw new Error('No active workspace')
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     await workspaceApi.leave()
 
-    // Go to personal workspace
-    const personal = personalWorkspace.value
+    const personal = workspaces.value.find(
+      (workspace) =>
+        workspace.type === 'personal' && workspace.id !== current.id
+    )
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
+    } else {
+      clearLastWorkspaceId()
     }
     window.location.reload()
     // Code after this won't run (page reloads)
@@ -602,7 +600,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
-    if (userId === originalOwnerId.value) {
+    if (
+      activeWorkspace.value?.type === 'personal' &&
+      userId === originalOwnerId.value
+    ) {
       throw new Error("Cannot change the workspace creator's role")
     }
     // Only the role changes; merge it onto the existing row rather than trusting
