@@ -23,6 +23,18 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
 }
 
+function getInitialPlanMode(
+  explicitMode: SubscriptionDialogOptions['planMode'],
+  isTeamPlan: boolean,
+  hasCurrentPlan: boolean,
+  isPersonalWorkspace: boolean
+): NonNullable<SubscriptionDialogOptions['planMode']> {
+  if (explicitMode) return explicitMode
+  if (isTeamPlan) return 'team'
+  if (hasCurrentPlan) return 'personal'
+  return isPersonalWorkspace ? 'personal' : 'team'
+}
+
 export const useSubscriptionDialog = () => {
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const dialogService = useDialogService()
@@ -45,8 +57,36 @@ export const useSubscriptionDialog = () => {
     })
   }
 
+  function showInactiveMemberDialog(): boolean {
+    if (!shouldUseWorkspaceBilling.value) return false
+
+    const { permissions } = useWorkspaceUI()
+    if (permissions.value.canManageSubscription) return false
+
+    dialogStore.closeDialog({ key: 'global-settings' })
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: defineAsyncComponent(
+        () =>
+          import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+      ),
+      props: { onClose: hide },
+      dialogComponentProps: {
+        style: 'width: min(360px, 95vw);',
+        pt: {
+          root: {
+            class: 'bg-transparent border-none rounded-none shadow-none'
+          },
+          content: { class: '!p-0 bg-transparent border-none shadow-none' }
+        }
+      }
+    })
+    return true
+  }
+
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
+    if (showInactiveMemberDialog()) return
 
     // Opening pricing from inside Settings (the "Subscribe" / "Upgrade to Team"
     // CTA) would stack the Reka pricing dialog behind the PrimeVue Settings
@@ -54,37 +94,6 @@ export const useSubscriptionDialog = () => {
     // non-modal so its hosted PrimeVue popover stays clickable, so it can't just
     // be raised above. Close Settings first so pricing opens cleanly on top.
     dialogStore.closeDialog({ key: 'global-settings' })
-
-    const { permissions } = useWorkspaceUI()
-
-    // Members can't manage the workspace subscription, so a blocked run shows a
-    // small read-only "ask your owner to reactivate" modal instead of the
-    // pricing table. Out-of-credits still routes everyone to the credits flow.
-    if (
-      shouldUseWorkspaceBilling.value &&
-      !workspaceStore.isInPersonalWorkspace &&
-      !permissions.value.canManageSubscription &&
-      options?.reason !== 'out_of_credits'
-    ) {
-      dialogService.showLayoutDialog({
-        key: DIALOG_KEY,
-        component: defineAsyncComponent(
-          () =>
-            import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
-        ),
-        props: { onClose: hide },
-        dialogComponentProps: {
-          style: 'width: min(360px, 95vw);',
-          pt: {
-            root: {
-              class: 'bg-transparent border-none rounded-none shadow-none'
-            },
-            content: { class: '!p-0 bg-transparent border-none shadow-none' }
-          }
-        }
-      })
-      return
-    }
 
     trackModalOpened(options?.reason)
 
@@ -113,7 +122,8 @@ export const useSubscriptionDialog = () => {
       // an import cycle (useBillingContext -> useWorkspaceBilling ->
       // useSubscriptionDialog), so a setup-time read would deref the shared
       // context before its state is constructed.
-      const { isLegacyTeamPlan } = useBillingContext()
+      const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
+        useBillingContext()
       if (isLegacyTeamPlan.value) {
         dialogService.showLayoutDialog({
           key: DIALOG_KEY,
@@ -142,12 +152,12 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
-          // A team workspace lands on the For Teams tab; personal on For
-          // Personal. An explicit caller (e.g. an "Upgrade to Team" CTA) can
-          // override via options.planMode.
-          initialPlanMode:
-            options?.planMode ??
-            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
+          initialPlanMode: getInitialPlanMode(
+            options?.planMode,
+            isTeamPlan.value,
+            currentPlanSlug.value !== null,
+            workspaceStore.isInPersonalWorkspace
+          )
         },
         dialogComponentProps: {
           // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
@@ -180,6 +190,8 @@ export const useSubscriptionDialog = () => {
   }
 
   function show(options?: SubscriptionDialogOptions) {
+    if (isCloud && showInactiveMemberDialog()) return
+
     // Free-tier state comes from the unified facade so it works on both the
     // legacy (/customers) and workspace (/api/billing) paths. Resolved lazily
     // (not at composable setup) to avoid the useBillingContext import cycle.
@@ -262,7 +274,10 @@ export const useSubscriptionDialog = () => {
       sessionStorage.removeItem(RESUME_PRICING_KEY)
 
       if (!workspaceStore.isInPersonalWorkspace) {
-        showPricingTable({ reason: 'team_upgrade_resume' })
+        showPricingTable({
+          reason: 'team_upgrade_resume',
+          planMode: 'team'
+        })
       }
     } catch {
       // sessionStorage may be unavailable

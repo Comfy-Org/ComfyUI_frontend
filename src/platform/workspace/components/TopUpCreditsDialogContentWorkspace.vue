@@ -158,10 +158,12 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -177,6 +179,8 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
@@ -249,7 +253,13 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
-  if (loading.value || !isValidAmount.value) return
+  if (
+    loading.value ||
+    !isValidAmount.value ||
+    (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
+  ) {
+    return
+  }
 
   loading.value = true
   try {
