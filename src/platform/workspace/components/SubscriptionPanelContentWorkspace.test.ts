@@ -550,7 +550,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a subscribed personal workspace Edit, Cancel plan, and a locked Delete', () => {
+  it('offers a subscribed personal workspace Edit and Cancel but not Delete', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = true
     mockHasSubscription.value = true
@@ -565,8 +565,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Cancel plan' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Delete Workspace' })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Leave Workspace' })
     ).not.toBeInTheDocument()
@@ -656,7 +656,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a promoted owner Edit and Leave (no Cancel or Delete)', () => {
+  it('offers a promoted owner Edit, Leave, and subscription-locked Delete', () => {
     renderComponent()
 
     expect(
@@ -669,8 +669,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByRole('button', { name: 'Cancel plan' })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: 'Delete Workspace' })
+    ).toBeDisabled()
   })
 
   it('offers the original owner Edit, Cancel plan, and a subscription-locked Delete', async () => {
@@ -685,15 +685,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Delete Workspace' })
     ).toBeDisabled()
     expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
     expect(mockShowCancelSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
-  it('enables Delete for the original owner once the plan is cancelled', () => {
-    mockUserEmail.value = 'creator@example.com'
+  it('enables Delete for an owner once the plan is cancelled', () => {
     mockSubscriptionStatus.value = 'canceled'
     renderComponent()
 

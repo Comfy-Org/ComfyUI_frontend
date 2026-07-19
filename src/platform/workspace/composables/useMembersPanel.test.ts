@@ -257,6 +257,7 @@ const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
   mockMembers,
+  mockActiveWorkspace,
   mockPendingInvites,
   mockOriginalOwnerId,
   mockTotalMemberSlots,
@@ -275,6 +276,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
+    mockActiveWorkspace: ref<{ type: 'personal' | 'team' }>({ type: 'team' }),
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockTotalMemberSlots: ref(0),
@@ -333,6 +335,7 @@ vi.mock('pinia', async (importOriginal) => {
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
+    activeWorkspace: mockActiveWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
     originalOwnerId: mockOriginalOwnerId,
@@ -404,6 +407,7 @@ vi.mock('@/services/dialogService', () => ({
 describe('useMembersPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockActiveWorkspace.value = { type: 'team' }
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
@@ -707,13 +711,22 @@ describe('useMembersPanel', () => {
   })
 
   describe('isOriginalOwner', () => {
-    it('matches against the store originalOwnerId', async () => {
+    it('protects the original owner in a personal workspace', async () => {
+      mockActiveWorkspace.value = { type: 'personal' }
       mockOriginalOwnerId.value = 'creator-1'
       const panel = await setup()
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
         true
       )
       expect(panel.isOriginalOwner(createMember({ id: 'other' }))).toBe(false)
+    })
+
+    it('does not protect the creator of an additional workspace', async () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+      expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
+        false
+      )
     })
   })
 

@@ -21,7 +21,6 @@ const memberConfig = {
 }
 
 const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
-const mockIsCurrentUserOriginalOwner = ref(false)
 const mockIsWorkspaceSubscribed = ref(false)
 
 const mockShowLeaveWorkspaceDialog = vi.fn()
@@ -34,8 +33,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    isCurrentUserOriginalOwner: mockIsCurrentUserOriginalOwner
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
 }))
 
@@ -73,7 +71,6 @@ describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUiConfig.value = ownerConfig
-    mockIsCurrentUserOriginalOwner.value = false
     mockIsWorkspaceSubscribed.value = false
   })
 
@@ -88,7 +85,7 @@ describe('WorkspaceMenuButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('lets a non-creator owner leave', () => {
+  it('lets an owner leave', () => {
     renderComponent()
 
     expect(
@@ -99,29 +96,11 @@ describe('WorkspaceMenuButton', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the creator a disabled Leave option', () => {
-    mockIsCurrentUserOriginalOwner.value = true
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
-    ).toBeDisabled()
-  })
-
-  it('opens the leave dialog when a non-creator owner clicks Leave', async () => {
+  it('opens the leave dialog when an owner clicks Leave', async () => {
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
     expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
-  })
-
-  it('does not open the leave dialog for the creator', async () => {
-    const user = userEvent.setup()
-    mockIsCurrentUserOriginalOwner.value = true
-    renderComponent()
-
-    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

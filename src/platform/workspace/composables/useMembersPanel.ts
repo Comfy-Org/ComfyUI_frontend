@@ -101,6 +101,7 @@ export function useMembersPanel() {
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
+    activeWorkspace,
     members,
     pendingInvites,
     originalOwnerId,
@@ -271,7 +272,10 @@ export function useMembersPanel() {
   }
 
   function isOriginalOwner(member: WorkspaceMember): boolean {
-    return member.id === originalOwnerId.value
+    return (
+      activeWorkspace.value?.type === 'personal' &&
+      member.id === originalOwnerId.value
+    )
   }
 
   const filteredMembers = computed(() => {

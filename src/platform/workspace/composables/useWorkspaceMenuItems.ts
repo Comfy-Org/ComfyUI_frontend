@@ -17,6 +17,7 @@ export function useWorkspaceMenuItems() {
   const { t } = useI18n()
   const { isFreeTier, subscription } = useBillingContext()
   const {
+    permissions,
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
@@ -58,13 +59,10 @@ export function useWorkspaceMenuItems() {
 
   const canDeleteWorkspace = computed(
     () =>
-      isOriginalOwner.value &&
-      (!isInPersonalWorkspace.value || isActiveSubscription.value)
+      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
   )
 
-  const canLeaveWorkspace = computed(
-    () => !isInPersonalWorkspace.value && !isOriginalOwner.value
-  )
+  const canLeaveWorkspace = computed(() => !isInPersonalWorkspace.value)
 
   const deleteTooltip = computed(() => {
     const key = deleteDisabledTooltipKey.value
