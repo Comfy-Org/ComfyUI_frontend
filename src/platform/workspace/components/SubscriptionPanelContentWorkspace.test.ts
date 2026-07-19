@@ -73,7 +73,7 @@ const mockShowDeleteWorkspaceDialog = vi.fn()
 
 type MenuUiConfig = {
   showEditWorkspaceMenuItem: boolean
-  workspaceMenuAction: 'leave' | 'delete' | null
+  workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
@@ -85,14 +85,13 @@ const ownerUiConfig: MenuUiConfig = {
 }
 const memberUiConfig: MenuUiConfig = {
   showEditWorkspaceMenuItem: false,
-  workspaceMenuAction: 'leave',
+  workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const personalUiConfig: MenuUiConfig = {
   showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: 'delete',
-  workspaceMenuDisabledTooltip:
-    'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+  workspaceMenuAction: null,
+  workspaceMenuDisabledTooltip: null
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
@@ -424,6 +423,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -543,6 +543,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(screen.getByText('Free')).toBeInTheDocument()
@@ -570,6 +571,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -592,6 +594,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -715,6 +718,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers the original owner Edit, Cancel plan, and a subscription-locked Delete', async () => {
     const user = userEvent.setup()
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -733,6 +737,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('enables Delete for the original owner once the plan is cancelled', () => {
     mockIsOriginalOwner.value = true
+    mockCanLeaveWorkspace.value = false
     mockSubscriptionStatus.value = 'canceled'
     renderComponent()
 

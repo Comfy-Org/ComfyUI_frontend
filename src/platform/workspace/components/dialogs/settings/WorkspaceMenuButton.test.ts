@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -16,11 +16,12 @@ const ownerConfig = {
 }
 const memberConfig = {
   showEditWorkspaceMenuItem: false,
-  workspaceMenuAction: 'leave' as const,
+  workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 
 const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
+const mockCanLeaveWorkspace = ref(false)
 const mockIsCurrentUserOriginalOwner = ref(false)
 const mockIsWorkspaceSubscribed = ref(false)
 
@@ -29,7 +30,12 @@ const mockShowDeleteWorkspaceDialog = vi.fn()
 const mockShowEditWorkspaceDialog = vi.fn()
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ uiConfig: mockUiConfig })
+  useWorkspaceUI: () => ({
+    permissions: computed(() => ({
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
+    })),
+    uiConfig: mockUiConfig
+  })
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -73,12 +79,14 @@ describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUiConfig.value = ownerConfig
+    mockCanLeaveWorkspace.value = false
     mockIsCurrentUserOriginalOwner.value = false
     mockIsWorkspaceSubscribed.value = false
   })
 
   it('lets a member leave and offers no destructive workspace actions', () => {
     mockUiConfig.value = memberConfig
+    mockCanLeaveWorkspace.value = true
     renderComponent()
 
     const leave = screen.getByRole('button', { name: 'Leave Workspace' })
@@ -89,6 +97,7 @@ describe('WorkspaceMenuButton', () => {
   })
 
   it('lets a non-creator owner leave', () => {
+    mockCanLeaveWorkspace.value = true
     renderComponent()
 
     expect(
@@ -108,20 +117,31 @@ describe('WorkspaceMenuButton', () => {
     ).toBeDisabled()
   })
 
+  it('hides Leave from a promoted owner without permission', () => {
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Leave Workspace' })
+    ).not.toBeInTheDocument()
+  })
+
   it('opens the leave dialog when a non-creator owner clicks Leave', async () => {
     const user = userEvent.setup()
+    mockCanLeaveWorkspace.value = true
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
     expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('does not open the leave dialog for the creator', async () => {
-    const user = userEvent.setup()
-    mockIsCurrentUserOriginalOwner.value = true
+  it('rechecks permission before opening the leave dialog', () => {
+    mockCanLeaveWorkspace.value = true
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
+    const leave = screen.getByRole('button', { name: 'Leave Workspace' })
+    mockCanLeaveWorkspace.value = false
+    leave.click()
+
     expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

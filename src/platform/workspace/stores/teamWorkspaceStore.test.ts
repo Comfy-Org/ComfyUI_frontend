@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
@@ -541,21 +543,43 @@ describe('useTeamWorkspaceStore', () => {
 
       const store = useTeamWorkspaceStore()
       await store.initialize()
+      vi.clearAllMocks()
 
       await store.leaveWorkspace()
 
       expect(mockWorkspaceApi.leave).toHaveBeenCalled()
       expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID,
+        mockPersonalWorkspace.id
+      )
       expect(mockReload).toHaveBeenCalled()
     })
 
-    it('throws when trying to leave personal workspace', async () => {
+    it('forwards personal workspace leave and clears its persisted ID', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
+      vi.clearAllMocks()
+
+      await store.leaveWorkspace()
+
+      expect(mockWorkspaceApi.leave).toHaveBeenCalled()
+      expect(mockWorkspaceAuthStore.clearWorkspaceContext).toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
+        WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID
+      )
+      expect(mockReload).toHaveBeenCalled()
+    })
+
+    it('throws when there is no active workspace', async () => {
+      const store = useTeamWorkspaceStore()
 
       await expect(store.leaveWorkspace()).rejects.toThrow(
-        'Cannot leave personal workspace'
+        'No active workspace'
       )
+
+      expect(mockWorkspaceApi.leave).not.toHaveBeenCalled()
     })
   })
 

@@ -46,6 +46,7 @@ export function useWorkspaceMenuItems() {
   }
 
   function leaveWorkspace() {
+    if (!permissions.value.canLeaveWorkspace) return
     void showLeaveWorkspaceDialog()
   }
 
@@ -61,10 +62,6 @@ export function useWorkspaceMenuItems() {
     () =>
       isOriginalOwner.value &&
       (!isInPersonalWorkspace.value || isActiveSubscription.value)
-  )
-
-  const canLeaveWorkspace = computed(
-    () => permissions.value.canLeaveWorkspace && !isOriginalOwner.value
   )
 
   const deleteTooltip = computed(() => {
@@ -101,7 +98,7 @@ export function useWorkspaceMenuItems() {
       })
     }
 
-    if (canLeaveWorkspace.value) {
+    if (permissions.value.canLeaveWorkspace) {
       items.push({
         label: t('workspacePanel.menu.leaveWorkspace'),
         command: leaveWorkspace

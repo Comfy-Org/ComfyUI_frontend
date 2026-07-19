@@ -4,12 +4,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
+  canLeaveWorkspace: false,
   canManageSubscriptionLifecycle: false,
   isActiveSubscription: true,
   isFreeTier: false,
   isInPersonalWorkspace: false,
   isOriginalOwner: false,
   isSubscriptionCancelled: false
+}))
+
+const dialogMocks = vi.hoisted(() => ({
+  showCancelSubscriptionDialog: vi.fn(),
+  showEditWorkspaceDialog: vi.fn(),
+  showDeleteWorkspaceDialog: vi.fn(),
+  showLeaveWorkspaceDialog: vi.fn()
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -25,9 +33,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    })),
+    permissions: {
+      get value() {
+        return {
+          canLeaveWorkspace: state.canLeaveWorkspace,
+          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+        }
+      }
+    },
     uiConfig: computed(() => ({
       showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
@@ -43,16 +56,13 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 }))
 
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showCancelSubscriptionDialog: vi.fn(),
-    showEditWorkspaceDialog: vi.fn(),
-    showDeleteWorkspaceDialog: vi.fn(),
-    showLeaveWorkspaceDialog: vi.fn()
-  })
+  useDialogService: () => dialogMocks
 }))
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
+    state.canLeaveWorkspace = false
     state.canManageSubscriptionLifecycle = false
     state.isActiveSubscription = true
     state.isFreeTier = false
@@ -88,5 +98,36 @@ describe('useWorkspaceMenuItems', () => {
     expect(menuItems.value.map((item) => item.label)).not.toContain(
       'subscription.cancelPlan'
     )
+  })
+
+  it('shows Leave only when workspace permission grants it', () => {
+    const hiddenItems = useWorkspaceMenuItems().menuItems
+
+    expect(hiddenItems.value.map((item) => item.label)).not.toContain(
+      'workspacePanel.menu.leaveWorkspace'
+    )
+
+    state.canLeaveWorkspace = true
+    const visibleItems = useWorkspaceMenuItems().menuItems
+
+    expect(visibleItems.value.map((item) => item.label)).toContain(
+      'workspacePanel.menu.leaveWorkspace'
+    )
+  })
+
+  it('rechecks permission before opening the Leave dialog', () => {
+    state.canLeaveWorkspace = true
+    const { menuItems } = useWorkspaceMenuItems()
+    const leaveItem = menuItems.value.find(
+      (item) => item.label === 'workspacePanel.menu.leaveWorkspace'
+    )
+
+    state.canLeaveWorkspace = false
+    leaveItem?.command?.({
+      originalEvent: new Event('click'),
+      item: leaveItem
+    })
+
+    expect(dialogMocks.showLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

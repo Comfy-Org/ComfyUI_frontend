@@ -31,7 +31,7 @@ interface WorkspaceUIConfig {
   pendingGridCols: string
   headerGridCols: string
   showEditWorkspaceMenuItem: boolean
-  workspaceMenuAction: 'leave' | 'delete' | null
+  workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
@@ -39,9 +39,16 @@ function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
   isOriginalOwner: boolean,
-  hasActiveWorkspace: boolean
+  isOriginalOwnerResolved: boolean,
+  hasActiveWorkspace: boolean,
+  isTeamPlan: boolean
 ): WorkspacePermissions {
   const canManageBilling = hasActiveWorkspace && role === 'owner'
+  const canLeaveWorkspace =
+    hasActiveWorkspace &&
+    isTeamPlan &&
+    !isOriginalOwner &&
+    (role === 'member' || isOriginalOwnerResolved)
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
@@ -56,8 +63,8 @@ function getPermissions(
       canInviteMembers: false,
       canManageInvites: false,
       canManageMembers: false,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
+      canLeaveWorkspace,
+      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -69,8 +76,8 @@ function getPermissions(
       canInviteMembers: false,
       canManageInvites: false,
       canManageMembers: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
+      canLeaveWorkspace,
+      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -81,7 +88,7 @@ function getPermissions(
     canInviteMembers: true,
     canManageInvites: true,
     canManageMembers: true,
-    canLeaveWorkspace: true,
+    canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
   }
@@ -101,7 +108,7 @@ function getUIConfig(
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[1fr_auto]',
       showEditWorkspaceMenuItem: false,
-      workspaceMenuAction: 'leave',
+      workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
   }
@@ -169,7 +176,9 @@ function useWorkspaceUIInternal() {
       workspaceType.value,
       workspaceRole.value,
       store.isCurrentUserOriginalOwner,
-      store.activeWorkspace !== null
+      store.originalOwnerId !== null,
+      store.activeWorkspace !== null,
+      isTeamPlan.value
     )
   )
 
