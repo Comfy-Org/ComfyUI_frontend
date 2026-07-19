@@ -50,15 +50,51 @@ const toWorkspaceStatus = (
 
 const mockBalance: BillingBalanceResponse = {
   amount_micros: 6000, // -> 12,660 credits
+  cloud_credit_balance_micros: 5000,
   currency: 'usd',
-  effective_balance_micros: 6000
+  effective_balance_micros: 6000,
+  prepaid_balance_micros: 1000
+}
+
+const activeProSubscription: CloudSubscriptionStatusResponse = {
+  is_active: true,
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  renewal_date: '2099-02-20T10:00:00Z',
+  end_date: null
+}
+
+const legacyBillingConfig: RemoteConfig = {
+  team_workspaces_enabled: false,
+  billing_control_enabled: false,
+  subscription_required: true
+}
+
+const workspaceBillingConfig: RemoteConfig = {
+  team_workspaces_enabled: true,
+  billing_control_enabled: true,
+  subscription_required: true
+}
+
+interface BillingBackendRequestCounts {
+  legacyBalance: number
+  legacyStatus: number
+  workspaceBalance: number
+  workspaceStatus: number
 }
 
 async function mockCloudBoot(
   page: Page,
   subscriptionStatus: CloudSubscriptionStatusResponse,
   remoteConfig: RemoteConfig = { team_workspaces_enabled: false }
-) {
+): Promise<BillingBackendRequestCounts> {
+  const billingRequests: BillingBackendRequestCounts = {
+    legacyBalance: 0,
+    legacyStatus: 0,
+    workspaceBalance: 0,
+    workspaceStatus: 0
+  }
+
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
@@ -105,24 +141,30 @@ async function mockCloudBoot(
   )
 
   // Legacy backend (team_workspaces_enabled: false).
-  await page.route('**/customers/cloud-subscription-status', (r) =>
-    r.fulfill(jsonRoute(subscriptionStatus))
-  )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute(mockBalance))
-  )
+  await page.route('**/customers/cloud-subscription-status', (r) => {
+    billingRequests.legacyStatus += 1
+    return r.fulfill(jsonRoute(subscriptionStatus))
+  })
+  await page.route('**/customers/balance', (r) => {
+    billingRequests.legacyBalance += 1
+    return r.fulfill(jsonRoute(mockBalance))
+  })
 
   // Workspace backend (team_workspaces_enabled: true) — a personal workspace
   // now routes through `/api/billing/*`.
-  await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(toWorkspaceStatus(subscriptionStatus)))
-  )
-  await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute(mockBalance))
-  )
+  await page.route('**/api/billing/status', (r) => {
+    billingRequests.workspaceStatus += 1
+    return r.fulfill(jsonRoute(toWorkspaceStatus(subscriptionStatus)))
+  })
+  await page.route('**/api/billing/balance', (r) => {
+    billingRequests.workspaceBalance += 1
+    return r.fulfill(jsonRoute(mockBalance))
+  })
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+
+  return billingRequests
 }
 
 async function bootApp(page: Page) {
@@ -140,6 +182,104 @@ async function bootApp(page: Page) {
 }
 
 test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
+  test('TB-17 keeps the balance consistent from the popover to Plan & Credits', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const billingRequests = await mockCloudBoot(
+      page,
+      activeProSubscription,
+      workspaceBillingConfig
+    )
+    await bootApp(page)
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    await expect(popover.getByText('12,660', { exact: true })).toBeVisible()
+
+    await popover.getByTestId('manage-plan-menu-item').click()
+
+    const dialog = page.getByTestId('settings-dialog')
+    await expect(dialog).toBeVisible()
+    const content = dialog.getByRole('main')
+    await expect(
+      content.getByRole('tab', { name: 'Plan & Credits' })
+    ).toBeVisible()
+    await expect(content.getByText('Total credits')).toBeVisible()
+    await expect(content.getByText('12,660', { exact: true })).toBeVisible()
+    expect(billingRequests.workspaceStatus).toBeGreaterThanOrEqual(1)
+    expect(billingRequests.workspaceBalance).toBeGreaterThanOrEqual(1)
+    expect(billingRequests.legacyStatus).toBe(0)
+    expect(billingRequests.legacyBalance).toBe(0)
+  })
+
+  test('TB-18 keeps the legacy Plan & Credits surface functional with billing flags off', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const billingRequests = await mockCloudBoot(
+      page,
+      activeProSubscription,
+      legacyBillingConfig
+    )
+    await bootApp(page)
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    await popover.getByTestId('manage-plan-menu-item').click()
+
+    const dialog = page.getByTestId('settings-dialog')
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Plan & Credits' })
+    ).toBeVisible()
+
+    const content = dialog.getByRole('main')
+    await expect(
+      content.getByText('Subscription', { exact: true })
+    ).toBeVisible()
+    await expect(content.getByText('Pro', { exact: true })).toBeVisible()
+    await expect(content.getByText('$100', { exact: true })).toBeVisible()
+    await expect(content.getByText('12,660', { exact: true })).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Manage subscription' })
+    ).toBeVisible()
+    expect(billingRequests.legacyStatus).toBeGreaterThanOrEqual(1)
+    expect(billingRequests.legacyBalance).toBeGreaterThanOrEqual(1)
+    expect(billingRequests.workspaceStatus).toBe(0)
+    expect(billingRequests.workspaceBalance).toBe(0)
+  })
+
+  test('TB-19 keeps workspace-only controls and team pricing out of the legacy path', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page, activeProSubscription, legacyBillingConfig)
+    await bootApp(page)
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    await expect(popover.getByTestId('workspace-switcher-trigger')).toHaveCount(
+      0
+    )
+    await expect(
+      popover.getByTestId('workspace-settings-menu-item')
+    ).toHaveCount(0)
+
+    await popover.getByTestId('plans-pricing-menu-item').click()
+
+    await expect(
+      page.getByRole('heading', { name: 'Plans for Personal Workspace' })
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'For Teams' })).toHaveCount(0)
+  })
+
   test('avatar popover renders tier badge and balance from the facade', async ({
     page
   }) => {
