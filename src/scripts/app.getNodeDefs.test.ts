@@ -39,6 +39,9 @@ vi.mock('@/stores/systemStatsStore', () => ({
 }))
 
 // getNodeDefs triggers the price badge fetch chain; keep it off the network.
+// Badge assertions live in app.getNodeDefs.priceBadges.test.ts and
+// app.getNodeDefs.pendingPricing.test.ts, each in its own file because the
+// badge fetch is a session singleton settled by the first getNodeDefs() call.
 beforeEach(() => {
   vi.stubGlobal(
     'fetch',
@@ -52,53 +55,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  vi.useRealTimers()
-})
-
-// This describe must run first: the price badge fetch is a session singleton
-// kicked off by the first getNodeDefs() call, so the badge fetch stub has to
-// be in place before any other test touches getNodeDefs. The pending-fetch
-// counterpart lives in app.getNodeDefs.pendingPricing.test.ts for the same
-// reason (it needs a fresh module registry).
-describe('ComfyApp.getNodeDefs price badges', () => {
-  test('returned defs carry the remotely fetched price badge', async () => {
-    const priceBadge = {
-      engine: 'jsonata',
-      depends_on: {
-        widgets: [{ name: 'resolution', type: 'COMBO' }],
-        inputs: [],
-        input_groups: []
-      },
-      expr: '{"type":"usd","usd":0.1}'
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ PricedNode: priceBadge })
-      })
-    )
-    const mockNodeDefs: Record<string, ComfyNodeDefV1> = {
-      PricedNode: {
-        name: 'PricedNode',
-        display_name: 'Priced Node',
-        category: 'api node',
-        description: '',
-        input: { required: { resolution: [['1080p', '720p'], {}] } },
-        output: [],
-        output_node: false,
-        python_module: 'test.module'
-      } as unknown as ComfyNodeDefV1
-    }
-    vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
-
-    const result = await comfyApp.getNodeDefs()
-
-    expect(result.PricedNode.price_badge).toMatchObject({
-      expr: priceBadge.expr
-    })
-  })
 })
 
 describe('ComfyApp.getNodeDefs', () => {
