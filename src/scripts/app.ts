@@ -96,6 +96,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
@@ -1644,6 +1645,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.clearAllErrors()
+    let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useAuthStore().getAuthToken()
@@ -1686,12 +1688,8 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            const nodeErrors = res.node_errors
-            const hasNodeErrors =
-              nodeErrors && Object.keys(nodeErrors).length > 0
-            executionErrorStore.lastNodeErrors = hasNodeErrors
-              ? nodeErrors
-              : null
+            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            queueResultOverride = null
             try {
               if (res.prompt_id) {
                 executionStore.storeJob({
@@ -1707,7 +1705,7 @@ export class ComfyApp {
                 error
               })
             }
-            if (hasNodeErrors) {
+            if (executionErrorStore.hasNodeError) {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionErrorStore.showErrorOverlay()
               }
@@ -1779,30 +1777,18 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionErrorStore.lastNodeErrors =
-                error.response.node_errors ?? null
+              // Keep the legacy result before empty node errors are normalized.
+              const nodeErrors = error.response.node_errors
+              queueResultOverride = !nodeErrors
+              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              const nodeErrors = error.response.node_errors
-              const hasNodeErrors =
-                nodeErrors && Object.keys(nodeErrors).length > 0
-
-              if (!hasNodeErrors) {
-                const respError = error.response.error
-                if (respError && typeof respError === 'object') {
-                  executionErrorStore.lastPromptError = {
-                    type: respError.type,
-                    message: respError.message,
-                    details: respError.details ?? ''
-                  }
-                } else if (typeof respError === 'string') {
-                  executionErrorStore.lastPromptError = {
-                    type: 'error',
-                    message: respError,
-                    details: ''
-                  }
+              if (!executionErrorStore.hasNodeError) {
+                const promptError = normalizePromptError(error.response.error)
+                if (promptError) {
+                  executionErrorStore.recordPromptError(promptError)
                 }
               }
 
@@ -1842,7 +1828,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionErrorStore.lastNodeErrors
+    return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {

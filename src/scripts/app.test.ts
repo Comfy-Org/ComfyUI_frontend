@@ -22,7 +22,8 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { api } from '@/scripts/api'
+
+import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -196,6 +197,21 @@ describe('ComfyApp', () => {
   })
 
   describe('queuePrompt', () => {
+    function prepareEmptyPromptQueue() {
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {},
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+    }
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({
@@ -248,6 +264,77 @@ describe('ComfyApp', () => {
         'workflows/review.json'
       )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+
+    it('preserves a failed result when prompt errors include an empty node error record', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          node_errors: {},
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      expect(errorStore.lastNodeErrors).toBeNull()
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'prompt_no_outputs'
+      })
+    })
+
+    it('preserves a successful result when prompt errors omit node errors', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+    })
+
+    it('uses the last processed queue item result after an earlier failure', async () => {
+      prepareEmptyPromptQueue()
+      let rejectFirst!: (reason?: unknown) => void
+      const firstResponse = new Promise<never>((_, reject) => {
+        rejectFirst = reject
+      })
+      vi.spyOn(api, 'queuePrompt')
+        .mockImplementationOnce(() => firstResponse)
+        .mockResolvedValueOnce({
+          prompt_id: 'job-2',
+          error: ''
+        })
+
+      const firstQueue = app.queuePrompt(0)
+      await vi.waitFor(() => {
+        expect(api.queuePrompt).toHaveBeenCalledTimes(1)
+      })
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      rejectFirst(
+        new PromptExecutionError({
+          node_errors: {},
+          error: {
+            type: 'prompt_no_outputs',
+            message: 'Prompt has no outputs',
+            details: ''
+          }
+        })
+      )
+
+      await expect(firstQueue).resolves.toBe(true)
+      expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
     })
   })
 
