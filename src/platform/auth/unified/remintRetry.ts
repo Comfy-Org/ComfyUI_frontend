@@ -36,15 +36,30 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
  * unexpected throw (e.g. a chunk-load failure or no active Pinia), which it
  * logs. Either way `null` makes the caller surface its original 401 unchanged.
  */
-async function tryRemintToken(): Promise<string | null> {
+async function tryRemintToken(expectedToken: string): Promise<string | null> {
   try {
     const { useWorkspaceAuthStore } =
       await import('@/platform/workspace/stores/workspaceAuthStore')
-    return await useWorkspaceAuthStore().remintUnifiedOnce()
+    return await useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
   } catch (err) {
     console.warn('Unified re-mint primitive threw unexpectedly:', err)
     return null
   }
+}
+
+function bearerToken(authorization: unknown): string | undefined {
+  if (typeof authorization !== 'string') return
+  return authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined
+}
+
+function fetchRequestHeaders(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Headers {
+  if (init.headers !== undefined) return new Headers(init.headers)
+  return input instanceof Request ? new Headers(input.headers) : new Headers()
 }
 
 /**
@@ -76,12 +91,16 @@ export async function fetchWithUnifiedRemint(
     return response
   }
 
-  const token = await tryRemintToken()
+  const requestHeaders = fetchRequestHeaders(input, init)
+  const expectedToken = bearerToken(requestHeaders.get('Authorization'))
+  if (!expectedToken) return response
+
+  const token = await tryRemintToken(expectedToken)
   if (!token) {
     return response
   }
 
-  const headers = new Headers(init.headers)
+  const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
   return fetch(input, { ...init, headers })
 }
@@ -115,7 +134,14 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
         throw error
       }
 
-      const token = await tryRemintToken()
+      const expectedToken = bearerToken(
+        new AxiosHeaders(error.config.headers).get('Authorization')
+      )
+      if (!expectedToken) {
+        throw error
+      }
+
+      const token = await tryRemintToken(expectedToken)
       if (!token) {
         throw error
       }

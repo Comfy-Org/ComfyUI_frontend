@@ -59,6 +59,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(ok)
     expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
 
     const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
@@ -125,6 +126,31 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the bearer from a Request when init does not override headers', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    mockRemint.mockResolvedValue('tokenB')
+    const request = new Request('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
+  it('surfaces the original 401 when the original bearer is unavailable', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized)
+
+    const result = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+    expect(result).toBe(unauthorized)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockRemint).not.toHaveBeenCalled()
   })
 
   it('surfaces the original 401 when the re-mint throws a permanent auth error', async () => {
@@ -255,6 +281,7 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(res.status).toBe(200)
     expect(adapter).toHaveBeenCalledTimes(2)
     expect(mockRemint).toHaveBeenCalledTimes(1)
+    expect(mockRemint).toHaveBeenCalledWith('tokenA')
     expect(String(adapter.mock.calls[1][0].headers.Authorization)).toBe(
       'Bearer tokenB'
     )
@@ -298,6 +325,17 @@ describe('attachUnifiedRemintInterceptor', () => {
         __skipUnifiedRemint: true
       })
     ).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(mockRemint).not.toHaveBeenCalled()
+  })
+
+  it('does not re-mint when the original bearer is unavailable', async () => {
+    const { client, adapter } = makeClient([401])
+
+    await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+      response: { status: 401 }
+    })
 
     expect(adapter).toHaveBeenCalledTimes(1)
     expect(mockRemint).not.toHaveBeenCalled()

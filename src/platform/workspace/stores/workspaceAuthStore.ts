@@ -57,6 +57,7 @@ interface MintedToken {
   token: string
   expiresAt: number
   workspace: WorkspaceWithRole
+  ownerUid: string
 }
 
 const PERMANENT_AUTH_ERROR_CODES = new Set([
@@ -104,6 +105,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
+  const workspaceTokenOwnerUid = ref<string | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -111,6 +113,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // populated by the unified mint lifecycle below but read by no consumer until
   // the PR 3 consumer flip, so it cannot change which token requests carry.
   const unifiedToken = ref<string | null>(null)
+  const unifiedTokenOwnerUid = ref<string | null>(null)
+  const issuedUnifiedTokenOwners = new Map<string, string>()
 
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
@@ -128,8 +132,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // Getters
   const isAuthenticated = computed(
-    () => currentWorkspace.value !== null && workspaceToken.value !== null
+    () => currentWorkspace.value !== null && hasValidWorkspaceToken()
   )
+
+  function currentUserUid(): string | null {
+    return useAuthStore().currentUser?.uid ?? null
+  }
+
+  function isCurrentUser(ownerUid: string): boolean {
+    return currentUserUid() === ownerUid
+  }
 
   // Private helpers
   function stopRefreshTimer(): void {
@@ -201,14 +213,21 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return true
   }
 
-  function isStaleWorkspaceRequest(capturedRequestId: number): boolean {
-    return capturedRequestId !== refreshRequestId
+  function isStaleWorkspaceRequest(
+    capturedRequestId: number,
+    ownerUid?: string | null
+  ): boolean {
+    return (
+      capturedRequestId !== refreshRequestId ||
+      (ownerUid !== undefined && ownerUid !== null && !isCurrentUser(ownerUid))
+    )
   }
 
   function persistToSession(
     workspace: WorkspaceWithRole,
     token: string,
-    expiresAt: number
+    expiresAt: number,
+    ownerUid: string
   ): void {
     try {
       sessionStorage.setItem(
@@ -220,6 +239,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
         expiresAt.toString()
       )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, ownerUid)
     } catch {
       console.warn('Failed to persist workspace context to sessionStorage')
     }
@@ -230,6 +250,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
       sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
       sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
     } catch {
       console.warn('Failed to clear workspace context from sessionStorage')
     }
@@ -257,8 +278,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       const expiresAtStr = sessionStorage.getItem(
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT
       )
+      const ownerUid = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
 
-      if (!workspaceJson || !token || !expiresAtStr) {
+      if (
+        !workspaceJson ||
+        !token ||
+        !expiresAtStr ||
+        !ownerUid ||
+        !isCurrentUser(ownerUid)
+      ) {
+        clearSessionStorage()
         return false
       }
 
@@ -280,6 +309,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       currentWorkspace.value = parseResult.data
       workspaceToken.value = token
       workspaceTokenExpiresAt.value = expiresAt
+      workspaceTokenOwnerUid.value = ownerUid
       error.value = null
 
       scheduleTokenRefresh(expiresAt)
@@ -299,6 +329,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
    * each other's gates.
    */
   async function requestToken(workspaceId?: string): Promise<MintedToken> {
+    const ownerUid = currentUserUid()
+    if (!ownerUid) {
+      throw new WorkspaceAuthError(
+        t('workspaceAuth.errors.notAuthenticated'),
+        'NOT_AUTHENTICATED'
+      )
+    }
+
     const firebaseToken = await useAuthStore().getIdToken()
     if (!firebaseToken) {
       throw new WorkspaceAuthError(
@@ -372,7 +410,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return {
       token: data.token,
       expiresAt,
-      workspace: { ...data.workspace, role: data.role }
+      workspace: { ...data.workspace, role: data.role },
+      ownerUid
     }
   }
 
@@ -382,15 +421,17 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
 
     const capturedRequestId = refreshRequestId
+    const capturedOwnerUid = currentUserUid()
 
     inFlightSwitchCount += 1
     isLoading.value = true
     error.value = null
 
     try {
-      const { token, expiresAt, workspace } = await requestToken(workspaceId)
+      const { token, expiresAt, workspace, ownerUid } =
+        await requestToken(workspaceId)
 
-      if (isStaleWorkspaceRequest(capturedRequestId)) {
+      if (isStaleWorkspaceRequest(capturedRequestId, ownerUid)) {
         console.warn(
           'Aborting stale workspace switch: workspace context changed before commit'
         )
@@ -403,13 +444,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       currentWorkspace.value = workspace
       workspaceToken.value = token
       workspaceTokenExpiresAt.value = expiresAt
+      workspaceTokenOwnerUid.value = ownerUid
       scheduledRefreshRetryCount = 0
       recoveryCooldownUntil = 0
 
-      persistToSession(workspace, token, expiresAt)
+      persistToSession(workspace, token, expiresAt, ownerUid)
       scheduleTokenRefresh(expiresAt)
     } catch (err) {
-      if (isStaleWorkspaceRequest(capturedRequestId)) {
+      if (isStaleWorkspaceRequest(capturedRequestId, capturedOwnerUid)) {
         console.warn(
           'Aborting stale workspace switch: workspace context changed before error commit',
           err
@@ -502,9 +544,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
 
+    const ownerUid = currentUserUid()
+    if (!ownerUid) return null
     const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id
 
     while (true) {
+      if (!isCurrentUser(ownerUid)) return null
       if (hasValidTokenForWorkspace(targetWorkspaceId)) {
         return workspaceToken.value
       }
@@ -512,6 +557,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // Join any in-flight mint and re-check rather than launching our own.
       if (inFlightSwitchPromise) {
         await inFlightSwitchPromise.catch(() => {})
+        if (!isCurrentUser(ownerUid)) return null
         continue
       }
 
@@ -522,10 +568,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       try {
         await switchWorkspace(targetWorkspaceId)
       } catch (err) {
+        if (!isCurrentUser(ownerUid)) return null
         handleRecoveryFailure(err, targetWorkspaceId)
         return null
       }
 
+      if (!isCurrentUser(ownerUid)) return null
       if (hasValidTokenForWorkspace(targetWorkspaceId)) {
         return workspaceToken.value
       }
@@ -634,7 +682,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Mint body the unified session re-mints against: `{}` = personal (resolved
   // server-side from the Firebase identity), `{ workspace_id }` = explicit.
   type UnifiedMintBody = Record<string, never> | { workspace_id: string }
+  interface InFlightUnifiedMint {
+    ownerUid: string | null
+    targetKey: string
+    promise: Promise<boolean>
+  }
+
   let unifiedTarget: UnifiedMintBody | null = null
+  let inFlightUnifiedMint: InFlightUnifiedMint | null = null
 
   function personalWorkspaceTarget(): UnifiedMintBody {
     return {}
@@ -642,6 +697,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function currentUnifiedTarget(): UnifiedMintBody | null {
     return unifiedTarget
+  }
+
+  function unifiedTargetKey(target: UnifiedMintBody): string {
+    return 'workspace_id' in target ? target.workspace_id : 'personal'
   }
 
   function stopUnifiedRefreshTimer(): void {
@@ -666,27 +725,66 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedRefreshRequestId++
     stopUnifiedRefreshTimer()
     unifiedToken.value = null
+    unifiedTokenOwnerUid.value = null
+    issuedUnifiedTokenOwners.clear()
     unifiedTarget = null
+    inFlightUnifiedMint = null
   }
 
-  async function mintUnified(target: UnifiedMintBody): Promise<boolean> {
-    // Stale-guard: bump and capture the request id so a 401-driven re-mint and
-    // a timer-driven re-mint cannot clobber each other's write — the last mint
-    // to start wins.
+  async function performUnifiedMint(
+    target: UnifiedMintBody,
+    capturedOwnerUid: string | null
+  ): Promise<boolean> {
     const capturedRequestId = ++unifiedRefreshRequestId
     const workspaceId =
       'workspace_id' in target ? target.workspace_id : undefined
 
-    const { token, expiresAt } = await requestToken(workspaceId)
+    let mintedToken: MintedToken
+    try {
+      mintedToken = await requestToken(workspaceId)
+    } catch (err) {
+      if (
+        capturedRequestId !== unifiedRefreshRequestId ||
+        capturedOwnerUid === null ||
+        !isCurrentUser(capturedOwnerUid)
+      ) {
+        return false
+      }
+      throw err
+    }
 
-    if (capturedRequestId !== unifiedRefreshRequestId) {
+    if (
+      capturedRequestId !== unifiedRefreshRequestId ||
+      !isCurrentUser(mintedToken.ownerUid)
+    ) {
       return false
     }
 
-    unifiedToken.value = token
+    unifiedToken.value = mintedToken.token
+    unifiedTokenOwnerUid.value = mintedToken.ownerUid
+    issuedUnifiedTokenOwners.set(mintedToken.token, mintedToken.ownerUid)
     unifiedTarget = target
-    scheduleUnifiedRefresh(expiresAt)
+    scheduleUnifiedRefresh(mintedToken.expiresAt)
     return true
+  }
+
+  function mintUnified(target: UnifiedMintBody): Promise<boolean> {
+    const ownerUid = currentUserUid()
+    const targetKey = unifiedTargetKey(target)
+    if (
+      inFlightUnifiedMint?.ownerUid === ownerUid &&
+      inFlightUnifiedMint.targetKey === targetKey
+    ) {
+      return inFlightUnifiedMint.promise
+    }
+
+    const promise = performUnifiedMint(target, ownerUid).finally(() => {
+      if (inFlightUnifiedMint?.promise === promise) {
+        inFlightUnifiedMint = null
+      }
+    })
+    inFlightUnifiedMint = { ownerUid, targetKey, promise }
+    return promise
   }
 
   async function refreshUnified(): Promise<void> {
@@ -710,7 +808,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // Guard the toast on a live token so concurrent permanent failures across
       // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
-        if (unifiedToken.value) surfacePermanentAuthError(err)
+        if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -722,7 +820,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!flags.unifiedCloudAuthEnabled) {
       return false
     }
-    if (unifiedToken.value) {
+    if (getUnifiedToken()) {
       return true
     }
     try {
@@ -737,26 +835,33 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
-  const remintUnifiedOnce = async (): Promise<string | null> => {
+  const remintUnifiedOnce = async (
+    expectedToken: string
+  ): Promise<string | null> => {
     if (!flags.unifiedCloudAuthEnabled) {
       return null
     }
     const target = currentUnifiedTarget()
-    if (!target) {
+    const ownerUid = currentUserUid()
+    const currentToken = getUnifiedToken()
+    if (
+      !target ||
+      !ownerUid ||
+      !currentToken ||
+      issuedUnifiedTokenOwners.get(expectedToken) !== ownerUid
+    ) {
       return null
     }
+    if (expectedToken !== currentToken) return currentToken
     try {
-      // On a concurrent burst the stale-guard discards all but the winning
-      // mint. Return the slot's current token (the winner's, once it lands)
-      // rather than this call's own success, so a discarded caller can still
-      // retry with it instead of burning its one-shot retry on a fresh 401.
-      await mintUnified(target)
-      return unifiedToken.value ?? null
+      const minted = await mintUnified(target)
+      if (!minted) return null
+      return getUnifiedToken() ?? null
     } catch (err) {
       // Mirror refreshUnified: a permanent failure tears down the session;
       // guard the toast on a live token so a concurrent burst surfaces it once.
       if (isPermanentAuthError(err)) {
-        if (unifiedToken.value) surfacePermanentAuthError(err)
+        if (getUnifiedToken()) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified reactive re-mint failed:', err)
@@ -766,7 +871,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
-    if (!workspaceToken.value) {
+    if (!hasValidWorkspaceToken()) {
       return null
     }
     return {
@@ -775,15 +880,27 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function getWorkspaceToken(): string | undefined {
-    return workspaceToken.value ?? undefined
+    return hasValidWorkspaceToken()
+      ? (workspaceToken.value ?? undefined)
+      : undefined
   }
 
   function hasValidWorkspaceToken(): boolean {
     return (
       workspaceToken.value !== null &&
       workspaceTokenExpiresAt.value !== null &&
-      workspaceTokenExpiresAt.value > Date.now()
+      workspaceTokenExpiresAt.value > Date.now() &&
+      workspaceTokenOwnerUid.value !== null &&
+      isCurrentUser(workspaceTokenOwnerUid.value)
     )
+  }
+
+  function getUnifiedToken(): string | undefined {
+    return unifiedToken.value !== null &&
+      unifiedTokenOwnerUid.value !== null &&
+      isCurrentUser(unifiedTokenOwnerUid.value)
+      ? unifiedToken.value
+      : undefined
   }
 
   function clearWorkspaceContext(): void {
@@ -792,6 +909,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     currentWorkspace.value = null
     workspaceToken.value = null
     workspaceTokenExpiresAt.value = null
+    workspaceTokenOwnerUid.value = null
     scheduledRefreshRetryCount = 0
     recoveryCooldownUntil = 0
     // refreshRequestId bump above aborts any in-flight switch before it commits.
@@ -824,6 +942,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     ensureWorkspaceAuthHeader,
     ensureWorkspaceToken,
     getWorkspaceToken,
+    getUnifiedToken,
     clearWorkspaceContext
   }
 })

@@ -528,6 +528,27 @@ describe('useAuthStore', () => {
       expect(token).toBeUndefined()
     })
 
+    it('discards a token that resolves after the account changes', async () => {
+      let resolveToken: (token: string) => void = () => {}
+      mockUser.getIdToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const tokenPromise = store.getIdToken()
+      const nextUser = {
+        ...mockUser,
+        uid: 'different-user-id',
+        email: 'different@example.com',
+        getIdToken: vi.fn().mockResolvedValue('different-user-token')
+      } as MockUser
+
+      authStateCallback(nextUser)
+      resolveToken('old-user-token')
+
+      await expect(tokenPromise).resolves.toBeUndefined()
+    })
+
     it('should return null for token after login and logout sequence', async () => {
       // Setup mock for login
       const mockUserCredential = { user: mockUser }

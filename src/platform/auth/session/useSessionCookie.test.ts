@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGetIdToken = vi.fn()
+const mockAuthState = vi.hoisted(() => ({
+  currentUser: { uid: 'user-a' } as { uid: string } | null
+}))
 const originalFetch = globalThis.fetch
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -18,7 +21,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
-    getAuthHeader: vi.fn()
+    getAuthHeader: vi.fn(),
+    get currentUser() {
+      return mockAuthState.currentUser
+    }
   })
 }))
 
@@ -33,6 +39,7 @@ describe('useSessionCookie', () => {
     vi.resetModules()
     vi.restoreAllMocks()
     mockGetIdToken.mockReset()
+    mockAuthState.currentUser = { uid: 'user-a' }
     globalThis.fetch = vi.fn()
   })
 
@@ -91,6 +98,45 @@ describe('useSessionCookie', () => {
     await Promise.all([first, second])
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializes a new user session after the previous user response', async () => {
+    mockGetIdToken.mockImplementation(() =>
+      Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
+    )
+    let resolveFirstFetch: (value: Response) => void = () => {}
+    vi.mocked(globalThis.fetch)
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolveFirstFetch = resolve
+        })
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    const first = useSessionCookie().createSession()
+    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
+
+    mockAuthState.currentUser = { uid: 'user-b' }
+    const second = useSessionCookie().createSession()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(mockGetIdToken).toHaveBeenCalledTimes(1)
+
+    resolveFirstFetch(new Response(null, { status: 204 }))
+    await Promise.all([first, second])
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+    const firstHeaders = new Headers(
+      vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers
+    )
+    const secondHeaders = new Headers(
+      vi.mocked(globalThis.fetch).mock.calls[1][1]?.headers
+    )
+    expect(firstHeaders.get('Authorization')).toBe('Bearer firebase-user-a')
+    expect(secondHeaders.get('Authorization')).toBe('Bearer firebase-user-b')
   })
 
   it('createSessionOrThrow fails fast on non-success responses', async () => {

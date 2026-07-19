@@ -3,8 +3,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
-// Coalesce concurrent rotations (token-refresh bursts) into one POST.
-let inFlightCreateSession: Promise<void> | null = null
+interface InFlightCreateSession {
+  ownerUid: string | null
+  promise: Promise<void>
+}
+
+let inFlightCreateSession: InFlightCreateSession | null = null
 
 /**
  * Session cookie management for cloud authentication.
@@ -51,14 +55,35 @@ export const useSessionCookie = () => {
    */
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
-    if (inFlightCreateSession) return inFlightCreateSession
-    inFlightCreateSession = performCreateSession().finally(() => {
-      inFlightCreateSession = null
-    })
-    return inFlightCreateSession
+    const ownerUid = useAuthStore().currentUser?.uid ?? null
+    if (inFlightCreateSession?.ownerUid === ownerUid) {
+      return inFlightCreateSession.promise
+    }
+
+    const previousRequest = inFlightCreateSession?.promise
+    const request: InFlightCreateSession = {
+      ownerUid,
+      promise: (previousRequest
+        ? previousRequest.catch(() => {})
+        : Promise.resolve()
+      )
+        .then(async () => {
+          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) return
+          await performCreateSession(ownerUid)
+        })
+        .finally(() => {
+          if (inFlightCreateSession === request) {
+            inFlightCreateSession = null
+          }
+        })
+    }
+    inFlightCreateSession = request
+    return request.promise
   }
 
-  const performCreateSession = async (): Promise<void> => {
+  const performCreateSession = async (
+    expectedOwnerUid: string | null
+  ): Promise<void> => {
     const { flags } = useFeatureFlags()
     try {
       const authStore = useAuthStore()
@@ -86,6 +111,8 @@ export const useSessionCookie = () => {
         }
         authHeader = header
       }
+
+      if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) return
 
       const response = await createSessionWithHeader(authHeader)
 

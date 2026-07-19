@@ -264,6 +264,60 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
     })
 
+    it('can initialize the next user after identity state is reset', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      store.resetForIdentityChange()
+
+      expect(store.initState).toBe('uninitialized')
+      expect(store.workspaces).toEqual([])
+      expect(store.activeWorkspaceId).toBeNull()
+      expect(store.error).toBeNull()
+      expect(store.isFetchingWorkspaces).toBe(false)
+
+      mockWorkspaceApi.list.mockResolvedValueOnce({
+        workspaces: [mockMemberWorkspace]
+      })
+      await store.initialize()
+
+      expect(store.initState).toBe('ready')
+      expect(store.workspaces).toEqual([
+        expect.objectContaining({ id: mockMemberWorkspace.id })
+      ])
+      expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
+    })
+
+    it('does not let a previous user initialization overwrite the next user', async () => {
+      let resolveFirstList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveFirstList = resolve
+          })
+        )
+        .mockResolvedValueOnce({ workspaces: [mockMemberWorkspace] })
+
+      const store = useTeamWorkspaceStore()
+      const firstInitialization = store.initialize()
+      store.resetForIdentityChange()
+      const secondInitialization = store.initialize()
+
+      await secondInitialization
+      resolveFirstList({ workspaces: [mockPersonalWorkspace] })
+      await firstInitialization
+
+      expect(store.initState).toBe('ready')
+      expect(store.workspaces).toEqual([
+        expect.objectContaining({ id: mockMemberWorkspace.id })
+      ])
+      expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenCalledOnce()
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenCalledWith(
+        mockMemberWorkspace.id
+      )
+    })
+
     it('throws when no workspaces available', async () => {
       mockWorkspaceApi.list.mockResolvedValue({ workspaces: [] })
 
@@ -357,6 +411,40 @@ describe('useTeamWorkspaceStore', () => {
       ).rejects.toThrow('Workspace not found or access denied')
 
       expect(store.isSwitching).toBe(false)
+    })
+  })
+
+  describe('refreshWorkspaces', () => {
+    it('does not let a previous user refresh overwrite the next user', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let resolveRefresh: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRefresh = resolve
+        })
+      )
+      const previousRefresh = store.refreshWorkspaces()
+
+      store.resetForIdentityChange()
+      mockWorkspaceApi.list.mockResolvedValueOnce({
+        workspaces: [mockMemberWorkspace]
+      })
+      await store.initialize()
+
+      resolveRefresh({ workspaces: [mockTeamWorkspace] })
+      await previousRefresh
+
+      expect(store.initState).toBe('ready')
+      expect(store.workspaces).toEqual([
+        expect.objectContaining({
+          id: mockMemberWorkspace.id,
+          role: mockMemberWorkspace.role
+        })
+      ])
+      expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
+      expect(store.isFetchingWorkspaces).toBe(false)
     })
   })
 
