@@ -10,6 +10,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 // workspaces flag from it (the `ff:` localStorage override is dev-only).
 export const WORKSPACE_FEATURE_FLAG: RemoteConfig = {
   team_workspaces_enabled: true,
+  consolidated_billing_enabled: true,
   billing_control_enabled: true
 }
 
