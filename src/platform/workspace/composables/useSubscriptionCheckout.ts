@@ -18,6 +18,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
@@ -27,6 +28,10 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
   checkoutType: SubscriptionCheckoutType
+}
+
+interface SubscriptionCheckoutOptions {
+  tierPlanType?: 'personal' | 'team'
 }
 
 /**
@@ -59,7 +64,8 @@ export function useSubscriptionCheckout(
   emit: {
     (e: 'close', subscribed: boolean): void
   },
-  paymentIntentSource?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource,
+  { tierPlanType = 'personal' }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -69,8 +75,10 @@ export function useSubscriptionCheckout(
     plans,
     fetchStatus,
     fetchBalance,
+    isTeamPlan,
     resubscribe
   } = useBillingContext()
+  const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
 
@@ -88,6 +96,28 @@ export function useSubscriptionCheckout(
     () => selectedTeamCheckout.value?.stop ?? null
   )
   const isTeamCheckout = computed(() => selectedTeamCheckout.value !== null)
+
+  function canSelectTierPlan(): boolean {
+    return (
+      tierPlanType === 'team' ||
+      !isTeamPlan.value ||
+      permissions.value.canDowngradeToPersonal
+    )
+  }
+
+  async function showTeamToPersonalDowngrade(
+    planSlug: string,
+    tierKey: CheckoutTierKey
+  ): Promise<boolean> {
+    if (tierPlanType === 'team' || !isTeamPlan.value) return false
+
+    const { useDialogService } = await import('@/services/dialogService')
+    await useDialogService().showDowngradeToPersonalDialog({
+      planName: t(`subscription.tiers.${tierKey}.name`),
+      planSlug
+    })
+    return true
+  }
 
   const previewVariant = computed<PreviewVariant>(() => {
     if (selectedTeamCheckout.value) {
@@ -112,6 +142,8 @@ export function useSubscriptionCheckout(
     tierKey: CheckoutTierKey
     billingCycle: BillingCycle
   }) {
+    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+
     const { tierKey, billingCycle } = payload
 
     isLoadingPreview.value = true
@@ -129,6 +161,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
@@ -170,6 +203,8 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
+    if (!permissions.value.canManageSubscription) return
+
     selectedTeamCheckout.value = {
       stop: payload.stop,
       checkoutType: payload.isChange ? 'change' : 'new'
@@ -209,6 +244,8 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscription() {
+    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+
     const tierKey = selectedTierKey.value
     if (!tierKey) return
 
@@ -223,6 +260,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
+      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
@@ -302,6 +340,8 @@ export function useSubscriptionCheckout(
   }
 
   async function handleTeamSubscription() {
+    if (!permissions.value.canManageSubscription) return
+
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout?.stop.id) {
       toast.add({
@@ -343,6 +383,8 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
+    if (!permissions.value.canManageSubscriptionLifecycle) return
+
     telemetry?.trackResubscribeClicked({
       source: 'pricing_dialog',
       payment_intent_source: paymentIntentSource
