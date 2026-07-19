@@ -1,7 +1,7 @@
 import { api } from '@/scripts/api'
 
 import {
-  cachedConsolidatedBillingEnabled,
+  cachedBillingControlEnabled,
   cachedTeamWorkspacesEnabled,
   remoteConfig,
   remoteConfigState
@@ -43,8 +43,8 @@ export async function refreshRemoteConfig(
         cachedTeamWorkspacesEnabled.value = Boolean(
           config.team_workspaces_enabled
         )
-        cachedConsolidatedBillingEnabled.value = Boolean(
-          config.consolidated_billing_enabled
+        cachedBillingControlEnabled.value = Boolean(
+          config.billing_control_enabled
         )
       }
       return
