@@ -66,6 +66,7 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).not.toHaveBeenCalled()
     expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
   })
 
@@ -81,5 +82,21 @@ describe('useResubscribe', () => {
     expect(state.toastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success' })
     )
+  })
+
+  it('shows an error and resets loading when resubscription fails', async () => {
+    state.resubscribe.mockRejectedValueOnce(new Error('Resubscribe failed'))
+    const { handleResubscribe, isResubscribing } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).toHaveBeenCalledOnce()
+    expect(state.toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Resubscribe failed'
+      })
+    )
+    expect(isResubscribing.value).toBe(false)
   })
 })

@@ -52,7 +52,7 @@ function getPermissions(
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isOriginalOwner,
+    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
     canTopUp: canManageBilling
   }
 

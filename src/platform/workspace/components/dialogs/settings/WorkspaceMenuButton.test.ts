@@ -104,8 +104,8 @@ describe('WorkspaceMenuButton', () => {
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeEnabled()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: 'Delete Workspace' })
+    ).not.toBeInTheDocument()
   })
 
   it('shows the creator a disabled Leave option', () => {
@@ -115,6 +115,9 @@ describe('WorkspaceMenuButton', () => {
     expect(
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Delete Workspace' })
+    ).toBeInTheDocument()
   })
 
   it('hides Leave from a promoted owner without permission', () => {
@@ -143,5 +146,18 @@ describe('WorkspaceMenuButton', () => {
     leave.click()
 
     expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
+  })
+
+  it('rechecks original ownership before opening the delete dialog', () => {
+    mockIsCurrentUserOriginalOwner.value = true
+    renderComponent()
+
+    const deleteWorkspace = screen.getByRole('button', {
+      name: 'Delete Workspace'
+    })
+    mockIsCurrentUserOriginalOwner.value = false
+    deleteWorkspace.click()
+
+    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

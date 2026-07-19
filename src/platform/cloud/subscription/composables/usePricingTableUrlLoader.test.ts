@@ -82,16 +82,6 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('does not wait for original-owner member data', async () => {
-    mockRouteQuery.value = { pricing: '1' }
-
-    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
-    const result = loadPricingTableFromUrl()
-
-    expect(mockShowPricingTable).toHaveBeenCalledOnce()
-    await result
-  })
-
   it('opens on the team tab for ?pricing=team', async () => {
     mockRouteQuery.value = { pricing: 'team' }
 

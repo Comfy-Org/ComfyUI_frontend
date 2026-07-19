@@ -55,6 +55,11 @@ function leaveWorkspace() {
   void showLeaveWorkspaceDialog()
 }
 
+function deleteWorkspace() {
+  if (!isCurrentUserOriginalOwner.value || isDeleteDisabled.value) return
+  void showDeleteWorkspaceDialog()
+}
+
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = []
 
@@ -66,7 +71,10 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  if (uiConfig.value.workspaceMenuAction === 'delete') {
+  if (
+    uiConfig.value.workspaceMenuAction === 'delete' &&
+    isCurrentUserOriginalOwner.value
+  ) {
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
       icon: 'pi pi-trash',
@@ -75,9 +83,7 @@ const menuItems = computed<MenuItem[]>(() => {
         : 'text-destructive-background',
       disabled: isDeleteDisabled.value,
       tooltip: deleteTooltip.value,
-      command: isDeleteDisabled.value
-        ? undefined
-        : () => showDeleteWorkspaceDialog()
+      command: isDeleteDisabled.value ? undefined : deleteWorkspace
     })
   }
 

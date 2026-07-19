@@ -100,6 +100,22 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('rechecks eligibility before opening the cancellation dialog', () => {
+    state.canManageSubscriptionLifecycle = true
+    const { menuItems } = useWorkspaceMenuItems()
+    const cancelItem = menuItems.value.find(
+      (item) => item.label === 'subscription.cancelPlan'
+    )
+
+    state.canManageSubscriptionLifecycle = false
+    cancelItem?.command?.({
+      originalEvent: new Event('click'),
+      item: cancelItem
+    })
+
+    expect(dialogMocks.showCancelSubscriptionDialog).not.toHaveBeenCalled()
+  })
+
   it('shows Leave only when workspace permission grants it', () => {
     const hiddenItems = useWorkspaceMenuItems().menuItems
 

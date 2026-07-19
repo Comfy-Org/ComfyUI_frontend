@@ -38,6 +38,12 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
+    if (
+      !permissions.value.canManageSubscriptionLifecycle ||
+      !canCancelPlan.value
+    ) {
+      return
+    }
     void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
   }
 

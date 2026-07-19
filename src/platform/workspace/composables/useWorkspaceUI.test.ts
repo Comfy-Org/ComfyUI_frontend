@@ -335,10 +335,20 @@ describe('useWorkspaceUI', () => {
     it('grants lifecycle and downgrade to the original owner', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
       mockStore.isCurrentUserOriginalOwner = true
+      mockIsTeamPlan.value = true
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
       expect(ui.permissions.value.canDowngradeToPersonal).toBe(true)
+    })
+
+    it('withholds downgrade from an original owner on a Personal plan', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockStore.isCurrentUserOriginalOwner = true
+      const ui = await loadComposable()
+
+      expect(ui.permissions.value.canManageSubscription).toBe(true)
+      expect(ui.permissions.value.canDowngradeToPersonal).toBe(false)
     })
 
     it('grants lifecycle but withholds downgrade from a promoted owner', async () => {

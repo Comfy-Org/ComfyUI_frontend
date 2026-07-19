@@ -158,6 +158,7 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
@@ -178,6 +179,7 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
 
 const billingOperationStore = useBillingOperationStore()
@@ -251,7 +253,11 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
-  if (loading.value || !isValidAmount.value || !permissions.value.canTopUp) {
+  if (
+    loading.value ||
+    !isValidAmount.value ||
+    (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
+  ) {
     return
   }
 

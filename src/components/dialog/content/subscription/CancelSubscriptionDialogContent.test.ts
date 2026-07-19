@@ -279,6 +279,8 @@ describe('CancelSubscriptionDialogContent', () => {
         'confirmed',
         expect.anything()
       )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
     })
 
     it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {

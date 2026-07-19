@@ -991,8 +991,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('does not submit a team-to-personal downgrade after permission is revoked', async () => {
-      mockIsTeamPlan.value = true
+    it('does not submit a previewed plan after permission is revoked', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
@@ -1002,11 +1001,15 @@ describe('useSubscriptionCheckout', () => {
         tierKey: 'standard',
         billingCycle: 'yearly'
       })
-      mockPermissions.value.canDowngradeToPersonal = false
+      expect(checkout.checkoutStep.value).toBe('preview')
+      mockPermissions.value.canManageSubscription = false
 
       await checkout.handleConfirmTransition()
 
       expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(emit).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 
