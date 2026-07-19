@@ -62,13 +62,19 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(orphan.outputs[0].links).toBeNull()
   })
 
-  it('throws on assignment', () => {
-    const { source } = createConnectedGraph()
+  it('ignores writes, warns, and keeps the store-derived value', () => {
+    const { source, target } = createConnectedGraph()
+    const link = source.connect(0, target, 0)
     const slot: { links?: unknown } = source.outputs[0]
 
     expect(() => {
-      slot.links = []
-    }).toThrow(TypeError)
+      slot.links = null
+    }).not.toThrow()
+    expect(onWarning).toHaveBeenCalledWith(
+      expect.stringContaining('Assignment to output.links is deprecated'),
+      undefined
+    )
+    expect(source.outputs[0].links).toEqual([link!.id])
   })
 
   it('throws on mutation of the returned array', () => {

@@ -223,7 +223,7 @@ reader migration, and wiring `connected` from `NodeSlots` into
 dot via CSS).
 
 Since implemented by Decision 6: `output.links` reader migration, write
-sites, and field deletion.
+sites, and field deletion — and the same for `input.link` (PR 13498).
 
 Out of scope, each a piece of the deferred `SlotConnection` phase:
 

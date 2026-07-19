@@ -19,7 +19,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   /** @deprecated Derived from the link store via a warning prototype getter; never written. */
-  declare readonly link?: LinkId | null
+  declare readonly link: LinkId | null
   alwaysVisible?: boolean
 
   get isWidgetInputSlot(): boolean {

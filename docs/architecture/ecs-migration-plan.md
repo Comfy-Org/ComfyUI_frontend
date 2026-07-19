@@ -285,6 +285,11 @@ data is complete and consistent with the class-based graph.
 > `node/slotLinks.ts` (see
 > [output slot connectivity](output-slot-connectivity.md)). Remaining: the
 > `input.link` slot mirror and execution order.
+>
+> **Status (2026-07-18):** The `input.link` mirror is deleted (PR 13498) by the
+> same recipe: a deprecated warning getter on `NodeInputSlot`, readers going
+> through the `slotLinks` input helpers, and serialization deriving
+> `inputs[].link` from the store. Remaining: execution order.
 
 **Risk:** Low. Read-only system with equivalence tests.
 
@@ -341,8 +346,8 @@ the system knowing about the callback API.
 > through canonical `LGraph` mutation chokepoints: `_addLink`/`_removeLink` and
 > `_addReroute`/`_removeReroute` pair every map mutation with store
 > (un)registration, and `clear()` / subgraph-definition GC unregister whole
-> graphs. The callback contract above and `input.link` slot-mirror extraction
-> remain (`output.links` was deleted in PR 13479).
+> graphs. The callback contract above remains (`output.links` was deleted in
+> PR 13479, `input.link` in PR 13498).
 
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.
