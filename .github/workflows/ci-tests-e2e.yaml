@@ -171,6 +171,45 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  # Windows runner — smoke test chromium only, no container
+  playwright-tests-windows:
+    needs: setup
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Download built frontend
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Setup ComfyUI server (Windows)
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'true'
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests (chromium)
+        id: playwright
+        run: pnpm exec playwright test --project=chromium --reporter=html
+        env:
+          PLAYWRIGHT_HTML_REPORT: playwright-report
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: playwright-report-windows
+          path: ./playwright-report/
+          retention-days: 30
+
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
     needs: [changes, playwright-tests-chromium-sharded]
@@ -209,7 +248,7 @@ jobs:
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
   e2e-status:
     if: ${{ always() }}
-    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests, playwright-tests-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Check E2E results
@@ -217,9 +256,13 @@ jobs:
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
+          WINDOWS: ${{ needs.playwright-tests-windows.result }}
         run: |
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          if [[ "$WINDOWS" == "failure" ]]; then
+            echo "::warning::Windows E2E failed (non-blocking — see playwright-report-windows artifact)"
+          fi
           echo "E2E passed"
 
   #### BEGIN Deployment and commenting (non-forked PRs only)
