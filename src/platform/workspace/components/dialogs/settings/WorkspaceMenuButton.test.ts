@@ -19,10 +19,15 @@ const memberConfig = {
   workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
+const personalConfig = {
+  showEditWorkspaceMenuItem: true,
+  workspaceMenuAction: null,
+  workspaceMenuDisabledTooltip: null
+}
 
 const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
 const mockCanLeaveWorkspace = ref(false)
-const mockIsCurrentUserOriginalOwner = ref(false)
+const mockCanManageSubscription = ref(true)
 const mockIsWorkspaceSubscribed = ref(false)
 
 const mockShowLeaveWorkspaceDialog = vi.fn()
@@ -32,7 +37,8 @@ const mockShowEditWorkspaceDialog = vi.fn()
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
+      canLeaveWorkspace: mockCanLeaveWorkspace.value,
+      canManageSubscription: mockCanManageSubscription.value
     })),
     uiConfig: mockUiConfig
   })
@@ -40,8 +46,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    isCurrentUserOriginalOwner: mockIsCurrentUserOriginalOwner
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
 }))
 
@@ -80,13 +85,14 @@ describe('WorkspaceMenuButton', () => {
     vi.clearAllMocks()
     mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
-    mockIsCurrentUserOriginalOwner.value = false
+    mockCanManageSubscription.value = true
     mockIsWorkspaceSubscribed.value = false
   })
 
   it('lets a member leave and offers no destructive workspace actions', () => {
     mockUiConfig.value = memberConfig
     mockCanLeaveWorkspace.value = true
+    mockCanManageSubscription.value = false
     renderComponent()
 
     const leave = screen.getByRole('button', { name: 'Leave Workspace' })
@@ -96,7 +102,8 @@ describe('WorkspaceMenuButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('lets a non-creator owner leave', () => {
+  it('lets an additional workspace owner leave and delete', async () => {
+    const user = userEvent.setup()
     mockCanLeaveWorkspace.value = true
     renderComponent()
 
@@ -104,23 +111,32 @@ describe('WorkspaceMenuButton', () => {
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeEnabled()
     expect(
+      screen.getByRole('button', { name: 'Delete Workspace' })
+    ).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Delete Workspace' }))
+    expect(mockShowDeleteWorkspaceDialog).toHaveBeenCalledOnce()
+  })
+
+  it('does not expose Delete in a personal workspace', () => {
+    mockUiConfig.value = personalConfig
+    renderComponent()
+
+    expect(
       screen.queryByRole('button', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
   })
 
-  it('shows the creator a disabled Leave option', () => {
-    mockIsCurrentUserOriginalOwner.value = true
+  it('disables Delete while the additional workspace is subscribed', () => {
+    mockIsWorkspaceSubscribed.value = true
     renderComponent()
 
     expect(
-      screen.getByRole('button', { name: 'Leave Workspace' })
-    ).toBeDisabled()
-    expect(
       screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeInTheDocument()
+    ).toBeDisabled()
   })
 
-  it('hides Leave from a promoted owner without permission', () => {
+  it('hides Leave when workspace permission is withheld', () => {
     renderComponent()
 
     expect(
@@ -128,7 +144,7 @@ describe('WorkspaceMenuButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens the leave dialog when a non-creator owner clicks Leave', async () => {
+  it('opens the leave dialog when an owner clicks Leave', async () => {
     const user = userEvent.setup()
     mockCanLeaveWorkspace.value = true
     renderComponent()
@@ -148,14 +164,25 @@ describe('WorkspaceMenuButton', () => {
     expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 
-  it('rechecks original ownership before opening the delete dialog', () => {
-    mockIsCurrentUserOriginalOwner.value = true
+  it('rechecks owner permission before opening the delete dialog', () => {
     renderComponent()
 
     const deleteWorkspace = screen.getByRole('button', {
       name: 'Delete Workspace'
     })
-    mockIsCurrentUserOriginalOwner.value = false
+    mockCanManageSubscription.value = false
+    deleteWorkspace.click()
+
+    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
+  })
+
+  it('rechecks the subscription lock before opening the delete dialog', () => {
+    renderComponent()
+
+    const deleteWorkspace = screen.getByRole('button', {
+      name: 'Delete Workspace'
+    })
+    mockIsWorkspaceSubscribed.value = true
     deleteWorkspace.click()
 
     expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()

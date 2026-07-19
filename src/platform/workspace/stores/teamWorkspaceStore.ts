@@ -600,7 +600,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
-    if (userId === originalOwnerId.value) {
+    if (
+      activeWorkspace.value?.type === 'personal' &&
+      userId === originalOwnerId.value
+    ) {
       throw new Error("Cannot change the workspace creator's role")
     }
     // Only the role changes; merge it onto the existing row rather than trusting

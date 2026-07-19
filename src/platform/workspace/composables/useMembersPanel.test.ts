@@ -256,6 +256,7 @@ const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
+  mockActiveWorkspace,
   mockMembers,
   mockPendingInvites,
   mockOriginalOwnerId,
@@ -274,6 +275,9 @@ const {
   const { ref } = require('vue') as typeof import('vue')
 
   return {
+    mockActiveWorkspace: ref<{ type: 'personal' | 'team' } | null>({
+      type: 'personal'
+    }),
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
@@ -333,6 +337,7 @@ vi.mock('pinia', async (importOriginal) => {
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
+    activeWorkspace: mockActiveWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
     originalOwnerId: mockOriginalOwnerId,
@@ -404,6 +409,7 @@ vi.mock('@/services/dialogService', () => ({
 describe('useMembersPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockActiveWorkspace.value = { type: 'personal' }
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
@@ -707,13 +713,23 @@ describe('useMembersPanel', () => {
   })
 
   describe('isOriginalOwner', () => {
-    it('matches against the store originalOwnerId', async () => {
+    it('protects the matching creator in a personal workspace', async () => {
       mockOriginalOwnerId.value = 'creator-1'
       const panel = await setup()
       expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
         true
       )
       expect(panel.isOriginalOwner(createMember({ id: 'other' }))).toBe(false)
+    })
+
+    it('treats an additional workspace creator as an ordinary owner', async () => {
+      mockActiveWorkspace.value = { type: 'team' }
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+
+      expect(panel.isOriginalOwner(createMember({ id: 'creator-1' }))).toBe(
+        false
+      )
     })
   })
 

@@ -5,11 +5,12 @@ import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
   canLeaveWorkspace: false,
+  canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   isActiveSubscription: true,
+  isDeleteDisabled: false,
   isFreeTier: false,
   isInPersonalWorkspace: false,
-  isOriginalOwner: false,
   isSubscriptionCancelled: false
 }))
 
@@ -37,6 +38,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       get value() {
         return {
           canLeaveWorkspace: state.canLeaveWorkspace,
+          canManageSubscription: state.canManageSubscription,
           canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
         }
       }
@@ -48,9 +50,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     })),
     isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
     isActiveSubscription: computed(() => state.isActiveSubscription),
-    isOriginalOwner: computed(() => state.isOriginalOwner),
     isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
-    isDeleteDisabled: computed(() => false),
+    isDeleteDisabled: {
+      get value() {
+        return state.isDeleteDisabled
+      }
+    },
     deleteDisabledTooltipKey: computed(() => null)
   })
 }))
@@ -63,11 +68,12 @@ describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     state.canLeaveWorkspace = false
+    state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.isActiveSubscription = true
+    state.isDeleteDisabled = false
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
-    state.isOriginalOwner = false
     state.isSubscriptionCancelled = false
   })
 
@@ -145,5 +151,82 @@ describe('useWorkspaceMenuItems', () => {
     })
 
     expect(dialogMocks.showLeaveWorkspaceDialog).not.toHaveBeenCalled()
+  })
+
+  it('shows Leave and Delete when owner permissions grant both', () => {
+    state.canLeaveWorkspace = true
+    state.canManageSubscription = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toEqual([
+      'workspacePanel.menu.deleteWorkspace',
+      'workspacePanel.menu.leaveWorkspace'
+    ])
+  })
+
+  it('withholds Delete from members', () => {
+    state.canLeaveWorkspace = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toEqual([
+      'workspacePanel.menu.leaveWorkspace'
+    ])
+  })
+
+  it('withholds Delete from personal workspace owners', () => {
+    state.canManageSubscription = true
+    state.isInPersonalWorkspace = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'workspacePanel.menu.deleteWorkspace'
+    )
+  })
+
+  it('disables Delete while the additional workspace is subscribed', () => {
+    state.canManageSubscription = true
+    state.isDeleteDisabled = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+    const deleteItem = menuItems.value.find(
+      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
+    )
+
+    expect(deleteItem).toMatchObject({ disabled: true, command: undefined })
+  })
+
+  it('rechecks owner permission before opening the Delete dialog', () => {
+    state.canManageSubscription = true
+    const { menuItems } = useWorkspaceMenuItems()
+    const deleteItem = menuItems.value.find(
+      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
+    )
+
+    state.canManageSubscription = false
+    deleteItem?.command?.({
+      originalEvent: new Event('click'),
+      item: deleteItem
+    })
+
+    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+  })
+
+  it('rechecks the subscription lock before opening the Delete dialog', () => {
+    state.canManageSubscription = true
+    const { menuItems } = useWorkspaceMenuItems()
+    const deleteItem = menuItems.value.find(
+      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
+    )
+
+    state.isDeleteDisabled = true
+    deleteItem?.command?.({
+      originalEvent: new Event('click'),
+      item: deleteItem
+    })
+
+    expect(dialogMocks.showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

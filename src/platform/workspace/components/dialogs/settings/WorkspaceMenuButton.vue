@@ -31,9 +31,7 @@ const {
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isWorkspaceSubscribed, isCurrentUserOriginalOwner } = storeToRefs(
-  useTeamWorkspaceStore()
-)
+const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
 const { permissions, uiConfig } = useWorkspaceUI()
 
 // Disable delete when the workspace has an active subscription (prevents
@@ -56,7 +54,13 @@ function leaveWorkspace() {
 }
 
 function deleteWorkspace() {
-  if (!isCurrentUserOriginalOwner.value || isDeleteDisabled.value) return
+  if (
+    !permissions.value.canManageSubscription ||
+    uiConfig.value.workspaceMenuAction !== 'delete' ||
+    isDeleteDisabled.value
+  ) {
+    return
+  }
   void showDeleteWorkspaceDialog()
 }
 
@@ -73,7 +77,7 @@ const menuItems = computed<MenuItem[]>(() => {
 
   if (
     uiConfig.value.workspaceMenuAction === 'delete' &&
-    isCurrentUserOriginalOwner.value
+    permissions.value.canManageSubscription
   ) {
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
@@ -92,17 +96,6 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('workspacePanel.menu.leaveWorkspace'),
       icon: 'pi pi-sign-out',
       command: leaveWorkspace
-    })
-  } else if (
-    uiConfig.value.workspaceMenuAction === 'delete' &&
-    isCurrentUserOriginalOwner.value
-  ) {
-    items.push({
-      label: t('workspacePanel.menu.leaveWorkspace'),
-      icon: 'pi pi-sign-out',
-      class: 'opacity-50',
-      disabled: true,
-      tooltip: t('workspacePanel.menu.creatorCannotLeave')
     })
   }
 

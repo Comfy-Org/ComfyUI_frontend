@@ -824,7 +824,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].role).toBe('member')
     })
 
-    it('changeMemberRole refuses to change the flagged creator and never calls the API', async () => {
+    it('changeMemberRole refuses to change a personal workspace creator', async () => {
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [
           {
@@ -846,8 +846,6 @@ describe('useTeamWorkspaceStore', () => {
         ],
         pagination: { offset: 0, limit: 50, total: 2 }
       })
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
 
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -858,6 +856,52 @@ describe('useTeamWorkspaceStore', () => {
       )
       expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
       expect(store.members.find((m) => m.id === 'creator')?.role).toBe('owner')
+    })
+
+    it('changeMemberRole allows changing an additional workspace creator', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'creator',
+            name: 'Creator',
+            email: 'creator@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'owner',
+            is_original_owner: true
+          },
+          {
+            id: 'user-2',
+            name: 'User Two',
+            email: 'two@test.com',
+            joined_at: '2024-01-02T00:00:00Z',
+            role: 'owner',
+            is_original_owner: false
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceApi.updateMemberRole.mockResolvedValue({
+        id: 'creator',
+        name: 'Creator',
+        email: 'creator@test.com',
+        joined_at: '2024-01-01T00:00:00Z',
+        role: 'member',
+        is_original_owner: true
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      await store.changeMemberRole('creator', 'member')
+
+      expect(mockWorkspaceApi.updateMemberRole).toHaveBeenCalledWith(
+        'creator',
+        'member'
+      )
+      expect(store.members.find((m) => m.id === 'creator')?.role).toBe('member')
     })
 
     it('originalOwnerId is the member flagged is_original_owner, even when not earliest-joined', async () => {
@@ -895,7 +939,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.originalOwnerId).toBe('creator')
     })
 
-    it('originalOwnerId falls back to the earliest-joined member when no flag is present', async () => {
+    it('allows changing the fallback creator in an additional workspace', async () => {
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [
           {
@@ -915,6 +959,14 @@ describe('useTeamWorkspaceStore', () => {
         ],
         pagination: { offset: 0, limit: 50, total: 2 }
       })
+      mockWorkspaceApi.updateMemberRole.mockResolvedValue({
+        id: 'founder',
+        name: 'Founder',
+        email: 'founder@test.com',
+        joined_at: '2024-01-01T00:00:00Z',
+        role: 'member',
+        is_original_owner: false
+      })
       mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
       mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
 
@@ -924,10 +976,11 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(store.originalOwnerId).toBe('founder')
 
-      await expect(store.changeMemberRole('founder', 'member')).rejects.toThrow(
-        "Cannot change the workspace creator's role"
+      await store.changeMemberRole('founder', 'member')
+      expect(mockWorkspaceApi.updateMemberRole).toHaveBeenCalledWith(
+        'founder',
+        'member'
       )
-      expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
     })
 
     it('originalOwnerId fallback skips a non-owner earliest joiner, keeping them changeable', async () => {

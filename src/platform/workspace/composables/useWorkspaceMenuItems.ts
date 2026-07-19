@@ -21,7 +21,6 @@ export function useWorkspaceMenuItems() {
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
-    isOriginalOwner,
     isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
@@ -48,6 +47,13 @@ export function useWorkspaceMenuItems() {
   }
 
   function deleteWorkspace() {
+    if (
+      !permissions.value.canManageSubscription ||
+      isInPersonalWorkspace.value ||
+      isDeleteDisabled.value
+    ) {
+      return
+    }
     void showDeleteWorkspaceDialog()
   }
 
@@ -66,8 +72,7 @@ export function useWorkspaceMenuItems() {
 
   const canDeleteWorkspace = computed(
     () =>
-      isOriginalOwner.value &&
-      (!isInPersonalWorkspace.value || isActiveSubscription.value)
+      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
   )
 
   const deleteTooltip = computed(() => {

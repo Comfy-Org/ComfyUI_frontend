@@ -46,9 +46,11 @@ function getPermissions(
   const canManageBilling = hasActiveWorkspace && role === 'owner'
   const canLeaveWorkspace =
     hasActiveWorkspace &&
-    isTeamPlan &&
-    !isOriginalOwner &&
-    (role === 'member' || isOriginalOwnerResolved)
+    (type === 'personal'
+      ? isTeamPlan &&
+        !isOriginalOwner &&
+        (role === 'member' || isOriginalOwnerResolved)
+      : true)
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,

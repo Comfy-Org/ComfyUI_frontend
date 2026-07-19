@@ -185,6 +185,16 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(true)
     })
 
+    it('keeps the original creator from leaving while using a Team plan', async () => {
+      mockIsTeamPlan.value = true
+      mockStore.originalOwnerId = 'current-user'
+      mockStore.isCurrentUserOriginalOwner = true
+      const ui = await loadComposable()
+
+      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
+      expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
+    })
+
     it('lets the personal owner rename their workspace', async () => {
       const ui = await loadComposable()
 
@@ -226,7 +236,7 @@ describe('useWorkspaceUI', () => {
         canInviteMembers: true,
         canManageInvites: true,
         canManageMembers: true,
-        canLeaveWorkspace: false,
+        canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: true,
         canManageSubscriptionLifecycle: true,
@@ -292,12 +302,12 @@ describe('useWorkspaceUI', () => {
       )
     })
 
-    it('withholds leave while using a Personal plan', async () => {
+    it('allows leave independently of the active plan', async () => {
       mockIsTeamPlan.value = false
       const ui = await loadComposable()
 
-      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
-      expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
+      expect(ui.permissions.value.canLeaveWorkspace).toBe(true)
+      expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(true)
     })
   })
 
@@ -319,15 +329,15 @@ describe('useWorkspaceUI', () => {
 
       expect(ui.isOriginalOwner.value).toBe(true)
       expect(ui.permissions.value.canDowngradeToPersonal).toBe(true)
-      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
+      expect(ui.permissions.value.canLeaveWorkspace).toBe(true)
     })
 
-    it('fails owner Leave closed until creator identity resolves', async () => {
+    it('allows an additional workspace owner to leave before creator identity resolves', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
 
-      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
+      expect(ui.permissions.value.canLeaveWorkspace).toBe(true)
     })
   })
 
