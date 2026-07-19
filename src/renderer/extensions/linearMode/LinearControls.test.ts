@@ -94,7 +94,7 @@ function renderControls({
 
   useAppModeStore().selectedOutputs = [toNodeId(1)]
   if (hasError) {
-    useExecutionErrorStore().lastNodeErrors = nodeErrors
+    useExecutionErrorStore().recordNodeErrors(nodeErrors)
   }
 
   const toastTarget = document.createElement('div')

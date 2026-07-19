@@ -8,7 +8,7 @@ import type { BillingType } from './types'
 /**
  * Selects the billing backend for the active workspace: legacy user-scoped
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
- * stay legacy until `billingControlEnabled`; team workspaces are always
+ * stay legacy until `consolidatedBillingEnabled`; team workspaces are always
  * workspace-scoped. The routing matrix is covered in useBillingRouting.test.ts.
  */
 export function useBillingRouting() {
@@ -23,7 +23,7 @@ export function useBillingRouting() {
     const workspaceType = workspaceStore.activeWorkspace?.type
     if (!workspaceType) return 'legacy'
 
-    if (workspaceType === 'personal' && !flags.billingControlEnabled) {
+    if (workspaceType === 'personal' && !flags.consolidatedBillingEnabled) {
       return 'legacy'
     }
 

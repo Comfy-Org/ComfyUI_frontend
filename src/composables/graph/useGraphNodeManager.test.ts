@@ -514,7 +514,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -527,7 +527,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.has_errors).toBe(true)
@@ -537,7 +537,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('sets slot hasErrors for inputs matching error input_name', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -550,7 +550,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
 
     expect(nodeA.inputs[0].hasErrors).toBe(true)
@@ -560,7 +560,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('clears has_errors and slot hasErrors when errors are removed', async () => {
     const { nodeA, store } = setupGraphWithStore()
 
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(nodeA.id)]: {
         errors: [
           {
@@ -573,12 +573,12 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'KSampler'
       }
-    }
+    })
     await nextTick()
     expect(nodeA.has_errors).toBe(true)
     expect(nodeA.inputs[1].hasErrors).toBe(true)
 
-    store.lastNodeErrors = null
+    store.recordNodeErrors(null)
     await nextTick()
 
     expect(nodeA.has_errors).toBeFalsy()
@@ -603,7 +603,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     // Error on interior node: execution ID = "50:<interiorNodeId>"
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [interiorExecId]: {
         errors: [
           {
@@ -616,7 +616,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
         dependent_outputs: [],
         class_type: 'InnerNode'
       }
-    }
+    })
     await nextTick()
 
     // Interior node should have the error
@@ -624,6 +624,56 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(interiorNode.inputs[0].hasErrors).toBe(true)
     // Parent subgraph node should also be flagged
     expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('merges slot errors when execution IDs resolve to the same node', async () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('InnerNode')
+    interiorNode.addInput('first', 'INT')
+    interiorNode.addInput('second', 'INT')
+    subgraph.add(interiorNode)
+
+    const firstInstance = createTestSubgraphNode(subgraph, { id: 50 })
+    const secondInstance = createTestSubgraphNode(subgraph, { id: 51 })
+    const graph = firstInstance.graph as LGraph
+    graph.add(firstInstance)
+    graph.add(secondInstance)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+
+    useGraphNodeManager(graph)
+    const store = useExecutionErrorStore()
+    store.recordNodeErrors({
+      [`${firstInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing first',
+            details: '',
+            extra_info: { input_name: 'first' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      },
+      [`${secondInstance.id}:${interiorNode.id}`]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing second',
+            details: '',
+            extra_info: { input_name: 'second' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'InnerNode'
+      }
+    })
+    await nextTick()
+
+    expect(interiorNode.inputs[0].hasErrors).toBe(true)
+    expect(interiorNode.inputs[1].hasErrors).toBe(true)
   })
 
   it('sets has_errors on nodes with missing models', async () => {
