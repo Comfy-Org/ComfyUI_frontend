@@ -22,11 +22,10 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * Member role change (Settings ▸ Workspace ▸ Members) — Figma 2993-15512.
  *
  * The viewer is a promoted owner (not the workspace creator), so the spec can
- * distinguish the creator guard from the self guard: the creator row and the
- * viewer's own row hide the row menu, every other row exposes
- * "Change role ›" (Owner / Member) plus "Remove member". Promoting a member
- * sends PATCH /api/workspace/members/:id {role}, flips the Role column,
- * re-sorts the row under the creator, and the promoted owner stays demotable.
+ * distinguish personal-workspace creator protection from the self guard.
+ * Promoting a member sends PATCH /api/workspace/members/:id {role}, flips the
+ * Role column, re-sorts the row under the creator, and the promoted owner stays
+ * demotable.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -92,6 +91,7 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
     await expect(
       content.getByText(MEMBER_JANE.email, { exact: true })
     ).toBeVisible()
+    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
     await expect(
       content.getByRole('button', { name: 'Upgrade to Team' })
     ).toHaveCount(0)
@@ -108,19 +108,19 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
 test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
-  test('row menus respect creator and self guards', async ({ page }) => {
+  test('row menus protect only the current user in an additional workspace', async ({
+    page
+  }) => {
     await new CloudWorkspaceMockHelper(page).setup()
     const content = await openMembersTab(page)
 
-    // US8/US9 — no row actions on the creator row (Liz) nor on the viewer's
-    // own row; the two plain members each expose a menu.
     await expect(
       menuButton(memberRow(content, MEMBER_JOHN.email))
     ).toBeVisible()
     await expect(
       menuButton(memberRow(content, MEMBER_JANE.email))
     ).toBeVisible()
-    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
+    await expect(menuButton(memberRow(content, CREATOR.email))).toBeVisible()
     await expect(menuButton(memberRow(content, VIEWER.email))).toHaveCount(0)
 
     // US1/US12 — the row menu exposes Change role and the FE-768 remove flow.
@@ -181,9 +181,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       page.getByText('Manage members, payment methods, and workspace settings')
     ).toBeVisible()
     await expect(
-      page.getByText(
-        'Promote and demote other owners (except the workspace creator).'
-      )
+      page.getByText('Promote and demote other owners.')
     ).toBeVisible()
 
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
