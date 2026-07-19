@@ -238,7 +238,30 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await expect.poll(() => workspaceMintOwners).toContain('a')
     await expect.poll(() => sessionOwners).toContain('a')
 
-    await page.goto(`${APP_URL}/cloud/login?switchAccount=true`)
+    await page.evaluate(() => {
+      sessionStorage.setItem(
+        'e2e-account-switch-route',
+        '/cloud/login?switchAccount=true'
+      )
+    })
+    await page.addInitScript(() => {
+      function applyTargetRoute() {
+        const targetRoute = sessionStorage.getItem('e2e-account-switch-route')
+        if (!targetRoute) return
+        sessionStorage.removeItem('e2e-account-switch-route')
+        window.history.replaceState(null, '', targetRoute)
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('readystatechange', applyTargetRoute, {
+          once: true
+        })
+        return
+      }
+      applyTargetRoute()
+    })
+    await page.goto(APP_URL)
+    await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
     await page.getByRole('button', { name: 'Use email instead' }).click()
     await page.getByLabel('Email').fill(ACCOUNT_B.email)
     await page.getByLabel('Password').fill('password')
