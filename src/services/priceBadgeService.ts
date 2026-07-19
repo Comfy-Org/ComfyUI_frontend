@@ -276,7 +276,9 @@ export async function applyPriceBadges(
   if (raceLostForSession) return
   if (!result) return
   for (const [name, badge] of Object.entries(result)) {
-    const def = defs[name]
+    // Own-key check: names like 'constructor' or 'toString' would otherwise
+    // resolve to inherited builtins and let remote data mutate them.
+    const def = Object.hasOwn(defs, name) ? defs[name] : undefined
     if (!def) continue
     const problem = validateBadgeAgainstDef(badge, def)
     if (problem) {

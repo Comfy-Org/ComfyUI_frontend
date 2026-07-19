@@ -127,6 +127,28 @@ describe('priceBadgeService', () => {
     // In the map but not in the defs: ignored without throwing.
   })
 
+  it('never resolves badge names to inherited keys or mutates builtins', async () => {
+    // JSON.parse is required for fidelity: an object literal's __proto__
+    // sets the prototype instead of creating the own key that
+    // response.json() produces.
+    const payload: unknown = JSON.parse(
+      JSON.stringify({ OtherNode: emptyDependsBadge }).replace(
+        '{',
+        `{"__proto__":${JSON.stringify(emptyDependsBadge)},` +
+          `"constructor":${JSON.stringify(emptyDependsBadge)},` +
+          `"toString":${JSON.stringify(emptyDependsBadge)},`
+      )
+    )
+    vi.stubGlobal('fetch', mockFetchResponse(payload))
+    const { applyPriceBadges } = await importService()
+    const defs = makeDefs()
+    await applyPriceBadges(defs)
+    expect(Object.hasOwn(Object.prototype, 'price_badge')).toBe(false)
+    expect(Object.hasOwn(Object, 'price_badge')).toBe(false)
+    expect(Object.hasOwn(Object.prototype.toString, 'price_badge')).toBe(false)
+    expect(defs['OtherNode'].price_badge).toBeDefined()
+  })
+
   it('requests the versioned endpoint, normalizing a trailing base slash', async () => {
     mockApiBase.url = 'https://api.example.com/'
     const fetchMock = mockFetchResponse({})
