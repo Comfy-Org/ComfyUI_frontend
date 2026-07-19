@@ -139,7 +139,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits'
+      'out_of_credits',
+      { tierPlanType: 'team' }
+    )
+  })
+
+  it('marks the legacy Personal table as a personal-plan target', () => {
+    renderComponent({ isPersonal: true })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { tierPlanType: 'personal' }
     )
   })
 
