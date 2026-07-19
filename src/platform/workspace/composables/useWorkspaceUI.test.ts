@@ -176,6 +176,14 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
     })
 
+    it('withholds leave from a Team-plan owner until creator identity resolves', async () => {
+      mockIsTeamPlan.value = true
+      const ui = await loadComposable()
+
+      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
+      expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
+    })
+
     it('lets a promoted owner leave while using a Team plan', async () => {
       mockIsTeamPlan.value = true
       mockStore.originalOwnerId = 'original-owner'
