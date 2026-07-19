@@ -49,18 +49,23 @@ async function resolveSystemStats() {
   await until(
     () => systemStatsStore.isInitialized || !!systemStatsStore.error
   ).toBe(true)
-  return systemStatsStore.systemStats
+  return systemStatsStore.error ? null : systemStatsStore.systemStats
 }
 
 async function fetchPriceBadgeMap(): Promise<PriceBadgeMap | null> {
   try {
     const stats = await resolveSystemStats()
-    // --disable-api-nodes promises no frontend internet access; honor it
-    // (same contract as releaseStore).
-    if (stats?.system?.argv?.includes('--disable-api-nodes')) {
+    // Without stats we can't tell whether --disable-api-nodes is set, so
+    // its no-external-requests promise must fail closed: no fetch.
+    if (!stats) {
       return null
     }
-    const version = stats?.system?.comfyui_version || 'nightly'
+    // --disable-api-nodes promises no frontend internet access; honor it
+    // (same contract as releaseStore).
+    if (stats.system?.argv?.includes('--disable-api-nodes')) {
+      return null
+    }
+    const version = stats.system?.comfyui_version || 'nightly'
     const base = getComfyApiBaseUrl().replace(/\/+$/, '')
     const params = new URLSearchParams({
       comfyui_version: version,

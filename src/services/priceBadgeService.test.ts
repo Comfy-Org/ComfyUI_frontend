@@ -155,7 +155,7 @@ describe('priceBadgeService', () => {
   })
 
   it('falls back to nightly when the version is unavailable', async () => {
-    mockSystemStatsStore.systemStats = null
+    mockSystemStatsStore.systemStats = { system: {} }
     const fetchMock = mockFetchResponse({})
     vi.stubGlobal('fetch', fetchMock)
     const { applyPriceBadges } = await importService()
@@ -163,6 +163,21 @@ describe('priceBadgeService', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('comfyui_version=nightly')
     )
+  })
+
+  // Without stats we can't tell whether --disable-api-nodes is set; its
+  // no-external-requests promise must fail closed.
+  it('never fetches when the system stats request fails', async () => {
+    mockSystemStatsStore.isInitialized = false
+    mockSystemStatsStore.error = new Error('system_stats unavailable')
+    mockSystemStatsStore.systemStats = null
+    const fetchMock = mockFetchResponse({ PartnerNode: validBadge })
+    vi.stubGlobal('fetch', fetchMock)
+    const { applyPriceBadges } = await importService()
+    const defs = makeDefs()
+    await applyPriceBadges(defs)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(defs['PartnerNode'].price_badge).toBeUndefined()
   })
 
   // The wire schema is declarative Zod; one representative per rejection
