@@ -55,7 +55,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
+import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
@@ -91,12 +92,9 @@ const showMembersTabCount = computed(
   () => hasTeamPlan.value && members.value.length > 1
 )
 
-watch(
-  [hasTeamPlan, isPlanLoading],
-  ([hasPlan, isLoading]) => {
-    if (!hasPlan || isLoading) return
-    void Promise.allSettled([fetchMembers(), fetchPendingInvites()])
-  },
+whenever(
+  () => hasTeamPlan.value && !isPlanLoading.value,
+  () => Promise.allSettled([fetchMembers(), fetchPendingInvites()]),
   { immediate: true }
 )
 </script>
