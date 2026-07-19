@@ -89,7 +89,6 @@
       >
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
-      <!-- Add Credits (subscribed + personal or workspace owner only, paid tier) -->
       <Button
         v-else-if="isActiveSubscription && permissions.canTopUp"
         variant="secondary"
@@ -113,11 +112,7 @@
         button-variant="subscribe"
       />
       <Button
-        v-if="
-          showSubscribeAction &&
-          !isPersonalWorkspace &&
-          (!isCancelled || permissions.canManageSubscriptionLifecycle)
-        "
+        v-if="showSubscribeAction && !isPersonalWorkspace"
         variant="primary"
         size="sm"
         @click="handleOpenPlansAndPricing"
@@ -132,7 +127,6 @@
 
     <Divider class="mx-0 my-2" />
 
-    <!-- Plans & Pricing (PERSONAL and OWNER only) -->
     <div
       v-if="showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -145,7 +139,6 @@
       }}</span>
     </div>
 
-    <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
     <div
       v-if="showManagePlan"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -306,8 +299,8 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
-    permissions.value.canManageSubscription &&
-    (!isActiveSubscription.value || isCancelled.value)
+    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+    (!isActiveSubscription.value && permissions.value.canManageSubscription)
 )
 
 const handleOpenUserSettings = () => {

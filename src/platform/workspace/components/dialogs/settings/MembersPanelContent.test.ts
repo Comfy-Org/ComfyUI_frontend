@@ -25,7 +25,9 @@ const {
   mockOriginalOwnerId,
   mockFilteredMembers,
   mockFilteredPendingInvites,
-  mockIsPersonalWorkspace,
+  mockHasTeamPlan,
+  mockHasLapsedTeamPlan,
+  mockIsPlanLoading,
   mockIsOnTeamPlan,
   mockHasMultipleMembers,
   mockShowSearch,
@@ -51,7 +53,9 @@ const {
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<PendingInvite[]>([]),
-    mockIsPersonalWorkspace: ref(false),
+    mockHasTeamPlan: ref(true),
+    mockHasLapsedTeamPlan: ref(false),
+    mockIsPlanLoading: ref(false),
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
     mockSearchQuery: ref(''),
@@ -75,7 +79,7 @@ const {
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete' as 'leave' | 'delete' | null,
+      workspaceMenuAction: 'delete' as 'delete' | null,
       workspaceMenuDisabledTooltip: null as string | null
     })
   }
@@ -86,7 +90,10 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     searchQuery: mockSearchQuery,
     activeView: mockActiveView,
     maxSeats: computed(() => 20),
+    hasTeamPlan: mockHasTeamPlan,
+    isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
+    hasLapsedTeamPlan: mockHasLapsedTeamPlan,
     hasMultipleMembers: mockHasMultipleMembers,
     showSearch: mockShowSearch,
     showViewTabs: mockShowViewTabs,
@@ -111,7 +118,6 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
           mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
         )
     ),
-    isPersonalWorkspace: mockIsPersonalWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
     permissions: mockPermissions,
@@ -205,7 +211,9 @@ describe('MembersPanelContent', () => {
     mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
     mockFilteredPendingInvites.value = []
-    mockIsPersonalWorkspace.value = false
+    mockHasTeamPlan.value = true
+    mockHasLapsedTeamPlan.value = false
+    mockIsPlanLoading.value = false
     mockIsOnTeamPlan.value = true
     mockHasMultipleMembers.value = true
     mockShowSearch.value = true
@@ -239,9 +247,9 @@ describe('MembersPanelContent', () => {
     }
   })
 
-  describe('personal workspace', () => {
+  describe('personal plan', () => {
     beforeEach(() => {
-      mockIsPersonalWorkspace.value = true
+      mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockHasMultipleMembers.value = false
       mockShowSearch.value = false
@@ -275,7 +283,7 @@ describe('MembersPanelContent', () => {
     })
   })
 
-  describe('team workspace - member list', () => {
+  describe('Team plan member list', () => {
     it('shows the Role column header and member roles', () => {
       mockFilteredMembers.value = [
         createMember({ role: 'owner', email: 'boss@test.com' }),
@@ -301,6 +309,9 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.getByText('Alice')).toBeTruthy()
       expect(screen.getByText('Bob')).toBeTruthy()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBanner')
+      ).toBeNull()
     })
 
     it('shows more options button for non-current members', () => {
@@ -427,10 +438,36 @@ describe('MembersPanelContent', () => {
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
       ).toHaveLength(0)
     })
+
+    it('does not show an upgrade action', () => {
+      mockHasTeamPlan.value = false
+      mockIsOnTeamPlan.value = false
+      renderComponent()
+
+      expect(
+        screen.queryByRole('button', {
+          name: /workspacePanel\.members\.upgradeToTeam/
+        })
+      ).toBeNull()
+    })
+
+    it('does not show a reactivate action for a lapsed Team plan', () => {
+      mockHasTeamPlan.value = true
+      mockHasLapsedTeamPlan.value = true
+      mockIsOnTeamPlan.value = false
+      renderComponent()
+
+      expect(
+        screen.queryByRole('button', {
+          name: /workspacePanel\.members\.reactivateTeam/
+        })
+      ).toBeNull()
+    })
   })
 
   describe('not on team plan', () => {
     beforeEach(() => {
+      mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockShowSearch.value = false
       mockShowViewTabs.value = false
@@ -444,6 +481,7 @@ describe('MembersPanelContent', () => {
     })
 
     it('hides the upsell banner when on a team plan', () => {
+      mockHasTeamPlan.value = true
       mockIsOnTeamPlan.value = true
       renderComponent()
       expect(
@@ -460,6 +498,19 @@ describe('MembersPanelContent', () => {
       expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 
+    it('lets an owner reactivate a lapsed Team plan', async () => {
+      mockHasTeamPlan.value = true
+      mockHasLapsedTeamPlan.value = true
+      renderComponent()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /workspacePanel\.members\.reactivateTeam/
+        })
+      )
+      expect(mockShowTeamPlans).toHaveBeenCalled()
+    })
+
     it('hides search input', () => {
       renderComponent()
       expect(screen.queryByRole('textbox')).toBeNull()
@@ -469,10 +520,18 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByText('workspacePanel.members.contactUs')).toBeNull()
     })
+
+    it('does not show an upgrade banner while plan state is loading', () => {
+      mockIsPlanLoading.value = true
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBanner')
+      ).toBeNull()
+    })
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab for team workspaces on a team plan', async () => {
+    it('opens discord in a new tab on a Team plan', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
@@ -489,10 +548,9 @@ describe('MembersPanelContent', () => {
       openSpy.mockRestore()
     })
 
-    it('is hidden in personal workspaces', () => {
-      mockIsPersonalWorkspace.value = true
+    it('is shown whenever the active plan is Team', () => {
       renderComponent()
-      expect(screen.queryByText('workspacePanel.members.contactUs')).toBeNull()
+      expect(screen.getByText('workspacePanel.members.contactUs')).toBeTruthy()
     })
   })
 
