@@ -679,6 +679,7 @@ export const useDialogService = () => {
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+    dialogStore.closeDialog({ key: 'downgrade-remove-members' })
     return new Promise((resolve) => {
       dialogStore.showDialog({
         key: 'downgrade-remove-members',

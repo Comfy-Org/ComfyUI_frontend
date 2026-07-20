@@ -398,8 +398,8 @@ describe('useSubscriptionCheckout', () => {
       }
       mockIsTeamPlan.value = true
       mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
-      mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
-      mockFetchBalance.mockResolvedValue(undefined)
+      mockFetchStatus.mockReturnValueOnce(new Promise(() => {}))
+      mockFetchBalance.mockRejectedValueOnce(new Error('refresh failed'))
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({

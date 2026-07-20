@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -207,6 +207,33 @@ describe('dialogStore', () => {
       expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
         false
       )
+    })
+
+    it('notifies a dialog when the stack capacity evicts it', () => {
+      const store = useDialogStore()
+      const onClose = vi.fn()
+
+      store.showDialog({
+        key: 'evicted-dialog',
+        component: MockComponent,
+        dialogComponentProps: { onClose },
+        priority: 10
+      })
+      for (let index = 0; index < 9; index++) {
+        store.showDialog({
+          key: `dialog-${index}`,
+          component: MockComponent,
+          priority: 9 - index
+        })
+      }
+
+      store.showDialog({
+        key: 'eleventh-dialog',
+        component: MockComponent
+      })
+
+      expect(onClose).toHaveBeenCalledOnce()
+      expect(store.isDialogOpen('evicted-dialog')).toBe(false)
     })
   })
 

@@ -312,8 +312,8 @@ export function useSubscriptionCheckout(
 
     if (response.status === 'subscribed') {
       telemetry?.trackMonthlySubscriptionSucceeded()
-      await Promise.allSettled([fetchStatus(), fetchBalance()])
       checkoutStep.value = 'success'
+      void Promise.allSettled([fetchStatus(), fetchBalance()])
       return
     }
 

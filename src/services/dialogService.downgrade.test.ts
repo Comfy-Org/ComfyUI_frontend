@@ -6,13 +6,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
+const closeDialog = vi.hoisted(() => vi.fn())
 const toastAdd = vi.hoisted(() => vi.fn())
 const refreshMembers = vi.hoisted(() => vi.fn())
 const downgradeToPersonal = vi.hoisted(() => vi.fn())
 const hasOtherMembers = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
+  useDialogStore: () => ({ showDialog, closeDialog })
 }))
 
 vi.mock('@/i18n', () => ({
@@ -102,6 +103,9 @@ describe('showDowngradeToPersonalDialog', () => {
     await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
 
     expect(downgradeToPersonal).not.toHaveBeenCalled()
+    expect(closeDialog).toHaveBeenCalledWith({
+      key: 'downgrade-remove-members'
+    })
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('downgrade-remove-members')
     expect(args.dialogComponentProps.closable).toBe(false)
