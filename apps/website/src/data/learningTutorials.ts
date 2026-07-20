@@ -217,6 +217,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'Moodboard Creation', 'zh-CN': '情绪板制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising1.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
     href: 'https://cloud.comfy.org/?share=62f892c540e3',
     tags: []
   },
@@ -225,6 +226,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'Storyboard Creation', 'zh-CN': '故事板制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising2.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
     href: 'https://cloud.comfy.org/?share=a598339548b3',
     tags: []
   },
@@ -233,6 +235,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'Product Photography', 'zh-CN': '产品摄影' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising3.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
     href: 'https://cloud.comfy.org/?share=2d5b0cdf915a',
     tags: []
   },
@@ -241,6 +244,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'Talent Casting', 'zh-CN': '演员选角' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising4.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
     href: 'https://cloud.comfy.org/?share=1233f85f1c96',
     tags: []
   },
@@ -249,6 +253,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'B-Roll Creation', 'zh-CN': 'B-Roll 素材制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising5.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
     href: 'https://cloud.comfy.org/?share=dd1946bdd7c8',
     tags: []
   },
