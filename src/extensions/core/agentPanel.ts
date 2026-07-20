@@ -12,9 +12,7 @@ useExtensionService().registerExtension({
       const source = createPostHogFlagSource(posthog)
       const sync = (): void => {
         const forceInDev = import.meta.env.MODE === 'development'
-        const enabled = forceInDev || source.isEnabled()
-        agentPanelStore.enabled = enabled
-        if (!enabled) agentPanelStore.close('flag_disabled')
+        agentPanelStore.enabled = forceInDev || source.isEnabled()
       }
       source.onChange?.(sync)
       sync()

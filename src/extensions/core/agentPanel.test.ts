@@ -4,7 +4,7 @@ import type { ComfyExtension } from '@/types/comfy'
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
-  agentStore: { enabled: false, close: vi.fn() },
+  agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null
 }))
@@ -67,7 +67,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.enabled).toBe(true)
   })
 
-  it('disables and closes the panel when the flag flips back to false', async () => {
+  it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
     mocks.flagListener!()
@@ -75,6 +75,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener!()
 
     expect(mocks.agentStore.enabled).toBe(false)
-    expect(mocks.agentStore.close).toHaveBeenCalledWith('flag_disabled')
+    expect(mocks.agentStore.close).not.toHaveBeenCalled()
+    expect(mocks.agentStore.isOpen).toBe(true)
   })
 })

@@ -411,13 +411,10 @@ export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   workflow_id: string | null
 }
 
-export type AgentPanelCloseSource =
-  | 'topbar_button'
-  | 'close_button'
-  | 'flag_disabled'
+export type AgentPanelCloseSource = 'topbar_button' | 'close_button'
 
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'topbar_button'
+  source: 'topbar_button' | 'restored'
 }
 
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
