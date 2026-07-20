@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -40,7 +40,7 @@ const groups = computed<Group[]>(() => {
   return out
 })
 
-const plainText = computed(() =>
+const markdown = computed(() =>
   message.parts
     .filter((part): part is TextPart => part.type === 'text')
     .map((part) => part.text)
@@ -48,10 +48,8 @@ const plainText = computed(() =>
 )
 
 const showActions = computed(
-  () => !message.streaming && plainText.value.length > 0
+  () => !message.streaming && markdown.value.length > 0
 )
-
-const raw = ref(false)
 </script>
 
 <template>
@@ -65,11 +63,7 @@ const raw = ref(false)
     </div>
 
     <template v-for="(group, index) in groups" :key="index">
-      <MarkdownStream
-        v-if="group.kind === 'text'"
-        :text="group.part.text"
-        :raw="raw"
-      />
+      <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
       <ToolCallGroup v-else-if="group.kind === 'tools'" :tools="group.parts" />
       <div
         v-else
@@ -87,22 +81,10 @@ const raw = ref(false)
       </div>
     </template>
 
-    <div v-if="showActions" class="flex items-center gap-1">
-      <MessageFeedback :text="plainText" @feedback="emit('feedback', $event)" />
-      <button
-        type="button"
-        :aria-label="t('agent.toggleRaw')"
-        :aria-pressed="raw"
-        :class="
-          cn(
-            'rounded-agent text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-7 items-center justify-center transition-colors',
-            raw && 'text-agent-fg'
-          )
-        "
-        @click="raw = !raw"
-      >
-        <span class="icon-[lucide--code] size-4" />
-      </button>
-    </div>
+    <MessageFeedback
+      v-if="showActions"
+      :markdown
+      @feedback="emit('feedback', $event)"
+    />
   </div>
 </template>
