@@ -11,7 +11,7 @@ import type { ISlotType, Positionable } from '../interfaces'
  * @returns All unpinned items in the original set, and recursively, their children
  */
 export function getAllNestedItems(
-  items: ReadonlySet<Positionable>
+  items: ReadonlySet<Positionable> | undefined
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
   if (items) {
@@ -61,7 +61,7 @@ type FreeSlotResult<T extends { type: ISlotType }> =
  * @returns The index and slot if found, otherwise `undefined`.
  */
 export function findFreeSlotOfType<T extends { type: ISlotType }>(
-  slots: T[],
+  slots: T[] | undefined,
   type: ISlotType,
   hasNoLinks: (slot: T) => boolean
 ) {

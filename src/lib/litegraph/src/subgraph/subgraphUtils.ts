@@ -1,5 +1,6 @@
 import { isEqual } from 'es-toolkit'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+import type { SubgraphNode } from './SubgraphNode'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -28,7 +29,6 @@ import type {
 import type { GraphOrSubgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphNode } from './SubgraphNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
