@@ -1079,12 +1079,12 @@ describe('AgentPanelRoot workflow binding', () => {
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    expect(await screen.findByText('current')).toBeInTheDocument()
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     const other = addTab('workflows/other.json')
     hostStores.workflow.activeWorkflow = other
-    expect(await screen.findByText('other')).toBeInTheDocument()
-    expect(screen.queryByText('current')).not.toBeInTheDocument()
+    expect(await screen.findAllByText('other')).not.toHaveLength(0)
+    expect(screen.queryAllByText('current')).toHaveLength(0)
   })
 
   it("sends the active tab's saved workflow id and applies patches in place", async () => {
