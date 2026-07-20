@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -10,25 +10,16 @@ import PartnerNodesPanelContent from './PartnerNodesPanelContent.vue'
 
 const mockFetch = vi.fn()
 const mockToggleSort = vi.fn()
-const mockSetEnabled = vi.fn()
-const mockSetSelectedEnabled = vi.fn()
 const mockSetAllFilteredEnabled = vi.fn()
 const mockSetGroupEnabled = vi.fn()
 const mockSetRestrictionsEnabled = vi.fn()
-const mockToggleSelection = vi.fn()
-const mockToggleSelectAll = vi.fn()
 const mockTogglePartnerCollapsed = vi.fn()
-const mockClearSelection = vi.fn()
 const mockConfirm = vi.fn()
 
 const mockRestrictionsEnabled = ref(true)
 const mockSearchQuery = ref('')
 const mockSortField = ref<'name' | 'lastModified'>('name')
 const mockSortDirection = ref<'asc' | 'desc'>('asc')
-const mockSelectedIds = ref(new Set<string>())
-const mockSelectedCount = ref(0)
-const mockSelectedEnabled = ref(false)
-const mockAllFilteredSelected = ref(false)
 const enabledNode = {
   id: 'a',
   name: 'Zeta Node',
@@ -68,23 +59,14 @@ vi.mock('@/platform/workspace/composables/usePartnerNodes', () => ({
     searchQuery: mockSearchQuery,
     sortField: mockSortField,
     sortDirection: mockSortDirection,
-    selectedIds: mockSelectedIds,
-    selectedCount: mockSelectedCount,
-    selectedEnabled: mockSelectedEnabled,
-    allFilteredSelected: mockAllFilteredSelected,
     filteredNodes: mockFilteredNodes,
     groups: mockGroups,
     fetch: mockFetch,
     toggleSort: mockToggleSort,
-    setEnabled: mockSetEnabled,
-    setSelectedEnabled: mockSetSelectedEnabled,
     setAllFilteredEnabled: mockSetAllFilteredEnabled,
     setGroupEnabled: mockSetGroupEnabled,
     setRestrictionsEnabled: mockSetRestrictionsEnabled,
-    toggleSelection: mockToggleSelection,
-    toggleSelectAll: mockToggleSelectAll,
-    togglePartnerCollapsed: mockTogglePartnerCollapsed,
-    clearSelection: mockClearSelection
+    togglePartnerCollapsed: mockTogglePartnerCollapsed
   })
 }))
 
@@ -119,10 +101,6 @@ describe('PartnerNodesPanelContent', () => {
     vi.clearAllMocks()
     mockRestrictionsEnabled.value = true
     mockSearchQuery.value = ''
-    mockSelectedIds.value = new Set()
-    mockSelectedCount.value = 0
-    mockSelectedEnabled.value = false
-    mockAllFilteredSelected.value = false
     mockNodes.value = [enabledNode, disabledNode]
     mockGroups.value = [
       {
@@ -161,7 +139,7 @@ describe('PartnerNodesPanelContent', () => {
     expect(
       screen.getByRole('group', {
         name: 'Partner node access',
-        description: 'All partner nodes are available, including new releases.'
+        description: 'Partner nodes from every provider are available.'
       })
     ).toBeInTheDocument()
     expect(
@@ -172,17 +150,17 @@ describe('PartnerNodesPanelContent', () => {
       'off'
     )
     expect(
-      screen.getByText(
-        'All partner nodes are available, including new releases.'
-      )
+      screen.getByText('Partner nodes from every provider are available.')
     ).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Search partner nodes')).toBeDisabled()
+    expect(
+      screen.getByPlaceholderText('Search providers or partner nodes')
+    ).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Enable all' })).toBeDisabled()
     expect(
       screen.getByRole('columnheader', { name: 'Enabled' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('group', { name: 'Partner node controls' })
+      screen.getByRole('group', { name: 'Partner node provider controls' })
     ).toBeDisabled()
     expect(screen.getByText('2/2 enabled')).toBeInTheDocument()
   })
@@ -198,9 +176,9 @@ describe('PartnerNodesPanelContent', () => {
       expect.objectContaining({
         title: 'Restrict access to partner nodes?',
         message:
-          'Workspace members will only be able to use Partner Nodes that you enable.',
-        hint: 'New Partner Nodes will be unavailable until you enable them.',
-        showHintIcon: false
+          'Workspace members will only be able to use partner nodes from providers that you enable.',
+        hint: "New partner nodes follow their provider's access setting.",
+        separateHint: true
       })
     )
     await waitFor(() =>
@@ -225,7 +203,7 @@ describe('PartnerNodesPanelContent', () => {
 
     expect(
       screen.getByText(
-        'Only enabled partner nodes are available. New releases start disabled.'
+        'Only partner nodes from enabled providers are available.'
       )
     ).toBeInTheDocument()
 
@@ -234,8 +212,9 @@ describe('PartnerNodesPanelContent', () => {
     expect(mockConfirm).toHaveBeenCalledWith({
       title: 'Allow access to all partner nodes?',
       message:
-        'All currently restricted partner-node models will become available to every workspace member.',
-      hint: 'New partner-node models will also be available automatically.'
+        'Partner nodes from every provider will become available to every workspace member.',
+      hint: 'New providers will also be available automatically.',
+      separateHint: true
     })
     await waitFor(() =>
       expect(mockSetRestrictionsEnabled).toHaveBeenCalledWith(false)
@@ -281,7 +260,7 @@ describe('PartnerNodesPanelContent', () => {
     renderComponent()
 
     const disclosure = screen.getByRole('button', {
-      name: 'Collapse BFL partner nodes'
+      name: 'Collapse BFL provider'
     })
     expect(disclosure).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('1/2 enabled')).toBeInTheDocument()
@@ -296,7 +275,7 @@ describe('PartnerNodesPanelContent', () => {
     expect(mockTogglePartnerCollapsed).toHaveBeenCalledWith('BFL')
 
     const providerSwitch = screen.getByRole('switch', {
-      name: 'Enable or disable BFL partner nodes'
+      name: 'Enable or disable BFL provider'
     })
     expect(providerSwitch).toHaveAttribute('aria-checked', 'false')
 
@@ -319,7 +298,7 @@ describe('PartnerNodesPanelContent', () => {
 
     await user.click(
       screen.getByRole('switch', {
-        name: 'Enable or disable BFL partner nodes'
+        name: 'Enable or disable BFL provider'
       })
     )
 
@@ -340,7 +319,7 @@ describe('PartnerNodesPanelContent', () => {
     renderComponent()
 
     const providerSwitch = screen.getByRole('switch', {
-      name: 'Enable or disable BFL partner nodes'
+      name: 'Enable or disable BFL provider'
     })
     expect(providerSwitch).toHaveAttribute('aria-checked', 'true')
 
@@ -352,17 +331,17 @@ describe('PartnerNodesPanelContent', () => {
     )
   })
 
-  it('selects a child from the row without toggling its enabled state', async () => {
-    const user = userEvent.setup()
+  it('renders child models without individual controls', () => {
     renderComponent()
 
-    await user.click(screen.getByRole('row', { name: /Zeta Node/ }))
+    const modelRow = screen.getByRole('row', { name: /Zeta Node/ })
 
-    expect(mockToggleSelection).toHaveBeenCalledWith('a')
-    expect(mockSetEnabled).not.toHaveBeenCalled()
+    expect(within(modelRow).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(modelRow).queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(within(modelRow).queryByRole('switch')).not.toBeInTheDocument()
   })
 
-  it('confirms before disabling every current model', async () => {
+  it('confirms before disabling every provider', async () => {
     const user = userEvent.setup()
     renderComponent()
 
@@ -371,7 +350,7 @@ describe('PartnerNodesPanelContent', () => {
 
     expect(mockSetAllFilteredEnabled).toHaveBeenNthCalledWith(1, true)
     expect(mockConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Disable all partner nodes?' })
+      expect.objectContaining({ title: 'Disable all providers?' })
     )
     await waitFor(() =>
       expect(mockSetAllFilteredEnabled).toHaveBeenNthCalledWith(2, false)
@@ -382,7 +361,10 @@ describe('PartnerNodesPanelContent', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.type(screen.getByPlaceholderText('Search partner nodes'), 'zeta')
+    await user.type(
+      screen.getByPlaceholderText('Search providers or partner nodes'),
+      'zeta'
+    )
 
     await user.click(screen.getByRole('button', { name: 'Disable results' }))
 

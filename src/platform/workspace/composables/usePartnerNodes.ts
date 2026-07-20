@@ -57,34 +57,24 @@ export function usePartnerNodes() {
   const searchQuery = ref('')
   const sortField = ref<SortField>('name')
   const sortDirection = ref<SortDirection>('asc')
-  const selectedIds = ref<Set<string>>(new Set())
   const expandedPartners = ref<Set<string>>(new Set())
 
   const filteredNodes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
-    const filtered = nodes.value.filter(
-      (n) =>
-        !q ||
-        n.name.toLowerCase().includes(q) ||
-        n.partner.toLowerCase().includes(q)
+    const matchingPartners = new Set(
+      nodes.value
+        .filter(
+          (node) =>
+            !q ||
+            node.name.toLowerCase().includes(q) ||
+            node.partner.toLowerCase().includes(q)
+        )
+        .map((node) => node.partner)
     )
-    return filtered.sort((a, b) =>
-      compareNodes(a, b, sortField.value, sortDirection.value)
-    )
+    return nodes.value
+      .filter((node) => matchingPartners.has(node.partner))
+      .sort((a, b) => compareNodes(a, b, sortField.value, sortDirection.value))
   })
-
-  const selectedCount = computed(() => selectedIds.value.size)
-  const selectedEnabled = computed(() => {
-    const selected = nodes.value.filter((node) =>
-      selectedIds.value.has(node.id)
-    )
-    return selected.length > 0 && selected.every((node) => node.enabled)
-  })
-  const allFilteredSelected = computed(
-    () =>
-      filteredNodes.value.length > 0 &&
-      filteredNodes.value.every((n) => selectedIds.value.has(n.id))
-  )
 
   const groups = computed<PartnerGroup[]>(() => {
     const allByPartner = new Map<string, PartnerNode[]>()
@@ -157,24 +147,6 @@ export function usePartnerNodes() {
     )
   }
 
-  async function setEnabled(node: PartnerNode, enabled: boolean) {
-    const { enabled: prevEnabled, last_modified: prevModified } = node
-    applyEnabled([node.id], enabled)
-    try {
-      await partnerNodesApi.setEnabled(node.id, enabled)
-    } catch {
-      nodes.value = nodes.value.map((n) =>
-        n.id === node.id
-          ? { ...n, enabled: prevEnabled, last_modified: prevModified }
-          : n
-      )
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.partnerNodes.updateError')
-      })
-    }
-  }
-
   async function setNodesEnabled(
     ids: string[],
     enabled: boolean
@@ -205,13 +177,14 @@ export function usePartnerNodes() {
     }
   }
 
-  async function setSelectedEnabled(enabled: boolean) {
-    await setNodesEnabled([...selectedIds.value], enabled)
-  }
-
   async function setAllFilteredEnabled(enabled: boolean) {
+    const visiblePartners = new Set(
+      filteredNodes.value.map((node) => node.partner)
+    )
     const updated = await setNodesEnabled(
-      filteredNodes.value.map((node) => node.id),
+      nodes.value
+        .filter((node) => visiblePartners.has(node.partner))
+        .map((node) => node.id),
       enabled
     )
     if (!updated || searchQuery.value.trim()) return updated
@@ -252,7 +225,6 @@ export function usePartnerNodes() {
     try {
       await partnerNodesApi.setAutoEnableNew(true)
       restrictionsEnabled.value = false
-      selectedIds.value = new Set()
       return true
     } catch {
       toast.add({
@@ -263,32 +235,11 @@ export function usePartnerNodes() {
     }
   }
 
-  function toggleSelection(id: string) {
-    const next = new Set(selectedIds.value)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    selectedIds.value = next
-  }
-
-  function toggleSelectAll() {
-    const next = new Set(selectedIds.value)
-    if (allFilteredSelected.value) {
-      for (const node of filteredNodes.value) next.delete(node.id)
-    } else {
-      for (const node of filteredNodes.value) next.add(node.id)
-    }
-    selectedIds.value = next
-  }
-
   function togglePartnerCollapsed(partner: string) {
     const next = new Set(expandedPartners.value)
     if (next.has(partner)) next.delete(partner)
     else next.add(partner)
     expandedPartners.value = next
-  }
-
-  function clearSelection() {
-    selectedIds.value = new Set()
   }
 
   return {
@@ -298,22 +249,13 @@ export function usePartnerNodes() {
     searchQuery,
     sortField,
     sortDirection,
-    selectedIds,
-    selectedCount,
-    selectedEnabled,
-    allFilteredSelected,
     filteredNodes,
     groups,
     fetch,
     toggleSort,
-    setEnabled,
-    setSelectedEnabled,
     setAllFilteredEnabled,
     setGroupEnabled,
     setRestrictionsEnabled,
-    toggleSelection,
-    toggleSelectAll,
-    togglePartnerCollapsed,
-    clearSelection
+    togglePartnerCollapsed
   }
 }

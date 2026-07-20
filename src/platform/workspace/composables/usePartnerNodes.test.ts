@@ -16,7 +16,6 @@ vi.mock('primevue/usetoast', () => ({
 vi.mock('@/platform/workspace/api/partnerNodesApi', () => ({
   partnerNodesApi: {
     list: vi.fn(),
-    setEnabled: vi.fn(),
     setEnabledBulk: vi.fn(),
     setAutoEnableNew: vi.fn()
   }
@@ -114,10 +113,13 @@ describe('usePartnerNodes', () => {
     ])
   })
 
-  it('filters by search across name and partner', async () => {
+  it('shows the whole provider when its name or a model name matches', async () => {
     const pn = await setupLoaded()
     pn.searchQuery.value = 'anthropic'
     expect(pn.filteredNodes.value.map((n) => n.id)).toEqual(['b'])
+
+    pn.searchQuery.value = 'zeta'
+    expect(pn.filteredNodes.value.map((n) => n.id)).toEqual(['c', 'a'])
   })
 
   it('groups nodes by partner and starts groups collapsed', async () => {
@@ -160,39 +162,8 @@ describe('usePartnerNodes', () => {
     pn.searchQuery.value = 'zeta'
     const bfl = pn.groups.value.find((group) => group.partner === 'BFL')
     expect(bfl?.expanded).toBe(true)
-    expect(bfl?.nodes.map((partnerNode) => partnerNode.id)).toEqual(['a'])
+    expect(bfl?.nodes.map((partnerNode) => partnerNode.id)).toEqual(['c', 'a'])
     expect(bfl?.totalCount).toBe(2)
-  })
-
-  it('optimistically toggles a node and calls the api', async () => {
-    const pn = await setupLoaded()
-    const target = pn.nodes.value.find((n) => n.id === 'b')!
-    await pn.setEnabled(target, true)
-    expect(pn.nodes.value.find((n) => n.id === 'b')!.enabled).toBe(true)
-    expect(partnerNodesApi.setEnabled).toHaveBeenCalledWith('b', true)
-  })
-
-  it('reverts and toasts when a toggle fails', async () => {
-    const pn = await setupLoaded()
-    vi.mocked(partnerNodesApi.setEnabled).mockRejectedValueOnce(new Error('x'))
-    const target = pn.nodes.value.find((n) => n.id === 'a')!
-    await pn.setEnabled(target, false)
-    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(true)
-    expect(mockToastAdd).toHaveBeenCalled()
-  })
-
-  it('bulk-toggles the current selection and keeps it selected', async () => {
-    const pn = await setupLoaded()
-    pn.toggleSelection('a')
-    pn.toggleSelection('c')
-    await pn.setSelectedEnabled(false)
-    expect(pn.nodes.value.find((n) => n.id === 'a')!.enabled).toBe(false)
-    expect(pn.nodes.value.find((n) => n.id === 'c')!.enabled).toBe(false)
-    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(
-      ['a', 'c'],
-      false
-    )
-    expect(pn.selectedCount.value).toBe(2)
   })
 
   it('toggles every node in a provider group', async () => {
@@ -235,7 +206,6 @@ describe('usePartnerNodes', () => {
 
   it('removes restrictions by enabling all current and future nodes', async () => {
     const pn = await setupLoaded()
-    pn.toggleSelection('b')
 
     await expect(pn.setRestrictionsEnabled(false)).resolves.toBe(true)
 
@@ -248,7 +218,6 @@ describe('usePartnerNodes', () => {
       true
     )
     expect(pn.restrictionsEnabled.value).toBe(false)
-    expect(pn.selectedCount.value).toBe(0)
   })
 
   it('keeps restrictions visible when enabling current nodes fails', async () => {
@@ -263,13 +232,16 @@ describe('usePartnerNodes', () => {
     expect(pn.restrictionsEnabled.value).toBe(true)
   })
 
-  it('enables or disables only the nodes matching the current search', async () => {
+  it('updates the whole provider when a model matches the current search', async () => {
     const pn = await setupLoaded()
     pn.searchQuery.value = 'zeta'
 
     await pn.setAllFilteredEnabled(false)
 
-    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(['a'], false)
+    expect(partnerNodesApi.setEnabledBulk).toHaveBeenCalledWith(
+      ['a', 'c'],
+      false
+    )
   })
 
   it('disables every current partner node', async () => {
@@ -293,25 +265,5 @@ describe('usePartnerNodes', () => {
     expect(pn.nodes.value.every((partnerNode) => partnerNode.enabled)).toBe(
       true
     )
-  })
-
-  it('select-all reflects the filtered set', async () => {
-    const pn = await setupLoaded()
-    pn.searchQuery.value = 'BFL'
-    pn.toggleSelectAll()
-    expect(pn.selectedCount.value).toBe(2)
-    expect(pn.allFilteredSelected.value).toBe(true)
-  })
-
-  it('preserves selections outside the filtered set', async () => {
-    const pn = await setupLoaded()
-    pn.toggleSelection('b')
-    pn.searchQuery.value = 'BFL'
-
-    pn.toggleSelectAll()
-    expect([...pn.selectedIds.value].sort()).toEqual(['a', 'b', 'c'])
-
-    pn.toggleSelectAll()
-    expect([...pn.selectedIds.value]).toEqual(['b'])
   })
 })

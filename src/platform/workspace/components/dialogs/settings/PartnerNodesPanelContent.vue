@@ -53,22 +53,18 @@
       "
       :aria-label="$t('workspacePanel.partnerNodes.controlsLabel')"
     >
-      <div class="flex w-full justify-end">
-        <SearchInput
-          v-model="searchQuery"
-          :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-          size="lg"
-          class="w-full @2xl:w-64"
-        />
-      </div>
-
       <div
-        class="flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-6"
+        class="mt-2 flex flex-col gap-3 @2xl:flex-row @2xl:items-center @2xl:gap-6"
       >
-        <span class="min-w-0 flex-1 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.partnerNodes.description') }}
-        </span>
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <SearchInput
+            v-model="searchQuery"
+            :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
+            size="lg"
+            class="w-full @2xl:w-64"
+          />
+        </div>
+        <div class="flex shrink-0 items-center gap-2 pr-4">
           <Button
             variant="muted-textonly"
             size="lg"
@@ -108,13 +104,6 @@
             <TableRow
               class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
             >
-              <TableHead class="w-6">
-                <Checkbox
-                  :model-value="allFilteredSelected"
-                  :aria-label="$t('workspacePanel.partnerNodes.selectAll')"
-                  @update:model-value="toggleSelectAll"
-                />
-              </TableHead>
               <TableHead :aria-sort="ariaSort('name')">
                 <button :class="sortHeaderClass" @click="toggleSort('name')">
                   {{ $t('workspacePanel.partnerNodes.columns.name') }}
@@ -144,7 +133,6 @@
                 class="cursor-pointer hover:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors"
                 @click="togglePartnerCollapsed(group.partner)"
               >
-                <TableCell />
                 <TableCell>
                   <button
                     type="button"
@@ -224,27 +212,10 @@
                 <TableRow
                   v-for="node in group.nodes"
                   :key="node.id"
-                  :data-state="
-                    selectedIds.has(node.id) ? 'selected' : undefined
-                  "
-                  class="group cursor-pointer hover:bg-transparent data-[state=selected]:bg-transparent [&:hover>td]:bg-secondary-background/50 [&>td]:border-b [&>td]:border-interface-stroke/20 [&>td]:transition-colors [&[data-state=selected]>td]:bg-secondary-background/50"
-                  @click="toggleSelection(node.id)"
+                  class="hover:bg-transparent [&>td]:border-b [&>td]:border-interface-stroke/20"
                 >
-                  <TableCell>
-                    <Checkbox
-                      :model-value="selectedIds.has(node.id)"
-                      :aria-label="node.name"
-                      :class="
-                        cn(
-                          'pointer-events-none',
-                          !hasSelection &&
-                            'opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'
-                        )
-                      "
-                    />
-                  </TableCell>
                   <TableCell class="text-muted-foreground">
-                    <div :class="cn('pl-7', !node.enabled && 'opacity-30')">
+                    <div class="pl-7">
                       {{ node.name }}
                     </div>
                   </TableCell>
@@ -252,31 +223,13 @@
                   <TableCell class="text-muted-foreground">
                     {{ formatLastModified(node.last_modified) }}
                   </TableCell>
-                  <TableCell @click.stop>
-                    <div
-                      class="flex h-8 cursor-pointer items-center justify-center"
-                      @click="setEnabled(node, !node.enabled)"
-                    >
-                      <Switch
-                        :model-value="node.enabled"
-                        :aria-label="
-                          $t('workspacePanel.partnerNodes.nodeToggle', {
-                            name: node.name
-                          })
-                        "
-                        @click.stop
-                        @update:model-value="
-                          (value: boolean) => setEnabled(node, value)
-                        "
-                      />
-                    </div>
-                  </TableCell>
+                  <TableCell />
                 </TableRow>
               </template>
             </template>
             <TableRow v-if="groups.length === 0" class="hover:bg-transparent">
               <TableCell
-                :colspan="5"
+                :colspan="4"
                 class="py-6 text-center text-sm text-muted-foreground"
               >
                 {{ $t('workspacePanel.partnerNodes.empty') }}
@@ -286,30 +239,6 @@
         </Table>
       </div>
     </fieldset>
-
-    <div class="absolute inset-x-0 bottom-0">
-      <Transition
-        enter-active-class="transition-opacity duration-150"
-        leave-active-class="transition-opacity duration-150"
-        enter-from-class="opacity-0"
-        leave-to-class="opacity-0"
-      >
-        <SelectionBar
-          v-if="restrictionsEnabled && selectedCount > 0"
-          :label="
-            $t('workspacePanel.partnerNodes.selectedCount', selectedCount)
-          "
-          :deselect-label="$t('workspacePanel.partnerNodes.clearSelection')"
-          @deselect="clearSelection"
-        >
-          <Switch
-            :model-value="selectedEnabled"
-            :aria-label="$t('workspacePanel.partnerNodes.bulkToggle')"
-            @update:model-value="applyBulk"
-          />
-        </SelectionBar>
-      </Transition>
-    </div>
   </div>
 </template>
 
@@ -317,9 +246,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SelectionBar from '@/components/common/SelectionBar.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import Table from '@/components/ui/table/Table.vue'
@@ -344,26 +271,16 @@ const {
   searchQuery,
   sortField,
   sortDirection,
-  selectedIds,
-  selectedCount,
-  selectedEnabled,
-  allFilteredSelected,
   filteredNodes,
   groups,
   fetch,
   toggleSort,
-  setEnabled,
-  setSelectedEnabled,
   setAllFilteredEnabled,
   setGroupEnabled,
   setRestrictionsEnabled,
-  toggleSelection,
-  toggleSelectAll,
-  togglePartnerCollapsed,
-  clearSelection
+  togglePartnerCollapsed
 } = usePartnerNodes()
 
-const hasSelection = computed(() => selectedCount.value > 0)
 const hasSearch = computed(() => searchQuery.value.trim().length > 0)
 
 const sortHeaderClass =
@@ -383,10 +300,6 @@ function ariaSort(
   return sortDirection.value === 'asc' ? 'ascending' : 'descending'
 }
 
-function applyBulk(value: boolean) {
-  void setSelectedEnabled(value)
-}
-
 async function requestRestrictionsChange(mode: unknown) {
   if (mode === 'allowAll' && restrictionsEnabled.value) {
     if (nodes.value.some((node) => !node.enabled)) {
@@ -397,7 +310,10 @@ async function requestRestrictionsChange(mode: unknown) {
         message: t(
           'workspacePanel.partnerNodes.restrictions.allowAllConfirm.message'
         ),
-        hint: t('workspacePanel.partnerNodes.restrictions.allowAllConfirm.hint')
+        hint: t(
+          'workspacePanel.partnerNodes.restrictions.allowAllConfirm.hint'
+        ),
+        separateHint: true
       })
       if (!confirmed) return
     }
@@ -411,7 +327,7 @@ async function requestRestrictionsChange(mode: unknown) {
     title: t('workspacePanel.partnerNodes.restrictions.confirm.title'),
     message: t('workspacePanel.partnerNodes.restrictions.confirm.message'),
     hint: t('workspacePanel.partnerNodes.restrictions.confirm.hint'),
-    showHintIcon: false
+    separateHint: true
   })
   if (confirmed) await setRestrictionsEnabled(true)
 }

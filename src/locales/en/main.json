@@ -2878,12 +2878,10 @@
       "placeholder": "Dashboard workspace settings"
     },
     "partnerNodes": {
-      "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
-      "controlsLabel": "Partner node controls",
-      "searchPlaceholder": "Search partner nodes",
-      "selectAll": "Select all partner nodes",
+      "controlsLabel": "Partner node provider controls",
+      "searchPlaceholder": "Search providers or partner nodes",
       "columns": {
-        "name": "Partner Node",
+        "name": "Provider / partner node",
         "nodes": "Nodes",
         "lastModified": "Last modified",
         "enabled": "Enabled"
@@ -2891,8 +2889,8 @@
       "restrictions": {
         "label": "Partner node access",
         "descriptions": {
-          "allowAll": "All partner nodes are available, including new releases.",
-          "restricted": "Only enabled partner nodes are available. New releases start disabled."
+          "allowAll": "Partner nodes from every provider are available.",
+          "restricted": "Only partner nodes from enabled providers are available."
         },
         "modes": {
           "allowAll": "Unrestricted",
@@ -2900,35 +2898,31 @@
         },
         "confirm": {
           "title": "Restrict access to partner nodes?",
-          "message": "Workspace members will only be able to use Partner Nodes that you enable.",
-          "hint": "New Partner Nodes will be unavailable until you enable them."
+          "message": "Workspace members will only be able to use partner nodes from providers that you enable.",
+          "hint": "New partner nodes follow their provider's access setting."
         },
         "allowAllConfirm": {
           "title": "Allow access to all partner nodes?",
-          "message": "All currently restricted partner-node models will become available to every workspace member.",
-          "hint": "New partner-node models will also be available automatically."
+          "message": "Partner nodes from every provider will become available to every workspace member.",
+          "hint": "New providers will also be available automatically."
         }
       },
       "neverModified": "—",
-      "empty": "No partner nodes match your search.",
+      "empty": "No providers or partner nodes match your search.",
       "enableAll": "Enable all",
       "disableAll": "Disable all",
       "enableResults": "Enable results",
       "disableResults": "Disable results",
       "disableAllConfirm": {
-        "title": "Disable all partner nodes?",
-        "message": "This disables every partner-node model currently available to your workspace.",
+        "title": "Disable all providers?",
+        "message": "This blocks partner nodes from every current provider for your workspace.",
         "hint": "Workflows using these nodes will be blocked."
       },
-      "disableAllSuccess": "All partner nodes disabled",
-      "expandProvider": "Expand {partner} partner nodes",
-      "collapseProvider": "Collapse {partner} partner nodes",
+      "disableAllSuccess": "All partner node providers disabled",
+      "expandProvider": "Expand {partner} provider",
+      "collapseProvider": "Collapse {partner} provider",
       "groupCount": "{enabled}/{total} enabled",
-      "groupToggle": "Enable or disable {partner} partner nodes",
-      "nodeToggle": "Enable or disable {name}",
-      "bulkToggle": "Enable or disable selected partner nodes",
-      "selectedCount": "{count} node selected | {count} nodes selected",
-      "clearSelection": "Clear selection",
+      "groupToggle": "Enable or disable {partner} provider",
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes"
     },

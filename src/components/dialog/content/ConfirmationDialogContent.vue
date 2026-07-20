@@ -12,10 +12,14 @@
       <div
         v-if="hint"
         role="status"
-        class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
+        :class="
+          cn(
+            'flex items-start gap-2 text-sm text-muted-foreground',
+            separateHint ? 'mt-4' : 'mt-2'
+          )
+        "
       >
         <i
-          v-if="showHintIcon !== false"
           class="pi pi-info-circle mt-0.5"
           aria-hidden="true"
           data-testid="confirmation-dialog-hint-icon"
@@ -121,6 +125,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -133,7 +139,7 @@ const props = defineProps<{
   onConfirm: (value?: boolean) => void
   itemList?: string[]
   hint?: string
-  showHintIcon?: boolean
+  separateHint?: boolean
   denyLabel?: string
 }>()
 
