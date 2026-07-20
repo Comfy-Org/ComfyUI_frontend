@@ -379,12 +379,14 @@ export function demotePromotedInput(
   )
   const linkedInput = hostInput?._subgraphSlot
   if (!linkedInput) return false
+  const hostWidgetId = hostInput.widgetId
 
   if (hostInput.link != null) {
     linkedInput.disconnect()
   } else {
     subgraphNode.subgraph.removeInput(linkedInput)
   }
+  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
   return true
 }
 
