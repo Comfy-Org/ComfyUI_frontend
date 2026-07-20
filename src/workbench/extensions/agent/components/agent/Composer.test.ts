@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -71,5 +72,62 @@ describe('Composer', () => {
     const { emitted } = mount({ canAttach: true })
     await userEvent.click(screen.getByRole('button', { name: 'Attach a file' }))
     expect(emitted().attach).toHaveLength(1)
+  })
+
+  describe('insert highlight', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function mountWithInsert() {
+      const composer = ref<InstanceType<typeof Composer> | null>(null)
+      const Host = defineComponent({
+        setup: () => () => h(Composer, { ref: composer })
+      })
+      const { container } = render(Host, { global: { plugins: [i18n] } })
+      // eslint-disable-next-line testing-library/no-node-access -- composer root has no queryable role
+      const root = container.firstElementChild as HTMLElement
+      return {
+        root,
+        insert: (text: string) => composer.value?.insert(text)
+      }
+    }
+
+    it('flashes the accent border, focuses the textarea, then clears', async () => {
+      const { root, insert } = mountWithInsert()
+      const focusSpy = vi.spyOn(screen.getByRole('textbox'), 'focus')
+
+      insert('foo')
+      await nextTick()
+      expect(root.classList.contains('border-agent-accent')).toBe(true)
+      expect(focusSpy).toHaveBeenCalledOnce()
+
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+      expect(root.classList.contains('border-agent-accent')).toBe(false)
+    })
+
+    it('restarts the highlight timer on repeated insert', async () => {
+      const { root, insert } = mountWithInsert()
+
+      insert('foo')
+      await nextTick()
+      vi.advanceTimersByTime(500)
+
+      insert('bar')
+      await nextTick()
+      expect(vi.getTimerCount()).toBe(1)
+      vi.advanceTimersByTime(999)
+      await nextTick()
+      expect(root.classList.contains('border-agent-accent')).toBe(true)
+
+      vi.advanceTimersByTime(1)
+      await nextTick()
+      expect(root.classList.contains('border-agent-accent')).toBe(false)
+    })
   })
 })
