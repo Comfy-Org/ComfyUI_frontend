@@ -369,7 +369,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
     })
 
-    it('shows the existing success step for a completed Team-to-personal change', async () => {
+    it('shows success without conversion telemetry for a scheduled Team downgrade', async () => {
       const preview = {
         allowed: true,
         transition_type: 'downgrade' as const,
@@ -411,7 +411,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockFetchStatus).toHaveBeenCalledOnce()
       expect(mockFetchBalance).toHaveBeenCalledOnce()
-      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({

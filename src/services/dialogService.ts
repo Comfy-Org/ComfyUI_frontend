@@ -1,4 +1,5 @@
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
@@ -679,24 +680,37 @@ export const useDialogService = () => {
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    dialogStore.closeDialog({ key: 'downgrade-remove-members' })
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
     return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
+      }
+
       dialogStore.showDialog({
-        key: 'downgrade-remove-members',
+        key: dialogKey,
         component,
         props: {
           planName: options.planName,
           planSlug: options.planSlug,
           onConfirm: async (planSlug: string) => {
             const result = await downgradeToPersonal(planSlug)
-            resolve(result)
+            resolveResult(result)
           }
         },
         dialogComponentProps: {
           ...workspaceDialogProps,
           closable: false,
           dismissableMask: false,
-          onClose: () => resolve(null)
+          onClose: () => resolveResult(null)
         }
       })
     })

@@ -126,7 +126,7 @@ export function useSubscriptionCheckout(
       billingOpId: result.response.billing_op_id,
       paymentIntentSource
     })
-    await handleSubscribeResponse(result.response)
+    await handleSubscribeResponse(result.response, result.preview.is_immediate)
     return true
   }
 
@@ -306,12 +306,15 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void
+    response: SubscribeResponse | void,
+    shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) return
 
     if (response.status === 'subscribed') {
-      telemetry?.trackMonthlySubscriptionSucceeded()
+      if (shouldTrackSubscriptionSuccess) {
+        telemetry?.trackMonthlySubscriptionSucceeded()
+      }
       checkoutStep.value = 'success'
       void Promise.allSettled([fetchStatus(), fetchBalance()])
       return
