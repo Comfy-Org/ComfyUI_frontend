@@ -131,7 +131,7 @@ defineExpose({
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
-      class="max-h-48 min-h-20 resize-none rounded-xl bg-transparent px-4 py-3 focus-visible:ring-0"
+      class="field-sizing-content max-h-48 min-h-20 resize-none overflow-y-auto rounded-xl bg-transparent px-4 py-3 focus-visible:ring-0"
       @keydown.enter="onEnter"
     />
 
