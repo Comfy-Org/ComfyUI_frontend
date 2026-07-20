@@ -14,6 +14,7 @@ import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
+import RunNoticeBanner from './RunNoticeBanner.vue'
 import ConflictDialog from './safety/ConflictDialog.vue'
 
 const {
@@ -161,6 +162,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-if="!showHistory">
       <footer class="shrink-0 p-4">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-2.5">
+          <RunNoticeBanner />
           <Composer
             ref="composerRef"
             :streaming="streaming"
