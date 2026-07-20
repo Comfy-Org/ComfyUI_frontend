@@ -1,35 +1,44 @@
 <template>
-  <ProcessToast
+  <div
     v-if="toastView"
     data-testid="queue-status-toast"
-    class="pointer-events-auto"
-    :verb="toastView.verb"
-    :percent="toastView.percent"
-    :status="toastView.status"
-    :failed-count="failedCount"
-    :expanded="expanded"
-    hide-chevron
-    progress-class="bg-base-foreground"
+    class="pointer-events-auto flex flex-col items-end gap-1"
   >
-    <template #action>
-      <template v-if="toastView?.showStop">
-        <div
-          class="mx-0.5 h-5 w-px shrink-0 self-center bg-interface-stroke"
-          aria-hidden="true"
-        />
-        <Button
-          v-tooltip.bottom="stopTooltip"
-          variant="textonly"
-          size="sm"
-          class="gap-1 text-text-secondary"
-          :aria-label="t('processToast.stop')"
-          data-testid="queue-status-stop"
-          @click="interruptAll"
-        >
-          <i class="icon-[lucide--square] size-4 shrink-0" />
-          {{ t('processToast.stop') }}
-        </Button>
-      </template>
+    <!-- Status pill + expand tab, sharing one surface -->
+    <div
+      class="flex items-center gap-1 rounded-lg bg-comfy-menu-bg p-1 shadow-interface"
+    >
+      <ProcessToast
+        :verb="toastView.verb"
+        :percent="toastView.percent"
+        :status="toastView.status"
+        :failed-count="failedCount"
+        hide-chevron
+        progress-class="bg-base-foreground"
+        pill-class="rounded-md bg-secondary-background shadow-none"
+      >
+        <template #action>
+          <template v-if="toastView.showStop">
+            <div
+              class="mx-0.5 h-5 w-px shrink-0 self-center bg-interface-stroke"
+              aria-hidden="true"
+            />
+            <Button
+              v-tooltip.bottom="stopTooltip"
+              variant="textonly"
+              size="sm"
+              class="gap-1 text-text-secondary"
+              :aria-label="t('processToast.stop')"
+              data-testid="queue-status-stop"
+              @click="interruptAll"
+            >
+              <i class="icon-[comfy--stop] size-4 shrink-0" />
+              {{ t('processToast.stop') }}
+            </Button>
+          </template>
+        </template>
+      </ProcessToast>
+
       <Button
         v-if="activeJobs.length > 0"
         v-tooltip.bottom="expandTooltip"
@@ -44,7 +53,7 @@
         <i
           :class="
             cn(
-              'size-3.5',
+              'size-4',
               expanded
                 ? 'icon-[lucide--chevron-up]'
                 : 'icon-[lucide--chevron-down]'
@@ -52,13 +61,13 @@
           "
         />
       </Button>
-    </template>
+    </div>
 
-    <template #panel>
-      <div
-        data-testid="queue-status-panel"
-        class="mt-1 flex w-80 flex-col overflow-clip rounded-lg bg-comfy-menu-bg shadow-interface"
-      >
+    <div
+      v-if="expanded"
+      data-testid="queue-status-panel"
+      class="flex w-80 flex-col overflow-clip rounded-lg bg-comfy-menu-bg shadow-interface"
+    >
         <div class="flex h-10 shrink-0 items-center justify-between px-3">
           <span class="text-sm font-bold text-base-foreground">
             {{ t('queueStatus.activeGenerations') }}
@@ -135,8 +144,7 @@
           </p>
         </div>
       </div>
-    </template>
-  </ProcessToast>
+  </div>
 
   <!-- Idle: nothing queued, running or recently finished -->
   <div
