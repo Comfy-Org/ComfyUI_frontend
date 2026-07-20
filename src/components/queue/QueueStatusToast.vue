@@ -138,6 +138,15 @@
     </template>
   </ProcessToast>
 
+  <!-- Idle: nothing queued, running or recently finished -->
+  <div
+    v-else
+    data-testid="queue-status-idle"
+    class="pointer-events-auto flex h-8 items-center rounded-lg border border-interface-stroke px-3 text-sm text-muted-foreground"
+  >
+    {{ activeJobsLabel }}
+  </div>
+
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
@@ -164,7 +173,7 @@ import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
@@ -244,6 +253,16 @@ const activeJobs = computed(() =>
 const failedCount = computed(
   () => activeJobs.value.filter((job) => job.state === 'failed').length
 )
+
+/** Idle label, e.g. "0 active". */
+const activeJobsLabel = computed(() => {
+  const count = queueStore.activeJobsCount
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobsShort',
+    { count: n(count) },
+    count
+  )
+})
 const hasRunningJob = computed(() => activeJobs.value.some(isRunning))
 
 const isRunning = (job: JobListItem) =>
