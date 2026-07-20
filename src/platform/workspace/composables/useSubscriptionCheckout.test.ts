@@ -398,7 +398,7 @@ describe('useSubscriptionCheckout', () => {
       }
       mockIsTeamPlan.value = true
       mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
-      mockFetchStatus.mockResolvedValue(undefined)
+      mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
       mockFetchBalance.mockResolvedValue(undefined)
       const checkout = await setup()
 
@@ -412,6 +412,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockFetchStatus).toHaveBeenCalledOnce()
       expect(mockFetchBalance).toHaveBeenCalledOnce()
       expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           tier: 'creator',

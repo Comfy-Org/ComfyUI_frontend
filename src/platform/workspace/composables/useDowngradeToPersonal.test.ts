@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -11,6 +11,7 @@ const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
+const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
   value: {
     canManageSubscription: true,
@@ -31,6 +32,12 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     members: mockMembers,
     removeMember: mockRemoveMember,
     fetchMembers: mockFetchMembers
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    startOperation: mockStartOperation
   })
 }))
 
@@ -87,6 +94,8 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 describe('useDowngradeToPersonal', () => {
+  let windowOpen: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.resetAllMocks()
     mockMembers.value = []
@@ -100,6 +109,11 @@ describe('useDowngradeToPersonal', () => {
       canManageSubscription: true,
       canDowngradeToPersonal: true
     }
+    windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+  })
+
+  afterEach(() => {
+    windowOpen.mockRestore()
   })
 
   describe('removableMembers / hasOtherMembers', () => {
@@ -299,19 +313,22 @@ describe('useDowngradeToPersonal', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
-    it('returns a needs-payment-method response to the checkout owner', async () => {
+    it('opens the payment-method page and polls when subscribe needs a payment method', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      const response = {
+      mockSubscribe.mockResolvedValue({
         billing_op_id: 'op-2',
-        status: 'needs_payment_method' as const,
+        status: 'needs_payment_method',
         payment_method_url: 'https://pay.test/method'
-      }
-      mockSubscribe.mockResolvedValue(response)
+      })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
-      const result = await downgradeToPersonal('founder-monthly')
+      await downgradeToPersonal('founder-monthly')
 
-      expect(result.response).toStrictEqual(response)
+      expect(windowOpen).toHaveBeenCalledWith(
+        'https://pay.test/method',
+        '_blank'
+      )
+      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
     })
 
     it('falls back to the generic message when the transition is disallowed without a reason', async () => {
@@ -324,32 +341,48 @@ describe('useDowngradeToPersonal', () => {
       )
     })
 
-    it('returns a needs-payment-method response without a URL', async () => {
+    it('throws and skips polling when the payment tab is popup-blocked', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      const response = {
-        billing_op_id: 'op-3',
-        status: 'needs_payment_method' as const
-      }
-      mockSubscribe.mockResolvedValue(response)
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-5',
+        status: 'needs_payment_method',
+        payment_method_url: 'https://pay.test/method'
+      })
+      windowOpen.mockReturnValue(null)
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
-      const result = await downgradeToPersonal('founder-monthly')
-
-      expect(result.response).toStrictEqual(response)
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.paymentPageBlocked'
+      )
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
-    it('returns a pending-payment response to the checkout owner', async () => {
+    it('throws when a payment method is needed but no url is provided', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      const response = {
-        billing_op_id: 'op-4',
-        status: 'pending_payment' as const
-      }
-      mockSubscribe.mockResolvedValue(response)
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-3',
+        status: 'needs_payment_method'
+      })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
-      const result = await downgradeToPersonal('founder-monthly')
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.paymentMethodRequired'
+      )
+      expect(mockStartOperation).not.toHaveBeenCalled()
+    })
 
-      expect(result.response).toStrictEqual(response)
+    it('polls without opening a tab when the payment is pending', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-4',
+        status: 'pending_payment'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(windowOpen).not.toHaveBeenCalled()
+      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
     })
 
     it('reports the generic failure when subscribe fails and no members were removed', async () => {

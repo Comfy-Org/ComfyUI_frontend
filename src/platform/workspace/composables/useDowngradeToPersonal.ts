@@ -10,6 +10,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export interface DowngradeToPersonalResult {
@@ -27,6 +28,7 @@ export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe } = useBillingContext()
+  const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
 
@@ -57,7 +59,7 @@ export function useDowngradeToPersonal() {
 
   async function downgradeToPersonal(
     planSlug: string
-  ): Promise<DowngradeToPersonalResult> {
+  ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
     const preview = await previewSubscribe(planSlug)
     if (!preview?.allowed) {
@@ -91,6 +93,29 @@ export function useDowngradeToPersonal() {
           ? t('subscription.downgrade.failedAfterMemberRemoval')
           : t('subscription.downgrade.failed')
       )
+    }
+
+    if (response.status === 'needs_payment_method') {
+      if (!response.payment_method_url) {
+        throw new Error(t('subscription.downgrade.paymentMethodRequired'))
+      }
+      const paymentTab = window.open(response.payment_method_url, '_blank')
+      if (!paymentTab) {
+        throw new Error(t('subscription.downgrade.paymentPageBlocked'))
+      }
+      void billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+      return null
+    }
+
+    if (response.status === 'pending_payment') {
+      void billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+      return null
     }
 
     return { preview, response }
