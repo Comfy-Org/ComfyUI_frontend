@@ -183,8 +183,8 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
-  --region-stroke: color-mix(in srgb, var(--border-color) 50%, transparent);
-  --workflow-tab-divider: color-mix(in srgb, var(--border-color) 50%, transparent);
+  --region-stroke: color-mix(in srgb, var(--border-color) 25%, transparent);
+  --workflow-tab-divider: color-mix(in srgb, var(--border-color) 25%, transparent);
   /* Sidebar and selected tab share the canvas base level so they match the
      rest of the canvas surfaces in every theme */
   --sidebar-surface: var(--bg-color);
@@ -327,8 +327,8 @@
   --sidebar-surface: var(--color-smoke-100);
   --workflow-tab-selected-surface: var(--color-smoke-200);
   --workflow-tab-hover-surface: var(--color-smoke-400);
-  --workflow-tab-divider: var(--color-smoke-400);
-  --region-stroke: var(--color-smoke-300);
+  --workflow-tab-divider: color-mix(in srgb, var(--color-smoke-400) 50%, transparent);
+  --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
 }
 
 .dark-theme {
