@@ -4597,6 +4597,7 @@
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "mention": "Mention a node",
+    "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",
     "send": "Send",
     "stop": "Stop",
