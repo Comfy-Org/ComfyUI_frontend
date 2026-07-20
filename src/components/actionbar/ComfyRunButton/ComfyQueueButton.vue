@@ -27,7 +27,7 @@
           :aria-label="t('menu.run')"
           data-testid="queue-mode-menu-trigger"
         >
-          <TinyChevronIcon />
+          <i class="icon-[lucide--chevron-down] size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
@@ -81,7 +81,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
-import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { isCloud } from '@/platform/distribution/types'
