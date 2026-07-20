@@ -1,16 +1,44 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+
+const {
+  mockApiURL,
+  mockExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeToNodeLocatorId,
+  mockReleaseSharedObjectUrl,
+  mockRetainSharedObjectUrl
+} = vi.hoisted(() => ({
+  mockApiURL: vi.fn((path: string) => `api${path}`),
+  mockExecutionIdToNodeLocatorId: vi.fn(
+    (_rootGraph: unknown, id: NodeExecutionId): NodeLocatorId | undefined =>
+      String(id) as NodeLocatorId
+  ),
+  mockNodeIdToNodeLocatorId: vi.fn(
+    (id: string | number): NodeLocatorId | undefined =>
+      String(id) as NodeLocatorId
+  ),
+  mockNodeToNodeLocatorId: vi.fn(
+    (node: { id: string | number }): NodeLocatorId | undefined =>
+      String(node.id) as NodeLocatorId
+  ),
+  mockReleaseSharedObjectUrl: vi.fn(),
+  mockRetainSharedObjectUrl: vi.fn()
+}))
 
 const mockResolveNode = vi.fn()
 
@@ -20,11 +48,25 @@ vi.mock('@/utils/litegraphUtil', () => ({
   resolveNode: (...args: unknown[]) => mockResolveNode(...args)
 }))
 
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: (...args: Parameters<typeof mockApiURL>) => mockApiURL(...args)
+  }
+}))
+
+vi.mock('@/utils/objectUrlUtil', () => ({
+  releaseSharedObjectUrl: (...args: [string | undefined]) =>
+    mockReleaseSharedObjectUrl(...args),
+  retainSharedObjectUrl: (...args: [string | undefined]) =>
+    mockRetainSharedObjectUrl(...args)
+}))
+
 const mockGetNodeById = vi.fn()
 
 vi.mock('@/scripts/app', () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    getRandParam: vi.fn(() => '&rand=1'),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -37,11 +79,11 @@ const createMockNode = (
   overrides: Record<string, unknown> = {}
 ): LGraphNode => {
   const { id = 1, ...rest } = overrides
-  return fromAny<LGraphNode, unknown>({
+  return {
     id: toNodeId(id as string | number),
     type: 'TestNode',
     ...rest
-  })
+  } as LGraphNode
 }
 
 const createMockOutputs = (
@@ -49,13 +91,32 @@ const createMockOutputs = (
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: (
+    ...args: Parameters<typeof mockExecutionIdToNodeLocatorId>
+  ) => mockExecutionIdToNodeLocatorId(...args)
 }))
+
+beforeEach(() => {
+  mockExecutionIdToNodeLocatorId.mockImplementation(
+    (_rootGraph: unknown, id: NodeExecutionId): NodeLocatorId | undefined =>
+      String(id) as NodeLocatorId
+  )
+  mockNodeIdToNodeLocatorId.mockImplementation(
+    (id: string | number) => String(id) as NodeLocatorId
+  )
+  mockNodeToNodeLocatorId.mockImplementation(
+    (node: { id: string | number }) => String(node.id) as NodeLocatorId
+  )
+})
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
+    nodeIdToNodeLocatorId: (
+      ...args: Parameters<typeof mockNodeIdToNodeLocatorId>
+    ) => mockNodeIdToNodeLocatorId(...args),
+    nodeToNodeLocatorId: (
+      ...args: Parameters<typeof mockNodeToNodeLocatorId>
+    ) => mockNodeToNodeLocatorId(...args)
   }))
 }))
 
@@ -387,7 +448,8 @@ describe('nodeOutputStore getPreviewParam', () => {
   it('should return empty string if outputs.images only contains null entries', () => {
     const store = useNodeOutputStore()
     const node = createMockNode()
-    const outputs = createMockOutputs(fromAny([null]))
+    const outputs = createMockOutputs([])
+    ;(outputs as Record<string, unknown>).images = [null]
     expect(store.getPreviewParam(node, outputs)).toBe('')
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
   })
@@ -763,7 +825,7 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   it('should return early for null node', () => {
     const store = useNodeOutputStore()
 
-    store.setNodeOutputs(fromAny<LGraphNode, unknown>(null), 'test.png')
+    store.setNodeOutputs(null, 'test.png')
 
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
   })
@@ -780,6 +842,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('ignores widget outputs when no locator can be resolved', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    mockNodeToNodeLocatorId.mockReturnValueOnce(undefined)
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(store.nodeOutputs).toEqual({})
+    expect(app.nodeOutputs).toEqual({})
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
@@ -788,6 +861,449 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     expect(store.nodeOutputs['5']).toBeUndefined()
     expect(app.nodeOutputs['5']).toBeUndefined()
+  })
+
+  it('stores direct result items without wrapping them as image outputs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, { filename: 'direct.png', type: 'temp' })
+
+    expect(store.nodeOutputs['5']).toEqual({
+      filename: 'direct.png',
+      type: 'temp'
+    })
+  })
+
+  it('marks animated webp and png filenames when requested', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, ['clip.webp', 'still.jpg', 'mask.png'], {
+      folder: 'output',
+      isAnimated: true
+    })
+
+    expect(store.nodeOutputs['5']?.animated).toEqual([true, false, true])
+    expect(store.nodeOutputs['5']?.images?.map((image) => image.type)).toEqual([
+      'output',
+      'output',
+      'output'
+    ])
+  })
+})
+
+describe('nodeOutputStore image URLs', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
+    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('returns stored preview URLs before output URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, toNodeId(5)), [
+      'blob:preview'
+    ])
+
+    expect(store.getNodeImageUrls(node)).toEqual(['blob:preview'])
+    expect(mockApiURL).not.toHaveBeenCalled()
+  })
+
+  it('builds view URLs from output images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    app.nodeOutputs['5'] = createMockOutputs([
+      { filename: 'a.png', subfolder: 'x', type: 'temp' }
+    ])
+
+    expect(store.getNodeImageUrls(node)).toEqual([
+      'api/view?filename=a.png&subfolder=x&type=temp&format=test_webp&rand=1'
+    ])
+  })
+
+  it('returns undefined when a node has neither previews nor outputs', () => {
+    const store = useNodeOutputStore()
+
+    expect(store.getNodeImageUrls(createMockNode({ id: 5 }))).toBeUndefined()
+  })
+
+  it('returns execution previews before execution output URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodePreviewsByExecutionId(executionId, ['blob:preview'])
+
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([
+      'blob:preview'
+    ])
+    expect(store.latestPreview).toEqual(['blob:preview'])
+    expect(mockApiURL).not.toHaveBeenCalled()
+  })
+
+  it('falls back to execution output URLs when no preview exists', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'result.png', type: 'temp' }])
+    )
+
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([
+      'api/view?filename=result.png&type=temp&format=test_webp&rand=1'
+    ])
+  })
+})
+
+describe('nodeOutputStore locator misses', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('keeps execution operations inert when no locator can be resolved', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+    mockExecutionIdToNodeLocatorId.mockReturnValue(undefined)
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'result.png' }])
+    )
+    store.setNodePreviewsByExecutionId(executionId, ['blob:preview'])
+    store.revokePreviewsByExecutionId(executionId)
+
+    expect(store.getNodeOutputByExecutionId(executionId)).toBeUndefined()
+    expect(store.getNodePreviewImagesByExecutionId(executionId)).toBeUndefined()
+    expect(store.nodeOutputs).toEqual({})
+    expect(store.nodePreviewImages).toEqual({})
+  })
+})
+
+describe('nodeOutputStore merge branches', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('sets outputs when merge is requested without existing output', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+    const output = createMockOutputs([{ filename: 'first.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, output, { merge: true })
+
+    expect(store.nodeOutputs[executionId]).toEqual(output)
+  })
+
+  it('ignores null outputs', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodeOutputsByExecutionId(executionId, null)
+
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
+  })
+
+  it('overwrites non-array fields during merge', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+    const firstOutput: ExecutedWsMessage['output'] = {
+      images: [{ filename: 'first.png' }],
+      text: 'old'
+    }
+
+    store.setNodeOutputsByExecutionId(executionId, firstOutput)
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      { text: ['new'] },
+      { merge: true }
+    )
+
+    expect(store.nodeOutputs[executionId]?.images).toEqual([
+      { filename: 'first.png' }
+    ])
+    expect(store.nodeOutputs[executionId]?.text).toEqual(['new'])
+  })
+})
+
+describe('nodeOutputStore previews and removal', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('releases old previews and retains new previews on replacement', () => {
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(null, toNodeId(5))
+
+    store.setNodePreviewsByLocatorId(locatorId, ['blob:first'])
+    store.setNodePreviewsByLocatorId(locatorId, ['blob:second'])
+
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:first')
+    expect(mockRetainSharedObjectUrl).toHaveBeenCalledWith('blob:second')
+    expect(store.nodePreviewImages[locatorId]).toEqual(['blob:second'])
+  })
+
+  it('cancels scheduled revocation when a newer preview arrives', async () => {
+    vi.useFakeTimers()
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodePreviewsByExecutionId(executionId, ['blob:first'])
+    store.revokePreviewsByExecutionId(executionId)
+    store.setNodePreviewsByExecutionId(executionId, ['blob:second'])
+    await vi.advanceTimersByTimeAsync(400)
+    vi.useRealTimers()
+
+    expect(store.nodePreviewImages[executionId]).toEqual(['blob:second'])
+    expect(mockReleaseSharedObjectUrl).not.toHaveBeenCalledWith('blob:second')
+  })
+
+  it('revokes locator previews and clears preview state', () => {
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(null, toNodeId(5))
+
+    store.setNodePreviewsByLocatorId(locatorId, ['blob:first'])
+    store.revokePreviewsByLocatorId(locatorId)
+
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:first')
+    expect(store.nodePreviewImages[locatorId]).toBeUndefined()
+    expect(app.nodePreviewImages[locatorId]).toBeUndefined()
+  })
+
+  it('leaves state unchanged when revoking a locator with no previews', () => {
+    const store = useNodeOutputStore()
+
+    store.revokePreviewsByLocatorId(createNodeLocatorId(null, toNodeId(5)))
+
+    expect(mockReleaseSharedObjectUrl).not.toHaveBeenCalled()
+    expect(store.nodePreviewImages).toEqual({})
+  })
+
+  it('skips non-iterable preview entries when revoking all previews', () => {
+    const store = useNodeOutputStore()
+    app.nodePreviewImages = { '6': ['blob:preview'] }
+    ;(app.nodePreviewImages as Record<string, unknown>)['5'] = {}
+
+    store.revokeAllPreviews()
+
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledTimes(1)
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:preview')
+    expect(store.nodePreviewImages).toEqual({})
+  })
+
+  it('revokes subgraph previews for the parent node and child nodes', () => {
+    const store = useNodeOutputStore()
+    const subgraphId = '11111111-1111-1111-1111-111111111111'
+    const parentLocatorId = createNodeLocatorId(null, toNodeId(9))
+    const childLocatorId = createNodeLocatorId(subgraphId, toNodeId(10))
+    const subgraphNode = {
+      id: toNodeId(9),
+      graph: { isRootGraph: true },
+      subgraph: {
+        id: subgraphId,
+        nodes: [createMockNode({ id: 10 })]
+      }
+    } as SubgraphNode
+
+    store.setNodePreviewsByLocatorId(parentLocatorId, ['blob:parent'])
+    store.setNodePreviewsByLocatorId(childLocatorId, ['blob:child'])
+    store.revokeSubgraphPreviews(subgraphNode)
+
+    expect(store.nodePreviewImages[parentLocatorId]).toBeUndefined()
+    expect(store.nodePreviewImages[childLocatorId]).toBeUndefined()
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:parent')
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:child')
+  })
+
+  it('uses the parent graph id for non-root subgraph preview revocation', () => {
+    const store = useNodeOutputStore()
+    const graphId = '22222222-2222-2222-2222-222222222222'
+    const subgraphId = '33333333-3333-3333-3333-333333333333'
+    const parentLocatorId = createNodeLocatorId(graphId, toNodeId(9))
+    const subgraphNodeRaw: unknown = {
+      id: toNodeId(9),
+      graph: { id: graphId, isRootGraph: false },
+      subgraph: { id: subgraphId, nodes: [] }
+    }
+    const subgraphNode = subgraphNodeRaw as SubgraphNode
+
+    store.setNodePreviewsByLocatorId(parentLocatorId, ['blob:parent'])
+    store.revokeSubgraphPreviews(subgraphNode)
+
+    expect(store.nodePreviewImages[parentLocatorId]).toBeUndefined()
+  })
+
+  it('leaves previews alone when a subgraph node has no parent graph', () => {
+    const store = useNodeOutputStore()
+    const locatorId = createNodeLocatorId(null, toNodeId(9))
+    const subgraphNodeRaw2: unknown = {
+      graph: undefined,
+      subgraph: { nodes: [] }
+    }
+    const subgraphNode = subgraphNodeRaw2 as SubgraphNode
+
+    store.setNodePreviewsByLocatorId(locatorId, ['blob:parent'])
+    store.revokeSubgraphPreviews(subgraphNode)
+
+    expect(store.nodePreviewImages[locatorId]).toEqual(['blob:parent'])
+  })
+
+  it('removes outputs and previews for a node id', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'result.png' }])
+    )
+    store.setNodePreviewsByExecutionId(executionId, ['blob:preview'])
+
+    expect(store.removeNodeOutputs(toNodeId(5))).toBe(true)
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
+    expect(store.nodePreviewImages[executionId]).toBeUndefined()
+    expect(mockReleaseSharedObjectUrl).toHaveBeenCalledWith('blob:preview')
+  })
+
+  it('returns false when removing outputs for a node with no outputs', () => {
+    const store = useNodeOutputStore()
+
+    expect(store.removeNodeOutputsForNode(createMockNode({ id: 9 }))).toBe(
+      false
+    )
+  })
+
+  it('returns false when a node id cannot resolve to a locator', () => {
+    const store = useNodeOutputStore()
+    mockNodeIdToNodeLocatorId.mockReturnValueOnce(undefined)
+
+    expect(store.removeNodeOutputs(toNodeId(9))).toBe(false)
+  })
+
+  it('removes preview state even when preview entries are not iterable', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(5)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'result.png' }])
+    )
+    ;(app.nodePreviewImages as Record<string, unknown>)[executionId] = {}
+    ;(store.nodePreviewImages as Record<string, unknown>)[executionId] = {}
+
+    expect(store.removeNodeOutputs(toNodeId(5))).toBe(true)
+    expect(store.nodePreviewImages[executionId]).toBeUndefined()
+    expect(mockReleaseSharedObjectUrl).not.toHaveBeenCalled()
+  })
+})
+
+describe('nodeOutputStore output refresh', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('updates stored output images from legacy node images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({
+      id: 5,
+      images: [{ filename: 'new.png', type: 'temp' }]
+    })
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs([{ filename: 'old.png', type: 'temp' }])
+    )
+    store.updateNodeImages(node)
+
+    expect(store.nodeOutputs['5']?.images).toEqual([
+      { filename: 'new.png', type: 'temp' }
+    ])
+  })
+
+  it('ignores legacy image updates when the node has no images', () => {
+    const store = useNodeOutputStore()
+
+    store.updateNodeImages(createMockNode({ id: 5 }))
+
+    expect(store.nodeOutputs).toEqual({})
+  })
+
+  it('ignores legacy image updates when no locator exists', () => {
+    const store = useNodeOutputStore()
+    mockNodeIdToNodeLocatorId.mockReturnValueOnce(undefined)
+
+    store.updateNodeImages(
+      createMockNode({ id: 5, images: [{ filename: 'new.png' }] })
+    )
+
+    expect(store.nodeOutputs).toEqual({})
+  })
+
+  it('ignores legacy image updates when no output exists', () => {
+    const store = useNodeOutputStore()
+
+    store.updateNodeImages(
+      createMockNode({ id: 5, images: [{ filename: 'new.png' }] })
+    )
+
+    expect(store.nodeOutputs).toEqual({})
+  })
+
+  it('copies app outputs into reactive state during refresh', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    const output = createMockOutputs([{ filename: 'result.png' }])
+    app.nodeOutputs['5'] = output
+
+    store.refreshNodeOutputs(node)
+
+    expect(store.nodeOutputs['5']).toEqual(output)
+    expect(store.nodeOutputs['5']).not.toBe(output)
+  })
+
+  it('does not refresh when a node has no locator', () => {
+    const store = useNodeOutputStore()
+    mockNodeToNodeLocatorId.mockReturnValueOnce(undefined)
+
+    store.refreshNodeOutputs(createMockNode({ id: 5 }))
+
+    expect(store.nodeOutputs).toEqual({})
+  })
+
+  it('does not refresh when app has no output for the node', () => {
+    const store = useNodeOutputStore()
+
+    store.refreshNodeOutputs(createMockNode({ id: 5 }))
+
+    expect(store.nodeOutputs).toEqual({})
+  })
+
+  it('keeps unresolved restore output ids as their original ids', () => {
+    const store = useNodeOutputStore()
+    const output = createMockOutputs([{ filename: 'saved.png' }])
+    mockExecutionIdToNodeLocatorId.mockReturnValueOnce(undefined)
+
+    store.restoreOutputs({ missing: output })
+
+    expect(store.nodeOutputs.missing).toEqual(output)
   })
 })
 
@@ -893,5 +1409,21 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)
+  })
+
+  it('copies output images onto the legacy node', () => {
+    LiteGraph.vueNodesMode = true
+    const store = useNodeOutputStore()
+    const mockNode = createMockNode({ id: 1 })
+    const mockImg = document.createElement('img')
+    mockResolveNode.mockReturnValue(mockNode)
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(1)]),
+      createMockOutputs([{ filename: 'result.png', type: 'temp' }])
+    )
+    store.syncLegacyNodeImgs(toNodeId(1), mockImg)
+
+    expect(mockNode.images).toEqual([{ filename: 'result.png', type: 'temp' }])
   })
 })

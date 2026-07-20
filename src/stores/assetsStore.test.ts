@@ -11,6 +11,7 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -96,6 +97,10 @@ const mockOutputOverrides = vi.hoisted(() => ({
   value: null as MockOutput[] | null
 }))
 
+const mockAssetMapperOptions = vi.hoisted(() => ({
+  omitCreatedAtForIds: new Set<string>()
+}))
+
 // Mock TaskItemImpl
 const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
 
@@ -169,11 +174,14 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
   })),
   mapTaskOutputToAssetItem: vi.fn((task, output) => {
     const index = parseInt(task.jobId.split('_')[1]) || 0
+    const createdAt = new Date(Date.now() - index * 1000).toISOString()
     return {
       id: task.jobId,
       name: output.filename,
       size: 0,
-      created_at: new Date(Date.now() - index * 1000).toISOString(),
+      ...(!mockAssetMapperOptions.omitCreatedAtForIds.has(task.jobId) && {
+        created_at: createdAt
+      }),
       tags: ['output'],
       preview_url: output.url,
       user_metadata: {}
@@ -205,6 +213,7 @@ describe('assetsStore - Refactored (Option A)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
     vi.clearAllMocks()
+    mockAssetMapperOptions.omitCreatedAtForIds.clear()
   })
 
   describe('Initial Load', () => {
@@ -272,6 +281,17 @@ describe('assetsStore - Refactored (Option A)', () => {
         'prompt_2'
       ])
     })
+
+    it('should skip unfinished jobs and completed jobs without previews', async () => {
+      vi.mocked(api.getHistory).mockResolvedValue([
+        { ...createMockJobItem(0), status: 'in_progress' },
+        { ...createMockJobItem(1), preview_output: undefined }
+      ])
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toEqual([])
+    })
   })
 
   describe('Pagination', () => {
@@ -326,6 +346,46 @@ describe('assetsStore - Refactored (Option A)', () => {
       const assetIds = store.historyAssets.map((a) => a.id)
       const uniqueAssetIds = new Set(assetIds)
       expect(uniqueAssetIds.size).toBe(store.historyAssets.length)
+    })
+
+    it('should insert newer paginated items in sorted order', async () => {
+      vi.mocked(api.getHistory).mockResolvedValueOnce(
+        Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      )
+      await store.updateHistory()
+
+      vi.mocked(api.getHistory).mockResolvedValueOnce([createMockJobItem(-1)])
+      await store.loadMoreHistory()
+
+      expect(store.historyAssets[0].id).toBe('prompt_-1')
+    })
+
+    it('sorts paginated items when the incoming asset has no timestamp', async () => {
+      vi.mocked(api.getHistory).mockResolvedValueOnce(
+        Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      )
+      await store.updateHistory()
+      mockAssetMapperOptions.omitCreatedAtForIds.add('prompt_200')
+      vi.mocked(api.getHistory).mockResolvedValueOnce([createMockJobItem(200)])
+
+      await store.loadMoreHistory()
+
+      expect(store.historyAssets.at(-1)?.id).toBe('prompt_200')
+    })
+
+    it('sorts paginated items when an existing asset has no timestamp', async () => {
+      for (let i = 0; i < 200; i++) {
+        mockAssetMapperOptions.omitCreatedAtForIds.add(`prompt_${i}`)
+      }
+      vi.mocked(api.getHistory).mockResolvedValueOnce(
+        Array.from({ length: 200 }, (_, i) => createMockJobItem(i))
+      )
+      await store.updateHistory()
+      vi.mocked(api.getHistory).mockResolvedValueOnce([createMockJobItem(-1)])
+
+      await store.loadMoreHistory()
+
+      expect(store.historyAssets[0].id).toBe('prompt_-1')
     })
 
     it('should stop loading when no more items', async () => {
@@ -492,6 +552,29 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.updateHistory()
 
       expect(store.historyLoading).toBe(false)
+      expect(store.historyError).toBe(error)
+    })
+
+    it('should preserve existing history when refresh fails', async () => {
+      vi.mocked(api.getHistory).mockResolvedValueOnce([createMockJobItem(0)])
+      await store.updateHistory()
+
+      const error = new Error('API error')
+      vi.mocked(api.getHistory).mockRejectedValueOnce(error)
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(1)
+      expect(store.historyError).toBe(error)
+    })
+
+    it('should keep empty history when loadMore fails before any load', async () => {
+      const error = new Error('API error')
+      vi.mocked(api.getHistory).mockRejectedValueOnce(error)
+
+      await store.loadMoreHistory()
+
+      expect(store.historyAssets).toEqual([])
       expect(store.historyError).toBe(error)
     })
   })
@@ -924,6 +1007,46 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         vi.mocked(assetService.getAssetsForNodeType)
       ).toHaveBeenCalledTimes(2)
     })
+
+    it('ignores a model response after the category is invalidated', async () => {
+      const store = useAssetsStore()
+      let resolveFetch!: (assets: AssetItem[]) => void
+      vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+
+      const request = store.updateModelsForNodeType('CheckpointLoaderSimple')
+      store.invalidateCategory('checkpoints')
+      resolveFetch([createMockAsset('stale-response')])
+      await request
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+    })
+
+    it('ignores a model rejection after the category is invalidated', async () => {
+      const store = useAssetsStore()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        let rejectFetch!: (error: Error) => void
+        vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectFetch = reject
+          })
+        )
+
+        const request = store.updateModelsForNodeType('CheckpointLoaderSimple')
+        store.invalidateCategory('checkpoints')
+        rejectFetch(new Error('stale rejection'))
+        await request
+
+        expect(store.getError('CheckpointLoaderSimple')).toBeUndefined()
+        expect(consoleSpy).not.toHaveBeenCalled()
+      } finally {
+        consoleSpy.mockRestore()
+      }
+    })
   })
 
   describe('shallowReactive state reactivity', () => {
@@ -966,6 +1089,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     it('should return empty array for unknown node types', () => {
       const store = useAssetsStore()
       expect(store.getAssets('UnknownNodeType')).toEqual([])
+      expect(store.isModelLoading('UnknownNodeType')).toBe(false)
+      expect(store.getError('UnknownNodeType')).toBeUndefined()
+      expect(store.hasMore('UnknownNodeType')).toBe(false)
+      expect(store.hasAssetKey('UnknownNodeType')).toBe(false)
     })
 
     it('should not fetch for unknown node types', async () => {
@@ -974,6 +1101,73 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(
         vi.mocked(assetService.getAssetsForNodeType)
       ).not.toHaveBeenCalled()
+    })
+
+    it('should refresh an already loaded category', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('first')
+      ])
+      await store.updateModelsForNodeType(nodeType)
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('second')
+      ])
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((asset) => asset.id)).toEqual([
+        'second'
+      ])
+    })
+
+    it('reports hasMore for a loaded category', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      expect(store.hasMore(nodeType)).toBe(false)
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('only-page')
+      ])
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.hasMore(nodeType)).toBe(false)
+    })
+
+    it('should record model loading errors', async () => {
+      const store = useAssetsStore()
+      const error = new Error('model fetch failed')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+          error
+        )
+
+        await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+        expect(store.getError('CheckpointLoaderSimple')).toBe(error)
+        expect(store.isModelLoading('CheckpointLoaderSimple')).toBe(false)
+      } finally {
+        consoleSpy.mockRestore()
+      }
+    })
+
+    it('should wrap non-error model loading failures', async () => {
+      const store = useAssetsStore()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+          'boom'
+        )
+
+        await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+        expect(store.getError('CheckpointLoaderSimple')?.message).toBe('boom')
+      } finally {
+        consoleSpy.mockRestore()
+      }
     })
   })
 
@@ -1129,7 +1323,140 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('completed download refresh', () => {
+    it('refreshes provider and tag caches for the completed model type', async () => {
+      const store = useAssetsStore()
+      const downloadStore = useAssetDownloadStore()
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([])
+
+      downloadStore.lastCompletedDownload = {
+        taskId: 'task-1',
+        modelType: 'checkpoints',
+        timestamp: 1
+      }
+
+      await vi.waitFor(() =>
+        expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+          'models',
+          true,
+          expect.objectContaining({ limit: 500, offset: 0 })
+        )
+      )
+
+      expect(assetService.getAssetsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        expect.objectContaining({ limit: 500, offset: 0 })
+      )
+      expect(assetService.getAssetsForNodeType).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+        'checkpoints',
+        true,
+        expect.objectContaining({ limit: 500, offset: 0 })
+      )
+      expect(store.hasCategory('tag:models')).toBe(true)
+    })
+  })
+
   describe('updateAssetMetadata optimistic cache', () => {
+    it('still writes metadata when a cache key is unresolved', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-unknown'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        ...original,
+        user_metadata: { note: 'after' }
+      })
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'after' },
+        'UnknownNodeType'
+      )
+
+      expect(vi.mocked(assetService.updateAsset)).toHaveBeenCalledWith(
+        'opt-unknown',
+        { user_metadata: { note: 'after' } }
+      )
+    })
+
+    it('still updates the server when the asset is not cached', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-missing'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        ...original,
+        user_metadata: { note: 'server' }
+      })
+
+      await store.updateAssetMetadata(original, { note: 'after' })
+
+      expect(vi.mocked(assetService.updateAsset)).toHaveBeenCalledWith(
+        'opt-missing',
+        { user_metadata: { note: 'after' } }
+      )
+    })
+
+    it('still updates the server when a resolved cache key has not loaded yet', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-unloaded'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        ...original,
+        user_metadata: { note: 'server' }
+      })
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'after' },
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.updateAsset)).toHaveBeenCalledWith(
+        'opt-unloaded',
+        { user_metadata: { note: 'after' } }
+      )
+    })
+
+    it('leaves unrelated cached assets alone during optimistic metadata update', async () => {
+      const store = useAssetsStore()
+      const cached = {
+        ...createMockAsset('opt-cached'),
+        user_metadata: { note: 'cached' } as Record<string, unknown>
+      }
+      const missing = {
+        ...createMockAsset('opt-missing-from-cache'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        cached
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        ...missing,
+        user_metadata: { note: 'server' }
+      })
+
+      await store.updateAssetMetadata(
+        missing,
+        { note: 'after' },
+        'CheckpointLoaderSimple'
+      )
+
+      expect(
+        store.getAssets('CheckpointLoaderSimple')[0].user_metadata
+      ).toEqual({
+        note: 'cached'
+      })
+    })
+
     it('reflects the server response in the cache after a successful update', async () => {
       const store = useAssetsStore()
       const original = {
@@ -1235,6 +1562,31 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
         'models',
         'featured'
+      ])
+    })
+
+    it('calls only the remove endpoint when there are no tags to add', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-remove-only', ['models', 'archived'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        total_tags: ['models']
+      })
+
+      await store.updateAssetTags(asset, ['models'], 'CheckpointLoaderSimple')
+
+      expect(vi.mocked(assetService.removeAssetTags)).toHaveBeenCalledWith(
+        'tags-remove-only',
+        ['archived']
+      )
+      expect(vi.mocked(assetService.addAssetTags)).not.toHaveBeenCalled()
+      expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
+        'models'
       ])
     })
   })
@@ -1349,6 +1701,36 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.hasCategory('loras')).toBe(false)
       expect(store.hasCategory('tag:models')).toBe(false)
+    })
+
+    it('keeps unrelated tag caches when compensation fails with a cache key', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-target-fail', ['models', 'loras'])
+      const otherAsset = createMockAsset('tags-other', ['models'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([otherAsset])
+      await store.updateModelsForTag('models')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(store.hasCategory('tag:models')).toBe(true)
     })
 
     it('does not attempt compensation when only the add was attempted', async () => {
@@ -1483,9 +1865,75 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
       const store = useAssetsStore()
       expect(store.getInputName('unknown.png')).toBe('unknown.png')
     })
+
+    it('ignores input assets without hashes', async () => {
+      mockIsCloud.value = true
+      try {
+        setActivePinia(createTestingPinia({ stubActions: false }))
+        const store = useAssetsStore()
+
+        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+          {
+            id: 'input-1',
+            name: 'plain.png',
+            tags: ['input']
+          }
+        ])
+        await store.updateInputs()
+
+        expect(store.getInputName('plain.png')).toBe('plain.png')
+      } finally {
+        mockIsCloud.value = false
+      }
+    })
   })
 
   describe('updateInputs cloud routing', () => {
+    it('reads input files from the internal API when isCloud is false', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(['input-a.png', 'input-b.png']), {
+          status: 200
+        })
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const store = useAssetsStore()
+
+        await store.updateInputs()
+
+        expect(fetchMock).toHaveBeenCalledWith(
+          'http://localhost:3000/files/input',
+          { headers: { 'Comfy-User': 'test-user' } }
+        )
+        expect(store.inputAssets.map((asset) => asset.name)).toEqual([
+          'input-a.png',
+          'input-b.png'
+        ])
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('records internal input API failures', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(null, { status: 500 }))
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+        const store = useAssetsStore()
+
+        await store.updateInputs()
+
+        expect(store.inputError).toBeInstanceOf(Error)
+        consoleSpy.mockRestore()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
     it('reads from assetService.getAssetsByTag with limit 100 when isCloud is true', async () => {
       mockIsCloud.value = true
       try {
@@ -1584,6 +2032,18 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await store.updateFlatOutputs()
 
     expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('does not load more flat outputs when there are no more pages', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage([makeAsset('a1', 'one.png')])
+    )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledTimes(1)
   })
 
   it('threads the minted cursor into after on loadMore and omits offset', async () => {
@@ -1799,5 +2259,27 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+
+  it('ignores concurrent load more calls while one is active', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage([makeAsset('a1', 'f1.png')], { hasMore: true })
+    )
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    let resolvePage!: (page: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+      new Promise<AssetResponse>((resolve) => {
+        resolvePage = resolve
+      })
+    )
+
+    const first = store.loadMoreFlatOutputs()
+    const second = store.loadMoreFlatOutputs()
+    resolvePage(makePage([makeAsset('a2', 'f2.png')]))
+    await Promise.all([first, second])
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledTimes(2)
   })
 })

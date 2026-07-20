@@ -137,6 +137,88 @@ describe('useModelStore', () => {
     expect(model.resolution).toBe('')
   })
 
+  it('keeps the default model metadata when the server returns null', async () => {
+    enableMocks()
+    vi.mocked(api.viewMetadata).mockResolvedValueOnce(null)
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const model = folderStore!.models['0/sdxl.safetensors']
+
+    await model.load()
+
+    expect(model.title).toBe('sdxl')
+    expect(model.has_loaded_metadata).toBe(false)
+  })
+
+  it('loads model metadata once', async () => {
+    enableMocks()
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const model = folderStore!.models['0/sdxl.safetensors']
+
+    await model.load()
+    await model.load()
+
+    expect(api.viewMetadata).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the default title when the first metadata key is empty', async () => {
+    enableMocks()
+    vi.mocked(api.viewMetadata).mockResolvedValueOnce({
+      'modelspec.title': '',
+      display_name: 'Fallback title'
+    })
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const model = folderStore!.models['0/sdxl.safetensors']
+
+    await model.load()
+
+    expect(model.title).toBe('sdxl')
+  })
+
+  it('returns null for unknown loaded model folders', async () => {
+    enableMocks()
+    store = useModelStore()
+    await store.loadModelFolders()
+
+    await expect(store.getLoadedModelFolder('missing')).resolves.toBeNull()
+  })
+
+  it('should read metadata from suffixed keys and ignore null values', async () => {
+    enableMocks()
+    vi.mocked(api.viewMetadata).mockResolvedValueOnce({
+      'custom.modelspec.title': 'Namespaced title',
+      'custom.modelspec.author': null,
+      'custom.modelspec.tags': null
+    })
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const model = folderStore!.models['0/sdxl.safetensors']
+
+    await model.load()
+
+    expect(model.title).toBe('Namespaced title')
+    expect(model.author).toBe('')
+    expect(model.tags).toEqual([''])
+  })
+
+  it('should keep extensions for non-safetensors files', async () => {
+    enableMocks()
+    vi.mocked(api.getModels).mockResolvedValueOnce([
+      { name: 'notes.txt', pathIndex: 0 }
+    ])
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+
+    expect(folderStore!.models['0/notes.txt'].title).toBe('notes.txt')
+  })
+
   it('should cache model information', async () => {
     enableMocks()
     store = useModelStore()
@@ -208,6 +290,23 @@ describe('useModelStore', () => {
 
       expect(api.getModelFolders).toHaveBeenCalledTimes(2)
       expect(api.getModels).not.toHaveBeenCalled()
+    })
+
+    it('does not reload previously loaded folders that disappear', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      vi.mocked(api.getModelFolders).mockResolvedValueOnce([
+        { name: 'vae', folders: ['/path/to/vae'] }
+      ])
+
+      await store.refresh()
+
+      expect(store.modelFolders.map((folder) => folder.directory)).toEqual([
+        'vae'
+      ])
+      expect(api.getModels).toHaveBeenCalledTimes(1)
     })
   })
 

@@ -1,16 +1,24 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import axios from 'axios'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  buildNodeDefTree,
+  createDummyFolderNodeDef,
+  useNodeDefStore,
+  useNodeFrequencyStore
+} from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -19,6 +27,10 @@ describe('useNodeDefStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useNodeDefStore()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   const createMockNodeDef = (
@@ -39,7 +51,118 @@ describe('useNodeDefStore', () => {
     ...overrides
   })
 
+  describe('ComfyNodeDefImpl', () => {
+    it('migrates defaultInput options and applies constructor fallbacks', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const nodeDef = createMockNodeDef({
+        category: '_for_testing/coverage',
+        deprecated: undefined,
+        dev_only: undefined,
+        experimental: undefined,
+        help: undefined,
+        input: {
+          required: { prompt: ['STRING', { defaultInput: true }] },
+          optional: { seed_override: ['INT', { defaultInput: true }] }
+        }
+      })
+
+      const impl = new ComfyNodeDefImpl(nodeDef)
+
+      expect(warn).toHaveBeenCalledTimes(2)
+      expect(impl.help).toBe('')
+      expect(impl.experimental).toBe(true)
+      expect(impl.dev_only).toBe(false)
+      expect(impl.inputs.seed_override.forceInput).toBe(true)
+    })
+
+    it('derives empty-category node paths and lifecycle badges', () => {
+      const deprecated = new ComfyNodeDefImpl(
+        createMockNodeDef({ category: '', deprecated: undefined })
+      )
+      const beta = new ComfyNodeDefImpl(
+        createMockNodeDef({ experimental: true })
+      )
+      const dev = new ComfyNodeDefImpl(createMockNodeDef({ dev_only: true }))
+      const normal = new ComfyNodeDefImpl(createMockNodeDef())
+
+      expect(deprecated.nodePath).toBe('TestNode')
+      expect(deprecated.isDummyFolder).toBe(false)
+      expect(deprecated.nodeLifeCycleBadgeText).toBe('[DEPR]')
+      expect(beta.nodeLifeCycleBadgeText).toBe('[BETA]')
+      expect(dev.nodeLifeCycleBadgeText).toBe('[DEV]')
+      expect(normal.nodeLifeCycleBadgeText).toBe('')
+    })
+
+    it('defaults missing legacy input and output fields', () => {
+      const nodeDef = new ComfyNodeDefImpl(
+        fromPartial<ComfyNodeDef>({
+          name: 'FallbackNode',
+          display_name: 'Fallback Node',
+          category: 'test',
+          python_module: 'test_module',
+          description: 'Test node',
+          output_node: false
+        })
+      )
+
+      expect(nodeDef.input).toEqual({})
+      expect(nodeDef.output).toEqual([])
+    })
+
+    it('post-processes search scores with node frequency', async () => {
+      vi.spyOn(axios, 'get').mockResolvedValue({ data: { TestNode: 7 } })
+      const frequencyStore = useNodeFrequencyStore()
+      await frequencyStore.loadNodeFrequencies()
+      const nodeDef = new ComfyNodeDefImpl(createMockNodeDef())
+
+      expect(nodeDef.postProcessSearchScores([10, 4, 2])).toEqual([
+        10, -7, 4, 2
+      ])
+    })
+  })
+
+  describe('tree helpers', () => {
+    it('builds node definition trees from default and custom paths', () => {
+      const nodeDef = new ComfyNodeDefImpl(
+        createMockNodeDef({ name: 'TreeNode', category: 'root/branch' })
+      )
+
+      expect(buildNodeDefTree([nodeDef]).children?.[0].label).toBe('root')
+      expect(
+        buildNodeDefTree([nodeDef], {
+          pathExtractor: (node) => ['custom', node.name]
+        }).children?.[0].label
+      ).toBe('custom')
+    })
+
+    it('normalizes dummy folder paths', () => {
+      expect(createDummyFolderNodeDef('folder/').category).toBe('folder')
+      expect(createDummyFolderNodeDef('folder').category).toBe('folder')
+    })
+  })
+
   describe('filter registry', () => {
+    it('updates LiteGraph skip state for registered dev-only nodes', () => {
+      const registeredNodeTypes = LiteGraph.registered_node_types
+      try {
+        LiteGraph.registered_node_types = {
+          DevNode: {
+            nodeData: { dev_only: true },
+            skip_list: false
+          } as typeof LGraphNode,
+          NormalNode: { nodeData: {}, skip_list: false } as typeof LGraphNode
+        }
+
+        setActivePinia(createTestingPinia({ stubActions: false }))
+        useNodeDefStore()
+
+        expect(LiteGraph.registered_node_types.DevNode.skip_list).toBe(true)
+        expect(LiteGraph.registered_node_types.NormalNode.skip_list).toBe(false)
+      } finally {
+        LiteGraph.registered_node_types = registeredNodeTypes
+      }
+    })
+
     it('should register a new filter', () => {
       const filter: NodeDefFilter = {
         id: 'test.filter',
@@ -287,6 +410,26 @@ describe('useNodeDefStore', () => {
   })
 
   describe('allNodeDefsByName', () => {
+    it('keeps existing ComfyNodeDefImpl instances during updates', () => {
+      const nodeDef = new ComfyNodeDefImpl(
+        createMockNodeDef({ name: 'ExistingImpl' })
+      )
+
+      store.updateNodeDefs([nodeDef])
+
+      expect(store.nodeDefsByName.ExistingImpl.name).toBe('ExistingImpl')
+      expect(store.nodeDefsByDisplayName['Test Node'].name).toBe('ExistingImpl')
+    })
+
+    it('adds one node definition to the name and display-name indexes', () => {
+      store.addNodeDef(
+        createMockNodeDef({ name: 'AddedNode', display_name: 'Added Node' })
+      )
+
+      expect(store.nodeDefsByName.AddedNode.name).toBe('AddedNode')
+      expect(store.nodeDefsByDisplayName['Added Node'].name).toBe('AddedNode')
+    })
+
     it('should include all node defs by name', () => {
       const node1 = createMockNodeDef({ name: 'Node1' })
       const node2 = createMockNodeDef({ name: 'Node2' })
@@ -335,6 +478,39 @@ describe('useNodeDefStore', () => {
       // allNodeDefsByName includes all
       expect(store.allNodeDefsByName).toHaveProperty('Normal')
       expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+
+    it('derives unique input and output data types', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: { image: ['IMAGE', {}] },
+            optional: { mask: ['MASK', {}] }
+          },
+          output: ['IMAGE', 'LATENT'],
+          output_is_list: [false, false],
+          output_name: ['image', 'latent']
+        })
+      ])
+
+      expect([...store.nodeDataTypes].sort()).toEqual([
+        'IMAGE',
+        'LATENT',
+        'MASK'
+      ])
+    })
+
+    it('looks up node definitions from graph nodes and returns null for misses', () => {
+      store.updateNodeDefs([createMockNodeDef({ name: 'KnownNode' })])
+
+      expect(
+        store.fromLGraphNode(new LGraphNode('KnownNode', 'KnownNode'))?.name
+      ).toBe('KnownNode')
+      expect(store.fromLGraphNode(new LGraphNode('', ''))).toBeNull()
+      expect(
+        store.getInputSpecForWidget(new LGraphNode('Missing', 'Missing'), 'x')
+      ).toBeUndefined()
+      expect(store.nodeSearchService).toBeDefined()
     })
   })
 
@@ -388,6 +564,95 @@ describe('useNodeDefStore', () => {
       const spec = store.getInputSpecForWidget(host, 'prompt')
       expect(spec?.type).toBe('STRING')
       expect(spec?.default).toBeUndefined()
+    })
+
+    it('returns undefined for missing promoted subgraph inputs', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+
+      expect(store.getInputSpecForWidget(host, 'missing')).toBeUndefined()
+    })
+
+    it('returns undefined when a subgraph input is not promoted', () => {
+      const subgraph = createTestSubgraph()
+      const host = createTestSubgraphNode(subgraph)
+      host.addInput('raw', 'STRING')
+
+      expect(store.getInputSpecForWidget(host, 'raw')).toBeUndefined()
+    })
+
+    it('returns undefined when a promoted source no longer resolves', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+      host.subgraph.nodes[0].widgets = []
+
+      expect(store.getInputSpecForWidget(host, 'prompt')).toBeUndefined()
+    })
+
+    it('returns undefined when concrete promoted widget resolution fails', async () => {
+      const resolver =
+        await import('@/core/graph/subgraph/resolveConcretePromotedWidget')
+      vi.spyOn(resolver, 'resolveConcretePromotedWidget').mockReturnValue({
+        status: 'failure',
+        failure: 'missing-widget'
+      } as const)
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+
+      expect(store.getInputSpecForWidget(host, 'prompt')).toBeUndefined()
+    })
+  })
+
+  describe('node frequency store', () => {
+    it('loads frequencies once and exposes top matching node definitions', async () => {
+      const get = vi.spyOn(axios, 'get').mockResolvedValue({
+        data: { RankedNode: 10, MissingNode: 3 }
+      })
+      store.updateNodeDefs([createMockNodeDef({ name: 'RankedNode' })])
+      const frequencyStore = useNodeFrequencyStore()
+
+      await frequencyStore.loadNodeFrequencies()
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(get).toHaveBeenCalledTimes(1)
+      expect(frequencyStore.isLoaded).toBe(true)
+      expect(frequencyStore.getNodeFrequencyByName('RankedNode')).toBe(10)
+      expect(
+        frequencyStore.getNodeFrequency(
+          new ComfyNodeDefImpl(createMockNodeDef({ name: 'RankedNode' }))
+        )
+      ).toBe(10)
+      expect(frequencyStore.getNodeFrequencyByName('Unknown')).toBe(0)
+      expect(frequencyStore.topNodeDefs.map((nodeDef) => nodeDef.name)).toEqual(
+        ['RankedNode']
+      )
+    })
+
+    it('leaves frequency state unloaded when loading fails', async () => {
+      const error = new Error('boom')
+      vi.spyOn(axios, 'get').mockRejectedValue(error)
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const frequencyStore = useNodeFrequencyStore()
+
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(frequencyStore.isLoaded).toBe(false)
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error loading node frequencies:',
+        error
+      )
     })
   })
 

@@ -234,6 +234,54 @@ describe('useRegistrySearchGateway', () => {
       const gateway = useRegistrySearchGateway()
       expect(gateway).toBeDefined()
     })
+
+    it('waits for the circuit breaker timeout before retrying a failed provider', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+
+      vi.mocked(useAlgoliaSearchProvider).mockImplementation(() => {
+        throw new Error('Algolia init failed')
+      })
+
+      const registryResult = {
+        nodePacks: [{ id: 'registry-1', name: 'Registry Pack' }],
+        querySuggestions: []
+      }
+
+      const mockRegistryProvider = {
+        searchPacks: vi.fn().mockRejectedValue(new Error('Registry failed')),
+        clearSearchCache: vi.fn(),
+        getSortValue: vi.fn(),
+        getSortableFields: vi.fn().mockReturnValue([])
+      }
+
+      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(
+        mockRegistryProvider
+      )
+
+      const gateway = useRegistrySearchGateway()
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await expect(
+          gateway.searchPacks('test', { pageSize: 10, pageNumber: 0 })
+        ).rejects.toThrow('All search providers failed')
+      }
+
+      expect(mockRegistryProvider.searchPacks).toHaveBeenCalledTimes(3)
+
+      await expect(
+        gateway.searchPacks('test', { pageSize: 10, pageNumber: 0 })
+      ).rejects.toThrow('All search providers failed')
+      expect(mockRegistryProvider.searchPacks).toHaveBeenCalledTimes(3)
+
+      vi.setSystemTime(new Date('2024-01-01T00:01:01Z'))
+      mockRegistryProvider.searchPacks.mockResolvedValueOnce(registryResult)
+
+      await expect(
+        gateway.searchPacks('test', { pageSize: 10, pageNumber: 0 })
+      ).resolves.toBe(registryResult)
+      expect(mockRegistryProvider.searchPacks).toHaveBeenCalledTimes(4)
+    })
   })
 
   describe('Cache management', () => {

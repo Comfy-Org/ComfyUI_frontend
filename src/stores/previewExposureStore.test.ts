@@ -95,6 +95,22 @@ describe(usePreviewExposureStore, () => {
 
       expect(store.getExposures(rootGraphA, hostA)).toEqual([])
     })
+
+    it('clears only the requested host when other hosts remain', () => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.addExposure(rootGraphA, hostB, {
+        sourceNodeId: '43',
+        sourcePreviewName: 'preview'
+      })
+
+      store.setExposures(rootGraphA, hostA, [])
+
+      expect(store.getExposures(rootGraphA, hostA)).toEqual([])
+      expect(store.getExposures(rootGraphA, hostB)).toHaveLength(1)
+    })
   })
 
   describe('removeExposure', () => {
@@ -121,6 +137,12 @@ describe(usePreviewExposureStore, () => {
       const before = store.getExposures(rootGraphA, hostA)
       store.removeExposure(rootGraphA, hostA, 'does-not-exist')
       expect(store.getExposures(rootGraphA, hostA)).toEqual(before)
+    })
+
+    it('is a no-op for an unknown host', () => {
+      store.removeExposure(rootGraphA, 'missing-host', 'preview')
+
+      expect(store.getExposures(rootGraphA, 'missing-host')).toEqual([])
     })
   })
 

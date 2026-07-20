@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -27,6 +28,8 @@ interface HostAssetWidget extends IBaseWidget<
 > {
   node: LGraphNode
 }
+
+type AssetWidget = IBaseWidget<string | undefined, 'asset', IWidgetAssetOptions>
 
 type OnWidgetChanged = NonNullable<LGraphNode['onWidgetChanged']>
 
@@ -165,5 +168,127 @@ describe('createAssetWidget', () => {
       hostWidget
     )
     expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to widget name and empty current value for cloned widgets', async () => {
+    const { node } = createAssetWidgetNode()
+    const sourceWidget = createAssetWidget({
+      node,
+      widgetName: 'lora_name',
+      nodeTypeForBrowser: 'LoraLoader'
+    })
+    assertAssetOptions(sourceWidget.options)
+    const clonedWidget: AssetWidget = {
+      type: 'asset',
+      name: 'lora_name',
+      value: undefined,
+      options: sourceWidget.options,
+      y: 0
+    }
+
+    await sourceWidget.options.openModal(clonedWidget)
+
+    expect(firstShowOptions()).toMatchObject({
+      nodeType: 'LoraLoader',
+      inputName: 'lora_name',
+      currentValue: ''
+    })
+  })
+
+  it('rejects malformed asset selections', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { node } = createAssetWidgetNode()
+      const widget = createAssetWidget({
+        node,
+        widgetName: 'ckpt_name',
+        nodeTypeForBrowser: 'CheckpointLoaderSimple',
+        defaultValue: 'fake_model.safetensors'
+      })
+      assertAssetOptions(widget.options)
+
+      await widget.options.openModal(widget)
+      firstShowOptions().onAssetSelected?.(
+        fromPartial({ id: 'asset-without-name' })
+      )
+
+      expect(widget.value).toBe('fake_model.safetensors')
+      expect(captureCanvasState).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('rejects invalid asset filenames', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { node } = createAssetWidgetNode()
+      const widget = createAssetWidget({
+        node,
+        widgetName: 'ckpt_name',
+        nodeTypeForBrowser: 'CheckpointLoaderSimple',
+        defaultValue: 'fake_model.safetensors'
+      })
+      assertAssetOptions(widget.options)
+
+      await widget.options.openModal(widget)
+      firstShowOptions().onAssetSelected?.(
+        checkpointAsset('../bad.safetensors')
+      )
+
+      expect(widget.value).toBe('fake_model.safetensors')
+      expect(captureCanvasState).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
+  it('updates ownerless cloned widgets without node callbacks', async () => {
+    const { node, onWidgetChanged } = createAssetWidgetNode()
+    const sourceWidget = createAssetWidget({
+      node,
+      widgetName: 'ckpt_name',
+      nodeTypeForBrowser: 'CheckpointLoaderSimple',
+      defaultValue: 'fake_model.safetensors'
+    })
+    assertAssetOptions(sourceWidget.options)
+    const callback = vi.fn<NonNullable<IBaseWidget['callback']>>()
+    const clonedWidget: AssetWidget = {
+      type: 'asset',
+      name: 'ckpt_name',
+      value: 'fake_model.safetensors',
+      callback,
+      options: sourceWidget.options,
+      y: 0
+    }
+
+    await sourceWidget.options.openModal(clonedWidget)
+    firstShowOptions().onAssetSelected?.(
+      checkpointAsset('real_model.safetensors')
+    )
+
+    expect(clonedWidget.value).toBe('real_model.safetensors')
+    expect(callback).toHaveBeenCalledWith('real_model.safetensors')
+    expect(onWidgetChanged).not.toHaveBeenCalled()
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('does not capture canvas state when the selection is unchanged', async () => {
+    const { node } = createAssetWidgetNode()
+    const widget = createAssetWidget({
+      node,
+      widgetName: 'ckpt_name',
+      nodeTypeForBrowser: 'CheckpointLoaderSimple',
+      defaultValue: 'fake_model.safetensors'
+    })
+    assertAssetOptions(widget.options)
+
+    await widget.options.openModal(widget)
+    firstShowOptions().onAssetSelected?.(
+      checkpointAsset('fake_model.safetensors')
+    )
+
+    expect(widget.value).toBe('fake_model.safetensors')
+    expect(captureCanvasState).not.toHaveBeenCalled()
   })
 })
