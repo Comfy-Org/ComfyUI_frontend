@@ -152,7 +152,7 @@
       <button
         type="button"
         data-testid="queue-status-idle"
-        class="pointer-events-auto flex h-6 cursor-pointer items-center rounded-md border border-solid border-base-foreground bg-transparent px-2 text-xs text-base-foreground opacity-50 transition-opacity hover:opacity-100 data-[state=open]:opacity-100"
+        class="pointer-events-auto flex h-6 cursor-pointer items-center rounded-md border border-solid border-base-foreground bg-transparent px-2 text-xs text-base-foreground opacity-50 transition-opacity hover:opacity-70 data-[state=open]:opacity-100"
       >
         {{ activeJobsLabel }}
       </button>
