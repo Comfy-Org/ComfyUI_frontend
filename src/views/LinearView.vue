@@ -30,7 +30,7 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 
 const settingStore = useSettingStore()
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
@@ -104,10 +104,7 @@ function dragDrop(e: DragEvent) {
 <template>
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
-    <div
-      data-testid="linear-workspace-column"
-      class="flex min-w-0 flex-1 flex-col overflow-hidden"
-    >
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
       <div
         class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
       >
@@ -148,7 +145,6 @@ function dragDrop(e: DragEvent) {
             <AppBuilder v-if="showLeftBuilder" />
             <div
               v-else-if="sidebarOnLeft && activeTab"
-              v-coachmark="assetsPanelCoach"
               class="size-full overflow-x-hidden border-r border-border-subtle"
             >
               <ExtensionSlot :extension="activeTab" />
@@ -161,7 +157,6 @@ function dragDrop(e: DragEvent) {
           </SplitterPanel>
           <SplitterPanel
             id="linearCenterPanel"
-            v-coachmark="COACH_IDS.outputs"
             data-testid="linear-center-panel"
             :size="CENTER_PANEL_SIZE"
             class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
@@ -200,7 +195,6 @@ function dragDrop(e: DragEvent) {
             />
             <div
               v-else-if="activeTab"
-              v-coachmark="assetsPanelCoach"
               class="h-full overflow-x-hidden border-l border-border-subtle"
             >
               <ExtensionSlot :extension="activeTab" />
@@ -209,7 +203,7 @@ function dragDrop(e: DragEvent) {
         </Splitter>
       </div>
     </div>
-    <component :is="DockedAgentPanel" v-if="agentDocked" />
+    <DockedAgentPanel />
   </div>
 </template>
 
