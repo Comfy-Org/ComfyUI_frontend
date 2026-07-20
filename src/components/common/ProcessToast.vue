@@ -26,12 +26,12 @@
         class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
       />
 
-      <span class="text-sm font-medium whitespace-nowrap text-base-foreground">
+      <span class="text-xs font-normal whitespace-nowrap text-base-foreground">
         {{ verb }}
       </span>
       <span
         v-if="showPercent"
-        class="text-sm font-medium tabular-nums text-base-foreground"
+        class="text-xs font-normal tabular-nums text-base-foreground"
       >
         {{ displayPercent }}%
       </span>
