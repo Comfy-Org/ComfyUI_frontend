@@ -30,9 +30,11 @@ const friendlyKey = computed(() =>
   Object.hasOwn(FRIENDLY_TOOL_KEYS, name) ? FRIENDLY_TOOL_KEYS[name] : undefined
 )
 
-const label = computed(() =>
-  friendlyKey.value === undefined ? name : t(friendlyKey.value)
-)
+const label = computed(() => {
+  if (friendlyKey.value !== undefined) return t(friendlyKey.value)
+  const spaced = name.replaceAll('_', ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+})
 
 const glyph = computed(() => {
   if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
@@ -43,17 +45,14 @@ const glyph = computed(() => {
 
 const glyphColor = computed(() => {
   if (state === 'streaming') return 'text-agent-fg-subtle'
-  return ok === false ? 'text-agent-danger' : 'text-agent-success'
+  return ok === false ? 'text-agent-danger' : 'text-agent-fg-subtle'
 })
 </script>
 
 <template>
   <div class="text-agent-fg flex items-center gap-2 px-3 py-1.5 text-sm">
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
-    <span
-      :class="cn('truncate text-xs', friendlyKey === undefined && 'font-mono')"
-      >{{ label }}</span
-    >
+    <span class="truncate text-xs">{{ label }}</span>
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
       >×{{ count }}</span
     >
