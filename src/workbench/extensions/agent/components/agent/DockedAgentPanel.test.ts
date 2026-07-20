@@ -77,6 +77,7 @@ describe('DockedAgentPanel', () => {
 
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
+    expect(container).toHaveClass('docked-agent-panel')
     expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
   })
 
