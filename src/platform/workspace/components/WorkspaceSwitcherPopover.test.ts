@@ -103,6 +103,25 @@ describe('WorkspaceSwitcherPopover', () => {
     billingMocks.subscription.value = null
   })
 
+  it('shows a renamed personal workspace name', () => {
+    renderComponent({
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-personal',
+          name: 'My Creative Workspace',
+          type: 'personal',
+          role: 'owner'
+        })
+      ]
+    })
+
+    expect(screen.getByText('My Creative Workspace')).toHaveAttribute(
+      'title',
+      'My Creative Workspace'
+    )
+    expect(screen.queryByText('Personal')).not.toBeInTheDocument()
+  })
+
   it('exposes the full team workspace name as a tooltip on the row', () => {
     renderComponent()
 
