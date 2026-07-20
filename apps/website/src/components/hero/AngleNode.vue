@@ -112,7 +112,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="group focus-within:border-primary-comfy-yellow hover:border-primary-comfy-yellow/70 relative size-full rounded-[1.25em] border border-white/10 bg-[#1b1b1d] p-[0.9em] transition-colors"
+    class="group border-primary-comfy-yellow/80 hover:border-primary-comfy-yellow relative size-full rounded-[1.25em] border-2 bg-[#17171a] p-[0.9em] shadow-[0_0_2em_rgba(242,255,89,0.12)] transition-colors"
   >
     <span
       class="bg-primary-comfy-yellow absolute top-0 left-[1.25em] size-[0.55em] -translate-y-1/2 rounded-full"
@@ -121,7 +121,7 @@ onUnmounted(() => {
       class="absolute top-0 right-[1.25em] flex -translate-y-1/2 items-center gap-[0.5em]"
     >
       <span
-        class="font-formula bg-[#1b1b1d] text-[0.7em] font-semibold tracking-[0.14em] text-white/85"
+        class="font-formula bg-[#17171a] text-[0.7em] font-semibold tracking-[0.14em] text-white"
       >
         3D ANGLE
       </span>
@@ -131,7 +131,7 @@ onUnmounted(() => {
     <div
       ref="sceneContainer"
       data-camera-scene
-      class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#2c2c2e]"
+      class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#343437]"
       :class="sceneReady ? 'opacity-100' : 'opacity-0'"
       style="transition: opacity 300ms"
     />

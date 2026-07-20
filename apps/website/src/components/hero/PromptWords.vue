@@ -10,14 +10,14 @@ const { azimuth, elevation, zoom } = defineProps<{
 }>()
 
 const chips = computed(() => [
-  { text: azimuthLabel(azimuth), tilt: '-rotate-[1.5deg]' },
-  { text: elevationLabel(elevation), tilt: 'rotate-[1deg]' },
-  { text: distanceLabel(zoom), tilt: '-rotate-[0.5deg]' }
+  { text: azimuthLabel(azimuth), tilt: '-rotate-[2deg]' },
+  { text: elevationLabel(elevation), tilt: 'rotate-[1.5deg]' },
+  { text: distanceLabel(zoom), tilt: '-rotate-[1deg]' }
 ])
 </script>
 
 <template>
-  <p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-3">
+  <p class="flex flex-wrap items-center justify-center gap-3">
     <span class="sr-only"
       >Prompt: {{ chips.map((c) => c.text).join(' ') }}</span
     >
@@ -32,9 +32,13 @@ const chips = computed(() => [
       :key="chip.text"
       aria-hidden="true"
       :class="chip.tilt"
-      class="bg-primary-comfy-yellow font-formula inline-block rounded-[0.2em] px-3 py-1 text-xl font-bold tracking-tight text-primary-comfy-ink uppercase lg:text-3xl"
+      class="bg-primary-comfy-yellow inline-block skew-x-[-9deg] rounded-[0.1em] px-[0.55em] py-[0.1em]"
     >
-      {{ chip.text }}
+      <span
+        class="font-formula inline-block skew-x-[9deg] text-xl font-bold tracking-tight text-primary-comfy-ink uppercase lg:text-3xl"
+      >
+        {{ chip.text }}
+      </span>
     </span>
   </p>
 </template>
