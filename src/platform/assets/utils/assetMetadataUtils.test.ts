@@ -873,13 +873,39 @@ describe('getEditableModelType', () => {
     tags
   })
 
-  it('returns the stripped model_type value in model_type mode', () => {
+  it('prefers the model_type value over a distinct bare tag in model_type mode', () => {
     expect(
       getEditableModelType(
-        asset(['models', 'checkpoints', 'model_type:checkpoints']),
+        asset(['models', 'checkpoints', 'model_type:loras']),
+        true
+      )
+    ).toBe('loras')
+  })
+
+  it('returns the model_type value even when no bare twin is present', () => {
+    expect(
+      getEditableModelType(asset(['models', 'model_type:loras']), true)
+    ).toBe('loras')
+  })
+
+  it('ignores an empty model_type value and falls back to the bare tag', () => {
+    expect(
+      getEditableModelType(
+        asset(['models', 'checkpoints', 'model_type:']),
         true
       )
     ).toBe('checkpoints')
+  })
+
+  it('resolves the same primary model_type regardless of tag array order', () => {
+    const forward = ['models', 'model_type:diffusion_models', 'model_type:unet']
+    const reversed = [
+      'models',
+      'model_type:unet',
+      'model_type:diffusion_models'
+    ]
+    expect(getEditableModelType(asset(forward), true)).toBe('diffusion_models')
+    expect(getEditableModelType(asset(reversed), true)).toBe('diffusion_models')
   })
 
   it('falls back to the bare tag for an uncovered asset in model_type mode', () => {
@@ -920,17 +946,17 @@ describe('buildModelTypeTagUpdate', () => {
     ).toEqual(['models', 'sdxl', 'loras'])
   })
 
-  it('writes only the model_type form for a covered asset, leaving the bare twin for the backend', () => {
+  it('drops the primary model_type form and its stale bare twin for a covered asset', () => {
     expect(
       buildModelTypeTagUpdate(
         asset(['models', 'checkpoints', 'model_type:checkpoints']),
         'loras',
         true
       )
-    ).toEqual(['models', 'checkpoints', 'model_type:loras'])
+    ).toEqual(['models', 'model_type:loras'])
   })
 
-  it('replaces every existing model_type form for a shared-path dual-tagged asset', () => {
+  it('replaces only the primary membership, preserving sibling model_type memberships', () => {
     expect(
       buildModelTypeTagUpdate(
         asset([
@@ -942,7 +968,31 @@ describe('buildModelTypeTagUpdate', () => {
         'loras',
         true
       )
-    ).toEqual(['models', 'diffusion_models', 'model_type:loras'])
+    ).toEqual(['models', 'model_type:unet_gguf', 'model_type:loras'])
+  })
+
+  it('replaces the deterministic primary regardless of model_type tag order', () => {
+    expect(
+      buildModelTypeTagUpdate(
+        asset([
+          'models',
+          'model_type:unet_gguf',
+          'model_type:diffusion_models'
+        ]),
+        'loras',
+        true
+      )
+    ).toEqual(['models', 'model_type:unet_gguf', 'model_type:loras'])
+  })
+
+  it('does not duplicate when re-typing to an existing sibling membership', () => {
+    expect(
+      buildModelTypeTagUpdate(
+        asset(['models', 'model_type:diffusion_models', 'model_type:loras']),
+        'loras',
+        true
+      )
+    ).toEqual(['models', 'model_type:loras'])
   })
 
   it('drops the bare current type for an uncovered asset in model_type mode', () => {
@@ -951,13 +1001,13 @@ describe('buildModelTypeTagUpdate', () => {
     ).toEqual(['models', 'model_type:loras'])
   })
 
-  it('keeps user labels untouched in model_type mode', () => {
+  it('keeps user labels but drops the primary bare twin in model_type mode', () => {
     expect(
       buildModelTypeTagUpdate(
         asset(['models', 'checkpoints', 'model_type:checkpoints', 'sdxl']),
         'loras',
         true
       )
-    ).toEqual(['models', 'checkpoints', 'sdxl', 'model_type:loras'])
+    ).toEqual(['models', 'sdxl', 'model_type:loras'])
   })
 })
