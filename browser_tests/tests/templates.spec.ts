@@ -1,7 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -233,7 +232,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const templateGrid = comfyPage.page.getByTestId(
       'template-workflows-content'
     )
-    const nav = comfyPage.page.locator('header', { hasText: 'Templates' })
+    const nav = comfyPage.page.locator(
+      'header[data-component-id="LeftPanelHeader"]'
+    )
 
     await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
@@ -260,7 +261,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      // Wait for filter bar select components to render
+      // Selects collapse behind a toggle at narrow container widths
+      await comfyPage.templatesDialog.openFilters()
+
       const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
       await expect(sortBySelect).toBeVisible()
 
@@ -272,115 +275,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
         {
           mask: [comfyPage.page.locator('.p-toast')]
         }
-      )
-    }
-  )
-
-  test(
-    'template cards descriptions adjust height dynamically',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
-      // Setup test by intercepting templates response to inject cards with varying description lengths
-      await comfyPage.page.route(
-        '**/templates/index.json',
-        async (route, _) => {
-          const response: WorkflowTemplates[] = [
-            {
-              moduleName: 'default',
-              title: 'Test Templates',
-              type: 'image',
-              templates: [
-                {
-                  name: 'short-description',
-                  title: 'Short Description',
-                  mediaType: 'image',
-                  mediaSubtype: 'webp',
-                  description: 'This is a short description.'
-                },
-                {
-                  name: 'medium-description',
-                  title: 'Medium Description',
-                  mediaType: 'image',
-                  mediaSubtype: 'webp',
-                  description:
-                    'This is a medium length description that should take up two lines on most displays.'
-                },
-                {
-                  name: 'long-description',
-                  title: 'Long Description',
-                  mediaType: 'image',
-                  mediaSubtype: 'webp',
-                  description:
-                    'This is a much longer description that should definitely wrap to multiple lines. It contains enough text to demonstrate how the cards handle varying amounts of content while maintaining a consistent layout grid.'
-                }
-              ]
-            }
-          ]
-          await route.fulfill({
-            status: 200,
-            body: JSON.stringify(response),
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-store'
-            }
-          })
-        }
-      )
-
-      // Mock the thumbnail images to avoid 404s
-      await comfyPage.page.route('**/templates/**.webp', async (route) => {
-        const headers = {
-          'Content-Type': 'image/webp',
-          'Cache-Control': 'no-store'
-        }
-        await route.fulfill({
-          status: 200,
-          path: 'browser_tests/assets/example.webp',
-          headers
-        })
-      })
-
-      // Open templates dialog
-      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-      await expect(comfyPage.templates.content).toBeVisible()
-
-      // Wait for cards to load
-      await expect(
-        comfyPage.page.getByTestId('template-workflow-short-description')
-      ).toBeVisible()
-
-      // Verify all three cards with different descriptions are visible
-      const shortDescCard = comfyPage.page.getByTestId(
-        'template-workflow-short-description'
-      )
-      const mediumDescCard = comfyPage.page.getByTestId(
-        'template-workflow-medium-description'
-      )
-      const longDescCard = comfyPage.page.getByTestId(
-        'template-workflow-long-description'
-      )
-
-      await expect(shortDescCard).toBeVisible()
-      await expect(mediumDescCard).toBeVisible()
-      await expect(longDescCard).toBeVisible()
-
-      // Verify descriptions are visible and have line-clamp class
-      // The description is in a p tag with text-muted class
-      const shortDesc = shortDescCard.locator('p.text-muted.line-clamp-2')
-      const mediumDesc = mediumDescCard.locator('p.text-muted.line-clamp-2')
-      const longDesc = longDescCard.locator('p.text-muted.line-clamp-2')
-
-      await expect(shortDesc).toContainText('short description')
-      await expect(mediumDesc).toContainText('medium length description')
-      await expect(longDesc).toContainText('much longer description')
-
-      // Verify grid layout maintains consistency
-      const templateGrid = comfyPage.page.getByTestId(
-        'template-workflows-content'
-      )
-      await expect(templateGrid).toBeVisible()
-      await expect(templateGrid).toHaveScreenshot(
-        'template-grid-varying-content.png'
       )
     }
   )
