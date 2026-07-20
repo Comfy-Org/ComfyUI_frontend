@@ -1,5 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AgentDraftSnapshot,
@@ -136,7 +138,7 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
-export async function mockAgentBoot(
+async function mockAgentBoot(
   page: Page,
   {
     agentFlag,
@@ -227,3 +229,19 @@ export async function mockAgentBoot(
     r.fulfill(jsonRoute(DRAFT_SNAPSHOT))
   )
 }
+
+type AgentFixtures = {
+  agentFlagEnabled: boolean
+  postedMessages: string[]
+}
+
+export const agentTest = comfyPageFixture.extend<AgentFixtures>({
+  agentFlagEnabled: [true, { option: true }],
+  postedMessages: async ({}, use) => {
+    await use([])
+  },
+  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
+    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+    await use(page)
+  }
+})

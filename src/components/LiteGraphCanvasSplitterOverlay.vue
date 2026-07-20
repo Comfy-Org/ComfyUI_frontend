@@ -125,30 +125,17 @@
       </div>
     </div>
 
-    <div
-      v-if="agentPanelDocked"
-      class="pointer-events-auto relative h-full shrink-0 overflow-hidden"
-      :style="{ width: `${agentPanelWidth}px` }"
-    >
-      <div
-        class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
-        :data-resizing="isAgentResizing"
-        @pointerdown="onAgentResizeStart"
-        @lostpointercapture="isAgentResizing = false"
-      />
-      <slot name="agent-panel" />
-    </div>
+    <slot name="agent-panel" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import type { SplitterResizeStartEvent } from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -163,13 +150,11 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
-const agentPanelStore = useAgentPanelStore()
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -185,33 +170,6 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const {
-  isOpen: agentPanelOpen,
-  enabled: agentPanelEnabled,
-  width: agentPanelWidth
-} = storeToRefs(agentPanelStore)
-const agentPanelDocked = computed(
-  () => agentPanelEnabled.value && agentPanelOpen.value
-)
-const isAgentResizing = ref(false)
-let agentResizeStartX = 0
-let agentResizeStartWidth = 0
-
-function onAgentResizeStart(e: PointerEvent): void {
-  isAgentResizing.value = true
-  agentResizeStartX = e.clientX
-  agentResizeStartWidth = agentPanelStore.width
-  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  e.preventDefault()
-}
-
-useEventListener(document, 'pointermove', (e: PointerEvent) => {
-  if (!isAgentResizing.value) return
-  agentPanelStore.setWidth(
-    agentResizeStartWidth + (agentResizeStartX - e.clientX)
-  )
-})
-
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
@@ -353,11 +311,5 @@ const lastPanelStyle = computed(() => {
 
 .splitter-overlay-bottom :deep(.p-splitter-gutter) {
   transform: translateY(5px);
-}
-
-.agent-resize-handle:hover,
-.agent-resize-handle[data-resizing='true'] {
-  transition: background-color 0.2s ease 300ms;
-  background-color: var(--p-primary-color);
 }
 </style>

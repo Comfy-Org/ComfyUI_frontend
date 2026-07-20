@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -12,6 +13,10 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
 }
 
 describe('Composer', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('disables send when empty and enables once text is typed', async () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
@@ -44,6 +49,17 @@ describe('Composer', () => {
     await userEvent.click(stop)
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().send).toBeUndefined()
+  })
+
+  it('restores the typed draft after unmount and remount', async () => {
+    const first = mount()
+    await userEvent.type(screen.getByRole('textbox'), 'keep me')
+    first.unmount()
+
+    mount()
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+      'keep me'
+    )
   })
 
   it('hides the paperclip by default', () => {

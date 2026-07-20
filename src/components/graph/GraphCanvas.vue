@@ -39,13 +39,7 @@
       <NodePropertiesPanel v-else />
     </template>
     <template #agent-panel>
-      <div class="size-full p-2">
-        <div
-          class="size-full overflow-hidden rounded-lg border border-(--interface-stroke)"
-        >
-          <AgentPanelRoot />
-        </div>
-      </div>
+      <DockedAgentPanel v-if="!linearMode" />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu
@@ -120,7 +114,6 @@
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
-  defineAsyncComponent,
   nextTick,
   onMounted,
   onUnmounted,
@@ -191,6 +184,7 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -206,10 +200,6 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
-
-const AgentPanelRoot = defineAsyncComponent(
-  () => import('@/workbench/extensions/agent/AgentPanelRoot.vue')
-)
 
 const { t } = useI18n()
 const emit = defineEmits<{

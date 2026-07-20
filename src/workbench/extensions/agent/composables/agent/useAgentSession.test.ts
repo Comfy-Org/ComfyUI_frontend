@@ -7,6 +7,7 @@ import type {
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
+  TurnId,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -201,6 +202,149 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][0]).toBe('new')
     expect(postMessage.mock.calls[1][0]).toBe('th-9')
+  })
+
+  it('(b3) a stale stop() from a superseded session leaves the live turn untouched', async () => {
+    const rest = fakeRest()
+    const conversation = useAgentConversationStore()
+
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    conversation.startTurn('turn-live' as TurnId)
+
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    first.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBe('turn-live')
+
+    second.stop()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  it('(b4) a close with no successor still aborts once the microtask flushes', async () => {
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    conversation.startTurn('turn-live' as TurnId)
+
+    session.stop()
+    expect(conversation.activeTurnId).toBe('turn-live')
+
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
+    const rest = fakeRest()
+    const conversation = useAgentConversationStore()
+
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    conversation.startTurn('turn-live' as TurnId)
+
+    first.stop()
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(conversation.activeTurnId).toBe('turn-live')
+  })
+
+  it.for([
+    ['stale hydrate resolves first', [0, 1]] as const,
+    ['current hydrate resolves first', [1, 0]] as const
+  ])(
+    '(b6) a double toggle within one hydrate round trip keeps the live turn (%s)',
+    async ([, resolutionOrder]) => {
+      const conversation = useAgentConversationStore()
+      const resolvers: Array<(rows: []) => void> = []
+      const getMessages = vi.fn(
+        () =>
+          new Promise<[]>((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      const rest = fakeRest({ getMessages })
+
+      const s1 = useAgentSession({ rest, events: fakeEvents().source })
+      s1.start()
+      conversation.setThreadId('th-9')
+      conversation.startTurn('turn-live' as TurnId)
+
+      const s2 = useAgentSession({ rest, events: fakeEvents().source })
+      s2.start()
+      s1.stop()
+      const s3 = useAgentSession({ rest, events: fakeEvents().source })
+      s3.start()
+      s2.stop()
+      expect(resolvers).toHaveLength(2)
+
+      for (const index of resolutionOrder) {
+        resolvers[index]([])
+        await Promise.resolve()
+        await Promise.resolve()
+      }
+      await vi.waitFor(() =>
+        expect(conversation.activeTurnId).toBe('turn-live')
+      )
+    }
+  )
+
+  it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
+    const conversation = useAgentConversationStore()
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    const resolvers: Array<(rows: []) => void> = []
+    const getMessages = vi.fn(
+      () =>
+        new Promise<[]>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const rest = fakeRest({ getMessages })
+
+    const s1 = useAgentSession({ rest, events: fakeEvents().source })
+    s1.start()
+    expect(conversation.threadId).toBe('th-9')
+
+    const s2 = useAgentSession({ rest, events: fakeEvents().source })
+    s2.start()
+    s1.stop()
+    expect(resolvers).toHaveLength(2)
+
+    resolvers[1]([])
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    conversation.startTurn('turn-live' as TurnId)
+
+    resolvers[0]([])
+    await Promise.resolve()
+    await Promise.resolve()
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
+  })
+
+  it('(b7) a transient hydrate failure on rehost resumes the live turn instead of stranding it', async () => {
+    const conversation = useAgentConversationStore()
+    const getMessages = vi
+      .fn<() => Promise<[]>>()
+      .mockRejectedValue(new AgentApiError('backend blip', 500, undefined))
+    const rest = fakeRest({ getMessages })
+
+    const s1 = useAgentSession({ rest, events: fakeEvents().source })
+    s1.start()
+    conversation.setThreadId('th-9')
+    conversation.startTurn('turn-live' as TurnId)
+
+    const s2 = useAgentSession({ rest, events: fakeEvents().source })
+    s2.start()
+    s1.stop()
+
+    await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
+    expect(conversation.threadId).toBe('th-9')
   })
 
   it('(c) a postMessage AgentApiError surfaces inline only (no toast) and opens no live turn', async () => {
@@ -1016,6 +1160,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await first.sendMessage('go')
     expect(first.isStreaming.value).toBe(true)
     first.stop()
+    await Promise.resolve()
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
@@ -1078,6 +1223,7 @@ describe('useAgentSession (v1 composition root)', () => {
     first.start()
     await first.sendMessage('go')
     first.stop()
+    await Promise.resolve()
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
@@ -1389,6 +1535,7 @@ describe('thread resume (B17)', () => {
     first.start()
     await first.sendMessage('live message')
     first.stop()
+    await Promise.resolve()
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()

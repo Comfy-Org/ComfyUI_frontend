@@ -1,7 +1,6 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -13,26 +12,10 @@ import {
   MESSAGE_DONE_EVENT,
   THINKING_EVENT,
   TOOL_CALL_EVENT,
-  mockAgentBoot
+  agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
-type AgentFixtures = {
-  agentFlagEnabled: boolean
-  postedMessages: string[]
-}
-
-const agentCloudFixture = comfyPageFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }],
-  postedMessages: async ({}, use) => {
-    await use([])
-  },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
-    await use(page)
-  }
-})
-
-const test = mergeTests(agentCloudFixture, webSocketFixture)
+const test = mergeTests(agentTest, webSocketFixture)
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
