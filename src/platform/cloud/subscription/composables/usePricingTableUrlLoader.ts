@@ -8,7 +8,6 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 
@@ -16,15 +15,14 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
  * Opens the pricing table from a `?pricing=` deep link, to send pilot users
  * straight to subscribe. Values: `1` (default tab), `team`, `personal`.
  *
- * Gated to the original owner (`canManageSubscriptionLifecycle`); a member or
- * promoted owner is a silent no-op with the param stripped. Survives the login
- * redirect via the preserved-query system, like the invite URL loader.
+ * Gated to workspace owners (`canManageSubscription`); a member is a silent
+ * no-op with the param stripped. Survives the login redirect via the
+ * preserved-query system, like the invite URL loader.
  */
 export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
-  const workspaceStore = useTeamWorkspaceStore()
   const { permissions } = useWorkspaceUI()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
@@ -52,11 +50,7 @@ export function usePricingTableUrlLoader() {
     // gets stripped above.
     if (typeof param !== 'string' || !param) return
 
-    // Load members before reading the gate so the original-owner self-row is
-    // present. fetchMembers always awaits the request; ensureMembersLoaded can
-    // early-return on a cached/in-flight load and let the gate read empty members.
-    await workspaceStore.fetchMembers()
-    if (!permissions.value.canManageSubscriptionLifecycle) return
+    if (!permissions.value.canManageSubscription) return
 
     const planMode =
       param === 'team' || param === 'personal' ? param : undefined

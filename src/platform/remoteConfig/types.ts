@@ -121,6 +121,7 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
+  consolidated_billing_enabled?: boolean
   billing_control_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string

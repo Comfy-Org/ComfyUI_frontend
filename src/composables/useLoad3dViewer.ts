@@ -752,6 +752,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       if (uploadPath) {
+        backgroundRenderMode.value = 'tiled'
         backgroundImage.value = uploadPath
         hasBackgroundImage.value = true
       }
