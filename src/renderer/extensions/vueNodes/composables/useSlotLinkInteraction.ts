@@ -23,6 +23,13 @@ import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
+import {
+  collectFanInputs,
+  collectFanOutputs,
+  connectImagesToDynamicInput,
+  createBatchImagesNode,
+  toImageBatchSources
+} from '@/renderer/core/canvas/links/multiNodeLinkConnect'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -35,6 +42,7 @@ import { app } from '@/scripts/app'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface SlotInteractionOptions {
   nodeId?: NodeId
@@ -188,11 +196,41 @@ export function useSlotLinkInteraction({
       .filter(isToInputLink)
       .filter((link) => link.canConnectToInput(node, inputSlot))
 
-    for (const link of validCandidates) {
-      link.connectToInput(node, inputSlot, activeAdapter?.linkConnector.events)
+    if (validCandidates.length === 0) return false
+
+    const events = activeAdapter?.linkConnector.events
+    const grabbedLink = validCandidates[0]
+
+    if (validCandidates.length === 1) {
+      grabbedLink.connectToInput(node, inputSlot, events)
+      return true
     }
 
-    return validCandidates.length > 0
+    // Multi-node fan-out. A dynamic (autogrow) input takes every image directly;
+    // a static single-link input aggregates them through an auto-created
+    // BatchImagesNode; other types degrade to connecting only the grabbed slot.
+    const sources = toImageBatchSources(validCandidates)
+
+    if (connectImagesToDynamicInput(node, inputSlot, sources)) return true
+
+    const canvas = app.canvas
+    const inputIndex = node.inputs.indexOf(inputSlot)
+    if (
+      canvas &&
+      inputIndex >= 0 &&
+      inputSlot.type === 'IMAGE' &&
+      grabbedLink.fromSlot.type === 'IMAGE'
+    ) {
+      void createBatchImagesNode(canvas, sources, node, inputIndex).catch(
+        (error) => {
+          console.error('Failed to create batch images node', error)
+        }
+      )
+      return true
+    }
+
+    grabbedLink.connectToInput(node, inputSlot, events)
+    return true
   }
 
   function connectLinksToOutput(
@@ -676,15 +714,40 @@ export function useSlotLinkInteraction({
     const shouldMoveExistingInput =
       isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
+    const addFanLinks = (slotKind: 'input' | 'output') => {
+      const adapter = activeAdapter
+      if (!adapter || !resolvedNode) return
+
+      const selectedNodes = [...canvas.selectedItems].filter(isLGraphNode)
+      if (selectedNodes.length <= 1 || !selectedNodes.includes(resolvedNode)) {
+        return
+      }
+
+      if (slotKind === 'output') {
+        // Forward fan-out only resolves for images (auto-created batch node),
+        // so only show the multi-link UI when dragging an image output.
+        const grabbedOutput = resolvedNode.outputs?.[index]
+        if (!grabbedOutput || grabbedOutput.type !== 'IMAGE') return
+
+        const fanSources = collectFanOutputs(resolvedNode, index, selectedNodes)
+        adapter.addOutputRenderLinks(fanSources.slice(1))
+      } else {
+        const fanInputs = collectFanInputs(resolvedNode, index, selectedNodes)
+        adapter.addInputRenderLinks(fanInputs.slice(1))
+      }
+    }
+
     if (isOutputSlot) {
       activeAdapter.beginFromOutput(localNodeId, index, {
         moveExisting: shouldMoveExistingOutput
       })
+      if (!shouldMoveExistingOutput) addFanLinks('output')
     } else {
       activeAdapter.beginFromInput(localNodeId, index, {
         moveExisting: shouldMoveExistingInput,
         layout
       })
+      if (!shouldMoveExistingInput) addFanLinks('input')
     }
 
     if (shouldMoveExistingInput && existingInputLink) {

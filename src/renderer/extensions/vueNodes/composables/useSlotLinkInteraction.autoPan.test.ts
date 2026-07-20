@@ -68,6 +68,7 @@ vi.mock('@/scripts/app', () => ({
         getReroute: () => null
       },
       linkConnector: mockLinkConnector,
+      selectedItems: new Set(),
       canvas: {
         getBoundingClientRect: () => ({
           left: 0,
@@ -177,6 +178,16 @@ vi.mock('@/renderer/core/canvas/links/linkDropOrchestrator', () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
+vi.mock('@/renderer/core/canvas/links/multiNodeLinkConnect', () => ({
+  getSelectedNodes: () => [],
+  collectFanOutputs: () => [],
+  collectFanInputs: () => [],
+  toImageBatchSources: () => [],
+  createBatchImagesNode: vi.fn(),
+  connectImagesToDynamicInput: () => false,
+  isImageType: () => false
+}))
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
@@ -187,10 +198,6 @@ vi.mock('@vueuse/core', () => ({
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
   LLink: { getReroutes: () => [] }
-}))
-
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
 }))
 
 vi.mock('@/utils/rafBatch', () => ({

@@ -453,6 +453,13 @@ export class ComfyPage {
     }, focusMode)
     await this.nextFrame()
   }
+  async centerPoint(locator: Locator) {
+    const bounding = await locator.boundingBox()
+    if (!bounding) throw new Error('failed to resolve bounding box')
+
+    const { x, y, width, height } = bounding
+    return { x: x + width / 2, y: y + height / 2 }
+  }
 }
 
 class ComfyFiles {
