@@ -5,12 +5,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ActiveTab } from './ActiveTabStrip.vue'
-import ActiveTabStrip from './ActiveTabStrip.vue'
 
-const { isMaximized = false, activeTab = null } = defineProps<{
+const { isMaximized = false } = defineProps<{
   isMaximized?: boolean
-  activeTab?: ActiveTab | null
 }>()
 
 const emit = defineEmits<{
@@ -41,8 +38,6 @@ const sizeToggleLabel = computed(() =>
     >
       {{ t('agent.alpha') }}
     </span>
-
-    <ActiveTabStrip :tab="activeTab" />
 
     <div class="ml-auto flex items-center gap-1">
       <Button
