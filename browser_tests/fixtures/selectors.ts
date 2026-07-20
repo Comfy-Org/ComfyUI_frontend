@@ -102,7 +102,8 @@ export const TestIds = {
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
-    actionBarButtons: 'action-bar-buttons'
+    actionBarButtons: 'action-bar-buttons',
+    freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'

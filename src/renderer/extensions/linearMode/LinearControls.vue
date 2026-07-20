@@ -10,6 +10,7 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -23,7 +24,7 @@ const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
-const { isActiveSubscription } = useBillingContext()
+const { canRunWorkflows } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -43,7 +44,6 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
-
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
@@ -137,10 +137,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <div v-else class="mt-4 flex">
           <PartnerNodesList mobile />
           <Popover side="top" @open-auto-focus.prevent>
@@ -189,10 +186,7 @@ function handleDragDrop() {
           :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
           class="h-7 min-w-40"
         />
-        <SubscribeToRunButton
-          v-if="!isActiveSubscription"
-          class="mt-4 w-full"
-        />
+        <SubscribeToRunButton v-if="!canRunWorkflows" class="mt-4 w-full" />
         <Button
           v-else
           variant="primary"
@@ -203,6 +197,7 @@ function handleDragDrop() {
           <i class="icon-[lucide--play]" />
           {{ t('menu.run') }}
         </Button>
+        <FreeTierQuota />
       </section>
     </div>
   </div>
