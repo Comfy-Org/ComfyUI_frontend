@@ -111,7 +111,7 @@ type ModelOrFolder = ComfyModelDef | ModelFolder
 const root = computed<TreeNode>(() => {
   const allNodes: ModelOrFolder[] = searchQuery.value
     ? filteredModels.value
-    : [...modelStore.modelFolders, ...modelStore.models]
+    : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )

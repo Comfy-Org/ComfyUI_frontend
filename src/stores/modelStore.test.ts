@@ -493,6 +493,35 @@ describe('useModelStore', () => {
     })
   })
 
+  describe('visibleModelFolders', () => {
+    it('hides folders that loaded empty in asset mode', async () => {
+      enableMocks(true)
+      vi.mocked(assetService.getAssetModels).mockImplementation(
+        async (folder: string) =>
+          folder === 'checkpoints'
+            ? [{ name: 'sdxl.safetensors', pathIndex: 0 }]
+            : []
+      )
+      store = useModelStore()
+      await store.loadModels()
+
+      expect(store.visibleModelFolders.map((f) => f.directory)).toEqual([
+        'checkpoints'
+      ])
+      // The full folder list is untouched for consumers that need it.
+      expect(store.modelFolders).toHaveLength(2)
+    })
+
+    it('keeps all registered folders visible on the legacy path', async () => {
+      enableMocks(false)
+      vi.mocked(api.getModels).mockResolvedValue([])
+      store = useModelStore()
+      await store.loadModels()
+
+      expect(store.visibleModelFolders).toHaveLength(2)
+    })
+  })
+
   describe('cloud gating', () => {
     beforeEach(() => {
       isCloudRef.value = true

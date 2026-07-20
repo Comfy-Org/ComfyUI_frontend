@@ -85,6 +85,7 @@ vi.mock('@/stores/modelStore', async () => {
     },
     useModelStore: () => ({
       modelFolders: [],
+      visibleModelFolders: [],
       models,
       loadModels: mockLoadModels,
       loadModelFolders: vi.fn().mockResolvedValue([]),

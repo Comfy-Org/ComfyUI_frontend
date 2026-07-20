@@ -288,6 +288,22 @@ export const useModelStore = defineStore('models', () => {
   const models = computed<ComfyModelDef[]>(() =>
     modelFolders.value.flatMap((folder) => Object.values(folder.models))
   )
+  /**
+   * Folders worth showing in the sidebar. Asset mode hides folders that
+   * loaded empty — the registry lists every registered folder type, most of
+   * which have no models on a given install; they reappear live when a scan
+   * discovers a first model. The legacy path keeps its historical
+   * all-registered-folders view.
+   */
+  const visibleModelFolders = computed<ModelFolder[]>(() =>
+    usesAssetApi()
+      ? modelFolders.value.filter(
+          (folder) =>
+            folder.state !== ResourceState.Loaded ||
+            Object.keys(folder.models).length > 0
+        )
+      : modelFolders.value
+  )
 
   /**
    * Whether model contents come from the asset API. Named to avoid confusion
@@ -459,6 +475,7 @@ export const useModelStore = defineStore('models', () => {
   return {
     models,
     modelFolders,
+    visibleModelFolders,
     loadModelFolders,
     loadModels,
     getLoadedModelFolder,
