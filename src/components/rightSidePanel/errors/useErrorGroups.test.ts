@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: {
       serialize: vi.fn(() => ({})),
       getNodeById: vi.fn()
@@ -127,6 +129,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   getExecutionIdByNode,
   getNodeByExecutionId
@@ -424,7 +428,7 @@ describe('useErrorGroups', () => {
 
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -436,7 +440,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
@@ -449,7 +453,7 @@ describe('useErrorGroups', () => {
 
     it('resolves required_input_missing item display copy', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -464,7 +468,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -493,9 +497,50 @@ describe('useErrorGroups', () => {
       )
     })
 
+    it('groups lifted boundary errors under the host node card', async () => {
+      const { store, groups } = createErrorGroups()
+      const { rootGraph, host } = createBoundaryLinkedSubgraph({
+        interiorType: 'InteriorClass'
+      })
+      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
+        await vi.importActual<typeof GraphTraversalUtil>(
+          '@/utils/graphTraversalUtil'
+        )
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+        return actualGetNodeByExecutionId(rootGraph, String(nodeId))
+      })
+      store.recordNodeErrors({
+        '12:5': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'seed_input',
+              {},
+              'Required input is missing'
+            )
+          ],
+          'InteriorClass'
+        )
+      })
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      expect(card.nodeId).toBe('12')
+      expect(card.title).toBe(host.title)
+      expect(card.errors[0].displayDetails).toBe(
+        `${host.title} is missing a required input: seed`
+      )
+    })
+
     it('groups node validation errors by catalog id across node types', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -524,7 +569,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
@@ -545,7 +590,7 @@ describe('useErrorGroups', () => {
     it('uses general execution_failed display fields for unrecognized runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
-      store.lastExecutionError = {
+      store.recordExecutionError({
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
         node_id: 5,
@@ -556,7 +601,7 @@ describe('useErrorGroups', () => {
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
-      }
+      })
       await nextTick()
 
       const execGroups = groups.allErrorGroups.value.filter(
@@ -582,7 +627,7 @@ describe('useErrorGroups', () => {
     it('adds display fields for targeted runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
-      store.lastExecutionError = {
+      store.recordExecutionError({
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
         node_id: 5,
@@ -594,7 +639,7 @@ describe('useErrorGroups', () => {
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -615,11 +660,11 @@ describe('useErrorGroups', () => {
 
     it('includes prompt error when present', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
@@ -637,11 +682,11 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([{ id: '1' }])
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
@@ -653,7 +698,7 @@ describe('useErrorGroups', () => {
 
     it('sorts cards within an execution group by nodeId numerically', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '10': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -669,7 +714,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -681,7 +726,7 @@ describe('useErrorGroups', () => {
 
     it('sorts cards with subpath nodeIds before higher root IDs', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '2': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -697,7 +742,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -709,7 +754,7 @@ describe('useErrorGroups', () => {
 
     it('sorts deeply nested nodeIds by each segment numerically', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '10:11:99': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -725,7 +770,7 @@ describe('useErrorGroups', () => {
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       const execGroup = groups.allErrorGroups.value.find(
@@ -739,13 +784,13 @@ describe('useErrorGroups', () => {
   describe('filteredGroups', () => {
     it('returns all groups when search query is empty', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.filteredGroups.value.length).toBeGreaterThan(0)
@@ -753,7 +798,7 @@ describe('useErrorGroups', () => {
 
     it('filters groups based on search query', async () => {
       const { store, groups, searchQuery } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -776,7 +821,7 @@ describe('useErrorGroups', () => {
             }
           ]
         }
-      }
+      })
       await nextTick()
 
       searchQuery.value = 'sampler'
@@ -1052,11 +1097,11 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([{ id: '1' }])
-      store.lastPromptError = {
+      store.recordPromptError({
         type: 'prompt_no_outputs',
         message: 'No outputs',
         details: ''
-      }
+      })
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
@@ -1071,13 +1116,13 @@ describe('useErrorGroups', () => {
 
     it('reports no selection state when nothing is selected', async () => {
       const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.hasSelection.value).toBe(false)
@@ -1100,7 +1145,7 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([selectedNode])
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -1113,7 +1158,7 @@ describe('useErrorGroups', () => {
             { type: 'file_not_found', message: 'File not found', details: '' }
           ]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.hasSelection.value).toBe(true)
@@ -1209,13 +1254,13 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([selectedNode])
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.selectionErrorCount.value).toBe(1)
@@ -1239,7 +1284,7 @@ describe('useErrorGroups', () => {
         typeof canvasStore.selectedItems,
         unknown
       >([containerNode])
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '2:5': {
           class_type: 'KSampler',
           dependent_outputs: [],
@@ -1252,7 +1297,7 @@ describe('useErrorGroups', () => {
             { type: 'file_not_found', message: 'File not found', details: '' }
           ]
         }
-      }
+      })
       await nextTick()
 
       expect(groups.selectionErrorCount.value).toBe(1)

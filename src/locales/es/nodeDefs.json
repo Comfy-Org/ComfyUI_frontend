@@ -1325,6 +1325,10 @@
         "name": "semilla",
         "tooltip": "Semilla a utilizar para la generación."
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Activa el razonamiento de optimización de prompts del modelo ('thinking') para una mejor adherencia. Puede aumentar considerablemente el tiempo de generación, especialmente en Seedream 5.0 Pro. Solo se puede desactivar para texto a imagen (no cuando se proporcionan imágenes de referencia)."
+      },
       "watermark": {
         "name": "marca de agua",
         "tooltip": "Indica si se añade una marca de agua de \"Generado por IA\" a la imagen."
@@ -2831,6 +2835,10 @@
         "name": "fondo",
         "tooltip": "Imagen opcional utilizada como fondo en el lienzo y la vista previa."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Cajas delimitadoras, elementos o una cadena JSON para inicializar el lienzo. Un nuevo valor ascendente inicializa el lienzo; las ediciones realizadas en el lienzo tienen prioridad y se mantienen hasta que el valor ascendente cambie nuevamente."
+      },
       "editor_state": {
         "name": "estado_del_editor",
         "tooltip": "Dibuja cajas delimitadoras y asigna a cada caja su tipo, texto, descripción y paleta de colores. Comienza con el elemento de fondo y termina con el primer plano."
@@ -2838,6 +2846,10 @@
       "height": {
         "name": "alto",
         "tooltip": "Alto del lienzo y de la cuadrícula de píxeles para las cajas delimitadoras."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "Estado interno gestionado por el lienzo: el valor de bboxes ascendente que lo inicializó por última vez. Déjalo vacío para reinicializar el lienzo desde la entrada de bboxes en la próxima ejecución."
       },
       "width": {
         "name": "ancho",
@@ -10565,6 +10577,12 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14573,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Previsualiza un archivo de modelo 3D sin guardarlo en el directorio de salida de ComfyUI.",
     "display_name": "Vista previa 3D",
     "inputs": {
       "bg_image": {
@@ -14591,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Previsualiza un archivo de modelo 3D sin guardarlo en el directorio de salida de ComfyUI.",
     "display_name": "Vista previa 3D (Avanzado)",
     "inputs": {
       "camera_info": {
@@ -14637,6 +14657,7 @@
     }
   },
   "PreviewAny": {
+    "description": "Previsualiza cualquier valor de entrada como texto.",
     "display_name": "Vista previa de cualquier",
     "inputs": {
       "preview_mode": {},
@@ -14647,6 +14668,7 @@
     }
   },
   "PreviewAudio": {
+    "description": "Previsualiza el audio sin guardarlo en el directorio de salida de ComfyUI.",
     "display_name": "Vista previa de audio",
     "inputs": {
       "audio": {
@@ -14664,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Previsualiza un archivo 3D de gaussian splat sin guardarlo en el directorio de salida de ComfyUI.",
     "display_name": "Vista previa de Splat",
     "inputs": {
       "camera_info": {
@@ -14724,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Previsualiza un archivo de nube de puntos 3D sin guardarlo en el directorio de salida de ComfyUI.",
     "display_name": "Vista previa de nube de puntos",
     "inputs": {
       "camera_info": {
@@ -17501,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Guardar 3D (Avanzado)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Archivo de modelo 3D de un nodo 3D ascendente."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "GuardarPNGAnimado",
     "inputs": {
@@ -17661,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Guardar Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Un archivo 3D de gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Guarda las imágenes de entrada en tu directorio de salida de ComfyUI.",
     "display_name": "Guardar Imagen",
@@ -17799,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Guardar Nube de Puntos",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Archivo de nube de puntos (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Guardar archivos SVG en disco.",
     "display_name": "NodoGuardarSVG",
@@ -17814,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Guardar el contenido de texto en un archivo en el directorio de salida.",
+    "display_name": "Guardar Texto",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17942,6 +18136,117 @@
       "0": {
         "name": "semilla",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Construir el condicionamiento positivo/negativo de SeedVR2 a partir de un latent de VAE.",
+    "display_name": "Aplicar Condicionamiento SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "El condicionamiento positivo para muestreo."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "El condicionamiento negativo para muestreo."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Alinea la imagen generada con la imagen original redimensionada y aplica corrección de color.",
+    "display_name": "Posprocesar salida de SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "método_de_corrección_de_color",
+        "tooltip": "Método para igualar los colores de la imagen generada con la imagen original. lab: transfiere el color en el espacio CIELAB, preservando el detalle (más fiel). wavelet: transfiere el color de baja frecuencia, manteniendo el detalle de alta frecuencia mejorado. adain: iguala la media/desviación estándar por canal (más rápido, tinte global). none: omite la transferencia de color (solo alineación geométrica)."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "La imagen generada a procesar."
+      },
+      "original_resized_images": {
+        "name": "imágenes_redimensionadas_originales",
+        "tooltip": "La imagen original redimensionada antes del preprocesamiento, usada como referencia."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imágenes",
+        "tooltip": "La imagen alineada y corregida en color."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Rellena una imagen redimensionada para el modelo SeedVR2. El canal alfa se elimina. El nodo Posprocesar salida de SeedVR2 lo vuelve a aplicar desde la imagen original redimensionada.",
+    "display_name": "Preprocesar entrada de SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "imágenes_redimensionadas",
+        "tooltip": "La imagen redimensionada a procesar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imágenes",
+        "tooltip": "La imagen rellenada para la codificación VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Divide un latente de video SeedVR2 en fragmentos temporales superpuestos lo suficientemente pequeños como para muestrear uno a la vez dentro de la VRAM, conectando las salidas de latentes tanto a Aplicar condicionamiento SeedVR2 como a la entrada de latente del muestreador antes de recombinar con Unir latentes de SeedVR2.",
+    "display_name": "Dividir latente de SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "modo_de_fragmentación",
+        "tooltip": "manual = usa exactamente frames_per_chunk; auto = predice el fragmento más grande que cabe en la VRAM libre."
+      },
+      "latent": {
+        "name": "latente",
+        "tooltip": "El latente de SeedVR2 codificado por VAE a dividir."
+      },
+      "temporal_overlap": {
+        "name": "superposición_temporal",
+        "tooltip": "Fotogramas latentes compartidos entre fragmentos adyacentes y fundidos al unir; 0 = sin superposición."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latentes",
+        "tooltip": "Los fragmentos temporales en orden secuencial."
+      },
+      "1": {
+        "name": "superposición_temporal",
+        "tooltip": "La superposición efectiva de fotogramas latentes entre fragmentos adyacentes, para Unir latentes de SeedVR2."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Recombina los fragmentos temporales muestreados del latente SeedVR2 en un solo latente, fundiendo cada superposición con una ventana de Hann del tamaño de la superposición_temporal conectada desde Dividir latente de SeedVR2.",
+    "display_name": "Unir latentes de SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latentes",
+        "tooltip": "Los fragmentos temporales muestreados en orden secuencial."
+      },
+      "temporal_overlap": {
+        "name": "superposición_temporal",
+        "tooltip": "La salida superposición_temporal de Dividir latente de SeedVR2. 0 = concatenación simple."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latente",
+        "tooltip": "El latente recombinado de longitud completa."
       }
     }
   },
@@ -18827,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "nombre_del_modelo_de_estilo"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Vuelve a sincronizar el movimiento de la boca en un video con un nuevo audio de voz usando sync.so. Maneja automáticamente primeros planos, perfiles y obstrucciones, preservando la expresión del hablante. El costo escala según la duración del resultado.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de voz para sincronizar con la boca."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de generación de sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Metraje del hablante para volver a sincronizar. Hasta 4K (4096x2160); una tasa de fotogramas constante de 24/25/30 fps funciona mejor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Anima un retrato estático en un video parlante impulsado por audio de voz, usando el modelo sync-3 de sync.so. La duración del resultado coincide con el audio. El costo escala según la duración del resultado.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de voz que impulsa el video parlante; la duración del resultado coincide con él. Encadena cualquier nodo TTS aquí para animar desde texto."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Una sola imagen con un rostro claramente visible, hasta 4K (4096x2160)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo de generación de sync.so. La entrada de imagen es exclusiva de sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Orientación opcional sobre cómo cobra vida el retrato, por ejemplo: 'haz que el sujeto sonría y mire a la cámara'. Déjalo vacío para un movimiento natural al hablar."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

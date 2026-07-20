@@ -1325,6 +1325,10 @@
         "name": "seed",
         "tooltip": "Сид для генерации."
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Включить оптимизацию промпта модели («мышление») для лучшего соответствия. Может значительно увеличить время генерации — особенно на Seedream 5.0 Pro. Может быть отключено только для текст-в-изображение (не работает при наличии референсных изображений)."
+      },
       "watermark": {
         "name": "watermark",
         "tooltip": "Добавлять ли водяной знак «AI generated» на изображение."
@@ -2831,6 +2835,10 @@
         "name": "фон",
         "tooltip": "Необязательное изображение, используемое как фон на холсте и в предпросмотре."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Границы (bounding boxes), элементы или JSON-строка для инициализации холста. Новое входящее значение инициализирует холст; изменения, внесённые на холсте, имеют приоритет и сохраняются до следующего изменения входящего значения."
+      },
       "editor_state": {
         "name": "состояние_редактора",
         "tooltip": "Нарисуйте ограничивающие рамки и задайте для каждой рамки тип, текст, описание, цветовую палитру. Начинайте с фонового элемента, затем передний план."
@@ -2838,6 +2846,10 @@
       "height": {
         "name": "высота",
         "tooltip": "Высота холста и пиксельной сетки для ограничивающих рамок."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "Внутреннее состояние, управляемое холстом: последнее входящее значение bboxes, которым он был инициализирован. Оставьте пустым, чтобы переинициализировать холст из входа bboxes при следующем запуске."
       },
       "width": {
         "name": "ширина",
@@ -10565,6 +10577,12 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14573,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предварительный просмотр 3D",
     "inputs": {
       "bg_image": {
@@ -14591,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
     "display_name": "Просмотр 3D (расширенный)",
     "inputs": {
       "camera_info": {
@@ -14637,6 +14657,7 @@
     }
   },
   "PreviewAny": {
+    "description": "Просмотр любого входного значения в виде текста.",
     "display_name": "Предпросмотр любого",
     "inputs": {
       "preview_mode": {},
@@ -14647,6 +14668,7 @@
     }
   },
   "PreviewAudio": {
+    "description": "Прослушать аудио без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предварительное прослушивание аудио",
     "inputs": {
       "audio": {
@@ -14664,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Просмотр 3D-файла gaussian splat без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предпросмотр Splat",
     "inputs": {
       "camera_info": {
@@ -14724,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Просмотр 3D-файла облака точек без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предпросмотр облака точек",
     "inputs": {
       "camera_info": {
@@ -17501,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Сохранить 3D (расширенно)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели от вышестоящего 3D-узла."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "Сохранить анимированный PNG",
     "inputs": {
@@ -17661,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Сохранить Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D Gaussian Splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
     "display_name": "Сохранить изображение",
@@ -17799,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Сохранить облако точек",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл облака точек (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Сохранить SVG файлы на диске.",
     "display_name": "SaveSVGNode",
@@ -17814,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Сохранить текстовое содержимое в файл в выходной директории.",
+    "display_name": "Сохранить текст",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17942,6 +18136,117 @@
       "0": {
         "name": "seed",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Создать положительное/отрицательное conditioning SeedVR2 из VAE latent.",
+    "display_name": "Применить SeedVR2 Conditioning",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Положительное conditioning для сэмплирования."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Отрицательное conditioning для сэмплирования."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Выровнять сгенерированное изображение с исходным изменённым по размеру изображением и применить цветокоррекцию.",
+    "display_name": "Постобработка вывода SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Метод сопоставления цветов сгенерированного изображения с оригиналом. lab: перенос цвета в пространстве CIELAB с сохранением деталей (наиболее точный). wavelet: перенос низкочастотного цвета с сохранением высокочастотных деталей при увеличении. adain: сопоставление средних/стандартных отклонений по каналам (самый быстрый, глобальный оттенок). none: пропустить перенос цвета (только выравнивание геометрии)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Сгенерированное изображение для обработки."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "Исходное изменённое по размеру изображение до предобработки, используется как эталон."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Выровненное, цветокорректированное изображение."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Добавить отступы к изменённому по размеру изображению для модели SeedVR2. Альфа-канал удаляется. Узел 'Постобработка вывода SeedVR2' повторно применяет его из исходного изменённого по размеру изображения.",
+    "display_name": "Предобработка входных данных SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "Изменённое по размеру изображение для обработки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Изображение с отступами для кодирования VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Разделить видео latent SeedVR2 на перекрывающиеся временные фрагменты, достаточно маленькие, чтобы обрабатывать их по одному в VRAM. Выходы latent подключаются как к Apply SeedVR2 Conditioning, так и к входу sampler latent перед объединением с помощью Merge SeedVR2 Latents.",
+    "display_name": "Разделить SeedVR2 latent",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = использовать frames_per_chunk точно; auto = подобрать максимальный фрагмент, который поместится в свободную VRAM."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Закодированный VAE latent SeedVR2 для разделения."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Кадры latent, общие для соседних фрагментов и смешиваемые при объединении; 0 = без перекрытия."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Временные фрагменты в порядке следования."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "Фактическое перекрытие кадров latent между соседними фрагментами для Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Объединить обработанные временные фрагменты latent SeedVR2 в один latent, смешивая каждое перекрытие с помощью окна Ханна, размер которого задаётся temporal_overlap, переданного из Split SeedVR2 Latent.",
+    "display_name": "Объединить SeedVR2 latents",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Обработанные временные фрагменты в порядке следования."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Выход temporal_overlap из Split SeedVR2 Latent. 0 = простая конкатенация."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "Объединённый latent полной длины."
       }
     }
   },
@@ -18827,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "название_модели_стиля"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Повторная синхронизация движения рта на видео с новой речевой дорожкой с помощью sync.so. Автоматически обрабатывает крупные планы, профиль и препятствия, сохраняя выражение лица говорящего. Стоимость зависит от продолжительности результата.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Речевая аудиодорожка для синхронизации с движением рта."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Генеративная модель sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Видеозапись говорящего для повторной синхронизации. До 4K (4096x2160); оптимально использовать постоянную частоту кадров 24/25/30 fps."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Анимируйте статичный портрет в говорящее видео, управляемое речевой аудиодорожкой, с помощью модели sync-3 от sync.so. Длительность результата соответствует длительности аудио. Стоимость зависит от продолжительности результата.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Речевая аудиодорожка, управляющая говорящим видео; длительность результата будет соответствовать ей. Для анимации по тексту подключите сюда любой TTS-узел."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Одиночное изображение с чётко видимым лицом, до 4K (4096x2160)."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Генеративная модель sync.so. Ввод изображения поддерживается только sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Необязательное указание, как должен оживать портрет, например: «заставьте персонажа улыбнуться и смотреть в камеру». Оставьте пустым для естественного движения при разговоре."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы, независимо от значения seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

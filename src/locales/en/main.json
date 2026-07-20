@@ -1163,6 +1163,7 @@
     "runsOnFilter": "Runs on",
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
+      "relevance": "Relevance",
       "recommended": "Recommended",
       "popular": "Popular",
       "alphabetical": "A → Z",
@@ -1812,12 +1813,15 @@
     "Runway": "Runway",
     "scail": "scail",
     "stable diffusion upscaler": "stable diffusion upscaler",
+    "post-processors": "post-processors",
+    "pre-processors": "pre-processors",
     "clip": "clip",
     "Sonilo": "Sonilo",
     "stable zero123": "stable zero123",
     "supir": "supir",
     "stable video 3d": "stable video 3d",
     "stable video": "stable video",
+    "sync_so": "sync.so",
     "Tencent": "Tencent",
     "boogu": "boogu",
     "qwen image": "qwen image",
@@ -2065,6 +2069,7 @@
     "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
+    "model3d": "3D Model",
     "camera": "Camera",
     "light": "Light",
     "switchingMaterialMode": "Switching Material Mode...",
@@ -2075,13 +2080,35 @@
     "reloadingModel": "Reloading model...",
     "uploadTexture": "Upload Texture",
     "applyingTexture": "Applying Texture...",
+    "menuBar": {
+      "showGrid": "Show grid",
+      "bgColor": "BG Color",
+      "bgImage": "BG Image",
+      "panorama": "Panorama",
+      "removeBackground": "Remove BG",
+      "upDirection": "Up Direction",
+      "material": "Material",
+      "skeleton": "Skeleton",
+      "fov": "FOV",
+      "intensity": "Intensity",
+      "record": "Record",
+      "recording": "Recording",
+      "stopRecording": "Stop recording",
+      "downloadRecording": "Download Recording",
+      "startNewRecording": "Start New Recording",
+      "deleteRecording": "Delete Recording",
+      "videoRecordingTooltip": "Video recording of the scene [mp4]",
+      "switchProjection": "Switch projection",
+      "originalMaterialOnly": "Original material only"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
       "pointCloud": "Point Cloud",
       "depth": "Depth",
-      "lineart": "Lineart"
+      "lineart": "Lineart",
+      "clay": "Clay"
     },
     "upDirections": {
       "original": "Original"
@@ -2113,10 +2140,10 @@
     "uploadingModel": "Uploading 3D model...",
     "loadingHDRI": "Loading HDRI...",
     "hdri": {
-      "label": "HDRI Environment",
-      "uploadFile": "Upload HDRI (.hdr, .exr)",
-      "changeFile": "Change HDRI",
-      "removeFile": "Remove HDRI",
+      "label": "HDRI",
+      "uploadFile": "Upload",
+      "changeFile": "Change",
+      "removeFile": "Remove",
       "showAsBackground": "Show as Background",
       "intensity": "Intensity"
     },
@@ -2126,7 +2153,7 @@
       "translate": "Translate",
       "rotate": "Rotate",
       "scale": "Scale",
-      "reset": "Reset Transform"
+      "reset": "Reset"
     }
   },
   "imageCrop": {
@@ -2170,7 +2197,8 @@
     "descLabel": "description",
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
-    "colors": "color_palette"
+    "colors": "color_palette",
+    "grid": "Grid"
   },
   "palette": {
     "addColor": "Add a color",
@@ -2445,6 +2473,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "insufficient": {
+      "memberTitle": "This workspace is out of credits",
+      "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
+      "memberCta": "Ok, got it"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -2854,6 +2887,32 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingStatus": {
+      "warning": {
+        "title": "Payment declined",
+        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
+        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+      },
+      "paused": {
+        "title": "Subscription paused",
+        "body": "This workspace's subscription is paused. Update payment to resume.",
+        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+      },
+      "outOfCredits": {
+        "title": "Out of credits",
+        "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
+        "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
+        "addCredits": "Add credits",
+        "dismiss": "Dismiss"
+      },
+      "ending": {
+        "title": "Your team plan ends on {date}",
+        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
+        "reactivate": "Reactivate plan"
+      },
+      "updatePayment": "Update payment"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
@@ -2928,7 +2987,7 @@
       "promoteIntro": "They'll be able to:",
       "promotePermissionCredits": "Add additional credits",
       "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
+      "promotePermissionRoles": "Promote members and demote eligible owners.",
       "promoteConfirm": "Make owner",
       "demoteTitle": "Demote {name} to member?",
       "demoteMessage": "They'll lose admin access.",
@@ -3085,6 +3144,7 @@
     "enterBuilderMode": "Build app",
     "editBuilderMode": "Edit app",
     "workflowActions": "Workflow actions",
+    "activeModeWorkflowActions": "{mode} mode, workflow actions",
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
@@ -3122,12 +3182,17 @@
     "description": "You've been using this feature. Would you take a moment to share your feedback?",
     "accept": "Sure, I'll help!",
     "notNow": "Not Now",
-    "dontAskAgain": "Don't Ask Again",
-    "loadError": "Failed to load survey. Please try again later."
+    "dontAskAgain": "Don't Ask Again"
   },
   "errorPanelSurvey": {
     "ctaText": "How's the new error panel?",
     "ctaButton": "Give feedback"
+  },
+  "feedback": {
+    "title": "Share Feedback"
+  },
+  "typeform": {
+    "loadError": "Failed to load the form. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
@@ -3527,6 +3592,9 @@
     "dockToTop": "Dock to top",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
+    "freeTierRunsExhausted": "No runs left",
+    "freeTierPartner": "Partner nodes need a paid plan",
     "share": "Share",
     "shareTooltip": "Share workflow"
   },
@@ -3702,8 +3770,6 @@
   },
   "linearMode": {
     "linearMode": "App Mode",
-    "beta": "App mode in beta",
-    "buildAnApp": "Build an app",
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
@@ -3736,7 +3802,10 @@
       "appBuilder": "App builder",
       "apps": "Apps",
       "appsEmptyMessage": "Saved apps will show up here.",
-      "appsEmptyMessageAction": "Click below to build your first app."
+      "appsEmptyMessageAction": "Click below to build your first app.",
+      "buildAnApp": "Build an app",
+      "create": "Create",
+      "createApp": "Create app"
     },
     "arrange": {
       "noOutputs": "No outputs added yet",
@@ -3779,6 +3848,7 @@
       "support": "contact our support",
       "promptShow": "Show error report"
     },
+    "feedbackLoadError": "Failed to load feedback form. Please try again later.",
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"
@@ -4416,6 +4486,10 @@
     "secretValuePlaceholderEdit": "Enter new value to change",
     "secretValueHint": "This value will be encrypted and cannot be viewed again.",
     "secretValueHintEdit": "Leave blank to keep the current value.",
+    "uploadJsonFile": "Upload JSON file",
+    "jsonFilePlaceholder": "Upload or paste the provider JSON credential",
+    "jsonFileHint": "Paste the JSON or upload a file. It will be encrypted and cannot be viewed again.",
+    "jsonFileHintEdit": "Leave blank to keep the current value, or upload a new JSON file to replace it.",
     "createdAt": "Created {date}",
     "lastUsed": "Last used {date}",
     "deleteConfirmTitle": "Delete Secret",
@@ -4425,6 +4499,9 @@
       "nameTooLong": "Name must be 255 characters or less",
       "providerRequired": "Provider is required",
       "secretValueRequired": "Secret value is required",
+      "invalidJson": "File must contain a valid JSON object",
+      "fileTooLarge": "File is too large. Upload a JSON credential under 1 MB",
+      "fileReadFailed": "Could not read the selected file. Please try again",
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }

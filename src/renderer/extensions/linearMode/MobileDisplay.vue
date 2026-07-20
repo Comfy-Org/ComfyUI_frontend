@@ -9,6 +9,7 @@ import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { APP_MODE_FEEDBACK_FORM_URL } from '@/platform/surveys/appModeFeedback'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -145,7 +146,12 @@ const menuEntries = computed<MenuItem[]>(() => [
     ...commandIdToMenuItem('Comfy.ShowSettingsDialog'),
     label: t('menu.settings')
   },
-  { ...commandIdToMenuItem('Comfy.ToggleHelpCenter'), label: t('menu.help') },
+  {
+    label: t('linearMode.giveFeedback'),
+    icon: 'icon-[lucide--clipboard-pen]',
+    command: () =>
+      window.open(APP_MODE_FEEDBACK_FORM_URL, '_blank', 'noopener,noreferrer')
+  },
   {
     label: t('menu.fullscreen'),
     icon: 'icon-[lucide--fullscreen]',

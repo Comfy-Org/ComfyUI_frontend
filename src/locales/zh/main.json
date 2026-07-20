@@ -359,12 +359,14 @@
     "colors": "调色板",
     "descLabel": "描述",
     "descPlaceholder": "该区域的描述",
+    "grid": "网格",
     "textLabel": "文本",
     "textPlaceholder": "要渲染的文本（原文）",
     "typeObj": "obj",
     "typeText": "text"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}模式，工作流操作",
     "app": "应用",
     "blueprint": "蓝图",
     "clearWorkflow": "清除工作流",
@@ -953,6 +955,16 @@
       "message": "提供的对话 ID 无效。",
       "title": "无效对话框"
     }
+  },
+  "desktopLogin": {
+    "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
+    "confirmSummary": "批准桌面端登录？",
+    "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
+    "expiredSummary": "桌面端登录失败",
+    "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
+    "failedSummary": "桌面端登录失败",
+    "successDetail": "您可以返回 ComfyUI 桌面应用。",
+    "successSummary": "登录成功"
   },
   "desktopMenu": {
     "confirmQuit": "有未保存的工作流开启；任何未保存的更改都将丢失。忽略此警告并退出？",
@@ -2067,7 +2079,10 @@
       "appBuilder": "应用构建器",
       "apps": "应用",
       "appsEmptyMessage": "已保存的应用会显示在这里。\n点击下方开始构建你的第一个应用。",
-      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。"
+      "appsEmptyMessageAction": "点击下方开始构建你的第一个应用。",
+      "buildAnApp": "构建应用",
+      "create": "创建",
+      "createApp": "创建应用"
     },
     "arrange": {
       "atLeastOne": "至少一个",
@@ -2080,8 +2095,6 @@
       "switchToOutputsButton": "切换到输出"
     },
     "backToWorkflow": "返回工作流",
-    "beta": "App 模式测试版 - 提供反馈",
-    "buildAnApp": "构建应用",
     "builder": {
       "exit": "退出构建器",
       "exitConfirmMessage": "您有未保存的更改将会丢失\n确定不保存直接退出吗？",
@@ -2119,6 +2132,7 @@
       "requiresGraph": "生成过程中出现问题。可能由于无效的隐藏输入、缺失资源或工作流配置问题导致。",
       "support": "联系我们的支持团队"
     },
+    "feedbackLoadError": "反馈表单加载失败，请稍后再试。",
     "giveFeedback": "提供反馈",
     "graphMode": "图形模式",
     "hasCreditCost": "需要额外积分",
@@ -2187,6 +2201,7 @@
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {
+      "clay": "陶土",
       "depth": "深度",
       "lineart": "线稿",
       "normal": "法线",
@@ -2194,7 +2209,29 @@
       "pointCloud": "点云",
       "wireframe": "线框"
     },
+    "menuBar": {
+      "bgColor": "背景颜色",
+      "bgImage": "背景图片",
+      "deleteRecording": "删除录制视频",
+      "downloadRecording": "下载录制视频",
+      "fov": "视场角",
+      "intensity": "强度",
+      "material": "材质",
+      "originalMaterialOnly": "仅原始材质",
+      "panorama": "全景",
+      "record": "录制",
+      "recording": "正在录制",
+      "removeBackground": "移除背景",
+      "showGrid": "显示网格",
+      "skeleton": "骨骼",
+      "startNewRecording": "开始新录制",
+      "stopRecording": "停止录制",
+      "switchProjection": "切换投影",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "场景视频录制 [mp4]"
+    },
     "model": "模型",
+    "model3d": "3D模型",
     "openIn3DViewer": "在 3D 查看器中打开",
     "panoramaMode": "全景",
     "previewOutput": "预览输出",
@@ -2854,6 +2891,8 @@
     "phantom subject": "幻影主体",
     "photomaker": "PhotoMaker",
     "pixart": "pixart",
+    "post-processors": "后处理器",
+    "pre-processors": "预处理器",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
@@ -2875,6 +2914,7 @@
     "stable video 3d": "stable video 3D",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "文本",
     "training": "训练",
     "transform": "变换",
@@ -3225,11 +3265,17 @@
     "errors": {
       "duplicateName": "已存在同名机密",
       "duplicateProvider": "该提供商的机密已存在",
+      "fileReadFailed": "无法读取所选文件",
+      "fileTooLarge": "文件过大。请上传小于1 MB的JSON凭证",
+      "invalidJson": "文件必须包含有效的JSON对象",
       "nameRequired": "名称为必填项",
       "nameTooLong": "名称长度不能超过 255 个字符",
       "providerRequired": "提供商为必填项",
       "secretValueRequired": "机密值为必填项"
     },
+    "jsonFileHint": "粘贴JSON或上传文件。它将被加密，无法再次查看。",
+    "jsonFileHintEdit": "留空以保留当前值，或上传新JSON文件进行替换。",
+    "jsonFilePlaceholder": "上传或粘贴提供者的JSON凭证",
     "lastUsed": "上次使用 {date}",
     "modelProviders": "模型提供商",
     "name": "名称",
@@ -3246,7 +3292,8 @@
     "secretValueHintEdit": "如需保留当前值，请留空。",
     "secretValuePlaceholder": "请输入您的 API 密钥",
     "secretValuePlaceholderEdit": "输入新值以更改",
-    "title": "API 密钥与机密"
+    "title": "API 密钥与机密",
+    "uploadJsonFile": "上传JSON文件"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "绕过分组节点",
@@ -4135,6 +4182,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
+      "relevance": "相关性",
       "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
