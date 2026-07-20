@@ -37,6 +37,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -129,3 +130,27 @@ jobs:
           path: playwright-report/
           retention-days: 7
           if-no-files-found: warn
+
+      # The radar must page someone: a red files (or updates) ONE tracked
+      # issue, deduped on the label, so nightly reds never rot unseen in the
+      # Actions tab and never spam a new issue per night.
+      - name: File drift issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body="Nightly custom-nodes canary (core at master, packs pinned) went red: $run_url
+          Triage: core drift broke the frontend contract, or exposed a pack bug. Playbook in ci-nightly-custom-nodes-canary.yaml."
+          existing=$(gh issue list --repo "${{ github.repository }}" \
+            --label custom-nodes-canary --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            gh issue create --repo "${{ github.repository }}" \
+              --title "Custom-nodes canary red: core drift" \
+              --label custom-nodes-canary \
+              --body "$body"
+          fi
