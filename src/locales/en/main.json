@@ -2919,7 +2919,43 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "allowlist": "Allowlist"
+    },
+    "allowlist": {
+      "title": "Partner nodes",
+      "description": "Control which partner node providers members can use in this workspace.",
+      "searchPlaceholder": "Search partner nodes...",
+      "loading": "Loading partner node policy...",
+      "loadError": "Partner node policy could not be loaded.",
+      "retry": "Try again",
+      "empty": "No partner nodes are available.",
+      "noMatches": "No partner nodes match your search.",
+      "allowedCount": "{enabled} of {total} allowed",
+      "providerToggle": "Allow all nodes from {provider}",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "saveError": "Partner node policy could not be saved.",
+      "table": {
+        "label": "Partner node provider access",
+        "provider": "Provider",
+        "allowed": "Allowed nodes",
+        "lastModified": "Last modified",
+        "access": "Access",
+        "notAvailable": "Not available"
+      },
+      "mode": {
+        "title": "Partner node access",
+        "description": "Choose whether all providers are available or only selected providers.",
+        "unrestricted": "Unrestricted",
+        "restricted": "Restricted",
+        "restrictedConfirmTitle": "Switch to restricted access?",
+        "restrictedConfirmMessage": "Only enabled partner node providers will remain available to workspace members.",
+        "unrestrictedConfirmTitle": "Switch to unrestricted access?",
+        "unrestrictedConfirmMessage": "All partner node providers will become available to workspace members."
+      }
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
