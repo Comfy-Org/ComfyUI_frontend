@@ -1,18 +1,29 @@
+import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
-  const isOpen = ref(false)
+  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
   const width = ref(PANEL_MIN_WIDTH)
 
   let openedAt: number | null = null
+
+  watch(
+    () => enabled.value && isOpen.value,
+    (docked) => {
+      if (!docked || openedAt !== null) return
+      openedAt = Date.now()
+      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+    }
+  )
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
