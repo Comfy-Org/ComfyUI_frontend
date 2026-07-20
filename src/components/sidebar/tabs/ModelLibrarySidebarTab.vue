@@ -33,6 +33,13 @@
           "
           @search="handleSearch"
         />
+        <p v-if="searchResults.capped" class="mx-2 my-1 text-xs text-muted">
+          {{
+            $t('sideToolbar.searchResultsCapped', {
+              limit: SEARCH_RESULT_LIMIT
+            })
+          }}
+        </p>
       </SidebarTopArea>
     </template>
     <template #body>
@@ -91,11 +98,27 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const filteredModels = computed<ComfyModelDef[]>(() => {
-  const search = searchQuery.value.toLocaleLowerCase()
-  if (!search) return []
-  return modelStore.models.filter((model) => model.searchable.includes(search))
-})
+// Search results render expanded and un-virtualized, and the tree's cost is
+// O(n^2) in mounted rows, so an unbounded result set hangs the tab on large
+// libraries (measured: seconds at 5k models). Cap what renders; refining the
+// query is the path to the tail.
+const SEARCH_RESULT_LIMIT = 500
+
+const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
+  () => {
+    const search = searchQuery.value.toLocaleLowerCase()
+    if (!search) return { models: [], capped: false }
+    const matches: ComfyModelDef[] = []
+    for (const model of modelStore.models) {
+      if (!model.searchable.includes(search)) continue
+      if (matches.length === SEARCH_RESULT_LIMIT) {
+        return { models: matches, capped: true }
+      }
+      matches.push(model)
+    }
+    return { models: matches, capped: false }
+  }
+)
 
 const handleSearch = async (query: string) => {
   if (!query) {
@@ -104,24 +127,30 @@ const handleSearch = async (query: string) => {
   }
   // Load all models to ensure results cover folders not yet opened
   await modelStore.loadModels()
+  await expandSearchResults()
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
   const allNodes: ModelOrFolder[] = searchQuery.value
-    ? filteredModels.value
+    ? searchResults.value.models
     : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
 })
 
-watch(root, async (newRoot) => {
+async function expandSearchResults() {
   if (!searchQuery.value) return
   await nextTick()
-  expandNode(newRoot)
-})
+  expandNode(root.value)
+}
+
+// Expand results when the QUERY changes, not on every root recompute: a
+// background reload during an active search must neither re-expand folders
+// the user collapsed nor pay a full expand-and-mount pass per folder commit.
+watch(searchQuery, expandSearchResults)
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')

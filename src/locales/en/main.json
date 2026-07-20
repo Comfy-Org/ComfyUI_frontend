@@ -976,6 +976,7 @@
     },
     "modelLibrary": "Model Library",
     "modelLibraryLoadFailed": "Failed to load models. Check the server connection and use Refresh to retry.",
+    "searchResultsCapped": "Showing the first {limit} matches. Refine your search to see more specific results.",
     "downloads": "Downloads",
     "queueProgressOverlay": {
       "title": "Queue Progress",

@@ -127,9 +127,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock('@/composables/useTreeExpansion', () => ({
   useTreeExpansion: () => ({
-    expandNode: vi.fn(),
+    expandNode: mockExpandNode,
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
@@ -323,6 +324,67 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(leafLabels()).toEqual(['model', 'model-new'])
+    })
+  })
+
+  describe('search scale limits', () => {
+    it('caps rendered search results and shows the hint', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+      for (let i = 0; i < 520; i++) {
+        modelsState.push(
+          fromPartial<ComfyModelDef>({
+            key: `checkpoints/bulk-${i}.safetensors`,
+            file_name: `bulk-${i}.safetensors`,
+            simplified_file_name: `bulk-${i}`,
+            title: `bulk-${i}`,
+            directory: 'checkpoints',
+            searchable: `checkpoints/bulk-${i}.safetensors`
+          })
+        )
+      }
+
+      await user.type(screen.getByTestId('search-input'), 'bulk')
+      await nextTick()
+
+      const { children: folders = [] } = getRoot()
+      const leafCount = folders.flatMap(
+        ({ children: leaves = [] }) => leaves
+      ).length
+      expect(leafCount).toBe(500)
+      expect(
+        screen.getByText('sideToolbar.searchResultsCapped')
+      ).toBeInTheDocument()
+    })
+
+    it('does not re-expand results when a reload lands mid-search', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      await user.type(screen.getByTestId('search-input'), 'model')
+      await nextTick()
+      await nextTick()
+      const expandCallsAfterTyping = mockExpandNode.mock.calls.length
+      expect(expandCallsAfterTyping).toBeGreaterThan(0)
+
+      // A background reload adds another matching model; the tree data
+      // updates but no new expand pass runs (preserves manual collapses).
+      modelsState.push(
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/model-late.safetensors',
+          file_name: 'model-late.safetensors',
+          simplified_file_name: 'model-late',
+          title: 'Model Late',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/model-late.safetensors'
+        })
+      )
+      await nextTick()
+      await nextTick()
+
+      expect(mockExpandNode.mock.calls.length).toBe(expandCallsAfterTyping)
     })
   })
 
