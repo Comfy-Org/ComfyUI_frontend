@@ -75,15 +75,23 @@ function visibleRect(selector: string): DOMRect | undefined {
 
 function updateToastPosition() {
   const container = visibleRect('.graph-canvas-container')
-  if (container === undefined) return
-  const edge = visibleRect('.graph-canvas-panel') ?? container
+  // App mode hides the graph container; anchor beside the docked panel there.
+  const anchor = container ?? visibleRect('.docked-agent-panel')
+  if (anchor === undefined) return
+  const edge = container
+    ? (visibleRect('.graph-canvas-panel') ?? container)
+    : undefined
+  const right =
+    edge === undefined
+      ? window.innerWidth - anchor.left + 20
+      : window.innerWidth - (edge.left + edge.width) + 20
   const styleElement =
     document.getElementById('dynamic-toast-style') || createStyleElement()
 
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
-      top: ${container.top + 100}px !important;
-      right: ${window.innerWidth - (edge.left + edge.width) + 20}px !important;
+      top: ${anchor.top + 100}px !important;
+      right: ${right}px !important;
        z-index: 10000 !important;
     }
   `

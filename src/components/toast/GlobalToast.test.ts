@@ -168,6 +168,27 @@ describe('GlobalToast dynamic positioning', () => {
     expect(injectedToastStyle()).toContain('right: 620px')
   })
 
+  it('anchors beside the docked panel when the graph container is hidden', async () => {
+    const container = addCanvasElement('graph-canvas-container', 0, 1000)
+
+    renderToast()
+    await nextTick()
+    expect(injectedToastStyle()).toContain('right: 220px')
+
+    stubRect(container, 0, 0)
+    const panel = document.createElement('div')
+    panel.className = 'docked-agent-panel'
+    stubRect(panel, 780, 420, 40)
+    document.body.appendChild(panel)
+
+    useToastStore().messagesToAdd = [{ severity: 'info', summary: 'app mode' }]
+    await nextTick()
+    await nextTick()
+
+    expect(injectedToastStyle()).toContain('right: 440px')
+    expect(injectedToastStyle()).toContain('top: 140px')
+  })
+
   it('re-anchors from the live DOM whenever a toast is shown', async () => {
     addCanvasElement('graph-canvas-container', 0, 1000)
     const panel = addCanvasElement('graph-canvas-panel', 0, 600)
