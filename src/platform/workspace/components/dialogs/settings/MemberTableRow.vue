@@ -29,23 +29,32 @@
       </div>
     </TableCell>
     <TableCell class="text-sm text-muted-foreground">
-      {{ $t(roleLabelKey(member.role, isOriginalOwner)) }}
+      {{ $t(roleLabelKey(member.role)) }}
     </TableCell>
     <TableCell v-if="canManageMembers" class="text-sm text-muted-foreground">
       {{ lastActivityLabel }}
     </TableCell>
-    <TableCell
-      v-if="canManageMembers"
-      class="text-right text-sm text-muted-foreground tabular-nums"
-    >
-      {{ creditsLabel }}
+    <TableCell v-if="canManageMembers" class="text-sm tabular-nums">
+      <div v-if="member.monthlyCreditLimit" class="flex flex-col gap-1">
+        <span class="text-base-foreground">{{ creditsLabel }}</span>
+        <div
+          class="h-1 overflow-hidden rounded-full bg-secondary-background-hover"
+        >
+          <div
+            class="h-full rounded-full bg-credit"
+            :style="{ width: `${creditUsagePercent}%` }"
+          />
+        </div>
+      </div>
+      <span v-else class="text-muted-foreground">{{ creditsLabel }}</span>
     </TableCell>
     <TableCell v-if="canManageMembers" class="text-right" @click.stop>
       <DropdownMenu
         v-if="showMenu"
         :entries="menuItems"
         :modal="false"
-        content-class="min-w-44"
+        content-class="w-56 min-w-0 px-2 py-3 shadow-sm"
+        item-class="m-0 h-8 rounded-sm p-2 text-sm leading-none"
       >
         <template #button>
           <Button
@@ -80,13 +89,11 @@ const {
   member,
   isCurrentUser,
   canManageMembers = false,
-  isOriginalOwner = false,
   menuItems = []
 } = defineProps<{
   member: WorkspaceMember
   isCurrentUser: boolean
   canManageMembers?: boolean
-  isOriginalOwner?: boolean
   menuItems?: MenuItem[]
 }>()
 
@@ -96,10 +103,7 @@ const initial = computed(() =>
   (member.name || member.email).charAt(0).toUpperCase()
 )
 
-// The creator and the current user can't be managed from their own row.
-const showMenu = computed(
-  () => canManageMembers && !isCurrentUser && !isOriginalOwner
-)
+const showMenu = computed(() => canManageMembers && menuItems.length > 0)
 
 const lastActivityLabel = computed(() => {
   if (!member.lastActivity) return '—'
@@ -111,7 +115,18 @@ const lastActivityLabel = computed(() => {
   })
 })
 
-const creditsLabel = computed(() =>
-  (member.creditsUsedThisMonth ?? 0).toLocaleString()
-)
+const creditsLabel = computed(() => {
+  const used = (member.creditsUsedThisMonth ?? 0).toLocaleString()
+  return member.monthlyCreditLimit
+    ? `${used} / ${member.monthlyCreditLimit.toLocaleString()}`
+    : used
+})
+
+const creditUsagePercent = computed(() => {
+  if (!member.monthlyCreditLimit) return 0
+  return Math.min(
+    100,
+    ((member.creditsUsedThisMonth ?? 0) / member.monthlyCreditLimit) * 100
+  )
+})
 </script>

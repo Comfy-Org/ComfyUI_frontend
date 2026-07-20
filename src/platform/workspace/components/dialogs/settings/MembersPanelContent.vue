@@ -105,10 +105,7 @@
               class="w-64"
               :aria-sort="ariaSort('credits')"
             >
-              <button
-                :class="cn(sortHeaderClass, 'ml-auto')"
-                @click="toggleSort('credits')"
-              >
+              <button :class="sortHeaderClass" @click="toggleSort('credits')">
                 <i class="icon-[lucide--coins] size-4" />
                 {{ $t('workspacePanel.members.columns.creditsUsed') }}
                 <i :class="sortIcon('credits')" />
@@ -130,7 +127,6 @@
               :member="member"
               :is-current-user="isCurrentUser(member)"
               :can-manage-members="permissions.canManageMembers"
-              :is-original-owner="isOriginalOwner(member)"
               :menu-items="memberMenus.get(member.id)"
             />
           </template>
@@ -235,7 +231,6 @@ import MemberTableRow from '@/platform/workspace/components/dialogs/settings/Mem
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInviteRow from '@/platform/workspace/components/dialogs/settings/PendingInviteRow.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -264,7 +259,6 @@ const {
   uiConfig,
   fetchBalance,
   isCurrentUser,
-  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,

@@ -251,6 +251,7 @@ const mockResendInvite = vi.fn()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
 const mockShowChangeMemberRoleDialog = vi.fn()
+const mockShowSetMemberCreditLimitDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockShowInviteMemberDialog = vi.fn()
 const mockShowInviteMemberUpsellDialog = vi.fn()
@@ -394,6 +395,7 @@ vi.mock('@/services/dialogService', () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
     showChangeMemberRoleDialog: mockShowChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog: mockShowSetMemberCreditLimitDialog,
     showInviteMemberDialog: mockShowInviteMemberDialog,
     showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog,
     showMemberLimitDialog: mockShowMemberLimitDialog
@@ -593,18 +595,20 @@ describe('useMembersPanel', () => {
 
       expect(items.map((i) => i.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
+        'workspacePanel.members.actions.setCreditLimit',
+        undefined,
         'workspacePanel.members.actions.removeMember'
       ])
 
       const roleItems = items[0].items ?? []
       expect(roleItems.map((i) => i.label)).toEqual([
-        'workspaceSwitcher.roleAdmin',
+        'workspaceSwitcher.roleOwner',
         'workspaceSwitcher.roleMember'
       ])
       expect(roleItems.map((i) => i.checked)).toEqual([false, true])
     })
 
-    it('checks Admin for owner-role rows', async () => {
+    it('checks Owner for owner-role rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
       const roleItems = items[0].items ?? []
@@ -629,7 +633,7 @@ describe('useMembersPanel', () => {
     it('routes Remove member to the remove dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9' })
-      const removeItem = panel.memberMenuItems(member)[1]
+      const removeItem = panel.memberMenuItems(member)[3]
 
       removeItem.command?.({
         originalEvent: new Event('click'),
@@ -637,6 +641,45 @@ describe('useMembersPanel', () => {
       })
 
       expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-9')
+    })
+
+    it('opens the credit-limit dialog with the member usage', async () => {
+      const panel = await setup()
+      const member = createMember({
+        id: 'mem-9',
+        name: 'Jane',
+        creditsUsedThisMonth: 645,
+        monthlyCreditLimit: 3000
+      })
+      const limitItem = panel.memberMenuItems(member)[1]
+
+      limitItem.command?.({
+        originalEvent: new Event('click'),
+        item: limitItem
+      })
+
+      expect(mockShowSetMemberCreditLimitDialog).toHaveBeenCalledWith({
+        memberId: 'mem-9',
+        memberName: 'Jane',
+        creditsUsed: 645,
+        currentLimit: 3000
+      })
+    })
+
+    it('lets the original owner manage their own credit limit only', async () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      const panel = await setup()
+      const items = panel.memberMenuItems(
+        createMember({
+          id: 'creator-1',
+          email: 'owner@example.com',
+          role: 'owner'
+        })
+      )
+
+      expect(items.map((item) => item.label)).toEqual([
+        'workspacePanel.members.actions.setCreditLimit'
+      ])
     })
   })
 

@@ -26,9 +26,7 @@ const LS_UI = 'cbm_ui'
 const ACTIVE_KEY = 'cbm.active'
 
 type Workspace = 'personal' | 'team'
-// 'owner' = the signed-in user is the workspace creator (isOriginalOwner);
-// 'admin' = owner-role but not the creator; 'member' = plain member.
-type Role = 'owner' | 'admin' | 'member'
+type Role = 'owner' | 'member'
 
 // Real signed-in email so 'owner' can make the current user the creator (the
 // original-owner check matches the earliest member's email to the current user).
@@ -99,7 +97,7 @@ const OPTIONS: Record<
   string[]
 > = {
   ws: ['personal', 'team'],
-  role: ['owner', 'admin', 'member'],
+  role: ['owner', 'member'],
   tier: ['free', 'standard', 'creator', 'pro', 'enterprise'],
   state: ['active', 'cancelled', 'inactive', 'changing', 'at_risk', 'paused'],
   balance: ['full', 'partial', 'low', 'empty'],
@@ -367,7 +365,8 @@ function members(): unknown {
     role: 'owner',
     is_original_owner: true,
     last_active_at: hoursAgo(2),
-    credits_used_this_month: usage(6532)
+    credits_used_this_month: usage(546),
+    monthly_credit_limit: 3000
   }
   const selfRow =
     cfg.role === 'owner'
@@ -378,14 +377,13 @@ function members(): unknown {
             name: 'You',
             email: me,
             joined_at: '2026-01-05T00:00:00Z',
-            role: cfg.role === 'admin' ? 'owner' : 'member',
+            role: 'member',
             is_original_owner: false,
             last_active_at: hoursAgo(1),
             credits_used_this_month: usage(1234)
           }
         ]
   // A long roster so the table overflows and scrolls under its sticky header.
-  // role 'owner' (non-creator) renders as "Admin"; 'member' as "Member".
   const names = [
     'Jane Doe',
     'Rob Johnson',
@@ -424,8 +422,9 @@ function members(): unknown {
     is_original_owner: false,
     last_active_at: hoursAgo([0.1, 2, 7, 23, 24, 72, 120][i % 7]),
     credits_used_this_month: usage(
-      [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
-    )
+      i === 2 ? 5400 : [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
+    ),
+    monthly_credit_limit: i < 3 ? [3000, 2500, 5000][i] : null
   }))
   const list = cfg.ws === 'team' ? [creator, ...selfRow, ...team] : [creator]
   return {

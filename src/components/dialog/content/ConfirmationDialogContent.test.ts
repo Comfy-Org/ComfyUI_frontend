@@ -64,6 +64,9 @@ describe('ConfirmationDialogContent', () => {
     renderComponent({ hint: 'This action cannot be undone.' })
     const status = screen.getByRole('status')
     expect(status).toHaveTextContent('This action cannot be undone.')
+    expect(
+      screen.getByTestId('confirmation-dialog-hint-icon')
+    ).toBeInTheDocument()
   })
 
   it('does not render a status alert when hint is omitted', () => {

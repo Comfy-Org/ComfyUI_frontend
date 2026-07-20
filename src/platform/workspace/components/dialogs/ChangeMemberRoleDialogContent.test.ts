@@ -56,20 +56,20 @@ describe('ChangeMemberRoleDialogContent', () => {
     mockChangeMemberRole.mockResolvedValue(undefined)
   })
 
-  it('shows promote copy and confirms with Make admin', async () => {
+  it('shows owner copy and confirms with Make owner', async () => {
     const { user } = renderDialog('owner')
 
     expect(
-      screen.getByText('workspacePanel.changeRoleDialog.promoteTitle')
+      screen.getByText('workspacePanel.changeRoleDialog.makeOwnerTitle')
     ).toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.changeRoleDialog.promoteIntro')
+      screen.getByText('workspacePanel.changeRoleDialog.ownerIntro')
     ).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
 
     await user.click(
       screen.getByRole('button', {
-        name: 'workspacePanel.changeRoleDialog.promoteConfirm'
+        name: 'workspacePanel.changeRoleDialog.makeOwner'
       })
     )
 
@@ -84,19 +84,19 @@ describe('ChangeMemberRoleDialogContent', () => {
     )
   })
 
-  it('shows demote copy and confirms with Demote to member', async () => {
+  it('shows member copy and confirms with Make member', async () => {
     const { user } = renderDialog('member')
 
     expect(
-      screen.getByText('workspacePanel.changeRoleDialog.demoteTitle')
+      screen.getByText('workspacePanel.changeRoleDialog.makeMemberTitle')
     ).toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.changeRoleDialog.demoteMessage')
+      screen.getByText('workspacePanel.changeRoleDialog.memberMessage')
     ).toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', {
-        name: 'workspacePanel.changeRoleDialog.demoteConfirm'
+        name: 'workspacePanel.changeRoleDialog.makeMember'
       })
     )
 
@@ -109,7 +109,7 @@ describe('ChangeMemberRoleDialogContent', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'workspacePanel.changeRoleDialog.promoteConfirm'
+        name: 'workspacePanel.changeRoleDialog.makeOwner'
       })
     )
 

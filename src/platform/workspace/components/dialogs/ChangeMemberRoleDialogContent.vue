@@ -8,11 +8,11 @@
     >
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{
-          isPromotion
-            ? $t('workspacePanel.changeRoleDialog.promoteTitle', {
+          isMakingOwner
+            ? $t('workspacePanel.changeRoleDialog.makeOwnerTitle', {
                 name: memberName
               })
-            : $t('workspacePanel.changeRoleDialog.demoteTitle', {
+            : $t('workspacePanel.changeRoleDialog.makeMemberTitle', {
                 name: memberName
               })
         }}
@@ -28,18 +28,18 @@
 
     <!-- Body -->
     <div class="p-4">
-      <template v-if="isPromotion">
+      <template v-if="isMakingOwner">
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
+          {{ $t('workspacePanel.changeRoleDialog.ownerIntro') }}
         </p>
         <ul class="m-0 mt-1 list-disc ps-5 text-sm text-muted-foreground">
-          <li v-for="permission in promotePermissions" :key="permission">
+          <li v-for="permission in ownerPermissions" :key="permission">
             {{ permission }}
           </li>
         </ul>
       </template>
       <p v-else class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
+        {{ $t('workspacePanel.changeRoleDialog.memberMessage') }}
       </p>
     </div>
 
@@ -50,9 +50,9 @@
       </Button>
       <Button variant="secondary" size="lg" :loading @click="onConfirm">
         {{
-          isPromotion
-            ? $t('workspacePanel.changeRoleDialog.promoteConfirm')
-            : $t('workspacePanel.changeRoleDialog.demoteConfirm')
+          isMakingOwner
+            ? $t('workspacePanel.changeRoleDialog.makeOwner')
+            : $t('workspacePanel.changeRoleDialog.makeMember')
         }}
       </Button>
     </div>
@@ -81,12 +81,12 @@ const toast = useToast()
 const { t } = useI18n()
 const loading = ref(false)
 
-const isPromotion = computed(() => targetRole === 'owner')
+const isMakingOwner = computed(() => targetRole === 'owner')
 
-const promotePermissions = computed(() => [
-  t('workspacePanel.changeRoleDialog.promotePermissionCredits'),
-  t('workspacePanel.changeRoleDialog.promotePermissionManage'),
-  t('workspacePanel.changeRoleDialog.promotePermissionRoles')
+const ownerPermissions = computed(() => [
+  t('workspacePanel.changeRoleDialog.ownerPermissionCredits'),
+  t('workspacePanel.changeRoleDialog.ownerPermissionManage'),
+  t('workspacePanel.changeRoleDialog.ownerPermissionRoles')
 ])
 
 function onCancel() {

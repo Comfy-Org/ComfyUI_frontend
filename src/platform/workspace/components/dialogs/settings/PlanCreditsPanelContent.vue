@@ -88,7 +88,7 @@ const tabs = computed(() => {
     { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
     { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
   ]
-  // Invoices are billing details — owners/admins only.
+  // Invoices are billing details — owners only.
   if (permissions.value.canManageSubscription) {
     base.push({
       key: 'invoices',

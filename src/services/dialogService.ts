@@ -67,6 +67,7 @@ interface BaseConfirmOptions {
   /** Displayed as an unordered list immediately below the message body */
   itemList?: string[]
   hint?: string
+  separateHint?: boolean
 }
 
 type ConfirmOptions = BaseConfirmOptions &
@@ -301,6 +302,7 @@ export const useDialogService = () => {
     type = 'default',
     itemList = [],
     hint,
+    separateHint,
     denyLabel
   }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
@@ -314,6 +316,7 @@ export const useDialogService = () => {
           itemList,
           onConfirm: resolve,
           hint,
+          separateHint,
           denyLabel
         },
         dialogComponentProps: {
@@ -559,6 +562,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed: number
+    currentLimit: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -782,6 +801,7 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showAutoReloadDialog,

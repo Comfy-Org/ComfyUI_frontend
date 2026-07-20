@@ -25,6 +25,7 @@ export interface WorkspaceMember {
   isOriginalOwner: boolean
   lastActivity?: Date | null
   creditsUsedThisMonth?: number
+  monthlyCreditLimit?: number | null
 }
 
 export interface PendingInvite {
@@ -57,7 +58,8 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     lastActivity: member.last_active_at
       ? new Date(member.last_active_at)
       : null,
-    creditsUsedThisMonth: member.credits_used_this_month ?? 0
+    creditsUsedThisMonth: member.credits_used_this_month ?? 0,
+    monthlyCreditLimit: member.monthly_credit_limit ?? null
   }
 }
 
@@ -605,6 +607,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  function setMemberCreditLimit(userId: string, limit: number | null): void {
+    const current = activeWorkspace.value
+    if (!current) return
+    updateActiveWorkspace({
+      members: current.members.map((member) =>
+        member.id === userId ? { ...member, monthlyCreditLimit: limit } : member
+      )
+    })
+  }
+
   /**
    * Fetch pending invites for the current workspace.
    */
@@ -761,6 +773,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ensureMembersLoaded,
     removeMember,
     changeMemberRole,
+    setMemberCreditLimit,
 
     // Invite Actions
     fetchPendingInvites,

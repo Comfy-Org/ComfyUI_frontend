@@ -2847,7 +2847,7 @@
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "This workspace's subscription is paused. Your workspace owners need to update the payment method."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -2878,21 +2878,51 @@
       "placeholder": "Dashboard workspace settings"
     },
     "partnerNodes": {
-      "description": "Choose which partner nodes your team can use. Workflows with disabled nodes cannot be run.",
-      "searchPlaceholder": "Search partner nodes",
-      "selectAll": "Select all partner nodes",
+      "controlsLabel": "Partner node provider controls",
+      "searchPlaceholder": "Search providers or partner nodes",
       "columns": {
-        "name": "Partner Node",
-        "partner": "Partner",
-        "lastModified": "Last modified"
+        "name": "Provider / partner node",
+        "nodes": "Nodes",
+        "lastModified": "Last modified",
+        "enabled": "Enabled"
+      },
+      "restrictions": {
+        "label": "Partner node access",
+        "descriptions": {
+          "allowAll": "Partner nodes from every provider are available.",
+          "restricted": "Only partner nodes from enabled providers are available."
+        },
+        "modes": {
+          "allowAll": "Unrestricted",
+          "restricted": "Restricted"
+        },
+        "confirm": {
+          "title": "Restrict access to partner nodes?",
+          "message": "Workspace members will only be able to use partner nodes from providers that you enable.",
+          "hint": "New partner nodes follow their provider's access setting."
+        },
+        "allowAllConfirm": {
+          "title": "Allow access to all partner nodes?",
+          "message": "Partner nodes from every provider will become available to every workspace member.",
+          "hint": "New providers will also be available automatically."
+        }
       },
       "neverModified": "—",
-      "empty": "No partner nodes match your search.",
-      "selectedCount": "{count} node selected | {count} nodes selected",
-      "clearSelection": "Clear selection",
-      "autoEnableLabel": "When a new partner node is added, it should be:",
-      "autoEnabled": "auto-enabled",
-      "autoDisabled": "auto-disabled",
+      "empty": "No providers or partner nodes match your search.",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "enableResults": "Enable results",
+      "disableResults": "Disable results",
+      "disableAllConfirm": {
+        "title": "Disable all providers?",
+        "message": "This blocks partner nodes from every current provider for your workspace.",
+        "hint": "Workflows using these nodes will be blocked."
+      },
+      "disableAllSuccess": "All partner node providers disabled",
+      "expandProvider": "Expand {partner} provider",
+      "collapseProvider": "Collapse {partner} provider",
+      "groupCount": "{enabled}/{total} enabled",
+      "groupToggle": "Enable or disable {partner} provider",
       "loadError": "Failed to load partner nodes",
       "updateError": "Failed to update partner nodes"
     },
@@ -2925,7 +2955,17 @@
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
+        "setCreditLimit": "Set credit limit",
         "removeMember": "Remove member"
+      },
+      "creditLimitDialog": {
+        "title": "Set a monthly credit limit for {name}",
+        "description": "Once they reach this limit, they’ll be unable to run workflows.",
+        "limitOption": "Limit monthly credit usage to:",
+        "noLimit": "No limit",
+        "warning": "This user has already spent {credits} credits. Setting this cap will prevent further runs until next month.",
+        "invalidLimit": "Enter a credit limit greater than zero.",
+        "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
@@ -3075,15 +3115,15 @@
       "error": "Failed to remove member"
     },
     "changeRoleDialog": {
-      "promoteTitle": "Make {name} an admin?",
-      "promoteIntro": "They'll be able to:",
-      "promotePermissionCredits": "Add additional credits",
-      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other admins (except the workspace owner).",
-      "promoteConfirm": "Make admin",
-      "demoteTitle": "Demote {name} to member?",
-      "demoteMessage": "They'll lose admin access.",
-      "demoteConfirm": "Demote to member",
+      "makeOwnerTitle": "Make {name} an owner?",
+      "ownerIntro": "They'll be able to:",
+      "ownerPermissionCredits": "Add additional credits",
+      "ownerPermissionManage": "Manage members, payment methods, and workspace settings",
+      "ownerPermissionRoles": "Make other members owners or members (except the workspace creator).",
+      "makeOwner": "Make owner",
+      "makeMemberTitle": "Make {name} a member?",
+      "memberMessage": "They'll lose owner access.",
+      "makeMember": "Make member",
       "success": "Role updated",
       "error": "Failed to update role"
     },
@@ -3158,7 +3198,6 @@
     "subscribe": "Subscribe",
     "personal": "Personal",
     "roleOwner": "Owner",
-    "roleAdmin": "Admin",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",

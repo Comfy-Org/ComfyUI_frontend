@@ -13,7 +13,6 @@ import type {
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
-const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
@@ -104,7 +103,13 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     memberMenus: computed(
       () =>
         new Map(
-          mockFilteredMembers.value.map((m) => [m.id, mockMemberMenuItems()])
+          mockFilteredMembers.value.map((member) => [
+            member.id,
+            member.email.toLowerCase() === 'owner@example.com' ||
+            member.id === mockOriginalOwnerId.value
+              ? []
+              : [{ label: 'Action' }]
+          ])
         )
     ),
     isPersonalWorkspace: mockIsPersonalWorkspace,
@@ -198,7 +203,6 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 describe('MembersPanelContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
@@ -267,7 +271,7 @@ describe('MembersPanelContent', () => {
       expect(
         screen.getByText('workspacePanel.members.columns.role')
       ).toBeTruthy()
-      expect(screen.getByText('workspaceSwitcher.roleAdmin')).toBeTruthy()
+      expect(screen.getByText('workspaceSwitcher.roleOwner')).toBeTruthy()
       expect(screen.getByText('workspaceSwitcher.roleMember')).toBeTruthy()
     })
 
@@ -288,7 +292,7 @@ describe('MembersPanelContent', () => {
       expect(screen.getByText('6,532')).toBeTruthy()
     })
 
-    it('labels the original owner as Owner and other owners as Admin', () => {
+    it('labels every owner-role member as Owner', () => {
       mockOriginalOwnerId.value = 'creator-1'
       mockFilteredMembers.value = [
         createMember({
@@ -297,11 +301,10 @@ describe('MembersPanelContent', () => {
           role: 'owner',
           isOriginalOwner: true
         }),
-        createMember({ id: '2', email: 'admin@test.com', role: 'owner' })
+        createMember({ id: '2', email: 'owner@test.com', role: 'owner' })
       ]
       renderComponent()
-      expect(screen.getByText('workspaceSwitcher.roleOwner')).toBeTruthy()
-      expect(screen.getByText('workspaceSwitcher.roleAdmin')).toBeTruthy()
+      expect(screen.getAllByText('workspaceSwitcher.roleOwner')).toHaveLength(2)
     })
 
     it('renders filtered members', () => {

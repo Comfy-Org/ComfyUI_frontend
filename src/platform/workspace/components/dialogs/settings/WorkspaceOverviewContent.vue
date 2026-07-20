@@ -263,7 +263,7 @@ const emit = defineEmits<{ navigate: [view: 'activity'] }>()
 
 const { t } = useI18n()
 
-// Plan lifecycle actions are for the workspace creator (Owner) only; Admins and
+// Plan lifecycle actions are for the workspace creator only; other owners and
 // Members don't see Change plan or the overflow menu.
 const {
   isOriginalOwner,

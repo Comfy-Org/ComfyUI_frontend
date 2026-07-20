@@ -126,6 +126,7 @@ export function useMembersPanel() {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showMemberLimitDialog
@@ -225,14 +226,31 @@ export function useMembersPanel() {
   }
 
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
+    const creditLimitItem: MenuItem = {
+      label: t('workspacePanel.members.actions.setCreditLimit'),
+      command: () =>
+        void showSetMemberCreditLimitDialog({
+          memberId: member.id,
+          memberName: member.name,
+          creditsUsed: member.creditsUsedThisMonth ?? 0,
+          currentLimit: member.monthlyCreditLimit ?? null
+        })
+    }
+
+    if (isCurrentUser(member) || isOriginalOwner(member)) {
+      return [creditLimitItem]
+    }
+
     return [
       {
         label: t('workspacePanel.members.actions.changeRole'),
         items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleAdmin')),
+          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
+      creditLimitItem,
+      { separator: true },
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)
