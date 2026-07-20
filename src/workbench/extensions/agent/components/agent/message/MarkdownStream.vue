@@ -7,10 +7,7 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import CodeBlock from './CodeBlock.vue'
 
-const { text, raw = false } = defineProps<{
-  text: string
-  raw?: boolean
-}>()
+const { text } = defineProps<{ text: string }>()
 
 interface ProseSegment {
   type: 'prose'
@@ -64,12 +61,7 @@ const proseClass = cn(
 </script>
 
 <template>
-  <pre
-    v-if="raw"
-    class="rounded-agent bg-agent-surface text-agent-fg overflow-x-auto p-3 text-xs whitespace-pre-wrap"
-    >{{ text }}</pre
-  >
-  <div v-else>
+  <div>
     <template v-for="(segment, index) in segments" :key="index">
       <CodeBlock
         v-if="segment.type === 'code'"

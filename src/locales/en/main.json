@@ -5015,7 +5015,6 @@
     "thinking": "Thinking...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
-    "toggleRaw": "Toggle raw markdown",
     "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
     "copy": "Copy",
     "copied": "Copied!",
