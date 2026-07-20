@@ -22,7 +22,7 @@ function tool(
 }
 
 describe('ToolCallGroup', () => {
-  it('maps tab tools to friendly labels and renders unknown tools by raw name', () => {
+  it('maps tab tools to friendly labels and humanizes unknown tool names', () => {
     render(ToolCallGroup, {
       props: {
         tools: [
@@ -31,7 +31,8 @@ describe('ToolCallGroup', () => {
           tool('c3', 'add_node', 'streaming'),
           tool('c4', 'constructor', 'done', true),
           tool('c5', 'remember', 'done', true),
-          tool('c6', 'forget', 'done', true)
+          tool('c6', 'forget', 'done', true),
+          tool('c7', 'resize_image_node', 'done', true)
         ]
       },
       global: { plugins: [i18n] }
@@ -39,8 +40,9 @@ describe('ToolCallGroup', () => {
 
     expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
     expect(screen.getByText('Switched tabs')).toBeInTheDocument()
-    expect(screen.getByText('add_node')).toBeInTheDocument()
-    expect(screen.getByText('constructor')).toBeInTheDocument()
+    expect(screen.getByText('Add node')).toBeInTheDocument()
+    expect(screen.getByText('Resize image node')).toBeInTheDocument()
+    expect(screen.getByText('Constructor')).toBeInTheDocument()
     expect(screen.getByText('Saved a preference')).toBeInTheDocument()
     expect(screen.getByText('Forgot a preference')).toBeInTheDocument()
   })
@@ -52,7 +54,7 @@ describe('ToolCallGroup', () => {
     })
 
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
-    expect(screen.getByText('add_node')).toBeInTheDocument()
+    expect(screen.getByText('Add node')).toBeInTheDocument()
   })
 
   it('stays open and folds a same-name re-run into the counted row', () => {
@@ -67,7 +69,7 @@ describe('ToolCallGroup', () => {
     })
 
     expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
-    expect(screen.getAllByText('add_node')).toHaveLength(1)
+    expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 
@@ -77,7 +79,7 @@ describe('ToolCallGroup', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.queryByText('add_node')).not.toBeInTheDocument()
+    expect(screen.queryByText('Add node')).not.toBeInTheDocument()
 
     await rerender({
       tools: [
@@ -86,7 +88,7 @@ describe('ToolCallGroup', () => {
       ]
     })
 
-    expect(await screen.findByText('add_node')).toBeInTheDocument()
+    expect(await screen.findByText('Add node')).toBeInTheDocument()
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 })
@@ -106,13 +108,13 @@ describe('AgentMessage tool grouping', () => {
     render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
 
     expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
-    expect(screen.queryByText('add_node')).not.toBeInTheDocument()
+    expect(screen.queryByText('Add node')).not.toBeInTheDocument()
 
     await userEvent.click(
       screen.getByRole('button', { name: /ran 2 tool calls/i })
     )
 
-    expect(await screen.findAllByText('add_node')).toHaveLength(1)
+    expect(await screen.findAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 })
