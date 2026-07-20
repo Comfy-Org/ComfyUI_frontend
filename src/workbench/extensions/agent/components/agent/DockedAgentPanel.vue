@@ -12,9 +12,11 @@
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
     />
-    <div class="size-full p-2">
+    <div
+      class="size-full border-l border-interface-stroke bg-comfy-menu-bg p-2"
+    >
       <div
-        class="size-full overflow-hidden rounded-lg border border-(--interface-stroke)"
+        class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
         <AgentPanelRoot />
       </div>
