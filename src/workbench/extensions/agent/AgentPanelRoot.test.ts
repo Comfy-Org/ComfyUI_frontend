@@ -1378,6 +1378,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/current.json')
     )
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
   })
 
   it('pins the spinner via the snapshot tab when adoption has no sent context', async () => {
