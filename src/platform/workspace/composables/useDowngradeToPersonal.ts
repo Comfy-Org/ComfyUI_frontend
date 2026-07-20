@@ -5,9 +5,17 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import type {
+  PreviewSubscribeResponse,
+  SubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+export interface DowngradeToPersonalResult {
+  preview: PreviewSubscribeResponse
+  response: SubscribeResponse
+}
 
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
@@ -19,7 +27,6 @@ export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe } = useBillingContext()
-  const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
 
@@ -48,7 +55,9 @@ export function useDowngradeToPersonal() {
     ensureCanDowngrade()
   }
 
-  async function downgradeToPersonal(planSlug: string): Promise<void> {
+  async function downgradeToPersonal(
+    planSlug: string
+  ): Promise<DowngradeToPersonalResult> {
     ensureCanDowngrade()
     const preview = await previewSubscribe(planSlug)
     if (!preview?.allowed) {
@@ -84,27 +93,7 @@ export function useDowngradeToPersonal() {
       )
     }
 
-    if (response.status === 'needs_payment_method') {
-      if (!response.payment_method_url) {
-        throw new Error(t('subscription.downgrade.paymentMethodRequired'))
-      }
-      const paymentTab = window.open(response.payment_method_url, '_blank')
-      if (!paymentTab) {
-        throw new Error(t('subscription.downgrade.paymentPageBlocked'))
-      }
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
-      return
-    }
-
-    if (response.status === 'pending_payment') {
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
-    }
+    return { preview, response }
   }
 
   return {

@@ -82,17 +82,52 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(showDialog).not.toHaveBeenCalled()
   })
 
+  it('returns the downgrade result from the no-members fast path', async () => {
+    const result = {
+      preview: { allowed: true, transition_type: 'downgrade' },
+      response: { billing_op_id: 'op-1', status: 'subscribed' }
+    }
+    downgradeToPersonal.mockResolvedValue(result)
+
+    await expect(
+      useDialogService().showDowngradeToPersonalDialog(options)
+    ).resolves.toStrictEqual(result)
+  })
+
   it('shows a non-dismissable confirm dialog when other members exist', async () => {
     hasOtherMembers.value = true
 
-    await useDialogService().showDowngradeToPersonalDialog(options)
+    const resultPromise =
+      useDialogService().showDowngradeToPersonalDialog(options)
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
 
     expect(downgradeToPersonal).not.toHaveBeenCalled()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('downgrade-remove-members')
-    expect(args.props.onConfirm).toBe(downgradeToPersonal)
     expect(args.dialogComponentProps.closable).toBe(false)
     expect(args.dialogComponentProps.dismissableMask).toBe(false)
+
+    args.dialogComponentProps.onClose()
+    await expect(resultPromise).resolves.toBeNull()
+  })
+
+  it('returns the downgrade result after member confirmation', async () => {
+    const result = {
+      preview: { allowed: true, transition_type: 'downgrade' },
+      response: { billing_op_id: 'op-1', status: 'subscribed' }
+    }
+    hasOtherMembers.value = true
+    downgradeToPersonal.mockResolvedValue(result)
+
+    const resultPromise =
+      useDialogService().showDowngradeToPersonalDialog(options)
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledOnce())
+    const [args] = showDialog.mock.calls[0]
+
+    await args.props.onConfirm('standard-monthly')
+
+    expect(downgradeToPersonal).toHaveBeenCalledWith('standard-monthly')
+    await expect(resultPromise).resolves.toStrictEqual(result)
   })
 
   it('toasts and does not rethrow when the fast-path downgrade fails', async () => {

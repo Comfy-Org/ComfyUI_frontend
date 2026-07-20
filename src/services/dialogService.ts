@@ -22,6 +22,7 @@ import type {
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -656,7 +657,7 @@ export const useDialogService = () => {
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
-  }) {
+  }): Promise<DowngradeToPersonalResult | null> {
     const { useDowngradeToPersonal } =
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
     const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
@@ -665,8 +666,7 @@ export const useDialogService = () => {
     try {
       await refreshMembers()
       if (!hasOtherMembers.value) {
-        await downgradeToPersonal(options.planSlug)
-        return
+        return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
       useToastStore().add({
@@ -674,24 +674,30 @@ export const useDialogService = () => {
         summary: t('subscription.downgrade.failed'),
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
-      return
+      return null
     }
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'downgrade-remove-members',
-      component,
-      props: {
-        planName: options.planName,
-        planSlug: options.planSlug,
-        onConfirm: downgradeToPersonal
-      },
-      dialogComponentProps: {
-        ...workspaceDialogProps,
-        closable: false,
-        dismissableMask: false
-      }
+    return new Promise((resolve) => {
+      dialogStore.showDialog({
+        key: 'downgrade-remove-members',
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          onConfirm: async (planSlug: string) => {
+            const result = await downgradeToPersonal(planSlug)
+            resolve(result)
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolve(null)
+        }
+      })
     })
   }
 
