@@ -1,7 +1,7 @@
 <!-- A popover that shows current user information and actions -->
 <template>
   <div
-    class="current-user-popover -m-3 w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
@@ -32,7 +32,7 @@
         data-testid="workspace-switcher-trigger"
         @click="toggleWorkspaceSwitcher"
       >
-        <div class="flex min-w-0 flex-1 items-center gap-2">
+        <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
             :workspace-name="workspaceName"
