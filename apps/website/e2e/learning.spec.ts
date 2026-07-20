@@ -6,12 +6,13 @@ import {
   filterByCategory,
   learningCategories,
   learningTutorials,
-  populatedCategories
+  populatedCategories,
+  tutorialPath
 } from '../src/data/learningTutorials'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const playButtonName = (title: string, locale: 'en' | 'zh-CN') =>
+const thumbnailLinkName = (title: string, locale: 'en' | 'zh-CN') =>
   `${t('player.play', locale)} ${title}`
 
 const categoryNav = (page: Page, locale: 'en' | 'zh-CN' = 'en') =>
@@ -72,13 +73,13 @@ test.describe('Learning page @smoke', () => {
     ).toBeVisible()
   })
 
-  test('renders every tutorial from the data source', async ({ page }) => {
+  test('renders every tutorial as a link to its page', async ({ page }) => {
     for (const tutorial of learningTutorials) {
       await expect(
-        page.getByRole('button', {
-          name: playButtonName(tutorial.title.en, 'en')
+        page.getByRole('link', {
+          name: thumbnailLinkName(tutorial.title.en, 'en')
         })
-      ).toBeVisible()
+      ).toHaveAttribute('href', tutorialPath(tutorial))
     }
   })
 
@@ -133,82 +134,66 @@ test.describe('Learning category pages @smoke', () => {
       await expect(page).toHaveTitle(`${label} Learning - Comfy`)
 
       for (const tutorial of learningTutorials) {
-        const playButton = page.getByRole('button', {
-          name: playButtonName(tutorial.title.en, 'en')
+        const link = page.getByRole('link', {
+          name: thumbnailLinkName(tutorial.title.en, 'en')
         })
         if (tutorial.category === category) {
-          await expect(playButton).toBeVisible()
+          await expect(link).toBeVisible()
         } else {
-          await expect(playButton).toHaveCount(0)
+          await expect(link).toHaveCount(0)
         }
       }
     })
   }
 })
 
-test.describe('Learning tutorial dialog', () => {
-  test('opens a tutorial video and dismisses via the close button', async ({
+test.describe('Learning tutorial page @smoke', () => {
+  const [firstTutorial] = learningTutorials
+
+  test('a thumbnail navigates to the dedicated tutorial page', async ({
     page
   }) => {
-    const [firstTutorial] = learningTutorials
     await page.goto('/learning')
-
-    const openButton = page.getByRole('button', {
-      name: playButtonName(firstTutorial.title.en, 'en')
-    })
-    await openButton.scrollIntoViewIfNeeded()
-
-    const dialog = page.getByRole('dialog', { name: firstTutorial.title.en })
-    // The section is hydrated via `client:load`; retry the click until Vue
-    // responds by opening the dialog.
-    await expect(async () => {
-      await openButton.click()
-      await expect(dialog).toBeVisible({ timeout: 1_000 })
-    }).toPass({ timeout: 10_000 })
-
-    await expect(
-      dialog.getByRole('heading', { level: 2, name: firstTutorial.title.en })
-    ).toBeVisible()
-
-    await dialog
-      .getByRole('button', { name: t('gallery.detail.close', 'en') })
+    await page
+      .getByRole('link', {
+        name: thumbnailLinkName(firstTutorial.title.en, 'en')
+      })
       .click()
-    await expect(dialog).toBeHidden()
+
+    await expect(page).toHaveURL(tutorialPath(firstTutorial))
+    await expect(page).toHaveTitle(`${firstTutorial.title.en} - Comfy`)
   })
 
-  test('opens a tutorial video from its title', async ({ page }) => {
-    const [firstTutorial] = learningTutorials
-    await page.goto('/learning')
+  test('the page exposes an indexable heading, video, and workflow link', async ({
+    page
+  }) => {
+    await page.goto(tutorialPath(firstTutorial))
 
-    const titleButton = page.getByRole('button', {
-      name: `${t('learning.tutorials.titlePrefix', 'en')} ${firstTutorial.title.en}`
-    })
-    await titleButton.scrollIntoViewIfNeeded()
-
-    const dialog = page.getByRole('dialog', { name: firstTutorial.title.en })
-    await expect(async () => {
-      await titleButton.click()
-      await expect(dialog).toBeVisible({ timeout: 1_000 })
-    }).toPass({ timeout: 10_000 })
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      firstTutorial.title.en
+    )
+    await expect(page.locator('video')).toBeVisible()
+    if (firstTutorial.href) {
+      await expect(
+        page.getByRole('link', { name: t('cta.tryWorkflow', 'en') }).first()
+      ).toHaveAttribute('href', firstTutorial.href)
+    }
   })
 
-  test('dismisses the dialog with the Escape key', async ({ page }) => {
-    const [firstTutorial] = learningTutorials
-    await page.goto('/learning')
+  test('the page emits VideoObject structured data', async ({ page }) => {
+    await page.goto(tutorialPath(firstTutorial))
+    const blocks = page.locator('script[type="application/ld+json"]')
+    const contents = await blocks.allTextContents()
+    expect(contents.some((c) => c.includes('"VideoObject"'))).toBe(true)
+  })
 
-    const openButton = page.getByRole('button', {
-      name: playButtonName(firstTutorial.title.en, 'en')
-    })
-    await openButton.scrollIntoViewIfNeeded()
-
-    const dialog = page.getByRole('dialog', { name: firstTutorial.title.en })
-    await expect(async () => {
-      await openButton.click()
-      await expect(dialog).toBeVisible({ timeout: 1_000 })
-    }).toPass({ timeout: 10_000 })
-
-    await page.keyboard.press('Escape')
-    await expect(dialog).toBeHidden()
+  test('renders under the zh-CN locale', async ({ page }) => {
+    const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
+    await page.goto(zhPath)
+    await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']} - Comfy`)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      firstTutorial.title['zh-CN']
+    )
   })
 })
 
@@ -230,8 +215,8 @@ test.describe('Learning page (zh-CN) @smoke', () => {
 
     const [firstTutorial] = learningTutorials
     await expect(
-      page.getByRole('button', {
-        name: playButtonName(firstTutorial.title['zh-CN'], 'zh-CN')
+      page.getByRole('link', {
+        name: thumbnailLinkName(firstTutorial.title['zh-CN'], 'zh-CN')
       })
     ).toBeVisible()
   })

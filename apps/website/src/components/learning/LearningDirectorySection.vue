@@ -4,12 +4,9 @@
 // column shows a compact featured banner followed by a dense, scannable row
 // list. Each category is its own statically generated page, so the nav
 // entries are plain links; `category` is undefined on /learning (all).
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
-import type {
-  LearningCategory,
-  LearningTutorial
-} from '../../data/learningTutorials'
+import type { LearningCategory } from '../../data/learningTutorials'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import {
@@ -18,13 +15,14 @@ import {
   featuredFor,
   filterByCategory,
   getTutorialPosterSrc,
-  populatedCategories
+  populatedCategories,
+  tutorialPath
 } from '../../data/learningTutorials'
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import { ButtonMask } from '../ui/button-mask'
-import TutorialDetailDialog from './TutorialDetailDialog.vue'
+import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 
 const { locale = 'en', category } = defineProps<{
   locale?: Locale
@@ -58,8 +56,6 @@ const rows = computed(() =>
     (tutorial) => tutorial.id !== featured.value?.id
   )
 )
-
-const activeTutorial = ref<LearningTutorial | null>(null)
 </script>
 
 <template>
@@ -142,14 +138,13 @@ const activeTutorial = ref<LearningTutorial | null>(null)
             <h2
               class="text-2xl font-light tracking-tight text-primary-comfy-canvas lg:text-3xl"
             >
-              <button
-                type="button"
-                class="cursor-pointer text-left hover:underline"
-                @click="activeTutorial = featured"
+              <a
+                :href="localizeHref(tutorialPath(featured), locale)"
+                class="text-left hover:underline"
               >
                 {{ t('learning.tutorials.titlePrefix', locale) }}
                 {{ featured.title[locale] }}
-              </button>
+              </a>
             </h2>
             <ul class="flex flex-wrap gap-2">
               <li v-for="tag in featured.tags" :key="tag">
@@ -157,7 +152,7 @@ const activeTutorial = ref<LearningTutorial | null>(null)
               </li>
             </ul>
             <div v-if="featured.href">
-              <ButtonMask
+              <ButtonPill
                 as="a"
                 :href="featured.href"
                 icon-position="right"
@@ -165,28 +160,14 @@ const activeTutorial = ref<LearningTutorial | null>(null)
                 size="default"
               >
                 {{ t('cta.tryWorkflow', locale) }}
-                <template #icon>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="size-4"
-                  >
-                    <polyline points="9 6 15 12 9 18" />
-                  </svg>
-                </template>
-              </ButtonMask>
+              </ButtonPill>
             </div>
           </div>
 
-          <button
-            type="button"
-            class="group relative block aspect-video cursor-pointer overflow-hidden rounded-3xl"
+          <a
+            :href="localizeHref(tutorialPath(featured), locale)"
+            class="group relative block aspect-video overflow-hidden rounded-3xl"
             :aria-label="`${t('player.play', locale)} ${featured.title[locale]}`"
-            @click="activeTutorial = featured"
           >
             <video
               :src="getTutorialPosterSrc(featured)"
@@ -213,7 +194,7 @@ const activeTutorial = ref<LearningTutorial | null>(null)
                 </svg>
               </span>
             </span>
-          </button>
+          </a>
         </article>
 
         <!-- Row list -->
@@ -223,11 +204,10 @@ const activeTutorial = ref<LearningTutorial | null>(null)
             :key="tutorial.id"
             class="flex flex-wrap items-center gap-4 py-5 lg:flex-nowrap lg:gap-6"
           >
-            <button
-              type="button"
-              class="group relative block aspect-video w-36 shrink-0 cursor-pointer overflow-hidden rounded-2xl lg:w-44"
+            <a
+              :href="localizeHref(tutorialPath(tutorial), locale)"
+              class="group relative block aspect-video w-36 shrink-0 overflow-hidden rounded-2xl lg:w-44"
               :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
-              @click="activeTutorial = tutorial"
             >
               <video
                 :src="getTutorialPosterSrc(tutorial)"
@@ -254,7 +234,7 @@ const activeTutorial = ref<LearningTutorial | null>(null)
                   </svg>
                 </span>
               </span>
-            </button>
+            </a>
 
             <div class="min-w-0 flex-1">
               <Badge variant="category" size="xs">
@@ -263,14 +243,13 @@ const activeTutorial = ref<LearningTutorial | null>(null)
               <h3
                 class="mt-1 text-sm/snug text-primary-comfy-canvas lg:text-base/snug"
               >
-                <button
-                  type="button"
-                  class="cursor-pointer text-left hover:underline"
-                  @click="activeTutorial = tutorial"
+                <a
+                  :href="localizeHref(tutorialPath(tutorial), locale)"
+                  class="text-left hover:underline"
                 >
                   {{ t('learning.tutorials.titlePrefix', locale) }}
                   {{ tutorial.title[locale] }}
-                </button>
+                </a>
               </h3>
               <ul class="mt-2 flex flex-wrap gap-2">
                 <li v-for="tag in tutorial.tags" :key="tag">
@@ -307,12 +286,5 @@ const activeTutorial = ref<LearningTutorial | null>(null)
         </ul>
       </div>
     </div>
-
-    <TutorialDetailDialog
-      v-if="activeTutorial"
-      :tutorial="activeTutorial"
-      :locale="locale"
-      @close="activeTutorial = null"
-    />
   </section>
 </template>

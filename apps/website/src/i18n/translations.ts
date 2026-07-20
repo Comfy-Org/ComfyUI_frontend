@@ -1497,6 +1497,8 @@ const translations = {
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
+  'learning.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'learning.detail.moreInCategory': { en: 'More in', 'zh-CN': '更多' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
   'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
