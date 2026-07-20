@@ -920,9 +920,9 @@ export class GroupNodeHandler {
         for (const innerInputName in map) {
           const groupSlotId = map[innerInputName]
           if (groupSlotId == null) continue
-          const slot = node.inputs[groupSlotId]
-          if (slot.link == null) continue
-          const link = app.rootGraph.links[slot.link]
+          const slotLink = node.inputs?.[groupSlotId]?.link
+          if (slotLink == null) continue
+          const link = app.rootGraph.links[slotLink]
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
           const innerInputId = newNode.findInputSlot(innerInputName)
