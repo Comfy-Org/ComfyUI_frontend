@@ -6,7 +6,8 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null
+  flagListener: null as (() => void) | null,
+  registerTracker: vi.fn(() => () => {})
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -20,6 +21,13 @@ vi.mock('@/services/extensionService', () => ({
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => mocks.agentStore
 }))
+
+vi.mock(
+  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  () => ({
+    registerWorkflowTabActivityTracker: mocks.registerTracker
+  })
+)
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -52,12 +60,18 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.enabled = false
     mocks.flagEnabled = undefined
     mocks.flagListener = null
+    mocks.registerTracker.mockClear()
     vi.resetModules()
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(mocks.agentStore.enabled).toBe(false)
+  })
+
+  it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
+    await loadEntryAndSetup()
+    expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
   })
 
   it('enables the panel when the flag turns true', async () => {

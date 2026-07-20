@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { app } from '@/scripts/app'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -1087,6 +1088,311 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryAllByText('current')).toHaveLength(0)
   })
 
+  it('keeps the active-tab strip visible in the history view', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findAllByText('current')).not.toHaveLength(0)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+    )
+    expect(
+      await screen.findByText(i18n.global.t('agent.historyEmpty'))
+    ).toBeInTheDocument()
+    expect(screen.getByText('current')).toBeInTheDocument()
+  })
+
+  it('activates the tab picked from the workflow selector via the service', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(await screen.findByText('other'))
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(other)
+    )
+  })
+
+  it('flags the bound tab as agent-edited for exactly the turn duration', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    expect(activity.editingTabPath).toBeNull()
+  })
+
+  it('marks a backgrounded bound tab modified without touching the canvas', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    const other = addTab('workflows/other.json')
+    hostStores.workflow.activeWorkflow = other
+    await nextTick()
+
+    patch(1, { version: 0.4, nodes: [{ id: 3 }] })
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() =>
+      expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
+        true
+      )
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('clears the spinner and creating flags when the panel unmounts mid-turn', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('add an upscaler')
+
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+    activity.setCreating(true)
+
+    unmount()
+
+    expect(activity.editingTabPath).toBeNull()
+    expect(activity.creatingTab).toBe(false)
+  })
+
+  it('raises the creating flag only while an unbound agent tab materializes', async () => {
+    makeTab('wf-42')
+    let resolveDraft: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('workflow_id=wf-new')) {
+          return new Promise<Response>((resolve) => {
+            resolveDraft = resolve
+          })
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('work here')
+
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.creatingTab).toBe(false)
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+
+    resolveDraft?.(json(404, { error: 'none' }))
+    await vi.waitFor(() => expect(activity.creatingTab).toBe(false))
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeDefined()
+  })
+
+  it('lowers the creating flag when the draft fetch for a fresh tab fails', async () => {
+    makeTab('wf-42')
+    let rejectDraft: ((error: Error) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('workflow_id=wf-new')) {
+          return new Promise<Response>((_resolve, reject) => {
+            rejectDraft = reject
+          })
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('work here')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+
+    rejectDraft?.(new Error('network down'))
+    await vi.waitFor(() => expect(activity.creatingTab).toBe(false))
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBe(undefined)
+  })
+
+  it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
+    const bound = makeTab('wf-42')
+    let resolveDraft: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('workflow_id=wf-new')) {
+          return new Promise<Response>((resolve) => {
+            resolveDraft = resolve
+          })
+        }
+        if (url.includes('/agent/draft')) return json(404, { error: 'none' })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('work here')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    resolveDraft?.(json(404, { error: 'none' }))
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(bound)
+    )
+    expect(activity.creatingTab).toBe(false)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBe(undefined)
+  })
+
+  it('pins the spinner to the tab that sent the turn, not the tab active at ack', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) {
+          hostStores.workflow.activeWorkflow = other
+          return json(202, ack('wf-42', 'm-1'))
+        }
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('add an upscaler')
+
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+  })
+
+  it('moves the spinner to the tab the agent creates mid-turn', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+
+    await renderAndSend('work here')
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(activity.editingTabPath).toBe('workflows/Video test.json')
+    )
+  })
+
+  it('keeps the spinner on a tab renamed by the first-draft autosave', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    const renamedPath = 'workflows/Video test.app.json'
+    workflowService.saveWorkflowAs.mockImplementationOnce(async (tab) => {
+      const entry = hostStores.workflow.tabs.get(tab.path)
+      hostStores.workflow.tabs.delete(tab.path)
+      tab.isTemporary = false
+      tab.isModified = false
+      tab.path = renamedPath
+      if (entry) hostStores.workflow.tabs.set(tab.path, entry)
+      return true
+    })
+
+    await renderAndSend('work here')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() => expect(activity.editingTabPath).toBe(renamedPath))
+  })
+
+  it('re-arms a resumed turn spinner on the bound tab, not the active tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('add an upscaler')
+
+    const activity = useWorkflowTabActivityStore()
+    expect(activity.editingTabPath).toBe('workflows/current.json')
+
+    unmount()
+    expect(activity.editingTabPath).toBeNull()
+
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    hostStores.workflow.activeWorkflow = other
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(activity.editingTabPath).toBe('workflows/current.json')
+    )
+  })
+
+  it('pins the spinner via the snapshot tab when adoption has no sent context', async () => {
+    makeTab()
+    appMock.graph.nodes = [{ id: 1 }]
+    mockMessagesEndpoint('wf-new', { status: 404, body: { error: 'none' } })
+
+    await renderAndSend('build something')
+
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() =>
+      expect(activity.editingTabPath).toBe('workflows/current.json')
+    )
+  })
+
   it("sends the active tab's saved workflow id and applies patches in place", async () => {
     const tab = makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
@@ -1651,6 +1957,17 @@ describe('AgentPanelRoot workflow binding', () => {
       ).toBeDefined()
     )
     expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(2)
+
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() =>
+      expect(activity.editingTabPath).toBe(
+        'workflows/Unsaved Workflow (2).json'
+      )
+    )
+    ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
+    await vi.waitFor(() =>
+      expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
+    )
   })
 
   it('a bound-branch draft fetch failure keeps the switch and moves the binding', async () => {
