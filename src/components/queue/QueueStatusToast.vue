@@ -147,37 +147,37 @@
   </div>
 
   <!-- Idle: nothing queued, running or recently finished -->
-  <div v-else class="pointer-events-auto flex flex-col items-end gap-1">
-    <button
-      type="button"
-      data-testid="queue-status-idle"
-      :aria-expanded="idleExpanded"
-      class="flex h-6 cursor-pointer items-center rounded-md border border-solid border-interface-stroke px-2 text-xs text-muted-foreground opacity-50 transition-opacity hover:opacity-100"
-      @click="idleExpanded = !idleExpanded"
-    >
-      {{ activeJobsLabel }}
-    </button>
-
-    <div
-      v-if="idleExpanded"
+  <Popover v-else>
+    <PopoverTrigger as-child>
+      <button
+        type="button"
+        data-testid="queue-status-idle"
+        class="pointer-events-auto flex h-6 cursor-pointer items-center rounded-md border border-solid border-interface-stroke px-2 text-xs text-muted-foreground opacity-50 transition-opacity hover:opacity-100 data-[state=open]:opacity-100"
+      >
+        {{ activeJobsLabel }}
+      </button>
+    </PopoverTrigger>
+    <PopoverContent
+      align="end"
+      :side-offset="6"
       data-testid="queue-status-idle-panel"
-      class="flex w-56 flex-col gap-3 rounded-lg border border-solid border-interface-stroke bg-comfy-menu-bg p-3 shadow-interface"
+      class="flex w-56 flex-col gap-3 p-3"
     >
       <p class="text-center text-xs text-muted-foreground">
         {{ t('queueStatus.nothingRunning') }}
       </p>
       <Button
-        variant="textonly"
-        size="md"
-        class="w-full gap-2 border border-solid border-interface-stroke text-base-foreground"
+        variant="secondary"
+        size="sm"
+        class="w-full gap-2"
         data-testid="queue-status-go-history"
         @click="goToHistory"
       >
         <i class="icon-[lucide--history] size-4 shrink-0" />
         {{ t('queueStatus.goToHistory') }}
       </Button>
-    </div>
-  </div>
+    </PopoverContent>
+  </Popover>
 
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
@@ -189,9 +189,13 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { PopoverTrigger } from 'reka-ui'
+
 import ProcessToast from '@/components/common/ProcessToast.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
@@ -216,11 +220,9 @@ const { jobItems } = useJobList()
 const sidebarTabStore = useSidebarTabStore()
 
 const expanded = ref(false)
-/** Idle popover ("Nothing running right now" + history shortcut). */
-const idleExpanded = ref(false)
 
+/** Idle popover shortcut into the job history. */
 const goToHistory = () => {
-  idleExpanded.value = false
   sidebarTabStore.toggleSidebarTab('job-history')
 }
 
