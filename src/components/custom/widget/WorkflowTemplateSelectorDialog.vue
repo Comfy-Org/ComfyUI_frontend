@@ -15,139 +15,107 @@
     </template>
 
     <template #header>
-      <h2 class="text-neutral m-0 truncate text-base font-medium">
-        {{ pageTitle }}
-      </h2>
-    </template>
-
-    <template #header-right-area>
-      <div class="flex items-center gap-2">
-        <Button
-          v-if="filteredCount !== totalCount"
-          variant="secondary"
-          size="lg"
-          @click="resetFilters"
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <h2
+          class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
         >
-          <i class="icon-[lucide--filter-x]" />
-          <span>{{
-            $t('templateWorkflows.resetFilters', 'Clear Filters')
-          }}</span>
-        </Button>
+          {{ pageTitle }}
+        </h2>
         <AsyncSearchInput
           v-model="searchInput"
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-9 w-96 border border-border-subtle bg-transparent"
+          class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
           autofocus
         />
       </div>
     </template>
 
+    <template #header-right-area>
+      <Button
+        v-if="filteredCount !== totalCount"
+        variant="secondary"
+        size="lg"
+        class="hidden shrink-0 min-[880px]:inline-flex"
+        @click="resetFilters"
+      >
+        <i class="icon-[lucide--filter-x]" />
+        <span>{{ $t('templateWorkflows.resetFilters') }}</span>
+      </Button>
+    </template>
+
     <template #contentFilter>
       <div
-        class="relative flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pb-4"
+        :ref="primeVueOverlay.overlayScopeRef"
+        class="@container/filters relative px-6 pb-4"
       >
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex items-center gap-3">
+          <div class="flex min-w-0 shrink items-center gap-2">
+            <Button
+              v-for="tab in typeTabs"
+              :key="tab.value"
+              size="md"
+              :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
+              :aria-pressed="selectedType === tab.value"
+              :aria-label="tab.icon ? tab.label : undefined"
+              class="h-9 shrink-0 px-4 @max-[30rem]/filters:px-2.5"
+              @click="selectedType = tab.value"
+            >
+              <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
+              <span :class="cn(tab.icon && '@max-[30rem]/filters:sr-only')">{{
+                tab.label
+              }}</span>
+            </Button>
+          </div>
+
+          <div
+            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+          >
+            <TemplateFilterControls
+              v-bind="filterControlBindings"
+              trigger-class="min-w-0 shrink basis-40 border border-border-subtle bg-transparent"
+            />
+          </div>
+
           <Button
             size="md"
-            :variant="selectedType === 'all' ? 'inverted' : 'secondary'"
-            :aria-pressed="selectedType === 'all'"
-            class="h-9 px-4"
-            @click="selectedType = 'all'"
+            :variant="mobileFiltersOpen ? 'inverted' : 'secondary'"
+            :aria-expanded="mobileFiltersOpen"
+            aria-controls="template-mobile-filters"
+            :aria-label="$t('templateWorkflows.filtersButton')"
+            class="ml-auto h-9 shrink-0 px-4 @[58rem]/filters:hidden"
+            @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
-            {{ $t('g.all') }}
-          </Button>
-          <Button
-            size="md"
-            :variant="selectedType === 'nodeGraph' ? 'inverted' : 'secondary'"
-            :aria-pressed="selectedType === 'nodeGraph'"
-            class="h-9 px-4"
-            @click="selectedType = 'nodeGraph'"
-          >
-            <i class="icon-[comfy--workflow] size-3.5" />
-            {{ $t('builderToolbar.nodeGraph') }}
-          </Button>
-          <Button
-            size="md"
-            :variant="selectedType === 'apps' ? 'inverted' : 'secondary'"
-            :aria-pressed="selectedType === 'apps'"
-            class="h-9 px-4"
-            @click="selectedType = 'apps'"
-          >
-            <i class="icon-[lucide--app-window] size-3.5" />
-            {{ $t('builderToolbar.app') }}
+            <i class="icon-[lucide--sliders-horizontal] size-3.5" />
+            <span>{{ $t('templateWorkflows.filtersButton') }}</span>
+            <span v-if="activeFilterCount > 0" :class="selectCountBadgeClass">
+              {{ activeFilterCount }}
+            </span>
           </Button>
         </div>
 
         <div
-          :ref="primeVueOverlay.overlayScopeRef"
-          class="flex min-w-56 flex-1 items-center justify-end gap-2"
+          v-show="mobileFiltersOpen"
+          id="template-mobile-filters"
+          class="mt-3 flex flex-col gap-2 @[58rem]/filters:hidden"
         >
-          <MultiSelect
-            v-model="selectedModelObjects"
-            v-model:search-query="modelSearchText"
+          <div class="grid grid-cols-2 gap-2 @max-[26rem]/filters:grid-cols-1">
+            <TemplateFilterControls
+              v-bind="filterControlBindings"
+              trigger-class="w-full border border-border-subtle bg-transparent"
+            />
+          </div>
+          <Button
+            v-if="filteredCount !== totalCount"
+            variant="secondary"
             size="md"
-            class="min-w-0 shrink basis-44 border border-border-subtle bg-transparent"
-            :label="modelFilterLabel"
-            :options="modelOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-            actions-placement="footer"
+            class="h-9 self-end px-4"
+            @click="resetFilters"
           >
-            <template #icon>
-              <i class="icon-[lucide--cpu]" />
-            </template>
-          </MultiSelect>
-
-          <MultiSelect
-            v-model="selectedUseCaseObjects"
-            size="md"
-            class="min-w-0 shrink basis-36 border border-border-subtle bg-transparent"
-            :label="useCaseFilterLabel"
-            :options="useCaseOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-            actions-placement="footer"
-          >
-            <template #icon>
-              <i class="icon-[lucide--target]" />
-            </template>
-          </MultiSelect>
-
-          <MultiSelect
-            v-model="selectedRunsOnObjects"
-            size="md"
-            class="min-w-0 shrink basis-36 border border-border-subtle bg-transparent"
-            :label="runsOnFilterLabel"
-            :options="runsOnOptions"
-            :content-style="selectContentStyle"
-            :show-search-box="true"
-            :show-selected-count="true"
-            :show-clear-button="true"
-            actions-placement="footer"
-          >
-            <template #icon>
-              <i class="icon-[lucide--server]" />
-            </template>
-          </MultiSelect>
-
-          <SingleSelect
-            v-model="sortSelection"
-            size="md"
-            class="min-w-0 shrink basis-44 border border-border-subtle bg-transparent"
-            :label="$t('templateWorkflows.sorting', 'Sort by')"
-            :options="sortOptions"
-            :content-style="selectContentStyle"
-          >
-            <template #icon>
-              <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
-            </template>
-          </SingleSelect>
+            <i class="icon-[lucide--filter-x] size-3.5" />
+            <span>{{ $t('templateWorkflows.resetFilters') }}</span>
+          </Button>
         </div>
       </div>
     </template>
@@ -456,21 +424,23 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
+import type { SelectOption } from '@/components/ui/select/types'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
@@ -599,6 +569,22 @@ const navigationFilteredTemplates = computed(() => {
 
 const selectedType = ref<TemplateTypeFilter>('all')
 
+const typeTabs = computed<
+  { value: TemplateTypeFilter; label: string; icon?: string }[]
+>(() => [
+  { value: 'all', label: t('g.all') },
+  {
+    value: 'nodeGraph',
+    label: t('builderToolbar.nodeGraph'),
+    icon: 'icon-[comfy--workflow]'
+  },
+  {
+    value: 'apps',
+    label: t('builderToolbar.app'),
+    icon: 'icon-[lucide--app-window]'
+  }
+])
+
 const typeFilteredTemplates = computed(() =>
   filterTemplatesByType(navigationFilteredTemplates.value, selectedType.value)
 )
@@ -671,41 +657,41 @@ watch(sortSelection, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
 // Only show selected items that exist in the current scope
+const toSelectOptions = (values: string[]): SelectOption[] =>
+  values.map((value) => ({ name: value, value }))
+
+// active* hides out-of-scope model/use-case selections; availableRunsOn is
+// static so runs-on selections are always in scope and need no filtering.
 const selectedModelObjects = computed({
-  get() {
-    // Only include selected models that exist in availableModels
-    return activeModels.value.map((model) => ({ name: model, value: model }))
-  },
-  set(value: { name: string; value: string }[]) {
+  get: () => toSelectOptions(activeModels.value),
+  set: (value: SelectOption[]) => {
     selectedModels.value = value.map((item) => item.value)
   }
 })
 
 const selectedUseCaseObjects = computed({
-  get() {
-    return activeUseCases.value.map((useCase) => ({
-      name: useCase,
-      value: useCase
-    }))
-  },
-  set(value: { name: string; value: string }[]) {
+  get: () => toSelectOptions(activeUseCases.value),
+  set: (value: SelectOption[]) => {
     selectedUseCases.value = value.map((item) => item.value)
   }
 })
 
 const selectedRunsOnObjects = computed({
-  get() {
-    return selectedRunsOn.value.map((runsOn) => ({
-      name: runsOn,
-      value: runsOn
-    }))
-  },
-  set(value: { name: string; value: string }[]) {
+  get: () => toSelectOptions(selectedRunsOn.value),
+  set: (value: SelectOption[]) => {
     selectedRunsOn.value = value.map((item) => item.value)
   }
 })
 
-// Loading states
+const activeFilterCount = computed(
+  () =>
+    selectedModelObjects.value.length +
+    selectedUseCaseObjects.value.length +
+    selectedRunsOnObjects.value.length
+)
+
+// UI state
+const mobileFiltersOpen = ref(false)
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
@@ -811,6 +797,37 @@ const sortOptions = computed(() => [
     value: 'alphabetical'
   }
 ])
+
+const filterControlBindings = computed(() => ({
+  selectedModels: selectedModelObjects.value,
+  'onUpdate:selectedModels': (value: SelectOption[]) => {
+    selectedModelObjects.value = value
+  },
+  selectedUseCases: selectedUseCaseObjects.value,
+  'onUpdate:selectedUseCases': (value: SelectOption[]) => {
+    selectedUseCaseObjects.value = value
+  },
+  selectedRunsOn: selectedRunsOnObjects.value,
+  'onUpdate:selectedRunsOn': (value: SelectOption[]) => {
+    selectedRunsOnObjects.value = value
+  },
+  sortSelection: sortSelection.value,
+  'onUpdate:sortSelection': (value: TemplateSortMode) => {
+    sortSelection.value = value
+  },
+  modelSearchText: modelSearchText.value,
+  'onUpdate:modelSearchText': (value: string) => {
+    modelSearchText.value = value
+  },
+  modelOptions: modelOptions.value,
+  useCaseOptions: useCaseOptions.value,
+  runsOnOptions: runsOnOptions.value,
+  sortOptions: sortOptions.value,
+  modelFilterLabel: modelFilterLabel.value,
+  useCaseFilterLabel: useCaseFilterLabel.value,
+  runsOnFilterLabel: runsOnFilterLabel.value,
+  contentStyle: selectContentStyle.value
+}))
 
 // Lazy pagination setup
 const loadTrigger = ref<HTMLElement | null>(null)
