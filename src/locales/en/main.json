@@ -3500,6 +3500,7 @@
       "modelTagging": "Model Tagging",
       "modelType": "Model Type",
       "selectModelType": "Select model type...",
+      "modelTypeCoreReadonly": "Model type cannot be changed on core, moving the file is not yet supported.",
       "compatibleBaseModels": "Compatible Base Models",
       "addBaseModel": "Add base model...",
       "baseModelUnknown": "Base model unknown",

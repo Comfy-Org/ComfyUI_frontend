@@ -87,7 +87,11 @@
             </SelectItem>
           </SelectContent>
         </Select>
-        <div v-else class="p-2 text-sm text-muted-foreground">
+        <div
+          v-else
+          :title="t('assetBrowser.modelInfo.modelTypeCoreReadonly')"
+          class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+        >
           {{
             modelTypes.find((o) => o.value === selectedModelType)?.name ??
             t('assetBrowser.unknown')
@@ -233,7 +237,6 @@ import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
-  buildModelTypeTagUpdate,
   getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
@@ -243,7 +246,8 @@ import {
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getEditableModelType,
-  getSourceName
+  getSourceName,
+  resolveModelTypeTagUpdate
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -325,18 +329,13 @@ function handleDisplayNameEdit(newName: string) {
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
-  if (!isModelTypeEditable.value) return
-  const currentModelType = getEditableModelType(
-    asset,
-    flags.supportsModelTypeTags
-  )
-  if (currentModelType === newModelType) return
-  const newTags = buildModelTypeTagUpdate(
+  const newTags = resolveModelTypeTagUpdate(
     asset,
     newModelType,
+    isModelTypeEditable.value,
     flags.supportsModelTypeTags
   )
-  assetsStore.updateAssetTags(asset, newTags, cacheKey)
+  if (newTags) assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
 const baseModels = computed({
