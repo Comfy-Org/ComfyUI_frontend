@@ -1,15 +1,18 @@
 <template>
   <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
-      v-bind="$attrs"
+      v-bind="attrsWithoutClass"
       :aria-label="label || t('g.singleSelectDropdown')"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
-        selectTriggerVariants({
-          size,
-          border: invalid ? 'invalid' : 'none'
-        })
+        cn(
+          selectTriggerVariants({
+            size,
+            border: invalid ? 'invalid' : 'none'
+          }),
+          attrsClass
+        )
       "
     >
       <div
@@ -93,12 +96,14 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useAttrsClass } from '@/composables/useAttrsClass'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
 })
+const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
