@@ -35,30 +35,6 @@ export interface CameraPose {
 
 export const DEFAULT_POSE: CameraPose = { azimuth: 0, elevation: 0, zoom: 5 }
 
-export const AZIMUTH_PRESETS: ReadonlyArray<{
-  label: AzimuthLabel
-  value: number
-}> = AZIMUTH_LABELS.map((label, i) => ({ label, value: i * 45 }))
-
-export const ELEVATION_PRESETS: ReadonlyArray<{
-  label: ElevationLabel
-  value: number
-}> = [
-  { label: 'low-angle shot', value: -30 },
-  { label: 'eye-level shot', value: 0 },
-  { label: 'elevated shot', value: 30 },
-  { label: 'high-angle shot', value: 60 }
-]
-
-export const DISTANCE_PRESETS: ReadonlyArray<{
-  label: DistanceLabel
-  value: number
-}> = [
-  { label: 'wide shot', value: 1 },
-  { label: 'medium shot', value: 4 },
-  { label: 'close-up', value: 8 }
-]
-
 export function azimuthLabel(degrees: number): AzimuthLabel {
   const h = ((degrees % 360) + 360) % 360
   if (h < 22.5 || h >= 337.5) return 'front view'

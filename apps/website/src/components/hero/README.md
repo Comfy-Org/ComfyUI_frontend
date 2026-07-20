@@ -1,18 +1,17 @@
 # Hero graph
 
-An interactive recreation of a real ComfyUI workflow, used as the comfy.org
-landing hero. Four nodes are wired left to right:
+An interactive recreation of a ComfyUI camera-angle flow, used as the comfy.org
+landing hero. Three elements are wired left to right:
 
 ```
-Load Image ──IMAGE──▶ Qwen Multiangle Camera ──Prompt──▶ Image Edit (Qwen-Image 2511) ──IMAGE──▶ Save Image
+input image ──▶ 3D ANGLE node ──▶ OUTPUT image
 ```
 
-The **Qwen Multiangle Camera** node is the interactive centerpiece: a real
-Three.js scene (pink azimuth ring, cyan elevation arc, gold zoom handle) whose
-state also drives labeled sliders, preset dropdowns, and the live `<sks>` prompt
-string. Every node is draggable and collapsible, like the real editor. Pressing
-**Run** resolves the current camera pose to a pre-rendered output image and shows
-it in the Image Edit and Save nodes — nothing generates at runtime.
+The **3D ANGLE** node is a real Three.js scene (a white orbit ring, a grey
+elevation handle, a yellow camera indicator and zoom handle) that the visitor
+drags directly. As the camera pose changes, the OUTPUT image cross-fades to the
+matching pre-rendered result and the live prompt "words" below the graph update
+— no Run button, it just changes.
 
 ## The "no backend" illusion
 
@@ -43,14 +42,19 @@ without any code change.
 
 `camera/CameraWidget.ts` is vendored from
 [jtydhr88/ComfyUI-qwenmultiangle](https://github.com/jtydhr88/ComfyUI-qwenmultiangle)
-(MIT). See `camera/ATTRIBUTION.md` for the license and the list of local
-modifications (named `three` imports, hardened disposal, pause/resume).
+(MIT). See `camera/ATTRIBUTION.md` for the license and local modifications
+(named `three` imports, hardened disposal, pause/resume, and the optional
+`palette` used to recolour the scene).
 
-## Performance notes
+## Performance & accessibility
 
 - The graph is server-rendered DOM; only the 3D scene needs JS.
 - `three` and `CameraWidget` are dynamically imported and only initialise when
-  the camera node scrolls into view and the main thread is idle.
-- The render loop pauses when the tab is hidden or the node scrolls offscreen,
-  and disposes the WebGL context, geometries, materials, and textures on unmount.
-- Below `md` the WebGL scene is dropped entirely for a static fallback image.
+  the node scrolls into view and the main thread is idle. The render loop pauses
+  when the tab is hidden or the node scrolls offscreen, and disposes the WebGL
+  context, geometries, materials, and textures on unmount.
+- The canvas is decorative; every camera axis is also a real, labelled
+  `<input type="range">` (visually hidden) with `aria-valuetext` set to the pose
+  label, so the flow is keyboard operable.
+- Below `md` the WebGL scene is dropped for a static fallback image plus the
+  live prompt words.

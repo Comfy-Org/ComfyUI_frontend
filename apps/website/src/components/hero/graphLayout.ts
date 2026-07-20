@@ -1,31 +1,48 @@
-export type NodeKey = 'load' | 'camera' | 'edit' | 'save'
+export type ElementKey = 'input' | 'angle' | 'output'
 
-export interface NodeRect {
+export interface ElementRect {
   left: number
   top: number
   width: number
   height: number
 }
 
-export const GRAPH: {
+/** Layout in em units; the canvas scales the em size to fit its container. */
+export const FLOW: {
   canvas: { width: number; height: number }
-  nodes: Record<NodeKey, NodeRect>
+  elements: Record<ElementKey, ElementRect>
 } = {
-  canvas: { width: 95, height: 41 },
-  nodes: {
-    load: { left: 0, top: 2.5, width: 23, height: 21.8 },
-    camera: { left: 25.5, top: 0, width: 22, height: 38.9 },
-    edit: { left: 50, top: 0.75, width: 19.5, height: 36.6 },
-    save: { left: 72, top: 3.5, width: 23, height: 20.2 }
+  canvas: { width: 95, height: 34 },
+  elements: {
+    input: { left: 0, top: 9, width: 30, height: 16.4 },
+    angle: { left: 37.5, top: 3, width: 20, height: 20 },
+    output: { left: 65, top: 9, width: 30, height: 16.4 }
   }
 }
 
-export const NODE_KEYS: NodeKey[] = ['load', 'camera', 'edit', 'save']
+export const ELEMENT_KEYS: ElementKey[] = ['input', 'angle', 'output']
 
-const HEADER_HEIGHT = 2.25
-const PORT_ROW_HEIGHT = 1.5
+interface Port {
+  el: ElementKey
+  dx: number
+  dy: number
+}
 
-export function portY(top: number, row: number, collapsed: boolean): number {
-  if (collapsed) return top + HEADER_HEIGHT / 2
-  return top + HEADER_HEIGHT + PORT_ROW_HEIGHT * row + PORT_ROW_HEIGHT / 2
+/** Port offsets relative to each element's top-left corner (em). */
+export const PORTS: Record<
+  'inputOut' | 'angleIn' | 'angleOut' | 'outputIn',
+  Port
+> = {
+  inputOut: { el: 'input', dx: 30, dy: 8.2 },
+  angleIn: { el: 'angle', dx: 0.9, dy: 0 },
+  angleOut: { el: 'angle', dx: 19.1, dy: 0 },
+  outputIn: { el: 'output', dx: 0.9, dy: 2.9 }
+}
+
+export function portPoint(
+  port: Port,
+  positions: Record<ElementKey, { x: number; y: number }>
+): { x: number; y: number } {
+  const pos = positions[port.el]
+  return { x: pos.x + port.dx, y: pos.y + port.dy }
 }

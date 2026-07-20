@@ -38,12 +38,27 @@ import {
 } from 'three'
 import type { Camera, Material } from 'three'
 
-import type { CameraState, CameraWidgetOptions } from './types'
+import type { CameraPalette, CameraState, CameraWidgetOptions } from './types'
+
+const DEFAULT_PALETTE: CameraPalette = {
+  azimuth: 0xe93d82,
+  elevation: 0x00ffd0,
+  distance: 0xffb800,
+  camera: 0xe93d82,
+  fill: 0xe93d82,
+  frame: 0xe93d82,
+  cardFront: 0x3a3a4a,
+  background: 0x0a0a0f,
+  showGrid: true,
+  showGlowRing: true,
+  showGlows: true
+}
 
 export class CameraWidget {
   private container: HTMLElement
   private state: CameraState
   private onStateChange?: (state: CameraState) => void
+  private pal: CameraPalette
 
   private scene!: Scene
   private camera!: PerspectiveCamera
@@ -103,6 +118,7 @@ export class CameraWidget {
   constructor(options: CameraWidgetOptions) {
     this.container = options.container
     this.onStateChange = options.onStateChange
+    this.pal = { ...DEFAULT_PALETTE, ...options.palette }
     this.state = {
       azimuth: options.initialState?.azimuth ?? 0,
       elevation: options.initialState?.elevation ?? 0,
@@ -125,7 +141,8 @@ export class CameraWidget {
     const height = this.container.clientHeight || 300
 
     this.scene = new Scene()
-    this.scene.background = new Color(0x0a0a0f)
+    this.scene.background =
+      this.pal.background === null ? null : new Color(this.pal.background)
 
     this.camera = new PerspectiveCamera(45, width / height, 0.1, 1000)
     this.camera.position.set(4, 3.5, 4)
@@ -154,12 +171,13 @@ export class CameraWidget {
     mainLight.position.set(5, 10, 5)
     this.scene.add(mainLight)
 
-    const fillLight = new DirectionalLight(0xe93d82, 0.3)
+    const fillLight = new DirectionalLight(this.pal.fill, 0.3)
     fillLight.position.set(-5, 5, -5)
     this.scene.add(fillLight)
 
     this.gridHelper = new GridHelper(5, 20, 0x1a1a2e, 0x12121a)
     this.gridHelper.position.y = -0.01
+    this.gridHelper.visible = this.pal.showGrid
     this.scene.add(this.gridHelper)
 
     this.createSubject()
@@ -205,7 +223,7 @@ export class CameraWidget {
     const cardThickness = 0.02
     const cardGeo = new BoxGeometry(1.2, 1.2, cardThickness)
 
-    const frontMat = new MeshBasicMaterial({ color: 0x3a3a4a })
+    const frontMat = new MeshBasicMaterial({ color: this.pal.cardFront })
     const backMat = new MeshBasicMaterial({ map: this.createGridTexture() })
     const edgeMat = new MeshBasicMaterial({ color: 0x1a1a2a })
 
@@ -224,14 +242,14 @@ export class CameraWidget {
     this.planeMat = frontMat
 
     const frameGeo = new EdgesGeometry(cardGeo)
-    const frameMat = new LineBasicMaterial({ color: 0xe93d82 })
+    const frameMat = new LineBasicMaterial({ color: this.pal.frame })
     this.imageFrame = new LineSegments(frameGeo, frameMat)
     this.imageFrame.position.copy(this.CENTER)
     this.scene.add(this.imageFrame)
 
     const glowRingGeo = new RingGeometry(0.55, 0.58, 64)
     const glowRingMat = new MeshBasicMaterial({
-      color: 0xe93d82,
+      color: this.pal.frame,
       transparent: true,
       opacity: 0.4,
       side: DoubleSide
@@ -239,14 +257,15 @@ export class CameraWidget {
     this.glowRing = new Mesh(glowRingGeo, glowRingMat)
     this.glowRing.position.set(0, 0.01, 0)
     this.glowRing.rotation.x = -Math.PI / 2
+    this.glowRing.visible = this.pal.showGlowRing
     this.scene.add(this.glowRing)
   }
 
   private createCameraIndicator(): void {
     const camGeo = new ConeGeometry(0.15, 0.4, 4)
     const camMat = new MeshStandardMaterial({
-      color: 0xe93d82,
-      emissive: 0xe93d82,
+      color: this.pal.camera,
+      emissive: this.pal.camera,
       emissiveIntensity: 0.5,
       metalness: 0.8,
       roughness: 0.2
@@ -256,18 +275,19 @@ export class CameraWidget {
 
     const camGlowGeo = new SphereGeometry(0.08, 16, 16)
     const camGlowMat = new MeshBasicMaterial({
-      color: 0xff6ba8,
+      color: this.pal.camera,
       transparent: true,
       opacity: 0.8
     })
     this.camGlow = new Mesh(camGlowGeo, camGlowMat)
+    this.camGlow.visible = this.pal.showGlows
     this.scene.add(this.camGlow)
   }
 
   private createAzimuthRing(): void {
     const azRingGeo = new TorusGeometry(this.AZIMUTH_RADIUS, 0.04, 16, 100)
     const azRingMat = new MeshBasicMaterial({
-      color: 0xe93d82,
+      color: this.pal.azimuth,
       transparent: true,
       opacity: 0.7
     })
@@ -278,8 +298,8 @@ export class CameraWidget {
 
     const azHandleGeo = new SphereGeometry(0.16, 32, 32)
     const azHandleMat = new MeshStandardMaterial({
-      color: 0xe93d82,
-      emissive: 0xe93d82,
+      color: this.pal.azimuth,
+      emissive: this.pal.azimuth,
       emissiveIntensity: 0.6,
       metalness: 0.3,
       roughness: 0.4
@@ -289,11 +309,12 @@ export class CameraWidget {
 
     const azGlowGeo = new SphereGeometry(0.22, 16, 16)
     const azGlowMat = new MeshBasicMaterial({
-      color: 0xe93d82,
+      color: this.pal.azimuth,
       transparent: true,
       opacity: 0.2
     })
     this.azGlow = new Mesh(azGlowGeo, azGlowMat)
+    this.azGlow.visible = this.pal.showGlows
     this.scene.add(this.azGlow)
   }
 
@@ -312,7 +333,7 @@ export class CameraWidget {
     const arcCurve = new CatmullRomCurve3(arcPoints)
     const elArcGeo = new TubeGeometry(arcCurve, 32, 0.04, 8, false)
     const elArcMat = new MeshBasicMaterial({
-      color: 0x00ffd0,
+      color: this.pal.elevation,
       transparent: true,
       opacity: 0.8
     })
@@ -321,8 +342,8 @@ export class CameraWidget {
 
     const elHandleGeo = new SphereGeometry(0.16, 32, 32)
     const elHandleMat = new MeshStandardMaterial({
-      color: 0x00ffd0,
-      emissive: 0x00ffd0,
+      color: this.pal.elevation,
+      emissive: this.pal.elevation,
       emissiveIntensity: 0.6,
       metalness: 0.3,
       roughness: 0.4
@@ -332,19 +353,20 @@ export class CameraWidget {
 
     const elGlowGeo = new SphereGeometry(0.22, 16, 16)
     const elGlowMat = new MeshBasicMaterial({
-      color: 0x00ffd0,
+      color: this.pal.elevation,
       transparent: true,
       opacity: 0.2
     })
     this.elGlow = new Mesh(elGlowGeo, elGlowMat)
+    this.elGlow.visible = this.pal.showGlows
     this.scene.add(this.elGlow)
   }
 
   private createDistanceHandle(): void {
     const distHandleGeo = new SphereGeometry(0.15, 32, 32)
     const distHandleMat = new MeshStandardMaterial({
-      color: 0xffb800,
-      emissive: 0xffb800,
+      color: this.pal.distance,
+      emissive: this.pal.distance,
       emissiveIntensity: 0.7,
       metalness: 0.5,
       roughness: 0.3
@@ -354,11 +376,12 @@ export class CameraWidget {
 
     const distGlowGeo = new SphereGeometry(0.22, 16, 16)
     const distGlowMat = new MeshBasicMaterial({
-      color: 0xffb800,
+      color: this.pal.distance,
       transparent: true,
       opacity: 0.25
     })
     this.distGlow = new Mesh(distGlowGeo, distGlowMat)
+    this.distGlow.visible = this.pal.showGlows
     this.scene.add(this.distGlow)
   }
 
@@ -371,7 +394,7 @@ export class CameraWidget {
     const path = new LineCurve3(start, end)
     const tubeGeo = new TubeGeometry(path, 1, 0.025, 8, false)
     const tubeMat = new MeshBasicMaterial({
-      color: 0xffb800,
+      color: this.pal.distance,
       transparent: true,
       opacity: 0.8
     })

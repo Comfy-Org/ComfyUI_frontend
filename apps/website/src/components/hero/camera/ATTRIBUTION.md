@@ -40,3 +40,6 @@ Qwen-Image-Edit-2511-Multiple-Angles-LoRA.
 - `pause()`/`resume()` added so the render loop stops when the widget is
   offscreen or the tab is hidden
 - replaced image-card textures are disposed instead of leaked
+- added an optional `palette` (colours + grid/glow toggles) so the marketing
+  hero can render the scene in a quieter white / grey / yellow theme; defaults
+  reproduce the upstream ComfyUI look exactly
