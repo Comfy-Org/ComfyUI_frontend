@@ -1,5 +1,6 @@
 <script setup lang="ts">
 export interface ActiveTab {
+  path: string
   name: string
 }
 

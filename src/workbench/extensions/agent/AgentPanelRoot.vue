@@ -156,8 +156,20 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
 
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
-  return active ? { name: active.filename } : null
+  return active ? { path: active.path, name: active.filename } : null
 })
+
+const workflowTabs = computed<ActiveTab[]>(() =>
+  workflowStore.openWorkflows.map((tab) => ({
+    path: tab.path,
+    name: tab.filename
+  }))
+)
+
+async function onSelectTab(path: string): Promise<void> {
+  const tab = workflowStore.getWorkflowByPath(path)
+  if (tab) await workflowService.openWorkflow(tab)
+}
 
 let lastSentGraph: string | null = null
 let snapshotTabPath: string | null = null
@@ -727,8 +739,10 @@ async function onFilesPicked(event: Event): Promise<void> {
       :history-groups="history.grouped"
       :selection-tags="selectionTags"
       :active-tab="activeTab"
+      :workflow-tabs="workflowTabs"
       :conflict-open="conflictOpen"
       :get-mention-nodes="mentionableNodes"
+      @select-tab="onSelectTab"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
