@@ -59,6 +59,8 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
+let sessionGeneration = 0
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
@@ -76,6 +78,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let ownedGeneration = 0
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -101,12 +104,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function start(): void {
+    ownedGeneration = ++sessionGeneration
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     const surviving = conversationStore.threadId
     if (surviving !== null) {
       const generation = ++loadGeneration
-      void hydrateFromServer(surviving, () => generation === loadGeneration)
+      const isCurrent = () =>
+        generation === loadGeneration && ownedGeneration === sessionGeneration
+      conversationStore.stashActiveTurn()
+      void hydrateFromServer(surviving, isCurrent).then(() => {
+        if (isCurrent() && conversationStore.threadId === surviving)
+          conversationStore.resumeBackgroundTurn()
+      })
       return
     }
     if (conversationStore.messages.length === 0) {
@@ -114,7 +124,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
-        void hydrateFromServer(stored, () => generation === loadGeneration)
+        void hydrateFromServer(
+          stored,
+          () =>
+            generation === loadGeneration &&
+            ownedGeneration === sessionGeneration
+        )
       }
     }
   }
@@ -146,8 +161,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    conversationStore.abortActiveTurn()
-    conversationStore.dropBackgroundTurns()
+    const stoppedGeneration = ownedGeneration
+    queueMicrotask(() => {
+      if (stoppedGeneration !== sessionGeneration) return
+      conversationStore.abortActiveTurn()
+      conversationStore.dropBackgroundTurns()
+    })
   }
 
   async function sendMessage(
@@ -286,16 +305,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function loadThread(threadId: string): Promise<void> {
     const generation = ++loadGeneration
+    const isCurrent = () =>
+      generation === loadGeneration && ownedGeneration === sessionGeneration
     conversationStore.stashActiveTurn()
     draftStore.reset()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    const hydrated = await hydrateFromServer(
-      threadId,
-      () => generation === loadGeneration
-    )
-    if (hydrated && generation === loadGeneration)
-      conversationStore.resumeBackgroundTurn()
+    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
   function onRaw(raw: unknown): void {
