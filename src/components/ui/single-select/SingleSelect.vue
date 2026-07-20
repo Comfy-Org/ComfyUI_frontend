@@ -18,8 +18,8 @@
       <div
         :class="
           cn(
-            'flex flex-1 items-center gap-2 overflow-hidden py-2',
-            size === 'md' ? 'pl-3 text-xs' : 'pl-4 text-sm'
+            'flex flex-1 items-center gap-2 overflow-hidden py-2 pl-2',
+            size === 'md' ? 'text-xs' : 'text-sm'
           )
         "
       >

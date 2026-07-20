@@ -23,19 +23,19 @@
         "
       >
         <div
-          :class="
-            cn(
-              'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
-              size === 'md' ? 'pl-3' : 'pl-4'
-            )
-          "
+          class="flex flex-1 items-center overflow-hidden py-2 pl-2 whitespace-nowrap"
         >
           <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
             {{ label }}
           </span>
           <span
             v-if="selectedCount > 0"
-            class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
+            :class="
+              cn(
+                'pointer-events-none absolute -top-2 -right-2 z-10',
+                selectCountBadgeClass
+              )
+            "
           >
             {{ selectedCount }}
           </span>
@@ -158,6 +158,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import {
   selectContentClass,
+  selectCountBadgeClass,
   selectDropdownClass,
   selectEmptyMessageClass,
   selectItemVariants,
