@@ -39,12 +39,15 @@ function pick(session: ChatSession): void {
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex shrink-0 items-center px-2 py-1.5">
       <button
-        v-tooltip.bottom="{ value: t('agent.backToChat'), showDelay: 500 }"
+        v-tooltip.bottom="{
+          value: t('agent.backToPreviousChat'),
+          showDelay: 500
+        }"
         type="button"
         class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-6 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors"
         @click="emit('back')"
       >
-        <span class="icon-[lucide--arrow-left] size-3.5 shrink-0" />
+        <span class="icon-[lucide--chevron-left] size-3.5 shrink-0" />
         <span>{{ t('agent.history') }}</span>
       </button>
     </div>
