@@ -17,11 +17,11 @@ export function useWorkspaceMenuItems() {
   const { t } = useI18n()
   const { isFreeTier, subscription } = useBillingContext()
   const {
+    permissions,
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
-    isOriginalOwner,
-    isTeamPlanCancelled,
+    isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
@@ -37,33 +37,42 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
+    if (
+      !permissions.value.canManageSubscriptionLifecycle ||
+      !canCancelPlan.value
+    ) {
+      return
+    }
     void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
   }
 
   function deleteWorkspace() {
+    if (
+      !permissions.value.canManageSubscription ||
+      isInPersonalWorkspace.value ||
+      isDeleteDisabled.value
+    ) {
+      return
+    }
     void showDeleteWorkspaceDialog()
   }
 
   function leaveWorkspace() {
+    if (!permissions.value.canLeaveWorkspace) return
     void showLeaveWorkspaceDialog()
   }
 
   const canCancelPlan = computed(
     () =>
-      isOriginalOwner.value &&
+      permissions.value.canManageSubscriptionLifecycle &&
       isActiveSubscription.value &&
-      !isTeamPlanCancelled.value &&
+      !isSubscriptionCancelled.value &&
       !isFreeTier.value
   )
 
   const canDeleteWorkspace = computed(
     () =>
-      isOriginalOwner.value &&
-      (!isInPersonalWorkspace.value || isActiveSubscription.value)
-  )
-
-  const canLeaveWorkspace = computed(
-    () => !isInPersonalWorkspace.value && !isOriginalOwner.value
+      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
   )
 
   const deleteTooltip = computed(() => {
@@ -100,7 +109,7 @@ export function useWorkspaceMenuItems() {
       })
     }
 
-    if (canLeaveWorkspace.value) {
+    if (permissions.value.canLeaveWorkspace) {
       items.push({
         label: t('workspacePanel.menu.leaveWorkspace'),
         command: leaveWorkspace

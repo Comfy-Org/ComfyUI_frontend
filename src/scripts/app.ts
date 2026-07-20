@@ -96,6 +96,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
@@ -156,6 +157,8 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -166,6 +169,11 @@ import {
 } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
+
+function isMeshModelFile(file: File): boolean {
+  const name = file.name.toLowerCase()
+  return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
+}
 
 export function sanitizeNodeName(string: string) {
   let entityMap = {
@@ -660,6 +668,12 @@ export class ComfyApp {
             imageFiles.length + audioFiles.length + videoFiles.length
           const hasMultipleMedia = totalMedia > 1
 
+          const createdNodes: LGraphNode[] = []
+          const handleFileOptions = {
+            deferWarnings: true,
+            onNodeCreated: (node: LGraphNode) => createdNodes.push(node)
+          }
+
           if (hasMultipleMedia) {
             if (imageFiles.length > 0) {
               await this.handleFileList(imageFiles)
@@ -671,17 +685,15 @@ export class ComfyApp {
               await this.handleVideoFileList(videoFiles)
             }
             for (const file of files.filter((f) => !isMediaFile(f))) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           } else {
             for (const file of files) {
-              await this.handleFile(file, 'file_drop', {
-                deferWarnings: true
-              })
+              await this.handleFile(file, 'file_drop', handleFileOptions)
             }
           }
+
+          this.positionNodes(createdNodes)
         } finally {
           workspace.spinner = false
         }
@@ -1633,6 +1645,7 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.clearAllErrors()
+    let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const comfyOrgAuthToken = await useAuthStore().getAuthToken()
@@ -1675,12 +1688,8 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            const nodeErrors = res.node_errors
-            const hasNodeErrors =
-              nodeErrors && Object.keys(nodeErrors).length > 0
-            executionErrorStore.lastNodeErrors = hasNodeErrors
-              ? nodeErrors
-              : null
+            executionErrorStore.recordNodeErrors(res.node_errors ?? null)
+            queueResultOverride = null
             try {
               if (res.prompt_id) {
                 executionStore.storeJob({
@@ -1696,7 +1705,7 @@ export class ComfyApp {
                 error
               })
             }
-            if (hasNodeErrors) {
+            if (executionErrorStore.hasNodeError) {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionErrorStore.showErrorOverlay()
               }
@@ -1768,30 +1777,18 @@ export class ComfyApp {
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
-              executionErrorStore.lastNodeErrors =
-                error.response.node_errors ?? null
+              // Keep the legacy result before empty node errors are normalized.
+              const nodeErrors = error.response.node_errors
+              queueResultOverride = !nodeErrors
+              executionErrorStore.recordNodeErrors(nodeErrors ?? null)
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              const nodeErrors = error.response.node_errors
-              const hasNodeErrors =
-                nodeErrors && Object.keys(nodeErrors).length > 0
-
-              if (!hasNodeErrors) {
-                const respError = error.response.error
-                if (respError && typeof respError === 'object') {
-                  executionErrorStore.lastPromptError = {
-                    type: respError.type,
-                    message: respError.message,
-                    details: respError.details ?? ''
-                  }
-                } else if (typeof respError === 'string') {
-                  executionErrorStore.lastPromptError = {
-                    type: 'error',
-                    message: respError,
-                    details: ''
-                  }
+              if (!executionErrorStore.hasNodeError) {
+                const promptError = normalizePromptError(error.response.error)
+                if (promptError) {
+                  executionErrorStore.recordPromptError(promptError)
                 }
               }
 
@@ -1831,7 +1828,7 @@ export class ComfyApp {
     } finally {
       this.processingQueue = false
     }
-    return !executionErrorStore.lastNodeErrors
+    return queueResultOverride ?? !executionErrorStore.lastNodeErrors
   }
 
   showErrorOnFileLoad(file: File) {
@@ -1847,7 +1844,10 @@ export class ComfyApp {
   async handleFile(
     file: File,
     openSource?: WorkflowOpenSource,
-    options?: { deferWarnings?: boolean }
+    options?: {
+      deferWarnings?: boolean
+      onNodeCreated?: (node: LGraphNode) => void
+    }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
@@ -1869,6 +1869,13 @@ export class ComfyApp {
         transfer.items.add(file)
         const node = await createNode(this.canvas, nodeType)
         await pasteFn(this.canvas, transfer.items, node)
+        if (node) options?.onNodeCreated?.(node)
+        return
+      }
+
+      if (isMeshModelFile(file)) {
+        const node = await this.handleMeshFile(file)
+        if (node) options?.onNodeCreated?.(node)
         return
       }
 
@@ -1948,6 +1955,29 @@ export class ComfyApp {
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+  /**
+   * Uploads a mesh model file and creates a Load3DAdvanced node displaying it
+   * @param {File} file
+   */
+  private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
+    if (!uploadedPath) return null
+
+    const node = await createNode(this.canvas, 'Load3DAdvanced')
+    if (!node) return null
+
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (!modelWidget) return node
+
+    const values = (modelWidget.options as { values?: string[] } | undefined)
+      ?.values
+    if (values && !values.includes(uploadedPath)) {
+      values.push(uploadedPath)
+    }
+    modelWidget.value = uploadedPath
+    return node
   }
 
   /**

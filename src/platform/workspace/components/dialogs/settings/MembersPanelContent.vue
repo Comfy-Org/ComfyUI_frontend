@@ -186,7 +186,9 @@
     </div>
     <!-- Upsell Banner -->
     <MemberUpsellBanner
-      v-if="!isPlanLoading && !isOnTeamPlan"
+      v-if="
+        !isPlanLoading && !isOnTeamPlan && permissions.canManageSubscription
+      "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
