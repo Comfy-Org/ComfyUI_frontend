@@ -230,6 +230,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     title: { en: 'Background and Compositing', 'zh-CN': '背景与合成' },
     videoSrc: 'https://media.comfy.org/website/learning/animation6.mp4',
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
+    href: 'https://cloud.comfy.org/?share=ea6c80d417cf',
     tags: []
   },
   {
