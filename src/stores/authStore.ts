@@ -140,13 +140,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   onAuthStateChanged(auth, (user) => {
     const previousUserId = currentUser.value?.uid ?? null
-    const isDirectAccountSwitch =
-      previousUserId !== null && user !== null && previousUserId !== user.uid
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
 
-    if (user === null || isDirectAccountSwitch) {
+    if (user === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
     }
-    if (previousUserId !== null && previousUserId !== user?.uid) {
+    if (identityChanged) {
       useTeamWorkspaceStore().resetForIdentityChange()
     }
 

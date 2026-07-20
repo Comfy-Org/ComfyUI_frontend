@@ -143,6 +143,33 @@ describe('fetchWithUnifiedRemint', () => {
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
   })
 
+  it('preserves a Request body for the retry', async () => {
+    const body = JSON.stringify({ amount: 5 })
+    const request = new Request('https://cloud/x', {
+      method: 'POST',
+      body,
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+    mockFetch
+      .mockImplementationOnce(async (input: Request) => {
+        expect(await input.text()).toBe(body)
+        return unauthorized
+      })
+      .mockImplementationOnce(async (input: Request) => {
+        expect(input).not.toBe(request)
+        expect(await input.text()).toBe(body)
+        return ok
+      })
+    mockRemint.mockResolvedValue('tokenB')
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    const retryHeaders = new Headers(mockFetch.mock.calls[1][1].headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
   it('surfaces the original 401 when the original bearer is unavailable', async () => {
     mockFetch.mockResolvedValueOnce(unauthorized)
 

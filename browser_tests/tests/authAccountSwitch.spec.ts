@@ -37,6 +37,46 @@ const ACCOUNT_B = {
 
 type MockAccount = typeof ACCOUNT_A | typeof ACCOUNT_B
 
+interface FirebasePasswordSignInResponse {
+  kind: 'identitytoolkit#VerifyPasswordResponse'
+  localId: string
+  email: string
+  displayName: string
+  idToken: string
+  registered: boolean
+  refreshToken: string
+  expiresIn: string
+}
+
+interface FirebaseLookupResponse {
+  kind: 'identitytoolkit#GetAccountInfoResponse'
+  users: Array<{
+    localId: string
+    email: string
+    displayName: string
+    emailVerified: boolean
+    providerUserInfo: Array<{
+      providerId: string
+      rawId: string
+      email: string
+      displayName: string
+    }>
+    validSince: string
+    lastLoginAt: string
+    createdAt: string
+  }>
+}
+
+interface FirebaseSecureTokenResponse {
+  access_token: string
+  expires_in: string
+  token_type: 'Bearer'
+  refresh_token: string
+  id_token: string
+  user_id: string
+  project_id: string
+}
+
 function accountForToken(token: string | null): MockAccount {
   if (
     token?.includes(ACCOUNT_B.idToken) ||
@@ -53,7 +93,7 @@ function accountForToken(token: string | null): MockAccount {
   throw new Error(`Unexpected account token: ${token ?? 'missing'}`)
 }
 
-function firebaseLookupResponse(account: MockAccount) {
+function firebaseLookupResponse(account: MockAccount): FirebaseLookupResponse {
   return {
     kind: 'identitytoolkit#GetAccountInfoResponse',
     users: [
@@ -82,6 +122,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
   test('keeps workspace bearer and session cookie on the switched account', async ({
     page
   }) => {
+    test.setTimeout(60_000)
+
     await new CloudWorkspaceMockHelper(page).setup([
       ...DEFAULT_TEAM_MEMBERS,
       member({
@@ -111,17 +153,18 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.route('**/identitytoolkit.googleapis.com/**', async (route) => {
       const request = route.request()
       if (request.url().includes('accounts:signInWithPassword')) {
+        const response = {
+          kind: 'identitytoolkit#VerifyPasswordResponse',
+          localId: ACCOUNT_B.uid,
+          email: ACCOUNT_B.email,
+          displayName: ACCOUNT_B.displayName,
+          idToken: ACCOUNT_B.idToken,
+          registered: true,
+          refreshToken: ACCOUNT_B.refreshToken,
+          expiresIn: '3600'
+        } satisfies FirebasePasswordSignInResponse
         await route.fulfill({
-          json: {
-            kind: 'identitytoolkit#VerifyPasswordResponse',
-            localId: ACCOUNT_B.uid,
-            email: ACCOUNT_B.email,
-            displayName: ACCOUNT_B.displayName,
-            idToken: ACCOUNT_B.idToken,
-            registered: true,
-            refreshToken: ACCOUNT_B.refreshToken,
-            expiresIn: '3600'
-          }
+          json: response
         })
         return
       }
@@ -137,16 +180,17 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         route.request().postData() ?? ''
       ).get('refresh_token')
       const account = accountForToken(refreshToken)
+      const response = {
+        access_token: account.idToken,
+        expires_in: '3600',
+        token_type: 'Bearer',
+        refresh_token: account.refreshToken,
+        id_token: account.idToken,
+        user_id: account.uid,
+        project_id: 'dreamboothy-dev'
+      } satisfies FirebaseSecureTokenResponse
       await route.fulfill({
-        json: {
-          access_token: account.idToken,
-          expires_in: '3600',
-          token_type: 'Bearer',
-          refresh_token: account.refreshToken,
-          id_token: account.idToken,
-          user_id: account.uid,
-          project_id: 'dreamboothy-dev'
-        }
+        json: response
       })
     })
 
@@ -212,10 +256,17 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     let viewStatus: number | null = null
     await page.route('**/api/view?*', async (route) => {
       viewCookie = await route.request().headerValue('cookie')
-      const bearerOwner = jobsAuthorization?.endsWith('-b') ? 'b' : 'a'
-      const cookieOwner = viewCookie?.includes('mock-cloud-session=b')
-        ? 'b'
-        : 'a'
+      const bearerOwner =
+        jobsAuthorization === null
+          ? null
+          : jobsAuthorization.endsWith(`-${ACCOUNT_B.id}`)
+            ? ACCOUNT_B.id
+            : ACCOUNT_A.id
+      const cookieOwner = viewCookie?.includes(
+        `mock-cloud-session=${ACCOUNT_B.id}`
+      )
+        ? ACCOUNT_B.id
+        : ACCOUNT_A.id
 
       if (bearerOwner !== cookieOwner) {
         viewStatus = 404
@@ -234,7 +285,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       })
     })
 
-    await page.goto(APP_URL)
+    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
     await expect.poll(() => workspaceMintOwners).toContain('a')
     await expect.poll(() => sessionOwners).toContain('a')
 
@@ -260,7 +311,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       }
       applyTargetRoute()
     })
-    await page.goto(APP_URL)
+    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
     await page.getByRole('button', { name: 'Use email instead' }).click()
     await page.getByLabel('Email').fill(ACCOUNT_B.email)

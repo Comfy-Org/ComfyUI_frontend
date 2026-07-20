@@ -79,6 +79,10 @@ export async function fetchWithUnifiedRemint(
   init: RequestInit,
   shouldRetryOn401: boolean
 ): Promise<Response> {
+  const retryInput =
+    shouldRetryOn401 && input instanceof Request && input.body !== null
+      ? input.clone()
+      : input
   const response = await fetch(input, init)
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
@@ -102,7 +106,7 @@ export async function fetchWithUnifiedRemint(
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
-  return fetch(input, { ...init, headers })
+  return fetch(retryInput, { ...init, headers })
 }
 
 function isRetriableUnauthorized(
