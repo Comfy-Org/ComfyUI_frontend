@@ -31,6 +31,14 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
+const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/auth/session/useSessionCookie', () => ({
+  useSessionCookie: () => ({
+    ensureSessionCookie: mockEnsureSessionCookie
+  })
+}))
+
 // Mock current user (drives the original-owner self-row match by email)
 const mockCurrentUser = vi.hoisted(() => ({
   userEmail: { value: null as string | null }
@@ -144,6 +152,7 @@ describe('useTeamWorkspaceStore', () => {
     mockWorkspaceAuthStore.isAuthenticated = false
     mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(false)
     mockWorkspaceAuthStore.switchWorkspace.mockResolvedValue(undefined)
+    mockEnsureSessionCookie.mockResolvedValue(undefined)
 
     // Default mock responses
     mockWorkspaceApi.list.mockResolvedValue({
@@ -302,6 +311,9 @@ describe('useTeamWorkspaceStore', () => {
 
       const store = useTeamWorkspaceStore()
       const firstInitialization = store.initialize()
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      )
       store.resetForIdentityChange()
       const secondInitialization = store.initialize()
 

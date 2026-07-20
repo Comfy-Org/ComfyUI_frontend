@@ -194,11 +194,13 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       })
     })
 
+    const credentialEvents: string[] = []
     const workspaceMintOwners: string[] = []
     await page.route('**/api/auth/token', async (route) => {
       const authorization = await route.request().headerValue('authorization')
       const account = accountForToken(authorization)
       workspaceMintOwners.push(account.id)
+      credentialEvents.push(`workspace:${account.id}`)
       const response = {
         token: `workspace-jwt-${account.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
@@ -217,7 +219,6 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.route('**/api/auth/session', async (route) => {
       const authorization = await route.request().headerValue('authorization')
       const account = accountForToken(authorization)
-      sessionOwners.push(account.id)
       await route.fulfill({
         status: 200,
         headers: {
@@ -225,6 +226,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         },
         json: {}
       })
+      sessionOwners.push(account.id)
+      credentialEvents.push(`session:${account.id}`)
     })
 
     await page.route('**/customers', (route) =>
@@ -286,8 +289,10 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     })
 
     await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
-    await expect.poll(() => workspaceMintOwners).toContain('a')
-    await expect.poll(() => sessionOwners).toContain('a')
+    await expect
+      .poll(() => workspaceMintOwners, { timeout: 15_000 })
+      .toContain('a')
+    await expect.poll(() => sessionOwners, { timeout: 15_000 }).toContain('a')
 
     await page.evaluate(() => {
       sessionStorage.setItem(
@@ -324,8 +329,13 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByText(ACCOUNT_B.email, { exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect.poll(() => workspaceMintOwners).toContain('b')
-    await expect.poll(() => sessionOwners).toContain('b')
+    await expect
+      .poll(() => workspaceMintOwners, { timeout: 15_000 })
+      .toContain('b')
+    await expect.poll(() => sessionOwners, { timeout: 15_000 }).toContain('b')
+    expect(credentialEvents.indexOf('session:b')).toBeLessThan(
+      credentialEvents.indexOf('workspace:b')
+    )
 
     await new AssetsSidebarTab(page).open()
     const card = page.locator('[data-asset-id="account-switch-job"]')

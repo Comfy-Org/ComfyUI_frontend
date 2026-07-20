@@ -254,6 +254,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
+        const { useSessionCookie } =
+          await import('@/platform/auth/session/useSessionCookie')
+        await useSessionCookie().ensureSessionCookie()
+        if (isStaleIdentity(generation)) return
+
         // 1. Try to restore workspace context from session (page refresh case)
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 

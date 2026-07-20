@@ -428,6 +428,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     error.value = null
 
     try {
+      const { useSessionCookie } =
+        await import('@/platform/auth/session/useSessionCookie')
+      await useSessionCookie().ensureSessionCookie()
+      if (isStaleWorkspaceRequest(capturedRequestId, capturedOwnerUid)) return
+
       const { token, expiresAt, workspace, ownerUid } =
         await requestToken(workspaceId)
 

@@ -11,6 +11,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
 const mockToastAdd = vi.fn()
+const mockEnsureSessionCookie = vi.fn()
 const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
   value: null
 }))
@@ -29,6 +30,12 @@ vi.mock('@/stores/authStore', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace
+  })
+}))
+
+vi.mock('@/platform/auth/session/useSessionCookie', () => ({
+  useSessionCookie: () => ({
+    ensureSessionCookie: mockEnsureSessionCookie
   })
 }))
 
@@ -96,6 +103,7 @@ describe('useWorkspaceAuthStore', () => {
     mockTeamWorkspacesEnabled.value = true
     mockUnifiedCloudAuthEnabled.value = false
     mockCurrentUser.value = { uid: 'user-a' }
+    mockEnsureSessionCookie.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -279,6 +287,47 @@ describe('useWorkspaceAuthStore', () => {
       expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
       expect(workspaceToken.value).toBe('workspace-token-abc')
       expect(isAuthenticated.value).toBe(true)
+    })
+
+    it('waits for the matching session cookie before exchanging a workspace token', async () => {
+      let confirmSession: () => void = () => {}
+      mockEnsureSessionCookie.mockReturnValue(
+        new Promise<void>((resolve) => {
+          confirmSession = resolve
+        })
+      )
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const switchPromise = store.switchWorkspace('workspace-123')
+      await Promise.resolve()
+
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      confirmSession()
+      await switchPromise
+
+      expect(mockFetch).toHaveBeenCalledOnce()
+      expect(store.workspaceToken).toBe('workspace-token-abc')
+    })
+
+    it('does not exchange a workspace token when session creation fails', async () => {
+      mockEnsureSessionCookie.mockRejectedValue(new Error('session denied'))
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
+        'session denied'
+      )
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(store.workspaceToken).toBeNull()
     })
 
     it('discards a token exchange that resolves after the user changes', async () => {
