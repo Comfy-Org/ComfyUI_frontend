@@ -1,0 +1,126 @@
+# Nightly drift radar for the custom-node suite - NON-GATING by design. The
+# PR gate (ci-tests-custom-nodes.yaml) pins core and packs so a PR red is
+# always the PR's fault; this workflow is where environment drift surfaces
+# instead, one moving variable per job so every red names its own culprit:
+#
+#   Job A (canary-core-drift): core at master, packs pinned
+#     -> red = a core change broke the frontend contract or exposed a pack
+#        bug (e.g. the 2026-07-18 KJNodes editor crashes). Fix our code,
+#        ledger the pack bug, or bump the gate's core pin in its own PR.
+#   Job B (pack HEADs, planned - see the manifest loader's
+#     CUSTOM_NODES_ALLOW_UNPINNED escape hatch): core pinned, packs at HEAD
+#     -> red = a pack author's update broke something. Needs its own policy
+#        for the exact node-count guard before it can land.
+#
+# A canary red blocks nothing; it is a signal to triage. Mirrors the gate's
+# steps minus the path filter (drift checks always run the full suite) and
+# minus the core pin.
+name: 'CI: Custom Nodes Canary'
+
+on:
+  schedule:
+    # Nightly, off-peak. Scheduled runs execute from the default branch.
+    - cron: '30 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  canary-core-drift:
+    # Don't run the cron on forks.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    # Drift reds run slower than green (retries multiply every failure).
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # No comfyui_ref: core deliberately floats at master. This is the ONE
+      # moving variable in this job.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+
+      # Identical pinned-pack install to the gate: packs must NOT move here,
+      # or a red would be ambiguous between core drift and pack drift.
+      - name: Install manifest custom nodes
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
+          manifest=browser_tests/fixtures/data/customNodeManifest.json
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pin=$(jq -r '.pin' <<<"$entry")
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
+            fi
+            if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            echo "::group::install $pack"
+            git clone --depth 1 "$repo" "$dir"
+            git -C "$dir" fetch --depth 1 origin "$pin"
+            git -C "$dir" checkout "$pin"
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1
+
+      - name: Forbid skipped tests
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load on current core"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes-canary
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn

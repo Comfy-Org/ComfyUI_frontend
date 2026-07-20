@@ -4,6 +4,12 @@
 # red - a regression gate that let a broken pack through as a "skip" would be
 # pointless. Mark `custom-nodes-e2e` as a required status check in branch
 # protection to block merges on failure.
+#
+# The gate is fully DETERMINISTIC: ComfyUI core and every pack are pinned at
+# verified commits, so nothing in the environment can move underneath a PR
+# and a red here is always caused by the PR itself. Environment drift (core
+# master moving, pack authors shipping changes) is the nightly canary's job
+# (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not a PR blocker.
 name: 'CI: Tests Custom Nodes'
 
 on:
@@ -71,10 +77,16 @@ jobs:
 
       # Checks out ComfyUI, installs Python/torch/requirements and ComfyUI_devtools.
       # launch_server:false so we can add the manifest packs before booting.
+      # comfyui_ref pins core so the gate is reproducible: this SHA is the
+      # exact master commit the suite (incl. the KJNodes ledger entries and
+      # per-pack node counts) was last verified green against. Bump it
+      # deliberately, in its own PR, recalibrating ledgers/counts if the run
+      # says so. Core DRIFT is covered nightly by the canary, not here.
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: 'false'
+          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
 
       # Install every pack the manifest declares (DRY: a new pack row installs
       # itself here, no workflow change). A clone or dependency failure fails the
