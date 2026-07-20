@@ -37,6 +37,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
+  const requestIds = { status: 0, balance: 0 }
 
   const isActiveSubscription = computed(
     () => statusData.value?.is_active ?? false
@@ -113,30 +114,81 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function fetchStatus(): Promise<void> {
+    const requestId = ++requestIds.status
     isLoading.value = true
     error.value = null
     try {
-      statusData.value = await workspaceApi.getBillingStatus()
+      const status = await workspaceApi.getBillingStatus()
+      if (requestId === requestIds.status) statusData.value = status
     } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : 'Failed to fetch billing status'
+      if (requestId === requestIds.status) {
+        error.value =
+          err instanceof Error ? err.message : 'Failed to fetch billing status'
+      }
       throw err
     } finally {
-      isLoading.value = false
+      if (requestId === requestIds.status) isLoading.value = false
     }
   }
 
   async function fetchBalance(): Promise<void> {
+    const requestId = ++requestIds.balance
     isLoading.value = true
     error.value = null
     try {
-      balanceData.value = await workspaceApi.getBillingBalance()
+      const balance = await workspaceApi.getBillingBalance()
+      if (requestId === requestIds.balance) balanceData.value = balance
     } catch (err) {
-      error.value =
-        err instanceof Error ? err.message : 'Failed to fetch balance'
+      if (requestId === requestIds.balance) {
+        error.value =
+          err instanceof Error ? err.message : 'Failed to fetch balance'
+      }
       throw err
     } finally {
-      isLoading.value = false
+      if (requestId === requestIds.balance) isLoading.value = false
+    }
+  }
+
+  async function retryBillingRead(
+    read: () => Promise<void>,
+    resource: keyof typeof requestIds
+  ): Promise<{ failed: boolean; requestId: number }> {
+    const firstAttempt = read()
+    const firstRequestId = requestIds[resource]
+    try {
+      await firstAttempt
+      return { failed: false, requestId: firstRequestId }
+    } catch {
+      if (firstRequestId !== requestIds[resource]) {
+        return { failed: false, requestId: firstRequestId }
+      }
+    }
+
+    const retry = read()
+    const retryRequestId = requestIds[resource]
+    try {
+      await retry
+      return { failed: false, requestId: retryRequestId }
+    } catch {
+      return {
+        failed: retryRequestId === requestIds[resource],
+        requestId: retryRequestId
+      }
+    }
+  }
+
+  async function reconcileBillingStateAfterSubscribe(): Promise<void> {
+    const [statusResult, balanceResult] = await Promise.all([
+      retryBillingRead(fetchStatus, 'status'),
+      retryBillingRead(fetchBalance, 'balance')
+    ])
+    const statusFailed =
+      statusResult.failed && statusResult.requestId === requestIds.status
+    const balanceFailed =
+      balanceResult.failed && balanceResult.requestId === requestIds.balance
+
+    if (statusFailed || balanceFailed) {
+      error.value = 'Subscription succeeded, but billing state refresh failed'
     }
   }
 
@@ -147,12 +199,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.subscribe(planSlug, options)
+      const response = await workspaceApi.subscribe(planSlug, options)
+      isLoading.value = false
+      void reconcileBillingStateAfterSubscribe()
+      return response
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to subscribe'
-      throw err
-    } finally {
       isLoading.value = false
+      throw err
     }
   }
 

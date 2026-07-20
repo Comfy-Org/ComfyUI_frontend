@@ -2,8 +2,10 @@ import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
+  BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
+  ErrorResponse,
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse
@@ -46,7 +48,10 @@ const BOOT_FEATURES = {
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
 // GraphCanvas onMounted chain before the deep-link loader.
-const BOOT_SETTINGS = { 'Comfy.Assets.UseAssetAPI': false }
+const BOOT_SETTINGS = {
+  'Comfy.Assets.UseAssetAPI': false,
+  'Comfy.TutorialCompleted': true
+}
 
 const CREATOR_ANNUAL_PLAN = {
   slug: 'creator-annual',
@@ -60,6 +65,21 @@ const CREATOR_ANNUAL_PLAN = {
     seat_count: 1,
     total_cost_cents: 33_600,
     total_credits_cents: 7_400
+  }
+} satisfies Plan
+
+const STANDARD_ANNUAL_PLAN = {
+  slug: 'standard-annual',
+  tier: 'STANDARD',
+  duration: 'ANNUAL',
+  price_cents: 19_200,
+  credits_cents: 4_200,
+  max_seats: 1,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 19_200,
+    total_credits_cents: 4_200
   }
 } satisfies Plan
 
@@ -79,7 +99,25 @@ const ACTIVE_TEAM_STATUS = {
   }
 } satisfies BillingStatusResponse
 
-const TEAM_BALANCE = {
+const ACTIVE_STANDARD_STATUS = {
+  is_active: true,
+  subscription_status: 'active',
+  subscription_tier: 'STANDARD',
+  subscription_duration: 'ANNUAL',
+  plan_slug: 'standard-annual',
+  billing_status: 'paid',
+  has_funds: true,
+  renewal_date: '2099-02-20T00:00:00Z',
+  team_credit_stop: null
+} satisfies BillingStatusResponse
+
+const ACTIVE_CREATOR_STATUS = {
+  ...ACTIVE_STANDARD_STATUS,
+  subscription_tier: 'CREATOR',
+  plan_slug: 'creator-annual'
+} satisfies BillingStatusResponse
+
+const BILLING_BALANCE = {
   amount_micros: 0,
   currency: 'USD'
 } satisfies BillingBalanceResponse
@@ -87,6 +125,16 @@ const TEAM_BALANCE = {
 const TEAM_WITH_CREATOR_PLANS = {
   current_plan_slug: 'team_per_credit_annual',
   plans: [CREATOR_ANNUAL_PLAN]
+} satisfies BillingPlansResponse
+
+const STANDARD_WITH_CREATOR_PLANS = {
+  current_plan_slug: 'standard-annual',
+  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+} satisfies BillingPlansResponse
+
+const CREATOR_WITH_CREATOR_PLANS = {
+  ...STANDARD_WITH_CREATOR_PLANS,
+  current_plan_slug: 'creator-annual'
 } satisfies BillingPlansResponse
 
 const SCHEDULED_CREATOR_DOWNGRADE = {
@@ -109,6 +157,59 @@ const SUBSCRIBED_RESPONSE = {
   status: 'subscribed',
   effective_at: '2099-02-20T00:00:00Z'
 } satisfies SubscribeResponse
+
+const IMMEDIATE_CREATOR_UPGRADE = {
+  allowed: true,
+  transition_type: 'upgrade',
+  effective_at: '2026-07-20T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 14_400,
+  cost_next_period_cents: 33_600,
+  credits_today_cents: 3_200,
+  credits_next_period_cents: 7_400,
+  current_plan: {
+    slug: STANDARD_ANNUAL_PLAN.slug,
+    tier: STANDARD_ANNUAL_PLAN.tier,
+    duration: STANDARD_ANNUAL_PLAN.duration,
+    price_cents: STANDARD_ANNUAL_PLAN.price_cents,
+    credits_cents: STANDARD_ANNUAL_PLAN.credits_cents,
+    seat_summary: STANDARD_ANNUAL_PLAN.seat_summary,
+    period_end: '2026-07-20T00:00:00Z'
+  },
+  new_plan: {
+    slug: CREATOR_ANNUAL_PLAN.slug,
+    tier: CREATOR_ANNUAL_PLAN.tier,
+    duration: CREATOR_ANNUAL_PLAN.duration,
+    price_cents: CREATOR_ANNUAL_PLAN.price_cents,
+    credits_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+    seat_summary: CREATOR_ANNUAL_PLAN.seat_summary
+  }
+} satisfies PreviewSubscribeResponse
+
+const IMMEDIATE_SUBSCRIBED_RESPONSE = {
+  billing_op_id: 'creator-upgrade',
+  status: 'subscribed',
+  effective_at: '2026-07-20T00:00:00Z'
+} satisfies SubscribeResponse
+
+const PAYMENT_METHOD_REQUIRED_RESPONSE = {
+  billing_op_id: 'creator-downgrade-payment-method',
+  status: 'needs_payment_method',
+  payment_method_url: 'https://pay.test/method'
+} satisfies SubscribeResponse
+
+const UNEXPECTED_OPERATION_RESPONSE = {
+  id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
+  status: 'failed',
+  error_message: 'Payment page was not opened',
+  started_at: '2026-07-20T00:00:00Z',
+  completed_at: '2026-07-20T00:00:01Z'
+} satisfies BillingOpStatusResponse
+
+const TRANSIENT_STATUS_ERROR = {
+  code: 'billing_status_unavailable',
+  message: 'Billing status is temporarily unavailable'
+} satisfies ErrorResponse
 
 // The deep-link loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
@@ -167,7 +268,7 @@ async function mockScheduledCreatorDowngrade(page: Page) {
       balanceRefreshRequests.push(route.request())
       await postSubscribeRefreshGate
     }
-    return route.fulfill(jsonRoute(TEAM_BALANCE))
+    return route.fulfill(jsonRoute(BILLING_BALANCE))
   })
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(TEAM_WITH_CREATOR_PLANS))
@@ -186,6 +287,93 @@ async function mockScheduledCreatorDowngrade(page: Page) {
     statusRefreshRequests,
     balanceRefreshRequests,
     releasePostSubscribeRefresh
+  }
+}
+
+async function mockImmediateCreatorUpgradeWithTransientStatusFailure(
+  page: Page
+) {
+  const subscribeRequests: Request[] = []
+  const statusRefreshRequests: Request[] = []
+  let subscribeCompleted = false
+
+  await page.route('**/api/billing/status', (route) => {
+    if (!subscribeCompleted) {
+      return route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
+    }
+
+    statusRefreshRequests.push(route.request())
+    if (statusRefreshRequests.length === 1) {
+      return route.fulfill({
+        ...jsonRoute(TRANSIENT_STATUS_ERROR),
+        status: 500
+      })
+    }
+    return route.fulfill(jsonRoute(ACTIVE_CREATOR_STATUS))
+  })
+  await page.route('**/api/billing/balance', (route) =>
+    route.fulfill(jsonRoute(BILLING_BALANCE))
+  )
+  await page.route('**/api/billing/plans', (route) =>
+    route.fulfill(
+      jsonRoute(
+        subscribeCompleted
+          ? CREATOR_WITH_CREATOR_PLANS
+          : STANDARD_WITH_CREATOR_PLANS
+      )
+    )
+  )
+  await page.route('**/api/billing/preview-subscribe', (route) =>
+    route.fulfill(jsonRoute(IMMEDIATE_CREATOR_UPGRADE))
+  )
+  await page.route('**/api/billing/subscribe', (route) => {
+    subscribeRequests.push(route.request())
+    subscribeCompleted = true
+    return route.fulfill(jsonRoute(IMMEDIATE_SUBSCRIBED_RESPONSE))
+  })
+
+  return { subscribeRequests, statusRefreshRequests }
+}
+
+async function mockPopupBlockedCreatorDowngrade(page: Page) {
+  const subscribeRequests: Request[] = []
+  const statusRefreshRequests: Request[] = []
+  const balanceRefreshRequests: Request[] = []
+  const operationPollRequests: Request[] = []
+  let subscribeCompleted = false
+
+  await page.route('**/api/billing/status', (route) => {
+    if (subscribeCompleted) statusRefreshRequests.push(route.request())
+    return route.fulfill(jsonRoute(ACTIVE_TEAM_STATUS))
+  })
+  await page.route('**/api/billing/balance', (route) => {
+    if (subscribeCompleted) balanceRefreshRequests.push(route.request())
+    return route.fulfill(jsonRoute(BILLING_BALANCE))
+  })
+  await page.route('**/api/billing/plans', (route) =>
+    route.fulfill(jsonRoute(TEAM_WITH_CREATOR_PLANS))
+  )
+  await page.route('**/api/billing/preview-subscribe', (route) =>
+    route.fulfill(jsonRoute(SCHEDULED_CREATOR_DOWNGRADE))
+  )
+  await page.route('**/api/billing/subscribe', (route) => {
+    subscribeRequests.push(route.request())
+    subscribeCompleted = true
+    return route.fulfill(jsonRoute(PAYMENT_METHOD_REQUIRED_RESPONSE))
+  })
+  await page.route(
+    `**/api/billing/ops/${PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id}`,
+    (route) => {
+      operationPollRequests.push(route.request())
+      return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
+    }
+  )
+
+  return {
+    subscribeRequests,
+    statusRefreshRequests,
+    balanceRefreshRequests,
+    operationPollRequests
   }
 }
 
@@ -317,3 +505,131 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
     }
   })
 })
+
+test.describe(
+  'Billing reconciliation after plan changes',
+  { tag: '@cloud' },
+  () => {
+    test.describe('after a transient status failure', () => {
+      let subscribeRequests: Request[]
+      let statusRefreshRequests: Request[]
+
+      test.beforeEach(async ({ page }) => {
+        await setupCloudApp(page, workspace('personal', 'owner'), [])
+        const upgradeMock =
+          await mockImmediateCreatorUpgradeWithTransientStatusFailure(page)
+        subscribeRequests = upgradeMock.subscribeRequests
+        statusRefreshRequests = upgradeMock.statusRefreshRequests
+      })
+
+      test('keeps the success view while status retries, then reopens with the reconciled plan', async ({
+        page
+      }) => {
+        test.slow()
+        await page.goto(`${APP_URL}/?pricing=personal`)
+
+        const changePlan = page.getByRole('button', {
+          name: 'Change to Creator Yearly'
+        })
+        await expect(changePlan).toBeVisible({ timeout: 45_000 })
+        await changePlan.click()
+
+        await expect(
+          page.getByRole('heading', { name: 'Confirm your upgrade' })
+        ).toBeVisible()
+        const subscribeResponse = page.waitForResponse(
+          (response) =>
+            response.url().endsWith('/api/billing/subscribe') &&
+            response.request().method() === 'POST'
+        )
+        await page.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+        expect((await subscribeResponse).status()).toBe(200)
+        expect(subscribeRequests).toHaveLength(1)
+        expect(subscribeRequests[0].postDataJSON()).toMatchObject({
+          plan_slug: 'creator-annual'
+        })
+
+        const successHeading = page.getByRole('heading', {
+          name: "You're all set"
+        })
+        await expect(successHeading).toBeVisible()
+        const successView = successHeading.locator('..').locator('..')
+        await expect(
+          successView.getByText('Your plan has been successfully updated.', {
+            exact: false
+          })
+        ).toBeVisible()
+        await expect.poll(() => statusRefreshRequests.length).toBe(2)
+        await expect(successHeading).toBeVisible()
+
+        await successView.getByRole('button', { name: 'Close' }).click()
+        await page.getByRole('button', { name: 'Current user' }).click()
+        await page.getByTestId('plans-pricing-menu-item').click()
+
+        await expect(pricingHeading(page)).toBeVisible()
+        await expect(
+          page.getByRole('button', { name: 'For Personal' })
+        ).toHaveAttribute('aria-pressed', 'true')
+        await expect(
+          page.getByRole('button', { name: 'Current Plan', exact: true })
+        ).toBeDisabled()
+        await expect(changePlan).toBeHidden()
+      })
+    })
+
+    test.describe('when the payment popup is blocked', () => {
+      let subscribeRequests: Request[]
+      let statusRefreshRequests: Request[]
+      let balanceRefreshRequests: Request[]
+      let operationPollRequests: Request[]
+
+      test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+          window.open = () => null
+        })
+        await setupCloudApp(page, workspace('team', 'owner'), [
+          member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
+        ])
+        const downgradeMock = await mockPopupBlockedCreatorDowngrade(page)
+        subscribeRequests = downgradeMock.subscribeRequests
+        statusRefreshRequests = downgradeMock.statusRefreshRequests
+        balanceRefreshRequests = downgradeMock.balanceRefreshRequests
+        operationPollRequests = downgradeMock.operationPollRequests
+      })
+
+      test('reconciles status and balance without polling', async ({
+        page
+      }) => {
+        test.slow()
+        await page.goto(`${APP_URL}/?pricing=personal`)
+
+        const subscribeResponse = page.waitForResponse(
+          (response) =>
+            response.url().endsWith('/api/billing/subscribe') &&
+            response.request().method() === 'POST'
+        )
+        await page
+          .getByRole('button', { name: 'Change to Creator Yearly' })
+          .click()
+
+        expect((await subscribeResponse).status()).toBe(200)
+        expect(subscribeRequests).toHaveLength(1)
+
+        const blockedPopupToast = page
+          .locator('.p-toast-message.p-toast-message-error')
+          .filter({ hasText: 'Failed to change plan' })
+        await expect(blockedPopupToast).toContainText(
+          "Couldn't open the payment page — please try again"
+        )
+        await expect
+          .poll(() => ({
+            status: statusRefreshRequests.length,
+            balance: balanceRefreshRequests.length,
+            operationPolls: operationPollRequests.length
+          }))
+          .toEqual({ status: 1, balance: 1, operationPolls: 0 })
+      })
+    })
+  }
+)

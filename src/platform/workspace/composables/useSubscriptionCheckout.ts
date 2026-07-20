@@ -69,15 +69,8 @@ export function useSubscriptionCheckout(
 ) {
   const { t } = useI18n()
   const toast = useToast()
-  const {
-    subscribe,
-    previewSubscribe,
-    plans,
-    fetchStatus,
-    fetchBalance,
-    isTeamPlan,
-    resubscribe
-  } = useBillingContext()
+  const { subscribe, previewSubscribe, plans, isTeamPlan, resubscribe } =
+    useBillingContext()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -316,7 +309,6 @@ export function useSubscriptionCheckout(
         telemetry?.trackMonthlySubscriptionSucceeded()
       }
       checkoutStep.value = 'success'
-      void Promise.allSettled([fetchStatus(), fetchBalance()])
       return
     }
 

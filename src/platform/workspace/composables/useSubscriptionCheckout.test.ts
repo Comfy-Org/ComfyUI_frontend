@@ -398,8 +398,6 @@ describe('useSubscriptionCheckout', () => {
       }
       mockIsTeamPlan.value = true
       mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
-      mockFetchStatus.mockReturnValueOnce(new Promise(() => {}))
-      mockFetchBalance.mockRejectedValueOnce(new Error('refresh failed'))
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -409,8 +407,6 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.previewData.value).toStrictEqual(preview)
       expect(checkout.checkoutStep.value).toBe('success')
-      expect(mockFetchStatus).toHaveBeenCalledOnce()
-      expect(mockFetchBalance).toHaveBeenCalledOnce()
       expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
@@ -842,7 +838,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
-    it('transitions to success step on subscribed status', async () => {
+    it('shows existing success immediately without owning reconciliation', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -850,8 +846,8 @@ describe('useSubscriptionCheckout', () => {
         status: 'subscribed',
         billing_op_id: 'op-1'
       })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
+      mockFetchStatus.mockReturnValueOnce(new Promise(() => {}))
+      mockFetchBalance.mockReturnValueOnce(new Promise(() => {}))
 
       await checkout.handleAddCreditCard()
 
@@ -861,6 +857,8 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+      expect(mockFetchBalance).not.toHaveBeenCalled()
     })
 
     it('skips begin_checkout when no user id is available', async () => {
