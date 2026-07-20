@@ -4567,6 +4567,7 @@
     "locate": "Locate",
     "cancel": "Cancel",
     "completed": "Completed",
-    "queuedCount": "Queued ({count})"
+    "queuedCount": "Queued ({count})",
+    "goToHistory": "Go to history"
   }
 }
