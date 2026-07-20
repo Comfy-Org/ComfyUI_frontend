@@ -1,3 +1,9 @@
+import type {
+  CreateSecretRequest,
+  SecretListResponse,
+  SecretProvidersResponse,
+  SecretResponse
+} from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
@@ -38,26 +44,11 @@ const BOOT_SETTINGS = { 'Comfy.TutorialCompleted': true }
 // back by the API or rendered anywhere in the UI.
 const RUNWAY_KEY_VALUE = 'sk-runway-do-not-echo-0xDEADBEEF'
 
-interface SecretRecord {
-  id: string
-  name: string
-  provider?: string
-  created_at: string
-  updated_at: string
-  last_used_at?: string
-}
-
-interface CreateCapture {
-  name?: string
-  provider?: string
-  secret_value?: string
-}
-
 interface SecretsBackend {
   /** Bodies received by POST /secrets, in order — for asserting what was sent. */
-  createRequests: CreateCapture[]
+  createRequests: CreateSecretRequest[]
   /** Current server-side store — for asserting delete actually removed a row. */
-  store: SecretRecord[]
+  store: SecretResponse[]
 }
 
 /**
@@ -76,7 +67,9 @@ async function mockSecretsBackend(
   let idSeq = 0
 
   const respondList = (route: Route) =>
-    route.fulfill(jsonRoute({ data: backend.store }))
+    route.fulfill(
+      jsonRoute({ data: backend.store } satisfies SecretListResponse)
+    )
 
   await page.route('**/api/secrets**', async (route) => {
     const request = route.request()
@@ -96,7 +89,9 @@ async function mockSecretsBackend(
     // GET /secrets/providers — the entitlement-gated provider allowlist.
     if (pathname.endsWith('/secrets/providers')) {
       return route.fulfill(
-        jsonRoute({ data: providerIds.map((id) => ({ id })) })
+        jsonRoute({
+          data: providerIds.map((id) => ({ id }))
+        } satisfies SecretProvidersResponse)
       )
     }
 
@@ -113,19 +108,23 @@ async function mockSecretsBackend(
 
     // /secrets — collection routes.
     if (method === 'POST') {
-      const body = (request.postDataJSON() ?? {}) as CreateCapture
+      const body = (request.postDataJSON() ?? {}) as CreateSecretRequest
       backend.createRequests.push(body)
       idSeq += 1
-      const created: SecretRecord = {
+      const created: SecretResponse = {
         id: `00000000-0000-4000-8000-${String(idSeq).padStart(12, '0')}`,
-        name: body.name ?? '',
+        name: body.name,
         provider: body.provider,
         created_at: '2026-07-08T00:00:00Z',
         updated_at: '2026-07-08T00:00:00Z'
       }
       backend.store.push(created)
-      // Response echoes metadata ONLY — the schema has no secret_value field.
-      return route.fulfill(jsonRoute(created))
+      // 201 Created, echoing metadata ONLY — the schema has no secret_value field.
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(created)
+      })
     }
 
     // GET /secrets (list).
