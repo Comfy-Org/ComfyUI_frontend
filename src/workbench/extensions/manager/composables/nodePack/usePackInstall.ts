@@ -1,6 +1,6 @@
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import { t } from '@/i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -18,7 +18,6 @@ export function usePackInstall(
   const managerStore = useComfyManagerStore()
   const { show: showNodeConflictDialog } = useNodeConflictDialog()
   const { checkNodeCompatibility } = useConflictDetection()
-  const { t } = useI18n()
 
   // Check if any of the packs are currently being installed
   const isInstalling = computed(() => {
