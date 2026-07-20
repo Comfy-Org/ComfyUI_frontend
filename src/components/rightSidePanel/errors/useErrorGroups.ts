@@ -704,7 +704,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
+      (c) =>
+        (c.nodeId != null && isAssetCandidateInSelection(c.nodeId)) ||
+        (c.sourceExecutionId != null &&
+          isAssetCandidateInSelection(c.sourceExecutionId))
     )
     if (!filtered.length) return []
     return groupMissingModelCandidates(filtered, isCloud)
