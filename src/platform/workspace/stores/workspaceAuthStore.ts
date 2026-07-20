@@ -109,12 +109,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
-  // Unified Cloud-JWT slot (flag-gated: unified_cloud_auth). Dormant in this PR:
-  // populated by the unified mint lifecycle below but read by no consumer until
-  // the PR 3 consumer flip, so it cannot change which token requests carry.
+  // Unified Cloud-JWT slot (flag-gated: unified_cloud_auth). Kept separate from
+  // workspaceToken so the legacy and unified refresh lifecycles cannot collide.
   const unifiedToken = ref<string | null>(null)
   const unifiedTokenOwnerUid = ref<string | null>(null)
-  const issuedUnifiedTokenOwners = new Map<string, string>()
+  const issuedUnifiedTokenContexts = new Map<
+    string,
+    { ownerUid: string; targetKey: string }
+  >()
 
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
@@ -473,6 +475,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function switchWorkspace(workspaceId: string): Promise<void> {
+    if (flags.unifiedCloudAuthEnabled) {
+      return switchUnifiedWorkspace(workspaceId)
+    }
+
     const promise = performSwitchWorkspace(workspaceId)
     inFlightSwitchPromise = promise
     void promise
@@ -678,8 +684,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
   //
-  // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
-  // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
+  // A parallel mint/refresh lifecycle that writes to `unifiedToken`. The legacy
+  // refresh machinery above remains isolated behind its feature flag.
   //
   // TODO(unified): call forgetRevokedActiveWorkspace on
   // ACCESS_DENIED/WORKSPACE_NOT_FOUND here too, with the PR-3 consumer flip.
@@ -731,7 +737,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     stopUnifiedRefreshTimer()
     unifiedToken.value = null
     unifiedTokenOwnerUid.value = null
-    issuedUnifiedTokenOwners.clear()
+    issuedUnifiedTokenContexts.clear()
     unifiedTarget = null
     inFlightUnifiedMint = null
   }
@@ -767,7 +773,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     unifiedToken.value = mintedToken.token
     unifiedTokenOwnerUid.value = mintedToken.ownerUid
-    issuedUnifiedTokenOwners.set(mintedToken.token, mintedToken.ownerUid)
+    issuedUnifiedTokenContexts.set(mintedToken.token, {
+      ownerUid: mintedToken.ownerUid,
+      targetKey: unifiedTargetKey(target)
+    })
     unifiedTarget = target
     scheduleUnifiedRefresh(mintedToken.expiresAt)
     return true
@@ -790,6 +799,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
     inFlightUnifiedMint = { ownerUid, targetKey, promise }
     return promise
+  }
+
+  async function switchUnifiedWorkspace(workspaceId: string): Promise<void> {
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+    await useSessionCookie().ensureSessionCookie()
+    if (!(await mintUnified({ workspace_id: workspaceId }))) {
+      throw new Error('Workspace identity changed during switch')
+    }
   }
 
   async function refreshUnified(): Promise<void> {
@@ -849,11 +867,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const target = currentUnifiedTarget()
     const ownerUid = currentUserUid()
     const currentToken = getUnifiedToken()
+    const expectedContext = issuedUnifiedTokenContexts.get(expectedToken)
     if (
       !target ||
       !ownerUid ||
       !currentToken ||
-      issuedUnifiedTokenOwners.get(expectedToken) !== ownerUid
+      expectedContext?.ownerUid !== ownerUid ||
+      expectedContext.targetKey !== unifiedTargetKey(target)
     ) {
       return null
     }

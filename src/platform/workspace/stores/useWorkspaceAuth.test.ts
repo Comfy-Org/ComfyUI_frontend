@@ -384,6 +384,50 @@ describe('useWorkspaceAuthStore', () => {
       )
     })
 
+    it('replaces the workspace token when the same user switches workspaces', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'workspace-a-token',
+              workspace: { ...mockWorkspace, id: 'workspace-a' }
+            })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'workspace-b-token',
+              workspace: { ...mockWorkspace, id: 'workspace-b' }
+            })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-a')
+      await store.switchWorkspace('workspace-b')
+
+      expect(mockFetch.mock.calls.map(([, init]) => init.body)).toEqual([
+        JSON.stringify({ workspace_id: 'workspace-a' }),
+        JSON.stringify({ workspace_id: 'workspace-b' })
+      ])
+      expect(store.currentWorkspace?.id).toBe('workspace-b')
+      expect(store.getWorkspaceAuthHeader()).toEqual({
+        Authorization: 'Bearer workspace-b-token'
+      })
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'workspace-b-token'
+      )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)).toBe(
+        'user-a'
+      )
+    })
+
     it('sets isLoading to true during operation', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       let resolveResponse: (value: unknown) => void
@@ -1955,18 +1999,61 @@ describe('useWorkspaceAuthStore', () => {
     it('does not bump the rotation trigger on a workspace switch', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse)
-        })
-      )
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
       await store.switchWorkspace('workspace-123')
 
+      expect(mockEnsureSessionCookie).toHaveBeenCalledOnce()
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/auth/token',
+        expect.objectContaining({
+          body: JSON.stringify({ workspace_id: 'workspace-123' })
+        })
+      )
+      expect(store.getUnifiedToken()).toBe('workspace-token-abc')
+      expect(store.workspaceToken).toBeNull()
       expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
+    })
+
+    it('does not retry an old workspace request with a new workspace token', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'workspace-a-token',
+              workspace: { ...mockWorkspace, id: 'workspace-a' }
+            })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'workspace-b-token',
+              workspace: { ...mockWorkspace, id: 'workspace-b' }
+            })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-a')
+      await store.switchWorkspace('workspace-b')
+
+      await expect(
+        store.remintUnifiedOnce('workspace-a-token')
+      ).resolves.toBeNull()
+      expect(store.getUnifiedToken()).toBe('workspace-b-token')
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('bumps the rotation trigger exactly once on a refresh re-mint', async () => {
