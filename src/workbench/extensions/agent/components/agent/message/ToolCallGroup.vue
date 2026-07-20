@@ -8,7 +8,6 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ToolPart } from '../../../services/agent/agentMessageParts'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ToolCallCard from './ToolCallCard.vue'
 
@@ -81,7 +80,7 @@ watch(
     <CollapsibleContent
       class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
-      <div :class="cn('flex flex-col gap-0.5 pt-1 pl-2')">
+      <div class="border-agent-border ml-4 flex flex-col gap-0.5 border-l pt-1">
         <ToolCallCard
           v-for="(row, index) in rows"
           :key="index"
