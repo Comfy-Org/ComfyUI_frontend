@@ -142,7 +142,7 @@
   <div
     v-else
     data-testid="queue-status-idle"
-    class="pointer-events-auto flex h-8 items-center rounded-lg border border-interface-stroke px-3 text-sm text-muted-foreground"
+    class="pointer-events-auto flex h-6 items-center rounded-md border border-interface-stroke px-2 text-xs text-muted-foreground"
   >
     {{ activeJobsLabel }}
   </div>
