@@ -2,10 +2,11 @@
   <BaseModalLayout
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     size="md"
+    close-button-variant="textonly"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-neutral text-base">
+      <h2 class="text-neutral text-base font-semibold">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -14,18 +15,13 @@
     </template>
 
     <template #header>
-      <AsyncSearchInput
-        v-model="searchInput"
-        :searcher="applySearchQuery"
-        :debounce-ms="400"
-        :debounce-max-wait-ms="4000"
-        class="h-10 max-w-96 flex-1"
-        autofocus
-      />
+      <h2 class="text-neutral m-0 truncate text-base font-medium">
+        {{ pageTitle }}
+      </h2>
     </template>
 
     <template #header-right-area>
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2">
         <Button
           v-if="filteredCount !== totalCount"
           variant="secondary"
@@ -37,85 +33,122 @@
             $t('templateWorkflows.resetFilters', 'Clear Filters')
           }}</span>
         </Button>
+        <AsyncSearchInput
+          v-model="searchInput"
+          :searcher="applySearchQuery"
+          :debounce-ms="400"
+          :debounce-max-wait-ms="4000"
+          class="h-9 w-96 border border-border-subtle bg-transparent"
+          autofocus
+        />
       </div>
     </template>
 
     <template #contentFilter>
-      <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
+      <div
+        class="relative flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pb-4"
+      >
+        <div class="flex shrink-0 items-center gap-2">
+          <Button
+            size="md"
+            :variant="selectedType === 'all' ? 'inverted' : 'secondary'"
+            :aria-pressed="selectedType === 'all'"
+            class="h-9 px-4"
+            @click="selectedType = 'all'"
+          >
+            {{ $t('g.all') }}
+          </Button>
+          <Button
+            size="md"
+            :variant="selectedType === 'nodeGraph' ? 'inverted' : 'secondary'"
+            :aria-pressed="selectedType === 'nodeGraph'"
+            class="h-9 px-4"
+            @click="selectedType = 'nodeGraph'"
+          >
+            <i class="icon-[comfy--workflow] size-3.5" />
+            {{ $t('builderToolbar.nodeGraph') }}
+          </Button>
+          <Button
+            size="md"
+            :variant="selectedType === 'apps' ? 'inverted' : 'secondary'"
+            :aria-pressed="selectedType === 'apps'"
+            class="h-9 px-4"
+            @click="selectedType = 'apps'"
+          >
+            <i class="icon-[lucide--app-window] size-3.5" />
+            {{ $t('builderToolbar.app') }}
+          </Button>
+        </div>
+
         <div
           :ref="primeVueOverlay.overlayScopeRef"
-          class="flex flex-wrap gap-2"
+          class="flex min-w-56 flex-1 items-center justify-end gap-2"
         >
-          <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
             v-model:search-query="modelSearchText"
-            class="w-[250px]"
+            size="md"
+            class="min-w-0 shrink basis-44 border border-border-subtle bg-transparent"
             :label="modelFilterLabel"
             :options="modelOptions"
             :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
+            actions-placement="footer"
           >
             <template #icon>
               <i class="icon-[lucide--cpu]" />
             </template>
           </MultiSelect>
 
-          <!-- Use Case Filter -->
           <MultiSelect
             v-model="selectedUseCaseObjects"
+            size="md"
+            class="min-w-0 shrink basis-36 border border-border-subtle bg-transparent"
             :label="useCaseFilterLabel"
             :options="useCaseOptions"
             :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
+            actions-placement="footer"
           >
             <template #icon>
               <i class="icon-[lucide--target]" />
             </template>
           </MultiSelect>
 
-          <!-- Runs On Filter -->
           <MultiSelect
             v-model="selectedRunsOnObjects"
+            size="md"
+            class="min-w-0 shrink basis-36 border border-border-subtle bg-transparent"
             :label="runsOnFilterLabel"
             :options="runsOnOptions"
             :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
+            actions-placement="footer"
           >
             <template #icon>
               <i class="icon-[lucide--server]" />
             </template>
           </MultiSelect>
-        </div>
 
-        <!-- Sort Options -->
-        <div>
           <SingleSelect
             v-model="sortSelection"
+            size="md"
+            class="min-w-0 shrink basis-44 border border-border-subtle bg-transparent"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
             :content-style="selectContentStyle"
-            class="w-62.5"
           >
             <template #icon>
               <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
             </template>
           </SingleSelect>
         </div>
-      </div>
-      <div
-        v-if="!isLoading"
-        class="text-neutral px-6 pt-4 pb-2 text-2xl font-semibold"
-      >
-        <span>
-          {{ pageTitle }}
-        </span>
       </div>
     </template>
 
@@ -148,7 +181,7 @@
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          :style="gridStyle"
+          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -183,10 +216,10 @@
 
           <!-- Actual Template Cards -->
           <CardContainer
-            v-for="template in isLoading ? [] : displayTemplates"
+            v-for="{ template, tags } in isLoading ? [] : displayTemplates"
             :key="template.name"
             ref="cardRefs"
-            size="tall"
+            size="auto"
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
@@ -264,6 +297,7 @@
                       v-if="template.logos?.length"
                       :logos="template.logos"
                       :get-logo-url="workflowTemplatesStore.getLogoUrl"
+                      default-position="right-2 bottom-2"
                     />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
@@ -271,23 +305,50 @@
                     />
                   </div>
                 </template>
-                <template #bottom-right>
-                  <template v-if="template.tags && template.tags.length > 0">
-                    <Tag
-                      v-for="tag in template.tags"
-                      :key="tag"
-                      :label="tag"
-                      shape="overlay"
+                <template #top-left>
+                  <div
+                    class="flex h-7 items-center gap-1.5 rounded-lg bg-black/30 px-2 backdrop-blur-[20px]"
+                  >
+                    <i
+                      :class="
+                        cn(
+                          'size-4',
+                          isAppTemplate(template)
+                            ? 'icon-[lucide--app-window] text-jade-600'
+                            : 'icon-[comfy--workflow] text-azure-400'
+                        )
+                      "
                     />
-                  </template>
+                    <span
+                      class="text-sm font-medium whitespace-nowrap text-white"
+                    >
+                      {{
+                        isAppTemplate(template)
+                          ? $t('builderToolbar.app')
+                          : $t('builderToolbar.nodeGraph')
+                      }}
+                    </span>
+                  </div>
+                </template>
+                <template v-if="template.tutorialUrl" #top-right>
+                  <Button
+                    v-tooltip.bottom="$t('g.seeTutorial')"
+                    :aria-label="$t('g.seeTutorial')"
+                    variant="inverted"
+                    size="icon"
+                    class="not-group-hover/card:opacity-0"
+                    @click.stop="openTutorial(template)"
+                  >
+                    <i class="icon-[lucide--info] size-4" />
+                  </Button>
                 </template>
               </CardTop>
             </template>
             <template #bottom>
-              <CardBottom>
-                <div class="flex flex-col gap-2 pt-3">
+              <CardBottom :full-height="false">
+                <div class="flex flex-col gap-2 pt-2">
                   <h3
-                    class="m-0 line-clamp-1 text-sm"
+                    class="m-0 line-clamp-1 text-sm font-semibold"
                     :title="
                       getTemplateTitle(
                         template,
@@ -302,43 +363,26 @@
                       )
                     }}
                   </h3>
-                  <div class="flex justify-between gap-2">
-                    <div class="flex-1">
-                      <p
-                        class="m-0 line-clamp-2 text-sm text-muted"
-                        :title="getTemplateDescription(template)"
-                      >
-                        {{ getTemplateDescription(template) }}
-                      </p>
-                    </div>
-                    <div
-                      v-if="template.tutorialUrl"
-                      class="flex flex-col-reverse justify-center"
-                    >
-                      <Button
-                        v-tooltip.bottom="$t('g.seeTutorial')"
-                        :aria-label="$t('g.seeTutorial')"
-                        variant="inverted"
-                        size="icon"
-                        class="not-group-hover/card:opacity-0"
-                        @click.stop="openTutorial(template)"
-                      >
-                        <i class="icon-[lucide--info] size-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div class="flex">
+                  <div
+                    v-if="tags.visible.length"
+                    class="flex items-center gap-2 py-1"
+                  >
+                    <Tag
+                      v-for="tag in tags.visible"
+                      :key="tag"
+                      :label="tag"
+                      shape="square"
+                      class="bg-charcoal-500/50 opacity-80"
+                    />
                     <span
-                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
+                      v-if="tags.hidden.length"
+                      v-tooltip.top="tags.hidden.join(', ')"
                     >
-                      <template v-if="isAppTemplate(template)">
-                        <i class="icon-[lucide--panels-top-left]" />
-                        {{ $t('builderToolbar.app', 'App') }}
-                      </template>
-                      <template v-else>
-                        <i class="icon-[lucide--workflow]" />
-                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
-                      </template>
+                      <Tag
+                        :label="`+${tags.hidden.length}`"
+                        shape="square"
+                        class="bg-charcoal-500/50 opacity-80"
+                      />
                     </span>
                   </div>
                 </div>
@@ -429,11 +473,19 @@ import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type {
+  TemplateInfo,
+  TemplateTypeFilter
+} from '@/platform/workflow/templates/types/template'
+import {
+  filterTemplatesByType,
+  getTemplateTags,
+  isAppTemplate
+} from '@/platform/workflow/templates/utils/templateDisplay'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { createGridStyle } from '@/utils/gridUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
@@ -472,14 +524,11 @@ const {
   loadTemplates,
   loadWorkflowTemplate,
   getTemplateThumbnailUrl,
-  getTemplateTitle,
-  getTemplateDescription
+  getTemplateTitle
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
-
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
@@ -531,8 +580,6 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
   return workflowTemplatesStore.navGroupedTemplates
 })
 
-const gridStyle = computed(() => createGridStyle())
-
 // Get enhanced templates for better filtering
 const allTemplates = computed(() => {
   return workflowTemplatesStore.enhancedTemplates
@@ -549,6 +596,12 @@ const navigationFilteredTemplates = computed(() => {
 
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
 })
+
+const selectedType = ref<TemplateTypeFilter>('all')
+
+const typeFilteredTemplates = computed(() =>
+  filterTemplatesByType(navigationFilteredTemplates.value, selectedType.value)
+)
 
 // Template filtering with scope awareness
 const {
@@ -567,7 +620,7 @@ const {
   filteredCount,
   totalCount,
   resetFilters
-} = useTemplateFiltering(navigationFilteredTemplates)
+} = useTemplateFiltering(typeFilteredTemplates)
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
@@ -772,11 +825,12 @@ const {
 } = useLazyPagination(filteredTemplates, { itemsPerPage: 24 }) // Load 24 items per page
 
 // Display templates (all when searching, paginated when not)
-const displayTemplates = computed(() => {
-  return shouldUsePagination.value
+const displayTemplates = computed(() =>
+  (shouldUsePagination.value
     ? paginatedTemplates.value
     : filteredTemplates.value
-})
+  ).map((template) => ({ template, tags: getTemplateTags(template) }))
+)
 
 // Set up intersection observer for lazy loading
 useIntersectionObserver(loadTrigger, () => {
@@ -794,6 +848,7 @@ watch(
   [
     filteredTemplates,
     selectedNavItem,
+    selectedType,
     sortSelection,
     selectedModels,
     selectedUseCases,
