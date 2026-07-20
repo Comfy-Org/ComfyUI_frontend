@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw } from 'vue'
+import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -83,6 +83,8 @@ vi.mock('./WorkflowTabPopover.vue', () => ({
   }
 }))
 
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+
 import WorkflowTab from './WorkflowTab.vue'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
@@ -93,12 +95,17 @@ const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
   failed: 'Failed'
 }
 
+const agentAriaLabels = {
+  agentWorking: 'Agent is working on this workflow',
+  agentModified: 'Agent updated this workflow'
+}
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels }
+      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels }
     }
   }
 })
@@ -212,6 +219,74 @@ describe('WorkflowTab - workflow status indicator', () => {
       screen.getByRole('img', { name: statusAriaLabels.running })
     ).toBeTruthy()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+  })
+})
+
+describe('WorkflowTab - agent activity indicators', () => {
+  beforeEach(() => {
+    mockWorkflowStatus.value = new Map()
+  })
+
+  it('shows the agent spinner even on the active tab', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeTruthy()
+  })
+
+  it('the agent spinner wins over the unseen-changes dot', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing('/workflows/test.json')
+    activity.markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+
+  it('shows the unseen-changes dot ahead of non-failed execution status', async () => {
+    const workflowOption = makeWorkflowOption()
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+    renderTab({ workflowOption })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(screen.getByTestId('agent-modified-indicator')).toBeTruthy()
+    expect(
+      screen.queryByRole('img', { name: statusAriaLabels.running })
+    ).toBeNull()
+  })
+
+  it('a failed run outranks the unseen-changes dot', async () => {
+    const workflowOption = makeWorkflowOption()
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'failed']])
+    renderTab({ workflowOption })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.failed })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+
+  it('clearing the store restores the existing indicators', async () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
+    const activity = useWorkflowTabActivityStore()
+    activity.markModified('/workflows/test.json')
+    await nextTick()
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+
+    activity.markSeen('/workflows/test.json')
+    await nextTick()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
   })
 })
 

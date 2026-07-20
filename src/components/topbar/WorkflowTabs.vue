@@ -49,6 +49,12 @@
           />
         </template>
       </SelectButton>
+      <Skeleton
+        v-if="tabActivity.creatingTab"
+        aria-hidden="true"
+        data-testid="creating-tab-skeleton"
+        class="m-2 h-4 w-24 shrink-0 self-center"
+      />
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
@@ -135,6 +141,7 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
@@ -145,6 +152,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -168,6 +176,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const tabActivity = useWorkflowTabActivityStore()
 const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
 

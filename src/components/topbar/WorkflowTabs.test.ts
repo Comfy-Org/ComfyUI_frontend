@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, reactive } from 'vue'
+import { defineComponent, h, nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
@@ -149,7 +151,7 @@ function renderComponent() {
 
   const result = render(WorkflowTabs, {
     global: {
-      plugins: [i18n],
+      plugins: [i18n, createPinia()],
       directives: {
         tooltip: {}
       }
@@ -192,6 +194,26 @@ describe('WorkflowTabs agent entry button', () => {
     expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
       resulting_state: 'closed'
     })
+  })
+})
+
+describe('WorkflowTabs creating-tab skeleton', () => {
+  beforeEach(() => {
+    tabBarLayout.value = 'Default'
+  })
+
+  it('renders a skeleton pseudo-tab only while a tab is being created', async () => {
+    renderComponent()
+    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
+
+    const activity = useWorkflowTabActivityStore()
+    activity.setCreating(true)
+    await nextTick()
+    expect(screen.getByTestId('creating-tab-skeleton')).toBeTruthy()
+
+    activity.setCreating(false)
+    await nextTick()
+    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
   })
 })
 

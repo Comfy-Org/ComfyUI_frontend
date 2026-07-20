@@ -17,6 +17,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -69,6 +70,7 @@ const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
 const agentPanelStore = useAgentPanelStore()
+const tabActivity = useWorkflowTabActivityStore()
 
 const canvasStore = useCanvasStore()
 const selectedNodes = computed<SelectedNode[]>(() =>
@@ -216,10 +218,13 @@ function onWorkflowAdopted(
     lastKnownGraph = { serialized: lastSentGraph, workflowId }
   if (sent !== undefined && sent.id === workflowId) {
     bindingStore.bind(workflowId, sent.tabPath)
+    tabActivity.setEditing(sent.tabPath)
     return
   }
-  if (uploaded && snapshotTabPath !== null)
+  if (uploaded && snapshotTabPath !== null) {
     bindingStore.bind(workflowId, snapshotTabPath)
+    tabActivity.setEditing(snapshotTabPath)
+  }
 }
 
 const {
@@ -247,6 +252,27 @@ const {
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab
   }
+})
+
+// The resumed turn's own workflow outlives a panel remount (draftStore
+// binds it at ack; only newChat/loadThread reset it), while the active tab
+// may have changed since - prefer the bound tab over active-tab derivation.
+function resumedTurnTabPath(): string | null {
+  const bound = draftStore.workflowId
+  if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
+  const boundPath = bindingStore.tabPathFor(bound)
+  if (boundPath !== undefined) return boundPath
+  const context = activeWorkflowTurnContext()
+  return context?.id === bound ? context.tabPath : null
+}
+
+// Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
+// primary spinner setters; the non-idle branch only re-arms it after the
+// stash/resume flip of a panel remount, where those setters never run.
+watch(status, (value) => {
+  if (value === 'idle') tabActivity.setEditing(null)
+  else if (tabActivity.editingTabPath === null)
+    tabActivity.setEditing(resumedTurnTabPath())
 })
 
 const executionErrorStore = useExecutionErrorStore()
@@ -319,6 +345,8 @@ async function autosaveAppliedDraft(
   workflowId: string,
   tab: ComfyWorkflow
 ): Promise<void> {
+  const preSavePath = tab.path
+  const wasEditing = tabActivity.editingTabPath === preSavePath
   try {
     const saved = tab.isTemporary
       ? await workflowService.saveWorkflowAs(tab, {
@@ -330,6 +358,13 @@ async function autosaveAppliedDraft(
     console.error(`Agent draft autosave failed for ${tab.path}:`, error)
   } finally {
     bindingStore.bind(workflowId, tab.path)
+    const editing = tabActivity.editingTabPath
+    if (
+      wasEditing &&
+      (editing === preSavePath || editing === null) &&
+      status.value !== 'idle'
+    )
+      tabActivity.setEditing(tab.path)
   }
 }
 
@@ -407,6 +442,7 @@ async function onAgentActiveTab(
         draftStore.version !== null
       await workflowService.openWorkflow(bound)
       if (stale()) return
+      if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       draftStore.bind(data.workflow_id)
       const snapshot = await fetchDraftSnapshot(data.workflow_id)
       if (stale()) return
@@ -425,6 +461,7 @@ async function onAgentActiveTab(
       })
       return
     }
+    tabActivity.setCreating(true)
     const snapshot = await fetchDraftSnapshot(data.workflow_id)
     if (stale()) return
     let validationError = ''
@@ -444,8 +481,10 @@ async function onAgentActiveTab(
       agentTabFilename(data.name),
       workflow ?? undefined
     )
+    tabActivity.setCreating(false)
     await workflowService.openWorkflow(tab)
     if (stale()) return
+    if (status.value !== 'idle') tabActivity.setEditing(tab.path)
     await autosaveAppliedDraft(data.workflow_id, tab)
     if (stale()) return
     if (snapshot === null) draftStore.bind(data.workflow_id)
@@ -461,6 +500,8 @@ async function onAgentActiveTab(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
+  } finally {
+    tabActivity.setCreating(false)
   }
 }
 
@@ -526,7 +567,10 @@ async function applyDraft(): Promise<void> {
     if (!Array.isArray(nodes) || nodes.length === 0) return
     const boundTab = boundTabFor(workflowId)
     if (boundTab) {
-      if (workflowStore.activeWorkflow?.path !== boundTab.path) return
+      if (workflowStore.activeWorkflow?.path !== boundTab.path) {
+        tabActivity.markModified(boundTab.path)
+        return
+      }
       if (boundTab.isModified) {
         conflictOpen.value = true
         return
@@ -588,7 +632,11 @@ function onResolveConflict(choice: ConflictChoice): void {
 
 start()
 void refreshCloudWorkflowIds()
-onBeforeUnmount(stop)
+onBeforeUnmount(() => {
+  stop()
+  tabActivity.setEditing(null)
+  tabActivity.setCreating(false)
+})
 
 const history = useAgentChatHistoryStore()
 

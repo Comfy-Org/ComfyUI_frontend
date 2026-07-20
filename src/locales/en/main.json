@@ -267,6 +267,8 @@
     "running": "Running",
     "failed": "Failed",
     "cancelled": "Cancelled",
+    "agentWorking": "Agent is working on this workflow",
+    "agentModified": "Agent updated this workflow",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
