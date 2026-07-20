@@ -49,6 +49,7 @@
       <div
         :ref="primeVueOverlay.overlayScopeRef"
         class="@container/filters relative px-6 pb-4"
+        data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
           <div class="flex min-w-0 shrink items-center gap-2">

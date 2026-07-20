@@ -265,9 +265,8 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(sortBySelect).toBeVisible()
 
       // Screenshot the filter bar containing MultiSelect and SingleSelect
-      const filterBar = sortBySelect.locator(
-        'xpath=ancestor::div[contains(@class, "justify-between")]'
-      )
+      const filterBar = comfyPage.templatesDialog.filterBar
+      await expect(filterBar).toBeVisible()
       await expect(filterBar).toHaveScreenshot(
         'template-filter-bar-select-components.png',
         {
