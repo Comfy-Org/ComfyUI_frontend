@@ -202,6 +202,47 @@ test.describe('Model library sidebar - asset mode', () => {
   })
 })
 
+test.describe('Model library sidebar - asset mode when the walk fails', () => {
+  test.beforeEach(async ({ comfyPage, assetApi }) => {
+    // The models walk 500s before the sidebar's eager load ever reads it, so
+    // no folder contents can resolve. The folder registration endpoint is
+    // separate, so the panel still knows which folders exist.
+    await assetApi.mockError(500)
+    await comfyPage.modelLibrary.mockModelFolders(REGISTERED_FOLDERS)
+    await comfyPage.setup()
+    await comfyPage.featureFlags.setServerFlags({
+      supports_model_type_tags: true
+    })
+    await comfyPage.menu.modelLibraryTab.open()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.clearMocks()
+  })
+
+  test('Degrades gracefully instead of hanging the panel', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.modelLibraryTab
+
+    // The panel renders and stays interactive even though the eager load threw:
+    // the tools and search box are usable rather than stuck on a load screen.
+    await expect(tab.refreshButton).toBeVisible()
+    await expect(tab.refreshButton).toBeEnabled()
+    await expect(tab.searchInput).toBeEditable()
+
+    // Registered folders still list from the folder endpoint; only their
+    // contents are missing, so the tree shows folders but no model leaves.
+    await expect(tab.getFolderRowByLabel('checkpoints')).toBeVisible()
+    await expect(tab.leafNodes).toHaveCount(0)
+
+    // Expanding a folder re-attempts the failing load without crashing or
+    // producing leaves, proving the failure path stays contained.
+    await tab.getFolderRowByLabel('checkpoints').click()
+    await expect(tab.leafNodes).toHaveCount(0)
+  })
+})
+
 test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
   test.beforeEach(async ({ comfyPage, assetApi }) => {
     assetApi.configure(withModels([STABLE_CHECKPOINT]))
