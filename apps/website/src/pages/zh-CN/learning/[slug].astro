@@ -1,72 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import LearningDirectorySection from '../../../components/learning/LearningDirectorySection.vue'
-import CallToActionSection from '../../../components/common/CallToActionSection.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../../config/routes'
+import LearningDirectoryPage from '../../../components/learning/LearningDirectoryPage.astro'
 import type { LearningCategory } from '../../../data/learningTutorials'
-import {
-  categoryLabelKeys,
-  filterByCategory,
-  populatedCategories,
-  tutorialPath
-} from '../../../data/learningTutorials'
-import { t } from '../../../i18n/translations'
-import {
-  absoluteUrl,
-  itemListNode,
-  jsonLdId,
-  pageContext
-} from '../../../utils/jsonLd'
+import { populatedCategories } from '../../../data/learningTutorials'
 
 export const getStaticPaths: GetStaticPaths = () =>
   populatedCategories.map((category) => ({ params: { slug: category } }))
-
-const category = Astro.params.slug as LearningCategory
-
-const { locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
-
-const label = t(categoryLabelKeys[category], locale)
-
-const tutorialList = itemListNode(
-  url,
-  label,
-  filterByCategory(category).map((tutorial) => ({
-    name: tutorial.title[locale],
-    url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
-  }))
-)
-
-const routes = getRoutes(locale)
 ---
 
-<BaseLayout
-  title={`${label} 学习 - Comfy`}
-  description={t('learning.tagline', locale)}
-  pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
-  breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    {
-      name: t('learning.title', locale),
-      url: absoluteUrl(Astro.site, localizeHref('/learning', locale))
-    },
-    { name: label }
-  ]}
-  extraJsonLd={[tutorialList]}
->
-  <LearningDirectorySection locale="zh-CN" category={category} client:load />
-  <CallToActionSection
-    locale="zh-CN"
-    headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
-    client:visible
-  />
-</BaseLayout>
+<LearningDirectoryPage category={Astro.params.slug as LearningCategory} />

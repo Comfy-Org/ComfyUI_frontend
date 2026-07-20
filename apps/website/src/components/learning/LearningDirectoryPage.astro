@@ -1,0 +1,76 @@
+---
+// Shared body for /learning and /learning/[category] in every locale: the
+// locale-specific page files are thin wrappers so titles, breadcrumbs, and
+// JSON-LD stay defined once. Locale comes from the rendering page's URL.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CallToActionSection from '../common/CallToActionSection.vue'
+import LearningDirectorySection from './LearningDirectorySection.vue'
+import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import type { LearningCategory } from '../../data/learningTutorials'
+import {
+  categoryLabelKeys,
+  filterByCategory,
+  learningCrumbs,
+  tutorialPath
+} from '../../data/learningTutorials'
+import { t } from '../../i18n/translations'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext
+} from '../../utils/jsonLd'
+
+interface Props {
+  category?: LearningCategory
+}
+
+const { category } = Astro.props
+
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+
+const learningTitle = t('learning.title', locale)
+const label = category ? t(categoryLabelKeys[category], locale) : undefined
+const title = `${label ? `${label} ` : ''}${learningTitle} - Comfy`
+
+const tutorialList = itemListNode(
+  url,
+  label ?? learningTitle,
+  filterByCategory(category).map((tutorial) => ({
+    name: tutorial.title[locale],
+    url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
+  }))
+)
+
+// BaseLayout's BreadcrumbList drops the url from the last crumb itself.
+const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
+  name: crumb.name,
+  url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
+}))
+
+const routes = getRoutes(locale)
+---
+
+<BaseLayout
+  title={title}
+  description={t('learning.tagline', locale)}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={breadcrumbs}
+  extraJsonLd={[tutorialList]}
+>
+  <LearningDirectorySection locale={locale} category={category} client:load />
+  <CallToActionSection
+    locale={locale}
+    headingKey="learning.cta.heading"
+    primaryLabelKey="learning.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>

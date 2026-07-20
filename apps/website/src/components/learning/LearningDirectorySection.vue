@@ -14,7 +14,6 @@ import {
   categoryLabelKeys,
   featuredFor,
   filterByCategory,
-  getTutorialPosterSrc,
   populatedCategories,
   tutorialPath
 } from '../../data/learningTutorials'
@@ -23,6 +22,7 @@ import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import { ButtonMask } from '../ui/button-mask'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
+import PlayOverlay from './PlayOverlay.vue'
 
 const { locale = 'en', category } = defineProps<{
   locale?: Locale
@@ -169,31 +169,8 @@ const rows = computed(() =>
             class="group relative block aspect-video overflow-hidden rounded-3xl"
             :aria-label="`${t('player.play', locale)} ${featured.title[locale]}`"
           >
-            <video
-              :src="getTutorialPosterSrc(featured)"
-              :poster="featured.poster"
-              class="size-full object-cover"
-              preload="metadata"
-              playsinline
-              muted
-            ></video>
-            <span
-              class="absolute inset-0 flex items-center justify-center"
-              aria-hidden="true"
-            >
-              <span
-                class="flex size-14 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm transition-transform group-hover:scale-105"
-              >
-                <svg
-                  class="ml-1 size-5 text-white"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-            </span>
+            <img :src="featured.poster" alt="" class="size-full object-cover" />
+            <PlayOverlay class="text-white" />
           </a>
         </article>
 
@@ -209,31 +186,16 @@ const rows = computed(() =>
               class="group relative block aspect-video w-36 shrink-0 overflow-hidden rounded-2xl lg:w-44"
               :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
             >
-              <video
-                :src="getTutorialPosterSrc(tutorial)"
-                :poster="tutorial.poster"
+              <img
+                :src="tutorial.poster"
+                alt=""
+                loading="lazy"
                 class="size-full object-cover"
-                preload="metadata"
-                playsinline
-                muted
-              ></video>
-              <span
-                class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
-                aria-hidden="true"
-              >
-                <span
-                  class="flex size-9 items-center justify-center rounded-full bg-white/25 backdrop-blur-sm"
-                >
-                  <svg
-                    class="ml-0.5 size-4 text-white"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </span>
-              </span>
+              />
+              <PlayOverlay
+                size="sm"
+                class="text-white opacity-0 transition-opacity group-hover:opacity-100"
+              />
             </a>
 
             <div class="min-w-0 flex-1">

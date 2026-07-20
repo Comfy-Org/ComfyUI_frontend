@@ -1,90 +1,20 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../../../layouts/BaseLayout.astro'
-import TutorialDetailSection from '../../../../components/learning/TutorialDetailSection.vue'
-import CallToActionSection from '../../../../components/common/CallToActionSection.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../../../config/routes'
+import LearningTutorialPage from '../../../../components/learning/LearningTutorialPage.astro'
 import {
-  LEARNING_DEFAULT_PUBLISHED_DATE,
-  categoryLabelKeys,
   getTutorialByCategoryAndSlug,
-  learningTutorials,
-  tutorialDescription
+  learningTutorials
 } from '../../../../data/learningTutorials'
-import { t } from '../../../../i18n/translations'
-import type { JsonLdNode } from '../../../../utils/jsonLd'
-import {
-  absoluteUrl,
-  jsonLdId,
-  pageContext,
-  videoObjectNode
-} from '../../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = () =>
   learningTutorials.map((tutorial) => ({
     params: { category: tutorial.category, slug: tutorial.slug }
   }))
 
-const { category, slug } = Astro.params
-const tutorial = getTutorialByCategoryAndSlug(category as string, slug as string)!
-
-const { siteUrl, locale, url } = pageContext(
-  Astro.site,
-  Astro.url.pathname,
-  Astro.currentLocale
-)
-
-const title = tutorial.title[locale]
-const description = tutorialDescription(tutorial, locale)
-const categoryLabel = t(categoryLabelKeys[tutorial.category], locale)
-const posterUrl = tutorial.poster ?? 'https://media.comfy.org/website/comfy.webp'
-const videoId = jsonLdId(url, 'video')
-
-const video: JsonLdNode = videoObjectNode({
-  siteUrl,
-  id: videoId,
-  pageUrl: url,
-  name: title,
-  description,
-  thumbnailUrl: posterUrl,
-  contentUrl: tutorial.videoSrc,
-  uploadDate: tutorial.publishedDate ?? LEARNING_DEFAULT_PUBLISHED_DATE,
-  locale
-})
-
-const routes = getRoutes(locale)
+const tutorial = getTutorialByCategoryAndSlug(
+  Astro.params.category as string,
+  Astro.params.slug as string
+)!
 ---
 
-<BaseLayout
-  title={`${title} - Comfy`}
-  description={description}
-  ogImage={posterUrl}
-  mainEntityId={videoId}
-  breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    {
-      name: t('learning.title', locale),
-      url: absoluteUrl(Astro.site, localizeHref('/learning', locale))
-    },
-    {
-      name: categoryLabel,
-      url: absoluteUrl(
-        Astro.site,
-        localizeHref(`/learning/${tutorial.category}`, locale)
-      )
-    },
-    { name: title }
-  ]}
-  extraJsonLd={[video]}
->
-  <TutorialDetailSection tutorial={tutorial} locale={locale} client:load />
-  <CallToActionSection
-    locale={locale}
-    headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
-    client:visible
-  />
-</BaseLayout>
+<LearningTutorialPage tutorial={tutorial} />

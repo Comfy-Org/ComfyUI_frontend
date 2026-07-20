@@ -20,9 +20,8 @@ export interface LearningTutorial {
   description?: LocalizedText
   videoSrc: string
   href?: string
-  poster?: string
+  poster: string
   caption?: readonly VideoTrack[]
-  posterTime?: number
   /** ISO date; feeds VideoObject.uploadDate. Falls back to the launch date. */
   publishedDate?: string
 }
@@ -49,15 +48,8 @@ export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
   ads: 'learning.categories.ads.blurb'
 }
 
-const DEFAULT_POSTER_TIME_SECONDS = 1
-
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
-
-export const getTutorialPosterSrc = (tutorial: LearningTutorial): string =>
-  tutorial.poster
-    ? tutorial.poster
-    : `${tutorial.videoSrc}#t=${tutorial.posterTime ?? DEFAULT_POSTER_TIME_SECONDS}`
 
 export const learningTutorials: readonly LearningTutorial[] = [
   {
@@ -147,6 +139,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
+    // The bucket object really is named with the space; the clean name 404s.
     poster:
       'https://media.comfy.org/website/learning/seedance seedance_demo_comfyui_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=ef543bd4a773',
@@ -295,6 +288,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     title: { en: 'OOH Visualization', 'zh-CN': '户外广告可视化' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising6.mp4',
+    poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',
     href: 'https://cloud.comfy.org/?share=9e36b66e188b',
     tags: []
   }
@@ -340,6 +334,32 @@ export const getTutorialByCategoryAndSlug = (
 /** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
 export const tutorialPath = (tutorial: LearningTutorial): string =>
   `/learning/${tutorial.category}/${tutorial.slug}`
+
+export interface LearningCrumb {
+  name: string
+  path: string
+}
+
+/**
+ * Breadcrumb trail for learning pages: Home → Learning (→ category). The
+ * single source for both the visible breadcrumb nav and the BreadcrumbList
+ * JSON-LD, so the two can't drift apart.
+ */
+export const learningCrumbs = (
+  locale: Locale,
+  category?: LearningCategory
+): LearningCrumb[] => [
+  { name: t('breadcrumb.home', locale), path: '/' },
+  { name: t('learning.title', locale), path: '/learning' },
+  ...(category
+    ? [
+        {
+          name: t(categoryLabelKeys[category], locale),
+          path: `/learning/${category}`
+        }
+      ]
+    : [])
+]
 
 /** Authored description when present, otherwise a per-locale SEO template. */
 export const tutorialDescription = (

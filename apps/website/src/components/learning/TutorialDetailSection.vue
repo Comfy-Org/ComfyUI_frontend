@@ -11,6 +11,7 @@ import { localizeHref } from '../../config/routes'
 import {
   categoryLabelKeys,
   filterByCategory,
+  learningCrumbs,
   tutorialDescription,
   tutorialPath
 } from '../../data/learningTutorials'
@@ -28,11 +29,7 @@ const categoryLabel = computed(() =>
   t(categoryLabelKeys[tutorial.category], locale)
 )
 
-const crumbs = computed(() => [
-  { name: t('breadcrumb.home', locale), href: '/' },
-  { name: t('learning.title', locale), href: '/learning' },
-  { name: categoryLabel.value, href: `/learning/${tutorial.category}` }
-])
+const crumbs = computed(() => learningCrumbs(locale, tutorial.category))
 
 const description = computed(() => tutorialDescription(tutorial, locale))
 
@@ -47,9 +44,9 @@ const related = computed(() =>
       class="text-primary-warm-gray flex flex-wrap items-center gap-2 text-xs"
       :aria-label="t('learning.breadcrumb', locale)"
     >
-      <template v-for="crumb in crumbs" :key="crumb.href">
+      <template v-for="crumb in crumbs" :key="crumb.path">
         <a
-          :href="localizeHref(crumb.href, locale)"
+          :href="localizeHref(crumb.path, locale)"
           class="transition-colors hover:text-primary-comfy-canvas"
         >
           {{ crumb.name }}
