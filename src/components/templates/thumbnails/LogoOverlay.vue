@@ -9,36 +9,42 @@
       data-testid="logo-pill"
       class="flex items-center gap-1"
     >
-      <div
+      <button
         v-for="badge in logo.badges"
         :key="badge.provider"
         v-tooltip.top="badge.provider"
+        type="button"
         data-testid="logo-badge"
-        class="flex size-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-[20px]"
+        :aria-label="badge.provider"
+        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+        @click.stop
       >
         <i
           v-if="badge.iconClass"
+          data-testid="logo-icon"
           :class="cn('size-3.5 text-white', badge.iconClass)"
-          role="img"
-          :aria-label="badge.provider"
+          aria-hidden="true"
         />
         <img
           v-else
           data-testid="logo-img"
           :src="badge.logoUrl"
-          :alt="badge.provider"
+          alt=""
           class="size-4 rounded-full object-cover"
           draggable="false"
           @error="onImageError(badge.provider)"
         />
-      </div>
-      <div
+      </button>
+      <button
         v-if="logo.extraProviders.length"
         v-tooltip.top="logo.extraProviders.join(', ')"
-        class="flex h-7 min-w-7 items-center justify-center rounded-full bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px]"
+        type="button"
+        :aria-label="logo.extraProviders.join(', ')"
+        class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
+        @click.stop
       >
         +{{ logo.extraProviders.length }}
-      </div>
+      </button>
     </div>
   </div>
 </template>

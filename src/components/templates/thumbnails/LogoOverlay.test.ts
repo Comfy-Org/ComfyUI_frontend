@@ -34,16 +34,21 @@ describe('LogoOverlay', () => {
 
   it('renders a monochrome comfy icon when the provider has one', () => {
     renderOverlay([{ provider: 'Google' }])
-    expect(screen.getByRole('img', { name: 'Google' })).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
+    expect(screen.getByTestId('logo-icon')).toHaveClass(
       'icon-mask-[comfy--gemini]'
     )
   })
 
   it('falls back to the raster logo when no comfy icon exists', () => {
     renderOverlay([{ provider: 'Unknown Brand' }])
-    const img = screen.getByTestId('logo-img')
-    expect(img).toHaveAttribute('src', '/logos/Unknown Brand.png')
-    expect(img).toHaveAttribute('alt', 'Unknown Brand')
+    expect(
+      screen.getByRole('button', { name: 'Unknown Brand' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('logo-img')).toHaveAttribute(
+      'src',
+      '/logos/Unknown Brand.png'
+    )
   })
 
   it('renders an icon-backed provider that has no logo url', () => {
@@ -51,7 +56,8 @@ describe('LogoOverlay', () => {
       props: { logos: [{ provider: 'Google' }], getLogoUrl: () => '' },
       global: { directives: { tooltip: {} } }
     })
-    expect(screen.getByRole('img', { name: 'Google' })).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
+    expect(screen.getByTestId('logo-icon')).toHaveClass(
       'icon-mask-[comfy--gemini]'
     )
   })
@@ -89,7 +95,7 @@ describe('LogoOverlay', () => {
 
     await fireEvent.error(screen.getByTestId('logo-img'))
 
-    expect(screen.getByRole('img', { name: 'Google' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Google' })).toBeVisible()
   })
 
   it('keeps remaining providers when one raster logo fails to load', async () => {

@@ -346,16 +346,20 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <span
+                    <button
                       v-if="tags.hidden.length"
                       v-tooltip.top="tags.hidden.join(', ')"
+                      type="button"
+                      :aria-label="tags.hidden.join(', ')"
+                      class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:outline-none"
+                      @click.stop
                     >
                       <Tag
                         :label="`+${tags.hidden.length}`"
                         shape="square"
                         class="bg-charcoal-500/50 opacity-80"
                       />
-                    </span>
+                    </button>
                   </div>
                 </div>
               </CardBottom>
