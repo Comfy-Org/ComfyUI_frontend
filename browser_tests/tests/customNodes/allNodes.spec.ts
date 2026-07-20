@@ -32,7 +32,7 @@ import {
   dismissTemplatesDialog,
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const target = new LocalDesktopTarget()
 
@@ -258,14 +258,6 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-async function expectNoVisibleErrors(
-  page: Page,
-  context: string
-): Promise<void> {
-  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
-}
-
 // The widgetValueStore keys state by node id and survives graph.clear(), so
 // a recreated node that reuses an id inherits the previous node's same-named
 // widget values (core bug, upstream-report candidate). Every in-page builder
@@ -398,7 +390,7 @@ async function packNodeKeys(
 }
 
 for (const entry of loadManifest()) {
-  test.describe(`all nodes: ${entry.pack}`, () => {
+  test.describe(`all nodes: ${entry.pack} @custom-nodes`, () => {
     test('every registered node mounts in both renderers', async ({
       comfyPage
     }) => {
@@ -408,6 +400,17 @@ for (const entry of loadManifest()) {
         keys.length === 0,
         `${entry.pack} not installed on this backend`
       )
+      // Exact-count guard: the corpus below comes from the live backend, so
+      // a pack silently registering fewer nodes (broken sub-import, a core
+      // change breaking registration) would shrink coverage while every
+      // remaining assertion stays green. At a fixed pin the count is
+      // deterministic; a delta in either direction fails until the manifest
+      // is deliberately recalibrated with the pin/core change that moved it.
+      console.log(`custom-nodes count: ${entry.pack} = ${keys.length}`)
+      expect(
+        keys,
+        `${entry.pack} registers ${keys.length} nodes but the manifest expects ${entry.expectedNodeCount} - a pack node failed to register (or the pack changed); recalibrate expectedNodeCount only with the change that moved it`
+      ).toHaveLength(entry.expectedNodeCount)
       const declaredByKey = new Map(
         keys.map((key) => [key, declaredShape(defs[key])])
       )

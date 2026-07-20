@@ -78,6 +78,36 @@ test.describe('autoRun classifier', () => {
     expect(verdict.needsPreviewSink).toBe(true)
   })
 
+  test('a union socket resolves to its first synthesizable member', () => {
+    const verdict = classifyAutoRunnable(
+      'UnionConsumer',
+      {
+        input: { required: { pixels: ['VAE,IMAGE'] } },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('CHAINABLE')
+    // The MEMBER is pushed, not the union string - the chain builder
+    // synthesizes a producer for exactly this type.
+    expect(verdict.requiredSockets).toEqual([{ name: 'pixels', type: 'IMAGE' }])
+  })
+
+  test('a union socket with no synthesizable member means NEEDS_WIRES', () => {
+    const verdict = classifyAutoRunnable(
+      'UnionNeedsWires',
+      {
+        input: { required: { model: ['MODEL,VAE'] } },
+        output: ['IMAGE'],
+        output_node: false
+      },
+      SYNTH
+    )
+    expect(verdict.verdict).toBe('NEEDS_WIRES')
+    expect(verdict.reason).toContain('MODEL,VAE')
+  })
+
   test('a socket with no model-free producer means NEEDS_WIRES', () => {
     const verdict = classifyAutoRunnable(
       'VaeDecode',

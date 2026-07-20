@@ -16,7 +16,7 @@ test.describe('Download page @smoke', () => {
 
   test('has correct title', async ({ page }) => {
     await expect(page).toHaveTitle(
-      'Download Comfy Desktop — Run AI on Your Hardware'
+      'Download Comfy Desktop - Run AI on Your Hardware'
     )
   })
 

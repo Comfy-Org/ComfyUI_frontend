@@ -9,7 +9,7 @@ import {
   listSecrets,
   SecretsApiError
 } from '../api/secretsApi'
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata, SecretProviderInfo } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
@@ -17,7 +17,7 @@ export function useSecrets() {
 
   const loading = ref(false)
   const secrets = ref<SecretMetadata[]>([])
-  const availableProviders = ref<string[] | null>(null)
+  const availableProviders = ref<SecretProviderInfo[] | null>(null)
   const operatingSecretId = ref<string | null>(null)
 
   const existingProviders = computed<string[]>(() =>

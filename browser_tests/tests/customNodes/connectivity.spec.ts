@@ -9,7 +9,10 @@ import {
   dismissTemplatesDialog,
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import {
+  isForeignExecutionNoise,
+  unallowlistedErrorsForPacks
+} from '@e2e/fixtures/customNode/consoleErrorLedger'
 import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 import type {
   ConnectivityOutcome,
@@ -22,7 +25,7 @@ import {
   planPairs
 } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const CORE_PROOF_NODE_COUNT = 16
 // A node may legitimately veto a wiring via onConnectInput; committed
@@ -32,6 +35,21 @@ const CONNECT_REJECTED_ALLOWLIST: string[] = [
   // pysssss MathExpression only accepts INT/FLOAT-producing links into its
   // expression variables; its JS vetoes text-list producers.
   'AddTextPrefix.texts -> MathExpression|pysssss.expression'
+]
+// Pairs whose creation/wiring THROWS inside the pack's own JS. Filter-guarded
+// ONLY, deliberately outside the observed-firing stale guard: the throw is a
+// timing race (it fires when the KJNodes editor_base creation crash lands
+// before this node's instantiation, and passes on runners where it doesn't -
+// observed failing 2026-07-18, passing 2026-07-20 at the IDENTICAL core SHA),
+// and ARCHITECTURE section 10's rule is that environment-conditional
+// failures get filter guards, never observed-firing guards that false-fail.
+const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
+  // TimerNodeKJ's widget JS throws `null.replace` when instantiated in the
+  // sweep after the editor_base crash contaminates shared state
+  // (single-creation mount stays clean). Part of the 2026-07-18 core-drift
+  // incident. Upstream-report candidate.
+  'TimerNodeKJ.timer -> TimerNodeKJ.timer',
+  'TimerNodeKJ.time -> AddLabel.text_x'
 ]
 // A pack's own serialize/configure hooks may drop links it manages itself
 // (reproducible manually: wire, save, reload - link gone). Pack behavior on
@@ -69,14 +87,6 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-async function expectNoVisibleErrors(
-  page: Page,
-  context: string
-): Promise<void> {
-  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
-}
-
 function concrete(slot: { type: string }): boolean {
   return !isWildcard(slot.type)
 }
@@ -92,7 +102,7 @@ const connectivityEntries = loadManifest().filter((entry) =>
   entry.tiers.includes('connectivity')
 )
 
-test('connectivity: every type-paired link survives model, serialize, and prompt round-trips', async ({
+test('connectivity: every type-paired link survives model, serialize, and prompt round-trips @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
@@ -151,19 +161,26 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const consoleErrors = collectConsoleErrors(comfyPage.page)
   const results = await runPairsInPage(comfyPage.page, plan.pairs)
   consoleErrors.stop()
-  // Deliberately raw, not routed through the pack console ledger
-  // (consoleErrorLedger.ts): the sweep holds zero console errors without
-  // exceptions today, and the stricter contract catches noise the moment
-  // wiring provokes it. If a ledgered pattern ever fires here, filter
-  // through unallowlistedErrors with the pack taken from the offending
-  // pair's nodes (the sweep is cross-pack), instead of silently
-  // loosening this assert. The wiring sweep queues no prompts, so a
-  // prompt-execution error here is a prior tier's async stray, not this
-  // test's (isForeignExecutionNoise; ARCHITECTURE section 9 principle).
-  expect(
-    consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
-    'console errors during breadth sweep'
-  ).toEqual([])
+  // Routed through the pack console ledger scoped to the packs actually in
+  // the corpus (the escape hatch this assert always documented): a KJNodes
+  // SplineEditor creation crash fired on 2026-07-18 when core's new partner
+  // nodes reshuffled the pair plan, and the ledger row carries its mechanism
+  // and upstream-report status. Every non-ledgered error still fails. The
+  // wiring sweep queues no prompts, so a prompt-execution error here is a
+  // prior tier's async stray, not this test's (isForeignExecutionNoise;
+  // ARCHITECTURE section 9 principle).
+  const sweepErrors = consoleErrors.errors.filter(
+    (error) => !isForeignExecutionNoise(error)
+  )
+  const unledgered = unallowlistedErrorsForPacks(
+    [...installedPacks],
+    sweepErrors
+  )
+  if (sweepErrors.length > unledgered.length)
+    console.log(
+      `connectivity sweep: ${sweepErrors.length - unledgered.length} console error(s) matched an installed pack's allowlist`
+    )
+  expect(unledgered, 'console errors during breadth sweep').toEqual([])
 
   const widgetOnly = results.filter(
     (result) =>
@@ -186,6 +203,11 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
       !(
         result.outcome === ('ROUNDTRIP_LOST' satisfies ConnectivityOutcome) &&
         ROUNDTRIP_LOST_ALLOWLIST.includes(result.key)
+      ) &&
+      !(
+        result.outcome ===
+          ('SLOT_CONTRACT_MISMATCH' satisfies ConnectivityOutcome) &&
+        SLOT_CONTRACT_MISMATCH_ALLOWLIST.includes(result.key)
       )
   )
   const passed = results.filter((result) => result.outcome === 'PASS').length
@@ -203,6 +225,9 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   const allPacksInstalled =
     installedEntries.length === connectivityEntries.length
   const staleEntries: string[] = []
+  // SLOT_CONTRACT_MISMATCH_ALLOWLIST is deliberately absent here: its
+  // failures are timing-conditional (see its comment), so demanding they
+  // fire every run false-fails on fast runners.
   for (const [allowlist, expected] of [
     [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
     [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
@@ -341,7 +366,7 @@ function runPairsInPage(
   }, pairs)
 }
 
-test('connectivity self-check: the executor rejects broken pairs', async ({
+test('connectivity self-check: the executor rejects broken pairs @custom-nodes', async ({
   comfyPage
 }) => {
   const slot = (nodeType: string, slotName: string, slotType: string) => ({
@@ -366,7 +391,7 @@ test('connectivity self-check: the executor rejects broken pairs', async ({
   ])
 })
 
-test('connectivity drags: curated slot-to-slot wires connect under both renderers', async ({
+test('connectivity drags: curated slot-to-slot wires connect under both renderers @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(120_000)
@@ -501,17 +526,12 @@ test('connectivity drags: curated slot-to-slot wires connect under both renderer
 
       if (vueNodesEnabled) {
         await comfyPage.vueNodes.waitForNodes(2)
-        // Output-side mirror of getInputSlotConnectionDot, addressed by
-        // data-slot-key so shared-label ambiguity cannot misfire the drag.
-        const outDot = comfyPage.page
-          .locator(`[data-node-id="${String(producer.id)}"]`)
-          .locator('.lg-slot--output')
-          .filter({
-            has: comfyPage.page.locator(
-              `[data-slot-key="${String(producer.id)}-out-${outIndex}"]`
-            )
-          })
-          .getByTestId('slot-connection-dot')
+        // Slot-key-addressed dots so shared-label ambiguity cannot misfire
+        // the drag.
+        const outDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
+          String(producer.id),
+          outIndex
+        )
         const inDot = comfyPage.vueNodes.getInputSlotConnectionDot(
           String(consumer.id),
           inIndex

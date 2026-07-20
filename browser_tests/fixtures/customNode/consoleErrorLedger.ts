@@ -38,6 +38,22 @@ export const CONSOLE_ERROR_ALLOWLIST: Record<
       pattern:
         /Failed to load resource.*\/api\/view\?type=input&filename=undefined/,
       reason: 'loader preview fetches undefined filename on empty input dir'
+    },
+    {
+      // The SHARED editor base (editor_base.js:727 createContextMenu)
+      // replaceChild-es a menu element it assumes is attached; repeat
+      // instantiation within one page (the wiring sweep creates a node once
+      // per planned pair) finds it gone and throws at construction - for
+      // EVERY editor subclass (SplineEditor and PointsEditor observed), so
+      // the pattern matches the mechanism, not one class name. Single
+      // creation is clean - the mount tier passes. Latent pack bug,
+      // surfaced 2026-07-18 when new core partner nodes (HeyGen/Gemini)
+      // grew the corpus and reshuffled the sweep's pair plan. Console-only;
+      // upstream-report candidate.
+      pattern:
+        /Error creating \w+Editor: TypeError: Cannot read properties of null \(reading 'replaceChild'\)/,
+      reason:
+        'KJNodes editor_base createContextMenu crashes on repeat instantiation (all editor subclasses)'
     }
   ],
   'ComfyUI-Custom-Scripts': [
@@ -57,6 +73,20 @@ export function unallowlistedErrors(pack: string, errors: string[]): string[] {
   const allowlist = CONSOLE_ERROR_ALLOWLIST[pack] ?? []
   return errors.filter(
     (error) => !allowlist.some((rule) => rule.pattern.test(error))
+  )
+}
+
+// For the cross-pack wiring sweep, where an error's owning pack cannot be
+// read off the collector: an error is ledgered if any pack WHOSE NODES ARE
+// IN THE SWEEP owns a matching pattern. Scoped to the installed packs, so a
+// pack absent from the corpus can never vouch for an error.
+export function unallowlistedErrorsForPacks(
+  packs: string[],
+  errors: string[]
+): string[] {
+  return packs.reduce(
+    (remaining, pack) => unallowlistedErrors(pack, remaining),
+    errors
   )
 }
 

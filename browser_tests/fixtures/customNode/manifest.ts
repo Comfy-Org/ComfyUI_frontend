@@ -21,6 +21,21 @@ export interface CustomNodeManifestEntry {
   // Runtime class_type / object_info keys, NOT Python class names (e.g. rgthree
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
   expectedNodes: string[]
+  // Frontend extension names the pack's JS registers at boot (via
+  // app.registerExtension), calibrated from the pinned source. Asserted
+  // against window.app.extensions in the load tier: backend nodes can
+  // register while the pack's frontend JS silently fails to load (wrong
+  // web dir, a loadExtensions regression), and every JS-dependent
+  // assertion in this suite would then quietly test vanilla nodes.
+  // Empty array = the pinned pack ships no boot-registered extension.
+  expectedExtensions: string[]
+  // Exact number of nodes the pack registers at its pin, calibrated from the
+  // gating CI's object_info. The all-nodes tiers derive their corpus from the
+  // live backend, so without this a pack that silently registers fewer nodes
+  // (a broken sub-import, a core change breaking registration) shrinks
+  // coverage while CI stays green. Any delta - either direction - fails until
+  // the count is deliberately recalibrated alongside a pin/core change.
+  expectedNodeCount: number
   requiresGpu: boolean
   requiresModels: string[]
   timeoutMs: number
@@ -79,6 +94,22 @@ export function assertEntry(
     missing.push('workflow (required when tiers includes "run")')
   if (!Array.isArray(entry.expectedNodes) || entry.expectedNodes.length === 0)
     missing.push('expectedNodes')
+  // Explicitly required (an empty array is a deliberate "no frontend JS"
+  // declaration) so a new pack row cannot silently opt out of the
+  // extension-loaded assert by omission.
+  if (
+    !Array.isArray(entry.expectedExtensions) ||
+    entry.expectedExtensions.some(
+      (name) => typeof name !== 'string' || name.length === 0
+    ) ||
+    new Set(entry.expectedExtensions).size !== entry.expectedExtensions.length
+  )
+    missing.push('expectedExtensions (unique non-empty extension names)')
+  if (
+    !Number.isInteger(entry.expectedNodeCount) ||
+    entry.expectedNodeCount <= 0
+  )
+    missing.push('expectedNodeCount (positive integer, calibrated at the pin)')
   if (!Array.isArray(entry.tiers) || entry.tiers.length === 0)
     missing.push('tiers')
   // A typo like "connectivty" would otherwise pass and silently drop that

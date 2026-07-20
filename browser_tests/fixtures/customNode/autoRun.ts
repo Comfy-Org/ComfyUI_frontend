@@ -1,5 +1,7 @@
 // Classifies which nodes can execute with no hand-authored fixture; the
 // rest are recorded with the reason, never silently dropped.
+import { chunk } from 'es-toolkit'
+
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 
 type AutoRunClass =
@@ -97,13 +99,21 @@ export function classifyAutoRunnable(
       }
     if (kind === 'socket') {
       const type = socketType(spec)
-      if (!synthTypes.has(type))
+      // Union-typed sockets ("IMAGE,MASK") accept any member (same semantics
+      // isTypeCompatible applies in typePairing), so one synthesizable member
+      // makes the socket wireable. Push the MEMBER, not the union string -
+      // the chain builder synthesizes a producer for exactly this type.
+      const member = type
+        .split(',')
+        .map((candidate) => candidate.trim())
+        .find((candidate) => synthTypes.has(candidate))
+      if (member === undefined)
         return {
           key,
           verdict: 'NEEDS_WIRES',
           reason: `required input "${name}" (${type}) has no model-free producer`
         }
-      sockets.push({ name, type })
+      sockets.push({ name, type: member })
     }
   }
   const terminus =
@@ -158,8 +168,5 @@ export function batchAutoRunnable(
     (verdict) =>
       verdict.verdict === 'AUTO_RUNNABLE' || verdict.verdict === 'CHAINABLE'
   )
-  const batches: AutoRunVerdict[][] = []
-  for (let offset = 0; offset < runnable.length; offset += batchSize)
-    batches.push(runnable.slice(offset, offset + batchSize))
-  return batches
+  return chunk(runnable, batchSize)
 }

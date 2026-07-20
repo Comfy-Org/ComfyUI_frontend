@@ -159,24 +159,27 @@ export const te: (typeof i18n.global)['te'] = i18n.global.te
 export const d: (typeof i18n.global)['d'] = i18n.global.d
 const tm = i18n.global.tm
 
+function rawTranslationOrFallback(key: string, fallbackMessage: string) {
+  const message = tm(key)
+  return typeof message === 'string' ? message : fallbackMessage
+}
+
 /**
  * Safe translation function that returns the fallback message if the key is not found.
+ * Invalid message syntax falls back to the raw locale message instead of crashing.
  *
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
-  // The normal defaultMsg overload fails in some cases for custom nodes
   if (!te(key)) return fallbackMessage
+
   try {
+    // The normal defaultMsg overload fails in some cases for custom nodes
     return t(key)
   } catch (error) {
-    // A custom-node-provided message value can contain vue-i18n linked-message
-    // syntax (a literal "@", "{", "|"), which throws at compile time. One bad
-    // key must never abort app boot (this runs on getNodeDefs -> registerNodes
-    // -> comfyApp.setup(), before window.app is assigned).
-    console.warn(`Failed to translate "${key}"; using fallback`, error)
-    return fallbackMessage
+    if (!(error instanceof SyntaxError)) throw error
+    return rawTranslationOrFallback(key, fallbackMessage)
   }
 }
 
@@ -190,6 +193,5 @@ export function st(key: string, fallbackMessage: string) {
 export function stRaw(key: string, fallbackMessage: string) {
   if (!te(key)) return fallbackMessage
 
-  const message = tm(key)
-  return typeof message === 'string' ? message : fallbackMessage
+  return rawTranslationOrFallback(key, fallbackMessage)
 }

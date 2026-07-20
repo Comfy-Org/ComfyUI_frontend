@@ -16,6 +16,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
     }
   : {
       retries: process.env.CI ? 3 : 0,
+      workers: process.env.CI ? 2 : undefined,
       use: {
         trace: 'on-first-retry'
       }
@@ -25,7 +26,7 @@ export default defineConfig({
   testDir: './browser_tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: 'html',
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
   globalSetup: './browser_tests/globalSetup.ts',
@@ -36,7 +37,25 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud/
+      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
+    },
+
+    // The custom-node suite needs the manifest packs installed and exclusive
+    // backend-queue access (its afterEach drains the queue), so it runs in
+    // its own gating job (ci-tests-custom-nodes.yaml) with --workers=1, not
+    // alongside the parallel main e2e shards. Excluded from `chromium` above
+    // so the main job never collects it and its unscoped drain cannot
+    // interrupt a sibling worker's in-flight prompt.
+    {
+      name: 'custom-nodes',
+      // retain-on-failure (not the repo's on-first-retry): this job is ~40
+      // serial tests, so recording overhead is negligible, and a red run
+      // needs 7 installed packs + a live backend to reproduce - the trace of
+      // the ACTUAL first failing attempt (not a retry) is the debug artifact.
+      use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+      timeout: 15000,
+      grep: /@custom-nodes/,
+      fullyParallel: false
     },
 
     {

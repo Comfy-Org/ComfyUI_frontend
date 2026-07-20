@@ -24,23 +24,23 @@ System design, data flow, and the reasoning behind every invariant:
 
 ## Running
 
-| Script                                 | What it does                                                                                                                                                                                                                                                                                     |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm test:custom-nodes`               | whole suite headless against the Vite dev server - the fast local loop for suite-code iteration. NOT the gate: the dev server never loads pack frontend JS (see Gotchas)                                                                                                                         |
-| `pnpm test:custom-nodes:ci`            | whole suite headless against the backend-served BUILT frontend - the gate-equivalent run (every tier passes, zero skips). Requires a backend serving the built dist on :8188 (a separate endpoint from the :8288 dev-proxy backend in Prerequisites); set `PLAYWRIGHT_TEST_URL` if yours differs |
-| `pnpm test:custom-nodes:watch`         | headed slow-motion run of the browser tiers, hands-off watching                                                                                                                                                                                                                                  |
-| `pnpm test:custom-nodes:debug`         | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)                                                                                                                                                                                                                 |
-| `pnpm test:custom-nodes:impact-render` | Impact nodes render in both renderers (Inspector)                                                                                                                                                                                                                                                |
-| `pnpm test:custom-nodes:impact-run`    | Impact group workflow executes on the backend (Inspector)                                                                                                                                                                                                                                        |
-| `pnpm test:custom-nodes:vhs-render`    | VHS nodes render in both renderers (Inspector)                                                                                                                                                                                                                                                   |
-| `pnpm test:custom-nodes:vhs-run`       | VHS decodes a real video through its node chain (Inspector)                                                                                                                                                                                                                                      |
-| `pnpm test:custom-nodes:connectivity`  | slot/type contract: type-paired links + real slot drags in both renderers (Inspector)                                                                                                                                                                                                            |
-| `pnpm test:custom-nodes:self-check`    | watches the harness catch a deliberate execution error                                                                                                                                                                                                                                           |
+| Script                                | What it does                                                                                                                                                                                                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm test:custom-nodes`              | whole suite headless against the Vite dev server - the fast local loop for suite-code iteration. NOT the gate: the dev server never loads pack frontend JS (see Gotchas)                                                                                                                         |
+| `pnpm test:custom-nodes:ci`           | whole suite headless against the backend-served BUILT frontend - the gate-equivalent run (every tier passes, zero skips). Requires a backend serving the built dist on :8188 (a separate endpoint from the :8288 dev-proxy backend in Prerequisites); set `PLAYWRIGHT_TEST_URL` if yours differs |
+| `pnpm test:custom-nodes:watch`        | headed slow-motion run of the browser tiers, hands-off watching                                                                                                                                                                                                                                  |
+| `pnpm test:custom-nodes:debug`        | step through the browser tiers in the Playwright Inspector (F10 step, F8 resume)                                                                                                                                                                                                                 |
+| `pnpm test:custom-nodes:connectivity` | slot/type contract: type-paired links + real slot drags in both renderers (Inspector)                                                                                                                                                                                                            |
+| `pnpm test:custom-nodes:self-check`   | watches the harness catch a deliberate execution error                                                                                                                                                                                                                                           |
+
+Scope any run to one pack or tier with Playwright's `-g` filter (titles follow
+`<pack>` / `T0` / `T1` patterns) instead of adding per-pack scripts - the
+script list stays fixed while the manifest grows:
 
 Example - watch the VHS video-decode run step by step:
 
 ```bash
-pnpm test:custom-nodes:vhs-run
+pnpm test:custom-nodes:debug -g "VideoHelperSuite.*T1"
 ```
 
 Two windows open: the app under test and the Playwright Inspector. Press F10
@@ -59,10 +59,19 @@ Any `-g` pattern works against the generic scripts, e.g.
   element mounts under Vue Nodes 2.0. Both renderer passes - unless the pack
   declares `vueNodesCompatible: false` in the manifest (evidence required;
   see [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)), in which case its tests run their
-  LiteGraph-canvas assertions only. Never a skip.
+  LiteGraph-canvas assertions only. Never a skip. T0 also asserts each
+  pack's declared frontend extensions registered (`expectedExtensions`):
+  backend nodes can appear while the pack's JS silently failed to load.
 - **T1 run**: the manifest workflow is loaded and queued; the backend's
   `executing` event stream must contain every expected node id, and the run
   must end in `execution_success`.
+- **Dynamic inputs** (`dynamicInputs.spec.ts`): autogrow nodes (pack JS adds
+  an input when the last one is connected, removes trailing empties on
+  disconnect) grow and shrink correctly, via BOTH a real mouse drag and a
+  programmatic connect, under both renderers, asserted in the graph AND (in
+  the Vue renderer) as a rendered slot row, both directions. This behavior
+  lives in pack JS, not `/object_info`, so no def-driven tier can see it.
+  Curated cases live in the spec's `AUTOGROW_CASES` table.
 - **Every-node tiers** (`allNodes.spec.ts`): the pack's FULL node list,
   discovered live from `/object_info`, is exercised with zero
   configuration - every registered node mounts in both renderers (chunked

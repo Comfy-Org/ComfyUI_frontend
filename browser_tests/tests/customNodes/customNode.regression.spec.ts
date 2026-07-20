@@ -23,9 +23,12 @@ import {
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
-import { expectedNodesPresent } from '@e2e/fixtures/customNode/objectInfoValidator'
+import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
-import { errorSurfaces } from '@e2e/fixtures/utils/errorSurfaces'
+import {
+  errorSurfaces,
+  expectNoVisibleErrors
+} from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const target = new LocalDesktopTarget()
@@ -58,14 +61,6 @@ test.afterEach(async ({ comfyPage }) => {
   await drainBackendToIdle(comfyPage.page, 10_000)
 })
 
-async function expectNoVisibleErrors(
-  page: Page,
-  context: string
-): Promise<void> {
-  for (const [surface, locator] of Object.entries(errorSurfaces(page)))
-    await expect(locator, `${context}: ${surface}`).toHaveCount(0)
-}
-
 function readWorkflow(relativePath: string): ComfyWorkflowJSON {
   return JSON.parse(
     readFileSync(resolve(relativePath), 'utf-8')
@@ -90,8 +85,8 @@ async function nodeIdsByType(
 for (const entry of loadManifest()) {
   const workflowRelative = `browser_tests/${entry.workflow}`
 
-  test.describe(`custom node: ${entry.pack}`, () => {
-    test('T0 load: expected nodes register and render in both renderers', async ({
+  test.describe(`custom node: ${entry.pack} @custom-nodes`, () => {
+    test('T0 load: expected nodes register, render in both renderers, and frontend extensions load', async ({
       comfyPage
     }) => {
       test.setTimeout(entry.timeoutMs)
@@ -100,12 +95,28 @@ for (const entry of loadManifest()) {
         Object.keys(objectInfo).length,
         'object_info sanity floor'
       ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
-      const { missing } = expectedNodesPresent(objectInfo, entry.expectedNodes)
+      const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
       test.skip(
         missing.length > 0,
         `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
       )
       await expectNoVisibleErrors(comfyPage.page, 'at startup')
+
+      // Backend registration alone does not prove the pack's FRONTEND JS
+      // loaded: a wrong web dir or a loadExtensions regression leaves nodes
+      // in object_info while every JS-driven behavior silently vanishes
+      // (and this suite would then be testing vanilla nodes). Assert the
+      // pack's boot-registered extensions actually arrived in the browser.
+      if (entry.expectedExtensions.length > 0) {
+        const registered = await comfyPage.page.evaluate(() =>
+          window.app!.extensions.map((extension) => extension.name)
+        )
+        for (const name of entry.expectedExtensions)
+          expect(
+            registered,
+            `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
+          ).toContain(name)
+      }
 
       // vueNodesCompatible: false = canvas-only assertions; still runs, no skip.
       const rendererPasses = rendererPassesFor(entry)
@@ -156,7 +167,7 @@ for (const entry of loadManifest()) {
     test('T1 run: workflow executes without error', async ({ comfyPage }) => {
       test.setTimeout(entry.timeoutMs + 15_000)
       const objectInfo = await target.getObjectInfo(comfyPage.page)
-      const { missing } = expectedNodesPresent(objectInfo, entry.expectedNodes)
+      const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
       test.skip(
         !entry.tiers.includes('run') ||
           missing.length > 0 ||
@@ -218,7 +229,7 @@ for (const entry of loadManifest()) {
   })
 }
 
-test('harness self-check: captures a real execution error', async ({
+test('harness self-check: captures a real execution error @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(30_000)
@@ -252,7 +263,7 @@ test('harness self-check: captures a real execution error', async ({
   await expect(errorSurfaces(comfyPage.page).errorOverlay).toBeVisible()
 })
 
-test('collector self-check: captures uncaught page exceptions', async ({
+test('collector self-check: captures uncaught page exceptions @custom-nodes', async ({
   comfyPage
 }) => {
   // Positive control for the console collector: an uncaught async throw
@@ -275,7 +286,7 @@ test('collector self-check: captures uncaught page exceptions', async ({
   collected.stop()
 })
 
-test('attribution self-check: a foreign-prompt terminal event cannot fail this run', async ({
+test('attribution self-check: a foreign-prompt terminal event cannot fail this run @custom-nodes', async ({
   comfyPage
 }) => {
   test.setTimeout(30_000)
@@ -293,8 +304,12 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
   // seen-set and misclassified the run as EXECUTION_ERROR. This is the
   // discriminating guard for the foreign-attribution bug class.
   await comfyPage.page.evaluate(() => {
-    const timer = setInterval(() => {
-      const sink = (window as unknown as { __cnEvents?: object[] }).__cnEvents
+    const w = window as unknown as {
+      __cnEvents?: object[]
+      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
+    }
+    w.__cnSelfCheckTimer = setInterval(() => {
+      const sink = w.__cnEvents
       if (!sink || sink.length === 0) return
       sink.push({
         type: 'execution_error',
@@ -302,7 +317,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
         exception_type: 'ForeignError',
         node_id: '424242'
       })
-      clearInterval(timer)
+      clearInterval(w.__cnSelfCheckTimer)
     }, 25)
   })
   const result = await target.runWorkflow(comfyPage.page, {
@@ -312,6 +327,25 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     ]),
     timeoutMs: 15000
   })
+  // Prove the stimulus actually landed before trusting the PASS: without
+  // this, a run that finishes before the injector's next tick never injects
+  // the foreign event, and PASS then holds for the wrong reason (it would
+  // hold identically against a harness with the prompt-id filter removed).
+  // Clearing a not-yet-fired timer stops a post-run push from faking it.
+  const injectionLanded = await comfyPage.page.evaluate(() => {
+    const w = window as unknown as {
+      __cnEvents?: { prompt_id?: string }[]
+      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
+    }
+    clearInterval(w.__cnSelfCheckTimer)
+    return (w.__cnEvents ?? []).some(
+      (event) => event.prompt_id === 'cn-foreign-self-check'
+    )
+  })
+  expect(
+    injectionLanded,
+    'positive control: the foreign terminal event was injected during the run'
+  ).toBe(true)
   expect(result.outcome, JSON.stringify(result.error ?? {})).toBe('PASS')
   expect(result.error).toBeUndefined()
 })

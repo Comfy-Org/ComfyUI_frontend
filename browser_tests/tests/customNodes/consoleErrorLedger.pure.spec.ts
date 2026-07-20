@@ -4,7 +4,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   isForeignExecutionNoise,
-  unallowlistedErrors
+  unallowlistedErrors,
+  unallowlistedErrorsForPacks
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 
 // unallowlistedErrors is the sole enforcement point of the curated-run
@@ -36,6 +37,25 @@ test.describe('consoleErrorLedger', () => {
       'boom'
     ]
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
+  })
+
+  test('cross-pack variant filters only via packs in scope', () => {
+    // Both observed editor_base subclasses match the mechanism pattern.
+    const kjErrors = [
+      "Error creating SplineEditor: TypeError: Cannot read properties of null (reading 'replaceChild')",
+      "Error creating PointsEditor: TypeError: Cannot read properties of null (reading 'replaceChild')"
+    ]
+    // Owning pack in scope: ledgered. Absent: the error surfaces, so a pack
+    // outside the sweep corpus can never vouch for an error.
+    expect(
+      unallowlistedErrorsForPacks(
+        ['ComfyUI-Impact-Pack', 'ComfyUI-KJNodes'],
+        [...kjErrors, 'boom']
+      )
+    ).toEqual(['boom'])
+    expect(
+      unallowlistedErrorsForPacks(['ComfyUI-Impact-Pack'], kjErrors)
+    ).toEqual(kjErrors)
   })
 })
 
