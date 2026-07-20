@@ -453,13 +453,12 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
   test('shows the existing success view when subscribe replays 200', async ({
     page
   }) => {
-    test.slow()
     await page.goto(`${APP_URL}/?pricing=personal`)
 
     const changePlan = page.getByRole('button', {
       name: 'Change to Creator Yearly'
     })
-    await expect(changePlan).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(changePlan).toBeVisible()
 
     const subscribeResponse = page.waitForResponse(
       (response) =>
@@ -523,13 +522,12 @@ test.describe(
       test('keeps the success view while status retries, then reopens with the reconciled plan', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const changePlan = page.getByRole('button', {
           name: 'Change to Creator Yearly'
         })
-        await expect(changePlan).toBeVisible({ timeout: 45_000 })
+        await cloudAppExpect(changePlan).toBeVisible()
         await changePlan.click()
 
         await expect(
@@ -599,7 +597,6 @@ test.describe(
       test('reconciles status and balance without polling', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const subscribeResponse = page.waitForResponse(
