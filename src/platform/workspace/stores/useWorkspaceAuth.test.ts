@@ -2056,6 +2056,80 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('does not let an old workspace retry supersede a pending switch', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      let resolveWorkspaceB: (value: unknown) => void = () => {}
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'workspace-a-token',
+              workspace: { ...mockWorkspace, id: 'workspace-a' }
+            })
+        })
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveWorkspaceB = resolve
+          })
+        )
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-a')
+      const switchToB = store.switchWorkspace('workspace-b')
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+
+      await expect(
+        store.remintUnifiedOnce('workspace-a-token')
+      ).resolves.toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+
+      resolveWorkspaceB({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'workspace-b-token',
+            workspace: { ...mockWorkspace, id: 'workspace-b' }
+          })
+      })
+      await switchToB
+
+      expect(store.getUnifiedToken()).toBe('workspace-b-token')
+    })
+
+    it('fails closed when switching workspaces fails', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({ message: 'try again' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-a')
+
+      await expect(store.switchWorkspace('workspace-b')).rejects.toThrow()
+      expect(store.getUnifiedToken()).toBeUndefined()
+      await expect(
+        store.remintUnifiedOnce('workspace-token-abc')
+      ).resolves.toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
     it('bumps the rotation trigger exactly once on a refresh re-mint', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

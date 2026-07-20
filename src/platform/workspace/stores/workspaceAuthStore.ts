@@ -802,6 +802,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function switchUnifiedWorkspace(workspaceId: string): Promise<void> {
+    clearUnifiedContext()
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
