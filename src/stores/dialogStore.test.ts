@@ -211,7 +211,13 @@ describe('dialogStore', () => {
 
     it('notifies a dialog when the stack capacity evicts it', () => {
       const store = useDialogStore()
-      const onClose = vi.fn()
+      const closeError = new Error('close failed')
+      const onClose = vi.fn(() => {
+        throw closeError
+      })
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
       store.showDialog({
         key: 'evicted-dialog',
@@ -233,7 +239,13 @@ describe('dialogStore', () => {
       })
 
       expect(onClose).toHaveBeenCalledOnce()
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to close evicted dialog',
+        closeError
+      )
       expect(store.isDialogOpen('evicted-dialog')).toBe(false)
+      expect(store.isDialogOpen('eleventh-dialog')).toBe(true)
+      consoleError.mockRestore()
     })
   })
 

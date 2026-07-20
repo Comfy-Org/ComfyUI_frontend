@@ -186,7 +186,11 @@ export const useDialogStore = defineStore('dialog', () => {
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
     if (dialogStack.value.length >= 10) {
       const evictedDialog = dialogStack.value.shift()
-      evictedDialog?.dialogComponentProps.onClose?.()
+      try {
+        evictedDialog?.dialogComponentProps.onClose?.()
+      } catch (error) {
+        console.error('Failed to close evicted dialog', error)
+      }
     }
 
     const dialog = {
