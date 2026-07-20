@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUse from '@vueuse/core'
@@ -119,5 +119,45 @@ describe('ConversationView', () => {
 
     await userEvent.click(pill)
     expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('fades only the edges where content continues past the view', async () => {
+    const assistant: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'hello', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+
+    const { container } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: { plugins: [i18n] }
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
+    const scroll = container.firstElementChild?.firstElementChild as HTMLElement
+    const topMask = 'mask-t-from-[calc(100%-2rem)]'
+    const bottomMask = 'mask-b-from-[calc(100%-2rem)]'
+
+    // ConversationView registers the bottom observer before the top one.
+    const [fireBottom, fireTop] = intersectionCallbacks
+
+    expect(scroll.classList.contains(topMask)).toBe(false)
+    expect(scroll.classList.contains(bottomMask)).toBe(false)
+
+    fireTop([{ isIntersecting: false }])
+    await nextTick()
+    expect(scroll.classList.contains(topMask)).toBe(true)
+    expect(scroll.classList.contains(bottomMask)).toBe(false)
+
+    fireTop([{ isIntersecting: true }])
+    await nextTick()
+    expect(scroll.classList.contains(topMask)).toBe(false)
+
+    fireBottom([{ isIntersecting: false }])
+    await nextTick()
+    expect(scroll.classList.contains(bottomMask)).toBe(true)
+    expect(scroll.classList.contains(topMask)).toBe(false)
   })
 })

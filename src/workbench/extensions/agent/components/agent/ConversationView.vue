@@ -3,6 +3,8 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 
 import AgentMessage from './message/AgentMessage.vue'
@@ -22,6 +24,13 @@ const atBottom = ref(true)
 
 useIntersectionObserver(bottom, ([entry]) => {
   atBottom.value = entry?.isIntersecting ?? true
+})
+
+const top = ref<HTMLElement>()
+const atTop = ref(true)
+
+useIntersectionObserver(top, ([entry]) => {
+  atTop.value = entry?.isIntersecting ?? true
 })
 
 function scrollToLatest(): void {
@@ -48,7 +57,16 @@ watch(
 
 <template>
   <div class="relative h-full">
-    <div class="h-full overflow-y-auto">
+    <div
+      :class="
+        cn(
+          'h-full overflow-y-auto',
+          !atTop && 'mask-t-from-[calc(100%-2rem)]',
+          !atBottom && 'mask-b-from-[calc(100%-2rem)]'
+        )
+      "
+    >
+      <div ref="top" />
       <div class="mx-auto max-w-[640px] p-4">
         <div class="flex flex-col gap-4">
           <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
