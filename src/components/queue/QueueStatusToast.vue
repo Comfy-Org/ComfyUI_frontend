@@ -147,12 +147,36 @@
   </div>
 
   <!-- Idle: nothing queued, running or recently finished -->
-  <div
-    v-else
-    data-testid="queue-status-idle"
-    class="pointer-events-auto flex h-6 items-center rounded-md border border-interface-stroke px-2 text-xs text-muted-foreground"
-  >
-    {{ activeJobsLabel }}
+  <div v-else class="pointer-events-auto flex flex-col items-end gap-1">
+    <button
+      type="button"
+      data-testid="queue-status-idle"
+      :aria-expanded="idleExpanded"
+      class="flex h-6 cursor-pointer items-center rounded-md border border-solid border-interface-stroke px-2 text-xs text-muted-foreground transition-colors hover:text-base-foreground"
+      @click="idleExpanded = !idleExpanded"
+    >
+      {{ activeJobsLabel }}
+    </button>
+
+    <div
+      v-if="idleExpanded"
+      data-testid="queue-status-idle-panel"
+      class="flex w-56 flex-col gap-3 rounded-lg border border-solid border-interface-stroke bg-comfy-menu-bg p-3 shadow-interface"
+    >
+      <p class="text-center text-xs text-muted-foreground">
+        {{ t('queueStatus.nothingRunning') }}
+      </p>
+      <Button
+        variant="textonly"
+        size="md"
+        class="w-full gap-2 border border-solid border-interface-stroke text-base-foreground"
+        data-testid="queue-status-go-history"
+        @click="goToHistory"
+      >
+        <i class="icon-[lucide--history] size-4 shrink-0" />
+        {{ t('queueStatus.goToHistory') }}
+      </Button>
+    </div>
   </div>
 
   <MediaLightbox
@@ -179,6 +203,7 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, n } = useI18n()
@@ -188,7 +213,16 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { totalPercent } = useQueueProgress()
 const { jobItems } = useJobList()
 
+const sidebarTabStore = useSidebarTabStore()
+
 const expanded = ref(false)
+/** Idle popover ("Nothing running right now" + history shortcut). */
+const idleExpanded = ref(false)
+
+const goToHistory = () => {
+  idleExpanded.value = false
+  sidebarTabStore.toggleSidebarTab('job-history')
+}
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const pendingCount = computed(() => queueStore.pendingTasks.length)
