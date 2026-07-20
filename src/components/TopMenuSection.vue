@@ -98,8 +98,8 @@
       </div>
     </div>
 
-    <div class="flex flex-col items-end gap-1">
-      <QueueStatusToast v-if="isActionbarEnabled" class="pr-1" />
+    <div class="flex flex-col items-end gap-1 pr-1">
+      <QueueStatusToast v-if="isActionbarEnabled" />
       <template v-if="showLegacyQueueUi">
         <Teleport
           v-if="inlineProgressSummaryTarget"
