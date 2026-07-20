@@ -1754,9 +1754,13 @@ export class LGraph
    * output.links and the graph's _links map.
    *
    * Three phases: group links by tuple, select the survivor, purge duplicates.
+   * @returns A map from each purged duplicate id to the survivor kept in its
+   * place, so a later realign can follow a serialized input reference through
+   * to the surviving link.
    */
-  _removeDuplicateLinks(): void {
+  _removeDuplicateLinks(): Map<LinkId, LinkId> {
     const groups = groupLinksByTuple(this._links)
+    const survivorByPurged = new Map<LinkId, LinkId>()
 
     for (const ids of groups.values()) {
       if (ids.length <= 1) continue
@@ -1766,7 +1770,12 @@ export class LGraph
       const keepId = selectSurvivorLink(ids, node)
 
       purgeOrphanedLinks(ids, keepId, this)
+      for (const id of ids) {
+        if (id !== keepId) survivorByPurged.set(id, keepId)
+      }
     }
+
+    return survivorByPurged
   }
 
   /**
@@ -2719,13 +2728,15 @@ export class LGraph
       // (origin_id, origin_slot, target_id, target_slot) tuple.
       // This repairs corrupted data where extra link objects were created
       // without proper cleanup of the previous connection.
-      this._removeDuplicateLinks()
+      const survivorByPurged = this._removeDuplicateLinks()
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots
       // that reference them. Uses nodeDataMap: the effective (possibly
       // deduplicated-clone) data nodes were actually configured from.
-      realignInputLinkSlots(this, nodeDataMap.values())
+      // survivorByPurged lets an input that referenced a deduplicated link
+      // realign the survivor kept in its place.
+      realignInputLinkSlots(this, nodeDataMap.values(), survivorByPurged)
 
       // groups
       this._groups.length = 0

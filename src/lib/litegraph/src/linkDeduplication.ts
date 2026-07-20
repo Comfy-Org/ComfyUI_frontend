@@ -78,15 +78,21 @@ export function purgeOrphanedLinks(
  * @param graph The graph whose links to realign
  * @param nodesData The serialized node data the graph's nodes were configured
  * from, after any in-place input reordering by node `configure()` overrides
+ * @param survivorByPurged Maps a duplicate link id removed by
+ * {@link purgeOrphanedLinks} to the survivor kept in its place, so an input
+ * referencing a purged duplicate realigns the surviving link
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>
+  nodesData: Iterable<ISerialisedNode>,
+  survivorByPurged: ReadonlyMap<LinkId, LinkId> = new Map()
 ): void {
   for (const nodeData of nodesData) {
     for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
       if (input.link == null) continue
-      const link = graph._links.get(toLinkId(input.link))
+      const serializedId = toLinkId(input.link)
+      const linkId = survivorByPurged.get(serializedId) ?? serializedId
+      const link = graph._links.get(linkId)
       if (link && link.target_slot !== slot) link.target_slot = slot
     }
   }

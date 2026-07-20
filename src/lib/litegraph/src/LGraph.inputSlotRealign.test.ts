@@ -116,6 +116,32 @@ function shiftedNodesAndLinks(sourceId: number, targetId: number) {
   }
 }
 
+/**
+ * As {@link shiftedNodesAndLinks}, but `in_a` carries a duplicate link: the
+ * survivor registered first (id 3) is not the id the serialized input
+ * references (id 4). Dedup keeps 3 and purges 4, so realignment must follow
+ * the purged reference through to the survivor to correct its slot.
+ */
+function duplicateDriftedNodesAndLinks(sourceId: number, targetId: number) {
+  const base = shiftedNodesAndLinks(sourceId, targetId)
+  const target = base.nodes[1]
+  target.inputs = [
+    { name: 'in_b', type: 'number', link: 1 },
+    { name: 'in_c', type: 'number', link: 2 },
+    { name: 'in_a', type: 'number', link: 4 }
+  ]
+  base.nodes[0].outputs = [{ name: 'out', type: 'number', links: [1, 2, 3, 4] }]
+  base.links.push({
+    id: 4,
+    origin_id: sourceId,
+    origin_slot: 0,
+    target_id: targetId,
+    target_slot: 2,
+    type: 'number'
+  })
+  return base
+}
+
 function emptySubgraphDefinition(): ExportedSubgraph {
   return {
     id: SUBGRAPH_ID,
@@ -144,6 +170,16 @@ function savedWorkflow(withSubgraphDefinition: boolean): SerialisableGraph {
     ...(withSubgraphDefinition
       ? { definitions: { subgraphs: [emptySubgraphDefinition()] } }
       : {})
+  }
+}
+
+function savedWorkflowWithDuplicateDriftedLink(): SerialisableGraph {
+  return {
+    id: 'ab000000-0000-4000-8000-000000000003',
+    version: 1,
+    revision: 0,
+    state: { lastNodeId: 2, lastLinkId: 4, lastGroupId: 0, lastRerouteId: 0 },
+    ...duplicateDriftedNodesAndLinks(1, 2)
   }
 }
 
@@ -224,5 +260,13 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
 
     const subgraph = graph.subgraphs.get(SUBGRAPH_ID)!
     assertLinksRealigned(subgraph, toNodeId(20))
+  })
+
+  it('realigns the survivor when a drifted input referenced a deduplicated link', () => {
+    const graph = new LGraph()
+    graph.configure(savedWorkflowWithDuplicateDriftedLink())
+
+    expect(graph.links.has(toLinkId(4))).toBe(false)
+    assertLinksRealigned(graph, toNodeId(2))
   })
 })
