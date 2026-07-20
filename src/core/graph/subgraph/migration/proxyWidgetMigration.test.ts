@@ -16,12 +16,14 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
+  appendQuarantine,
   flushProxyWidgetMigration,
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -179,6 +181,33 @@ describe('flushProxyWidgetMigration', () => {
       expect(getPromotedInputValue(outerHost, 'text')).toBe('22222222222')
     })
 
+    it('createSubgraphInput: resolves a nested promoted input by host input name', () => {
+      const rootGraph = new LGraph()
+      const innerSubgraph = createTestSubgraph({ rootGraph })
+      const source = new LGraphNode('CLIPTextEncode')
+      const sourceSlot = source.addInput('text', 'STRING')
+      sourceSlot.widget = { name: 'text' }
+      source.addWidget('text', 'text', 'nested value', () => {})
+      innerSubgraph.add(source)
+
+      const nestedHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: rootGraph
+      })
+      nestedHost.properties.proxyWidgets = [[String(source.id), 'text']]
+      flushProxyWidgetMigration({ hostNode: nestedHost })
+
+      const outerSubgraph = createTestSubgraph({ rootGraph })
+      outerSubgraph.add(nestedHost)
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph
+      })
+      outerHost.properties.proxyWidgets = [[String(nestedHost.id), 'text']]
+
+      flushProxyWidgetMigration({ hostNode: outerHost })
+
+      expect(getPromotedInputValue(outerHost, 'text')).toBe('nested value')
+    })
+
     it('alreadyLinked: leaves widget value unchanged when host value is a sparse hole', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'seed', type: 'INT' }]
@@ -238,6 +267,41 @@ describe('flushProxyWidgetMigration', () => {
           ? useWidgetValueStore().getWidget(promotedInput.widgetId)?.label
           : undefined
       ).toBe('renamed_from_sidepanel')
+    })
+
+    it('createSubgraphInput: falls back to the source widget type when the slot type is missing', () => {
+      const host = buildHost()
+      const inner = addInnerNode(host, 'Inner', (n) => {
+        const slot = n.addInput('seed', 'INT')
+        slot.type = undefined as never
+        slot.widget = { name: 'seed' }
+        n.addWidget('number', 'seed', 0, () => {})
+      })
+
+      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(
+        host.subgraph.inputs.find((input) => input.name === 'seed')?.type
+      ).toBe('number')
+    })
+
+    it('createSubgraphInput: falls back to wildcard type when slot and widget type are missing', () => {
+      const host = buildHost()
+      const inner = addInnerNode(host, 'Inner', (n) => {
+        const slot = n.addInput('seed', 'INT')
+        slot.type = undefined as never
+        slot.widget = { name: 'seed' }
+        const widget = n.addWidget('number', 'seed', 0, () => {})
+        widget.type = undefined as never
+      })
+
+      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(
+        host.subgraph.inputs.find((input) => input.name === 'seed')?.type
+      ).toBe('*')
     })
 
     it('createSubgraphInput: quarantines missingSubgraphInput when source widget has no backing input slot', () => {
@@ -328,6 +392,88 @@ describe('flushProxyWidgetMigration', () => {
       expect(getPromotedInputValue(host, 'value')).toBe(11)
     })
 
+    it('uses the primitive title as the promoted input name when it was renamed', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      primitive.title = 'Batch Size'
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(
+        host.inputs.find((input) => input.name === 'Batch Size')
+      ).toBeDefined()
+    })
+
+    it('skips a stale primitive bypass marker when the host input is absent', () => {
+      const host = buildHost()
+      const { primitive, targets } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      primitive.properties = {
+        proxyBypassedToSubgraphInput: 'deleted_input'
+      }
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      const slot = targets[0].inputs[0]
+      const link = host.subgraph.links.get(slot.link!)
+      expect(link?.origin_id).not.toBe(primitive.id)
+      expect(host.inputs.find((input) => input.name === 'value')).toBeDefined()
+    })
+
+    it('quarantines a stale primitive bypass marker that points to a plain input', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      primitive.properties = {
+        proxyBypassedToSubgraphInput: 'plain'
+      }
+      host.addInput('plain', 'INT')
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({
+        hostNode: host,
+        hostWidgetValues: [12]
+      })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'missingSubgraphInput'
+        })
+      ])
+    })
+
+    it('quarantines a stale primitive bypass marker that matches ambiguous host inputs', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      primitive.properties = {
+        proxyBypassedToSubgraphInput: 'plain'
+      }
+      host.addInput('plain', 'INT')
+      host.addInput('plain', 'INT')
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({
+        hostNode: host,
+        hostWidgetValues: [12]
+      })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'ambiguousSubgraphInput'
+        })
+      ])
+    })
+
     it('quarantines an unlinked primitive node with no fan-out', () => {
       const host = buildHost()
       const primitive = new LGraphNode('Primitive')
@@ -346,6 +492,64 @@ describe('flushProxyWidgetMigration', () => {
       ])
     })
 
+    it('quarantines primitive cohorts that disagree on source widget name', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+
+      host.properties.proxyWidgets = [
+        [String(primitive.id), 'value'],
+        [String(primitive.id), 'other']
+      ]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'primitiveBypassFailed'
+        }),
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'other'],
+          reason: 'primitiveBypassFailed'
+        })
+      ])
+    })
+
+    it('quarantines duplicate primitive entries with no fan-out targets', () => {
+      const host = buildHost()
+      const primitive = new LGraphNode('PrimitiveNode')
+      primitive.type = 'PrimitiveNode'
+      primitive.addOutput('value', 'INT')
+      host.subgraph.add(primitive)
+
+      host.properties.proxyWidgets = [
+        [String(primitive.id), 'value'],
+        [String(primitive.id), 'value']
+      ]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'primitiveBypassFailed'
+        })
+      ])
+    })
+
+    it('keeps the target default when the primitive source widget has no value', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      primitive.widgets = []
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(getPromotedInputValue(host, 'value')).toBe(0)
+    })
+
     it('quarantines all cohort entries when a target slot type is incompatible', () => {
       const host = buildHost()
       const { primitive, targets } = addPrimitiveWithTargets(host, {
@@ -358,6 +562,73 @@ describe('flushProxyWidgetMigration', () => {
       flushProxyWidgetMigration({ hostNode: host })
 
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore)
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'primitiveBypassFailed'
+        })
+      ])
+    })
+
+    it('quarantines primitive repair when the target slot disappeared', () => {
+      const host = buildHost()
+      const { primitive, targets } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      targets[0].inputs = []
+
+      const inputCountBefore = host.subgraph.inputs.length
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(host.subgraph.inputs).toHaveLength(inputCountBefore)
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'primitiveBypassFailed'
+        })
+      ])
+    })
+
+    it('quarantines primitive repair when the target node id is stale', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      const linkId = primitive.outputs[0].links?.[0]
+      if (!linkId) throw new Error('Missing primitive link')
+      const link = host.subgraph.links.get(linkId)
+      if (!link) throw new Error('Missing primitive link record')
+      link.target_id = toNodeId(999_999)
+
+      host.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.objectContaining({
+          originalEntry: [String(primitive.id), 'value'],
+          reason: 'primitiveBypassFailed'
+        })
+      ])
+    })
+
+    it('quarantines duplicate primitive entries when the fan-out target is unassigned', () => {
+      const host = buildHost()
+      const { primitive } = addPrimitiveWithTargets(host, {
+        targetCount: 1
+      })
+      const linkId = primitive.outputs[0].links?.[0]
+      if (!linkId) throw new Error('Missing primitive link')
+      const link = host.subgraph.links.get(linkId)
+      if (!link) throw new Error('Missing primitive link record')
+      link.target_id = UNASSIGNED_NODE_ID
+
+      host.properties.proxyWidgets = [
+        [String(primitive.id), 'value'],
+        [String(primitive.id), 'value']
+      ]
+      flushProxyWidgetMigration({ hostNode: host })
+
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
           originalEntry: [String(primitive.id), 'value'],
@@ -572,6 +843,22 @@ describe('flushProxyWidgetMigration', () => {
       ])
     })
 
+    it('does not preserve non-widget host values on quarantine rows', () => {
+      const host = buildHost()
+      host.properties.proxyWidgets = [['9999', 'seed']]
+
+      flushProxyWidgetMigration({
+        hostNode: host,
+        hostWidgetValues: [null]
+      })
+
+      expect(readHostQuarantine(host)).toEqual([
+        expect.not.objectContaining({
+          hostValue: expect.anything()
+        })
+      ])
+    })
+
     it('round-trips appended entries via the public read helper', () => {
       const host = buildHost()
       host.properties.proxyWidgets = [['9999', 'seed']]
@@ -601,6 +888,14 @@ describe('flushProxyWidgetMigration', () => {
       flushProxyWidgetMigration({ hostNode: host })
 
       expect(readHostQuarantine(host)).toEqual(firstQuarantine)
+    })
+
+    it('ignores empty quarantine append requests', () => {
+      const host = buildHost()
+
+      appendQuarantine(host, [])
+
+      expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
   })
 
@@ -822,6 +1117,22 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
 
     expect(result.sourceWidgetName).toBe('noise_seed')
     expect(result.disambiguatingSourceNodeId).toBe(String(samplerNode.id))
+  })
+
+  it('strips nested legacy prefixes from widget name', () => {
+    const { hostNode, innerNode } = createHostWithInnerWidget('seed')
+
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(innerNode.id),
+      '111: 222: seed'
+    )
+
+    expect(result).toEqual({
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'seed',
+      disambiguatingSourceNodeId: '222'
+    })
   })
 
   it('strips legacy prefix and surfaces it as disambiguator even when the bare name does not resolve', () => {

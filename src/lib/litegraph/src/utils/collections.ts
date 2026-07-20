@@ -11,7 +11,7 @@ import type { ISlotType, Positionable } from '../interfaces'
  * @returns All unpinned items in the original set, and recursively, their children
  */
 export function getAllNestedItems(
-  items: ReadonlySet<Positionable>
+  items: ReadonlySet<Positionable> | undefined
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
   if (items) {

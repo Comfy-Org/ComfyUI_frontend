@@ -120,7 +120,7 @@ describe('ComfyHubPublishWizardContent', () => {
             props: ['onProfileCreated', 'onClose', 'showCloseButton']
           },
           Skeleton: {
-            template: '<div class="skeleton" />'
+            template: '<div data-testid="skeleton" class="skeleton" />'
           },
           ComfyHubDescribeStep: {
             template: '<div data-testid="describe-step" />'
@@ -331,6 +331,52 @@ describe('ComfyHubPublishWizardContent', () => {
       renderComponent({ currentStep: 'finish' })
       expect(screen.queryByTestId('publish-gate-flow')).not.toBeInTheDocument()
       expect(screen.getByTestId('publish-footer')).toBeTruthy()
+    })
+  })
+
+  describe('step rendering and footer routing', () => {
+    it('renders the describe step', () => {
+      renderComponent({ currentStep: 'describe', isFirstStep: true })
+
+      expect(screen.getByTestId('describe-step')).toBeInTheDocument()
+      expect(screen.getByTestId('publish-footer')).toBeInTheDocument()
+    })
+
+    it('renders thumbnail and examples content on the examples step', () => {
+      renderComponent({ currentStep: 'examples' })
+
+      expect(screen.getByTestId('thumbnail-step')).toBeInTheDocument()
+      expect(screen.getByTestId('examples-step')).toBeInTheDocument()
+    })
+
+    it('renders a loading state while profile data is resolving', () => {
+      mockHasProfile.value = null
+
+      renderComponent({ currentStep: 'finish' })
+
+      expect(screen.getAllByTestId('skeleton')).toHaveLength(2)
+      expect(screen.queryByTestId('finish-step')).not.toBeInTheDocument()
+    })
+
+    it('renders profile prompt when the finish step lacks a profile', async () => {
+      mockHasProfile.value = false
+      mockProfile.value = null
+
+      renderComponent({ currentStep: 'finish' })
+      await userEvent.click(screen.getByTestId('request-profile'))
+
+      expect(screen.getByTestId('profile-prompt')).toBeInTheDocument()
+      expect(onRequireProfile).toHaveBeenCalledOnce()
+    })
+
+    it('routes footer next and back events', async () => {
+      renderComponent({ currentStep: 'describe', isFirstStep: true })
+
+      await userEvent.click(screen.getByTestId('next-btn'))
+      await userEvent.click(screen.getByTestId('back-btn'))
+
+      expect(onGoNext).toHaveBeenCalledOnce()
+      expect(onGoBack).toHaveBeenCalledOnce()
     })
   })
 })

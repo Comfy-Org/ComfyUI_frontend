@@ -12,7 +12,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-const { useComfyHubPublishWizard } = await import('./useComfyHubPublishWizard')
+const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
+  await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
@@ -179,6 +180,38 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.thumbnailUrl).toBeNull()
     })
 
+    it('preserves edited fields when applying a prefill', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      const afterFile = new File(['x'], 'after.png', { type: 'image/png' })
+      const existingExample = {
+        id: 'existing',
+        url: 'https://cdn.example.com/existing.png'
+      }
+      formData.value = {
+        ...formData.value,
+        description: 'Edited description',
+        tags: ['edited'],
+        thumbnailType: 'video',
+        comparisonAfterFile: afterFile,
+        exampleImages: [existingExample]
+      }
+
+      applyPrefill({
+        description: 'Restored description',
+        tags: ['restored'],
+        thumbnailType: 'imageComparison',
+        thumbnailComparisonUrl: 'https://cdn.example.com/after.png',
+        sampleImageUrls: ['https://cdn.example.com/sample.png']
+      })
+
+      expect(formData.value.description).toBe('Edited description')
+      expect(formData.value.tags).toEqual(['edited'])
+      expect(formData.value.thumbnailType).toBe('video')
+      expect(formData.value.comparisonAfterFile?.name).toBe(afterFile.name)
+      expect(formData.value.comparisonAfterUrl).toBeNull()
+      expect(formData.value.exampleImages).toEqual([existingExample])
+    })
+
     it('restores description, tags, and sample images alongside the thumbnail', () => {
       const { applyPrefill, formData } = useComfyHubPublishWizard()
       applyPrefill({
@@ -196,6 +229,54 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.exampleImages[0].url).toBe(
         'https://cdn.example.com/sample.png'
       )
+    })
+  })
+
+  describe('cachePublishPrefill', () => {
+    it('caches normalized prefill data and skips local blob example URLs', () => {
+      const { formData } = useComfyHubPublishWizard()
+      formData.value = {
+        ...formData.value,
+        description: 'Saved description',
+        tags: ['Text to Image', ' text to image ', ''],
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        exampleImages: [
+          { id: 'local', url: 'blob:local-image' },
+          { id: 'remote', url: 'https://cdn.example.com/sample.png' }
+        ]
+      }
+
+      cachePublishPrefill('/workflows/full', formData.value)
+
+      expect(getCachedPrefill('/workflows/full')).toEqual({
+        description: 'Saved description',
+        tags: ['text-to-image'],
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        thumbnailComparisonUrl: 'https://cdn.example.com/after.png',
+        sampleImageUrls: ['https://cdn.example.com/sample.png']
+      })
+    })
+
+    it('caches undefined optional fields for empty form data', () => {
+      const { formData } = useComfyHubPublishWizard()
+
+      cachePublishPrefill('/workflows/empty', formData.value)
+
+      expect(getCachedPrefill('/workflows/empty')).toEqual({
+        description: undefined,
+        tags: undefined,
+        thumbnailType: 'image',
+        thumbnailUrl: undefined,
+        thumbnailComparisonUrl: undefined,
+        sampleImageUrls: []
+      })
+    })
+
+    it('returns null when no cached prefill exists', () => {
+      expect(getCachedPrefill('/workflows/missing')).toBeNull()
     })
   })
 })

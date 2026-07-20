@@ -16,6 +16,11 @@ const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
 const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
+type RetryableLoadError = Error & {
+  status: number | null
+  isRetryable: boolean
+}
+
 vi.mock('@/scripts/api', () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
@@ -54,12 +59,41 @@ describe(useWorkflowShareService, () => {
     }
   ]
 
-  function mockJsonResponse(payload: unknown, ok = true, status = 200) {
+  function mockJsonResponse(
+    payload: unknown,
+    ok = true,
+    status = 200,
+    statusText = ''
+  ) {
     return {
       ok,
       status,
+      statusText,
       json: async () => payload
     } as Response
+  }
+
+  async function expectLoadError(
+    promise: Promise<unknown>,
+    expected: {
+      message: string
+      status: number | null
+      isRetryable: boolean
+    }
+  ) {
+    let caught: unknown
+
+    try {
+      await promise
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(Error)
+    const loadError = caught as RetryableLoadError
+    expect(loadError.message).toBe(expected.message)
+    expect(loadError.status).toBe(expected.status)
+    expect(loadError.isRetryable).toBe(expected.isRetryable)
   }
 
   beforeEach(() => {
@@ -85,6 +119,33 @@ describe(useWorkflowShareService, () => {
     expect(status.shareId).toBeNull()
     expect(status.shareUrl).toBeNull()
     expect(status.publishedAt).toBeNull()
+  })
+
+  it('returns unpublished when publish status does not exist', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 404))
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('missing')
+
+    expect(status).toEqual({
+      isPublished: false,
+      shareId: null,
+      shareUrl: null,
+      publishedAt: null,
+      prefill: null
+    })
+  })
+
+  it('throws when publish status request fails', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({}, false, 503, 'Service Unavailable')
+    )
+
+    const service = useWorkflowShareService()
+
+    await expect(service.getPublishStatus('wf-error')).rejects.toThrow(
+      'Failed to fetch publish status: 503 Service Unavailable'
+    )
   })
 
   it('publishes a workflow and returns a share URL', async () => {
@@ -118,6 +179,56 @@ describe(useWorkflowShareService, () => {
         })
       }
     )
+  })
+
+  it('throws when publish request fails', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 500))
+
+    const service = useWorkflowShareService()
+
+    await expect(
+      service.publishWorkflow('wf-error', mockShareableAssets)
+    ).rejects.toThrow('Failed to publish workflow: 500')
+  })
+
+  it('throws when publish response is missing required publish data', async () => {
+    mockFetchApi
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-no-share',
+          share_id: null,
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: false
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-no-date',
+          share_id: 'wf-no-date',
+          publish_time: null,
+          listed: false
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-invalid-date',
+          share_id: 'wf-invalid-date',
+          publish_time: 'invalid-date',
+          listed: false
+        })
+      )
+
+    const service = useWorkflowShareService()
+
+    await expect(
+      service.publishWorkflow('wf-no-share', mockShareableAssets)
+    ).rejects.toThrow('Failed to publish workflow: invalid response')
+    await expect(
+      service.publishWorkflow('wf-no-date', mockShareableAssets)
+    ).rejects.toThrow('Failed to publish workflow: invalid response')
+    await expect(
+      service.publishWorkflow('wf-invalid-date', mockShareableAssets)
+    ).rejects.toThrow('Failed to publish workflow: invalid response')
   })
 
   it('preserves app subpath when normalizing published share URLs', async () => {
@@ -202,6 +313,73 @@ describe(useWorkflowShareService, () => {
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
   })
 
+  it('maps listed hub workflow media prefill fields', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-media/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-media',
+          share_id: 'wf-media',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-media') {
+        return mockJsonResponse({
+          tags: ['motion'],
+          thumbnail_type: 'video',
+          thumbnail_url: 'https://example.com/thumb.mp4',
+          thumbnail_comparison_url: 'https://example.com/compare.png'
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-media')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toEqual({
+      tags: ['motion'],
+      thumbnailType: 'video',
+      thumbnailUrl: 'https://example.com/thumb.mp4',
+      thumbnailComparisonUrl: 'https://example.com/compare.png'
+    })
+  })
+
+  it('returns null listed prefill when hub metadata has no fields', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-empty-prefill/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-empty-prefill',
+          share_id: 'wf-empty-prefill',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-empty-prefill') {
+        return mockJsonResponse({
+          description: null,
+          tags: [],
+          thumbnail_type: null,
+          thumbnail_url: null,
+          thumbnail_comparison_url: null,
+          sample_image_urls: []
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-empty-prefill')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toBeNull()
+  })
+
   it('returns null prefill when hub workflow details are unavailable', async () => {
     mockFetchApi.mockImplementation(async (path: string) => {
       if (path === '/userdata/wf-no-meta/publish') {
@@ -279,6 +457,23 @@ describe(useWorkflowShareService, () => {
     expect(status.shareId).toBeNull()
   })
 
+  it('returns unpublished when publish record has invalid publish time', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        workflow_id: 'wf-invalid-time',
+        share_id: 'wf-invalid-time',
+        publish_time: 'invalid-date',
+        listed: false
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-invalid-time')
+
+    expect(status.isPublished).toBe(false)
+    expect(status.shareId).toBeNull()
+  })
+
   it('fetches and maps shared workflow payload', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
@@ -332,9 +527,48 @@ describe(useWorkflowShareService, () => {
 
     const service = useWorkflowShareService()
 
-    await expect(service.getSharedWorkflow('missing')).rejects.toThrow(
-      'Failed to load shared workflow: 404'
-    )
+    await expectLoadError(service.getSharedWorkflow('missing'), {
+      message: 'Failed to load shared workflow: 404',
+      status: 404,
+      isRetryable: false
+    })
+  })
+
+  it('marks retryable status errors on shared workflow failures', async () => {
+    const service = useWorkflowShareService()
+
+    mockFetchApi.mockResolvedValueOnce(mockJsonResponse({}, false, 500))
+    await expectLoadError(service.getSharedWorkflow('server-error'), {
+      message: 'Failed to load shared workflow: 500',
+      status: 500,
+      isRetryable: true
+    })
+
+    mockFetchApi.mockResolvedValueOnce(mockJsonResponse({}, false, 408))
+    await expectLoadError(service.getSharedWorkflow('timeout'), {
+      message: 'Failed to load shared workflow: 408',
+      status: 408,
+      isRetryable: true
+    })
+
+    mockFetchApi.mockResolvedValueOnce(mockJsonResponse({}, false, 429))
+    await expectLoadError(service.getSharedWorkflow('rate-limited'), {
+      message: 'Failed to load shared workflow: 429',
+      status: 429,
+      isRetryable: true
+    })
+  })
+
+  it('marks shared workflow network failures as retryable', async () => {
+    mockFetchApi.mockRejectedValue(new TypeError('network down'))
+
+    const service = useWorkflowShareService()
+
+    await expectLoadError(service.getSharedWorkflow('network-error'), {
+      message: 'Failed to load shared workflow: network error',
+      status: null,
+      isRetryable: true
+    })
   })
 
   it('imports published assets via POST /assets/import with share_id', async () => {
@@ -466,6 +700,66 @@ describe(useWorkflowShareService, () => {
     await service.getShareableAssets()
 
     expect(mockGetShareableAssets).toHaveBeenCalledWith({ '1': {} })
+  })
+
+  it('filters public shareable assets unless explicitly included', async () => {
+    mockApp.graphToPrompt.mockResolvedValue({ output: {} })
+    mockGetShareableAssets.mockResolvedValue({
+      assets: [
+        {
+          id: 'private-asset',
+          name: 'private.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        },
+        {
+          id: 'public-asset',
+          name: 'public.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: true,
+          in_library: false
+        }
+      ]
+    })
+
+    const service = useWorkflowShareService()
+
+    await expect(service.getShareableAssets()).resolves.toEqual([
+      {
+        id: 'private-asset',
+        name: 'private.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: false,
+        in_library: false
+      }
+    ])
+    await expect(service.getShareableAssets(true)).resolves.toEqual([
+      {
+        id: 'private-asset',
+        name: 'private.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: false,
+        in_library: false
+      },
+      {
+        id: 'public-asset',
+        name: 'public.png',
+        preview_url: '',
+        storage_url: '',
+        model: false,
+        public: true,
+        in_library: false
+      }
+    ])
   })
 
   it('propagates error when graphToPrompt fails', async () => {

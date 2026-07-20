@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { app as comfyApp } from '@/scripts/app'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -195,6 +197,13 @@ describe('workflowDraftStoreV2', () => {
       )
       expect(payloadKeys).toHaveLength(0)
     })
+
+    it('ignores missing drafts', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      expect(() => store.removeDraft('workflows/missing.json')).not.toThrow()
+      expect(store.getDraft('workflows/missing.json')).toBeNull()
+    })
   })
 
   describe('moveDraft', () => {
@@ -240,6 +249,122 @@ describe('workflowDraftStoreV2', () => {
         vi.useRealTimers()
       }
     })
+
+    it('ignores missing source drafts', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.moveDraft('workflows/missing.json', 'workflows/new.json', 'new')
+
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+    })
+
+    it('does not move when the old payload is missing', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      localStorage.removeItem(
+        StorageKeys.draftPayload('workflows/old.json', 'personal')
+      )
+      store.reset()
+
+      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+    })
+
+    it('keeps the original draft when writing the moved payload fails', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      const originalSetItem = localStorage.setItem.bind(localStorage)
+      const newPayloadKey = StorageKeys.draftPayload(
+        'workflows/new.json',
+        'personal'
+      )
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key === newPayloadKey) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return originalSetItem(key, value)
+        })
+
+      try {
+        store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+        expect(store.getDraft('workflows/old.json')).not.toBeNull()
+        expect(store.getDraft('workflows/new.json')).toBeNull()
+      } finally {
+        setItemSpy.mockRestore()
+      }
+    })
+
+    it('removes the moved payload when persisting the moved index fails', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      const originalSetItem = localStorage.setItem.bind(localStorage)
+      const indexKey = StorageKeys.draftIndex('personal')
+      const newPayloadKey = StorageKeys.draftPayload(
+        'workflows/new.json',
+        'personal'
+      )
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key === indexKey) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return originalSetItem(key, value)
+        })
+
+      try {
+        store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+        expect(localStorage.getItem(newPayloadKey)).toBeNull()
+      } finally {
+        setItemSpy.mockRestore()
+      }
+    })
+  })
+
+  describe('getDraft', () => {
+    it('removes stale index entries when the payload is missing', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      localStorage.removeItem(
+        StorageKeys.draftPayload('workflows/test.json', 'personal')
+      )
+      store.reset()
+
+      expect(store.getDraft('workflows/test.json')).toBeNull()
+      expect(store.getMostRecentPath()).toBeNull()
+    })
+  })
+
+  describe('markDraftUsed', () => {
+    it('ignores unknown draft paths', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      expect(() => store.markDraftUsed('workflows/missing.json')).not.toThrow()
+      expect(store.getMostRecentPath()).toBeNull()
+    })
   })
 
   describe('getMostRecentPath', () => {
@@ -260,6 +385,22 @@ describe('workflowDraftStoreV2', () => {
 
     it('returns null when no drafts', () => {
       const store = useWorkflowDraftStoreV2()
+      expect(store.getMostRecentPath()).toBeNull()
+    })
+
+    it('returns null when the newest index key has no entry', () => {
+      const indexKey = StorageKeys.draftIndex('personal')
+      localStorage.setItem(
+        indexKey,
+        JSON.stringify({
+          v: 2,
+          updatedAt: Date.now(),
+          order: ['missing'],
+          entries: {}
+        })
+      )
+      const store = useWorkflowDraftStoreV2()
+
       expect(store.getMostRecentPath()).toBeNull()
     })
   })
@@ -307,6 +448,57 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('loads legacy session workflow payloads in personal workspace', async () => {
+      const store = useWorkflowDraftStoreV2()
+      sessionStorage.setItem('workflow:test-client', '{"nodes":[]}')
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: 'legacy'
+      })
+
+      expect(result).toBe(true)
+      expect(comfyApp.loadGraphData).toHaveBeenCalledWith(
+        { nodes: [] },
+        true,
+        true,
+        'legacy'
+      )
+    })
+
+    it('falls back to legacy local workflow payloads in personal workspace', async () => {
+      const store = useWorkflowDraftStoreV2()
+      localStorage.setItem('workflow', '{"nodes":[1]}')
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null
+      })
+
+      expect(result).toBe(true)
+      expect(comfyApp.loadGraphData).toHaveBeenCalledWith(
+        { nodes: [1] },
+        true,
+        true,
+        null
+      )
+    })
+
+    it('does not load legacy payloads for non-personal workspaces', async () => {
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify({ id: 'team-1', type: 'organization' })
+      )
+      sessionStorage.setItem('workflow:test-client', '{"nodes":[]}')
+      localStorage.setItem('workflow', '{"nodes":[]}')
+      const store = useWorkflowDraftStoreV2()
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: 'team'
+      })
+
+      expect(result).toBe(false)
+      expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
     })
   })
 

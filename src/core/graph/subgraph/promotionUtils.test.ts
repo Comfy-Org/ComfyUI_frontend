@@ -15,6 +15,10 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import type { WidgetId } from '@/types/widgetId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 
 function promotedInputNames(host: {
   inputs: Array<{ widgetId?: unknown; name: string }>
@@ -51,19 +55,37 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
 }))
 
+const addBreadcrumbMock = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  addBreadcrumb: addBreadcrumbMock
+}))
+
+const mockNavigation = vi.hoisted(() => ({
+  stack: [] as Subgraph[]
+}))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    navigationStack: mockNavigation.stack
+  })
+}))
+
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
+  addWidgetPromotionOptions,
   autoExposeKnownPreviewNodes,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
+  isWidgetPromotedOnSubgraphNode,
+  promoteWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
   pruneDisconnected,
   reorderSubgraphInputsByName,
-  reorderSubgraphInputsByWidgetOrder
+  reorderSubgraphInputsByWidgetOrder,
+  tryToggleWidgetPromotion
 } from './promotionUtils'
 
 function widget(
@@ -100,6 +122,11 @@ function buildDuplicateNamePromotion() {
   expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text', 'text_1'])
 
   return { subgraph, host, nodeA, widgetA, nodeB, widgetB }
+}
+
+function setupNavigation(host: SubgraphNode) {
+  host.subgraph.rootGraph.add(host)
+  mockNavigation.stack = [host.subgraph]
 }
 
 describe('isPreviewPseudoWidget', () => {
@@ -303,6 +330,284 @@ describe('getPromotableWidgets', () => {
   })
 })
 
+describe('widget promotion actions', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    addBreadcrumbMock.mockReset()
+    mockNavigation.stack = []
+  })
+
+  function setupPromotableWidget() {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    setupNavigation(host)
+    const node = new LGraphNode('Prompt')
+    subgraph.add(node)
+    const input = node.addInput('text', 'STRING')
+    input.label = 'Prompt text'
+    const callback = vi.fn()
+    const textWidget = node.addWidget('text', 'text', 'value', callback)
+    textWidget.label = 'Prompt'
+    input.widget = { name: textWidget.name }
+    return { host, node, textWidget, callback }
+  }
+
+  it('adds a promote menu option and runs the widget callback after promotion', () => {
+    const { host, node, textWidget, callback } = setupPromotableWidget()
+    const options: Parameters<typeof addWidgetPromotionOptions>[0] = []
+
+    addWidgetPromotionOptions(options, textWidget, node)
+    const menuCallback = options[0]?.callback as
+      | ((...args: unknown[]) => unknown)
+      | undefined
+    void menuCallback?.(null, undefined, undefined)
+
+    expect(options[0]?.content).toContain('Prompt')
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(true)
+    expect(callback).toHaveBeenCalledWith('value')
+  })
+
+  it('adds an unpromote menu option when the widget is already promoted', () => {
+    const { host, node, textWidget, callback } = setupPromotableWidget()
+    expect(promoteValueWidgetViaSubgraphInput(host, node, textWidget).ok).toBe(
+      true
+    )
+    const options: Parameters<typeof addWidgetPromotionOptions>[0] = []
+
+    addWidgetPromotionOptions(options, textWidget, node)
+    const menuCallback = options[0]?.callback as
+      | ((...args: unknown[]) => unknown)
+      | undefined
+    void menuCallback?.(null, undefined, undefined)
+
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(
+      false
+    )
+    expect(callback).toHaveBeenCalledWith('value')
+  })
+
+  it('reports outside-subgraph promotion attempts through the toast store', () => {
+    const node = new LGraphNode('Prompt')
+    const textWidget = node.addWidget('text', 'text', 'value', () => {})
+    const options: Parameters<typeof addWidgetPromotionOptions>[0] = []
+
+    addWidgetPromotionOptions(options, textWidget, node)
+
+    expect(useToastStore().messagesToAdd).toHaveLength(1)
+    expect(options).toHaveLength(1)
+  })
+
+  it('toggles promotion for the widget under the canvas pointer', () => {
+    const { host, node, textWidget } = setupPromotableWidget()
+    const canvas = fromPartial<ReturnType<typeof useCanvasStore>['canvas']>({
+      graph_mouse: [10, 20],
+      visible_nodes: [node],
+      setDirty: vi.fn(),
+      graph: {
+        getNodeOnPos: vi.fn(() => node)
+      }
+    })
+    vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(textWidget)
+    useCanvasStore().canvas = canvas
+
+    tryToggleWidgetPromotion()
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(true)
+
+    tryToggleWidgetPromotion()
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(
+      false
+    )
+  })
+
+  it('leaves state unchanged when toggle has no node or widget target', () => {
+    const { host, node, textWidget } = setupPromotableWidget()
+    useCanvasStore().canvas = fromPartial<
+      ReturnType<typeof useCanvasStore>['canvas']
+    >({
+      graph_mouse: [0, 0],
+      visible_nodes: [],
+      setDirty: vi.fn(),
+      graph: {
+        getNodeOnPos: vi.fn(() => null)
+      }
+    })
+
+    tryToggleWidgetPromotion()
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(
+      false
+    )
+
+    useCanvasStore().canvas = fromPartial<
+      ReturnType<typeof useCanvasStore>['canvas']
+    >({
+      graph_mouse: [0, 0],
+      visible_nodes: [node],
+      setDirty: vi.fn(),
+      graph: {
+        getNodeOnPos: vi.fn(() => node)
+      }
+    })
+    vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(undefined)
+
+    tryToggleWidgetPromotion()
+    expect(isLinkedPromotion(host, String(node.id), textWidget.name)).toBe(
+      false
+    )
+  })
+
+  it('records a breadcrumb when value promotion has no source slot', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const node = new LGraphNode('LooseWidgetNode')
+    subgraph.add(node)
+    const looseWidget = node.addWidget('text', 'loose', 'value', () => {})
+
+    promoteWidget(node, looseWidget, [host])
+
+    expect(addBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        message: expect.stringContaining('missingSourceSlot')
+      })
+    )
+  })
+
+  it('ignores promotion calls for node-shaped values that are not graph nodes', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const partialNode = {
+      id: toNodeId(123),
+      title: 'Partial',
+      type: 'Partial'
+    }
+
+    promoteWidget(partialNode, widget({ name: 'seed', type: 'number' }), [host])
+
+    expect(host.subgraph.inputs).toEqual([])
+    expect(addBreadcrumbMock).not.toHaveBeenCalled()
+  })
+
+  it('uses the widget name in menu text when label is absent', () => {
+    const { node, textWidget } = setupPromotableWidget()
+    textWidget.label = undefined
+    const options: Parameters<typeof addWidgetPromotionOptions>[0] = []
+
+    addWidgetPromotionOptions(options, textWidget, node)
+
+    expect(options[0]?.content).toContain('text')
+  })
+})
+
+describe('preview promotion actions', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    addBreadcrumbMock.mockReset()
+    mockNavigation.stack = []
+  })
+
+  it('identifies preview exposure as promotion only for preview pseudo widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const previewNode = new LGraphNode('PreviewImage')
+    previewNode.type = 'PreviewImage'
+    subgraph.add(previewNode)
+    const previewWidget = widget({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      serialize: false,
+      type: 'preview'
+    })
+    usePreviewExposureStore().addExposure(host.rootGraph.id, String(host.id), {
+      sourceNodeId: previewNode.id,
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+
+    expect(
+      isWidgetPromotedOnSubgraphNode(
+        host,
+        {
+          sourceNodeId: previewNode.id,
+          sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+        },
+        previewWidget
+      )
+    ).toBe(true)
+    expect(
+      isWidgetPromotedOnSubgraphNode(
+        host,
+        {
+          sourceNodeId: previewNode.id,
+          sourceWidgetName: 'other'
+        },
+        previewWidget
+      )
+    ).toBe(false)
+  })
+
+  it('deduplicates preview exposures when the same preview is promoted twice', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const previewNode = new LGraphNode('PreviewImage')
+    previewNode.type = 'PreviewImage'
+    subgraph.add(previewNode)
+    const previewWidget = widget({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      serialize: false,
+      type: 'preview'
+    })
+
+    promoteWidget(previewNode, previewWidget, [host])
+    promoteWidget(previewNode, previewWidget, [host])
+
+    expect(
+      usePreviewExposureStore().getExposures(host.rootGraph.id, String(host.id))
+    ).toHaveLength(1)
+  })
+
+  it('demotes preview exposures when no linked value promotion exists', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const previewNode = new LGraphNode('PreviewImage')
+    previewNode.type = 'PreviewImage'
+    subgraph.add(previewNode)
+    const previewWidget = widget({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      serialize: false,
+      type: 'preview'
+    })
+    promoteWidget(previewNode, previewWidget, [host])
+
+    demoteWidget(previewNode, previewWidget, [host])
+
+    expect(
+      usePreviewExposureStore().getExposures(host.rootGraph.id, String(host.id))
+    ).toEqual([])
+  })
+
+  it('leaves unexposed preview widgets unchanged when demoted', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const previewNode = new LGraphNode('PreviewImage')
+    previewNode.type = 'PreviewImage'
+    subgraph.add(previewNode)
+    const previewWidget = widget({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      serialize: false,
+      type: 'preview'
+    })
+
+    demoteWidget(previewNode, previewWidget, [host])
+
+    expect(
+      usePreviewExposureStore().getExposures(host.rootGraph.id, String(host.id))
+    ).toEqual([])
+    expect(addBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(CANVAS_IMAGE_PREVIEW_WIDGET)
+      })
+    )
+  })
+})
+
 describe('promoteRecommendedWidgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -343,6 +648,49 @@ describe('promoteRecommendedWidgets', () => {
     expect(hostInput?.label).toBe('renamed_from_sidepanel')
     expect(promotedWidgetRef(subgraphNode, 'text').label).toBe(
       'renamed_from_sidepanel'
+    )
+  })
+
+  it('keeps value promotion idempotent when the widget is already linked', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Prompt')
+    const input = interiorNode.addInput('text', 'STRING')
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+    input.widget = { name: textWidget.name }
+    subgraph.add(interiorNode)
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(subgraphNode, interiorNode, textWidget)
+        .ok
+    ).toBe(true)
+    expect(
+      promoteValueWidgetViaSubgraphInput(subgraphNode, interiorNode, textWidget)
+        .ok
+    ).toBe(true)
+
+    expect(subgraph.inputs.map((slot) => slot.name)).toEqual(['text'])
+  })
+
+  it('seeds outer promoted widget state from a nested promoted input', () => {
+    const { host: innerHost } = buildDuplicateNamePromotion()
+    writePromotedInputValue(innerHost, 'text', 'inner value')
+    const outerSubgraph = createTestSubgraph()
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    outerSubgraph.add(innerHost)
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(
+        outerHost,
+        innerHost,
+        promotedWidgetRef(innerHost, 'text')
+      ).ok
+    ).toBe(true)
+
+    const hostInput = outerHost.inputs.find((input) => input.name === 'text')
+    if (!hostInput?.widgetId) throw new Error('Missing promoted host widget id')
+    expect(useWidgetValueStore().getWidget(hostInput.widgetId)?.value).toBe(
+      'inner value'
     )
   })
 
@@ -414,6 +762,24 @@ describe('promoteRecommendedWidgets', () => {
     })
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
+
+  it('records a breadcrumb when a recommended value widget has no source slot', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('CLIPTextEncode')
+    interiorNode.type = 'CLIPTextEncode'
+    interiorNode.addWidget('text', 'text', '', () => {})
+    subgraph.add(interiorNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    expect(addBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        message: expect.stringContaining('missingSourceSlot')
+      })
+    )
+  })
 })
 
 describe('autoExposeKnownPreviewNodes', () => {
@@ -481,6 +847,52 @@ describe('autoExposeKnownPreviewNodes', () => {
         .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
         .map((e) => e.sourceNodeId)
     ).not.toContain(String(glslNode.id))
+  })
+
+  it('defers preview discovery for nodes without eager preview widgets', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('DeferredPreview')
+    const rafCallbacks: FrameRequestCallback[] = []
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        rafCallbacks.push(callback)
+        return rafCallbacks.length
+      })
+    subgraph.add(interiorNode)
+
+    try {
+      autoExposeKnownPreviewNodes(subgraphNode)
+      rafCallbacks[0]?.(0)
+      const updateCallback = updatePreviewsMock.mock.calls[0]?.[1]
+      const previewWidget = interiorNode.addWidget(
+        'preview' as Parameters<typeof interiorNode.addWidget>[0],
+        'preview',
+        '',
+        () => {}
+      )
+      previewWidget.serialize = false
+      previewWidget.type = 'preview'
+      updateCallback?.()
+
+      expect(updatePreviewsMock).toHaveBeenCalledWith(
+        interiorNode,
+        expect.any(Function)
+      )
+      expect(
+        usePreviewExposureStore().getExposures(
+          subgraphNode.rootGraph.id,
+          String(subgraphNode.id)
+        )
+      ).toContainEqual({
+        name: 'preview',
+        sourceNodeId: String(interiorNode.id),
+        sourcePreviewName: 'preview'
+      })
+    } finally {
+      requestAnimationFrameSpy.mockRestore()
+    }
   })
 })
 
@@ -673,6 +1085,25 @@ describe('reorderSubgraphInputsByName', () => {
     ])
   })
 
+  it('leaves unordered names after explicitly ordered inputs', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'number' },
+        { name: 'second', type: 'number' },
+        { name: 'third', type: 'number' }
+      ]
+    })
+    const host = createTestSubgraphNode(subgraph)
+
+    reorderSubgraphInputsByName(host, ['second'])
+
+    expect(host.subgraph.inputs.map((input) => input.name)).toEqual([
+      'second',
+      'first',
+      'third'
+    ])
+  })
+
   it('updates subgraph input link slot indices after reordering', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -768,6 +1199,33 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       'first value'
     ])
   })
+
+  it('appends promoted inputs that are absent from the widget order', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+
+    reorderSubgraphInputsByWidgetOrder(host, [
+      promotedWidgetRef(host, 'second')
+    ])
+
+    expect(host.subgraph.inputs.map((input) => input.name)).toEqual([
+      'second',
+      'first'
+    ])
+  })
 })
 
 describe('demoteWidget — axiomatic projection retraction', () => {
@@ -797,6 +1255,23 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(result.ok).toBe(true)
     return { host, interiorNode, interiorWidget }
   }
+
+  it('runs as a no-op for an unpromoted non-preview widget', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    host.subgraph.add(interiorNode)
+    const widget = interiorNode.addWidget('text', 'value', 'initial', () => {})
+
+    demoteWidget(interiorNode, widget, [host])
+
+    expect(host.subgraph.inputs).toEqual([])
+    expect(addBreadcrumbMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Demoted widget "value"')
+      })
+    )
+  })
 
   it('drops projection but keeps slot and external link when host slot is externally connected', () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
@@ -942,5 +1417,55 @@ describe('disambiguated nested promotion identity', () => {
     pruneDisconnected(outerHost)
 
     expect(outerHost.subgraph.inputs).toHaveLength(beforeCount)
+  })
+
+  it('promotes a widget whose source widget state is missing', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput('text', 'STRING')
+    const interiorWidget = interiorNode.addWidget('text', 'text', '', () => {})
+    interiorInput.widget = { name: interiorWidget.name }
+    interiorInput.widgetId = 'missing-widget-state' as WidgetId
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, interiorWidget).ok
+    ).toBe(true)
+    expect(host.subgraph.inputs.map((input) => input.name)).toEqual(['text'])
+  })
+
+  it('keeps plain inputs after ordered promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'plain', type: 'STRING' }]
+    })
+    const host = createTestSubgraphNode(subgraph)
+
+    reorderSubgraphInputsByWidgetOrder(host, [
+      { widgetId: 'missing-widget-state' as WidgetId }
+    ])
+
+    expect(host.inputs.map((input) => input.name)).toEqual(['plain'])
+  })
+
+  it('falls back to append order when promoted input links are stale', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput('text', 'STRING')
+    const interiorWidget = interiorNode.addWidget('text', 'text', '', () => {})
+    interiorInput.widget = { name: interiorWidget.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, interiorWidget).ok
+    ).toBe(true)
+    const promotedInput = host.subgraph.inputs[0]
+    const linkId = promotedInput.linkIds[0]
+    host.subgraph.links.delete(linkId)
+
+    reorderSubgraphInputsByWidgetOrder(host, [promotedWidgetRef(host, 'text')])
+
+    expect(host.inputs.map((input) => input.name)).toEqual(['text'])
   })
 })

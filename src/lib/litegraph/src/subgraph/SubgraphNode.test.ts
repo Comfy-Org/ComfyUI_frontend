@@ -6,7 +6,7 @@
  */
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
@@ -17,9 +17,13 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -31,6 +35,10 @@ import {
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('SubgraphNode Construction', () => {
@@ -98,6 +106,18 @@ describe('SubgraphNode Construction', () => {
     expect(subgraphNode.graph).toBeNull()
     expect(() => subgraphNode.widgets).not.toThrow()
     expect(subgraphNode.widgets).toEqual([])
+  })
+
+  it('warns when external code assigns widgets directly', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraphNode.widgets = []
+
+    expect(warn).toHaveBeenCalledWith(
+      'Cannot manually set widgets on SubgraphNode; use the promotion system.'
+    )
   })
 
   subgraphTest(
@@ -218,6 +238,38 @@ describe('SubgraphNode Synchronization', () => {
     })
 
     expect(subgraphNode.outputs[0].label).toBe('newOutput')
+  })
+
+  it('throws when input rename events reference a missing slot', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'number' }]
+    })
+    createTestSubgraphNode(subgraph)
+
+    expect(() =>
+      subgraph.events.dispatch('renaming-input', {
+        input: subgraph.inputs[0],
+        index: 99,
+        oldName: 'input',
+        newName: 'missing'
+      })
+    ).toThrow('Subgraph input not found')
+  })
+
+  it('throws when output rename events reference a missing slot', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'output', type: 'number' }]
+    })
+    createTestSubgraphNode(subgraph)
+
+    expect(() =>
+      subgraph.events.dispatch('renaming-output', {
+        output: subgraph.outputs[0],
+        index: 99,
+        oldName: 'output',
+        newName: 'missing'
+      })
+    ).toThrow('Subgraph output not found')
   })
 
   it('represents promoted host widgets by input widgetId and WidgetState', () => {
@@ -362,6 +414,41 @@ describe('SubgraphNode Synchronization', () => {
     })
   })
 
+  it('falls back projected widget fields when WidgetState is missing', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const widget = subgraphNode.widgets[0]
+    const id = promotedInput.widgetId
+    if (!id) throw new Error('Missing widgetId')
+    if (!widget) throw new Error('Missing projected widget')
+
+    useWidgetValueStore().deleteWidget(id)
+
+    expect(widget.name).toBe('text')
+    expect(widget.label).toBe('text')
+    expect(widget.y).toBe(0)
+    expect(widget.type).toBe('text')
+    expect(widget.options).toEqual({})
+    expect(widget.value).toBeUndefined()
+    expect(() => {
+      widget.label = 'Label'
+      widget.y = 12
+      widget.callback?.('updated')
+    }).not.toThrow()
+  })
+
   it('should keep input.widget.name stable after rename (onGraphConfigured safety)', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
@@ -442,6 +529,111 @@ describe('SubgraphNode Synchronization', () => {
     expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
     )
+  })
+
+  it('keeps rename behavior when widget state has been removed', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const widgetId = promotedInput.widgetId
+    if (!widgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().deleteWidget(widgetId)
+
+    subgraph.renameInput(subgraph.inputs[0], 'Renamed Text')
+
+    expect(promotedInput.label).toBe('Renamed Text')
+    expect(useWidgetValueStore().getWidget(widgetId)).toBeUndefined()
+  })
+
+  it('rebinds promoted widgets when subgraph input objects are recreated', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    interiorNode.id = toNodeId(5)
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const originalSlot = subgraphNode.inputs[0]._subgraphSlot
+    const originalWidgetId = subgraphNode.inputs[0].widgetId
+    const serialized = subgraph.asSerialisable()
+
+    subgraph.configure(serialized)
+
+    expect(subgraphNode.inputs).toHaveLength(1)
+    expect(subgraphNode.inputs[0]._subgraphSlot).toBe(subgraph.inputs[0])
+    expect(subgraphNode.inputs[0]._subgraphSlot).not.toBe(originalSlot)
+    expect(subgraphNode.inputs[0].widgetId).toBe(originalWidgetId)
+    expect(subgraphNode.widgets[0]).toMatchObject({
+      name: 'text',
+      value: 'initial'
+    })
+  })
+
+  it('stores DOM widget metadata from custom promoted host widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'dom', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    const interiorWidget = interiorNode.addWidget(
+      'text',
+      'value',
+      'initial',
+      () => {}
+    )
+    Object.assign(interiorWidget, { isDOMWidget: true })
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+    const hostWidget = fromPartial<IBaseWidget>({
+      name: 'host',
+      type: 'text',
+      value: 'host value',
+      options: {},
+      y: 0
+    })
+
+    class HostWidgetSubgraphNode extends SubgraphNode {
+      protected override createPromotedHostWidget() {
+        return hostWidget
+      }
+    }
+
+    const subgraphNode = new HostWidgetSubgraphNode(
+      subgraph.rootGraph,
+      subgraph,
+      fromPartial<ExportedSubgraphInstance>({
+        id: 10,
+        type: subgraph.id,
+        pos: [0, 0],
+        size: [200, 100],
+        properties: {}
+      })
+    )
+    const widgetId = subgraphNode.inputs[0].widgetId
+    if (!widgetId) throw new Error('Missing widgetId')
+
+    expect(subgraphNode.widgets).toEqual([hostWidget])
+    expect(useWidgetValueStore().getWidget(widgetId)).toMatchObject({
+      isDOMWidget: true
+    })
   })
 })
 
@@ -658,6 +850,31 @@ describe('SubgraphNode Lifecycle', () => {
 })
 
 describe('SubgraphNode Basic Functionality', () => {
+  it('opens subgraphs from the title button and delegates other buttons', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const canvas = fromPartial<
+      Parameters<SubgraphNode['onTitleButtonClick']>[1]
+    >({
+      openSubgraph: vi.fn()
+    })
+    const fallback = vi
+      .spyOn(LGraphNode.prototype, 'onTitleButtonClick')
+      .mockImplementation(() => undefined)
+
+    subgraphNode.onTitleButtonClick(
+      fromPartial({ name: 'enter_subgraph' }),
+      canvas
+    )
+    subgraphNode.onTitleButtonClick(fromPartial({ name: 'other' }), canvas)
+
+    expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph, subgraphNode)
+    expect(fallback).toHaveBeenCalledWith(
+      fromPartial({ name: 'other' }),
+      canvas
+    )
+  })
+
   it('should inherit input types correctly', () => {
     const subgraph = createTestSubgraph({
       inputs: [
@@ -686,6 +903,157 @@ describe('SubgraphNode Basic Functionality', () => {
     expect(subgraphNode.outputs[0].type).toBe('number')
     expect(subgraphNode.outputs[1].type).toBe('string')
     expect(subgraphNode.outputs[2].type).toBe('*')
+  })
+
+  it('delegates title box drawing to a custom handler', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const onDrawTitleBox = vi.fn()
+    subgraphNode.onDrawTitleBox = onDrawTitleBox
+    const ctx = fromPartial<CanvasRenderingContext2D>({})
+
+    subgraphNode.drawTitleBox(ctx, {
+      scale: 2,
+      low_quality: false,
+      title_height: 30,
+      box_size: 12
+    })
+
+    expect(onDrawTitleBox).toHaveBeenCalledWith(
+      ctx,
+      30,
+      subgraphNode.renderingSize,
+      2
+    )
+  })
+
+  it('draws the default title box with and without the bitmap icon', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const ctx = fromPartial<CanvasRenderingContext2D>({
+      save: vi.fn(),
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      fill: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn(),
+      restore: vi.fn()
+    })
+
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+    subgraphNode.drawTitleBox(ctx, { scale: 1, low_quality: true })
+
+    expect(ctx.roundRect).toHaveBeenCalledWith(6, -24.5, 22, 20, 5)
+    expect(ctx.drawImage).toHaveBeenCalledTimes(1)
+    expect(ctx.restore).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns undefined when a widgetId does not match a promoted input', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(
+      subgraphNode.getSlotFromWidget(
+        fromPartial<IBaseWidget>({
+          name: 'missing',
+          type: 'text',
+          value: '',
+          widgetId: 'missing-widget' as WidgetId
+        })
+      )
+    ).toBeUndefined()
+  })
+
+  it('returns null for missing inner input links', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'output', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    expect(subgraphNode.getInputLink(0)).toBeNull()
+  })
+
+  it('returns a translated input link for connected subgraph outputs', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'output', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const inner = new LGraphNode('Inner')
+    inner.id = toNodeId(9)
+    inner.addOutput('image', 'IMAGE')
+    subgraph.add(inner)
+    subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
+
+    const link = subgraphNode.getInputLink(0)
+
+    expect(link?.origin_id).toBe(toNodeId(`${subgraphNode.id}:${inner.id}`))
+    expect(link?.origin_slot).toBe(0)
+  })
+
+  it('returns empty resolved input links when the subgraph input is isolated', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    expect(subgraphNode.resolveSubgraphInputLinks(0)).toEqual([])
+  })
+
+  it('returns resolved input links when the subgraph input is connected', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const inner = new LGraphNode('Inner')
+    inner.id = toNodeId(9)
+    const input = inner.addInput('image', 'IMAGE')
+    subgraph.add(inner)
+    subgraph.inputNode.slots[0].connect(input, inner)
+
+    expect(subgraphNode.resolveSubgraphInputLinks(0)).toEqual([
+      expect.objectContaining({
+        input,
+        inputNode: inner
+      })
+    ])
+  })
+
+  it('returns resolved output links when the subgraph output is connected', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'output', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const inner = new LGraphNode('Inner')
+    inner.addOutput('image', 'IMAGE')
+    subgraph.add(inner)
+    subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
+
+    expect(subgraphNode.resolveSubgraphOutputLink(0)?.outputNode).toBe(inner)
+  })
+
+  it('returns a consistent slot shape only when all inner shapes match', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const slot = subgraph.inputs[0]
+
+    expect(subgraphNode.getSlotShape(slot, fromPartial({ shape: 4 }))).toBe(4)
+
+    const node = new LGraphNode('ShapeTarget')
+    const rounded = node.addInput('rounded', 'IMAGE')
+    const boxed = node.addInput('boxed', 'IMAGE')
+    rounded.shape = 4
+    boxed.shape = 3
+    subgraph.add(node)
+    slot.connect(rounded, node)
+
+    expect(subgraphNode.getSlotShape(slot, boxed)).toBeUndefined()
   })
 })
 
@@ -776,6 +1144,27 @@ describe('SubgraphNode Execution', () => {
     expect(() => subgraph.add(subgraphNode)).toThrow()
   })
 
+  it('throws a recursion error when traversal revisits the same subgraph node', () => {
+    const subgraph = createTestSubgraph({ name: '' })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode.title = 'Recursive Host'
+
+    expect(() =>
+      subgraphNode.getInnerNodes(new Map(), [], [], new Set([subgraphNode]))
+    ).toThrow('Circular reference detected')
+  })
+
+  it('describes unnamed recursive subgraph nodes', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.name = ''
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode.title = ''
+
+    expect(() =>
+      subgraphNode.getInnerNodes(new Map(), [], [], new Set([subgraphNode]))
+    ).toThrow("node 1 of subgraph 'Unnamed Subgraph'")
+  })
+
   it('should resolve cross-boundary links', () => {
     // This test verifies that links can cross subgraph boundaries
     // Currently this is a basic test - full cross-boundary linking
@@ -798,6 +1187,171 @@ describe('SubgraphNode Execution', () => {
     const executableNodes = new Map()
     const flattened = subgraphNode.getInnerNodes(executableNodes)
     expect(flattened).toHaveLength(2)
+  })
+})
+
+describe('SubgraphNode preview exposure hydration', () => {
+  it('hydrates explicit preview exposure properties', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const store = usePreviewExposureStore()
+
+    subgraphNode.configure({
+      ...subgraphNode.serialize(),
+      properties: {
+        previewExposures: [
+          {
+            name: 'preview',
+            sourceNodeId: '12',
+            sourcePreviewName: '$$preview'
+          }
+        ]
+      }
+    } as ExportedSubgraphInstance)
+
+    expect(
+      store.getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+    ).toEqual([
+      {
+        name: 'preview',
+        sourceNodeId: toNodeId(12),
+        sourcePreviewName: '$$preview'
+      }
+    ])
+  })
+
+  it('clears exposures when an explicit empty property is serialized', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const store = usePreviewExposureStore()
+    store.addExposure(subgraphNode.rootGraph.id, String(subgraphNode.id), {
+      sourceNodeId: '12',
+      sourcePreviewName: '$$preview'
+    })
+
+    subgraphNode.configure({
+      ...subgraphNode.serialize(),
+      properties: { previewExposures: [] }
+    } as ExportedSubgraphInstance)
+
+    expect(
+      store.getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+    ).toEqual([])
+  })
+
+  it('hydrates legacy locator exposures when no explicit property exists', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const store = usePreviewExposureStore()
+    const legacyLocator = createNodeLocatorId(null, subgraphNode.id)
+    store.addExposure(subgraphNode.rootGraph.id, legacyLocator, {
+      sourceNodeId: '12',
+      sourcePreviewName: '$$legacy'
+    })
+
+    subgraphNode.configure({
+      ...subgraphNode.serialize(),
+      properties: {}
+    } as ExportedSubgraphInstance)
+
+    expect(
+      store.getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+    ).toEqual([
+      expect.objectContaining({
+        sourceNodeId: toNodeId(12),
+        sourcePreviewName: '$$legacy'
+      })
+    ])
+  })
+})
+
+describe('SubgraphNode serialization', () => {
+  it('serializes promoted widget values and valid quarantine entries', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('number', 'value', 3, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const widgetId = subgraphNode.inputs[0].widgetId
+    if (!widgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().setValue(widgetId, 42)
+    subgraphNode.properties.proxyWidgetErrorQuarantine = [
+      {
+        originalEntry: ['-1', 'seed'],
+        reason: 'missingSourceNode',
+        attemptedAtVersion: 1,
+        hostValue: 7
+      }
+    ]
+
+    const serialized = subgraphNode.serialize()
+
+    expect(serialized.widgets_values).toEqual([42])
+    expect(serialized.properties?.proxyWidgetErrorQuarantine).toEqual([
+      {
+        originalEntry: ['-1', 'seed'],
+        reason: 'missingSourceNode',
+        attemptedAtVersion: 1,
+        hostValue: 7
+      }
+    ])
+  })
+
+  it('uses quarantined host values before serialized widget values', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('number', 'value', 3, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const widgetId = subgraphNode.inputs[0].widgetId
+    if (!widgetId) throw new Error('Missing widgetId')
+
+    subgraphNode.configure({
+      ...subgraphNode.serialize(),
+      widgets_values: [11],
+      properties: {
+        proxyWidgetErrorQuarantine: [
+          {
+            originalEntry: ['-1', 'seed'],
+            reason: 'missingSourceNode',
+            attemptedAtVersion: 1,
+            hostValue: 55
+          }
+        ]
+      }
+    } as ExportedSubgraphInstance)
+
+    expect(useWidgetValueStore().getWidget(widgetId)?.value).toBe(55)
+  })
+
+  it('omits widget values when promoted widget state is non-serializable', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('number', 'value', 3, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const widgetId = subgraphNode.inputs[0].widgetId
+    if (!widgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().getWidget(widgetId)!.value = undefined
+
+    const serialized = subgraphNode.serialize()
+
+    expect(serialized.widgets_values).toBeUndefined()
   })
 })
 
@@ -951,6 +1505,26 @@ describe('SubgraphNode Cleanup', () => {
     expect(abortSpy1).toHaveBeenCalledTimes(1)
     expect(abortSpy2).toHaveBeenCalledTimes(1)
   })
+
+  it('removes promoted widgets even when an input listener is absent', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'input', type: 'number' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const onRemove = vi.fn()
+    subgraphNode.inputs[0]._widget = fromPartial<IBaseWidget>({
+      name: 'input',
+      type: 'number',
+      options: {},
+      y: 0,
+      onRemove
+    })
+    delete subgraphNode.inputs[0]._listenerController
+
+    subgraphNode.onRemoved()
+
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
 })
 
 describe('SubgraphNode duplicate input pruning (#9977)', () => {
@@ -1075,6 +1649,49 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
 
     expect(node.inputs).toHaveLength(2)
     expect(node.inputs.map((i) => i.name)).toEqual(['x', 'y'])
+  })
+
+  it('rebinds duplicate serialized inputs by signature and then by name', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'same', type: 'STRING' },
+        { name: 'same', type: 'STRING' },
+        { name: 'loose', type: 'INT' }
+      ]
+    })
+
+    const node = new SubgraphNode(
+      subgraph.rootGraph,
+      subgraph,
+      fromPartial<ExportedSubgraphInstance>({
+        id: 1,
+        type: subgraph.id,
+        pos: [0, 0],
+        size: [200, 100],
+        inputs: [
+          { name: 'same', type: 'STRING', link: null },
+          { name: 'same', type: 'STRING', link: null },
+          { name: 'loose', type: 'FLOAT', link: null },
+          { name: 'missing', type: 'BOOLEAN', link: null }
+        ],
+        outputs: [],
+        properties: {},
+        flags: {},
+        mode: 0,
+        order: 0
+      })
+    )
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'same',
+      'same',
+      'loose'
+    ])
+    expect(node.inputs.map((input) => input._subgraphSlot)).toEqual([
+      subgraph.inputs[0],
+      subgraph.inputs[1],
+      subgraph.inputs[2]
+    ])
   })
 })
 

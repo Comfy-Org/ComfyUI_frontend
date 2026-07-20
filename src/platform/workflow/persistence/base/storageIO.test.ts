@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
@@ -17,6 +18,18 @@ import {
   writePayload
 } from './storageIO'
 
+function createStorageStub(overrides: Partial<Storage> = {}): Storage {
+  return fromPartial<Storage>({
+    length: 0,
+    clear: vi.fn(),
+    getItem: vi.fn(() => null),
+    key: vi.fn(() => null),
+    removeItem: vi.fn(),
+    setItem: vi.fn(),
+    ...overrides
+  })
+}
+
 describe('storageIO', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -25,8 +38,11 @@ describe('storageIO', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     localStorage.clear()
     sessionStorage.clear()
+    vi.resetModules()
   })
 
   describe('index operations', () => {
@@ -74,6 +90,60 @@ describe('storageIO', () => {
       )
       expect(readIndex(workspaceId)).toBeNull()
     })
+
+    it('returns null for malformed index shapes', () => {
+      for (const value of [
+        null,
+        42,
+        { v: 2, updatedAt: 'now', order: [], entries: {} },
+        { v: 2, updatedAt: 1, order: {}, entries: {} },
+        { v: 2, updatedAt: 1, order: [], entries: null }
+      ]) {
+        localStorage.setItem(
+          'Comfy.Workflow.DraftIndex.v2:test-workspace',
+          JSON.stringify(value)
+        )
+        expect(readIndex(workspaceId)).toBeNull()
+      }
+    })
+
+    it('returns false for quota errors when writing an index', () => {
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          setItem: vi.fn(() => {
+            throw new DOMException('full', 'QuotaExceededError')
+          })
+        })
+      )
+      const index: DraftIndexV2 = {
+        v: 2,
+        updatedAt: 1,
+        order: [],
+        entries: {}
+      }
+
+      expect(writeIndex(workspaceId, index)).toBe(false)
+    })
+
+    it('rethrows non-quota errors when writing an index', () => {
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          setItem: vi.fn(() => {
+            throw new Error('storage failed')
+          })
+        })
+      )
+      const index: DraftIndexV2 = {
+        v: 2,
+        updatedAt: 1,
+        order: [],
+        entries: {}
+      }
+
+      expect(() => writeIndex(workspaceId, index)).toThrow('storage failed')
+    })
   })
 
   describe('payload operations', () => {
@@ -97,6 +167,45 @@ describe('storageIO', () => {
       expect(readPayload(workspaceId, 'missing')).toBeNull()
     })
 
+    it('returns null for invalid payload JSON', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.Draft.v2:test-workspace:abc12345',
+        'invalid'
+      )
+
+      expect(readPayload(workspaceId, draftKey)).toBeNull()
+    })
+
+    it('returns false for quota errors when writing payloads', () => {
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          setItem: vi.fn(() => {
+            throw new DOMException('full', 'NS_ERROR_DOM_QUOTA_REACHED')
+          })
+        })
+      )
+
+      expect(
+        writePayload(workspaceId, draftKey, { data: '{}', updatedAt: 1 })
+      ).toBe(false)
+    })
+
+    it('rethrows non-quota errors when writing payloads', () => {
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          setItem: vi.fn(() => {
+            throw new Error('storage failed')
+          })
+        })
+      )
+
+      expect(() =>
+        writePayload(workspaceId, draftKey, { data: '{}', updatedAt: 1 })
+      ).toThrow('storage failed')
+    })
+
     it('deletes payload', () => {
       const payload: DraftPayloadV2 = {
         data: '{}',
@@ -107,6 +216,18 @@ describe('storageIO', () => {
 
       deletePayload(workspaceId, draftKey)
       expect(readPayload(workspaceId, draftKey)).toBeNull()
+    })
+
+    it('ignores delete errors', () => {
+      const removeItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
+      vi.stubGlobal('localStorage', createStorageStub({ removeItem }))
+
+      expect(() => deletePayload(workspaceId, draftKey)).not.toThrow()
+      expect(removeItem).toHaveBeenCalledWith(
+        `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+      )
     })
 
     it('deletes multiple payloads', () => {
@@ -133,6 +254,20 @@ describe('storageIO', () => {
       expect(keys).toHaveLength(2)
       expect(keys).toContain('abc')
       expect(keys).toContain('def')
+    })
+
+    it('returns an empty list when key enumeration fails', () => {
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          length: 1,
+          key: vi.fn(() => {
+            throw new Error('key failed')
+          })
+        })
+      )
+
+      expect(getPayloadKeys('ws-1')).toEqual([])
     })
   })
 
@@ -279,6 +414,71 @@ describe('storageIO', () => {
       )
       expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
     })
+
+    it('falls back to the last active path in localStorage', () => {
+      const pointer = { workspaceId: 'ws-1', path: 'workflows/last.json' }
+      localStorage.setItem(
+        'Comfy.Workflow.LastActivePath:ws-1',
+        JSON.stringify(pointer)
+      )
+
+      expect(readActivePath('missing-client', 'ws-1')).toEqual(pointer)
+    })
+
+    it('ignores invalid last active path pointers', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.LastActivePath:ws-1',
+        JSON.stringify({ workspaceId: 'ws-1', paths: [] })
+      )
+
+      expect(readActivePath('missing-client', 'ws-1')).toBeNull()
+    })
+
+    it('falls back to the last open paths in localStorage', () => {
+      const pointer = {
+        workspaceId: 'ws-1',
+        paths: ['workflows/last.json'],
+        activeIndex: 0
+      }
+      localStorage.setItem(
+        'Comfy.Workflow.LastOpenPaths:ws-1',
+        JSON.stringify(pointer)
+      )
+
+      expect(readOpenPaths('missing-client', 'ws-1')).toEqual(pointer)
+    })
+
+    it('ignores invalid migrated session pointers', () => {
+      sessionStorage.setItem('Comfy.Workflow.OpenPaths:old-client', 'invalid')
+
+      expect(readOpenPaths('new-client', 'ws-1')).toBeNull()
+    })
+
+    it('silently ignores pointer write failures', () => {
+      const setItem = vi.fn(() => {
+        throw new Error('write failed')
+      })
+      const storage = createStorageStub({ setItem })
+      vi.stubGlobal('localStorage', storage)
+      vi.stubGlobal('sessionStorage', storage)
+
+      expect(() =>
+        writeActivePath('client', {
+          workspaceId: 'ws-1',
+          path: 'workflows/a.json'
+        })
+      ).not.toThrow()
+      expect(() =>
+        writeOpenPaths('client', {
+          workspaceId: 'ws-1',
+          paths: ['workflows/a.json'],
+          activeIndex: 0
+        })
+      ).not.toThrow()
+      expect(setItem).toHaveBeenCalled()
+      expect(readActivePath('client')).toBeNull()
+      expect(readOpenPaths('client')).toBeNull()
+    })
   })
 
   describe('clearAllV2Storage', () => {
@@ -316,6 +516,66 @@ describe('storageIO', () => {
         sessionStorage.getItem('Comfy.Workflow.OpenPaths:client-2')
       ).toBeNull()
       expect(sessionStorage.getItem('unrelated')).toBe('keep')
+    })
+
+    it('ignores storage cleanup failures', () => {
+      const localRemoveItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
+      const sessionRemoveItem = vi.fn(() => {
+        throw new Error('remove failed')
+      })
+      vi.stubGlobal(
+        'localStorage',
+        createStorageStub({
+          length: 1,
+          key: vi.fn(() => 'Comfy.Workflow.Draft.v2:ws-1:abc'),
+          removeItem: localRemoveItem
+        })
+      )
+      vi.stubGlobal(
+        'sessionStorage',
+        createStorageStub({
+          length: 1,
+          key: vi.fn(() => 'Comfy.Workflow.ActivePath:client-1'),
+          removeItem: sessionRemoveItem
+        })
+      )
+
+      expect(() => clearAllV2Storage()).not.toThrow()
+      expect(localRemoveItem).toHaveBeenCalledWith(
+        'Comfy.Workflow.Draft.v2:ws-1:abc'
+      )
+      expect(sessionRemoveItem).toHaveBeenCalledWith(
+        'Comfy.Workflow.ActivePath:client-1'
+      )
+    })
+  })
+
+  describe('storage availability', () => {
+    it('returns empty results and rejects writes after storage is marked unavailable', async () => {
+      const storage = await import('./storageIO')
+
+      expect(storage.isStorageAvailable()).toBe(true)
+
+      storage.markStorageUnavailable()
+
+      expect(storage.isStorageAvailable()).toBe(false)
+      expect(storage.readIndex('ws-1')).toBeNull()
+      expect(storage.readPayload('ws-1', 'draft')).toBeNull()
+      expect(storage.getPayloadKeys('ws-1')).toEqual([])
+      expect(
+        storage.writeIndex('ws-1', {
+          v: 2,
+          updatedAt: 1,
+          order: [],
+          entries: {}
+        })
+      ).toBe(false)
+      expect(
+        storage.writePayload('ws-1', 'draft', { data: '{}', updatedAt: 1 })
+      ).toBe(false)
+      expect(() => storage.clearAllV2Storage()).not.toThrow()
     })
   })
 })

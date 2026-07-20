@@ -19,6 +19,8 @@ describe('migrateV1toV2', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
     localStorage.clear()
     sessionStorage.clear()
   })
@@ -75,6 +77,44 @@ describe('migrateV1toV2', () => {
       const index = JSON.parse(indexJson!)
       expect(index.v).toBe(2)
       expect(index.order).toEqual([])
+    })
+
+    it('creates empty V2 index when V1 draft JSON is invalid', () => {
+      localStorage.setItem(`Comfy.Workflow.Drafts:${workspaceId}`, '{not-json')
+
+      expect(migrateV1toV2(workspaceId)).toBe(0)
+    })
+
+    it('migrates zero drafts when V1 order is missing', () => {
+      localStorage.setItem(
+        `Comfy.Workflow.Drafts:${workspaceId}`,
+        JSON.stringify({
+          'workflows/a.json': {
+            data: '{}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          }
+        })
+      )
+
+      expect(migrateV1toV2(workspaceId)).toBe(0)
+    })
+
+    it('skips paths that no longer exist in V1 drafts', () => {
+      setV1Data(
+        {
+          'workflows/a.json': {
+            data: '{}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          }
+        },
+        ['workflows/a.json', 'workflows/missing.json']
+      )
+
+      expect(migrateV1toV2(workspaceId)).toBe(1)
     })
 
     it('migrates V1 drafts to V2 format', () => {
@@ -211,6 +251,23 @@ describe('migrateV1toV2', () => {
         localStorage.getItem(`Comfy.Workflow.DraftOrder:${workspaceId}`)
       ).toBeNull()
     })
+
+    it('ignores storage errors during cleanup', () => {
+      const removeItem = vi.fn(() => {
+        throw new Error('blocked')
+      })
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(),
+        removeItem,
+        clear: vi.fn(),
+        key: vi.fn(() => null),
+        length: 0
+      })
+
+      expect(() => cleanupV1Data(workspaceId)).not.toThrow()
+      expect(removeItem).toHaveBeenCalled()
+    })
   })
 
   describe('V1 tab state migration', () => {
@@ -289,6 +346,71 @@ describe('migrateV1toV2', () => {
 
       // No tab state to migrate — should remain null
       expect(openPaths).toBeNull()
+    })
+
+    it('clamps out-of-range V1 active tab index', () => {
+      setV1Data(
+        {
+          'workflows/a.json': {
+            data: '{}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          }
+        },
+        ['workflows/a.json']
+      )
+      localStorage.setItem(
+        'Comfy.OpenWorkflowsPaths',
+        JSON.stringify(['workflows/a.json'])
+      )
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', JSON.stringify(10))
+
+      migrateV1toV2(workspaceId, 'client-123')
+
+      expect(readOpenPaths('client-123', workspaceId)?.activeIndex).toBe(0)
+    })
+
+    it('defaults V1 tab index when active index is invalid', () => {
+      setV1Data(
+        {
+          'workflows/a.json': {
+            data: '{}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          }
+        },
+        ['workflows/a.json']
+      )
+      localStorage.setItem(
+        'Comfy.OpenWorkflowsPaths',
+        JSON.stringify(['workflows/a.json'])
+      )
+      localStorage.setItem('Comfy.ActiveWorkflowIndex', JSON.stringify('bad'))
+
+      migrateV1toV2(workspaceId, 'client-123')
+
+      expect(readOpenPaths('client-123', workspaceId)?.activeIndex).toBe(0)
+    })
+
+    it('ignores invalid V1 tab state paths', () => {
+      setV1Data(
+        {
+          'workflows/a.json': {
+            data: '{}',
+            updatedAt: 1000,
+            name: 'a',
+            isTemporary: true
+          }
+        },
+        ['workflows/a.json']
+      )
+      localStorage.setItem('Comfy.OpenWorkflowsPaths', JSON.stringify([]))
+
+      migrateV1toV2(workspaceId, 'client-123')
+
+      expect(readOpenPaths('client-123', workspaceId)).toBeNull()
     })
   })
 

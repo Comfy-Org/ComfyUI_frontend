@@ -11,20 +11,20 @@ vi.mock('@/scripts/api', () => ({
 
 const { useComfyHubService } = await import('./comfyHubService')
 
-function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => payload
-  } as Response
+function mockJsonResponse(
+  payload: unknown,
+  _ok = true,
+  status = 200
+): Response {
+  return new Response(JSON.stringify(payload), { status })
 }
 
-function mockUploadResponse(ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => ({})
-  } as Response
+function mockUploadResponse(_ok = true, status = 200): Response {
+  return new Response(JSON.stringify({}), { status })
+}
+
+function mockJsonFailure(_ok = false, status = 500): Response {
+  return new Response('not valid json', { status })
 }
 
 describe('useComfyHubService', () => {
@@ -171,6 +171,29 @@ describe('useComfyHubService', () => {
     })
   })
 
+  it('publishes workflow with hub-native thumbnail type', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_id: 'share-1',
+        workflow_id: 'workflow-1',
+        thumbnail_type: 'video'
+      })
+    )
+
+    const service = useComfyHubService()
+    await service.publishWorkflow({
+      username: 'builder',
+      name: 'Video Flow',
+      workflowFilename: 'workflows/video-flow.json',
+      assetIds: ['asset-1'],
+      thumbnailType: 'video'
+    })
+
+    const [, options] = mockFetchApi.mock.calls[0]
+    const body = JSON.parse(options.body as string)
+    expect(body.thumbnail_type).toBe('video')
+  })
+
   it('fetches tag labels from /hub/labels?type=tag', async () => {
     mockFetchApi.mockResolvedValue(
       mockJsonResponse({
@@ -211,5 +234,108 @@ describe('useComfyHubService', () => {
       profilePictureUrl: 'https://cdn.example.com/avatar.png',
       coverImageUrl: undefined
     })
+  })
+
+  it('returns null when current profile is missing', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, false, 404))
+
+    const service = useComfyHubService()
+
+    await expect(service.getMyProfile()).resolves.toBeNull()
+  })
+
+  it('uses server error messages when requests fail', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({ message: 'No upload for you' }, false, 400)
+    )
+
+    const service = useComfyHubService()
+
+    await expect(
+      service.requestAssetUploadUrl({
+        filename: 'thumb.png',
+        contentType: 'image/png'
+      })
+    ).rejects.toThrow('No upload for you')
+  })
+
+  it('uses fallback error messages when error bodies are missing or malformed', async () => {
+    mockFetchApi.mockResolvedValueOnce(mockJsonFailure())
+    const service = useComfyHubService()
+
+    await expect(
+      service.requestAssetUploadUrl({
+        filename: 'thumb.png',
+        contentType: 'image/png'
+      })
+    ).rejects.toThrow('Failed to request upload URL')
+
+    mockFetchApi.mockResolvedValueOnce(mockJsonResponse({}, false, 500))
+
+    await expect(service.getMyProfile()).rejects.toThrow(
+      'Failed to load ComfyHub profile'
+    )
+  })
+
+  it('throws on invalid success payloads', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({ invalid: true }))
+
+    const service = useComfyHubService()
+
+    await expect(service.fetchTagLabels()).rejects.toThrow(
+      'Invalid label list response from server'
+    )
+  })
+
+  it('throws upload errors from presigned URL uploads', async () => {
+    mockGlobalFetch.mockResolvedValue(
+      mockJsonResponse({ message: 'Upload rejected' }, false, 403)
+    )
+
+    const service = useComfyHubService()
+    const file = new File(['payload'], 'avatar.png', { type: 'image/png' })
+
+    await expect(
+      service.uploadFileToPresignedUrl({
+        uploadUrl: 'https://upload.example.com/object',
+        file,
+        contentType: 'image/png'
+      })
+    ).rejects.toThrow('Upload rejected')
+  })
+
+  it('throws create and publish failures with parsed fallback messages', async () => {
+    const service = useComfyHubService()
+    mockFetchApi.mockResolvedValueOnce(mockJsonResponse({}, false, 500))
+
+    await expect(
+      service.createProfile({
+        workspaceId: 'workspace-1',
+        username: 'builder'
+      })
+    ).rejects.toThrow('Failed to create ComfyHub profile')
+
+    mockFetchApi.mockResolvedValueOnce(
+      mockJsonResponse({ message: 'Publish rejected' }, false, 400)
+    )
+
+    await expect(
+      service.publishWorkflow({
+        username: 'builder',
+        name: 'My Flow',
+        workflowFilename: 'workflows/my-flow.json',
+        assetIds: ['asset-1']
+      })
+    ).rejects.toThrow('Publish rejected')
+  })
+
+  it('throws label fetch failures', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({ message: 'Labels unavailable' }, false, 503)
+    )
+
+    const service = useComfyHubService()
+
+    await expect(service.fetchTagLabels()).rejects.toThrow('Labels unavailable')
   })
 })

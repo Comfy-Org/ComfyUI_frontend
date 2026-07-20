@@ -15,8 +15,10 @@ const mockWorkflowStore = reactive<{
     isModified: boolean
     lastModified: number
   } | null
+  saveWorkflow: ReturnType<typeof vi.fn>
 }>({
-  activeWorkflow: null
+  activeWorkflow: null,
+  saveWorkflow: vi.fn()
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -63,12 +65,17 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    saveWorkflow: vi.fn(),
-    renameWorkflow: vi.fn()
-  })
+const mockWorkflowService = vi.hoisted(() => ({
+  saveWorkflow: vi.fn(),
+  renameWorkflow: vi.fn()
 }))
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => mockWorkflowService
+}))
+
+const mockInputFocus = vi.hoisted(() => vi.fn())
+const mockInputSelect = vi.hoisted(() => vi.fn())
 
 const mockShareServiceData = vi.hoisted(() => ({
   items: [
@@ -113,6 +120,8 @@ const i18n = createI18n({
       g: { close: 'Close', error: 'Error' },
       shareWorkflow: {
         unsavedDescription: 'You must save your workflow before sharing.',
+        saveFailedTitle: 'Save failed',
+        saveFailedDescription: 'Unable to save workflow',
         shareLinkTab: 'Share',
         publishToHubTab: 'Publish',
         workflowNameLabel: 'Workflow name',
@@ -138,6 +147,9 @@ const i18n = createI18n({
         introTitle: 'Introducing ComfyHub',
         createProfileButton: 'Create my profile',
         startPublishingButton: 'Start publishing'
+      },
+      comfyHubPublish: {
+        unsavedDescription: 'Save before publishing.'
       }
     }
   }
@@ -152,6 +164,9 @@ describe('ShareWorkflowDialogContent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockWorkflowStore.saveWorkflow.mockReset()
+    mockWorkflowService.saveWorkflow.mockReset()
+    mockWorkflowService.renameWorkflow.mockReset()
     mockPublishWorkflow.mockReset()
     mockGetShareableAssets.mockReset()
     mockWorkflowStore.activeWorkflow = {
@@ -214,8 +229,14 @@ describe('ShareWorkflowDialogContent', () => {
             props: ['onCreateProfile']
           },
           Input: {
-            template: '<input v-bind="$attrs" />',
-            methods: { focus() {}, select() {} }
+            template:
+              '<input v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
+            methods: {
+              focus: mockInputFocus,
+              select: mockInputSelect
+            }
           }
         }
       }
@@ -555,6 +576,151 @@ describe('ShareWorkflowDialogContent', () => {
 
       expect(screen.queryByTestId('publish-tab-panel')).not.toBeInTheDocument()
       expect(container.textContent).not.toContain('Publish')
+    })
+
+    it('focuses the temporary workflow name when switching to publish mode', async () => {
+      mockFlags.comfyHubUploadEnabled = true
+      mockWorkflowStore.activeWorkflow = {
+        path: 'Unsaved Workflow.json',
+        directory: '',
+        filename: 'Unsaved Workflow.json',
+        isTemporary: true,
+        isModified: false,
+        lastModified: 1000
+      }
+      renderComponent()
+      await flushPromises()
+      mockInputFocus.mockClear()
+      mockInputSelect.mockClear()
+
+      await userEvent.click(screen.getByRole('tab', { name: /Publish/ }))
+      await nextTick()
+
+      expect(mockInputFocus).toHaveBeenCalled()
+      expect(mockInputSelect).toHaveBeenCalled()
+    })
+
+    it('renames and saves a temporary workflow from publish mode', async () => {
+      mockFlags.comfyHubUploadEnabled = true
+      const workflow = {
+        path: 'Unsaved Workflow.json',
+        directory: '',
+        filename: 'Unsaved Workflow.json',
+        isTemporary: true,
+        isModified: false,
+        lastModified: 1000
+      }
+      mockWorkflowStore.activeWorkflow = workflow
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByRole('tab', { name: /Publish/ }))
+      await userEvent.clear(screen.getByRole('textbox'))
+      await userEvent.type(screen.getByRole('textbox'), ' Better name ')
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/ })
+      )
+      await flushPromises()
+
+      expect(mockWorkflowService.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'Better name.json'
+      )
+      expect(mockWorkflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('does not save a temporary workflow with a blank name', async () => {
+      mockWorkflowStore.activeWorkflow = {
+        path: 'Unsaved Workflow.json',
+        directory: 'workflows',
+        filename: 'Unsaved Workflow.json',
+        isTemporary: true,
+        isModified: false,
+        lastModified: 1000
+      }
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.clear(screen.getByRole('textbox'))
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/ })
+      )
+      await flushPromises()
+
+      expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()
+      expect(mockWorkflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('saves a modified persisted workflow without renaming it', async () => {
+      const workflow = {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: true,
+        lastModified: 1000
+      }
+      mockWorkflowStore.activeWorkflow = workflow
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/ })
+      )
+      await flushPromises()
+
+      expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledWith(workflow)
+      expect(mockWorkflowService.renameWorkflow).not.toHaveBeenCalled()
+      expect(mockWorkflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('shows an error toast when saving fails', async () => {
+      mockWorkflowStore.activeWorkflow = {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: true,
+        lastModified: 1000
+      }
+      mockWorkflowService.saveWorkflow.mockRejectedValue(new Error('disk full'))
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /Save workflow/ })
+      )
+      await flushPromises()
+
+      expect(mockToast.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Save failed',
+        detail: 'Unable to save workflow'
+      })
+      errorSpy.mockRestore()
+    })
+
+    it('uses the generic error copy for non-error publish failures', async () => {
+      mockGetShareableAssets.mockResolvedValue([])
+      mockPublishWorkflow.mockRejectedValue('offline')
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByRole('button', { name: /Create link/ }))
+      await flushPromises()
+
+      expect(mockToast.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Error'
+      })
+      errorSpy.mockRestore()
     })
   })
 })
