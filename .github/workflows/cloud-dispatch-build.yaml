@@ -58,9 +58,8 @@ jobs:
           GRAPHQL_QUERY: >-
             query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){timelineItems(last:100,itemTypes:[LABELED_EVENT]){nodes{... on LabeledEvent{createdAt label{name}}}}}}}
         run: |
-          SOURCE_RUN=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" 2>/dev/null || printf '{}')
-          SOURCE_WORKFLOW_STARTED_AT=$(echo "$SOURCE_RUN" | jq -r '.run_started_at // empty')
-          SOURCE_WORKFLOW_CREATED_AT=$(echo "$SOURCE_RUN" | jq -r '.created_at // empty')
+          SOURCE_RUN_CREATED_AT=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --jq '.created_at' 2>/dev/null || date -u +'%Y-%m-%dT%H:%M:%SZ')
           if [ "${EVENT_NAME}" = "pull_request" ]; then
             REF="${PR_HEAD_SHA}"
             BRANCH="${PR_HEAD_REF}"
@@ -76,8 +75,7 @@ jobs:
             fi
             VARIANT="cpu"
             [ "${PREVIEW_LABEL}" = "preview-gpu" ] && VARIANT="gpu"
-            MEASUREMENT_ID="${GITHUB_REPOSITORY}:${PR_NUMBER}:${REF}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}"
-            REQUEST_RECEIVED_AT="$SOURCE_WORKFLOW_CREATED_AT"
+            REQUEST_RECEIVED_AT="$SOURCE_RUN_CREATED_AT"
             if [ "${ACTION}" = "labeled" ]; then
               OWNER="${GITHUB_REPOSITORY%%/*}"
               REPOSITORY="${GITHUB_REPOSITORY#*/}"
@@ -89,7 +87,7 @@ jobs:
                 | jq -r --arg label "$PREVIEW_LABEL" \
                   '[.data.repository.pullRequest.timelineItems.nodes[] | select(.label.name == $label) | .createdAt] | max // empty' \
                 || true)
-              REQUEST_RECEIVED_AT="${LABEL_ADDED_AT:-$SOURCE_WORKFLOW_CREATED_AT}"
+              REQUEST_RECEIVED_AT="${LABEL_ADDED_AT:-$SOURCE_RUN_CREATED_AT}"
             fi
           else
             REF="${GITHUB_SHA}"
@@ -97,8 +95,7 @@ jobs:
             PR_NUMBER=""
             VARIANT=""
             PREVIEW_LABEL=""
-            MEASUREMENT_ID="${GITHUB_REPOSITORY}:${REF}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}"
-            REQUEST_RECEIVED_AT="$SOURCE_WORKFLOW_CREATED_AT"
+            REQUEST_RECEIVED_AT="$SOURCE_RUN_CREATED_AT"
           fi
           DISPATCH_REQUESTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           payload="$(jq -nc \
@@ -106,24 +103,15 @@ jobs:
             --arg branch "${BRANCH}" \
             --arg pr_number "${PR_NUMBER}" \
             --arg variant "${VARIANT}" \
-            --arg measurement_id "${MEASUREMENT_ID}" \
-            --arg source_repository "${GITHUB_REPOSITORY}" \
-            --arg source_run_id "${GITHUB_RUN_ID}" \
-            --arg source_run_attempt "${GITHUB_RUN_ATTEMPT}" \
-            --arg source_event "${EVENT_NAME}" \
-            --arg source_action "${ACTION}" \
             --arg preview_label "${PREVIEW_LABEL}" \
+            --arg kind "${ACTION}" \
             --arg request_received_at "${REQUEST_RECEIVED_AT}" \
-            --arg source_workflow_started_at "${SOURCE_WORKFLOW_STARTED_AT}" \
             --arg dispatch_requested_at "${DISPATCH_REQUESTED_AT}" \
             '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant,
-              readiness: {measurement_id: $measurement_id,
-                source_repository: $source_repository, source_run_id: $source_run_id,
-                source_run_attempt: $source_run_attempt, source_event: $source_event,
-                source_action: $source_action, preview_label: $preview_label,
-                request_received_at: $request_received_at,
-                source_workflow_started_at: $source_workflow_started_at,
-                dispatch_requested_at: $dispatch_requested_at}}')"
+              readiness: (if $pr_number == "" then {} else {
+                label: $preview_label, kind: $kind,
+                request_at: $request_received_at,
+                dispatch_at: $dispatch_requested_at} end)}')"
           echo "json=${payload}" >> "${GITHUB_OUTPUT}"
 
       - name: Dispatch to cloud repo
