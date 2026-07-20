@@ -67,9 +67,11 @@
         />
       </Button>
 
-      <!-- Trailing action: default close (x); override via #action -->
+      <!-- Trailing action: default close (x); override via #action.
+           Completed dismisses itself, so it carries no close affordance. -->
       <slot name="action">
         <Button
+          v-if="status !== 'done'"
           variant="textonly"
           size="icon-sm"
           :aria-label="t('g.close')"
