@@ -253,7 +253,7 @@ const rows = computed(() =>
               </h3>
               <ul class="mt-2 flex flex-wrap gap-2">
                 <li v-for="tag in tutorial.tags" :key="tag">
-                  <Badge size="xs">{{ t(tag, locale) }}</Badge>
+                  <Badge variant="subtle" size="xs">{{ t(tag, locale) }}</Badge>
                 </li>
               </ul>
             </div>
