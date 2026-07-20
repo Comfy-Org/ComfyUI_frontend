@@ -2,59 +2,54 @@
   <div
     v-for="logo in validLogos"
     :key="logo.key"
-    :class="
-      cn('pointer-events-none absolute z-10', logo.position ?? defaultPosition)
-    "
+    :class="cn('absolute z-10', logo.position ?? defaultPosition)"
   >
     <div
-      v-show="!hasAllFailed(logo.providers)"
+      v-show="!hasAllFailed(logo.badges)"
       data-testid="logo-pill"
-      class="flex items-center gap-1.5 rounded-full bg-black/20 py-1 pr-2"
-      :style="{ opacity: logo.opacity ?? 0.85 }"
+      class="flex items-center gap-1"
     >
-      <div class="ml-0.5 flex items-center">
+      <div
+        v-for="badge in logo.badges"
+        :key="badge.provider"
+        v-tooltip.top="badge.provider"
+        data-testid="logo-badge"
+        class="flex size-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-[20px]"
+      >
+        <i
+          v-if="badge.iconClass"
+          :class="cn('size-3.5 text-white', badge.iconClass)"
+          role="img"
+          :aria-label="badge.provider"
+        />
         <img
-          v-for="(provider, providerIndex) in logo.providers"
-          :key="provider"
+          v-else
           data-testid="logo-img"
-          :src="logo.urls[providerIndex]"
-          :alt="provider"
-          class="size-6 rounded-full border-2 border-white object-cover"
-          :class="{ relative: providerIndex > 0 }"
-          :style="
-            providerIndex > 0 ? { marginLeft: `${logo.gap ?? -6}px` } : {}
-          "
+          :src="badge.logoUrl"
+          :alt="badge.provider"
+          class="size-4 rounded-full object-cover"
           draggable="false"
-          @error="onImageError(provider)"
+          @error="onImageError(badge.provider)"
         />
       </div>
-      <span class="text-sm font-medium text-white">
-        {{ logo.label }}
-      </span>
+      <div
+        v-if="logo.extraProviders.length"
+        v-tooltip.top="logo.extraProviders.join(', ')"
+        class="flex h-7 min-w-7 items-center justify-center rounded-full bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px]"
+      >
+        +{{ logo.extraProviders.length }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
+import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
+import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const { t, locale } = useI18n()
-
-function formatProviderList(providers: string[]): string {
-  const localeValue = String(locale.value)
-  try {
-    return new Intl.ListFormat(localeValue, {
-      style: 'long',
-      type: 'conjunction'
-    }).format(providers)
-  } catch {
-    return providers.join(t('templates.logoProviderSeparator'))
-  }
-}
 
 const {
   logos,
@@ -72,46 +67,34 @@ function onImageError(provider: string) {
   failedLogos.value = new Set([...failedLogos.value, provider])
 }
 
-function hasAllFailed(providers: string[]): boolean {
-  return providers.every((p) => failedLogos.value.has(p))
+function hasAllFailed(badges: ProviderBadge[]): boolean {
+  return (
+    badges.length > 0 &&
+    badges.every(
+      (badge) => !badge.iconClass && failedLogos.value.has(badge.provider)
+    )
+  )
 }
 
 interface ValidatedLogo {
   key: string
-  providers: string[]
-  urls: string[]
-  label: string
+  badges: ProviderBadge[]
+  extraProviders: string[]
   position: string | undefined
-  opacity: number | undefined
-  gap: number | undefined
 }
 
-const validLogos = computed<ValidatedLogo[]>(() => {
-  const result: ValidatedLogo[] = []
+const validLogos = computed<ValidatedLogo[]>(() =>
+  logos.flatMap((logo) => {
+    const badges = getProviderBadges(logo, getLogoUrl)
+    if (!badges) return []
 
-  logos.forEach((logo, index) => {
-    const providers = Array.isArray(logo.provider)
-      ? logo.provider
-      : [logo.provider]
-    const urls = providers.map((p) => getLogoUrl(p))
-    const validProviders = providers.filter((_, i) => urls[i])
-    const validUrls = urls.filter((url) => url)
-
-    if (validProviders.length === 0) return
-
-    const providerKey = validProviders.join('-')
-    const layoutKey = `${logo.position ?? ''}-${logo.opacity ?? ''}-${logo.gap ?? ''}`
-    result.push({
-      key: providerKey ? `${providerKey}-${layoutKey}` : `logo-${index}`,
-      providers: validProviders,
-      urls: validUrls,
-      label: logo.label ?? formatProviderList(validProviders),
-      position: logo.position,
-      opacity: logo.opacity,
-      gap: logo.gap
-    })
+    const providerKey = badges.visible.map((b) => b.provider).join('-')
+    return {
+      key: `${providerKey}-${logo.position ?? ''}`,
+      badges: badges.visible,
+      extraProviders: badges.extraProviders,
+      position: logo.position
+    }
   })
-
-  return result
-})
+)
 </script>
