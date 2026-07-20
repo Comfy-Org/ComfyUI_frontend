@@ -1,4 +1,7 @@
-import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
 export interface ComposerAttachment {
   id: string
@@ -15,8 +18,7 @@ export interface UseComposerOptions {
 }
 
 export function useComposer(options: UseComposerOptions) {
-  const draft = ref('')
-  const attachments = ref<ComposerAttachment[]>([])
+  const { draft, attachments } = storeToRefs(useAgentComposerStore())
 
   const canSend = computed(
     () =>

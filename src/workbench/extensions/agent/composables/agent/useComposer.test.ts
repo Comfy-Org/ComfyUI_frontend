@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
@@ -16,6 +17,10 @@ function setup(streaming = false) {
 }
 
 describe('useComposer', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('submit trims the draft, sends it, and clears draft + attachments', () => {
     const { composer, onSend } = setup()
     const attachment: ComposerAttachment = {
@@ -119,6 +124,23 @@ describe('useComposer', () => {
 
     expect(composer.draft.value).toBe('first second')
     expect(onSend).not.toHaveBeenCalled()
+  })
+
+  it('a recreated composer rehydrates the pending draft and attachments', () => {
+    const first = setup().composer
+    first.draft.value = 'still here'
+    first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
+
+    const { composer: second, onSend } = setup()
+    expect(second.draft.value).toBe('still here')
+    expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
+
+    second.submit()
+    expect(onSend).toHaveBeenCalledWith('still here', [
+      { id: 'a1', name: 'cat.png', ref: 'r' }
+    ])
+    expect(first.draft.value).toBe('')
+    expect(first.attachments.value).toEqual([])
   })
 
   it('removeAttachment drops the matching staged attachment', () => {
