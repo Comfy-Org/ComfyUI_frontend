@@ -6,7 +6,7 @@
   >
     <!-- Status pill + expand tab, sharing one surface -->
     <div
-      class="flex items-center gap-1 rounded-lg bg-comfy-menu-bg p-1 shadow-interface"
+      class="flex items-center gap-1 rounded-xl bg-comfy-menu-bg p-2 shadow-interface"
     >
       <ProcessToast
         :verb="toastView.verb"
@@ -152,7 +152,7 @@
       type="button"
       data-testid="queue-status-idle"
       :aria-expanded="idleExpanded"
-      class="flex h-6 cursor-pointer items-center rounded-md border border-solid border-interface-stroke px-2 text-xs text-muted-foreground transition-colors hover:text-base-foreground"
+      class="flex h-6 cursor-pointer items-center rounded-md border border-solid border-interface-stroke px-2 text-xs text-muted-foreground opacity-50 transition-opacity hover:opacity-100"
       @click="idleExpanded = !idleExpanded"
     >
       {{ activeJobsLabel }}
