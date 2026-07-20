@@ -422,6 +422,26 @@ describe('useSubscriptionCheckout', () => {
         })
       )
     })
+
+    it('tracks conversion success for an immediate Team downgrade', async () => {
+      mockIsTeamPlan.value = true
+      mockShowDowngradeToPersonalDialog.mockResolvedValue({
+        preview: { is_immediate: true },
+        response: {
+          status: 'subscribed',
+          billing_op_id: 'immediate-downgrade'
+        }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+    })
   })
 
   describe('handleSubscribeTeamClick', () => {
@@ -840,6 +860,7 @@ describe('useSubscriptionCheckout', () => {
         cancelUrl: 'https://platform.comfy.org/payment/failed'
       })
       expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
     })
 
     it('skips begin_checkout when no user id is available', async () => {

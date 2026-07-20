@@ -147,22 +147,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(planSlug, options)
-
-      // Refresh is non-fatal: the subscribe write already succeeded, so a failed
-      // refresh must not reject and prompt a retry of an active subscription.
-      const [statusResult, balanceResult] = await Promise.allSettled([
-        fetchStatus(),
-        fetchBalance()
-      ])
-      if (
-        statusResult.status === 'rejected' ||
-        balanceResult.status === 'rejected'
-      ) {
-        error.value = 'Subscription succeeded, but billing state refresh failed'
-      }
-
-      return response
+      return await workspaceApi.subscribe(planSlug, options)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to subscribe'
       throw err

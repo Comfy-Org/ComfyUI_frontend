@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 import type {
+  BillingBalanceResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   Plan,
@@ -78,6 +79,11 @@ const ACTIVE_TEAM_STATUS = {
   }
 } satisfies BillingStatusResponse
 
+const TEAM_BALANCE = {
+  amount_micros: 0,
+  currency: 'USD'
+} satisfies BillingBalanceResponse
+
 const TEAM_WITH_CREATOR_PLANS = {
   current_plan_slug: 'team_per_credit_annual',
   plans: [CREATOR_ANNUAL_PLAN]
@@ -141,10 +147,28 @@ async function setupCloudApp(
 
 async function mockScheduledCreatorDowngrade(page: Page) {
   const subscribeRequests: Request[] = []
+  const statusRefreshRequests: Request[] = []
+  const balanceRefreshRequests: Request[] = []
+  let subscribeCompleted = false
+  let releasePostSubscribeRefresh = () => {}
+  const postSubscribeRefreshGate = new Promise<void>((resolve) => {
+    releasePostSubscribeRefresh = resolve
+  })
 
-  await page.route('**/api/billing/status', (route) =>
-    route.fulfill(jsonRoute(ACTIVE_TEAM_STATUS))
-  )
+  await page.route('**/api/billing/status', async (route) => {
+    if (subscribeCompleted) {
+      statusRefreshRequests.push(route.request())
+      await postSubscribeRefreshGate
+    }
+    return route.fulfill(jsonRoute(ACTIVE_TEAM_STATUS))
+  })
+  await page.route('**/api/billing/balance', async (route) => {
+    if (subscribeCompleted) {
+      balanceRefreshRequests.push(route.request())
+      await postSubscribeRefreshGate
+    }
+    return route.fulfill(jsonRoute(TEAM_BALANCE))
+  })
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(TEAM_WITH_CREATOR_PLANS))
   )
@@ -153,10 +177,16 @@ async function mockScheduledCreatorDowngrade(page: Page) {
   )
   await page.route('**/api/billing/subscribe', (route) => {
     subscribeRequests.push(route.request())
+    subscribeCompleted = true
     return route.fulfill(jsonRoute(SUBSCRIBED_RESPONSE))
   })
 
-  return subscribeRequests
+  return {
+    subscribeRequests,
+    statusRefreshRequests,
+    balanceRefreshRequests,
+    releasePostSubscribeRefresh
+  }
 }
 
 const pricingHeading = (page: Page) =>
@@ -219,12 +249,19 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
 test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
   let subscribeRequests: Request[]
+  let statusRefreshRequests: Request[]
+  let balanceRefreshRequests: Request[]
+  let releasePostSubscribeRefresh: () => void
 
   test.beforeEach(async ({ page }) => {
     await setupCloudApp(page, workspace('team', 'owner'), [
       member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
     ])
-    subscribeRequests = await mockScheduledCreatorDowngrade(page)
+    const downgradeMock = await mockScheduledCreatorDowngrade(page)
+    subscribeRequests = downgradeMock.subscribeRequests
+    statusRefreshRequests = downgradeMock.statusRefreshRequests
+    balanceRefreshRequests = downgradeMock.balanceRefreshRequests
+    releasePostSubscribeRefresh = downgradeMock.releasePostSubscribeRefresh
   })
 
   test('shows the existing success view when subscribe replays 200', async ({
@@ -251,26 +288,32 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
       plan_slug: 'creator-annual'
     })
 
-    const successHeading = page.getByRole('heading', {
-      name: "You're all set"
-    })
-    await expect(successHeading).toBeVisible()
-    const successView = successHeading.locator('..').locator('..')
-    await expect(
-      successView.getByText('Your plan has been successfully updated.', {
-        exact: false
+    try {
+      const successHeading = page.getByRole('heading', {
+        name: "You're all set"
       })
-    ).toBeVisible()
-    await expect(
-      successView.getByText('Creator', { exact: true })
-    ).toBeVisible()
-    await expect(successView.getByText('$28', { exact: true })).toBeVisible()
-    await expect(
-      successView.getByText('7,400 / month', { exact: true })
-    ).toBeVisible()
-    await expect(
-      successView.getByRole('button', { name: 'Close' })
-    ).toBeVisible()
-    await expect(changePlan).toBeHidden()
+      await expect(successHeading).toBeVisible()
+      await expect.poll(() => statusRefreshRequests.length).toBe(1)
+      await expect.poll(() => balanceRefreshRequests.length).toBe(1)
+      const successView = successHeading.locator('..').locator('..')
+      await expect(
+        successView.getByText('Your plan has been successfully updated.', {
+          exact: false
+        })
+      ).toBeVisible()
+      await expect(
+        successView.getByText('Creator', { exact: true })
+      ).toBeVisible()
+      await expect(successView.getByText('$28', { exact: true })).toBeVisible()
+      await expect(
+        successView.getByText('7,400 / month', { exact: true })
+      ).toBeVisible()
+      await expect(
+        successView.getByRole('button', { name: 'Close' })
+      ).toBeVisible()
+      await expect(changePlan).toBeHidden()
+    } finally {
+      releasePostSubscribeRefresh()
+    }
   })
 })

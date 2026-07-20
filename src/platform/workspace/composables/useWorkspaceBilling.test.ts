@@ -282,59 +282,32 @@ describe('useWorkspaceBilling', () => {
   })
 
   describe('subscribe', () => {
-    it('exposes refreshed status and balance after a successful subscribe', async () => {
+    it('returns the response without refreshing billing state', async () => {
       mockWorkspaceApi.subscribe.mockResolvedValue({
         billing_op_id: 'op-1',
         status: 'subscribed'
       })
-      // Pre-subscribe state: free tier with zero balance.
-      mockWorkspaceApi.getBillingStatus
-        .mockResolvedValueOnce(freeStatus)
-        .mockResolvedValueOnce(activeStatus)
-      mockWorkspaceApi.getBillingBalance
-        .mockResolvedValueOnce(zeroBalance)
-        .mockResolvedValueOnce(positiveBalance)
+      mockWorkspaceApi.getBillingStatus.mockReturnValue(new Promise(() => {}))
+      mockWorkspaceApi.getBillingBalance.mockReturnValue(new Promise(() => {}))
 
       const billing = setupBilling()
-      await billing.fetchStatus()
-      await billing.fetchBalance()
-      expect(billing.isFreeTier.value).toBe(true)
-      expect(billing.balance.value?.amountMicros).toBe(0)
 
-      await billing.subscribe('pro', {
-        returnUrl: 'return',
-        cancelUrl: 'cancel'
+      await expect(
+        billing.subscribe('pro', {
+          returnUrl: 'return',
+          cancelUrl: 'cancel'
+        })
+      ).resolves.toStrictEqual({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
       })
 
       expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith('pro', {
         returnUrl: 'return',
         cancelUrl: 'cancel'
       })
-      // State reflects the refreshed post-subscribe responses.
-      expect(billing.subscription.value?.tier).toBe('CREATOR')
-      expect(billing.isFreeTier.value).toBe(false)
-      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
-    })
-
-    it('returns the successful response when the post-subscribe refresh fails', async () => {
-      mockWorkspaceApi.subscribe.mockResolvedValue({
-        billing_op_id: 'op-1',
-        status: 'subscribed'
-      })
-      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
-        new Error('refresh down')
-      )
-      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
-
-      const billing = setupBilling()
-
-      await expect(billing.subscribe('pro')).resolves.toStrictEqual({
-        billing_op_id: 'op-1',
-        status: 'subscribed'
-      })
-      expect(billing.error.value).toBe(
-        'Subscription succeeded, but billing state refresh failed'
-      )
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
     })
 
     it('propagates error and records message when subscribe fails', async () => {
