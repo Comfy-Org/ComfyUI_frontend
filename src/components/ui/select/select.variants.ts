@@ -43,7 +43,7 @@ export const selectDropdownClass =
 export const selectEmptyMessageClass = 'px-3 pb-4 text-sm text-muted-foreground'
 
 export const selectCountBadgeClass =
-  'flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background'
+  'flex size-3.5 items-center justify-center rounded-full bg-base-foreground text-[9px] font-semibold text-base-background'
 
 export function stopEscapeToDocument(event: KeyboardEvent) {
   if (event.key === 'Escape') {

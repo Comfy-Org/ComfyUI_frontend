@@ -18,9 +18,9 @@ export class TemplatesDialog {
       name: 'Filters'
     })
     this.filterBar = this.root.getByTestId('template-filter-bar')
-    this.clearFilters = this.root
-      .getByRole('banner')
-      .getByRole('button', { name: /Clear Filters/i })
+    this.clearFilters = this.filterBar.getByRole('button', {
+      name: /clear all filters/i
+    })
   }
 
   filterByHeading(name: string): Locator {

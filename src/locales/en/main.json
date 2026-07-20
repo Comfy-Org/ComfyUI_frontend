@@ -1147,7 +1147,8 @@
       "Generation Type": "Generation Type"
     },
     "categories": "Categories",
-    "resetFilters": "Clear Filters",
+    "clearAllFilters": "Clear all filters",
+    "filtersApplied": "{count} filter applied | {count} filters applied",
     "filtersButton": "Filters",
     "sorting": "Sort by",
     "loading": "Loading templates...",

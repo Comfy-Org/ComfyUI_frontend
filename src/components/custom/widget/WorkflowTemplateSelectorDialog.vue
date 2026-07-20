@@ -32,23 +32,15 @@
       </div>
     </template>
 
-    <template #header-right-area>
-      <Button
-        v-if="filteredCount !== totalCount"
-        variant="secondary"
-        size="lg"
-        class="hidden shrink-0 min-[880px]:inline-flex"
-        @click="resetFilters"
-      >
-        <i class="icon-[lucide--filter-x]" />
-        <span>{{ $t('templateWorkflows.resetFilters') }}</span>
-      </Button>
-    </template>
-
     <template #contentFilter>
       <div
         :ref="primeVueOverlay.overlayScopeRef"
-        class="@container/filters relative px-6 pb-4"
+        :class="
+          cn(
+            '@container/filters relative px-6',
+            hasActiveFilters ? 'pb-2' : 'pb-4'
+          )
+        "
         data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
@@ -107,15 +99,26 @@
               trigger-class="w-full border border-border-subtle bg-transparent"
             />
           </div>
+        </div>
+
+        <div v-if="hasActiveFilters" class="flex items-center pt-3">
+          <span
+            v-if="activeFilterCount > 0"
+            class="text-xs font-semibold text-muted-foreground"
+          >
+            {{
+              $t('templateWorkflows.filtersApplied', {
+                count: activeFilterCount
+              })
+            }}
+          </span>
           <Button
-            v-if="filteredCount !== totalCount"
-            variant="secondary"
-            size="md"
-            class="h-9 self-end px-4"
+            variant="link"
+            size="unset"
+            class="ml-auto text-xs font-normal text-base-foreground underline opacity-70 hover:opacity-100"
             @click="resetFilters"
           >
-            <i class="icon-[lucide--filter-x] size-3.5" />
-            <span>{{ $t('templateWorkflows.resetFilters') }}</span>
+            {{ $t('templateWorkflows.clearAllFilters') }}
           </Button>
         </div>
       </div>
@@ -622,7 +625,7 @@ const applySearchQuery = async (query: string) => {
 
 /**
  * Sync the visible search input when `searchQuery` is reset externally
- * (e.g. via the "Clear Filters" button).
+ * (e.g. via the "Clear all filters" action).
  */
 watch(searchQuery, (value) => {
   if (value !== searchInput.value) searchInput.value = value
@@ -689,6 +692,13 @@ const activeFilterCount = computed(
     selectedModelObjects.value.length +
     selectedUseCaseObjects.value.length +
     selectedRunsOnObjects.value.length
+)
+
+// Any filter chip or search query is set. Keyed off intent rather than the
+// result-count delta so the clear row still shows when a filter happens to
+// match every template (filteredCount === totalCount).
+const hasActiveFilters = computed(
+  () => activeFilterCount.value > 0 || hasActiveQuery.value
 )
 
 // UI state
