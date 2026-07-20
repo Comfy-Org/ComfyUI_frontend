@@ -1,34 +1,37 @@
 <template>
   <ProcessToast
-    v-if="hasActiveJob"
+    v-if="toastView"
     data-testid="queue-status-toast"
     class="pointer-events-auto"
-    :verb="t('g.running')"
-    :percent="totalPercent"
-    status="progress"
+    :verb="toastView.verb"
+    :percent="toastView.percent"
+    :status="toastView.status"
     :failed-count="failedCount"
     :expanded="expanded"
     hide-chevron
     progress-class="bg-base-foreground"
   >
     <template #action>
-      <div
-        class="mx-0.5 h-5 w-px shrink-0 self-center bg-interface-stroke"
-        aria-hidden="true"
-      />
+      <template v-if="toastView?.showStop">
+        <div
+          class="mx-0.5 h-5 w-px shrink-0 self-center bg-interface-stroke"
+          aria-hidden="true"
+        />
+        <Button
+          v-tooltip.bottom="stopTooltip"
+          variant="textonly"
+          size="sm"
+          class="gap-1 text-text-secondary"
+          :aria-label="t('processToast.stop')"
+          data-testid="queue-status-stop"
+          @click="interruptAll"
+        >
+          <i class="icon-[lucide--square] size-4 shrink-0" />
+          {{ t('processToast.stop') }}
+        </Button>
+      </template>
       <Button
-        v-tooltip.bottom="stopTooltip"
-        variant="textonly"
-        size="sm"
-        class="gap-1 text-text-secondary"
-        :aria-label="t('processToast.stop')"
-        data-testid="queue-status-stop"
-        @click="interruptAll"
-      >
-        <i class="icon-[lucide--square] size-4 shrink-0" />
-        {{ t('processToast.stop') }}
-      </Button>
-      <Button
+        v-if="activeJobs.length > 0"
         v-tooltip.bottom="expandTooltip"
         variant="textonly"
         size="icon-sm"
@@ -150,6 +153,7 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotificationBanners'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -170,8 +174,62 @@ const { jobItems } = useJobList()
 const expanded = ref(false)
 
 const runningCount = computed(() => queueStore.runningTasks.length)
+const pendingCount = computed(() => queueStore.pendingTasks.length)
 const isExecuting = computed(() => !executionStore.isIdle)
-const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
+
+/**
+ * Single surface for the whole job lifecycle: queued → running →
+ * completed/failed. Replaces the transient queue notification banners, reusing
+ * their completion/failure signal.
+ */
+const { currentNotification } = useQueueNotificationBanners()
+
+type ToastView = {
+  status: 'progress' | 'done' | 'failed'
+  verb: string
+  percent: number | null
+  showStop: boolean
+}
+
+const toastView = computed<ToastView | null>(() => {
+  if (runningCount.value > 0 || isExecuting.value) {
+    return {
+      status: 'progress',
+      verb: t('g.running'),
+      percent: totalPercent.value,
+      showStop: true
+    }
+  }
+  if (pendingCount.value > 0) {
+    return {
+      status: 'progress',
+      verb:
+        pendingCount.value > 1
+          ? t('queueStatus.queuedCount', { count: pendingCount.value })
+          : t('queueStatus.queued'),
+      percent: null,
+      showStop: true
+    }
+  }
+  const notification = currentNotification.value
+  if (notification?.type === 'completed') {
+    return {
+      status: 'done',
+      verb: t('queueStatus.completed'),
+      percent: null,
+      showStop: false
+    }
+  }
+  if (notification?.type === 'failed') {
+    return {
+      status: 'failed',
+      verb: t('queueStatus.jobFailed'),
+      percent: null,
+      showStop: false
+    }
+  }
+  return null
+})
 
 const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
   'running',
