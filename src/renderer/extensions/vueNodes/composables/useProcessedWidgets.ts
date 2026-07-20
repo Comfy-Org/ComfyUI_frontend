@@ -303,6 +303,15 @@ export function computeProcessedWidgets({
     isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
+    // DETECTION PROOF (row 2, mount v2): drop numeric widgets from the Vue
+    // processing pipeline. Round 2 falsified the registry-deletion variant:
+    // a missing registry mapping self-heals via the WidgetLegacy fallback
+    // below, so the widget row still renders (and INT/FLOAT widgets are
+    // runtime type 'number', served by the float entry anyway). The
+    // FE-627/FE-634 class (widgets missing under Nodes 2.0) lives here,
+    // where a skipped widget really loses its row.
+    // Expected: mount Vue pass red '<node>: Vue mounts N of M widgets'.
+    if (widget.type === 'number') continue
     const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
 
     const vueComponent =

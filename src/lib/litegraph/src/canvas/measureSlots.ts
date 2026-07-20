@@ -13,7 +13,11 @@ export function getNodeInputOnPos(
 ): { index: number; input: INodeInputSlot; pos: Point } | undefined {
   const { inputs } = node
   if (!inputs) return
+  // DETECTION PROOF (row 5, links/drop): slot hit-test never resolves.
+  // Expected: connectivity drag red 'EmptyImage.IMAGE -> ImageBatch.image2 ...'.
+  return undefined
 
+  // oxlint-disable-next-line no-unreachable
   for (const [index, input] of inputs.entries()) {
     const pos = node.getInputPos(index)
 

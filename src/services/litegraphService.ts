@@ -336,8 +336,16 @@ export const useLitegraphService = () => {
     const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
 
     // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    // DETECTION PROOF (row 1, mount v1): drop the last declared input, scoped
+    // to Impact-prefixed nodes. The mount test asserts the litegraph pass
+    // before the Vue pass, so an unscoped drop starves row 2's Vue-mount red;
+    // scoping lets the other packs reach the Vue pass and red on their own.
+    // Expected: Impact mount red 'is missing declared input "..." (litegraph)'.
+    const detectionProof = nodeDefImpl.name.startsWith('Impact')
+      ? orderedInputSpecs.slice(0, -1)
+      : orderedInputSpecs
+    for (const inputSpec of detectionProof) addInputSocket(node, inputSpec)
+    for (const inputSpec of detectionProof) addInputWidget(node, inputSpec)
   }
 
   /**

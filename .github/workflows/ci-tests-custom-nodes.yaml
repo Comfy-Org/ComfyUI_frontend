@@ -60,7 +60,10 @@ jobs:
       (github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # DETECTION PROOF (demo branch only): a green suite fits in 30, but with
+    # every surface deliberately broken the suite walks hundreds of failure
+    # paths (single re-runs, drains), so it needs far more headroom.
+    timeout-minutes: 90
     permissions:
       contents: read
     steps:
@@ -133,6 +136,42 @@ jobs:
             fi
             echo "::endgroup::"
           done
+
+      # DETECTION PROOF (rows 8-10): the pack-shipped bugs the suite is meant to
+      # catch live inside third-party pack repos, which CI clones fresh at their
+      # pins - a normal frontend commit cannot reach that code. This step, on the
+      # never-merge nathaniel/detection-proof branch ONLY, pokes one verified
+      # break into each cloned pack right after install, so the Pack-mode rows go
+      # red on real pack failures. Each break asserts it landed (grep) so a silent
+      # no-op cannot fake a pass. Do NOT port this step to any real suite branch.
+      - name: DETECTION PROOF - break packs (rows 8-10)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Row 8 (console/pageerror ledger, s10): Custom-Scripts showText.js
+          # logs a console.error when the node executes. onExecuted, not
+          # onConfigure: the wiring sweep configures nodes but queues no
+          # prompts, so an onConfigure error would red the sweep's console
+          # assert first and starve row 4's CONNECT_REJECTED signature.
+          # Expected: curated run (T1) red with `console errors during curated
+          # run` + the text + script URL.
+          f=ComfyUI/custom_nodes/ComfyUI-Custom-Scripts/web/js/showText.js
+          perl -pi -e "s/(onExecuted\?\.apply\(this, arguments\);)/\$1 console.error('DETECTION PROOF (row 8): pack showText.js onExecuted failure');/" "$f"
+          grep -q "DETECTION PROOF (row 8)" "$f" || { echo "::error::row 8 break did not apply"; exit 1; }
+          # Row 9 (execution runtime, s7): WAS `return_constant_number` raises
+          # on entry. Expected: auto-run tier red `Constant Number:
+          # EXECUTION_ERROR ... not in cannotRunAlone; a regression`.
+          f=ComfyUI/custom_nodes/was-node-suite-comfyui/WAS_Node_Suite.py
+          perl -pi -e 's/(def return_constant_number\(self, number_type, number, number_as_text=None\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/' "$f"
+          grep -q "DETECTION PROOF (row 9)" "$f" || { echo "::error::row 9 break did not apply"; exit 1; }
+          # Row 10 (registration sentinels, s5/s10): Impact renames the
+          # `ImpactInt` node-class key, so the node no longer registers under
+          # its expected class_type. Expected: the mount + curated tests that
+          # reference ImpactInt skip, and the "Forbid skipped tests" gate fails
+          # the job on `skipped != 0`.
+          f=ComfyUI/custom_nodes/ComfyUI-Impact-Pack/__init__.py
+          perl -pi -e 's/"ImpactInt": ImpactInt,/"ImpactIntDETECTIONPROOF": ImpactInt,/' "$f"
+          grep -q "ImpactIntDETECTIONPROOF" "$f" || { echo "::error::row 10 break did not apply"; exit 1; }
 
       # The VHS run-tier workflow reads input/plain_video.mp4.
       - name: Stage run-tier assets

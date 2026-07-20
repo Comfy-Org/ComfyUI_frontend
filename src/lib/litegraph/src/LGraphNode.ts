@@ -929,7 +929,9 @@ export class LGraphNode
         let i = 0
         for (const widget of this.widgets ?? []) {
           if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
+          // DETECTION PROOF (row 3, persistence): off-by-one drops the last
+          // widgets_values. Expected: persistence tier red '... on set-values reload'.
+          if (i >= info.widgets_values.length - 1) break
           widget.value = info.widgets_values[i++]
         }
       }
