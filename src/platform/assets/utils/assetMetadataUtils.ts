@@ -166,8 +166,11 @@ export function getAssetModelType(asset: AssetItem): string | null {
  * Builds the namespaced subtype tag the backend stores in `model_type:` mode.
  * The argument is a discovery folder_name (e.g. `checkpoints`,
  * `ultralytics_bbox`); the backend keeps the bare directory-path twin in sync.
+ * An already-namespaced input is returned unchanged rather than silently
+ * double-prefixed.
  */
 export function toModelTypeTag(folderName: string): string {
+  if (folderName.startsWith(MODEL_TYPE_TAG_PREFIX)) return folderName
   return `${MODEL_TYPE_TAG_PREFIX}${folderName}`
 }
 

@@ -864,6 +864,12 @@ describe('toModelTypeTag', () => {
       'model_type:ultralytics_bbox'
     )
   })
+
+  it('returns an already-namespaced value unchanged instead of double-prefixing', () => {
+    expect(toModelTypeTag('model_type:checkpoints')).toBe(
+      'model_type:checkpoints'
+    )
+  })
 })
 
 describe('getEditableModelType', () => {
