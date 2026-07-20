@@ -1490,37 +1490,33 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
-  // LearningHeroSection
-  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
-  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
-  'learning.heroTitle.line2': {
-    en: 'Build what doesn’t exist yet.',
-    'zh-CN': '构建尚未存在之物。'
+  // LearningDirectorySection
+  'learning.title': { en: 'Learning', 'zh-CN': '学习' },
+  'learning.tagline': {
+    en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
+    'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
-
-  // LearningFeaturedWorkflowSection
-  'learning.featured.title': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+  'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
+  'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
+  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.blurb': {
+    en: 'Every tutorial and workflow',
+    'zh-CN': '所有教程与工作流'
   },
-  'learning.featured.author': {
-    en: 'by Doug Hogan',
-    'zh-CN': '作者：Doug Hogan'
+  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.blurb': {
+    en: 'Compositing, cleanup and shot work',
+    'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.featured.description': {
-    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
-    'zh-CN':
-      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.blurb': {
+    en: 'Motion, retiming and character',
+    'zh-CN': '运动、变速与角色'
   },
-  'learning.featured.watchDemo': {
-    en: 'Watch Demo',
-    'zh-CN': '观看演示'
-  },
-
-  // LearningTutorialsSection
-  'learning.tutorials.heading': {
-    en: 'Featured Demos',
-    'zh-CN': '精选演示'
+  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.blurb': {
+    en: 'Product shots and campaign assets',
+    'zh-CN': '产品展示与广告素材'
   },
   'learning.tutorials.titlePrefix': {
     en: 'Learn how to:',
@@ -1536,15 +1532,6 @@ const translations = {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
   },
-
-  // LearningEventsSection
-  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
-  'learning.events.description': {
-    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
-    'zh-CN':
-      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
-  },
-  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },

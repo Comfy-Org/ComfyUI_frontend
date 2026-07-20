@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import LearningDirectorySection from '../../components/learning/LearningDirectorySection.vue'
+import CallToActionSection from '../../components/common/CallToActionSection.vue'
+import { getRoutes, externalLinks } from '../../config/routes'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout title="Learning - Comfy">
+  <LearningDirectorySection client:load />
+  <CallToActionSection
+    headingKey="learning.cta.heading"
+    primaryLabelKey="learning.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>
