@@ -4559,7 +4559,9 @@
   "agent": {
     "title": "Comfy Agent",
     "askComfyAgent": "Ask Comfy Agent",
-    "caption": "The agent edits your workflow as a draft. Only you can run it.",
+    "caption": "The AI agent can make mistakes. Double check your response.",
+    "runNotice": "The agent can modify the graph. You'll need to click run to execute the workflow.",
+    "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
     "alpha": "ALPHA",
