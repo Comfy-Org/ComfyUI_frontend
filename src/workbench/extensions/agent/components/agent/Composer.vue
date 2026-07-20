@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTimeoutFn } from '@vueuse/core'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -6,7 +7,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -57,8 +58,25 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
+const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
+const insertHighlight = ref(false)
+const { start: startInsertHighlight } = useTimeoutFn(
+  () => {
+    insertHighlight.value = false
+  },
+  1000,
+  { immediate: false }
+)
+
+function insert(text: string): void {
+  composer.insert(text)
+  insertHighlight.value = true
+  startInsertHighlight()
+  textareaRef.value?.focus()
+}
+
 defineExpose({
-  insert: composer.insert,
+  insert,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment
@@ -67,7 +85,13 @@ defineExpose({
 
 <template>
   <div
-    class="border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors"
+    :class="
+      cn(
+        'border-agent-border-strong bg-agent-surface-raised focus-within:border-agent-fg-muted flex flex-col rounded-2xl border transition-colors',
+        insertHighlight &&
+          'border-agent-accent focus-within:border-agent-accent'
+      )
+    "
   >
     <div v-if="selectionTags.length" class="flex flex-wrap gap-1.5 px-4 pt-3">
       <span
@@ -103,6 +127,7 @@ defineExpose({
     </div>
 
     <Textarea
+      ref="textareaRef"
       v-model="composer.draft.value"
       :placeholder="t('agent.placeholder')"
       rows="1"
