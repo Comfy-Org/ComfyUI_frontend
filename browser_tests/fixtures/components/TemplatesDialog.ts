@@ -6,6 +6,7 @@ export class TemplatesDialog {
   public readonly resultsCount: Locator
   public readonly mobileFiltersToggle: Locator
   public readonly filterBar: Locator
+  public readonly clearFilters: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.getByRole('dialog')
@@ -17,6 +18,9 @@ export class TemplatesDialog {
       name: 'Filters'
     })
     this.filterBar = this.root.getByTestId('template-filter-bar')
+    this.clearFilters = this.root
+      .getByRole('banner')
+      .getByRole('button', { name: /Clear Filters/i })
   }
 
   filterByHeading(name: string): Locator {
