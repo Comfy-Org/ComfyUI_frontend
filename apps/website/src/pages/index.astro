@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
-import HeroSection from "../components/home/HeroSection.vue";
+import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import UseCaseSection from "../components/home/UseCaseSection.vue";
@@ -43,7 +43,7 @@ const { siteUrl } = pageContext(
     "generative ai workflows",
   ]}
 >
-  <HeroSection client:load />
+  <HeroGraphSection client:load />
   <SocialProofBarSection />
   <ProductShowcaseSection client:load />
   <UseCaseSection client:load />
