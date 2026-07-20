@@ -22,7 +22,20 @@
         </span>
         <div class="relative">
           <i
-            v-if="workflowStatus"
+            v-if="isAgentEditing"
+            role="img"
+            :aria-label="t('g.agentWorking')"
+            class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-base-foreground group-hover:hidden motion-safe:animate-spin"
+          />
+          <span
+            v-else-if="showUnseenAgentDot"
+            role="img"
+            :aria-label="t('g.agentModified')"
+            data-testid="agent-modified-indicator"
+            class="absolute top-1/2 left-1/2 z-10 size-1.5 -translate-1/2 rounded-full bg-primary-background group-hover:hidden"
+          />
+          <i
+            v-else-if="workflowStatus"
             role="img"
             :aria-label="workflowStatusLabel"
             :class="
@@ -102,6 +115,7 @@ import {
   useExecutionStore,
   WORKFLOW_STATUS_I18N_KEYS
 } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -186,12 +200,25 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   failed: 'icon-[lucide--octagon-alert] text-destructive-background'
 }
 
+const tabActivity = useWorkflowTabActivityStore()
+
+const isAgentEditing = computed(
+  () => tabActivity.editingTabPath === props.workflowOption.workflow.path
+)
+
 // The active tab doesn't badge its own status - the user is already looking
 // at it. Background tabs surface the recorded execution status.
 const workflowStatus = computed(() =>
   isActiveTab.value
     ? undefined
     : executionStore.getWorkflowStatus(props.workflowOption.workflow)
+)
+
+// A failed run outranks the unseen-changes dot so the failure isn't masked.
+const showUnseenAgentDot = computed(
+  () =>
+    tabActivity.unseenModifiedPaths.has(props.workflowOption.workflow.path) &&
+    workflowStatus.value !== 'failed'
 )
 
 const workflowStatusLabel = computed(() =>
