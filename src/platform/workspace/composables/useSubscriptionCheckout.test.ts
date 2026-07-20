@@ -78,6 +78,7 @@ const {
   mockToastAdd,
   mockStartOperation,
   mockTrackBeginCheckout,
+  mockTrackMonthlySubscriptionSucceeded,
   mockShowDowngradeToPersonalDialog,
   mockUserId,
   mockIsTeamPlan,
@@ -92,6 +93,7 @@ const {
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
+  mockTrackMonthlySubscriptionSucceeded: vi.fn(),
   mockShowDowngradeToPersonalDialog: vi.fn(),
   mockUserId: { value: 'user-1' as string | null },
   mockIsTeamPlan: { value: false },
@@ -156,7 +158,7 @@ const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackMonthlySubscriptionSucceeded: vi.fn(),
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
     trackResubscribeClicked: mockTrackResubscribeClicked,
     trackBeginCheckout: mockTrackBeginCheckout
   })
@@ -195,6 +197,7 @@ describe('useSubscriptionCheckout', () => {
     vi.clearAllMocks()
     mockPlans.value = allPlans()
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
+    mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
     mockPermissions.value = {
@@ -364,6 +367,76 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
       expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    it('shows success without conversion telemetry for a scheduled Team downgrade', async () => {
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        effective_at: '2099-02-20T00:00:00Z',
+        is_immediate: false,
+        cost_today_cents: 0,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7_400,
+        new_plan: {
+          slug: 'creator-monthly',
+          tier: 'CREATOR' as const,
+          duration: 'MONTHLY' as const,
+          price_cents: 3_500,
+          credits_cents: 7_400,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 3_500,
+            total_credits_cents: 7_400
+          }
+        }
+      }
+      const response = {
+        status: 'subscribed' as const,
+        billing_op_id: 'existing-downgrade'
+      }
+      mockIsTeamPlan.value = true
+      mockShowDowngradeToPersonalDialog.mockResolvedValue({ preview, response })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tier: 'creator',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          billing_op_id: 'existing-downgrade'
+        })
+      )
+    })
+
+    it('tracks conversion success for an immediate Team downgrade', async () => {
+      mockIsTeamPlan.value = true
+      mockShowDowngradeToPersonalDialog.mockResolvedValue({
+        preview: { is_immediate: true },
+        response: {
+          status: 'subscribed',
+          billing_op_id: 'immediate-downgrade'
+        }
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
     })
   })
 
@@ -765,7 +838,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
-    it('transitions to success step on subscribed status', async () => {
+    it('shows existing success immediately without owning reconciliation', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -773,8 +846,8 @@ describe('useSubscriptionCheckout', () => {
         status: 'subscribed',
         billing_op_id: 'op-1'
       })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
+      mockFetchStatus.mockReturnValueOnce(new Promise(() => {}))
+      mockFetchBalance.mockReturnValueOnce(new Promise(() => {}))
 
       await checkout.handleAddCreditCard()
 
@@ -783,6 +856,9 @@ describe('useSubscriptionCheckout', () => {
         cancelUrl: 'https://platform.comfy.org/payment/failed'
       })
       expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockFetchStatus).not.toHaveBeenCalled()
+      expect(mockFetchBalance).not.toHaveBeenCalled()
     })
 
     it('skips begin_checkout when no user id is available', async () => {

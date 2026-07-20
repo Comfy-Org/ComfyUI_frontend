@@ -69,15 +69,8 @@ export function useSubscriptionCheckout(
 ) {
   const { t } = useI18n()
   const toast = useToast()
-  const {
-    subscribe,
-    previewSubscribe,
-    plans,
-    fetchStatus,
-    fetchBalance,
-    isTeamPlan,
-    resubscribe
-  } = useBillingContext()
+  const { subscribe, previewSubscribe, plans, isTeamPlan, resubscribe } =
+    useBillingContext()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -112,10 +105,21 @@ export function useSubscriptionCheckout(
     if (tierPlanType === 'team' || !isTeamPlan.value) return false
 
     const { useDialogService } = await import('@/services/dialogService')
-    await useDialogService().showDowngradeToPersonalDialog({
+    const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
+    if (!result) return true
+
+    previewData.value = result.preview
+    trackWorkspaceCheckoutStarted({
+      tier: tierKey,
+      cycle: selectedBillingCycle.value,
+      checkoutType: 'change',
+      billingOpId: result.response.billing_op_id,
+      paymentIntentSource
+    })
+    await handleSubscribeResponse(result.response, result.preview.is_immediate)
     return true
   }
 
@@ -295,13 +299,15 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void
+    response: SubscribeResponse | void,
+    shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) return
 
     if (response.status === 'subscribed') {
-      telemetry?.trackMonthlySubscriptionSucceeded()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      if (shouldTrackSubscriptionSuccess) {
+        telemetry?.trackMonthlySubscriptionSucceeded()
+      }
       checkoutStep.value = 'success'
       return
     }
