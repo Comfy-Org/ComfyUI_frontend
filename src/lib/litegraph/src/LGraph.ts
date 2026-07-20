@@ -1889,20 +1889,10 @@ export class LGraph
       groups: structuredClone([...groups].map((group) => group.serialize()))
     } satisfies ExportedSubgraph
 
-    const subgraph = this.createSubgraph(data)
-    subgraph.configure(data)
-    for (const node of subgraph.nodes) node.onGraphConfigured?.()
-    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
-
-    // Position the subgraph input nodes
-    subgraph.inputNode.arrange()
-    subgraph.outputNode.arrange()
-    const { boundingRect: inputRect } = subgraph.inputNode
-    const { boundingRect: outputRect } = subgraph.outputNode
-    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
-    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
-
-    // Remove items converted to subgraph
+    // Remove the originals before configuring the subgraph: its internal links
+    // reuse the boundary links' target slots, and the link store's first-wins
+    // registration would otherwise reject them in favour of the soon-removed
+    // originals that still hold those slots.
     for (const resolved of resolvedInputLinks)
       resolved.inputNode?.disconnectInput(
         resolved.inputNode.inputs.indexOf(resolved.input!),
@@ -1917,6 +1907,19 @@ export class LGraph
     for (const node of nodes) this.remove(node)
     for (const reroute of reroutes) this.removeReroute(reroute.id)
     for (const group of groups) this.remove(group)
+
+    const subgraph = this.createSubgraph(data)
+    subgraph.configure(data)
+    for (const node of subgraph.nodes) node.onGraphConfigured?.()
+    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
+
+    // Position the subgraph input nodes
+    subgraph.inputNode.arrange()
+    subgraph.outputNode.arrange()
+    const { boundingRect: inputRect } = subgraph.inputNode
+    const { boundingRect: outputRect } = subgraph.outputNode
+    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
+    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
 
     this.rootGraph.events.dispatch('convert-to-subgraph', {
       subgraph,
