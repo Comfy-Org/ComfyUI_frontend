@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-2"
+    class="ml-1 flex flex-col gap-1 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -14,7 +14,7 @@
         <div class="flex items-center gap-2">
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-(--workflow-tabs-height) shrink-0 items-center rounded-lg bg-comfy-menu-bg px-1 shadow-interface"
+            class="pointer-events-auto flex h-(--workflow-tabs-height) shrink-0 items-center rounded-lg bg-comfy-menu-bg px-2 shadow-interface"
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
@@ -220,7 +220,7 @@ const actionbarContainerClass = computed(() => {
     )
   }
 
-  return cn(base, 'px-1')
+  return cn(base, 'px-2')
 })
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
