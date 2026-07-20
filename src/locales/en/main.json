@@ -4565,6 +4565,8 @@
     "queued": "Queued",
     "jobFailed": "Failed",
     "locate": "Locate",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "completed": "Completed",
+    "queuedCount": "Queued ({count})"
   }
 }

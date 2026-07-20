@@ -120,7 +120,7 @@
         />
       </template>
       <QueueNotificationBannerHost
-        v-if="shouldShowQueueNotificationBanners"
+        v-if="showLegacyQueueUi && shouldShowQueueNotificationBanners"
         class="pr-1"
       />
     </div>
