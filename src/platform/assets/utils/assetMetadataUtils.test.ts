@@ -734,6 +734,15 @@ describe('getAssetNodeCategoryCandidates', () => {
     ).toEqual(['chatterbox/chatterbox_vc'])
   })
 
+  it('does not repeat a bare tag that duplicates its model_type value', () => {
+    expect(
+      getAssetNodeCategoryCandidates(
+        asset(['models', 'model_type:LLM', 'LLM']),
+        true
+      )
+    ).toEqual(['LLM'])
+  })
+
   it('returns no candidates when only reserved tags are present', () => {
     expect(
       getAssetNodeCategoryCandidates(asset(['models', 'missing']), true)

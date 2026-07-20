@@ -311,7 +311,9 @@ export function getAssetNodeCategoryCandidates(
     modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
 
   return [
-    ...[...modelTypes, ...bareTags.filter(isRelated)].sort(byDepthDesc),
+    ...[...new Set([...modelTypes, ...bareTags.filter(isRelated)])].sort(
+      byDepthDesc
+    ),
     ...bareTags.filter((tag) => !isRelated(tag)).sort(byDepthDesc)
   ]
 }
