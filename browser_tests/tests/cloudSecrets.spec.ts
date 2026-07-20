@@ -3,7 +3,10 @@ import type { Page, Route } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -168,8 +171,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   test('an entitled account can add, list, and delete a provider key', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -178,9 +179,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     const backend = await mockSecretsBackend(page, ['runway', 'gemini'])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
 
@@ -240,8 +239,6 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
   test('a non-entitled account never sees the gated providers', async ({
     page
   }) => {
-    test.slow()
-
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
       settings: BOOT_SETTINGS
@@ -251,9 +248,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await mockSecretsBackend(page, [])
 
     await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
 
     const settingsDialog = await openSecretsPanel(page)
     await expect(settingsDialog.getByText(/No secrets stored/)).toBeVisible()
