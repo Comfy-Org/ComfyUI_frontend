@@ -9,6 +9,7 @@ import type { ConflictChoice } from './safety/ConflictDialog.vue'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
+import ActiveTabStrip from './ActiveTabStrip.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -110,10 +111,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
   >
     <PanelHeader
       :is-maximized="isMaximized"
-      :active-tab="activeTab"
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
+    />
+
+    <ActiveTabStrip
+      :tab="activeTab"
+      class="border-agent-border shrink-0 border-b px-2 py-1.5"
     />
 
     <template v-if="showHistory">
