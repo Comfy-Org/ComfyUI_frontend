@@ -73,7 +73,7 @@ test.describe('Model library sidebar - asset mode', () => {
     const tab = comfyPage.menu.modelLibraryTab
 
     await expect(tab.refreshButton).toBeVisible()
-    await expect(tab.loadAllFoldersButton).toBeHidden()
+    await expect(tab.loadAllFoldersButton).toHaveCount(0)
 
     // Models render from the eager walk on expansion, with loader_path
     // subdirectories as nested folders.
@@ -99,7 +99,7 @@ test.describe('Model library sidebar - asset mode', () => {
     // the default model-extension list, hiding non-model noise.
     await tab.getFolderRowByLabel('loras').click()
     await expect(tab.getLeafByLabel('detail_enhancer_v1.2')).toBeVisible()
-    await expect(tab.getLeafByLabel('README')).toBeHidden()
+    await expect(tab.getLeafByLabel('README')).toHaveCount(0)
   })
 
   test('Refresh seeds a backend rescan', async ({ comfyPage, assetApi }) => {
@@ -129,7 +129,7 @@ test.describe('Model library sidebar - asset mode', () => {
 
     await tab.getFolderRowByLabel('checkpoints').click()
     await expect(tab.getLeafByLabel('v1-5-pruned-emaonly')).toBeVisible()
-    await expect(tab.getLeafByLabel('freshly_scanned')).toBeHidden()
+    await expect(tab.getLeafByLabel('freshly_scanned')).toHaveCount(0)
 
     assetApi.configure(
       withModels([...WALK_ASSETS, MODEL_TYPE_CHECKPOINT_SCANNED])
