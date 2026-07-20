@@ -176,8 +176,15 @@ function resetDraft(): void {
   saveError.value = false
 }
 
-watch([governedWorkspaceId, partnerNodes, policy], resetDraft, {
-  immediate: true
+watch([governedWorkspaceId, policy], resetDraft, { immediate: true })
+
+watch(partnerNodes, (nodes) => {
+  draftNodes.value = Object.fromEntries(
+    nodes.map((node) => [
+      node.id,
+      draftNodes.value[node.id] ?? originalNodeValue(node.id)
+    ])
+  )
 })
 
 watch(

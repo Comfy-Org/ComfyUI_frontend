@@ -109,11 +109,15 @@ const showAllowlistTab = computed(
 )
 const activeTab = ref(defaultTab)
 
-watch(showAllowlistTab, (isVisible) => {
-  if (!isVisible && activeTab.value === 'allowlist') {
-    activeTab.value = defaultTab === 'allowlist' ? 'plan' : defaultTab
-  }
-})
+watch(
+  showAllowlistTab,
+  (isVisible) => {
+    if (!isVisible && activeTab.value === 'allowlist') {
+      activeTab.value = defaultTab === 'allowlist' ? 'plan' : defaultTab
+    }
+  },
+  { immediate: true }
+)
 
 const showMembersTabCount = computed(
   () => hasTeamPlan.value && members.value.length > 1

@@ -243,6 +243,15 @@ describe('WorkspacePanelContent allowlist tab', () => {
     ).toBeNull()
   })
 
+  it('falls back when allowlist access is unavailable on mount', () => {
+    mockWorkspaceRole.value = 'member'
+    renderComponent('allowlist')
+
+    expect(
+      screen.getByRole('tab', { name: 'workspacePanel.tabs.planCredits' })
+    ).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('falls back to a valid tab when allowlist access is lost', async () => {
     renderComponent('allowlist')
 

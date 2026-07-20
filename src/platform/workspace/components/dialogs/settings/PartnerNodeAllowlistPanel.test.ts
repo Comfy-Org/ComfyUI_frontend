@@ -198,6 +198,19 @@ describe('PartnerNodeAllowlistPanel', () => {
     expect(screen.getByText('Google')).toBeInTheDocument()
   })
 
+  it('preserves draft changes when the partner node catalog refreshes', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('switch', { name: 'Allow Flux Fill' }))
+    state.partnerNodes.value = [...state.partnerNodes.value]
+    await nextTick()
+
+    expect(
+      screen.getByRole('switch', { name: 'Allow Flux Fill' })
+    ).toBeChecked()
+  })
+
   it('offers retry when the policy is unavailable', async () => {
     const user = userEvent.setup()
     state.status.value = 'unavailable'
