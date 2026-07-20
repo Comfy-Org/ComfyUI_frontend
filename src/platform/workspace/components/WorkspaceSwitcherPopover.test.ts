@@ -103,24 +103,60 @@ describe('WorkspaceSwitcherPopover', () => {
     billingMocks.subscription.value = null
   })
 
-  it('shows a renamed personal workspace name', () => {
-    renderComponent({
-      workspaces: [
-        createWorkspaceState({
-          id: 'ws-personal',
-          name: 'My Creative Workspace',
-          type: 'personal',
-          role: 'owner'
-        })
-      ]
-    })
+  it.for([
+    {
+      type: 'personal',
+      plan: 'free',
+      isSubscribed: true,
+      subscriptionPlan: null,
+      subscriptionTier: 'FREE'
+    },
+    {
+      type: 'personal',
+      plan: 'paid',
+      isSubscribed: true,
+      subscriptionPlan: 'PRO_MONTHLY',
+      subscriptionTier: 'PRO'
+    },
+    {
+      type: 'team',
+      plan: 'free',
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null
+    },
+    {
+      type: 'team',
+      plan: 'paid',
+      isSubscribed: true,
+      subscriptionPlan: 'team_per_credit_monthly',
+      subscriptionTier: null
+    }
+  ] as const)(
+    'shows a renamed $type workspace name on a $plan plan',
+    ({ type, isSubscribed, subscriptionPlan, subscriptionTier }) => {
+      renderComponent({
+        workspaces: [
+          createWorkspaceState({
+            id: `ws-${type}`,
+            name: 'My Creative Workspace',
+            type,
+            role: 'owner',
+            isSubscribed,
+            subscriptionPlan,
+            subscriptionTier
+          })
+        ],
+        activeWorkspaceId: `ws-${type}`
+      })
 
-    expect(screen.getByText('My Creative Workspace')).toHaveAttribute(
-      'title',
-      'My Creative Workspace'
-    )
-    expect(screen.queryByText('Personal')).not.toBeInTheDocument()
-  })
+      expect(screen.getByText('My Creative Workspace')).toHaveAttribute(
+        'title',
+        'My Creative Workspace'
+      )
+      expect(screen.queryByText('Personal')).not.toBeInTheDocument()
+    }
+  )
 
   it('exposes the full team workspace name as a tooltip on the row', () => {
     renderComponent()
