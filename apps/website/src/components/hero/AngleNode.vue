@@ -112,29 +112,29 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="relative size-full rounded-[1.25em] border border-white/12 bg-[#242428] p-[0.9em]"
+    class="relative flex size-full flex-col rounded-[1.25em] border border-white/12 bg-[#242428]"
   >
-    <span
-      class="bg-primary-comfy-yellow absolute top-0 left-[1.25em] size-[0.55em] -translate-y-1/2 rounded-full"
-    />
-    <div
-      class="absolute top-0 right-[1.25em] flex -translate-y-1/2 items-center gap-[0.5em]"
-    >
-      <span
-        class="font-formula bg-[#242428] text-[0.7em] font-semibold tracking-[0.14em] text-white"
-      >
-        3D ANGLE
-      </span>
+    <div class="flex h-[2.25em] shrink-0 items-center px-[1.05em]">
       <span class="bg-primary-comfy-yellow size-[0.55em] rounded-full" />
+      <span class="ml-auto flex items-center gap-[0.5em]">
+        <span
+          class="font-formula text-[0.75em] font-semibold tracking-[0.14em] text-white"
+        >
+          3D ANGLE
+        </span>
+        <span class="bg-primary-comfy-yellow size-[0.55em] rounded-full" />
+      </span>
     </div>
 
-    <div
-      ref="sceneContainer"
-      data-camera-scene
-      class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#3a3a3e]"
-      :class="sceneReady ? 'opacity-100' : 'opacity-0'"
-      style="transition: opacity 300ms"
-    />
+    <div class="min-h-0 flex-1 px-[0.9em] pb-[0.9em]">
+      <div
+        ref="sceneContainer"
+        data-camera-scene
+        class="relative size-full touch-none overflow-hidden rounded-[0.75em] bg-[#3a3a3e]"
+        :class="sceneReady ? 'opacity-100' : 'opacity-0'"
+        style="transition: opacity 300ms"
+      />
+    </div>
 
     <div class="sr-only">
       <label>

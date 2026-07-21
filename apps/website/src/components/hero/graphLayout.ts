@@ -34,8 +34,8 @@ export const PORTS: Record<
   Port
 > = {
   inputOut: { el: 'input', dx: 30, dy: 8.2 },
-  angleIn: { el: 'angle', dx: 0.9, dy: 0 },
-  angleOut: { el: 'angle', dx: 19.1, dy: 0 },
+  angleIn: { el: 'angle', dx: 1.3, dy: 1.125 },
+  angleOut: { el: 'angle', dx: 18.7, dy: 1.125 },
   outputIn: { el: 'output', dx: 0.9, dy: 2.9 }
 }
 
