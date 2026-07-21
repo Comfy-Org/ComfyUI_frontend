@@ -22,6 +22,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
 describe('useEduPricing', () => {
   it('is inactive unless both the flag and the customer marker are set', () => {
     const { isEduPricingActive } = useEduPricing()
@@ -37,5 +39,16 @@ describe('useEduPricing', () => {
     mockEduFlag.value = true
     mockIsEduCustomer.value = true
     expect(isEduPricingActive.value).toBe(true)
+  })
+
+  it('dev override fakes the customer marker', () => {
+    mockEduFlag.value = true
+    mockIsEduCustomer.value = false
+    localStorage.setItem('ff:edu_customer', 'true')
+
+    const { isEduPricingActive } = useEduPricing()
+    expect(isEduPricingActive.value).toBe(true)
+
+    localStorage.removeItem('ff:edu_customer')
   })
 })
