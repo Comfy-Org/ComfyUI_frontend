@@ -217,7 +217,7 @@ function node(
   }
 }
 
-function cte(id: number, conditioningLink: number, text: string) {
+function clipNode(id: number, conditioningLink: number, text: string) {
   return node(id, 'CLIPTextEncode', {
     inputs: [{ name: 'text', type: 'STRING' }],
     outputs: [
@@ -232,8 +232,8 @@ describe('resolveRoles — arbitrary (non-curated) graphs', () => {
     const roles = resolveRoles(
       workflow(
         [
-          cte(6, 4, 'a red fox'),
-          cte(7, 6, 'blurry'),
+          clipNode(6, 4, 'a red fox'),
+          clipNode(7, 6, 'blurry'),
           node(3, 'KSampler', {
             inputs: [
               { name: 'positive', type: 'CONDITIONING', link: 4 },
@@ -267,7 +267,7 @@ describe('resolveRoles — arbitrary (non-curated) graphs', () => {
           node(1, 'LoadImage', {
             outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [10] }]
           }),
-          cte(2, 11, 'dancing'),
+          clipNode(2, 11, 'dancing'),
           node(3, 'KSamplerAdvanced', {
             inputs: [{ name: 'positive', type: 'CONDITIONING', link: 11 }]
           }),
@@ -294,7 +294,7 @@ describe('resolveRoles — arbitrary (non-curated) graphs', () => {
     const roles = resolveRoles(
       workflow(
         [
-          cte(6, 4, 'x'),
+          clipNode(6, 4, 'x'),
           node(3, 'KSampler', {
             inputs: [{ name: 'positive', type: 'CONDITIONING', link: 4 }]
           }),
@@ -322,7 +322,7 @@ describe('resolveRoles — arbitrary (non-curated) graphs', () => {
       ...workflow(
         [
           node(1, subgraphId, { inputs: [] }),
-          cte(6, 4, 'a red fox'),
+          clipNode(6, 4, 'a red fox'),
           node(3, 'KSampler', {
             inputs: [{ name: 'positive', type: 'CONDITIONING', link: 4 }]
           }),

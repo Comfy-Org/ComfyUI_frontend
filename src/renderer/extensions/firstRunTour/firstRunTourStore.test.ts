@@ -273,8 +273,10 @@ describe('firstRunTourStore', () => {
 
     await store.captureResultMedia()
 
-    // A second success must not overwrite the first captured result.
-    expect(store.resultMedia).toEqual({
+    expect(
+      store.resultMedia,
+      'A second success must not overwrite the first captured result'
+    ).toEqual({
       url: 'blob:sink-output',
       kind: 'image'
     })

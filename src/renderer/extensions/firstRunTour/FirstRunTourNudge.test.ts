@@ -7,6 +7,8 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import FirstRunTourNudge from '@/renderer/extensions/firstRunTour/FirstRunTourNudge.vue'
+import { useFirstRunTourStore } from '@/renderer/extensions/firstRunTour/firstRunTourStore'
 
 const mocks = vi.hoisted(() => ({
   show: vi.fn(),
@@ -32,9 +34,6 @@ vi.mock('@/stores/dialogStore', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({ app: { canvas: null } }))
-
-import FirstRunTourNudge from './FirstRunTourNudge.vue'
-import { useFirstRunTourStore } from './firstRunTourStore'
 
 const i18n = createI18n({
   legacy: false,

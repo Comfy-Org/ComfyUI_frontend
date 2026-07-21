@@ -5,7 +5,14 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
+import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboardingEntryStore'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import GettingStartedScreen from '@/renderer/extensions/firstRunTour/GettingStartedScreen.vue'
+import {
+  FALLBACK_TEMPLATE_IDS,
+  tutorialCards
+} from '@/renderer/extensions/firstRunTour/tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   loadWorkflowTemplate: vi.fn(async () => true),
@@ -63,12 +70,6 @@ vi.mock(
 vi.mock('./useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.controllerBeginTour })
 }))
-
-import GettingStartedScreen from './GettingStartedScreen.vue'
-import { FALLBACK_TEMPLATE_IDS, tutorialCards } from './tutorialCards'
-import { useOnboardingEntryStore } from '@/platform/workflow/persistence/onboardingEntryStore'
-
-import enMessages from '@/locales/en/main.json'
 
 const i18n = createI18n({
   legacy: false,
@@ -144,11 +145,10 @@ describe('GettingStartedScreen', () => {
     mocks.getTemplateThumbnailUrl.mockClear()
     await userEvent.click(screen.getByRole('tab', { name: /tutorials/i }))
 
-    // Every tutorial resolves a thumbnail from some loaded template, so none
-    // renders an empty src.
-    expect(mocks.getTemplateThumbnailUrl).toHaveBeenCalledTimes(
-      tutorialCards.length
-    )
+    expect(
+      mocks.getTemplateThumbnailUrl,
+      'Every tutorial resolves a thumbnail from some loaded template'
+    ).toHaveBeenCalledTimes(tutorialCards.length)
   })
 
   it('loads the templates store when opened unloaded so cards can resolve', () => {

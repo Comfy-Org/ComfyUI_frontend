@@ -3,6 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  INITIAL_SETTLE,
+  TOUR_FOCUS_DURATION_MS,
+  canvasTransformValid,
+  focusFillFor,
+  focusNodes,
+  maskRectsFor,
+  nodeClientRect,
+  nodesPresent,
+  rectIntersectsViewport,
+  trackSettle
+} from '@/renderer/extensions/firstRunTour/canvasSpotlightAdapter'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -26,19 +38,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     }
   })
 }))
-
-import {
-  INITIAL_SETTLE,
-  TOUR_FOCUS_DURATION_MS,
-  canvasTransformValid,
-  focusFillFor,
-  focusNodes,
-  maskRectsFor,
-  nodeClientRect,
-  nodesPresent,
-  rectIntersectsViewport,
-  trackSettle
-} from './canvasSpotlightAdapter'
 
 function fakeCanvas(options: {
   offset?: [number, number]

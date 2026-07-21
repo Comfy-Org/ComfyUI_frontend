@@ -155,10 +155,12 @@ describe('FirstRunTourOverlay', () => {
 
     renderOverlay()
 
-    await vi.waitFor(() => {
-      // Holes cover both revealed nodes (1 & 2); rings cover only spotlit node 2.
-      expect(screen.getAllByTestId('onboarding-spotlight')).toHaveLength(1)
-    })
+    await vi.waitFor(() =>
+      expect(
+        screen.getAllByTestId('onboarding-spotlight'),
+        'rings cover only spotlit node 2'
+      ).toHaveLength(1)
+    )
   })
 
   it('shows the step counter derived from stepIndex and the step total', async () => {

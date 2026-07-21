@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -9,7 +10,7 @@ interface FakeNodeDef {
   output_node: boolean
   outputs: { type: string }[]
 }
-const nodeDefsByName = vi.hoisted(() => ({}) as Record<string, FakeNodeDef>)
+const nodeDefsByName = vi.hoisted((): Record<string, FakeNodeDef> => ({}))
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({ nodeDefsByName })
 }))
@@ -20,10 +21,10 @@ type Lookup = (
   type: string
 ) => { isOutputNode: boolean; producesVideo: boolean } | null
 
-const workflow = {} as ComfyWorkflowJSON
+const workflow: ComfyWorkflowJSON = fromPartial({})
 
 function capturedLookup(): Lookup {
-  return resolveRoles.mock.calls[0][2] as Lookup
+  return resolveRoles.mock.calls[0][2]
 }
 
 describe('resolveTourRoles', () => {
