@@ -12,6 +12,8 @@ const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
+const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
+const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
 
 vi.mock('vue', async (importOriginal) => {
@@ -61,6 +63,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isFreeTier: mockIsFreeTier,
     isLegacyTeamPlan: mockIsLegacyTeamPlan,
+    isTeamPlan: mockIsTeamPlan,
+    currentPlanSlug: mockCurrentPlanSlug,
     tier: mockTier
   })
 }))
@@ -99,6 +103,8 @@ describe('useSubscriptionDialog', () => {
     mockTier.value = 'FREE'
     mockShouldUseWorkspaceBilling.value = false
     mockIsLegacyTeamPlan.value = false
+    mockIsTeamPlan.value = false
+    mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
 
     try {
@@ -164,12 +170,38 @@ describe('useSubscriptionDialog', () => {
     it('opens the team tab when planMode is forced from a personal workspace', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = true
+      mockCurrentPlanSlug.value = 'creator-monthly'
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable({ planMode: 'team' })
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('team')
+    })
+
+    it('defaults to the team tab for a Team plan in a personal workspace', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = true
+      mockIsTeamPlan.value = true
+      mockCurrentPlanSlug.value = 'team_per_credit_monthly'
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('team')
+    })
+
+    it('defaults to the personal tab for a personal plan in a team workspace', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCurrentPlanSlug.value = 'creator-monthly'
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('personal')
     })
 
     it('uses the legacy table (with onChooseTeam) on the legacy billing flow', () => {
@@ -218,7 +250,7 @@ describe('useSubscriptionDialog', () => {
       expectRekaPricingDialogProps(dialogComponentProps)
     })
 
-    it('keeps a non-legacy (credit-slider) team subscriber on the unified table', () => {
+    it('defaults an unsubscribed team workspace to the team tab', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = false
       mockIsLegacyTeamPlan.value = false
@@ -228,6 +260,21 @@ describe('useSubscriptionDialog', () => {
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('team')
+    })
+
+    it('shows the read-only member dialog in a personal workspace', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = true
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onClose')
+      expect(props).not.toHaveProperty('reason')
+      expect(props).not.toHaveProperty('initialPlanMode')
     })
 
     it('tracks modal_opened with the caller reason and current tier', () => {
@@ -266,6 +313,21 @@ describe('useSubscriptionDialog', () => {
       expect(mockTrackSubscription).not.toHaveBeenCalled()
     })
 
+    it('shows the read-only member dialog for out-of-credits too, not the pricing table', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsInPersonalWorkspace.value = false
+      mockCanManageSubscription.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'out_of_credits' })
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onClose')
+      expect(props).not.toHaveProperty('reason')
+      expect(props).not.toHaveProperty('initialPlanMode')
+    })
+
     it('does not track on non-cloud', () => {
       mockIsCloud.value = false
       const { showPricingTable } = useSubscriptionDialog()
@@ -287,6 +349,24 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'free-tier-info' })
       )
+    })
+
+    it('checks workspace member permission before the personal free-tier path', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = true
+      mockCanManageSubscription.value = false
+      const { show } = useSubscriptionDialog()
+
+      show()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'subscription-required' })
+      )
+      expect(mockShowLayoutDialog).not.toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'free-tier-info' })
+      )
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
     })
 
     it('falls back to the pricing table for a non-free-tier user', () => {
@@ -391,13 +471,18 @@ describe('useSubscriptionDialog', () => {
     it('shows pricing table and clears intent when in team workspace', () => {
       sessionStorage.setItem('comfy:resume-team-pricing', '1')
       mockIsInPersonalWorkspace.value = false
+      mockShouldUseWorkspaceBilling.value = true
+      mockCurrentPlanSlug.value = 'creator-monthly'
 
       const { resumePendingPricingFlow } = useSubscriptionDialog()
       resumePendingPricingFlow()
 
       expect(sessionStorage.getItem('comfy:resume-team-pricing')).toBeNull()
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
-        expect.objectContaining({ key: 'subscription-required' })
+        expect.objectContaining({
+          key: 'subscription-required',
+          props: expect.objectContaining({ initialPlanMode: 'team' })
+        })
       )
     })
 

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { computed, ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
-import SectionLabel from '../../components/common/SectionLabel.vue'
+import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { captureMcpClientTabClick } from '../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const agentCommand = t('mcp.setup.option1.command', locale).replace(
+const agentCommand = t('mcp.setup.agent.command', locale).replace(
   '{url}',
   externalLinks.docsMcp
 )
@@ -21,19 +23,35 @@ interface McpClient {
   step: string
   command?: string
   link?: { label: string; href: string }
+  manualTitle?: string
+  showAgentCard: boolean
+  // Walkthrough clip shown in place of the agent card (source: docs.comfy.org/agent-tools/mcp)
+  video?: string
 }
 
 const clients: McpClient[] = [
   {
-    id: 'claude-code',
-    name: 'Claude Code',
-    step: t('mcp.setup.clients.claudeCode.step', locale),
-    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`
-  },
-  {
     id: 'claude-desktop',
     name: 'Claude Desktop',
-    step: t('mcp.setup.clients.claudeDesktop.step', locale)
+    step: t('mcp.setup.clients.claudeDesktop.step', locale),
+    manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
+    showAgentCard: false,
+    video: '/videos/mcp/setup-claude-desktop-v1.mp4'
+  },
+  {
+    id: 'claude-code',
+    name: 'Claude Code Terminal',
+    step: t('mcp.setup.clients.claudeCode.step', locale),
+    command: `claude mcp add --transport http comfy-cloud ${externalLinks.mcpEndpoint}`,
+    showAgentCard: true
+  },
+  {
+    id: 'codex',
+    name: 'Codex',
+    step: t('mcp.setup.clients.codex.step', locale),
+    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
+    showAgentCard: false,
+    video: '/videos/mcp/setup-codex-oauth-v1.mp4'
   },
   {
     id: 'cursor',
@@ -42,13 +60,15 @@ const clients: McpClient[] = [
     link: {
       label: t('mcp.setup.clients.cursor.linkLabel', locale),
       href: externalLinks.apiKeys
-    }
+    },
+    showAgentCard: true
   },
   {
-    id: 'codex',
-    name: 'Codex',
-    step: t('mcp.setup.clients.codex.step', locale),
-    command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`
+    id: 'openclaw',
+    name: 'OpenClaw',
+    step: t('mcp.setup.clients.openclaw.step', locale),
+    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
+    showAgentCard: true
   },
   {
     id: 'other',
@@ -57,9 +77,37 @@ const clients: McpClient[] = [
     link: {
       label: t('mcp.setup.clients.other.linkLabel', locale),
       href: externalLinks.docsMcp
-    }
+    },
+    showAgentCard: true
   }
 ]
+
+const activeClientId = ref(clients[0].id)
+const activeClient = computed(
+  () =>
+    clients.find((client) => client.id === activeClientId.value) ?? clients[0]
+)
+const manualTitle = computed(
+  () => activeClient.value.manualTitle ?? t('mcp.setup.manual.title', locale)
+)
+
+// reka-ui re-emits update:modelValue even when the value is unchanged
+// (re-clicking the active tab), so dedupe before capturing.
+let lastTrackedClientId: string | undefined
+function onClientTabChange(value: string | number | undefined) {
+  if (!value) return
+  const id = String(value)
+  if (id === lastTrackedClientId) return
+  lastTrackedClientId = id
+  captureMcpClientTabClick(id)
+}
+
+const walkthroughLabel = computed(() =>
+  t('mcp.setup.walkthroughAlt', locale).replace(
+    '{client}',
+    activeClient.value.name
+  )
+)
 
 const copyLabel = t('ui.copy', locale)
 const copiedLabel = t('ui.copied', locale)
@@ -83,77 +131,48 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
-    <div class="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div
-        class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+    <TabsRoot
+      v-model="activeClientId"
+      activation-mode="manual"
+      class="mt-10 block"
+      @update:model-value="onClientTabChange"
+    >
+      <TabsList
+        :aria-label="t('mcp.setup.manual.tabsLabel', locale)"
+        class="grid grid-cols-1 gap-px rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 min-[360px]:grid-cols-2 lg:inline-flex lg:flex-nowrap"
       >
-        <SectionLabel>{{ t('mcp.setup.option1.label', locale) }}</SectionLabel>
-        <h3
-          class="mt-3 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
+        <TabsTrigger
+          v-for="client in clients"
+          :key="client.id"
+          :value="client.id"
+          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
         >
-          {{ t('mcp.setup.option1.title', locale) }}
-        </h3>
-        <p class="mt-3 text-sm text-smoke-700">
-          {{ t('mcp.setup.option1.description', locale) }}
-        </p>
-        <div class="mt-6">
-          <CopyableField
-            :value="agentCommand"
-            :copy-label="copyLabel"
-            :copied-label="copiedLabel"
-          />
-        </div>
-        <p class="mt-auto pt-6 text-sm text-smoke-700">
-          {{ t('mcp.setup.skillsNote', locale)
-          }}<a
-            :href="externalLinks.mcpSkills"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
-            >{{ t('mcp.setup.skillsLink', locale) }}</a
-          >
-        </p>
-      </div>
+          {{ client.name }}
+        </TabsTrigger>
+      </TabsList>
 
-      <div
-        class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
-      >
-        <SectionLabel>{{ t('mcp.setup.option2.label', locale) }}</SectionLabel>
-        <h3
-          class="mt-3 text-xl font-light text-primary-comfy-canvas lg:text-2xl"
+      <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div
+          class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
         >
-          {{ t('mcp.setup.option2.title', locale) }}
-        </h3>
-        <p class="mt-3 text-sm text-smoke-700">
-          {{ t('mcp.setup.option2.description', locale) }}
-        </p>
-        <div class="mt-6">
-          <CopyableField
-            :value="externalLinks.mcpEndpoint"
-            :copy-label="copyLabel"
-            :copied-label="copiedLabel"
-          />
-        </div>
-
-        <TabsRoot default-value="claude-code" class="mt-6">
-          <TabsList
-            :aria-label="t('mcp.setup.option2.tabsLabel', locale)"
-            class="flex flex-wrap gap-2"
-          >
-            <TabsTrigger
-              v-for="client in clients"
-              :key="client.id"
-              :value="client.id"
-              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-full px-4 py-2 text-xs font-bold tracking-wider text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
-            >
-              {{ client.name }}
-            </TabsTrigger>
-          </TabsList>
+          <h3 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl">
+            {{ manualTitle }}
+          </h3>
+          <p class="mt-3 text-sm text-smoke-700">
+            {{ t('mcp.setup.manual.description', locale) }}
+          </p>
+          <div class="mt-6">
+            <CopyableField
+              :value="externalLinks.mcpEndpoint"
+              :copy-label="copyLabel"
+              :copied-label="copiedLabel"
+            />
+          </div>
           <TabsContent
             v-for="client in clients"
             :key="client.id"
             :value="client.id"
-            class="mt-4 flex min-h-24 flex-col gap-3"
+            class="mt-6 flex min-h-36 flex-col gap-3"
           >
             <p class="text-sm text-smoke-700">
               {{ client.step
@@ -173,8 +192,57 @@ const copiedLabel = t('ui.copied', locale)
               :copied-label="copiedLabel"
             />
           </TabsContent>
-        </TabsRoot>
+        </div>
+
+        <div
+          class="bg-transparency-white-t4 flex flex-col rounded-3xl"
+          :class="
+            activeClient.showAgentCard
+              ? 'p-6 lg:p-8'
+              : 'relative overflow-hidden max-lg:aspect-video'
+          "
+        >
+          <template v-if="activeClient.showAgentCard">
+            <h3
+              class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
+            >
+              {{ t('mcp.setup.agent.title', locale) }}
+            </h3>
+            <p class="mt-3 text-sm text-smoke-700">
+              {{ t('mcp.setup.agent.description', locale) }}
+            </p>
+            <div class="mt-6">
+              <CopyableField
+                :value="agentCommand"
+                :copy-label="copyLabel"
+                :copied-label="copiedLabel"
+              />
+            </div>
+            <p class="mt-6 text-sm text-smoke-700">
+              {{ t('mcp.setup.skillsNote', locale)
+              }}<a
+                :href="externalLinks.mcpSkills"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+                >{{ t('mcp.setup.skillsLink', locale) }}</a
+              >
+            </p>
+          </template>
+          <VideoPlayer
+            v-else-if="activeClient.video"
+            :key="activeClient.id"
+            :locale="locale"
+            :aria-label="walkthroughLabel"
+            :src="activeClient.video"
+            autoplay
+            loop
+            hide-controls
+            fit="contain"
+            class="absolute inset-0 size-full bg-transparent"
+          />
+        </div>
       </div>
-    </div>
+    </TabsRoot>
   </section>
 </template>

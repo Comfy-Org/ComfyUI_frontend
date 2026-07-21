@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedBillingControlEnabled,
   cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
@@ -24,6 +25,7 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
+  PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -33,6 +35,8 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile'
 }
 
@@ -133,6 +137,13 @@ export function useFeatureFlags() {
         cachedTeamWorkspacesEnabled
       )
     },
+    get partnerNodeGovernanceEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
+        remoteConfig.value.partner_node_governance_enabled,
+        false
+      )
+    },
     get userSecretsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
@@ -200,6 +211,23 @@ export function useFeatureFlags() {
         ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
         remoteConfig.value.consolidated_billing_enabled,
         cachedConsolidatedBillingEnabled
+      )
+    },
+    get billingControlEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.BILLING_CONTROL_ENABLED,
+        remoteConfig.value.billing_control_enabled,
+        cachedBillingControlEnabled
+      )
+    },
+    get freeTierJobAllowanceEnabled() {
+      const config = remoteConfig.value as typeof remoteConfig.value & {
+        free_tier_job_allowance_enabled?: boolean
+      }
+      return resolveFlag(
+        ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
+        config.free_tier_job_allowance_enabled,
+        false
       )
     },
     get signupTurnstileMode() {
