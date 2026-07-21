@@ -298,7 +298,6 @@ export const useLitegraphService = () => {
         nameKey,
         widget.label ?? widgetInputSpec.display_name ?? inputName
       )
-      widget.defaultLabel = widget.label
       widget.options ??= {}
       Object.assign(widget.options, {
         advanced: inputSpec.advanced,
