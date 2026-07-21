@@ -23,7 +23,7 @@ app.registerExtension({
 
       this.growByWidget = function () {
         this.addCustomWidget({
-          type: 'DEVTOOLS.RUNTIMEWIDGET',
+          type: 'custom',
           name: `runtime_widget_${this.widgets?.length ?? 0}`,
           value: 0,
           y: 0
