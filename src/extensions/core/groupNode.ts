@@ -910,15 +910,6 @@ export class GroupNodeHandler {
     }
 
     const reconnectInputs = (selectedIds: (string | number)[]) => {
-      ;(globalThis as unknown as { __gndiag?: unknown }).__gndiag = {
-        groupInputs: node.inputs?.map((i) => ({
-          name: i.name,
-          type: i.type,
-          link: i.link
-        })),
-        oldToNewInputMap: JSON.parse(JSON.stringify(oldToNewInputMap)),
-        selectedIds: selectedIds.map(String)
-      }
       for (const innerNodeIndex in oldToNewInputMap) {
         const selectedId = parseNodeId(selectedIds[Number(innerNodeIndex)])
         const newNode = selectedId
