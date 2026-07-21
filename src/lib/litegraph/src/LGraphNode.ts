@@ -926,11 +926,23 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+        const values = info.widgets_values
+        const serializableWidgets = this.widgets.filter(
+          (w) => w.serialize !== false
+        )
+        // serialize() indexes widgets_values by absolute widget position,
+        // leaving holes (null) at serialize:false widgets. Densely packed
+        // arrays (one value per serializable widget) are also accepted.
+        if (values.length === serializableWidgets.length) {
+          for (const [i, widget] of serializableWidgets.entries()) {
+            widget.value = values[i]
+          }
+        } else {
+          for (const [i, widget] of this.widgets.entries()) {
+            if (i >= values.length) break
+            if (widget.serialize === false) continue
+            widget.value = values[i]
+          }
         }
       }
     }
