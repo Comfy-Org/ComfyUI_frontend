@@ -346,6 +346,111 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   )
 
+  test('overflow tag disclosure opens on hover, focus, and tap without loading the workflow', async ({
+    comfyPage
+  }) => {
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+
+    await comfyPage.page.route('**/templates/index.json', async (route) => {
+      const response = [
+        {
+          moduleName: 'default',
+          title: 'Test Templates',
+          type: 'image',
+          templates: [
+            {
+              name: 'many-tags',
+              title: 'Many Tags',
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description: 'A template with more tags than fit.',
+              tags: ['Relight', 'Image Edit', 'Upscale', 'Inpaint']
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.page.route('**/templates/**.webp', async (route) => {
+      await route.fulfill({
+        status: 200,
+        path: 'browser_tests/assets/example.webp',
+        headers: {
+          'Content-Type': 'image/webp',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+
+    const card = comfyPage.page.getByTestId(
+      TestIds.templates.workflowCard('many-tags')
+    )
+    await expect(card).toBeVisible()
+
+    const overflow = card.getByRole('button', { name: 'Upscale, Inpaint' })
+    // Body-portalled, so unscopable to the card; the single-card mock keeps it unique.
+    const disclosure = comfyPage.page.getByTestId('disclosure-tooltip')
+
+    // toBeVisible() misses occlusion; assert the bubble is the top element at
+    // its centre so it can't regress behind the z-1702 dialog. Await the open
+    // state first so the hit-test doesn't race the enter animation.
+    const expectOnTop = async () => {
+      await expect(disclosure).toHaveAttribute('data-state', /-open$/)
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(() => {
+              const el = document.querySelector(
+                '[data-testid="disclosure-tooltip"]'
+              )
+              if (!el) return false
+              const r = el.getBoundingClientRect()
+              if (r.width === 0 || r.height === 0) return false
+              const top = document.elementFromPoint(
+                r.x + r.width / 2,
+                r.y + r.height / 2
+              )
+              return !!top && el.contains(top)
+            }),
+          { timeout: 2000 }
+        )
+        .toBe(true)
+    }
+
+    // Hover reveals the hidden tags (and the bubble is not occluded).
+    await overflow.hover()
+    await expect(disclosure).toHaveText('Upscale, Inpaint')
+    await expectOnTop()
+    await comfyPage.page.mouse.move(0, 0)
+    await expect(disclosure).toHaveCount(0)
+
+    // Keyboard focus reveals the hidden tags — the gap PrimeVue's tooltip left.
+    await overflow.focus()
+    await expect(disclosure).toBeVisible()
+    await expectOnTop()
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(disclosure).toHaveCount(0)
+
+    // Tap/click reveals the hidden tags and must NOT load the workflow.
+    await overflow.click()
+    await expect(disclosure).toBeVisible()
+    await expectOnTop()
+    await expect(comfyPage.templates.content).toBeVisible()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+  })
+
   test('Can open associated tutorial', async ({ comfyPage }) => {
     const tutorialUrl = 'https://comfyanonymous.github.io/ComfyUI_examples/'
     await comfyPage.page.route('**/templates/index.json', async (route) => {

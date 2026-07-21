@@ -346,20 +346,17 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <button
+                    <AccessibleTooltip
                       v-if="tags.hidden.length"
-                      v-tooltip.top="tags.hidden.join(', ')"
-                      type="button"
-                      :aria-label="tags.hidden.join(', ')"
-                      class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:outline-none"
-                      @click.stop
+                      :label="tags.hidden"
+                      trigger-class="rounded-sm"
                     >
                       <Tag
                         :label="`+${tags.hidden.length}`"
                         shape="square"
                         class="bg-charcoal-500/50 opacity-80"
                       />
-                    </button>
+                    </AccessibleTooltip>
                   </div>
                 </div>
               </CardBottom>
@@ -440,6 +437,7 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'

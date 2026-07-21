@@ -9,15 +9,13 @@
       data-testid="logo-pill"
       class="flex items-center gap-1"
     >
-      <button
+      <AccessibleTooltip
         v-for="badge in logo.badges"
         :key="badge.provider"
-        v-tooltip.top="badge.provider"
-        type="button"
-        data-testid="logo-badge"
-        :aria-label="badge.provider"
-        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-        @click.stop
+        :label="badge.provider"
+        test-id="logo-badge"
+        ring-class="focus-visible:ring-white"
+        trigger-class="flex size-7 items-center justify-center rounded-full bg-black/30 backdrop-blur-[20px]"
       >
         <i
           v-if="badge.iconClass"
@@ -34,17 +32,16 @@
           draggable="false"
           @error="onImageError(badge.provider)"
         />
-      </button>
-      <button
+      </AccessibleTooltip>
+      <AccessibleTooltip
         v-if="logo.extraProviders.length"
-        v-tooltip.top="logo.extraProviders.join(', ')"
-        type="button"
-        :aria-label="logo.extraProviders.join(', ')"
-        class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-        @click.stop
+        :label="logo.extraProviders"
+        test-id="logo-extra"
+        ring-class="focus-visible:ring-white"
+        trigger-class="flex h-7 min-w-7 items-center justify-center rounded-full bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px]"
       >
         +{{ logo.extraProviders.length }}
-      </button>
+      </AccessibleTooltip>
     </div>
   </div>
 </template>
@@ -52,6 +49,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -17,8 +18,7 @@ describe('LogoOverlay', () => {
     props: Partial<LogoOverlayProps> = {}
   ) {
     return render(LogoOverlay, {
-      props: { logos, getLogoUrl: mockGetLogoUrl, ...props },
-      global: { directives: { tooltip: {} } }
+      props: { logos, getLogoUrl: mockGetLogoUrl, ...props }
     })
   }
 
@@ -53,8 +53,7 @@ describe('LogoOverlay', () => {
 
   it('renders an icon-backed provider that has no logo url', () => {
     render(LogoOverlay, {
-      props: { logos: [{ provider: 'Google' }], getLogoUrl: () => '' },
-      global: { directives: { tooltip: {} } }
+      props: { logos: [{ provider: 'Google' }], getLogoUrl: () => '' }
     })
     expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
     expect(screen.getByTestId('logo-icon')).toHaveClass(
@@ -68,8 +67,7 @@ describe('LogoOverlay', () => {
         logos: [{ provider: ['Google', 'Nothing'] }],
         getLogoUrl: (provider: string) =>
           provider === 'Google' ? '/logos/Google.png' : ''
-      },
-      global: { directives: { tooltip: {} } }
+      }
     })
     expect(screen.getAllByTestId('logo-badge')).toHaveLength(1)
   })
@@ -88,6 +86,33 @@ describe('LogoOverlay', () => {
   it('shows no +N chip when every provider fits', () => {
     renderOverlay([{ provider: ['Google', 'OpenAI'] }])
     expect(screen.queryByText(/^\+\d+$/)).not.toBeInTheDocument()
+  })
+
+  it('discloses the hidden providers when the +N chip is activated', async () => {
+    const user = userEvent.setup()
+    renderOverlay(
+      [
+        {
+          provider: [
+            'Google',
+            'OpenAI',
+            'Kling',
+            'Luma',
+            'Runway',
+            'Veo',
+            'Vidu'
+          ]
+        }
+      ],
+      {}
+    )
+
+    const extras = screen.getByTestId('logo-extra')
+    const extraLabel = extras.getAttribute('aria-label') ?? ''
+    expect(extraLabel).toMatch(/,/)
+
+    await user.click(extras)
+    expect(await screen.findAllByText(extraLabel)).not.toHaveLength(0)
   })
 
   it('keeps the pill visible when its only image fails but an icon remains', async () => {
