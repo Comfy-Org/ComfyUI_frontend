@@ -103,9 +103,12 @@ const i18n = createI18n({
         usageProgress: '{used} of {total} credits used',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',
+        additionalCreditsTooltipYearly:
+          'Credits you add after yearly credits run out.',
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
-        usedAfterMonthly: 'Used after plan credits run out',
+        usedAfterMonthly: 'Used after monthly runs out',
+        usedAfterYearly: 'Used after yearly runs out',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
       }
@@ -174,7 +177,7 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('98% used')
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
-    expect(container.textContent).toContain('Used after plan credits run out')
+    expect(container.textContent).toContain('Used after monthly runs out')
   })
 
   it('uses the team credit stop grant for a monthly allowance', () => {
@@ -224,7 +227,11 @@ describe('CreditsTile', () => {
     state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
     renderTile()
     expect(screen.getByText('Yearly')).toBeInTheDocument()
+    expect(screen.getByText('Used after yearly runs out')).toBeInTheDocument()
     expect(screen.queryByText('Monthly')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Used after monthly runs out')
+    ).not.toBeInTheDocument()
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {

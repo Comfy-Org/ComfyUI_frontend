@@ -45,9 +45,9 @@
             class="m-0 flex items-center gap-1.5 text-base font-semibold whitespace-nowrap text-base-foreground"
           >
             <i class="icon-[lucide--coins] size-4 text-credit" />
-            {{ plan.monthlyCredits.toLocaleString() }}
+            {{ plan.cycleCredits.toLocaleString() }}
             <span class="text-base font-normal text-muted-foreground">
-              / {{ $t('workspacePanel.overview.perMonth') }}
+              / {{ plan.billingPeriod }}
             </span>
           </p>
           <span class="text-sm text-muted-foreground">

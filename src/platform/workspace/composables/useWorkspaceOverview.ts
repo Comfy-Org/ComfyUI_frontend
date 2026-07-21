@@ -40,7 +40,11 @@ export function useWorkspaceOverview() {
       (subscription.value?.tier as string | null) === 'ENTERPRISE'
         ? 'Enterprise'
         : 'Team',
-    monthlyCredits: allowanceTotalCredits.value ?? 0,
+    cycleCredits: allowanceTotalCredits.value ?? 0,
+    billingPeriod:
+      subscription.value?.duration === 'ANNUAL'
+        ? t('workspacePanel.overview.perYear')
+        : t('workspacePanel.overview.perMonth'),
     renewalLabel: renewalLabel.value
   }))
 

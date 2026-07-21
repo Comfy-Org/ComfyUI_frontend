@@ -74,7 +74,7 @@
             {{ $t('subscription.additionalCredits') }}
             <Button
               v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
+                value: additionalCreditsTooltip,
                 showDelay: 300
               }"
               variant="muted-textonly"
@@ -101,7 +101,7 @@
           </span>
         </div>
         <span class="text-sm text-muted @max-[300px]:hidden">
-          {{ $t('subscription.usedAfterMonthly') }}
+          {{ additionalCreditsUsageLabel }}
         </span>
       </div>
     </template>
@@ -190,10 +190,26 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
 
+const isAnnual = computed(() => subscription.value?.duration === 'ANNUAL')
+
 const cycleLabel = computed(() =>
-  subscription.value?.duration === 'ANNUAL'
-    ? t('subscription.yearly')
-    : t('subscription.monthly')
+  isAnnual.value ? t('subscription.yearly') : t('subscription.monthly')
+)
+
+const additionalCreditsUsageLabel = computed(() =>
+  t(
+    isAnnual.value
+      ? 'subscription.usedAfterYearly'
+      : 'subscription.usedAfterMonthly'
+  )
+)
+
+const additionalCreditsTooltip = computed(() =>
+  t(
+    isAnnual.value
+      ? 'subscription.additionalCreditsTooltipYearly'
+      : 'subscription.additionalCreditsTooltip'
+  )
 )
 
 const cycleUsedPercent = computed(() =>
