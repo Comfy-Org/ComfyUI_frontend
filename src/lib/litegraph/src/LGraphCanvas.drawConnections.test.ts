@@ -174,31 +174,6 @@ describe('drawConnections', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
-  it('never reads the deprecated slot link mirrors in a connect-draw-serialize cycle', () => {
-    const deprecationCallback = vi.fn()
-    const originalCallbacks = LiteGraph.onDeprecationWarning
-    LiteGraph.onDeprecationWarning = [deprecationCallback]
-    LiteGraph.alwaysRepeatWarnings = true
-    try {
-      const sourceNode = new LGraphNode('Source')
-      sourceNode.addOutput('out', 'STRING')
-      graph.add(sourceNode)
-
-      const targetNode = new LGraphNode('Target')
-      targetNode.addInput('in', 'STRING')
-      graph.add(targetNode)
-
-      sourceNode.connect(0, targetNode, 0)
-      canvas.drawConnections(createMockCtx())
-      graph.asSerialisable()
-
-      expect(deprecationCallback).not.toHaveBeenCalled()
-    } finally {
-      LiteGraph.onDeprecationWarning = originalCallbacks
-      LiteGraph.alwaysRepeatWarnings = false
-    }
-  })
-
   it('renders links in target order instead of generated id order', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]

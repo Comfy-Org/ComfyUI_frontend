@@ -116,40 +116,32 @@ describe('useLinkStore', () => {
     expect(mover.targetSlot).toBe(3)
   })
 
-  it('keeps both links registered across a pairwise slot swap', () => {
+  it.each([
+    { name: 'pairwise swap', targets: [1, 0] },
+    { name: 'three-slot rotation', targets: [1, 2, 0] }
+  ])('keeps every link registered across a $name', ({ targets }) => {
     const store = useLinkStore()
-    const first = link(1, 5, 0, 9, 0)
-    const second = link(2, 5, 1, 9, 1)
-    store.registerLink(graphA, first)
-    store.registerLink(graphA, second)
+    const topologies = targets.map((_, slot) =>
+      link(slot + 1, 5, slot, 9, slot)
+    )
+    for (const topology of topologies) {
+      store.registerLink(graphA, topology)
+    }
 
-    store.updateEndpoints(graphA, [
-      { topology: first, patch: { targetSlot: 1 } },
-      { topology: second, patch: { targetSlot: 0 } }
-    ])
+    store.updateEndpoints(
+      graphA,
+      topologies.map((topology, slot) => ({
+        topology,
+        patch: { targetSlot: targets[slot] }
+      }))
+    )
 
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)?.id).toBe(toLinkId(2))
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(1))
-  })
-
-  it('keeps every link registered across a three-slot rotation', () => {
-    const store = useLinkStore()
-    const first = link(1, 5, 0, 9, 0)
-    const second = link(2, 5, 1, 9, 1)
-    const third = link(3, 5, 2, 9, 2)
-    store.registerLink(graphA, first)
-    store.registerLink(graphA, second)
-    store.registerLink(graphA, third)
-
-    store.updateEndpoints(graphA, [
-      { topology: first, patch: { targetSlot: 1 } },
-      { topology: second, patch: { targetSlot: 2 } },
-      { topology: third, patch: { targetSlot: 0 } }
-    ])
-
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)?.id).toBe(toLinkId(3))
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(1))
-    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(2))
+    for (const targetSlot of targets) {
+      const sourceSlot = targets.indexOf(targetSlot)
+      expect(store.getInputSlotLink(graphA, toNodeId(9), targetSlot)?.id).toBe(
+        toLinkId(sourceSlot + 1)
+      )
+    }
   })
 
   it('rejects duplicate final targets without partial mutation', () => {

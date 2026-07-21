@@ -160,52 +160,57 @@ function emptySubgraphDefinition(): ExportedSubgraph {
   }
 }
 
-function savedWorkflow(withSubgraphDefinition: boolean): SerialisableGraph {
-  return {
-    id: 'ab000000-0000-4000-8000-000000000001',
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 2, lastLinkId: 3, lastGroupId: 0, lastRerouteId: 0 },
-    ...shiftedNodesAndLinks(1, 2),
-    ...(withSubgraphDefinition
-      ? { definitions: { subgraphs: [emptySubgraphDefinition()] } }
-      : {})
-  }
+interface WorkflowOptions {
+  duplicate?: boolean
+  insideSubgraph?: boolean
+  withSubgraphDefinition?: boolean
 }
 
-function savedWorkflowWithDuplicateDriftedLink(): SerialisableGraph {
-  return {
-    id: 'ab000000-0000-4000-8000-000000000003',
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 2, lastLinkId: 4, lastGroupId: 0, lastRerouteId: 0 },
-    ...duplicateDriftedNodesAndLinks(1, 2)
-  }
-}
+function savedWorkflow({
+  duplicate = false,
+  insideSubgraph = false,
+  withSubgraphDefinition = false
+}: WorkflowOptions = {}): SerialisableGraph {
+  const id = insideSubgraph
+    ? 'ab000000-0000-4000-8000-000000000002'
+    : duplicate
+      ? 'ab000000-0000-4000-8000-000000000003'
+      : 'ab000000-0000-4000-8000-000000000001'
+  const contents = duplicate
+    ? duplicateDriftedNodesAndLinks(1, 2)
+    : shiftedNodesAndLinks(1, 2)
+  const definitions = insideSubgraph
+    ? {
+        subgraphs: [
+          {
+            ...emptySubgraphDefinition(),
+            name: 'Subgraph With Shifted Inputs',
+            state: {
+              lastNodeId: 20,
+              lastLinkId: 3,
+              lastGroupId: 0,
+              lastRerouteId: 0
+            },
+            ...shiftedNodesAndLinks(10, 20)
+          }
+        ]
+      }
+    : withSubgraphDefinition
+      ? { subgraphs: [emptySubgraphDefinition()] }
+      : undefined
 
-function savedWorkflowWithShiftInsideSubgraph(): SerialisableGraph {
   return {
-    id: 'ab000000-0000-4000-8000-000000000002',
+    id,
     version: 1,
     revision: 0,
-    state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
-    nodes: [],
-    links: [],
-    definitions: {
-      subgraphs: [
-        {
-          ...emptySubgraphDefinition(),
-          name: 'Subgraph With Shifted Inputs',
-          state: {
-            lastNodeId: 20,
-            lastLinkId: 3,
-            lastGroupId: 0,
-            lastRerouteId: 0
-          },
-          ...shiftedNodesAndLinks(10, 20)
-        }
-      ]
-    }
+    state: {
+      lastNodeId: insideSubgraph ? 0 : 2,
+      lastLinkId: duplicate ? 4 : insideSubgraph ? 0 : 3,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    },
+    ...(insideSubgraph ? { nodes: [], links: [] } : contents),
+    ...(definitions ? { definitions } : {})
   }
 }
 
@@ -240,31 +245,31 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     LiteGraph.registerNodeType('test/RealignTarget', ReorderTargetNode)
   })
 
-  it('re-keys links to reordered input slots', () => {
-    const graph = new LGraph()
-    graph.configure(savedWorkflow(false))
+  it.each([
+    ['root workflow', {}, toNodeId(2)],
+    [
+      'root workflow cloned for definitions',
+      { withSubgraphDefinition: true },
+      toNodeId(2)
+    ],
+    ['subgraph definition', { insideSubgraph: true }, toNodeId(20)]
+  ] satisfies [string, WorkflowOptions, NodeId][])(
+    're-keys links in %s',
+    (_name, options, targetNodeId) => {
+      const graph = new LGraph()
+      graph.configure(savedWorkflow(options))
+      const configuredGraph =
+        'insideSubgraph' in options && options.insideSubgraph
+          ? graph.subgraphs.get(SUBGRAPH_ID)!
+          : graph
 
-    assertLinksRealigned(graph, toNodeId(2))
-  })
-
-  it('re-keys root links when subgraph definitions force a data clone', () => {
-    const graph = new LGraph()
-    graph.configure(savedWorkflow(true))
-
-    assertLinksRealigned(graph, toNodeId(2))
-  })
-
-  it('re-keys links of nodes inside subgraph definitions', () => {
-    const graph = new LGraph()
-    graph.configure(savedWorkflowWithShiftInsideSubgraph())
-
-    const subgraph = graph.subgraphs.get(SUBGRAPH_ID)!
-    assertLinksRealigned(subgraph, toNodeId(20))
-  })
+      assertLinksRealigned(configuredGraph, targetNodeId)
+    }
+  )
 
   it('realigns the survivor when a drifted input referenced a deduplicated link', () => {
     const graph = new LGraph()
-    graph.configure(savedWorkflowWithDuplicateDriftedLink())
+    graph.configure(savedWorkflow({ duplicate: true }))
 
     expect(graph.links.has(toLinkId(4))).toBe(false)
     assertLinksRealigned(graph, toNodeId(2))

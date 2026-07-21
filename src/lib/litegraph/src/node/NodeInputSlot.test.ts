@@ -33,36 +33,23 @@ describe('NodeInputSlot deprecated link getter', () => {
     LiteGraph.alwaysRepeatWarnings = false
   })
 
-  it('returns the link id for a connected input and warns', () => {
-    const { target, link } = createConnectedPair()
+  it('reflects graph and store state across the slot lifecycle', () => {
+    const orphan = new LGraphNode('Orphan')
+    orphan.addInput('in', 'INT')
+    expect(orphan.inputs[0].link).toBeNull()
 
+    const { source, target, link } = createConnectedPair()
     expect(target.inputs[0].link).toBe(link.id)
     expect(onWarning).toHaveBeenCalledWith(
       expect.stringContaining('input.link is deprecated'),
       undefined
     )
-  })
-
-  it('reflects live link store data across connect and disconnect', () => {
-    const { source, target, link } = createConnectedPair()
-
-    expect(target.inputs[0].link).toBe(link.id)
 
     target.disconnectInput(0)
     expect(target.inputs[0].link).toBeNull()
 
     const relink = source.connect(0, target, 0)!
     expect(target.inputs[0].link).toBe(relink.id)
-  })
-
-  it('returns null for an unconnected slot and for a graphless node', () => {
-    const { target } = createConnectedPair()
-    target.disconnectInput(0)
-    expect(target.inputs[0].link).toBeNull()
-
-    const orphan = new LGraphNode('Orphan')
-    orphan.addInput('in', 'INT')
-    expect(orphan.inputs[0].link).toBeNull()
   })
 
   it('ignores writes, warns, and keeps the store-derived value', () => {

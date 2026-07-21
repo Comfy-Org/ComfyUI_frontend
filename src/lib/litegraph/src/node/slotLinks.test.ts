@@ -233,4 +233,41 @@ describe('slotLinks', () => {
     expect(target.getInputLink(1)).toBe(removed)
     expect(onConnectionsChange).not.toHaveBeenCalled()
   })
+
+  it('rejects duplicate input objects without changing topology', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    const input = target.inputs[0]
+    const link = target.getInputLink(0)!
+
+    expect(() =>
+      replaceNodeInputs(target, captureInputLayout(target), [input, input])
+    ).toThrow('only appear once')
+
+    expect(target.inputs).toEqual([input])
+    expect(graph.getLink(link.id)).toBe(link)
+    expect(target.getInputLink(0)).toBe(link)
+  })
+
+  it('rejects assigning one link to two inputs without changing topology', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const previous = captureInputLayout(target)
+    const assignments = new Map(previous.links)
+    assignments.set(target.inputs[1], link)
+
+    expect(() =>
+      replaceNodeInputs(target, previous, target.inputs, assignments)
+    ).toThrow('only be assigned to one input slot')
+
+    expect(target.getInputLink(0)).toBe(link)
+    expect(target.getInputLink(1)).toBeNull()
+  })
 })

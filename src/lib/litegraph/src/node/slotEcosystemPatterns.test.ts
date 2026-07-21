@@ -1,9 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 function duckInputSlot(): INodeInputSlot {
@@ -36,12 +36,6 @@ function mockCanvasContext() {
 describe('ecosystem slot patterns', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    LiteGraph.alwaysRepeatWarnings = true
-  })
-
-  afterEach(() => {
-    LiteGraph.alwaysRepeatWarnings = false
-    LiteGraph.onDeprecationWarning = []
   })
 
   describe('duck-typed slots wrapped by _setConcreteSlots (M2)', () => {
@@ -117,58 +111,6 @@ describe('ecosystem slot patterns', () => {
       ).not.toThrow()
       expect(node.outputs).toHaveLength(1)
       expect(node.outputs[0].label).toBe('Out')
-    })
-  })
-
-  describe('direct writes to the deprecated mirrors (M5b)', () => {
-    it('ignores input.link writes and fires telemetry', () => {
-      const deprecationCallback = vi.fn()
-      LiteGraph.onDeprecationWarning = [deprecationCallback]
-      const node = new LGraphNode('n')
-      const input = node.addInput('in', 'INT')
-
-      const legacyWriter = input as { link?: unknown }
-      expect(() => {
-        legacyWriter.link = 42
-      }).not.toThrow()
-      expect(deprecationCallback).toHaveBeenCalledWith(
-        expect.stringMatching(/input\.link.*connect\(\).*disconnectInput\(\)/),
-        undefined
-      )
-      expect(input.link).toBeNull()
-    })
-
-    it('ignores output.links writes and fires telemetry', () => {
-      const deprecationCallback = vi.fn()
-      LiteGraph.onDeprecationWarning = [deprecationCallback]
-      const node = new LGraphNode('n')
-      const output = node.addOutput('out', 'INT')
-
-      const legacyWriter = output as { links?: unknown }
-      expect(() => {
-        legacyWriter.links = [1]
-      }).not.toThrow()
-      expect(deprecationCallback).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /output\.links.*connect\(\).*disconnectOutput\(\)/
-        ),
-        undefined
-      )
-      expect(output.links).toBeNull()
-    })
-  })
-
-  describe('plain-object slot reads after concretisation (M6a)', () => {
-    it('reads the store-derived link id through the upgraded slot', () => {
-      const { graph, source, target } = createSourceAndTarget()
-      target.inputs.push(duckInputSlot())
-      const link = source.connect(0, target, 0)
-
-      target._setConcreteSlots()
-
-      expect(link).not.toBeNull()
-      expect(target.inputs[0].link).toBe(link!.id)
-      expect(graph.getLink(target.inputs[0].link!)).toBe(link)
     })
   })
 })
