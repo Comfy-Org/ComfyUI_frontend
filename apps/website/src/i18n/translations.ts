@@ -2372,6 +2372,7 @@ const translations = {
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'footer.trustSafety': { en: 'Trust & Safety', 'zh-CN': '信任与安全' },
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
