@@ -1864,25 +1864,41 @@ const translations = {
     'zh-CN':
       'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
   },
-  'mcp.hero.demoPromptMoodboard': {
-    en: 'turn the brief in this email into a 6-up moodboard',
-    'zh-CN': '把这封邮件里的需求做成六宫格情绪板'
+  'mcp.hero.demoPromptKeyframeBoard': {
+    en: 'board the launch film — 8 key frames from the brief',
+    'zh-CN': '为发布影片做分镜——从简报生成 8 张关键帧'
   },
-  'mcp.hero.demoPromptConcepts': {
-    en: 'sketch three concept frames for the launch page',
-    'zh-CN': '为发布页画三张概念稿'
+  'mcp.hero.demoPromptCharacterConcepts': {
+    en: 'explore 4 hero directions — pick one to take forward',
+    'zh-CN': '探索 4 个主角方向——挑一个继续推进'
   },
-  'mcp.hero.demoPromptKeyart': {
-    en: "match this frame's palette, make the hero key art",
-    'zh-CN': '匹配这一帧的配色，生成主视觉关键画面'
+  'mcp.hero.demoPromptStyleTransfer': {
+    en: 'stylize all 12 previz frames — photoreal, one pass',
+    'zh-CN': '把 12 张预演帧统一风格化——写实，一次完成'
   },
-  'mcp.hero.demoPromptPbr': {
-    en: 'make a tileable asphalt PBR material, all 5 maps',
-    'zh-CN': '生成可平铺的沥青 PBR 材质，共 5 张贴图'
+  'mcp.hero.demoPromptFrameToVideo': {
+    en: 'animate each shot — first + last frame, 9:16, batch',
+    'zh-CN': '逐镜生成动画——首帧加尾帧，9:16，批量'
   },
-  'mcp.hero.demoPromptUpscale': {
-    en: 'upscale the neon kaiju shot to 4K',
-    'zh-CN': '把霓虹怪兽画面放大到 4K'
+  'mcp.hero.demoPromptProductPlacement': {
+    en: 'drop the can into all 8 hero shots, matched light',
+    'zh-CN': '把罐子放进 8 张主视觉里，光影匹配'
+  },
+  'mcp.hero.demoPromptCharacterDesign': {
+    en: 'design the hero — 4 turnarounds, game-ready',
+    'zh-CN': '设计主角——4 视图转面，可直接用于游戏'
+  },
+  'mcp.hero.demoPrompt3dAsset': {
+    en: 'build a 3D hero prop for the scene I have open',
+    'zh-CN': '为我打开的场景做一个 3D 主道具'
+  },
+  'mcp.hero.demoPromptCampaignKeyArt': {
+    en: "match this frame's palette, make the campaign key art",
+    'zh-CN': '匹配这一帧的配色，生成营销主视觉'
+  },
+  'mcp.hero.demoPromptSetExtension': {
+    en: 'extend the set — matte painting from this plate',
+    'zh-CN': '扩展场景——用这张底板做接景绘制'
   },
   'mcp.hero.viewDocs': {
     en: 'VIEW DOCS',
@@ -1896,17 +1912,53 @@ const translations = {
     en: 'GENERATE',
     'zh-CN': '生成'
   },
-  'mcp.hero.demoActionGenerateImage': {
-    en: 'GENERATE-IMAGE',
-    'zh-CN': '生成图像'
+  'mcp.hero.demoToolKeyframeBoard': {
+    en: 'keyframe board',
+    'zh-CN': '关键帧分镜'
   },
-  'mcp.hero.demoActionGenerate3d': {
-    en: 'GENERATE-3D ASSET',
-    'zh-CN': '生成 3D 资产'
+  'mcp.hero.demoToolCharacterConcepts': {
+    en: 'character concepts',
+    'zh-CN': '角色概念'
   },
-  'mcp.hero.demoActionUpscale': {
-    en: 'UPSCALE-IMAGE',
-    'zh-CN': '放大图像'
+  'mcp.hero.demoToolStyleTransfer': {
+    en: 'style transfer',
+    'zh-CN': '风格迁移'
+  },
+  'mcp.hero.demoToolFrameToVideo': {
+    en: 'frame to video',
+    'zh-CN': '帧生视频'
+  },
+  'mcp.hero.demoToolProductPlacement': {
+    en: 'product placement',
+    'zh-CN': '产品植入'
+  },
+  'mcp.hero.demoToolCharacterDesign': {
+    en: 'character design',
+    'zh-CN': '角色设计'
+  },
+  'mcp.hero.demoTool3dAsset': {
+    en: '3d asset',
+    'zh-CN': '3D 资产'
+  },
+  'mcp.hero.demoToolCampaignKeyArt': {
+    en: 'campaign key art',
+    'zh-CN': '营销主视觉'
+  },
+  'mcp.hero.demoToolSetExtension': {
+    en: 'set extension',
+    'zh-CN': '场景扩展'
+  },
+  'mcp.hero.demoStatusIdle': {
+    en: "your agent has Comfy's tools",
+    'zh-CN': '你的智能体已接入 Comfy 工具'
+  },
+  'mcp.hero.demoStatusBridging': {
+    en: 'bridging {app} → {tool}…',
+    'zh-CN': '正在桥接 {app} → {tool}…'
+  },
+  'mcp.hero.demoStatusRunning': {
+    en: 'running {tool}…',
+    'zh-CN': '正在运行 {tool}…'
   },
 
   // MCP – SetupSection
