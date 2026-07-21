@@ -137,6 +137,19 @@ describe('WorkflowSelectorChip', () => {
     expect(items.map((item) => item.textContent?.trim())).toEqual(['upscale'])
   })
 
+  it('closes the dropdown on Escape from the focused search input', async () => {
+    const { user } = renderChip()
+    await user.click(trigger())
+    const search = await screen.findByPlaceholderText(
+      enMessages.agent.searchWorkflows
+    )
+    expect(search).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+  })
+
   it('marks the row the agent is editing with a spinner', async () => {
     useWorkflowTabActivityStore().setEditing('workflows/upscale.json')
     const { user } = renderChip()

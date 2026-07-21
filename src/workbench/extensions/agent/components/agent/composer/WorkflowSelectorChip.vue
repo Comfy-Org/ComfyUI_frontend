@@ -50,6 +50,13 @@ const filteredTabs = computed(() =>
     tab.name.toLowerCase().includes(query.value.trim().toLowerCase())
   )
 )
+
+// Suppress keys from the dropdown's typeahead while typing in the search box,
+// but let Escape bubble to reka's dismiss (a window keydown listener) so the
+// menu still closes from the focused input.
+function onSearchKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Escape') event.stopPropagation()
+}
 </script>
 
 <template>
@@ -91,7 +98,7 @@ const filteredTabs = computed(() =>
             type="text"
             :placeholder="t('agent.searchWorkflows')"
             class="border-agent-border bg-agent-surface text-agent-fg placeholder:text-agent-fg-subtle mb-1 w-full rounded-sm border px-2 py-1 text-xs outline-none"
-            @keydown.stop
+            @keydown="onSearchKeydown"
           />
           <DropdownMenuRadioGroup :model-value="current?.path ?? ''">
             <DropdownMenuRadioItem
