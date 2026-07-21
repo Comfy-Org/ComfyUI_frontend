@@ -188,10 +188,11 @@ describe('usePricingTableUrlLoader', () => {
     )
   })
 
-  it('restores preserved query and opens the table', async () => {
+  it('restores a preserved Team selection with its catalog values', async () => {
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
-      pricing: 'pro',
+      pricing: 'team',
+      stop: 'team_700',
       cycle: 'yearly'
     })
 
@@ -203,13 +204,19 @@ describe('usePricingTableUrlLoader', () => {
     )
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
-      planMode: 'personal',
+      planMode: 'team',
       initialCheckout: {
-        planMode: 'personal',
-        tierKey: 'pro',
+        planMode: 'team',
+        stop: {
+          id: 'team_700',
+          credits: 147700,
+          usd: 700,
+          discountedUsd: 680
+        },
         billingCycle: 'yearly'
       }
     })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for an empty param', async () => {

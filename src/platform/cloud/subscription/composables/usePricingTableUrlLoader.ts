@@ -74,7 +74,8 @@ function getCheckoutSelection(
 /**
  * Opens the pricing table from a `?pricing=` deep link, to send pilot users
  * straight to subscribe. Values: `1` (default tab), `team`, `personal`, or a
- * paid personal tier with `cycle=monthly|yearly` to open its confirmation.
+ * selected personal tier or Team credit stop with a billing cycle to open its
+ * confirmation.
  *
  * Gated to workspace owners (`canManageSubscription`); a member is a silent
  * no-op with the param stripped. Survives the login redirect via the
