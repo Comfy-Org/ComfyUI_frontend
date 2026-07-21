@@ -97,13 +97,12 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 
 // The muted attribute only sets defaultMuted, so SSR-rendered autoplay
 // videos count as unmuted and get blocked; force the property and kick
-// playback. Scoped to hideControls (decorative) clips so chrome-visible
-// consumers keep native semantics. flush: 'post' guarantees this runs
-// after useMediaControls' internal muted watcher on the same source.
+// playback. flush: 'post' guarantees this runs after useMediaControls'
+// internal muted watcher on the same source.
 watch(
   [videoEl, () => src],
   ([el]) => {
-    if (!el || !autoplay || !hideControls) return
+    if (!el || !autoplay) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       el.pause()
       return

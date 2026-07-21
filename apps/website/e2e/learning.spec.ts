@@ -172,7 +172,12 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       firstTutorial.title.en
     )
-    await expect(page.locator('video')).toBeVisible()
+    // Attribute-level autoplay check: blockExternalMedia aborts the video
+    // request, so actual playback never starts in e2e.
+    const video = page.locator('video')
+    await expect(video).toBeVisible()
+    await expect(video).toHaveAttribute('autoplay', '')
+    await expect(video).toHaveAttribute('muted', '')
     if (firstTutorial.href) {
       await expect(
         page.getByRole('link', { name: t('cta.tryWorkflow', 'en') }).first()
