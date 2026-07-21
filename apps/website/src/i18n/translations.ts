@@ -1554,9 +1554,9 @@ const translations = {
     'zh-CN': '自定义 LoRA 导入'
   },
   'pricing.included.feature10.description': {
-    en: 'For those on the Creator or Pro plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.',
+    en: 'For those on the Creator, Pro, or Team plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.',
     'zh-CN':
-      'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
+      'Creator、Pro 或 Team 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
     en: 'Parallel job execution',
