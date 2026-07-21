@@ -228,6 +228,31 @@ describe('comfyUiSourceCodeNode', () => {
   })
 })
 
+describe('ComfyUI entity links', () => {
+  it('names the home page as the canonical page for the application', () => {
+    const node = comfyUiApplicationNode(siteUrl)
+    expect(node.mainEntityOfPage).toBe(`${siteUrl}/`)
+  })
+
+  it('links the application back to the source code emitted alongside it', () => {
+    const app = comfyUiApplicationNode(siteUrl)
+    const source = comfyUiSourceCodeNode(siteUrl)
+    expect(app.isBasedOn).toEqual({ '@id': source['@id'] })
+  })
+
+  it('claims no canonical page or source code for third-party software', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: 'https://comfy.org/p/supported-models/foo/#software',
+      name: 'Foo Model',
+      url: 'https://comfy.org/p/supported-models/foo/',
+      applicationCategory: 'MultimediaApplication'
+    })
+    expect(node.mainEntityOfPage).toBeUndefined()
+    expect(node.isBasedOn).toBeUndefined()
+  })
+})
+
 describe('buildPageGraph', () => {
   const url = 'https://comfy.org/cloud/pricing/'
   const graph = buildPageGraph(

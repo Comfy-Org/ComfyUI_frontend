@@ -22,7 +22,8 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  mcp: '/mcp'
+  mcp: '/mcp',
+  brand: '/brand'
 } as const
 
 type Routes = typeof baseRoutes
@@ -89,6 +90,7 @@ export const externalLinks = {
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',
   linkedin: 'https://www.linkedin.com/company/comfyui',
+  mcpEndpoint: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
@@ -96,6 +98,7 @@ export const externalLinks = {
   studentAmbassadorForm:
     'https://docs.google.com/forms/d/e/1FAIpQLScY3Ui44Mgho-4OQ1UAH3JLc3LCkY5kHDkHY7EZI6etTkVpZQ/viewform',
   support: 'https://support.comfy.org/hc/en-us',
+  trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',

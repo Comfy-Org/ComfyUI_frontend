@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import Accordion from '../ui/accordion/Accordion.vue'
 import AccordionContent from '../ui/accordion/AccordionContent.vue'
 import AccordionItem from '../ui/accordion/AccordionItem.vue'
@@ -6,11 +8,45 @@ import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
 
 type Faq = { id: string; question: string; answer: string }
 
-defineProps<{
+const { faqs } = defineProps<{
   id?: string
   heading: string
   faqs: readonly Faq[]
 }>()
+
+type AnswerPart = { type: 'text' | 'link'; value: string }
+
+// Answers with authored HTML (e.g. styled anchors) render verbatim via
+// v-html; plain-text answers get bare URLs autolinked instead.
+const htmlTagPattern = /<[a-z][^>]*>/i
+
+function parseAnswer(answer: string): AnswerPart[] {
+  const urlPattern = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
+  const parts: AnswerPart[] = []
+  let lastIndex = 0
+  for (const match of answer.matchAll(urlPattern)) {
+    const start = match.index ?? 0
+    const url = match[0].replace(/[.,;:]+$/, '')
+    if (start > lastIndex) {
+      parts.push({ type: 'text', value: answer.slice(lastIndex, start) })
+    }
+    parts.push({ type: 'link', value: url })
+    lastIndex = start + url.length
+  }
+  if (lastIndex < answer.length) {
+    parts.push({ type: 'text', value: answer.slice(lastIndex) })
+  }
+  return parts
+}
+
+const parsedFaqs = computed(() =>
+  faqs.map((faq) => ({
+    ...faq,
+    answerParts: htmlTagPattern.test(faq.answer)
+      ? null
+      : parseAnswer(faq.answer)
+  }))
+)
 </script>
 
 <template>
@@ -28,18 +64,41 @@ defineProps<{
       <!-- Right FAQ list -->
       <Accordion type="multiple" class="flex-1">
         <AccordionItem
-          v-for="(faq, index) in faqs"
+          v-for="(faq, index) in parsedFaqs"
           :key="faq.id"
           :value="faq.id"
         >
-          <AccordionTrigger :class="index === 0 ? 'pt-0' : ''">
+          <AccordionTrigger
+            :id="`faq-trigger-${faq.id}`"
+            :class="index === 0 ? 'pt-0' : ''"
+          >
             {{ faq.question }}
           </AccordionTrigger>
           <AccordionContent>
             <p
-              class="text-sm whitespace-pre-line text-primary-comfy-canvas/70"
+              v-if="faq.answerParts === null"
+              class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
               v-html="faq.answer"
             />
+            <p
+              v-else
+              class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
+            >
+              <template
+                v-for="(part, partIndex) in faq.answerParts"
+                :key="partIndex"
+              >
+                <a
+                  v-if="part.type === 'link'"
+                  :href="part.value"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+                  >{{ part.value }}</a
+                >
+                <template v-else>{{ part.value }}</template>
+              </template>
+            </p>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

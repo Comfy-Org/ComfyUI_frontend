@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "Bir videodaki ağız hareketini yeni konuşma sesine sync.so ile yeniden senkronize edin. Yakın planlar, profiller ve engelleri otomatik olarak işler ve konuşmacının ifadesini korur. Maliyet, çıktı süresiyle orantılıdır.",
+    "display_name": "sync.so Dudak Senkronizasyonu",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Ağız hareketinin senkronize edileceği konuşma sesi."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so üretim modeli."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Yeniden senkronize edilecek konuşmacının videosu. 4K'ya kadar (4096x2160); sabit bir 24/25/30 fps kare hızı en iyi sonucu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Bir portreyi, sync.so'nun sync-3 modeliyle konuşma sesiyle yönlendirilen konuşan bir videoya dönüştürün. Çıktı süresi sesle eşleşir. Maliyet, çıktı süresiyle orantılıdır.",
+    "display_name": "sync.so Konuşan Görsel",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Konuşan videoyu yönlendiren konuşma sesi; çıktı süresi bununla eşleşir. Animasyonu metinden yönlendirmek için buraya herhangi bir TTS düğümü zincirleyin."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Yüzü net bir şekilde görünen tek bir görsel, 4K'ya kadar (4096x2160)."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so üretim modeli. Görsel girişi yalnızca sync-3 ile kullanılabilir."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Portreye hayat verme konusunda isteğe bağlı yönlendirme, örn. 'konu gülümsesin ve kameraya baksın'. Doğal konuşma hareketi için boş bırakın."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5JetonlaştırıcıSeçenekleri",
     "inputs": {
