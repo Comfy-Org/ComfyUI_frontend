@@ -7,10 +7,13 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { api } from '@/scripts/api'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
+  FirstRunTourMetadata,
   OnboardingTourEntry,
   OnboardingTourRunStatus,
-  OnboardingTourShape
+  OnboardingTourShape,
+  OnboardingTourStage
 } from '@/platform/telemetry/types'
 import type { OnboardingCandidateDeps } from '@/platform/workflow/persistence/onboardingEntryStore'
 import { isOnboardingCandidate } from '@/platform/workflow/persistence/onboardingEntryStore'
@@ -23,9 +26,12 @@ import {
   canvasTransformValid,
   nodesPresent
 } from './canvasSpotlightAdapter'
-import { trackFirstRunTour } from './firstRunTourTelemetry'
 import { resolveTourRoles } from './roleResolution'
-import { isUpgradeModalOpen, useFirstRunTourStore } from './firstRunTourStore'
+import {
+  FIRST_RUN_TOUR,
+  isUpgradeModalOpen,
+  useFirstRunTourStore
+} from './firstRunTourStore'
 import type { TourEndReason } from './firstRunTourStore'
 import { restoreView } from './subgraphNavigation'
 import { shapeOf, toCoachSteps } from './tourSequence'
@@ -67,6 +73,12 @@ function _useFirstRunTourController() {
     featureFlags: useFeatureFlags(),
     desktop: useDesktopLayout()
   }
+  const telemetry = useTelemetry()
+  const trackTour = (
+    stage: OnboardingTourStage,
+    metadata: Omit<FirstRunTourMetadata, 'tour'> = {}
+  ) =>
+    telemetry?.trackOnboardingTour(stage, { tour: FIRST_RUN_TOUR, ...metadata })
 
   const isPreparing = ref(false)
 
@@ -152,7 +164,7 @@ function _useFirstRunTourController() {
   function reportRunTriggered(status: OnboardingTourRunStatus) {
     if (runReported) return
     runReported = true
-    trackFirstRunTour('run_triggered', {
+    trackTour('run_triggered', {
       template_id: activeTemplateId,
       shape: activeShape,
       status
@@ -179,18 +191,18 @@ function _useFirstRunTourController() {
     }
 
     store.prepare(workflow, templateId)
-    engine.startTour('firstRun', {
+    engine.startTour(FIRST_RUN_TOUR, {
       force: true,
       definition: toCoachSteps(store.steps)
     })
-    if (engine.activeTour !== 'firstRun') return
+    if (engine.activeTour !== FIRST_RUN_TOUR) return
 
     activeTemplateId = templateId
     const roles = store.resolvedRoles
     activeShape = roles ? shapeOf(roles) : 'other'
     runReported = false
     listenForFirstRun()
-    trackFirstRunTour('started', {
+    trackTour('started', {
       template_id: activeTemplateId,
       shape: activeShape,
       entry
@@ -255,7 +267,7 @@ function _useFirstRunTourController() {
     if (hasFunds()) return false
 
     useBillingContext().showSubscriptionDialog({ reason: 'out_of_credits' })
-    trackFirstRunTour('upgrade_shown', { template_id: activeTemplateId })
+    trackTour('upgrade_shown', { template_id: activeTemplateId })
     end('done')
     return true
   }
@@ -272,7 +284,7 @@ function _useFirstRunTourController() {
     // Defensive: the tour never enters a subgraph, but the user may have opened one.
     restoreView()
 
-    trackFirstRunTour('step_shown', {
+    trackTour('step_shown', {
       template_id: activeTemplateId,
       step_key: step.kind,
       step_number: store.stepIndex + 1,
@@ -299,7 +311,7 @@ function _useFirstRunTourController() {
     if (reason === 'skip') {
       const step = store.currentStep
       if (step) {
-        trackFirstRunTour('skipped', {
+        trackTour('skipped', {
           template_id: activeTemplateId,
           step_key: step.kind,
           step_number: store.stepIndex + 1,
@@ -307,7 +319,7 @@ function _useFirstRunTourController() {
         })
       }
     } else if (reason === 'done') {
-      trackFirstRunTour('completed', {
+      trackTour('completed', {
         template_id: activeTemplateId,
         shape: activeShape
       })

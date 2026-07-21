@@ -85,9 +85,17 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import type {
+  FirstRunTourMetadata,
+  OnboardingTourStage
+} from '@/platform/telemetry/types'
 
-import { trackFirstRunTour } from './firstRunTourTelemetry'
-import { isUpgradeModalOpen, useFirstRunTourStore } from './firstRunTourStore'
+import {
+  FIRST_RUN_TOUR,
+  isUpgradeModalOpen,
+  useFirstRunTourStore
+} from './firstRunTourStore'
 
 const FALLBACK_MEDIA = '/assets/images/og-image.png'
 
@@ -96,6 +104,12 @@ const { appearDelayMs = 1500 } = defineProps<{ appearDelayMs?: number }>()
 
 const { t } = useI18n()
 const store = useFirstRunTourStore()
+const telemetry = useTelemetry()
+const trackTour = (
+  stage: OnboardingTourStage,
+  metadata: Omit<FirstRunTourMetadata, 'tour'> = {}
+) =>
+  telemetry?.trackOnboardingTour(stage, { tour: FIRST_RUN_TOUR, ...metadata })
 
 const { resultMedia: media } = storeToRefs(store)
 
@@ -122,7 +136,7 @@ const shown = ref(false)
 const { start: startAppearDelay, stop: cancelAppearDelay } = useTimeoutFn(
   () => {
     shown.value = true
-    trackFirstRunTour('nudge_shown')
+    trackTour('nudge_shown')
   },
   () => appearDelayMs,
   { immediate: false }
@@ -144,7 +158,7 @@ watch(upgradeModalOpen, (open, wasOpen) => {
 
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('command')
-  trackFirstRunTour('explore_templates_clicked')
+  trackTour('explore_templates_clicked')
   store.dismissNudge()
 }
 </script>

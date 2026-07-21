@@ -198,6 +198,7 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 vi.mock('./firstRunTourStore', () => ({
+  FIRST_RUN_TOUR: 'firstRun',
   isUpgradeModalOpen: () => upgradeModalOpen.value,
   useFirstRunTourStore: () => ({
     prepare: mocks.storePrepare,

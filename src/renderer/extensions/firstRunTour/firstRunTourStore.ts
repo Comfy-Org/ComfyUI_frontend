@@ -15,6 +15,9 @@ import { restoreView } from './subgraphNavigation'
 import { sequenceBuilder } from './tourSequence'
 import type { MediaKind, ResolvedRoles, TourStep } from './tourSequence'
 
+/** This tour's key on the shared engine and its telemetry `tour` tag. */
+export const FIRST_RUN_TOUR = 'firstRun' as const
+
 export type TourEndReason = 'done' | 'skip' | 'error'
 
 export interface ResultMedia {
@@ -40,7 +43,7 @@ function stepTargets(step: TourStep): NodeId[] {
 /** First-run tour view state; the coachmark engine owns activation and position, this store the sequence. */
 export const useFirstRunTourStore = defineStore('firstRunTour', () => {
   const engine = useOnboardingTourStore()
-  const isActive = computed(() => engine.activeTour === 'firstRun')
+  const isActive = computed(() => engine.activeTour === FIRST_RUN_TOUR)
   const stepIndex = computed(() => engine.countedStepIdx)
   const steps = ref<TourStep[]>([])
   const resolvedRoles = ref<ResolvedRoles | null>(null)
