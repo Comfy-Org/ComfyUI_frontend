@@ -120,7 +120,7 @@
               "Node name for S&R": "CheckpointLoaderSimple"
             },
             "widgets_values": ["v1-5-pruned-emaonly.ckpt"],
-            "index": 1
+            "index": 0
           },
           {
             "id": -1,
@@ -157,7 +157,7 @@
             "widgets_values": [
               "beautiful scenery nature glass bottle landscape, , purple galaxy bottle,"
             ],
-            "index": 2
+            "index": 1
           },
           {
             "id": -1,
@@ -192,7 +192,7 @@
               "Node name for S&R": "CLIPTextEncode"
             },
             "widgets_values": ["text, watermark"],
-            "index": 3
+            "index": 2
           },
           {
             "id": -1,
@@ -250,7 +250,7 @@
               "karras",
               0.87
             ],
-            "index": 4
+            "index": 3
           },
           {
             "id": -1,
@@ -289,7 +289,7 @@
             "properties": {
               "Node name for S&R": "VAEDecode"
             },
-            "index": 5
+            "index": 4
           },
           {
             "id": -1,
@@ -315,18 +315,18 @@
             "outputs": [],
             "properties": {},
             "widgets_values": ["ComfyUI"],
-            "index": 6
+            "index": 5
           }
         ],
         "links": [
-          [1, 1, 2, 0, 4, "CLIP"],
-          [1, 1, 3, 0, 4, "CLIP"],
-          [1, 0, 4, 0, 4, "MODEL"],
-          [2, 0, 4, 1, 6, "CONDITIONING"],
-          [3, 0, 4, 2, 7, "CONDITIONING"],
-          [4, 0, 5, 0, 3, "LATENT"],
-          [1, 2, 5, 1, 4, "VAE"],
-          [5, 0, 6, 0, 8, "IMAGE"]
+          [0, 1, 1, 0, 4, "CLIP"],
+          [0, 1, 2, 0, 4, "CLIP"],
+          [0, 0, 3, 0, 4, "MODEL"],
+          [1, 0, 3, 1, 6, "CONDITIONING"],
+          [2, 0, 3, 2, 7, "CONDITIONING"],
+          [3, 0, 4, 0, 3, "LATENT"],
+          [0, 2, 4, 1, 4, "VAE"],
+          [4, 0, 5, 0, 8, "IMAGE"]
         ],
         "external": []
       }
