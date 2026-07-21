@@ -4,146 +4,123 @@
     data-testid="queue-status-toast"
     class="pointer-events-auto flex flex-col items-end gap-1"
   >
-    <!-- Status pill + expand tab, sharing one surface -->
-    <div
-      class="flex items-center gap-1 rounded-xl bg-comfy-menu-bg p-2 shadow-interface"
+    <ProcessToast
+      :verb="toastView.verb"
+      :percent="toastView.percent"
+      :status="toastView.status"
+      :failed-count="failedCount"
+      :expanded="expanded"
+      :hide-chevron="activeJobs.length === 0"
+      progress-class="bg-base-foreground/90"
+      @toggle-expand="expanded = !expanded"
     >
-      <ProcessToast
-        :verb="toastView.verb"
-        :percent="toastView.percent"
-        :status="toastView.status"
-        :failed-count="failedCount"
-        hide-chevron
-        progress-class="bg-base-foreground"
-        pill-class="rounded-md bg-secondary-background shadow-none"
-      >
-        <template #action>
-          <template v-if="toastView.showStop">
-            <div
-              class="mx-0.5 h-5 w-px shrink-0 self-center bg-interface-stroke"
+      <template #action>
+        <template v-if="toastView.showStop">
+          <div
+            class="mx-0.5 h-7 w-px shrink-0 self-center bg-base-foreground/10"
+            aria-hidden="true"
+          />
+          <button
+            v-tooltip.bottom="stopTooltip"
+            type="button"
+            class="flex cursor-pointer items-center gap-1.5 border-none bg-transparent px-1 text-[13.8px] font-semibold whitespace-nowrap text-base-foreground"
+            :aria-label="t('processToast.stop')"
+            data-testid="queue-status-stop"
+            @click="interruptAll"
+          >
+            <span
+              class="size-[11px] shrink-0 rounded-[2px] bg-base-foreground"
               aria-hidden="true"
             />
-            <Button
-              v-tooltip.bottom="stopTooltip"
-              variant="textonly"
-              size="sm"
-              class="gap-1 text-text-secondary"
-              :aria-label="t('processToast.stop')"
-              data-testid="queue-status-stop"
-              @click="interruptAll"
-            >
-              <i class="icon-[comfy--stop] size-4 shrink-0" />
-              {{ t('processToast.stop') }}
-            </Button>
-          </template>
+            {{ t('processToast.stop') }}
+          </button>
         </template>
-      </ProcessToast>
-
-      <Button
-        v-if="activeJobs.length > 0"
-        v-tooltip.bottom="expandTooltip"
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="
-          expanded ? t('processToast.collapse') : t('processToast.expand')
-        "
-        data-testid="queue-status-expand"
-        @click="expanded = !expanded"
-      >
-        <i
-          :class="
-            cn(
-              'size-4',
-              expanded
-                ? 'icon-[lucide--chevron-up]'
-                : 'icon-[lucide--chevron-down]'
-            )
-          "
-        />
-      </Button>
-    </div>
+      </template>
+    </ProcessToast>
 
     <div
       v-if="expanded"
       data-testid="queue-status-panel"
-      class="flex w-80 flex-col overflow-clip rounded-lg bg-comfy-menu-bg shadow-interface"
+      class="flex w-80 flex-col overflow-clip rounded-lg bg-comfy-menu-bg drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
-        <div class="flex h-10 shrink-0 items-center justify-between px-3">
-          <span class="text-sm font-bold text-base-foreground">
-            {{ t('queueStatus.activeGenerations') }}
-          </span>
-          <Button
-            v-if="hasRunningJob"
-            variant="textonly"
-            size="sm"
-            class="font-medium text-base-foreground"
-            data-testid="queue-status-cancel-all"
-            @click="interruptAll"
-          >
-            {{ t('queueStatus.cancelAll') }}
-          </Button>
-        </div>
+      <div class="flex shrink-0 items-center justify-between py-3.5 pr-3 pl-4">
+        <span class="text-[13px] font-semibold text-base-foreground">
+          {{ t('queueStatus.activeGenerations') }}
+        </span>
+        <button
+          v-if="hasRunningJob"
+          type="button"
+          class="cursor-pointer border-none bg-transparent text-[11px] font-medium text-base-foreground"
+          data-testid="queue-status-cancel-all"
+          @click="interruptAll"
+        >
+          {{ t('queueStatus.cancelAll') }}
+        </button>
+      </div>
 
-        <div class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
-          <div
-            v-for="job in activeJobs"
-            :key="job.id"
-            data-testid="queue-status-row"
-            class="flex flex-col gap-1 rounded-lg bg-secondary-background px-3 py-2"
-          >
-            <div class="flex items-center justify-between gap-2">
+      <div
+        class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-[9px] pb-[9px]"
+      >
+        <div
+          v-for="job in activeJobs"
+          :key="job.id"
+          data-testid="queue-status-row"
+          class="flex flex-col gap-1.5 rounded-[10px] bg-secondary-background p-2.5"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex min-w-0 flex-1 flex-col gap-1.5">
               <span
-                class="min-w-0 flex-1 truncate text-xs font-medium text-base-foreground"
+                class="truncate text-[12.5px] leading-none font-medium text-base-foreground"
               >
                 {{ job.title }}
               </span>
-              <div class="-my-1 flex shrink-0 items-center gap-0.5">
-                <Button
-                  v-tooltip.bottom="locateTooltip"
-                  variant="textonly"
-                  size="icon-sm"
-                  :aria-label="t('queueStatus.locate')"
-                  data-testid="queue-status-row-view"
-                  @click="viewJob(job)"
-                >
-                  <i class="icon-[lucide--locate] size-3.5 text-text-secondary" />
-                </Button>
-                <Button
-                  v-tooltip.bottom="cancelTooltip"
-                  variant="textonly"
-                  size="icon-sm"
-                  :aria-label="t('queueStatus.cancel')"
-                  data-testid="queue-status-row-cancel"
-                  @click="cancelJob(job)"
-                >
-                  <i class="icon-[lucide--x] size-3.5 text-text-secondary" />
-                </Button>
-              </div>
+              <span class="truncate text-[11px] leading-none text-[#8a8a8a]">
+                {{ jobSubtitle(job) }}
+              </span>
             </div>
-
-            <span class="text-[11px] leading-none text-muted-foreground">
-              {{ jobSubtitle(job) }}
-            </span>
-
-            <div
-              v-if="isRunning(job)"
-              class="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-white/10"
-            >
-              <div
-                class="h-full rounded-full bg-base-foreground transition-[width] duration-200 ease-out"
-                :style="{ width: `${jobPercent(job)}%` }"
-              />
+            <div class="flex shrink-0 items-center gap-4">
+              <button
+                v-tooltip.bottom="locateTooltip"
+                type="button"
+                class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
+                :aria-label="t('queueStatus.locate')"
+                data-testid="queue-status-row-view"
+                @click="viewJob(job)"
+              >
+                <i class="icon-[lucide--locate] size-3.5" />
+              </button>
+              <button
+                v-tooltip.bottom="cancelTooltip"
+                type="button"
+                class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
+                :aria-label="t('queueStatus.cancel')"
+                data-testid="queue-status-row-cancel"
+                @click="cancelJob(job)"
+              >
+                <i class="icon-[lucide--x] size-3.5" />
+              </button>
             </div>
           </div>
 
-          <p
-            v-if="!activeJobs.length"
-            class="px-2 py-4 text-center text-xs text-muted-foreground"
+          <div
+            v-if="isRunning(job)"
+            class="mt-1 h-1 w-full overflow-hidden rounded-[2px] bg-base-foreground/10"
           >
-            {{ t('queueStatus.nothingRunning') }}
-          </p>
+            <div
+              class="h-full rounded-[2px] bg-base-foreground/90 transition-[width] duration-200 ease-out"
+              :style="{ width: `${jobPercent(job)}%` }"
+            />
+          </div>
         </div>
+
+        <p
+          v-if="!activeJobs.length"
+          class="px-2 py-4 text-center text-xs text-muted-foreground"
+        >
+          {{ t('queueStatus.nothingRunning') }}
+        </p>
       </div>
+    </div>
   </div>
 
   <!-- Idle: nothing queued, running or recently finished -->
@@ -208,7 +185,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t, n } = useI18n()
 const queueStore = useQueueStore()
@@ -321,11 +297,6 @@ const jobSubtitle = (job: JobListItem) => {
 
 const stopTooltip = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
-)
-const expandTooltip = computed(() =>
-  buildTooltipConfig(
-    expanded.value ? t('processToast.collapse') : t('processToast.expand')
-  )
 )
 const locateTooltip = computed(() =>
   buildTooltipConfig(t('queueStatus.locate'))

@@ -5,7 +5,7 @@
       data-testid="process-toast-pill"
       :class="
         cn(
-          'relative flex h-8 items-center gap-1.5 overflow-clip rounded-lg bg-comfy-menu-bg py-1 pr-1 pl-2.5 shadow-interface',
+          'relative flex h-[30px] items-center gap-1.5 overflow-clip rounded-lg border border-solid border-[#2d2e32] bg-secondary-background px-2 shadow-interface',
           pillClass
         )
       "
@@ -26,12 +26,14 @@
         class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
       />
 
-      <span class="text-xs font-normal whitespace-nowrap text-base-foreground">
+      <span
+        class="text-[13.8px] font-semibold whitespace-nowrap text-base-foreground"
+      >
         {{ verb }}
       </span>
       <span
         v-if="showPercent"
-        class="text-xs font-normal tabular-nums text-base-foreground"
+        class="text-[13.8px] font-bold tabular-nums text-base-foreground"
       >
         {{ displayPercent }}%
       </span>
@@ -58,7 +60,7 @@
         <i
           :class="
             cn(
-              'size-3.5',
+              'size-3',
               expanded
                 ? 'icon-[lucide--chevron-up]'
                 : 'icon-[lucide--chevron-down]'
