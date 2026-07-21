@@ -39,6 +39,44 @@
           $t('subscription.eduPromoHeader', { percent: EDU_DISCOUNT_PERCENT })
         }}
       </div>
+      <div
+        v-else-if="needsEduVerification"
+        class="flex flex-col items-center gap-2"
+      >
+        <div
+          class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
+        >
+          {{
+            $t('subscription.eduVerifyHeader', {
+              percent: EDU_DISCOUNT_PERCENT
+            })
+          }}
+        </div>
+        <div class="flex items-center gap-2">
+          <Button
+            v-if="!isSent"
+            size="sm"
+            variant="secondary"
+            :disabled="isSending"
+            @click="sendVerification"
+          >
+            {{ $t('subscription.eduVerifySend') }}
+          </Button>
+          <template v-else>
+            <span class="text-sm text-muted-foreground">
+              {{ $t('subscription.eduVerifySentHint') }}
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              :disabled="isConfirmingVerification"
+              @click="handleVerificationConfirmed"
+            >
+              {{ $t('subscription.eduVerifyConfirm') }}
+            </Button>
+          </template>
+        </div>
+      </div>
     </div>
 
     <PricingTable
@@ -157,14 +195,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
+import { useEmailVerification } from '@/composables/auth/useEmailVerification'
 import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import { EDU_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useAuthStore } from '@/stores/authStore'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -184,7 +225,27 @@ const emit = defineEmits<{
 }>()
 
 const { isActiveSubscription } = useBillingContext()
-const { isEduPricingActive } = useEduPricing()
+const { isEduPricingActive, needsEduVerification } = useEduPricing()
+const { isSending, isSent, sendVerification, refreshVerification } =
+  useEmailVerification()
+const { fetchStatus } = useSubscription()
+const authStore = useAuthStore()
+
+const isConfirmingVerification = ref(false)
+
+// Post-verification loop: refreshed token -> re-provision (ratchets is_edu) -> refetch status.
+const handleVerificationConfirmed = async () => {
+  if (isConfirmingVerification.value) return
+  isConfirmingVerification.value = true
+  try {
+    const verified = await refreshVerification()
+    if (!verified) return
+    await authStore.createCustomer()
+    await fetchStatus()
+  } finally {
+    isConfirmingVerification.value = false
+  }
+}
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)

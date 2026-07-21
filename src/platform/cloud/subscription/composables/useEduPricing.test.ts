@@ -6,6 +6,20 @@ import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduP
 const mockEduFlag = ref(false)
 const mockIsEduCustomer = ref(false)
 const mockIsCloud = ref(true)
+const mockUserEmail = ref<string | null>(null)
+const mockIsEmailVerified = ref<boolean | null>(null)
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    userEmail: computed(() => mockUserEmail.value)
+  })
+}))
+
+vi.mock('@/composables/auth/useEmailVerification', () => ({
+  useEmailVerification: () => ({
+    isEmailVerified: computed(() => mockIsEmailVerified.value)
+  })
+}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -35,6 +49,8 @@ describe('useEduPricing', () => {
     mockIsCloud.value = true
     mockEduFlag.value = false
     mockIsEduCustomer.value = false
+    mockUserEmail.value = null
+    mockIsEmailVerified.value = null
   })
 
   it('is inactive unless both the flag and the customer marker are set', () => {
@@ -69,5 +85,39 @@ describe('useEduPricing', () => {
 
     const { isEduPricingActive } = useEduPricing()
     expect(isEduPricingActive.value).toBe(true)
+  })
+
+  it('nudges an unverified edu email when the flag is on', () => {
+    mockEduFlag.value = true
+    mockUserEmail.value = 'student@harvard.edu'
+    mockIsEmailVerified.value = false
+
+    const { isEduPricingActive, needsEduVerification } = useEduPricing()
+    expect(isEduPricingActive.value).toBe(false)
+    expect(needsEduVerification.value).toBe(true)
+  })
+
+  it('does not nudge when the discount is already active', () => {
+    mockEduFlag.value = true
+    mockIsEduCustomer.value = true
+    mockUserEmail.value = 'student@harvard.edu'
+    mockIsEmailVerified.value = false
+
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
+  })
+
+  it('does not nudge verified, unknown-state, or non-edu emails', () => {
+    mockEduFlag.value = true
+    mockUserEmail.value = 'student@harvard.edu'
+
+    mockIsEmailVerified.value = true
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
+
+    mockIsEmailVerified.value = null
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
+
+    mockIsEmailVerified.value = false
+    mockUserEmail.value = 'dev@acme-corp.com'
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
   })
 })
