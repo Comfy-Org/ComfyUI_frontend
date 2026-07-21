@@ -206,7 +206,9 @@ export const useAssetsStore = defineStore('assets', () => {
   let historyCursorMode = false
 
   const isRejectedCursorError = (err: unknown): boolean =>
-    err instanceof JobsApiError && err.status === 400
+    err instanceof JobsApiError &&
+    err.status === 400 &&
+    err.errorCode === 'INVALID_CURSOR'
 
   const fetchHistoryPageWithCursorRecovery = async (
     after: string | null,

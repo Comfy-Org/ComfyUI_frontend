@@ -6,6 +6,8 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { z } from 'zod'
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
@@ -29,12 +31,32 @@ export type JobsPageRequest =
   | { offset?: number; after?: never }
 
 /**
- * Non-ok response from the jobs API. Carries the HTTP status so callers can
- * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
+ * Non-ok response from the jobs API. Carries the HTTP status and the parsed
+ * machine-readable `errorCode` (from the JSON error body) so callers can tell a
+ * rejected cursor (`INVALID_CURSOR`) apart from other 400s and transient
+ * failures. `errorCode` is undefined when the body isn't the structured error
+ * shape (e.g. a proxy error page).
  */
 const MAX_ERROR_BODY_LENGTH = 200
 
+// Cap synchronous JSON.parse so an oversized error body can't block the UI
+// thread; the structured error is a few hundred bytes at most.
+const MAX_ERROR_PARSE_LENGTH = 10_000
+
+const zJobsErrorBody = z.object({ code: z.string() })
+
+function parseErrorCode(body: string): string | undefined {
+  if (body.length > MAX_ERROR_PARSE_LENGTH) return undefined
+  try {
+    return zJobsErrorBody.safeParse(JSON.parse(body)).data?.code
+  } catch {
+    return undefined
+  }
+}
+
 export class JobsApiError extends Error {
+  readonly errorCode?: string
+
   constructor(
     readonly status: number,
     body: string
@@ -45,6 +67,7 @@ export class JobsApiError extends Error {
         : body
     super(`[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim())
     this.name = 'JobsApiError'
+    this.errorCode = parseErrorCode(body)
   }
 }
 
