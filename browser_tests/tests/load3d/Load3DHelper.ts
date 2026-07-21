@@ -11,27 +11,35 @@ export class Load3DHelper {
   }
 
   get menuButton(): Locator {
-    return this.node.getByRole('button', { name: /show menu/i })
+    return this.node.getByTestId(TestIds.load3d.categoryMenu)
+  }
+
+  private get menuPanel(): Locator {
+    return this.node.page().getByRole('dialog')
   }
 
   get recordingButton(): Locator {
-    return this.node.getByRole('button', { name: /start recording/i })
+    return this.node.getByRole('button', { name: 'Record', exact: true })
   }
 
   get stopRecordingButton(): Locator {
     return this.node.getByRole('button', { name: /stop recording/i })
   }
 
-  get exportRecordingButton(): Locator {
-    return this.node.getByRole('button', { name: /export recording/i })
-  }
-
-  get clearRecordingButton(): Locator {
-    return this.node.getByRole('button', { name: /clear recording/i })
-  }
-
-  get recordingDuration(): Locator {
+  get recordingMenuButton(): Locator {
     return this.node.getByTestId(TestIds.load3d.recordingDuration)
+  }
+
+  get downloadRecordingMenuItem(): Locator {
+    return this.menuPanel.getByRole('button', { name: 'Download Recording' })
+  }
+
+  get startNewRecordingMenuItem(): Locator {
+    return this.menuPanel.getByRole('button', { name: 'Start New Recording' })
+  }
+
+  get deleteRecordingMenuItem(): Locator {
+    return this.menuPanel.getByRole('button', { name: 'Delete Recording' })
   }
 
   get gridToggleButton(): Locator {
@@ -39,11 +47,11 @@ export class Load3DHelper {
   }
 
   get uploadBackgroundImageButton(): Locator {
-    return this.node.getByRole('button', { name: /upload background image/i })
+    return this.node.getByRole('button', { name: 'BG Image' })
   }
 
   get removeBackgroundImageButton(): Locator {
-    return this.node.getByRole('button', { name: /remove background image/i })
+    return this.node.getByRole('button', { name: 'Remove BG' })
   }
 
   get panoramaModeButton(): Locator {
@@ -52,6 +60,10 @@ export class Load3DHelper {
 
   get colorInput(): Locator {
     return this.node.locator('input[type="color"]')
+  }
+
+  get exportButton(): Locator {
+    return this.node.getByRole('button', { name: 'Export', exact: true })
   }
 
   get openViewerButton(): Locator {
@@ -63,11 +75,15 @@ export class Load3DHelper {
   }
 
   getMenuCategory(name: string): Locator {
-    return this.node.getByText(name, { exact: true })
+    return this.menuPanel.getByRole('button', { name, exact: true })
   }
 
   get gizmoToggleButton(): Locator {
-    return this.node.getByRole('button', { name: 'Gizmo' })
+    // The category chip is also named "Gizmo" once that category is active;
+    // only the toggle carries aria-pressed.
+    return this.node
+      .getByRole('button', { name: 'Gizmo' })
+      .and(this.node.locator('[aria-pressed]'))
   }
 
   get gizmoTranslateButton(): Locator {
@@ -83,11 +99,15 @@ export class Load3DHelper {
   }
 
   get gizmoResetButton(): Locator {
-    return this.node.getByRole('button', { name: 'Reset Transform' })
+    return this.node.getByRole('button', { name: 'Reset', exact: true })
   }
 
   async openMenu(): Promise<void> {
     await this.menuButton.click()
+  }
+
+  async openRecordingMenu(): Promise<void> {
+    await this.recordingMenuButton.click()
   }
 
   async openGizmoCategory(): Promise<void> {

@@ -2,12 +2,11 @@ import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, nextTick, onMounted, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
 
-import type * as DistributionTypes from '@/platform/distribution/types'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
@@ -35,19 +34,29 @@ vi.mock('@/services/customerEventsService', () => ({
   }
 }))
 
+const mockTelemetry = vi.hoisted(() => ({
+  checkForCompletedTopup: vi.fn()
+}))
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
+  useTelemetry: () => mockTelemetry
 }))
 
-const mockFlags = vi.hoisted(() => ({ teamWorkspacesEnabled: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
+const mockBillingRouting = vi.hoisted(() => ({
+  shouldUseWorkspaceBilling: false
 }))
-
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionTypes>()),
-  isCloud: true
-}))
+vi.mock('@/composables/billing/useBillingRouting', async () => {
+  const { ref } = await import('vue')
+  const shouldUseWorkspaceBilling = ref(false)
+  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+    get: () => shouldUseWorkspaceBilling.value,
+    set: (value: boolean) => {
+      shouldUseWorkspaceBilling.value = value
+    }
+  })
+  return {
+    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
+  }
+})
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
@@ -68,7 +77,10 @@ const i18n = createI18n({
         additionalInfo: 'Additional Info',
         added: 'Added',
         accountInitialized: 'Account initialized',
-        model: 'Model'
+        model: 'Model',
+        loadEventsError: 'Failed to load activity. Please try again.',
+        loadEventsUnknownError:
+          'Something went wrong while loading activity. Please refresh and try again.'
       }
     }
   }
@@ -94,6 +106,11 @@ const AutoRefreshWrapper = defineComponent({
   },
   template: '<UsageLogsTable ref="tableRef" />'
 })
+
+async function flushMicrotasks() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+}
 
 function makeEventsResponse(
   events: Partial<AuditLog>[],
@@ -137,7 +154,7 @@ describe('UsageLogsTable', () => {
 
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
-    mockFlags.teamWorkspacesEnabled = false
+    mockBillingRouting.shouldUseWorkspaceBilling = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -228,7 +245,7 @@ describe('UsageLogsTable', () => {
       })
     })
 
-    it('shows error message when service throws', async () => {
+    it('shows a localized fallback instead of a raw Error message', async () => {
       mockCustomerEventsService.getMyEvents.mockRejectedValue(
         new Error('Network error')
       )
@@ -236,7 +253,25 @@ describe('UsageLogsTable', () => {
       renderWithAutoRefresh()
 
       await waitFor(() => {
-        expect(screen.getByText('Network error')).toBeInTheDocument()
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Network error')).not.toBeInTheDocument()
+    })
+
+    it('shows a localized fallback when the service reports no message', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
+      mockCustomerEventsService.error.value = null
+
+      renderWithAutoRefresh()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Failed to load activity. Please try again.')
+        ).toBeInTheDocument()
       })
     })
 
@@ -341,8 +376,8 @@ describe('UsageLogsTable', () => {
   })
 
   describe('billing events source', () => {
-    it('uses workspaceApi.getBillingEvents when teamWorkspacesEnabled is on', async () => {
-      mockFlags.teamWorkspacesEnabled = true
+    it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
 
       await renderLoaded()
 
@@ -351,6 +386,90 @@ describe('UsageLogsTable', () => {
         limit: 7
       })
       expect(mockCustomerEventsService.getMyEvents).not.toHaveBeenCalled()
+    })
+
+    it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderWithAutoRefresh()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      resolveLegacy(
+        makeEventsResponse([
+          {
+            event_id: 'legacy-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'LegacyAPI', model: 'legacy-model' },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      await flushMicrotasks()
+
+      expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+    })
+
+    it('runs top-up completion telemetry for a superseded response', async () => {
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderWithAutoRefresh()
+
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      const legacyResponse = makeEventsResponse([
+        {
+          event_id: 'legacy-1',
+          event_type: EventType.CREDIT_ADDED,
+          params: { amount: 1000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+      ])
+      resolveLegacy(legacyResponse)
+
+      await waitFor(() => {
+        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+          legacyResponse.events
+        )
+      })
     })
   })
 

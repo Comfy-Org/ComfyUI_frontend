@@ -8,6 +8,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
+  BillingRail,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
@@ -103,6 +104,14 @@ function setLastWorkspaceId(workspaceId: string): void {
   }
 }
 
+function clearLastWorkspaceId(): void {
+  try {
+    localStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
+  } catch {
+    console.warn('Failed to clear last workspace ID from localStorage')
+  }
+}
+
 const MAX_OWNED_WORKSPACES = 10
 export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
@@ -112,6 +121,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const activeWorkspaceId = ref<string | null>(null)
+  const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
   const isCreating = ref(false)
@@ -130,6 +140,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const isInPersonalWorkspace = computed(
     () => activeWorkspace.value?.type === 'personal'
   )
+
+  const activeWorkspaceBillingRail = computed(() => {
+    const workspaceId = activeWorkspaceId.value
+    return workspaceId
+      ? (billingRailByWorkspaceId.value[workspaceId] ?? null)
+      : null
+  })
 
   const sharedWorkspaces = computed(() =>
     workspaces.value.filter((w) => w.type !== 'personal')
@@ -214,6 +231,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   function updateActiveWorkspace(updates: Partial<WorkspaceState>) {
     if (!activeWorkspaceId.value) return
     updateWorkspace(activeWorkspaceId.value, updates)
+  }
+
+  function setWorkspaceBillingRail(
+    workspaceId: string,
+    billingRail: BillingRail
+  ) {
+    billingRailByWorkspaceId.value = {
+      ...billingRailByWorkspaceId.value,
+      [workspaceId]: billingRail
+    }
   }
 
   /**
@@ -363,6 +390,20 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Drop a revoked/deleted active workspace and reload so init falls back to the
+   * personal workspace. Skips the personal workspace to avoid a reload loop.
+   */
+  function forgetRevokedActiveWorkspace(workspaceId: string): void {
+    if (activeWorkspaceId.value !== workspaceId) return
+
+    const revoked = workspaces.value.find((w) => w.id === workspaceId)
+    if (revoked?.type === 'personal') return
+
+    clearLastWorkspaceId()
+    window.location.reload()
+  }
+
+  /**
    * Switch to a different workspace.
    * Clears workspace context and reloads the page.
    */
@@ -493,25 +534,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     await renameWorkspace(activeWorkspaceId.value, name)
   }
 
-  /**
-   * Leave the current workspace.
-   * Switches to personal workspace after leaving.
-   */
   async function leaveWorkspace(): Promise<void> {
     const current = activeWorkspace.value
-    if (!current || current.type === 'personal') {
-      throw new Error('Cannot leave personal workspace')
-    }
+    if (!current) throw new Error('No active workspace')
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     await workspaceApi.leave()
 
-    // Go to personal workspace
-    const personal = personalWorkspace.value
+    const personal = workspaces.value.find(
+      (workspace) =>
+        workspace.type === 'personal' && workspace.id !== current.id
+    )
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
+    } else {
+      clearLastWorkspaceId()
     }
     window.location.reload()
     // Code after this won't run (page reloads)
@@ -524,7 +563,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
@@ -532,20 +570,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
-  // Tracks which team workspaces have already loaded their members so the
+  // Tracks which workspaces have already loaded their members so the
   // lifecycle gate resolves without redundant or duplicate fetches.
   const loadedMemberWorkspaceIds = new Set<string>()
   let inFlightMembersWorkspaceId: string | null = null
 
   /**
-   * Load the active team workspace's members once. No-ops for personal or
-   * already-loaded workspaces and dedupes concurrent calls. A failed request is
-   * logged and leaves the workspace unloaded so a later call retries.
+   * Load the active workspace's members once. No-ops for already-loaded
+   * workspaces and dedupes concurrent calls. A failed request is logged and
+   * leaves the workspace unloaded so a later call retries.
    */
   async function ensureMembersLoaded(): Promise<void> {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return
-    if (activeWorkspace.value?.type === 'personal') return
     if (loadedMemberWorkspaceIds.has(workspaceId)) return
     if (inFlightMembersWorkspaceId === workspaceId) return
 
@@ -582,7 +619,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
-    if (userId === originalOwnerId.value) {
+    if (
+      activeWorkspace.value?.type === 'personal' &&
+      userId === originalOwnerId.value
+    ) {
       throw new Error("Cannot change the workspace creator's role")
     }
     // Only the role changes; merge it onto the existing row rather than trusting
@@ -604,7 +644,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
@@ -723,6 +762,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     activeWorkspace,
     personalWorkspace,
     isInPersonalWorkspace,
+    activeWorkspaceBillingRail,
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
@@ -744,6 +784,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Workspace Actions
     switchWorkspace,
+    forgetRevokedActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
     renameWorkspace,
@@ -765,6 +806,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Subscription
     subscribeWorkspace,
-    updateActiveWorkspace
+    updateActiveWorkspace,
+    setWorkspaceBillingRail
   }
 })

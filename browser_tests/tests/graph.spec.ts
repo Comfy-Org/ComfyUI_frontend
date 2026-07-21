@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -15,9 +16,10 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/input_order_swap')
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return window.app!.graph!.links.get(1)?.target_slot
-        })
+        comfyPage.page.evaluate(
+          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
+          toLinkId(1)
+        )
       )
       .toBe(1)
   })

@@ -73,6 +73,26 @@ describe('useSessionCookie', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled()
   })
 
+  it('createSession coalesces concurrent callers into one POST', async () => {
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    let resolveFetch: (value: Response) => void = () => {}
+    vi.mocked(globalThis.fetch).mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    const { createSession } = useSessionCookie()
+    const first = createSession()
+    const second = createSession()
+    resolveFetch(new Response(null, { status: 204 }))
+    await Promise.all([first, second])
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('createSessionOrThrow fails fast on non-success responses', async () => {
     mockGetIdToken.mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(

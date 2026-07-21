@@ -1,11 +1,14 @@
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -18,8 +21,9 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -339,6 +343,28 @@ export const useDialogService = () => {
       return
     }
 
+    // Members can't top up a team workspace, so they get a read-only
+    // "ask your workspace admins" notice instead of the purchase dialog.
+    if (
+      type.value === 'workspace' &&
+      !useWorkspaceUI().permissions.value.canTopUp
+    ) {
+      return dialogStore.showDialog({
+        key: 'insufficient-credits-member',
+        component: InsufficientCreditsMemberDialog,
+        props: {
+          onClose: () =>
+            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
+    }
+
     const component =
       type.value === 'workspace'
         ? TopUpCreditsDialogContentWorkspace
@@ -442,9 +468,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -632,7 +658,7 @@ export const useDialogService = () => {
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
-  }) {
+  }): Promise<DowngradeToPersonalResult | null> {
     const { useDowngradeToPersonal } =
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
     const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
@@ -641,8 +667,7 @@ export const useDialogService = () => {
     try {
       await refreshMembers()
       if (!hasOtherMembers.value) {
-        await downgradeToPersonal(options.planSlug)
-        return
+        return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
       useToastStore().add({
@@ -650,24 +675,44 @@ export const useDialogService = () => {
         summary: t('subscription.downgrade.failed'),
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
-      return
+      return null
     }
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'downgrade-remove-members',
-      component,
-      props: {
-        planName: options.planName,
-        planSlug: options.planSlug,
-        onConfirm: downgradeToPersonal
-      },
-      dialogComponentProps: {
-        ...workspaceDialogProps,
-        closable: false,
-        dismissableMask: false
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
+    return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
       }
+
+      dialogStore.showDialog({
+        key: dialogKey,
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          onConfirm: async (planSlug: string) => {
+            const result = await downgradeToPersonal(planSlug)
+            resolveResult(result)
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolveResult(null)
+        }
+      })
     })
   }
 

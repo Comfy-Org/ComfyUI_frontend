@@ -22,6 +22,8 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { isCloud } from '@/platform/distribution/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -85,6 +87,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const modelStore = useModelStore()
+  const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
   const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
@@ -311,6 +314,9 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        if (!isCloud) {
+          await missingModelStore.refreshMissingModels({ reloadDefs: false })
+        }
       }
     },
     {
@@ -503,7 +509,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -526,7 +532,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -548,7 +554,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!isActiveSubscription.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 

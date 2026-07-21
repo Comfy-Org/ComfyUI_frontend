@@ -12,6 +12,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -145,9 +147,7 @@ describe('useAuthStore', () => {
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
-  const mockAuth: MockAuth = {
-    /* mock Auth object */
-  }
+  const mockAuth: MockAuth = {/* mock Auth object */}
 
   const mockUser: MockUser = {
     uid: 'test-user-id',
@@ -618,6 +618,114 @@ describe('useAuthStore', () => {
 
       const authHeader = await store.getAuthHeader()
       expect(authHeader).toBeNull() // Should fallback gracefully
+    })
+  })
+
+  describe('getAuthHeader workspace recovery', () => {
+    beforeEach(() => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+    })
+
+    it('uses the workspace header when a valid workspace token exists', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
+        Authorization: 'Bearer ws-token'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ Authorization: 'Bearer ws-token' })
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('recovers the workspace token instead of downgrading to personal auth', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      const ensureSpy = vi
+        .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
+        .mockResolvedValue({ Authorization: 'Bearer recovered-ws-token' })
+
+      const header = await store.getAuthHeader()
+
+      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
+      expect(header).toEqual({ Authorization: 'Bearer recovered-ws-token' })
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
+        null
+      )
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = null
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
+      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
+
+      const header = await store.getAuthHeader()
+
+      expect(ensureSpy).not.toHaveBeenCalled()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+  })
+
+  describe('getAuthToken workspace recovery', () => {
+    beforeEach(() => {
+      mockFeatureFlags.teamWorkspacesEnabled = true
+    })
+
+    it('recovers the workspace token instead of downgrading to personal auth', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      const ensureSpy = vi
+        .spyOn(workspaceAuth, 'ensureWorkspaceToken')
+        .mockResolvedValue('recovered-ws-token')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
+      expect(token).toBe('recovered-ws-token')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = 'workspace-123'
+      vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
+
+      const token = await store.getAuthToken()
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const teamStore = useTeamWorkspaceStore()
+      teamStore.activeWorkspaceId = null
+      vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
+      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
+
+      const token = await store.getAuthToken()
+
+      expect(ensureSpy).not.toHaveBeenCalled()
+      expect(token).toBe('mock-id-token')
     })
   })
 

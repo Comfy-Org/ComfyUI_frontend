@@ -61,6 +61,9 @@ function onDismiss() {
 
 function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
-  subscriptionDialog.show({ planMode: 'team' })
+  subscriptionDialog.show({
+    planMode: 'team',
+    reason: 'invite_member_upsell'
+  })
 }
 </script>

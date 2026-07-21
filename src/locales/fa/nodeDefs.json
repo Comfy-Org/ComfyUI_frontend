@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "تولید گفتار، موسیقی، افکت‌های صوتی و گفت‌وگوی چند گوینده با یک پرامپت واحد توسط ByteDance Seed Audio ۱.۰. صدای(ها)، احساسات، فضای محیطی، موسیقی پس‌زمینه و افکت‌های صوتی را در پرامپت توصیف کنید و جملات مورد نظر برای گفتن را وارد نمایید. به صورت اختیاری می‌توانید یک صدای پیش‌فرض داخلی انتخاب کنید، تا ۳ صدا را از کلیپ‌های مرجع (با برچسب @Audio1-3 در پرامپت) شبیه‌سازی کنید یا صدایی را از تصویر یک شخصیت استخراج نمایید. حداکثر ۲ دقیقه صوت در هر اجرا.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "بلندی صدا. ۰ = عادی، ۱۰۰ = ۲.۰ برابر، ‎-۵۰ = ۰.۵ برابر."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "تغییر گام به نیم‌پرده (‎-۱۲ تا ۱۲)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "نحوه تعیین ویژگی صدای خروجی: «فقط متن» (همه چیز را در پرامپت توصیف کنید)، «مرجع صوتی» (تا ۳ صدا را شبیه‌سازی کنید، با برچسب @Audio1-3)، «مرجع تصویری» (صدایی را از تصویر یک شخصیت استخراج کنید)، یا «صدای پیش‌فرض» (یک صدای داخلی انتخاب کنید که پرامپت را بخواند)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "نرخ نمونه‌برداری خروجی بر حسب هرتز."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed تعیین می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "سرعت گفتار. ۰ = عادی، ۱۰۰ = ۲.۰ برابر، ‎-۵۰ = ۰.۵ برابر."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "صدای(ها)، احساسات، سرعت بیان، فضای محیطی، موسیقی پس‌زمینه و افکت‌های صوتی را توصیف کنید و جملات مورد نظر برای گفتن را وارد نمایید (برای گفت‌وگو، نام شخصیت‌ها را در متن ذکر کنید). در حالت «مرجع صوتی»، به کلیپ‌های متصل به ترتیب با @Audio1، @Audio2، @Audio3 ارجاع دهید. حداکثر ۳۰۰۰ کاراکتر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "تولید پاسخ متنی با مدل‌های Seed 2.0 شرکت ByteDance. یک متن ورودی (prompt) و در صورت نیاز یک یا چند تصویر یا ویدیو برای زمینه چندرسانه‌ای ارائه دهید.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "model"
       },
-      "model_fail_on_partial": {
-        "name": "fail_on_partial"
-      },
       "model_height": {
         "name": "height"
-      },
-      "model_max_images": {
-        "name": "max_images"
       },
       "model_size_preset": {
         "name": "size_preset"
@@ -1288,6 +1324,10 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed مورد استفاده برای تولید."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "فعال‌سازی استدلال بهینه‌سازی پرامپت مدل («thinking») برای تبعیت بهتر. می‌تواند زمان تولید را به طور قابل توجهی افزایش دهد — به ویژه در Seedream ۵.۰ Pro. فقط برای تبدیل متن به تصویر قابل غیرفعال‌سازی است (نه زمانی که تصاویر مرجع ارائه شده‌اند)."
       },
       "watermark": {
         "name": "watermark",
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "هگز",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "شرطی‌سازی مقصد"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Conditioning (ضرب)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2780,6 +2835,10 @@
         "name": "background",
         "tooltip": "تصویر اختیاری که به عنوان پس‌زمینه در بوم و پیش‌نمایش استفاده می‌شود."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "جعبه‌های مرزی، عناصر یا یک رشته JSON برای مقداردهی اولیه بوم (canvas). مقدار جدید بالادستی بوم را مقداردهی اولیه می‌کند؛ ویرایش‌های انجام‌شده روی بوم در اولویت هستند و تا زمانی که مقدار بالادستی دوباره تغییر کند، حفظ می‌شوند."
+      },
       "editor_state": {
         "name": "editor_state",
         "tooltip": "جعبه‌های مرزی را رسم کنید و نوع هر جعبه، متن، توضیح و پالت رنگ را تعیین کنید. با عنصر پس‌زمینه شروع و با پیش‌زمینه پایان دهید."
@@ -2787,6 +2846,10 @@
       "height": {
         "name": "height",
         "tooltip": "ارتفاع بوم و شبکه پیکسلی برای جعبه‌های مرزی."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "وضعیت داخلی مدیریت‌شده توسط بوم: آخرین مقدار bboxes بالادستی که آن را مقداردهی اولیه کرده است. برای مقداردهی اولیه مجدد بوم از ورودی bboxes در اجرای بعدی، این قسمت را خالی بگذارید."
       },
       "width": {
         "name": "width",
@@ -5196,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "تولید ویدیو همراه با صدا از یک پرامپت متنی با استفاده از مدل Gemini Omni Flash گوگل. به صورت اختیاری می‌توانید تصاویر و/یا ویدیوهای مرجع برای راهنمایی یا ویرایش نتیجه ارائه دهید. طول مورد نظر (۳ تا ۱۰ ثانیه) و نسبت تصویر (۱۶:۹ یا ۹:۱۶) را مستقیماً در پرامپت ذکر کنید.",
+    "display_name": "Google Gemini Omni (ویدیو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل ویدیویی Gemini که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed تعیین می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "تولید مسیرها",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "width": {
         "name": "عرض"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "تولید تصویر با استفاده از مدل Ideogram V1.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبت ابعاد برای تولید تصویر."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "تعیین اینکه آیا MagicPrompt در تولید استفاده شود یا خیر"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "توضیح مواردی که باید از تصویر حذف شوند"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "دستور متنی برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "آیا از حالت توربو استفاده شود (تولید سریع‌تر، احتمالاً با کیفیت پایین‌تر)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "تولید تصویر با استفاده از مدل Ideogram V2.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبت ابعاد برای تولید تصویر. اگر وضوح روی AUTO تنظیم نشده باشد، نادیده گرفته می‌شود."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "تعیین اینکه آیا MagicPrompt در تولید استفاده شود یا خیر"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "توضیح مواردی که باید از تصویر حذف شوند"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "دستور متنی برای تولید تصویر"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "وضوح تصویر برای تولید. اگر روی AUTO تنظیم نشده باشد، این مقدار نسبت ابعاد را نادیده می‌گیرد."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "نوع سبک برای تولید (فقط V2)"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "آیا از حالت توربو استفاده شود (تولید سریع‌تر، احتمالاً با کیفیت پایین‌تر)"
       }
     },
     "outputs": {
@@ -10568,6 +10577,12 @@
       "mask": {
         "name": "ماسک"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14576,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
     "display_name": "پیش‌نمایش سه‌بعدی و انیمیشن",
     "inputs": {
       "bg_image": {
@@ -14594,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "پیش‌نمایش یک فایل مدل سه‌بعدی بدون ذخیره آن در پوشه خروجی ComfyUI.",
     "display_name": "پیش‌نمایش سه‌بعدی (پیشرفته)",
     "inputs": {
       "camera_info": {
@@ -14640,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "پیش‌نمایش هر مقدار ورودی به صورت متن.",
     "display_name": "پیش‌نمایش به صورت متن",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "پیش‌نمایش"
-      },
-      "preview_text": {
-        "name": "پیش‌نمایش"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "سورس"
       }
     }
   },
   "PreviewAudio": {
+    "description": "پیش‌نمایش صدا بدون ذخیره آن در پوشه خروجی ComfyUI.",
     "display_name": "پیش‌نمایش صوت",
     "inputs": {
       "audio": {
@@ -14672,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "پیش‌نمایش یک فایل سه‌بعدی gaussian splat بدون ذخیره آن در پوشه خروجی ComfyUI.",
     "display_name": "پیش‌نمایش Splat",
     "inputs": {
       "camera_info": {
@@ -14732,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "پیش‌نمایش یک فایل سه‌بعدی point cloud بدون ذخیره آن در پوشه خروجی ComfyUI.",
     "display_name": "پیش‌نمایش Point Cloud",
     "inputs": {
       "camera_info": {
@@ -17509,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "ذخیره سه‌بعدی (پیشرفته)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "ذخیره PNG متحرک",
     "inputs": {
@@ -17669,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "ذخیره Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "یک فایل سه‌بعدی gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
     "display_name": "ذخیره تصویر",
@@ -17807,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "ذخیره Point Cloud",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل point cloud‏ (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "فایل‌های SVG را روی دیسک ذخیره کنید.",
     "display_name": "ذخیره SVG Node",
@@ -17822,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "SVG",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "ذخیره محتوای متنی در یک فایل در پوشه خروجی.",
+    "display_name": "ذخیره متن",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17950,6 +18136,117 @@
       "0": {
         "name": "بذر",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "ساخت conditioning مثبت/منفی SeedVR2 از یک latent مدل VAE.",
+    "display_name": "اعمال Conditioning مدل SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "مدل SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "conditioning مثبت برای نمونه‌گیری."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "conditioning منفی برای نمونه‌گیری."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "تراز کردن تصویر تولیدشده با تصویر اصلی تغییر اندازه یافته و اعمال تصحیح رنگ.",
+    "display_name": "پردازش پس از خروجی SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "روش تطبیق رنگ تصویر تولیدشده با تصویر اصلی. lab: انتقال رنگ در فضای CIELAB با حفظ جزئیات (وفادارترین). wavelet: انتقال رنگ فرکانس پایین و حفظ جزئیات فرکانس بالای بزرگ‌نمایی شده. adain: تطبیق میانگین/انحراف معیار هر کانال (سریع‌ترین، تغییر رنگ کلی). none: بدون انتقال رنگ (فقط تراز هندسی)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "تصویر تولیدشده برای پردازش."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "تصویر اصلی تغییر اندازه یافته قبل از پیش‌پردازش، به عنوان مرجع استفاده می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "تصویر تراز و تصحیح رنگ شده."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "افزودن حاشیه به تصویر تغییر اندازه یافته برای مدل SeedVR2. کانال آلفا حذف می‌شود. نود پردازش پس از خروجی SeedVR2 آن را از تصویر اصلی تغییر اندازه یافته مجدداً اعمال می‌کند.",
+    "display_name": "پیش‌پردازش ورودی SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "تصویر تغییر اندازه یافته برای پردازش."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "تصویر دارای حاشیه برای کدگذاری VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "تقسیم نهفته ویدیویی SeedVR2 به بخش‌های زمانی همپوشان کوچک‌تر به اندازه‌ای که بتوان هر بار یکی را در VRAM نمونه‌برداری کرد؛ خروجی‌های نهفته به هر دو Apply SeedVR2 Conditioning و ورودی نهفته sampler متصل می‌شوند و سپس با Merge SeedVR2 Latents دوباره ترکیب می‌شوند.",
+    "display_name": "تقسیم نهفته SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = استفاده دقیق از frames_per_chunk؛ auto = پیش‌بینی بزرگ‌ترین بخش که در VRAM آزاد جا می‌گیرد."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "نهفته SeedVR2 کدگذاری‌شده با VAE برای تقسیم."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "فریم‌های نهفته مشترک بین بخش‌های مجاور که هنگام ادغام crossfade می‌شوند؛ ۰ = بدون همپوشانی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "بخش‌های زمانی به ترتیب توالی."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "میزان همپوشانی فریم‌های نهفته بین بخش‌های مجاور، برای Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "ترکیب مجدد بخش‌های زمانی نمونه‌برداری‌شده نهفته SeedVR2 به یک نهفته، با crossfade هر همپوشانی با پنجره Hann به اندازه temporal_overlap که از Split SeedVR2 Latent متصل شده است.",
+    "display_name": "ادغام نهفته‌های SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "بخش‌های زمانی نمونه‌برداری‌شده به ترتیب توالی."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "خروجی temporal_overlap از Split SeedVR2 Latent. ۰ = الحاق ساده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "نهفته ترکیب‌شده با طول کامل."
       }
     }
   },
@@ -18465,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "بخشی از نمونه صوتی موجود را با استفاده از دستور متنی تغییر می‌دهد.",
-    "display_name": "تکمیل صوتی Stability AI",
-    "inputs": {
-      "audio": {
-        "name": "صدا",
-        "tooltip": "صدا باید بین ۶ تا ۱۹۰ ثانیه باشد."
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان",
-        "tooltip": "مدت زمان تولید شده به ثانیه را کنترل می‌کند."
-      },
-      "mask_end": {
-        "name": "پایان ماسک"
-      },
-      "mask_start": {
-        "name": "شروع ماسک"
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "دستور"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر تصادفی مورد استفاده برای تولید."
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد مراحل نمونه‌برداری را کنترل می‌کند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "نمونه‌های صوتی موجود را با استفاده از دستورهای متنی به ترکیب‌های جدید و باکیفیت تبدیل می‌کند.",
-    "display_name": "Stability AI Audio To Audio",
-    "inputs": {
-      "audio": {
-        "name": "صوت",
-        "tooltip": "فایل صوتی باید بین ۶ تا ۱۹۰ ثانیه باشد."
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان",
-        "tooltip": "مدت زمان (بر حسب ثانیه) صوت تولید شده را کنترل می‌کند."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر تصادفی مورد استفاده برای تولید."
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های نمونه‌برداری را کنترل می‌کند."
-      },
-      "strength": {
-        "name": "شدت",
-        "tooltip": "این پارامتر میزان تأثیر پارامتر صوت را بر صوت تولید شده کنترل می‌کند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "تصاویر را به صورت همزمان بر اساس پرامپت و وضوح تصویر تولید می‌کند.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبت تصویر",
-        "tooltip": "نسبت تصویر تولید شده."
-      },
-      "cfg_scale": {
-        "name": "مقیاس cfg",
-        "tooltip": "میزان پایبندی فرآیند diffusion به متن پرامپت (مقادیر بالاتر تصویر را به پرامپت نزدیک‌تر نگه می‌دارد)"
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر"
-      },
-      "image_denoise": {
-        "name": "کاهش نویز تصویر",
-        "tooltip": "کاهش نویز تصویر ورودی؛ مقدار ۰.۰ تصویری مشابه ورودی ایجاد می‌کند و مقدار ۱.۰ به منزله عدم وجود تصویر ورودی است."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "کلمات کلیدی برای مواردی که نمی‌خواهید در تصویر خروجی مشاهده شوند. این یک ویژگی پیشرفته است."
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "آنچه می‌خواهید در تصویر خروجی مشاهده کنید. یک پرامپت قوی و توصیفی که عناصر، رنگ‌ها و موضوعات را به وضوح تعریف کند، نتایج بهتری به همراه خواهد داشت."
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر تصادفی مورد استفاده برای ایجاد نویز."
-      },
-      "style_preset": {
-        "name": "پیش‌تنظیم سبک",
-        "tooltip": "سبک دلخواه (اختیاری) برای تصویر تولید شده."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "تولید تصویر به صورت همزمان بر اساس پرامپت و وضوح تصویر.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبت تصویر",
-        "tooltip": "نسبت تصویر تولید شده."
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر"
-      },
-      "image_denoise": {
-        "name": "کاهش نویز تصویر",
-        "tooltip": "کاهش نویز تصویر ورودی؛ مقدار ۰.۰ تصویری مشابه ورودی ایجاد می‌کند و مقدار ۱.۰ به منزله عدم وجود تصویر ورودی است."
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "توضیحی کوتاه درباره آنچه نمی‌خواهید در تصویر خروجی مشاهده کنید. این یک ویژگی پیشرفته است."
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "آنچه می‌خواهید در تصویر خروجی مشاهده کنید. یک پرامپت قوی و توصیفی که عناصر، رنگ‌ها و موضوعات را به وضوح مشخص کند، نتایج بهتری به همراه خواهد داشت. برای کنترل وزن یک واژه از فرمت `(واژه:وزن)` استفاده کنید، که در آن `واژه` همان واژه مورد نظر و `وزن` مقداری بین ۰ تا ۱ است. برای مثال: `آسمان (آبی:۰.۳) و (سبز:۰.۸)` نشان‌دهنده آسمانی است که هم آبی و هم سبز است، اما سبز بیشتر از آبی است."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
-      },
-      "style_preset": {
-        "name": "پیش‌تنظیم سبک",
-        "tooltip": "سبک دلخواه (اختیاری) برای تصویر تولید شده."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "تولید موسیقی و افکت صوتی با کیفیت بالا از توضیحات متنی.",
-    "display_name": "Stability AI Text To Audio",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان",
-        "tooltip": "مدت زمان (بر حسب ثانیه) صدای تولید شده را کنترل می‌کند."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed تصادفی مورد استفاده برای تولید."
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های نمونه‌برداری را کنترل می‌کند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "بزرگ‌نمایی تصویر با کمترین تغییرات تا وضوح 4K.",
-    "display_name": "Stability AI Upscale Conservative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "creativity": {
-        "name": "خلاقیت",
-        "tooltip": "احتمال ایجاد جزئیات اضافی که به شدت توسط تصویر اولیه تعیین نشده‌اند را کنترل می‌کند."
-      },
-      "image": {
-        "name": "تصویر"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "کلمات کلیدی برای آنچه نمی‌خواهید در تصویر خروجی مشاهده کنید. این یک ویژگی پیشرفته است."
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "آنچه می‌خواهید در تصویر خروجی مشاهده کنید. یک پرامپت قوی و توصیفی که عناصر، رنگ‌ها و موضوعات را به وضوح مشخص کند، نتایج بهتری به همراه خواهد داشت."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "بزرگ‌نمایی تصویر با کمترین تغییرات تا وضوح ۴K.",
-    "display_name": "Stability AI Upscale Creative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "creativity": {
-        "name": "خلاقیت",
-        "tooltip": "احتمال ایجاد جزئیات اضافی که به تصویر اولیه وابسته نیستند را کنترل می‌کند."
-      },
-      "image": {
-        "name": "تصویر"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "کلمات کلیدی برای مواردی که نمی‌خواهید در تصویر خروجی مشاهده شوند. این یک ویژگی پیشرفته است."
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "آنچه می‌خواهید در تصویر خروجی مشاهده کنید. یک پرامپت قوی و توصیفی که عناصر، رنگ‌ها و موضوعات را به‌وضوح تعریف کند، نتایج بهتری به همراه خواهد داشت."
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر تصادفی مورد استفاده برای ایجاد نویز."
-      },
-      "style_preset": {
-        "name": "پیش‌تنظیم سبک",
-        "tooltip": "سبک دلخواه (اختیاری) برای تصویر تولیدشده."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "بزرگ‌نمایی سریع تصویر از طریق API استبیلیتی تا ۴ برابر اندازه اصلی؛ مناسب برای بزرگ‌نمایی تصاویر کم‌کیفیت یا فشرده‌شده.",
-    "display_name": "Stability AI Upscale Fast",
-    "inputs": {
-      "image": {
-        "name": "تصویر"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -19122,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "نام مدل سبک"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "همگام‌سازی مجدد حرکت دهان در یک ویدیو با صدای گفتاری جدید با استفاده از sync.so. به‌طور خودکار کلوزآپ‌ها، نمای نیم‌رخ و موانع را مدیریت می‌کند و در عین حال حالت چهره گوینده را حفظ می‌نماید. هزینه بر اساس مدت زمان خروجی افزایش می‌یابد.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدای گفتاری برای همگام‌سازی حرکت دهان."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل تولید sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید مجدداً اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "تصویربرداری از گوینده برای همگام‌سازی مجدد. تا کیفیت ۴K (۴۰۹۶×۲۱۶۰)؛ نرخ فریم ثابت ۲۴/۲۵/۳۰ فریم بر ثانیه بهترین عملکرد را دارد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "یک تصویر پرتره ثابت را با صدای گفتاری به ویدیوی صحبت‌کننده تبدیل کنید، با استفاده از مدل sync-3 از sync.so. مدت زمان خروجی مطابق با صوت خواهد بود. هزینه بر اساس مدت زمان خروجی افزایش می‌یابد.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدای گفتاری که ویدیوی صحبت‌کننده را هدایت می‌کند؛ مدت زمان خروجی مطابق با آن است. هر node تبدیل متن به گفتار (TTS) را می‌توانید اینجا متصل کنید تا انیمیشن از متن هدایت شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "یک تصویر با چهره واضح، تا کیفیت ۴K (۴۰۹۶×۲۱۶۰)."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل تولید sync.so. ورودی تصویر فقط برای sync-3 فعال است."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "راهنمای اختیاری برای نحوه جان گرفتن پرتره، مثلاً «سوژه را لبخند بزن و به دوربین نگاه کند». برای حرکت طبیعی صحبت کردن، خالی بگذارید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید مجدداً اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19755,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "افزودن متن به یک تصویر یا مجموعه‌ای از تصاویر.",
+    "display_name": "افزودن متن به تصویر",
+    "inputs": {
+      "align": {
+        "name": "تراز"
+      },
+      "color": {
+        "name": "رنگ",
+        "tooltip": "رنگ متن."
+      },
+      "font_size": {
+        "name": "اندازه فونت",
+        "tooltip": "اندازه فونت به صورت درصدی از ارتفاع تصویر."
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "outline": {
+        "name": "حاشیه",
+        "tooltip": "یک حاشیه مشکی دور متن رسم می‌کند."
+      },
+      "position": {
+        "name": "موقعیت"
+      },
+      "text": {
+        "name": "متن"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
         "tooltip": null
       }
     }

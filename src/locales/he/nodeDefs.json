@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "יצירת דיבור, מוזיקה, אפקטים קוליים ודיאלוג רב-דוברים מפרומפט יחיד עם ByteDance Seed Audio 1.0. תאר/י את הקול/ות, הרגש, האווירה, המוזיקה ברקע והאפקטים הקוליים בפרומפט, והוסף/י את השורות להקראה. ניתן לבחור קול מובנה, לשכפל קולות עד 3 קליפים רפרנס (מסומנים @Audio1-3 בפרומפט), או להפיק קול מתמונת דמות. עד 2 דקות אודיו להרצה.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "עוצמת קול. 0 = רגיל, 100 = פי 2.0, ‎-50 = פי 0.5."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "הסטת גובה צליל בסמי-טונים (‎-12 עד 12)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "כיצד להתנות את הקול: 'text only' (תאר/י הכל בפרומפט), 'audio reference' (שכפול עד 3 קולות, מסומנים @Audio1-3), 'image reference' (הפקת קול מתמונת דמות אחת), או 'preset voice' (בחירת קול מובנה לקריאת הפרומפט)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "קצב דגימה ביציאה (Hz)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "מהירות דיבור. 0 = רגיל, 100 = פי 2.0, ‎-50 = פי 0.5."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "תאר/י את הקול/ות, הרגש, הקצב, האווירה, המוזיקה ברקע והאפקטים הקוליים, והוסף/י את השורות להקראה (ציין/י שמות דמויות בשורה לדיאלוג). במצב 'audio reference', התייחס/י לקליפים המחוברים לפי הסדר כ-@Audio1, @Audio2, @Audio3. עד 3000 תווים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "יצירת תגובות טקסט עם מודלי Seed 2.0 של ByteDance. יש לספק פרומפט טקסטואלי ואופציונלית תמונה אחת או יותר או וידאו להקשר מולטימודלי.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "model"
       },
-      "model_fail_on_partial": {
-        "name": "fail_on_partial"
-      },
       "model_height": {
         "name": "height"
-      },
-      "model_max_images": {
-        "name": "max_images"
       },
       "model_size_preset": {
         "name": "size_preset"
@@ -1288,6 +1324,10 @@
       "seed": {
         "name": "seed",
         "tooltip": "זרע (seed) לשימוש ביצירה."
+      },
+      "thinking": {
+        "name": "חשיבה",
+        "tooltip": "הפעלת מנגנון אופטימיזציית הפרומפט ('חשיבה') של המודל לשיפור ההתאמה. עלול להאריך משמעותית את זמן ההפקה — במיוחד ב-Seedream 5.0 Pro. ניתן לבטל רק עבור טקסט-לתמונה (לא כאשר מסופקות תמונות ייחוס)."
       },
       "watermark": {
         "name": "watermark",
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "התניה אל"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "התניה (כפל)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2780,6 +2835,10 @@
         "name": "רקע",
         "tooltip": "תמונה אופציונלית לשימוש כרקע בקנבס ובתצוגה המקדימה."
       },
+      "bboxes": {
+        "name": "תיבות תחימה",
+        "tooltip": "תיבות תחימה, אלמנטים, או מחרוזת JSON לאתחול הקנבס. ערך חדש במעלה הזרם מאתחל את הקנבס; עריכות שבוצעו בקנבס גוברות ונשמרות עד שהערך במעלה הזרם משתנה שוב."
+      },
       "editor_state": {
         "name": "מצב עורך",
         "tooltip": "צייר תיבות גבול והגדר לכל תיבה סוג, טקסט, תיאור, ופלטת צבעים. התחל עם רכיב הרקע תחילה והקדמה בסוף."
@@ -2787,6 +2846,10 @@
       "height": {
         "name": "גובה",
         "tooltip": "גובה הקנבס ורשת הפיקסלים עבור תיבות הגבול."
+      },
+      "last_incoming": {
+        "name": "ערך נכנס אחרון",
+        "tooltip": "מצב פנימי המנוהל על ידי הקנבס: ערך תיבות התחימה האחרון שאיתחל אותו. השאר ריק כדי לאתחל מחדש את הקנבס מהקלט bboxes בהרצה הבאה."
       },
       "width": {
         "name": "רוחב",
@@ -5196,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "יצירת וידאו עם אודיו מפרומפט טקסט באמצעות מודל Gemini Omni Flash של Google. ניתן לספק תמונות ו/או סרטונים רפרנס להכוונה או עריכה של התוצאה. תאר/י את האורך הרצוי (3-10 שניות) ואת יחס הגובה-רוחב (16:9 או 9:16) ישירות בפרומפט.",
+    "display_name": "Google Gemini Omni (וידאו)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל Gemini וידאו המשמש ליצירת הווידאו."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "יצירת מסלולי וידאו",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "width": {
         "name": "רוחב"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "יוצר תמונות באמצעות מודל Ideogram V1.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "יחס גובה-רוחב",
-        "tooltip": "יחס הגובה-רוחב ליצירת התמונה."
-      },
-      "control_after_generate": {
-        "name": "שליטה לאחר יצירה"
-      },
-      "magic_prompt_option": {
-        "name": "אפשרות MagicPrompt",
-        "tooltip": "האם להשתמש ב-MagicPrompt ביצירה"
-      },
-      "negative_prompt": {
-        "name": "הנחיה שלילית",
-        "tooltip": "תיאור של מה להוציא מהתמונה"
-      },
-      "num_images": {
-        "name": "מספר תמונות"
-      },
-      "prompt": {
-        "name": "הנחיה",
-        "tooltip": "הנחיה ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "טורבו",
-        "tooltip": "האם להשתמש במצב טורבו (יצירה מהירה יותר, ייתכן באיכות נמוכה יותר)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "יוצר תמונות באמצעות מודל Ideogram V2.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "יחס גובה-רוחב",
-        "tooltip": "יחס הגובה-רוחב ליצירת התמונה. מתעלם אם הרזולוציה לא מוגדרת כ-AUTO."
-      },
-      "control_after_generate": {
-        "name": "שליטה לאחר יצירה"
-      },
-      "magic_prompt_option": {
-        "name": "אפשרות MagicPrompt",
-        "tooltip": "האם להשתמש ב-MagicPrompt ביצירה"
-      },
-      "negative_prompt": {
-        "name": "הנחיה שלילית",
-        "tooltip": "תיאור של מה להוציא מהתמונה"
-      },
-      "num_images": {
-        "name": "מספר תמונות"
-      },
-      "prompt": {
-        "name": "הנחיה",
-        "tooltip": "הנחיה ליצירת התמונה"
-      },
-      "resolution": {
-        "name": "רזולוציה",
-        "tooltip": "הרזולוציה ליצירת התמונה. אם לא מוגדר כ-AUTO, זה עוקף את הגדרת יחס הגובה-רוחב."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "סוג סגנון",
-        "tooltip": "סוג הסגנון ליצירה (V2 בלבד)"
-      },
-      "turbo": {
-        "name": "טורבו",
-        "tooltip": "האם להשתמש במצב טורבו (יצירה מהירה יותר, ייתכן באיכות נמוכה יותר)"
       }
     },
     "outputs": {
@@ -10568,6 +10577,12 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14576,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
     "display_name": "תצוגה מקדימה בתלת-ממד ואנימציה",
     "inputs": {
       "bg_image": {
@@ -14594,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
     "display_name": "תצוגה מקדימה בתלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
@@ -14640,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "תצוגה מקדימה של כל ערך קלט כטקסט.",
     "display_name": "תצוגה מקדימה כטקסט",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "תצוגה מקדימה"
-      },
-      "preview_text": {
-        "name": "תצוגה מקדימה"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "source"
       }
     }
   },
   "PreviewAudio": {
+    "description": "תצוגה מקדימה של האודיו מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
     "display_name": "תצוגה מקדימה של שמע",
     "inputs": {
       "audio": {
@@ -14672,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "תצוגה מקדימה של קובץ gaussian splat תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
     "display_name": "תצוגה מקדימה Splat",
     "inputs": {
       "camera_info": {
@@ -14732,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "תצוגה מקדימה של קובץ point cloud תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
     "display_name": "תצוגה מקדימה של ענן נקודות",
     "inputs": {
       "camera_info": {
@@ -17509,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "שמירת תלת-ממד (מתקדם)",
+    "inputs": {
+      "camera_info": {
+        "name": "מידע מצלמה"
+      },
+      "filename_prefix": {
+        "name": "קידומת שם קובץ"
+      },
+      "height": {
+        "name": "גובה"
+      },
+      "model_3d": {
+        "name": "מודל תלת-ממד",
+        "tooltip": "קובץ מודל תלת-ממדי מצומת תלת-ממד במעלה הזרם."
+      },
+      "model_3d_info": {
+        "name": "מידע מודל תלת-ממד"
+      },
+      "viewport_state": {
+        "name": "מצב תצוגה"
+      },
+      "width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מודל תלת-ממד",
+        "tooltip": null
+      },
+      "1": {
+        "name": "מידע מודל תלת-ממד",
+        "tooltip": null
+      },
+      "2": {
+        "name": "מידע מצלמה",
+        "tooltip": null
+      },
+      "3": {
+        "name": "רוחב",
+        "tooltip": null
+      },
+      "4": {
+        "name": "גובה",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "שמור PNG מונפש",
     "inputs": {
@@ -17669,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "שמירת Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "קובץ Gaussian Splat תלת-ממדי."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "שומר את התמונות שהוזנו בתיקיית הפלט של ComfyUI.",
     "display_name": "שמירת תמונה",
@@ -17807,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "שמירת ענן נקודות",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "קובץ ענן נקודות (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "שמירת קבצי SVG בדיסק.",
     "display_name": "שמירת SVG",
@@ -17822,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "שמירת תוכן טקסט לקובץ בתיקיית הפלט.",
+    "display_name": "שמירת טקסט",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17950,6 +18136,117 @@
       "0": {
         "name": "seed",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "בניית Conditioning חיובי/שלילי של SeedVR2 מתוך latent של VAE.",
+    "display_name": "החלת SeedVR2 Conditioning",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "מודל SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "ה-Conditioning החיובי לדגימה."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "ה-Conditioning השלילי לדגימה."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "יישור התמונה שנוצרה עם התמונה המקורית ששונתה בגודלה ויישום תיקון צבע.",
+    "display_name": "עיבוד פוסט ל-SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "שיטה להתאמת צבעי התמונה שנוצרה לתמונה המקורית. lab: העברת צבע במרחב CIELAB, תוך שמירה על פרטים (הכי נאמן). wavelet: העברת צבע בתדר נמוך, תוך שמירה על פרטי תדר גבוה מוגדלים. adain: התאמת ממוצע/סטיית תקן לכל ערוץ (הכי מהיר, גוון גלובלי). none: דילוג על העברת צבע (רק יישור גיאומטרי)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "התמונה שנוצרה לעיבוד."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "התמונה המקורית ששונתה בגודלה לפני עיבוד מקדים, משמשת כהפניה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "התמונה המיושרת עם תיקון צבע."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "הוספת ריפוד לתמונה ששונתה בגודלה עבור מודל SeedVR2. ערוץ אלפא מוסר. הצומת 'עיבוד פוסט ל-SeedVR2' מחזיר אותו מהתמונה המקורית ששונתה בגודלה.",
+    "display_name": "עיבוד מקדים ל-SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "התמונה ששונתה בגודלה לעיבוד."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "התמונה המרופדת לקידוד VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "פיצול לטנט וידאו של SeedVR2 לקטעי זמן חופפים בגודל קטן מספיק לדגימה בודדת בזיכרון VRAM, חיבור פלטי לטנט גם ל-Apply SeedVR2 Conditioning וגם לקלט הלטנט של הסמפלר לפני איחוד מחדש עם Merge SeedVR2 Latents.",
+    "display_name": "פיצול לטנט SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = השתמש בדיוק ב-frames_per_chunk; auto = חיזוי הקטע הגדול ביותר שיכול להיכנס ל-VRAM פנוי."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "הלטנט של SeedVR2 המקודד ב-VAE לפיצול."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "פריימי לטנט משותפים בין קטעים סמוכים וממוזגים בהצלבה; 0 = ללא חפיפה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "הקטעים הזמניים בסדר רצף."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "חפיפת פריימי לטנט אפקטיבית בין קטעים סמוכים, עבור Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "איחוד מחדש של קטעי זמן של לטנט SeedVR2 לדגימה אחת, עם הצלבה של כל חפיפה באמצעות חלון Hann בגודל temporal_overlap שמחובר מ-Split SeedVR2 Latent.",
+    "display_name": "איחוד לטנטים של SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "קטעי הזמן שנדגמו בסדר רצף."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "פלט temporal_overlap של Split SeedVR2 Latent. 0 = שרשור רגיל."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "הלטנט המאוחד באורך מלא."
       }
     }
   },
@@ -18465,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "משנה חלק מדגימת אודיו קיימת באמצעות הנחיות טקסט.",
-    "display_name": "Stability AI Audio Inpaint",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "האודיו חייב להיות בין 6 ל-190 שניות."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "שולט במשך (בשניות) של האודיו שנוצר."
-      },
-      "mask_end": {
-        "name": "mask_end"
-      },
-      "mask_start": {
-        "name": "mask_start"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed האקראי המשמש ליצירה."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "שולט במספר שלבי הדגימה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "משנה דגימות אודיו קיימות ליצירות חדשות ואיכותיות באמצעות הנחיות טקסט.",
-    "display_name": "Stability AI Audio To Audio",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "האודיו חייב להיות בין 6 ל-190 שניות."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "שולט במשך (בשניות) של האודיו שנוצר."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed האקראי המשמש ליצירה."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "שולט במספר שלבי הדגימה."
-      },
-      "strength": {
-        "name": "strength",
-        "tooltip": "הפרמטר שולט בכמה השפעה יש לפרמטר האודיו על האודיו שנוצר."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "יוצר תמונות באופן סינכרוני על בסיס פרומפט ורזולוציה.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של התמונה שנוצרת."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "עד כמה תהליך הדיפוזיה דבק בטקסט הפרומפט (ערכים גבוהים ישמרו את התמונה קרובה יותר לפרומפט שלך)."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "סינון רעש של תמונת הקלט; ערך 0.0 יניב תמונה זהה לקלט, 1.0 כאילו לא סופקה תמונה כלל."
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "מילות מפתח למה שאינך רוצה לראות בתמונה המתקבלת. זהו מאפיין מתקדם."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "מה תרצה לראות בתמונה המתקבלת. פרומפט חזק ותיאורי שמגדיר בבירור אלמנטים, צבעים ונושאים יביא לתוצאות טובות יותר."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "הזרע האקראי המשמש ליצירת הרעש."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "סגנון אופציונלי רצוי לתמונה שנוצרת."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "יוצר תמונות באופן סינכרוני על בסיס פרומפט ורזולוציה.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של התמונה שנוצרת."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "סינון רעש של תמונת הקלט; ערך 0.0 יניב תמונה זהה לקלט, 1.0 כאילו לא סופקה תמונה כלל."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "קטע טקסט המתאר מה אינך רוצה לראות בתמונה המתקבלת. זהו מאפיין מתקדם."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "מה תרצה לראות בתמונה המתקבלת. פרומפט חזק ותיאורי שמגדיר בבירור אלמנטים, צבעים ונושאים יביא לתוצאות טובות יותר. כדי לשלוט במשקל של מילה מסוימת, השתמש בפורמט '(word:weight)', כאשר 'word' היא המילה שברצונך לשלוט במשקלה ו-'weight' הוא ערך בין 0 ל-1. לדוגמה: 'The sky was a crisp (blue:0.3) and (green:0.8)' יתאר שמיים שהם כחולים וירוקים, אך יותר ירוקים מכחולים."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "הזרע האקראי המשמש ליצירת הרעש."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "סגנון אופציונלי רצוי לתמונה שנוצרת."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "יוצר מוזיקה ואפקטים קוליים באיכות גבוהה מתיאורי טקסט.",
-    "display_name": "Stability AI טקסט לאודיו",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "משך",
-        "tooltip": "שולט במשך (בשניות) של האודיו שנוצר."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed האקראי בו השתמשו ליצירה."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "שולט במספר שלבי הדגימה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "משדרג תמונה לרזולוציית 4K עם מינימום שינויים.",
-    "display_name": "Stability AI שדרוג שמרני",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "creativity": {
-        "name": "יצירתיות",
-        "tooltip": "שולט בהסתברות להוספת פרטים נוספים שאינם תלויים בתמונה המקורית."
-      },
-      "image": {
-        "name": "תמונה"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "מילות מפתח למה שאינך רוצה לראות בתמונה הסופית. תכונה מתקדמת."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "מה תרצה לראות בתמונה הסופית. פרומפט חזק ותיאורי שמגדיר בבירור אלמנטים, צבעים ונושאים יביא לתוצאות טובות יותר."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed האקראי בו השתמשו ליצירת הרעש."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "משדרג תמונה לרזולוציית 4K עם מינימום שינויים.",
-    "display_name": "Stability AI שדרוג יצירתי",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "creativity": {
-        "name": "יצירתיות",
-        "tooltip": "שולט בהסתברות להוספת פרטים נוספים שאינם תלויים בתמונה המקורית."
-      },
-      "image": {
-        "name": "תמונה"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "מילות מפתח למה שאינך רוצה לראות בתמונה הסופית. תכונה מתקדמת."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "מה תרצה לראות בתמונה הסופית. פרומפט חזק ותיאורי שמגדיר בבירור אלמנטים, צבעים ונושאים יביא לתוצאות טובות יותר."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed האקראי בו השתמשו ליצירת הרעש."
-      },
-      "style_preset": {
-        "name": "סגנון מוכן",
-        "tooltip": "סגנון רצוי אופציונלי לתמונה שנוצרת."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "משדרג במהירות תמונה פי 4 מגודלה המקורי באמצעות קריאה ל-Stability API; מיועד לשדרוג תמונות באיכות נמוכה/דחוסות.",
-    "display_name": "Stability AI שדרוג מהיר",
-    "inputs": {
-      "image": {
-        "name": "תמונה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -19122,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "style_model_name"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "סנכרון מחדש של תנועות הפה בווידאו לדיבור חדש באמצעות sync.so. מטפל אוטומטית בתקריבים, פרופילים והסתרות, תוך שמירה על הבעות הדובר. העלות משתנה בהתאם לאורך הפלט.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "אודיו",
+        "tooltip": "אודיו של דיבור לסנכרון תנועות הפה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל יצירה של sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "קטע וידאו של הדובר לסנכרון מחדש. עד 4K ‏(4096x2160); קצב פריימים קבוע של 24/25/30 fps נותן תוצאות מיטביות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "הנפשת פורטרט סטטי לווידאו מדבר המונע על ידי אודיו של דיבור, באמצעות מודל sync-3 של sync.so. משך הפלט תואם לאורך האודיו. העלות משתנה בהתאם לאורך הפלט.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "אודיו",
+        "tooltip": "אודיו של דיבור שמניע את הווידאו; משך הפלט תואם לו. ניתן לשרשר כאן כל צומת TTS כדי להנפיש מטקסט."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונה בודדת עם פנים ברורות, עד 4K ‏(4096x2160)."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל יצירה של sync.so. קלט תמונה זמין רק עבור sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "הנחיה אופציונלית לאופן שבו הפורטרט מתעורר לחיים, לדוג' 'להפוך את הדמות למחייכת ומביטה למצלמה'. השאר ריק לתנועת דיבור טבעית."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19755,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "הוספת טקסט על גבי תמונה או אצווה של תמונות.",
+    "display_name": "הוספת טקסט על גבי תמונה",
+    "inputs": {
+      "align": {
+        "name": "align"
+      },
+      "color": {
+        "name": "color",
+        "tooltip": "צבע הטקסט."
+      },
+      "font_size": {
+        "name": "font_size",
+        "tooltip": "גודל הגופן כאחוז מגובה התמונה."
+      },
+      "images": {
+        "name": "images"
+      },
+      "outline": {
+        "name": "outline",
+        "tooltip": "הוספת קו מתאר שחור סביב הטקסט."
+      },
+      "position": {
+        "name": "position"
+      },
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
         "tooltip": null
       }
     }
