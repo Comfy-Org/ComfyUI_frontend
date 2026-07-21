@@ -83,6 +83,15 @@ Any `-g` pattern works against the generic scripts, e.g.
   never silently dropped; the documented exception ledgers (see
   [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)) carry a written mechanism for every
   escape hatch.
+- **Layout geometry**: while the mount sweep has each node on screen, its
+  geometry (node size, widget-row positions, slot positions, in both
+  renderers) is measured and compared exactly against committed per-pack
+  baselines - any layout shift, the "shrinking node" class, fails naming
+  the node and field. Baselines are recorded automatically
+  (`CN_GEOMETRY=record`) in the CI environment for font parity; nodes with
+  genuinely racy layout are ledgered by mechanism in
+  `GEOMETRY_UNSTABLE_NODES` (see
+  [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)).
 - **connectivity (contract)**: wiring-only, no execution. A
   type-pairing generator (`fixtures/customNode/typePairing.ts`) indexes
   `/object_info` producers/consumers and plans one representative typed edge

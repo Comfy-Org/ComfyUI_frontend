@@ -210,6 +210,24 @@ Append one object to `browser_tests/fixtures/data/customNodeManifest.json`:
 every row and fails loudly on a missing field, an empty `repo`, a misspelled
 tier, or a `run` tier with an empty `workflow`.
 
+## Step 5b - record the pack's geometry baseline
+
+Every pack commits a layout baseline
+(`browser_tests/fixtures/customNode/geometry/<pack>.json`): the mount sweep
+measures every node's geometry and compares it exactly, so a missing
+baseline fails CI rather than silently skipping the new pack. Record it in
+the CI environment, not on a dev machine - font metrics differ across
+platforms by whole pixels, so a locally recorded baseline false-fails CI.
+Run the all-nodes mount tests with `CN_GEOMETRY=record` there (a temporary
+workflow that uploads `browser_tests/fixtures/customNode/geometry/` as an
+artifact is the proven pattern), commit the resulting JSON, and re-run
+without the env var to confirm green. A node whose layout is genuinely
+non-deterministic run to run goes into `GEOMETRY_UNSTABLE_NODES`
+(`browser_tests/fixtures/customNode/geometry.ts`) with its mechanism
+written down; entries are registration-guarded, so a stale one fails the
+suite. Re-record only with the pin/core change that legitimately moved the
+layout, in the same commit.
+
 ## Step 6 - prove it green locally, in both environments
 
 ### 6a - fast loop (dev server)
