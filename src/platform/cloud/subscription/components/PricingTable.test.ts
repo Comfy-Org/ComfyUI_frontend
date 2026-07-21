@@ -487,10 +487,11 @@ describe('PricingTable', () => {
       const { container } = renderComponent()
       await flushPromises()
 
-      // Yearly default: standard 15% off, $16/mo -> $13.6/mo, $192 -> $163.2.
-      expect(screen.getByText('Billed yearly ($163.2)')).toBeInTheDocument()
-      expect(container.textContent).toContain('$13.6')
-      expect(container.textContent).toContain('$16')
+      // Yearly EDU: 6.25% on the yearly price, $16/mo -> $15/mo, $192 -> $180
+      // (25% off the $20 monthly list, which renders struck through).
+      expect(screen.getByText('Billed yearly ($180)')).toBeInTheDocument()
+      expect(container.textContent).toContain('$15')
+      expect(container.textContent).toContain('$20')
     })
 
     it('keeps list prices when inactive', async () => {
@@ -498,7 +499,7 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(screen.getByText('Billed yearly ($192)')).toBeInTheDocument()
-      expect(screen.queryByText('Billed yearly ($163.2)')).toBeNull()
+      expect(screen.queryByText('Billed yearly ($180)')).toBeNull()
     })
 
     it('discounts fractional monthly prices exactly', async () => {
@@ -509,8 +510,8 @@ describe('PricingTable', () => {
       await userEvent.click(screen.getByText('Monthly'))
       await flushPromises()
 
-      // Creator monthly 15% off, $35 -> $29.75; display must match the coupon charge.
-      expect(container.textContent).toContain('$29.75')
+      // Creator monthly 10% off, $35 -> $31.5; display must match the coupon charge.
+      expect(container.textContent).toContain('$31.5')
       expect(container.textContent).toContain('$35')
     })
   })

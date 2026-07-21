@@ -460,10 +460,12 @@ const getPrice = (tier: PricingTierConfig): number => {
     : base
 }
 
-// Undiscounted reference price rendered struck through next to the active price.
+// Monthly list price rendered struck through next to the active price, so the
+// EDU yearly card shows the full 25%-off-list story (mirrors stock yearly).
 const getStruckPrice = (tier: PricingTierConfig): number | null => {
-  if (isEduPricingActive.value) return tier.pricing[currentBillingCycle.value]
-  return currentBillingCycle.value === 'yearly' ? tier.pricing.monthly : null
+  if (isEduPricingActive.value || currentBillingCycle.value === 'yearly')
+    return tier.pricing.monthly
+  return null
 }
 
 const getAnnualTotal = (tier: PricingTierConfig): number => {

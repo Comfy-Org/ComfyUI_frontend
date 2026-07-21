@@ -56,22 +56,22 @@ export type PaidTierKey = Exclude<TierKey, 'free' | 'founder'>
 export type BillingCycleKey = 'monthly' | 'yearly'
 
 /**
- * PLACEHOLDER percents pending final coupon numbers; the ladder shape (deeper
- * cuts for higher tiers and yearly) is the contract. Must mirror the backend
- * Stripe coupons exactly — the display promises what the coupon charges.
+ * Coupon percent applied to the CYCLE price; must mirror the backend Stripe
+ * coupons exactly — the display promises what the coupon charges. Yearly 6.25%
+ * compounds with the 20% yearly bundle to 25% off the monthly list. Values are
+ * identical across tiers today; keyed per tier to mirror the backend slots.
  */
 export const EDU_DISCOUNT_PERCENTS: Record<
   PaidTierKey,
   Record<BillingCycleKey, number>
 > = {
-  standard: { monthly: 10, yearly: 15 },
-  creator: { monthly: 15, yearly: 20 },
-  pro: { monthly: 20, yearly: 25 }
+  standard: { monthly: 10, yearly: 6.25 },
+  creator: { monthly: 10, yearly: 6.25 },
+  pro: { monthly: 10, yearly: 6.25 }
 }
 
-export const EDU_MAX_DISCOUNT_PERCENT = Math.max(
-  ...Object.values(EDU_DISCOUNT_PERCENTS).flatMap((c) => [c.monthly, c.yearly])
-)
+/** Marketing max: total off the monthly list (yearly EDU = 25%), not a coupon percent. */
+export const EDU_MAX_DISCOUNT_PERCENT = 25
 
 /** Display-only EDU price; the backend coupon applies the same cut at checkout. */
 export function applyEduDiscount(
