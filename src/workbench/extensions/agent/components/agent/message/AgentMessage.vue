@@ -59,7 +59,9 @@ const showActions = computed(
       class="text-agent-fg-muted flex items-center gap-1.5 py-1 text-sm"
     >
       <span class="icon-[lucide--brain] size-3.5 shrink-0" />
-      <span class="agent-shimmer-text">{{ t('agent.thinking') }}</span>
+      <span class="agent-shimmer-text min-w-0 truncate">{{
+        message.thinkingText || t('agent.thinking')
+      }}</span>
     </div>
 
     <template v-for="(group, index) in groups" :key="index">

@@ -31,6 +31,7 @@ export interface AssistantMessage {
   parts: MessagePart[]
   streaming: boolean
   thinking: boolean
+  thinkingText?: string
 }
 
 export function createAssistantMessage(id: TurnId): AssistantMessage {
