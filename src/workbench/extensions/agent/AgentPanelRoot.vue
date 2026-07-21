@@ -149,7 +149,10 @@ function reclaimMovedBinding(activePath: string): string | undefined {
   return workflowId
 }
 
+const workflowDetached = ref(false)
+
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
+  if (workflowDetached.value) return undefined
   const active = workflowStore.activeWorkflow
   if (!active) return undefined
   const bound = cloudIdFor(active) ?? reclaimMovedBinding(active.path)
@@ -158,25 +161,34 @@ function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
 
 const activeTab = computed<ActiveTab | null>(() => {
   const active = workflowStore.activeWorkflow
-  return active ? { path: active.path, name: active.filename } : null
+  return active
+    ? { path: active.path, name: active.filename, modified: active.isModified }
+    : null
 })
 
 const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
     path: tab.path,
-    name: tab.filename
+    name: tab.filename,
+    modified: tab.isModified
   }))
 )
 
 async function onSelectTab(path: string): Promise<void> {
+  workflowDetached.value = false
   const tab = workflowStore.getWorkflowByPath(path)
   if (tab) await workflowService.openWorkflow(tab)
+}
+
+function onClearWorkflow(): void {
+  workflowDetached.value = true
 }
 
 let lastSentGraph: string | null = null
 let snapshotTabPath: string | null = null
 
 function takeWorkflowSnapshot(): DraftUpload | undefined {
+  if (workflowDetached.value) return undefined
   const graph = app.graph?.serialize()
   if (!graph?.nodes?.length) return undefined
   const serialized = JSON.stringify(graph)
@@ -205,7 +217,8 @@ function openTabsSnapshot(): OpenTabsSnapshot | undefined {
   const active = workflowStore.activeWorkflow
   return {
     open_tabs: openTabs,
-    current_tab: active ? cloudIdFor(active) : undefined
+    current_tab:
+      active && !workflowDetached.value ? cloudIdFor(active) : undefined
   }
 }
 
@@ -258,6 +271,7 @@ const {
 // binds it at ack; only newChat/loadThread reset it), while the active tab
 // may have changed since - prefer the bound tab over active-tab derivation.
 function resumedTurnTabPath(): string | null {
+  if (workflowDetached.value) return null
   const bound = draftStore.workflowId
   if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
   const boundPath = bindingStore.tabPathFor(bound)
@@ -677,6 +691,7 @@ void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
   resetSnapshotGuard()
+  workflowDetached.value = false
   await loadThread(id)
   void refreshHistory()
 }
@@ -724,6 +739,7 @@ function onStop(): void {
 
 function onNewChat(): void {
   resetSnapshotGuard()
+  workflowDetached.value = false
   newChat()
 }
 
@@ -788,9 +804,11 @@ async function onFilesPicked(event: Event): Promise<void> {
       :selection-tags="selectionTags"
       :active-tab="activeTab"
       :workflow-tabs="workflowTabs"
+      :workflow-detached="workflowDetached"
       :conflict-open="conflictOpen"
       :get-mention-nodes="mentionableNodes"
       @select-tab="onSelectTab"
+      @clear-workflow="onClearWorkflow"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
