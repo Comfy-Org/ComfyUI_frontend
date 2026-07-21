@@ -48,6 +48,24 @@ export interface PackGeometryFile {
   nodes: Record<string, NodeGeometry>
 }
 
+// Nodes whose initial layout is not deterministic run-to-run, keyed by the
+// MECHANISM that makes them racy (same discipline as the console ledger's
+// mechanism patterns): each exclusion carries a written reason, is
+// registration-guarded in the spec (an entry whose node leaves the corpus
+// reds), and excluded nodes are omitted from baselines entirely - never
+// silently skipped against a committed expectation.
+export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
+  'ComfyUI-KJNodes': {
+    // Both editor_base subclasses: widget layout depends on whether the
+    // pack's editor DOM finished initializing when the frame drew - the
+    // same init race the console ledger documents for editor creation.
+    // Observed live: SplineEditor widgets[13].y measured 915 in the CI
+    // record run and 920 in the CI compare run at identical code.
+    SplineEditor: 'editor_base init race shifts widget y between runs',
+    PointsEditor: 'same editor_base init race as SplineEditor'
+  }
+}
+
 function geometryPath(pack: string): string {
   return `${GEOMETRY_DIR}${pack}.json`
 }

@@ -27,6 +27,7 @@ import type {
 } from '@e2e/fixtures/customNode/geometry'
 import {
   diffGeometry,
+  GEOMETRY_UNSTABLE_NODES,
   loadPackGeometry,
   savePackGeometry
 } from '@e2e/fixtures/customNode/geometry'
@@ -533,6 +534,12 @@ for (const entry of loadManifest()) {
       // once at the end of the test.
       const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
       const measuredGeometry: Record<string, NodeGeometry> = {}
+      const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
+      for (const ledgered of Object.keys(geometryUnstable))
+        expect(
+          keys,
+          `stale GEOMETRY_UNSTABLE_NODES entry: ${ledgered} is not registered by ${entry.pack}`
+        ).toContain(ledgered)
       for (const ledgered of Object.keys(ledger))
         expect(
           keys,
@@ -573,7 +580,7 @@ for (const entry of loadManifest()) {
           )
           for (const [index, measured] of chunkGeometry.entries()) {
             const key = chunk[index]
-            if (measured === null) continue
+            if (measured === null || key in geometryUnstable) continue
             if (!vueNodesEnabled)
               measuredGeometry[key] = {
                 litegraph: measured as LitegraphNodeGeometry
