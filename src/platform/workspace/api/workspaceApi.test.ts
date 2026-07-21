@@ -47,6 +47,8 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
+import type { CreateTopupResponse } from './workspaceApi'
+
 import { workspaceApi } from './workspaceApi'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' }
@@ -446,6 +448,37 @@ describe('workspaceApi', () => {
     })
   })
 
+  describe('topup', () => {
+    it('createTopup() sends redirect URLs for payment Checkout fallback', async () => {
+      const data: CreateTopupResponse = {
+        billing_op_id: 'op-topup',
+        topup_id: 'op-topup',
+        status: 'needs_payment_method',
+        amount_cents: 5000,
+        payment_method_url: 'https://checkout.stripe.com/session'
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.createTopup(5000, {
+        idempotencyKey: 'topup-key',
+        returnUrl: 'https://www.comfy.org/settings',
+        cancelUrl: 'https://www.comfy.org/settings'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/topup',
+        {
+          amount_cents: 5000,
+          idempotency_key: 'topup-key',
+          return_url: 'https://www.comfy.org/settings',
+          cancel_url: 'https://www.comfy.org/settings'
+        },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+  })
+
   describe('payment', () => {
     it('getPaymentPortalUrl() sends POST with return_url', async () => {
       const data = { url: 'https://stripe.com/portal' }
@@ -472,11 +505,18 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.createTopup(1000, 'key-3')
+      const result = await workspaceApi.createTopup(1000, {
+        idempotencyKey: 'key-3'
+      })
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/topup',
-        { amount_cents: 1000, idempotency_key: 'key-3' },
+        {
+          amount_cents: 1000,
+          idempotency_key: 'key-3',
+          return_url: undefined,
+          cancel_url: undefined
+        },
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)

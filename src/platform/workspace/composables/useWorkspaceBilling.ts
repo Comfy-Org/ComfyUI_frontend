@@ -303,7 +303,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, {
+        returnUrl: window.location.href,
+        cancelUrl: window.location.href
+      })
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'
