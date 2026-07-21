@@ -112,6 +112,24 @@ Any `-g` pattern works against the generic scripts, e.g.
   that reaches a visible surface; only invisible, functionally-inert boot
   console noise (the ledger's whole reason to exist) is out of scope.
 
+## CI
+
+Two workflows deploy this suite; [ARCHITECTURE.md section 13](ARCHITECTURE.md#13-the-ci-deployment-view)
+has the full deployment view.
+
+- **The PR gate** (`custom-nodes-e2e` in `ci-tests-custom-nodes.yaml`, a
+  required check): runs the suite with every git surface pinned - ComfyUI
+  core at the exact verified commit (`comfyui_ref`) and every pack at its
+  manifest pin - so a red points at the PR, not at drift. Skipped tests
+  are failures.
+- **The nightly canary** (`ci-nightly-custom-nodes-canary.yaml`,
+  non-gating): where drift surfaces instead. Two jobs, one moving git
+  variable each: `canary-core-drift` floats ComfyUI core with packs
+  pinned; `canary-pack-drift` floats the packs at their authors' latest
+  with core pinned. A red or cancelled run files or updates one
+  label-deduped tracking issue carrying the run link, report artifact
+  name, and triage playbook. It never blocks a PR or a release.
+
 ## Adding a pack
 
 One manifest row plus one small workflow JSON - no new test code. The

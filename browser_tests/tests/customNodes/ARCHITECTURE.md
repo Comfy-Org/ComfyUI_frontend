@@ -148,8 +148,8 @@ Who and what the suite touches.
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 220}}}%%
 flowchart LR
-    CIP["CI platform: runs the gate on every PR"]
-    PACKS["Community node packs: external code, installed at pinned versions"]
+    CIP["CI platform: runs the gate on every PR, plus a nightly non-gating drift canary"]
+    PACKS["Community node packs: external code, installed at pinned versions (the canary also tests their latest)"]
     DRIVER["Suite test driver: puts every pack node through its create, wire, save, and submit checks"]
     FE["ComfyUI frontend: the system under test, running in a real browser"]
     BE["ComfyUI backend: real graph execution engine"]
@@ -680,14 +680,26 @@ these answer: "green but broken" and "tests can never catch random bugs."
 ## 13. The CI deployment view
 
 In today's implementation, the suite is Playwright driving bundled
-Chromium, and the CI platform is GitHub Actions.
+Chromium, and the CI platform is GitHub Actions. The suite deploys twice
+from the same manifest: a gating PR check where nothing git-level moves,
+and a nightly non-gating canary that is where drift is allowed to show up
+instead.
+
+### The PR gate (`custom-nodes-e2e`, gating)
+
+Everything git-level is pinned: ComfyUI core is provisioned at the exact
+commit the suite was last verified green against, and every pack at its
+manifest pin, enforced before anything installs. A gate red therefore
+points at the PR itself. Python dependencies and the runner image still
+resolve fresh per run - a red that appears everywhere at once right after
+a dependency release is environment, not the PR.
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 260}}}%%
 flowchart LR
     CH["change gate: skip only when nothing relevant changed, without wedging the required check"] --> BUILD["build the frontend"]
-    BUILD --> ENV["provision a CPU backend"]
-    ENV --> INST["clone every manifest pack at its pinned version; install with dependency constraints so packs cannot swap the numeric stack"]
+    BUILD --> ENV["provision a CPU backend with ComfyUI core at the verified pin"]
+    ENV --> INST["clone every manifest pack at its pinned commit; install with dependency constraints so packs cannot swap the numeric stack"]
     INST --> ASSET["stage the curated workflows' media"]
     ASSET --> RUN["boot the backend serving the built frontend; run the suite, one worker"]
     RUN --> SKIP{"anything skipped?"}
@@ -703,6 +715,52 @@ Ballpark at the time of writing, moving like the scale snapshot: about
 eight minutes of suite on top of about four and a half minutes of
 environment setup, with sharding starting to pay once the whole job
 passes roughly twelve minutes.
+
+### The nightly canary (non-gating drift radar)
+
+The gate's pins mean git drift never breaks a PR, so drift needs its own
+surface. The canary reruns the identical suite nightly, two jobs, each
+moving exactly one git variable so every red names its own culprit. The
+suite itself runs unmodified and fully strict in both jobs - no loosened
+assertions, no special environment flags.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 240}}}%%
+flowchart LR
+    CRON["nightly schedule"] --> A["core-drift job: ComfyUI core floats at master, packs stay pinned"]
+    CRON --> B["pack-drift job: core stays at the gate's exact pin, packs float at their authors' latest"]
+    A --> OUT{"red or cancelled?"}
+    B --> OUT
+    OUT -- no --> QUIET["quiet green, nothing to do"]
+    OUT -- yes --> PAGE["file or update ONE tracking issue, deduped on a per-job label, carrying the run link, the report artifact name, and the triage playbook"]
+```
+
+What a red means, and who acts:
+
+- **Core-drift red**: a core change broke the frontend contract or
+  exposed a pack bug (the 2026-07-18 KJNodes editor crashes were this).
+  Fix the code, ledger the pack bug by mechanism, or bump the gate's core
+  pin in its own PR.
+- **Pack-drift red**: the authors' latest diverges from what we
+  verified - the expected steady state whenever our pins lag. CI cannot
+  classify author intent (an added node, a removed node, and a rename can
+  each be healthy or breakage), so the job only detects divergence and a
+  human classifies from the report: crashes or execution failures are
+  reported upstream by a maintainer; count or membership drift alone
+  means bump the pins and recalibrate the manifest.
+
+The paging path is deliberate: a canary red blocks nothing, but it must
+never rot unseen. The filing step fires on failure and on cancellation (a
+job-level timeout cancels rather than fails, and a cancelled red must
+still page), and dedups on a label so one standing issue accumulates
+comments instead of spawning a new issue per night. The two labels
+(`custom-nodes-canary`, `custom-nodes-canary-packs`) must exist in the
+repo for filing to work; both are created.
+
+The core pin deliberately lives in two places - the gate and the
+pack-drift job, which needs the same pin so its reds isolate pack
+drift - and both copies are bumped in the same PR.
+[ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md) has the bump procedure.
 
 ## 14. Implementation map
 
@@ -725,4 +783,5 @@ The one place where architecture names meet code symbols.
 | Core smoke                            | `browser_tests/tests/customNodes/coreSmoke.spec.ts`                        |                                                                                                                                                                                                                                 |
 | Dynamic-input (autogrow) tier         | `browser_tests/tests/customNodes/dynamicInputs.spec.ts`                    | `AUTOGROW_CASES` (curated cases), `consumerShape` (graph + DOM census), per-path connect/disconnect loop                                                                                                                        |
 | Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                                               |
-| CI job                                | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`                                                                                                                                                                                                 |
+| PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`; core pin via `comfyui_ref`                                                                                                                                                                     |
+| Nightly canary                        | `.github/workflows/ci-nightly-custom-nodes-canary.yaml`                    | `canary-core-drift` (core floats), `canary-pack-drift` (packs float at HEAD), label-deduped issue filing                                                                                                                        |

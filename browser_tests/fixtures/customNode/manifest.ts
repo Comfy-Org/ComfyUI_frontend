@@ -72,8 +72,10 @@ export function assertEntry(
   if (typeof entry.repo !== 'string' || entry.repo.length === 0)
     missing.push('repo')
   // The gate tests exactly what was verified, so pin is a required full
-  // commit SHA. CUSTOM_NODES_ALLOW_UNPINNED=1 is the one escape hatch,
-  // reserved for the planned pack-HEAD canary - never for the PR gate.
+  // commit SHA. CUSTOM_NODES_ALLOW_UNPINNED=1 is a loader escape hatch
+  // currently exercised only by the pure spec - the nightly pack-drift
+  // canary ignores pin fields in its own install step instead, and the
+  // PR gate never unpins.
   if (
     !/^[0-9a-f]{40}$/.test(entry.pin ?? '') &&
     !(

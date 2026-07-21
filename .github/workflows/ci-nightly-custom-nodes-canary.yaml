@@ -162,6 +162,8 @@ jobs:
       # issue, deduped on the label, so nightly reds never rot unseen in the
       # Actions tab and never spam a new issue per night. cancelled() is
       # included so an infra-cancelled red still pages instead of vanishing.
+      # gh issue create fails on a missing label: both canary labels exist
+      # in this repo (create them once if porting this workflow elsewhere).
       - name: File drift issue on failure
         if: failure() || cancelled()
         env:
@@ -178,7 +180,7 @@ jobs:
             gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
           else
             gh issue create --repo "${{ github.repository }}" \
-              --title "Custom-nodes canary red: core drift" \
+              --title "Custom-nodes canary: core drift" \
               --label custom-nodes-canary \
               --body "$body"
           fi
@@ -306,7 +308,7 @@ jobs:
             gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
           else
             gh issue create --repo "${{ github.repository }}" \
-              --title "Custom-nodes canary red: pack drift" \
+              --title "Custom-nodes canary: pack drift" \
               --label custom-nodes-canary-packs \
               --body "$body"
           fi
