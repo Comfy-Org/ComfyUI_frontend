@@ -2,7 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 import { DEFAULT_POSE } from './cameraVocabulary'
 import { resolveAsset } from './assetResolver'
-import HeadlineChips from './HeadlineChips.vue'
+import HeroHeadline from './HeroHeadline.vue'
 import HeroGraph from './HeroGraph.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -28,6 +28,6 @@ const defaultAsset = resolveAsset(DEFAULT_POSE)
       />
     </figure>
 
-    <HeadlineChips :locale class="mt-10" />
+    <HeroHeadline :locale class="mt-10" />
   </section>
 </template>
