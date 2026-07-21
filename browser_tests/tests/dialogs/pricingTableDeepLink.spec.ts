@@ -17,7 +17,11 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppExpect,
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -382,40 +386,36 @@ const pricingHeading = (page: Page) =>
 
 test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   test('opens the pricing table for a personal owner', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
   })
 
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
     await page.goto(`${APP_URL}/?pricing=team`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'For Teams' })
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('opens for a team original owner', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('team', 'owner'), [
       member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
     ])
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
   })
 
   test('is a silent no-op for a team member', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('team', 'member'), [
       member({
         email: 'creator@test.comfy.org',
@@ -427,9 +427,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
     await expect(page).not.toHaveURL(/[?&]pricing=/)
     await expect(pricingHeading(page)).toBeHidden()
   })
@@ -455,13 +453,12 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
   test('shows the existing success view when subscribe replays 200', async ({
     page
   }) => {
-    test.slow()
     await page.goto(`${APP_URL}/?pricing=personal`)
 
     const changePlan = page.getByRole('button', {
       name: 'Change to Creator Yearly'
     })
-    await expect(changePlan).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(changePlan).toBeVisible()
 
     const subscribeResponse = page.waitForResponse(
       (response) =>
@@ -525,13 +522,12 @@ test.describe(
       test('keeps the success view while status retries, then reopens with the reconciled plan', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const changePlan = page.getByRole('button', {
           name: 'Change to Creator Yearly'
         })
-        await expect(changePlan).toBeVisible({ timeout: 45_000 })
+        await cloudAppExpect(changePlan).toBeVisible()
         await changePlan.click()
 
         await expect(
@@ -601,7 +597,6 @@ test.describe(
       test('reconciles status and balance without polling', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const subscribeResponse = page.waitForResponse(
