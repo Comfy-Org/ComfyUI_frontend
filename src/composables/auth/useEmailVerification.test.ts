@@ -136,6 +136,29 @@ describe('useEmailVerification', () => {
       const { nudgeVariant } = await loadComposable()
       expect(nudgeVariant.value).toBe('generic')
     })
+
+    it('survives storage being blocked (sandboxed iframe / privacy mode)', async () => {
+      const getItem = vi
+        .spyOn(Storage.prototype, 'getItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+      const setItem = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('blocked', 'SecurityError')
+        })
+      mocks.authStore.currentUser = makeUser()
+
+      const { nudgeVariant, dismiss } = await loadComposable()
+      expect(nudgeVariant.value).toBe('generic')
+
+      expect(() => dismiss()).not.toThrow()
+      expect(nudgeVariant.value).toBeNull()
+
+      getItem.mockRestore()
+      setItem.mockRestore()
+    })
   })
 
   describe('free-tier verification_required', () => {
@@ -201,6 +224,28 @@ describe('useEmailVerification', () => {
           detail: 'auth.emailVerification.resendFailedDetail'
         })
       )
+    })
+
+    it('re-enables the button immediately after a non-rate-limit failure', async () => {
+      mocks.authStore.currentUser = makeUser()
+      mocks.sendEmailVerification.mockRejectedValue(new Error('network'))
+      const { resend, canResend } = await loadComposable()
+
+      await resend()
+
+      expect(canResend.value).toBe(true)
+    })
+
+    it('keeps the button disabled after a rate-limit failure', async () => {
+      mocks.authStore.currentUser = makeUser()
+      mocks.sendEmailVerification.mockRejectedValue(
+        new FirebaseError('auth/too-many-requests', 'slow down')
+      )
+      const { resend, canResend } = await loadComposable()
+
+      await resend()
+
+      expect(canResend.value).toBe(false)
     })
 
     it('does not show an error toast when a post-send refresh fails', async () => {
