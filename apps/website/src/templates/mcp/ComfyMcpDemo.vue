@@ -179,9 +179,7 @@ onUnmounted(() => {
             v-if="card.tag"
             class="font-formula relative isolate inline-flex h-8 shrink-0 items-center justify-center overflow-visible bg-transparent px-5 text-sm font-extrabold tracking-[0.7px] text-white/60 uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm before:bg-white/20"
           >
-            <span class="ppformula-text-center">
-              {{ card.tag }}
-            </span>
+            {{ card.tag }}
           </span>
 
           <Check

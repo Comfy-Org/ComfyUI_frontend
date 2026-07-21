@@ -251,15 +251,6 @@
   mask-position: center;
 }
 
-/* PP Formula has asymmetric vertical metrics
-   Shifting visually with `top` corrects the appearance without changing the
-   inline-block's bounding box, so button/badge sizes are unaffected. */
-@utility ppformula-text-center {
-  display: inline-block;
-  position: relative;
-  top: 0.1em;
-}
-
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
    (e.g. Low Power Mode). These are decorative background videos. */
 video::-webkit-media-controls-start-playback-button,

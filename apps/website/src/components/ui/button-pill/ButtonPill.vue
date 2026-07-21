@@ -38,13 +38,7 @@ const {
     :disabled
     :class="cn(buttonPillVariants({ variant, size, iconPosition }), className)"
   >
-    <span
-      :class="
-        cn(
-          'ppformula-text-center relative leading-none transition-all duration-500'
-        )
-      "
-    >
+    <span class="relative leading-none transition-all duration-500">
       <slot />
     </span>
     <span

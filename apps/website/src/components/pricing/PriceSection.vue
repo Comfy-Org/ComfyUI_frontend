@@ -159,9 +159,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             <span
               class="bg-primary-comfy-yellow font-formula-narrow flex items-center px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
             >
-              <span class="ppformula-text-center">
-                {{ t('pricing.badge.popular', locale) }}
-              </span>
+              {{ t('pricing.badge.popular', locale) }}
             </span>
             <img
               src="/icons/node-right.svg"
@@ -265,9 +263,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
               <span
                 class="bg-primary-comfy-yellow flex items-center px-2 text-[10px] font-bold tracking-wider text-primary-comfy-ink"
               >
-                <span class="ppformula-text-center">
-                  {{ t('pricing.badge.popular', locale) }}
-                </span>
+                {{ t('pricing.badge.popular', locale) }}
               </span>
               <img
                 src="/icons/node-right.svg"

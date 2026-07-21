@@ -78,7 +78,7 @@ export const buttonMaskBadgeVariants = cva({
 })
 
 export const BUTTON_MASK_LABEL_CLASS = [
-  'ppformula-text-center relative inline-block align-baseline',
+  'relative inline-block align-baseline',
   '[will-change:mask-size,-webkit-mask-size]',
   '[mask-image:linear-gradient(black,black)] [-webkit-mask-image:linear-gradient(black,black)]',
   'mask-no-repeat [-webkit-mask-repeat:no-repeat]',
