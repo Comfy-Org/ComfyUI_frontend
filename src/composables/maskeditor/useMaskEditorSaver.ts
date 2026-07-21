@@ -47,9 +47,9 @@ export function useMaskEditorSaver() {
       const outputData = await prepareOutputData()
       dataStore.outputData = outputData
 
-      await updateNodePreview(sourceNode, outputData)
-
       await uploadAllLayers(outputData)
+
+      await updateNodePreview(sourceNode, outputData)
 
       updateNodeWithServerReferences(sourceNode, outputData)
 
