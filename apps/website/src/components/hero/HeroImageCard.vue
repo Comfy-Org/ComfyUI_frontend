@@ -9,7 +9,7 @@ const { src, alt, label, port } = defineProps<{
 
 <template>
   <div
-    class="relative size-full overflow-hidden rounded-[1em] border border-white/10 bg-black/40"
+    class="relative size-full overflow-hidden rounded-[1.25em] border border-white/12 bg-black/40"
   >
     <Transition
       enter-active-class="transition-opacity duration-500 ease-out"
@@ -29,7 +29,7 @@ const { src, alt, label, port } = defineProps<{
 
     <span
       v-if="label"
-      class="bg-primary-comfy-ink-light absolute top-[1em] left-[1em] z-10 flex items-center gap-[0.5em] rounded-full px-[0.9em] py-[0.4em]"
+      class="bg-secondary-deep-plum absolute top-[1em] left-[1em] z-10 flex items-center gap-[0.5em] rounded-[0.5em] px-[0.9em] py-[0.45em]"
     >
       <span class="bg-primary-comfy-yellow size-[0.5em] rounded-full" />
       <span
