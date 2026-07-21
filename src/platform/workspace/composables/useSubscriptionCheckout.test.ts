@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -180,6 +180,8 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
+  let assignedHref: string | undefined
+  const originalLocation = globalThis.location
 
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
@@ -195,6 +197,15 @@ describe('useSubscriptionCheckout', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    assignedHref = undefined
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: {
+        set href(value: string) {
+          assignedHref = value
+        }
+      }
+    })
     mockPlans.value = allPlans()
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
@@ -206,6 +217,13 @@ describe('useSubscriptionCheckout', () => {
       canDowngradeToPersonal: true
     }
     emit = vi.fn()
+  })
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: originalLocation
+    })
   })
 
   describe('handleSubscribeClick', () => {
@@ -712,7 +730,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('opens the payment URL when the team subscribe needs a payment method', async () => {
+    it('redirects to the payment URL when the team subscribe needs a payment method', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -729,14 +747,10 @@ describe('useSubscriptionCheckout', () => {
         payment_method_url: 'https://stripe.com/team-pay'
       })
 
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
       await checkout.handleTeamSubscribe()
 
-      expect(openSpy).toHaveBeenCalledWith(
-        'https://stripe.com/team-pay',
-        '_blank'
-      )
-      openSpy.mockRestore()
+      expect(assignedHref).toBe('https://stripe.com/team-pay')
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('does not subscribe and shows an error when the stop has no id', async () => {
@@ -902,7 +916,7 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
-    it('opens payment URL when needs_payment_method', async () => {
+    it('redirects to the payment URL when a payment method is needed', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -912,36 +926,13 @@ describe('useSubscriptionCheckout', () => {
         payment_method_url: 'https://stripe.com/pay'
       })
 
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
       await checkout.handleAddCreditCard()
 
-      expect(openSpy).toHaveBeenCalledWith('https://stripe.com/pay', '_blank')
-      openSpy.mockRestore()
+      expect(assignedHref).toBe('https://stripe.com/pay')
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
-    it('warns when the payment popup is blocked', async () => {
-      const checkout = await setup()
-      checkout.selectedTierKey.value = 'standard'
-      checkout.selectedBillingCycle.value = 'yearly'
-      mockSubscribe.mockResolvedValueOnce({
-        status: 'needs_payment_method',
-        billing_op_id: 'op-blocked',
-        payment_method_url: 'https://stripe.com/pay'
-      })
-      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-
-      await checkout.handleAddCreditCard()
-
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'warn',
-          detail: 'subscription.preview.paymentPopupBlocked'
-        })
-      )
-      openSpy.mockRestore()
-    })
-
-    it('polls the operation without opening a window when needs_payment_method has no URL', async () => {
+    it('polls the operation when needs_payment_method has no URL', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -950,17 +941,14 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-no-url'
       })
       mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       await checkout.handleAddCreditCard()
 
-      expect(openSpy).not.toHaveBeenCalled()
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-no-url',
         'subscription'
       )
       expect(checkout.checkoutStep.value).toBe('success')
-      openSpy.mockRestore()
     })
 
     it('advances to success once the async payment operation succeeds', async () => {
@@ -968,12 +956,10 @@ describe('useSubscriptionCheckout', () => {
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
       mockSubscribe.mockResolvedValueOnce({
-        status: 'needs_payment_method',
-        billing_op_id: 'op-async-1',
-        payment_method_url: 'https://stripe.com/pay'
+        status: 'pending_payment',
+        billing_op_id: 'op-async-1'
       })
       mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       await checkout.handleAddCreditCard()
 
@@ -982,7 +968,6 @@ describe('useSubscriptionCheckout', () => {
         'subscription'
       )
       expect(checkout.checkoutStep.value).toBe('success')
-      openSpy.mockRestore()
     })
 
     it('stays on the confirm step when the async operation does not succeed', async () => {

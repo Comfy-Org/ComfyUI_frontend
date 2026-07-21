@@ -312,24 +312,12 @@ export function useSubscriptionCheckout(
       return
     }
 
-    // needs_payment_method / pending_payment both finish asynchronously, so poll
-    // the billing op either way. needs_payment_method additionally points at a
-    // Stripe page to collect a card when the backend supplies the URL; without
-    // it we still poll rather than silently stranding the user on confirm.
     if (
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
-      const paymentWindow = window.open(response.payment_method_url, '_blank')
-      if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
-        })
-      }
+      globalThis.location.href = response.payment_method_url
+      return
     }
     await advanceToSuccessOnOperation(response.billing_op_id)
   }
