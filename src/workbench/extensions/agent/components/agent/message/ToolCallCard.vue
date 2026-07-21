@@ -9,12 +9,14 @@ const {
   name,
   state,
   ok,
-  count = 1
+  count = 1,
+  durationMs
 } = defineProps<{
   name: string
   state: PartState
   ok?: boolean
   count?: number
+  durationMs?: number
 }>()
 
 const { t } = useI18n()
@@ -55,6 +57,11 @@ const glyphColor = computed(() => {
     <span class="truncate text-xs">{{ label }}</span>
     <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
       >×{{ count }}</span
+    >
+    <span
+      v-if="durationMs !== undefined"
+      class="text-agent-fg-subtle ml-auto shrink-0 font-mono text-xs"
+      >{{ (durationMs / 1000).toFixed(1) }}s</span
     >
   </div>
 </template>

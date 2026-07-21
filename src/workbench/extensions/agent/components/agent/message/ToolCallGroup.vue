@@ -23,6 +23,7 @@ interface Row {
   state: ToolPart['state']
   ok?: boolean
   count: number
+  durationMs?: number
 }
 const rows = computed<Row[]>(() => {
   const out: Row[] = []
@@ -32,16 +33,24 @@ const rows = computed<Row[]>(() => {
       prev.count += 1
       if (tool.state === 'streaming') prev.state = 'streaming'
       if (tool.ok === false) prev.ok = false
+      if (tool.durationMs !== undefined)
+        prev.durationMs = (prev.durationMs ?? 0) + tool.durationMs
     } else {
       out.push({
         name: tool.name,
         state: tool.state,
         ok: tool.ok,
-        count: 1
+        count: 1,
+        durationMs: tool.durationMs
       })
     }
   }
   return out
+})
+
+const totalSeconds = computed(() => {
+  const ms = tools.reduce((sum, tool) => sum + (tool.durationMs ?? 0), 0)
+  return ms > 0 ? (ms / 1000).toFixed(1) : null
 })
 
 const running = computed(() => tools.some((tool) => tool.state === 'streaming'))
@@ -77,7 +86,13 @@ watch(
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
       <span class="flex-1 text-left">{{
-        t('agent.ranToolCalls', tools.length)
+        totalSeconds === null
+          ? t('agent.ranToolCalls', tools.length)
+          : t(
+              'agent.ranToolCallsTimed',
+              { seconds: totalSeconds },
+              tools.length
+            )
       }}</span>
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
@@ -94,6 +109,7 @@ watch(
           :state="row.state"
           :ok="row.ok"
           :count="row.count"
+          :duration-ms="row.durationMs"
         />
       </div>
     </CollapsibleContent>

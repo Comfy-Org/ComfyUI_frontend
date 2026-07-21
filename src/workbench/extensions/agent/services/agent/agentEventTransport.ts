@@ -55,7 +55,8 @@ export function createAgentEventTransport(
           callId: `tool_${toolCount++}`,
           name: event.data.tool_name,
           state: 'done',
-          ok: event.data.status === 'ok'
+          ok: event.data.status === 'ok',
+          durationMs: event.data.duration_ms
         }
         message.parts.push(part)
         break

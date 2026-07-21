@@ -14,6 +14,7 @@ export interface ToolPart {
   name: string
   state: PartState
   ok?: boolean
+  durationMs?: number
 }
 
 export interface NoticePart {

@@ -16,9 +16,10 @@ function tool(
   callId: string,
   name: string,
   state: ToolPart['state'],
-  ok?: boolean
+  ok?: boolean,
+  durationMs?: number
 ): ToolPart {
-  return { type: 'tool', callId, name, state, ok }
+  return { type: 'tool', callId, name, state, ok, durationMs }
 }
 
 describe('ToolCallGroup', () => {
@@ -71,6 +72,35 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
     expect(screen.getAllByText('Add node')).toHaveLength(1)
     expect(screen.getByText('×2')).toBeInTheDocument()
+  })
+
+  it('shows per-row and total durations from the wire timings', () => {
+    render(ToolCallGroup, {
+      props: {
+        tools: [
+          tool('c1', 'add_node', 'done', true, 1300),
+          tool('c2', 'add_node', 'done', true, 200),
+          tool('c3', 'switch_tab', 'done', true, 500)
+        ],
+        streaming: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Ran 3 tool calls for 2.0 seconds')
+    ).toBeInTheDocument()
+    expect(screen.getByText('1.5s')).toBeInTheDocument()
+    expect(screen.getByText('0.5s')).toBeInTheDocument()
+  })
+
+  it('keeps the untimed label when no durations arrive', () => {
+    render(ToolCallGroup, {
+      props: { tools: [tool('c1', 'add_node', 'done', true)] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
   })
 
   it('stays open while the turn streams and collapses when it completes', async () => {

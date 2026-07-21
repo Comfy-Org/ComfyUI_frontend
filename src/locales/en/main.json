@@ -4607,6 +4607,7 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
+    "ranToolCallsTimed": "Ran {count} tool call for {seconds} seconds | Ran {count} tool calls for {seconds} seconds",
     "copy": "Copy",
     "copied": "Copied!",
     "remove": "Remove",
