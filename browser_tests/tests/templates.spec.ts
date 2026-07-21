@@ -5,6 +5,7 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -353,7 +354,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
     await comfyPage.page.route('**/templates/index.json', async (route) => {
-      const response = [
+      const response: WorkflowTemplates[] = [
         {
           moduleName: 'default',
           title: 'Test Templates',
