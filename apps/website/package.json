@@ -45,6 +45,7 @@
     "@astrojs/vue": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
