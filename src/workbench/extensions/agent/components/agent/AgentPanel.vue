@@ -30,6 +30,7 @@ const {
   selectionTags = [],
   activeTab = null,
   workflowTabs = [],
+  workflowDetached = false,
   getMentionNodes = () => [],
   historyGroups
 } = defineProps<{
@@ -43,6 +44,7 @@ const {
   selectionTags?: SelectedNode[]
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
+  workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   historyGroups: HistoryGroups
 }>()
@@ -55,6 +57,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   resolveConflict: [choice: ConflictChoice]
   selectTab: [path: string]
+  clearWorkflow: []
   newChat: []
   toggleSize: []
   close: []
@@ -174,7 +177,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <WorkflowSelectorChip
             :active-tab="activeTab"
             :tabs="workflowTabs"
+            :detached="workflowDetached"
             @select-tab="emit('selectTab', $event)"
+            @clear="emit('clearWorkflow')"
           />
           <RunNoticeBanner />
           <Composer
