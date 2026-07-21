@@ -142,7 +142,11 @@
           inputmode="numeric"
           :aria-invalid="!!budgetError"
           :aria-describedby="
-            budgetError ? 'auto-reload-budget-error' : undefined
+            budgetError
+              ? 'auto-reload-budget-error'
+              : budgetWarning
+                ? 'auto-reload-budget-warning'
+                : undefined
           "
           :placeholder="budgetPlaceholder"
           class="w-full min-w-0 border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none disabled:cursor-not-allowed"
@@ -164,7 +168,19 @@
         </span>
       </div>
       <p
-        v-if="budgetEnabled && budgetCents > 0"
+        v-if="budgetWarning"
+        id="auto-reload-budget-warning"
+        role="status"
+        class="m-0 flex items-center gap-1.5 text-xs text-warning-background"
+      >
+        <i
+          class="icon-[lucide--triangle-alert] size-3.5 shrink-0"
+          aria-hidden="true"
+        />
+        {{ budgetWarning }}
+      </p>
+      <p
+        v-else-if="budgetEnabled && budgetCents > 0"
         class="m-0 text-xs text-muted-foreground"
       >
         {{ allowsReloadsLabel }}
@@ -198,7 +214,7 @@
         </ToggleGroupItem>
       </ToggleGroup>
       <div class="flex items-center gap-4">
-        <Button variant="muted-textonly" @click="onClose">
+        <Button variant="muted-textonly" size="lg" @click="onClose">
           {{ $t('workspacePanel.autoReload.dialog.cancel') }}
         </Button>
         <Button
@@ -477,6 +493,12 @@ const budgetError = computed(() => {
   }
   return budgetCents.value <= 0
     ? t('workspacePanel.autoReload.dialog.budgetRequired')
+    : ''
+})
+const budgetWarning = computed(() => {
+  if (!budgetEnabled.value || budgetError.value) return ''
+  return getAffordableReloadCount(budgetCents.value, reloadCredits.value) === 0
+    ? t('workspacePanel.autoReload.dialog.budgetBelowReload')
     : ''
 })
 

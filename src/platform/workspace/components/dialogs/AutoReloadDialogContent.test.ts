@@ -139,17 +139,21 @@ describe('AutoReloadDialogContent', () => {
     expect(screen.getByText('Allows 2 reloads /mo')).toBeInTheDocument()
   })
 
-  it('keeps a positive budget smaller than one reload valid', async () => {
+  it('warns without blocking when the budget cannot fund one reload', async () => {
     const user = userEvent.setup()
     renderDialog()
 
     await user.click(screen.getByRole('switch', { name: 'Monthly budget' }))
-    await user.type(
-      screen.getByRole('textbox', { name: 'Monthly budget' }),
-      '1000'
-    )
+    const budget = screen.getByRole('textbox', { name: 'Monthly budget' })
+    await user.type(budget, '1000')
 
-    expect(screen.getByText('Allows 0 reloads /mo')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Monthly budget is lower than the reload amount. Increase the budget to allow auto-reload.'
+    )
+    expect(budget).toHaveAttribute(
+      'aria-describedby',
+      'auto-reload-budget-warning'
+    )
     expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
   })
 

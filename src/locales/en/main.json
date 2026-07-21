@@ -2921,6 +2921,7 @@
       "dialog": {
         "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
         "amountLabel": "Add this amount of credits:",
+        "budgetBelowReload": "Monthly budget is lower than the reload amount. Increase the budget to allow auto-reload.",
         "budgetRequired": "Enter a monthly budget",
         "budgetPlaceholderCredits": "Enter an amount of credits",
         "budgetPlaceholderUsd": "Enter an amount of dollars",
