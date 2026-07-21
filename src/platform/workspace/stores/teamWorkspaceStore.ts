@@ -8,6 +8,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
+  BillingRail,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
@@ -120,6 +121,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const activeWorkspaceId = ref<string | null>(null)
+  const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
   const isCreating = ref(false)
@@ -138,6 +140,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const isInPersonalWorkspace = computed(
     () => activeWorkspace.value?.type === 'personal'
   )
+
+  const activeWorkspaceBillingRail = computed(() => {
+    const workspaceId = activeWorkspaceId.value
+    return workspaceId
+      ? (billingRailByWorkspaceId.value[workspaceId] ?? null)
+      : null
+  })
 
   const sharedWorkspaces = computed(() =>
     workspaces.value.filter((w) => w.type !== 'personal')
@@ -222,6 +231,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   function updateActiveWorkspace(updates: Partial<WorkspaceState>) {
     if (!activeWorkspaceId.value) return
     updateWorkspace(activeWorkspaceId.value, updates)
+  }
+
+  function setWorkspaceBillingRail(
+    workspaceId: string,
+    billingRail: BillingRail
+  ) {
+    billingRailByWorkspaceId.value = {
+      ...billingRailByWorkspaceId.value,
+      [workspaceId]: billingRail
+    }
   }
 
   /**
@@ -743,6 +762,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     activeWorkspace,
     personalWorkspace,
     isInPersonalWorkspace,
+    activeWorkspaceBillingRail,
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
@@ -786,6 +806,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Subscription
     subscribeWorkspace,
-    updateActiveWorkspace
+    updateActiveWorkspace,
+    setWorkspaceBillingRail
   }
 })
