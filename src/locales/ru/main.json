@@ -4115,7 +4115,6 @@
     "modelsSelected": "{count} моделей",
     "noResults": "Шаблоны не найдены",
     "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
-    "resetFilters": "Очистить фильтры",
     "resultsCount": "Показано {count} из {total} шаблонов",
     "runsOnFilter": "Запускается на",
     "runsOnSelected": "{count} запусков на",
