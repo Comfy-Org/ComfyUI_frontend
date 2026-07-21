@@ -425,6 +425,13 @@ export interface IBaseWidget<
   options: TOptions
 
   label?: string
+  /**
+   * The default (e.g. localized) display label applied when the widget is
+   * created, before any user rename. Used to persist only genuine label
+   * overrides — a label equal to this baseline is a locale-dependent default
+   * and must not be serialized.
+   */
+  defaultLabel?: string
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue

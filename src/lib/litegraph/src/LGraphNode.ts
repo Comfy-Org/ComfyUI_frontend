@@ -997,6 +997,9 @@ export class LGraphNode
       const widgetLabels: Record<string, string> = {}
       for (const widget of widgets) {
         if (widget.serialize === false || widget.label == null) continue
+        // A label equal to the creation-time (localized) default is not a user
+        // override; persisting it would pin a locale-dependent string.
+        if (widget.label === widget.defaultLabel) continue
         const mirroredByInput = this.inputs?.some(
           (input) => input.widget?.name === widget.name && input.label != null
         )

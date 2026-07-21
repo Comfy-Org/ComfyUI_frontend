@@ -156,6 +156,31 @@ describe('LGraphNode widget label persistence (regression #13861)', () => {
     expect(restoredNode.widgets![0].label).toBe('Renamed Label')
   })
 
+  test('does not persist a label equal to the localized default (defaultLabel)', () => {
+    // Widgets receive a locale-dependent default label at creation. That default
+    // must not leak into widgets_labels, or a workflow saved in one locale would
+    // differ from the same workflow saved in another.
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('text', 'my_widget', 'v', null)
+    node.widgets![0].label = 'Localized Default'
+    node.widgets![0].defaultLabel = 'Localized Default'
+
+    expect(node.serialize().widgets_labels).toBeUndefined()
+  })
+
+  test('persists a rename that diverges from the localized default', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('text', 'my_widget', 'v', null)
+    node.widgets![0].defaultLabel = 'Localized Default'
+    node.widgets![0].label = 'User Rename'
+
+    expect(node.serialize().widgets_labels).toEqual({
+      my_widget: 'User Rename'
+    })
+  })
+
   test('label survives delete -> undo (serialize snapshot -> reconfigure into a fresh graph)', () => {
     const graph = new LGraph()
     const node = LiteGraph.createNode('test/WidgetLabelTestNode')!
