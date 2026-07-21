@@ -47,9 +47,11 @@ export function createAgentEventTransport(
     switch (event.type) {
       case 'agent_thinking':
         if (!gotText) message.thinking = true
+        message.thinkingText = (message.thinkingText ?? '') + event.data.delta
         break
       case 'agent_tool_call': {
         closeOpenText()
+        message.thinkingText = undefined
         const part: ToolPart = {
           type: 'tool',
           callId: `tool_${toolCount++}`,
@@ -63,6 +65,7 @@ export function createAgentEventTransport(
       }
       case 'agent_message_delta':
         message.thinking = false
+        message.thinkingText = undefined
         gotText = true
         ;(openText ?? openNewText()).text += event.data.delta
         break
@@ -78,6 +81,7 @@ export function createAgentEventTransport(
     settled = true
     closeOpenText()
     message.thinking = false
+    message.thinkingText = undefined
     message.streaming = false
     emit(snapshotMessage(message))
   }
