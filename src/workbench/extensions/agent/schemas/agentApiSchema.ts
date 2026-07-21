@@ -90,6 +90,7 @@ const zAgentToolCallData = z
     tool_name: z.string(),
     status: z.string(),
     args: z.array(z.string()),
+    duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
   })
