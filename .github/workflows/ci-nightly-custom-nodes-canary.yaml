@@ -7,14 +7,20 @@
 #     -> red = a core change broke the frontend contract or exposed a pack
 #        bug (e.g. the 2026-07-18 KJNodes editor crashes). Fix our code,
 #        ledger the pack bug, or bump the gate's core pin in its own PR.
-#   Job B (pack HEADs, planned - see the manifest loader's
-#     CUSTOM_NODES_ALLOW_UNPINNED escape hatch): core pinned, packs at HEAD
-#     -> red = a pack author's update broke something. Needs its own policy
-#        for the exact node-count guard before it can land.
+#   Job B (canary-pack-drift): core pinned (same SHA as the gate), packs at
+#     their default-branch HEAD -> red = the authors' latest diverges from
+#     what we verified. The suite runs UNMODIFIED and fully strict on
+#     purpose: CI cannot classify an author's intent (an added node, a
+#     removed node, and a rename can each be healthy or breakage), so Job B
+#     only DETECTS divergence and a human classifies from the report.
+#     Expect red to be the steady state whenever our pins lag the authors -
+#     it is a stale-pins pressure gauge driving deliberate pin bumps, not a
+#     fire alarm. The manifest's pin fields stay untouched and still
+#     validate; this job's install step simply does not use them.
 #
-# A canary red blocks nothing; it is a signal to triage. Mirrors the gate's
-# steps minus the path filter (drift checks always run the full suite) and
-# minus the core pin.
+# A canary red blocks nothing; it is a signal to triage. Both jobs mirror
+# the gate's steps minus the path filter (drift checks always run the full
+# suite); each job moves exactly ONE variable.
 name: 'CI: Custom Nodes Canary'
 
 on:
@@ -22,6 +28,11 @@ on:
     # Nightly, off-peak. Scheduled runs execute from the default branch.
     - cron: '30 8 * * *'
   workflow_dispatch:
+  # TEMPORARY, removed before merge: workflow_dispatch only works once the
+  # file exists on the default branch, so this push trigger is the only way
+  # to live-test the canary jobs from the PR branch.
+  push:
+    branches: [nathaniel/custom-node-e2e-suite]
 
 jobs:
   canary-core-drift:
@@ -147,5 +158,126 @@ jobs:
             gh issue create --repo "${{ github.repository }}" \
               --title "Custom-nodes canary red: core drift" \
               --label custom-nodes-canary \
+              --body "$body"
+          fi
+
+  canary-pack-drift:
+    # Job B: the ONE moving variable is the packs (default-branch HEAD);
+    # core stays at the gate's exact pin. Don't run the cron on forks.
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      # Same pin as the gate (ci-tests-custom-nodes.yaml) - keep them in
+      # sync when bumping, or this job's reds stop isolating pack drift.
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+          comfyui_ref: 'b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2'
+
+      # Install every manifest pack at its default-branch HEAD. The pin
+      # fields are deliberately ignored here (Job B's whole question is
+      # "does the authors' latest still match what we verified"); the same
+      # pack-name safety check and torch constraints apply.
+      - name: Install manifest custom nodes at HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
+            > /tmp/torch-constraints.txt || true
+          manifest=browser_tests/fixtures/data/customNodeManifest.json
+          mapfile -t entries < <(jq -c '.[]' "$manifest")
+          for entry in "${entries[@]}"; do
+            repo=$(jq -r '.repo' <<<"$entry")
+            pack=$(jq -r '.pack' <<<"$entry")
+            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+              echo "::error::unsafe pack name: '$pack'"; exit 1
+            fi
+            dir="ComfyUI/custom_nodes/$pack"
+            echo "::group::install $pack @ HEAD"
+            git clone --depth 1 "$repo" "$dir"
+            git -C "$dir" log -1 --format='%H %s'
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt" -c /tmp/torch-constraints.txt
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: Stage run-tier assets
+        shell: bash
+        run: cp browser_tests/assets/plain_video.mp4 ComfyUI/input/plain_video.mp4
+
+      - name: Start ComfyUI server
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run custom-node suite
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
+        run: |
+          pnpm exec playwright test browser_tests/tests/customNodes/ \
+            --project=custom-nodes --reporter=list,json,html --workers=1
+
+      - name: Forbid skipped tests
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          skipped=$(jq '.stats.skipped' custom-nodes-results.json)
+          echo "skipped tests: $skipped"
+          if [ "$skipped" != "0" ]; then
+            echo "::error::$skipped test(s) skipped - a pack HEAD or devtools failed to load"
+            jq -r '.. | objects
+                     | select(has("title") and has("tests"))
+                     | select(any(.tests[]?; .status == "skipped"))
+                     | .title' custom-nodes-results.json | sort -u | head -40
+            exit 1
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-custom-nodes-canary-packs
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: File drift issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body="Nightly custom-nodes canary (core pinned, packs at HEAD) went red: $run_url
+          A red here means the authors' latest packs diverge from what we verified - expected whenever our pins lag. Triage by a human: crashes or execution failures likely mean a pack author broke something (a maintainer should report it on the pack's repo); count or membership drift alone means our pins are stale (bump pins and recalibrate the manifest in a normal PR)."
+          existing=$(gh issue list --repo "${{ github.repository }}" \
+            --label custom-nodes-canary-packs --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            gh issue create --repo "${{ github.repository }}" \
+              --title "Custom-nodes canary red: pack drift" \
+              --label custom-nodes-canary-packs \
               --body "$body"
           fi
