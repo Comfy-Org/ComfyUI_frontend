@@ -13,6 +13,10 @@ name: 'Record Custom Nodes Geometry'
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   record-geometry:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
@@ -82,9 +86,18 @@ jobs:
           python main.py --cpu --multi-user --cache-none --front-end-root ../dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
 
+      # The checkout brings the committed baselines along; delete them so
+      # the uploaded artifact is provably a product of THIS run and the
+      # if-no-files-found guard below can actually fire on a crashed
+      # record instead of shipping stale bytes as a fresh recording.
+      - name: Clear committed baselines
+        shell: bash
+        run: rm -f browser_tests/fixtures/customNode/geometry/*.json
+
       # Record mode throws by design after writing each pack's file (a
       # record must never look like a green test run), so the step is
-      # expected to exit nonzero; the artifact is the product.
+      # expected to exit nonzero; the artifact is the product. Retries are
+      # pointless against a deliberate throw, so they are off.
       # CN_GEOMETRY_CORE stamps provenance into each baseline file and
       # must match the comfyui_ref above.
       - name: Record geometry baselines
@@ -94,7 +107,7 @@ jobs:
           CN_GEOMETRY_CORE: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
-            --project=custom-nodes --reporter=list --workers=1 \
+            --project=custom-nodes --reporter=list --workers=1 --retries=0 \
             --grep "mounts in both renderers"
 
       - name: Upload recorded baselines

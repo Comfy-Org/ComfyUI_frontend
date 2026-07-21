@@ -15,7 +15,8 @@ const GEOMETRY_DIR = fileURLToPath(new URL('./geometry/', import.meta.url))
 // residuals in Vue values, so a chunk-composition change (the pack's
 // node count moved) perturbs them and forces a whole-pack re-record -
 // which the pin-bump flow performs anyway. Same-composition determinism
-// is proven: two independent CI runs came back byte-exact.
+// is proven: two independent CI runs came back byte-exact outside the
+// ledgered nodes below.
 export interface LitegraphNodeGeometry {
   w: number
   h: number
@@ -143,7 +144,7 @@ export function diffGeometry(
   for (const key of Object.keys(measured))
     if (!(key in baseline))
       failures.push(
-        `${key}: no geometry baseline - re-record (CN_GEOMETRY=record) with the change that added it`
+        `${key}: no geometry baseline - re-record via the record workflow (ADDING_CUSTOM_NODES.md Step 5b) with the change that added it`
       )
   for (const [key, expected] of Object.entries(baseline)) {
     const actual = measured[key]

@@ -219,7 +219,8 @@ baseline fails CI rather than silently skipping the new pack. Record it in
 the CI environment, not on a dev machine: font metrics differ across
 platforms by whole pixels, and the baselines encode pack-JS-built layout
 that the dev server never produces. Run the record workflow
-(`.github/workflows/record-custom-nodes-geometry.yaml`, manual dispatch):
+(`.github/workflows/record-custom-nodes-geometry.yaml`, manual dispatch -
+dispatched ON YOUR PR BRANCH, so the run sees your manifest row and pins):
 it runs the mount tests with `CN_GEOMETRY=record` plus `CN_GEOMETRY_CORE`
 set to the gate's pinned core SHA (stamping provenance into each file) and
 uploads `browser_tests/fixtures/customNode/geometry/` as an artifact.

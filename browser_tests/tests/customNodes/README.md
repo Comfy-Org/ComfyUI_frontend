@@ -87,9 +87,11 @@ Any `-g` pattern works against the generic scripts, e.g.
   geometry (node size, widget-row positions, slot positions, in both
   renderers) is measured and compared exactly against committed per-pack
   baselines - any layout shift, the "shrinking node" class, fails naming
-  the node and field. Baselines are recorded automatically
-  (`CN_GEOMETRY=record`) in the CI environment for font parity; nodes with
-  genuinely racy layout are ledgered by mechanism in
+  the node and field. The compare runs in CI only (local runs log and
+  skip: baselines encode CI fonts and pack-JS layout, which local
+  environments cannot reproduce). Baselines are recorded automatically by
+  the record workflow (`.github/workflows/record-custom-nodes-geometry.yaml`);
+  nodes with genuinely racy layout are ledgered by mechanism in
   `GEOMETRY_UNSTABLE_NODES` (see
   [ADDING_CUSTOM_NODES.md](ADDING_CUSTOM_NODES.md)).
 - **connectivity (contract)**: wiring-only, no execution. A

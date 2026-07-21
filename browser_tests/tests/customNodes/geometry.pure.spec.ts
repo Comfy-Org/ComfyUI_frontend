@@ -71,8 +71,24 @@ test.describe('diffGeometry', () => {
 
   test('a measured node with no baseline reds toward recording', () => {
     expect(diffGeometry({}, { A: node() })).toEqual([
-      'A: no geometry baseline - re-record (CN_GEOMETRY=record) with the change that added it'
+      'A: no geometry baseline - re-record via the record workflow (ADDING_CUSTOM_NODES.md Step 5b) with the change that added it'
     ])
+  })
+
+  test('a corrupted baseline shape (array vs object) reds with the ? length', () => {
+    const corrupted = node()
+    corrupted.litegraph.inputs = {} as never
+    expect(diffGeometry({ A: corrupted }, { A: node() })).toEqual([
+      'A.litegraph.inputs: expected length ?, got 1'
+    ])
+  })
+
+  test('a measured -0 equals a stored 0 (JSON writes -0 as 0; no unfixable red)', () => {
+    const measured = node()
+    measured.litegraph.w = -0
+    const baseline = node()
+    baseline.litegraph.w = 0
+    expect(diffGeometry({ A: baseline }, { A: measured })).toEqual([])
   })
 
   test('a baseline node no longer measured reds as stale', () => {
