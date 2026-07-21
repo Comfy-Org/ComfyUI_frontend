@@ -3,14 +3,15 @@ import { computed } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { extractUniformSources } from '@/renderer/glsl/useGLSLUniforms'
 import { useGLSLUniforms } from '@/renderer/glsl/useGLSLUniforms'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import type { UUID } from '@/utils/uuid'
 
 /**
  * Regression guard for the GLSL live preview breaking on *promoted* subgraph
