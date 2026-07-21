@@ -71,6 +71,7 @@ describe('findPlanSlug', () => {
 const {
   mockSubscribe,
   mockPreviewSubscribe,
+  mockFetchPlans,
   mockFetchStatus,
   mockFetchBalance,
   mockPlans,
@@ -86,6 +87,7 @@ const {
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockPreviewSubscribe: vi.fn(),
+  mockFetchPlans: vi.fn(),
   mockFetchStatus: vi.fn(),
   mockFetchBalance: vi.fn(),
   mockPlans: { value: [] as Plan[] },
@@ -110,7 +112,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     previewSubscribe: mockPreviewSubscribe,
-    plans: computed(() => mockPlans.value),
+    plans: mockPlans,
+    fetchPlans: mockFetchPlans,
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     isTeamPlan: computed(() => mockIsTeamPlan.value),
@@ -196,6 +199,7 @@ describe('useSubscriptionCheckout', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockPlans.value = allPlans()
+    mockFetchPlans.mockResolvedValue(undefined)
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
@@ -270,6 +274,36 @@ describe('useSubscriptionCheckout', () => {
           detail: 'This plan is not available'
         })
       )
+      expect(mockFetchPlans).toHaveBeenCalledOnce()
+    })
+
+    it('waits for plans before opening a deep-linked confirmation', async () => {
+      const checkout = await setup()
+      mockPlans.value = []
+      mockFetchPlans.mockImplementationOnce(async () => {
+        mockPlans.value = [makeCreatorMonthly()]
+      })
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        effective_at: '2025-01-01',
+        is_immediate: true,
+        cost_today_cents: 3500,
+        cost_next_period_cents: 3500,
+        credits_today_cents: 7400,
+        credits_next_period_cents: 7400,
+        new_plan: makeCreatorMonthly().seat_summary
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+
+      expect(mockFetchPlans).toHaveBeenCalledOnce()
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly')
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
     it('shows error toast on network failure', async () => {

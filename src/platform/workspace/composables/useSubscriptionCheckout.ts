@@ -74,8 +74,14 @@ export function useSubscriptionCheckout(
 ) {
   const { t } = useI18n()
   const toast = useToast()
-  const { subscribe, previewSubscribe, plans, isTeamPlan, resubscribe } =
-    useBillingContext()
+  const {
+    subscribe,
+    previewSubscribe,
+    plans,
+    fetchPlans,
+    isTeamPlan,
+    resubscribe
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -161,7 +167,11 @@ export function useSubscriptionCheckout(
     selectedBillingCycle.value = billingCycle
 
     try {
-      const planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      if (!planSlug) {
+        await fetchPlans()
+        planSlug = getApiPlanSlug(tierKey, billingCycle)
+      }
       if (!planSlug) {
         toast.add({
           severity: 'error',
