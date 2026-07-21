@@ -139,58 +139,59 @@ export const useLinkStore = defineStore('link', () => {
     return toRaw(targetIndex.value.get(graphId)?.get(key)) === toRaw(topology)
   }
 
-  /** Atomically validates and applies endpoint updates. */
-  function updateEndpoints(
+  function validateEndpointUpdates(
     graphId: UUID,
-    updates: readonly EndpointUpdate[]
-  ): LinkTopology[] {
-    if (updates.length === 0) return []
-
-    const participants = new Set(updates.map(({ topology }) => toRaw(topology)))
-    if (participants.size !== updates.length) {
+    updates: readonly EndpointUpdate[],
+    vacating: readonly LinkTopology[] = []
+  ): void {
+    const participants = [
+      ...updates.map(({ topology }) => toRaw(topology)),
+      ...vacating.map((topology) => toRaw(topology))
+    ]
+    if (new Set(participants).size !== participants.length) {
       throw new Error(
         'A link topology may only appear once in an endpoint batch'
       )
     }
 
-    const finalTopologies = updates.map(({ topology, patch }) => ({
-      topology,
-      final: { ...toRaw(topology), ...patch }
-    }))
-    const finalOwners = new Map<TargetSlotKey, LinkTopology>()
-
-    for (const { topology, final } of finalTopologies) {
+    for (const topology of participants) {
       if (!ownsPlacement(graphId, topology)) {
         throw new Error(
           'Link ' + topology.id + ' does not own its current placement'
         )
       }
+    }
+
+    const finalOwners = new Set<TargetSlotKey>()
+    for (const { topology, patch } of updates) {
+      const final = { ...toRaw(topology), ...patch }
       if (!hasUniqueTarget(final)) continue
 
       const key = targetKey(final.targetNodeId, final.targetSlot)
       if (finalOwners.has(key)) {
         throw new Error('Multiple links target input slot ' + key)
       }
-      finalOwners.set(key, topology)
+      finalOwners.add(key)
 
       const incumbent = targetIndex.value.get(graphId)?.get(key)
-      if (
-        incumbent &&
-        toRaw(incumbent) !== toRaw(topology) &&
-        !participants.has(toRaw(incumbent))
-      ) {
+      if (incumbent && !participants.includes(toRaw(incumbent))) {
         throw new Error('Link target slot ' + key + ' is already occupied')
       }
     }
+  }
 
+  /** Atomically validates and applies endpoint updates. */
+  function updateEndpoints(
+    graphId: UUID,
+    updates: readonly EndpointUpdate[]
+  ): LinkTopology[] {
+    validateEndpointUpdates(graphId, updates)
     for (const { topology } of updates) displace(graphId, topology)
 
-    const placed: LinkTopology[] = []
-    for (const { topology, patch } of updates) {
+    return updates.map(({ topology, patch }) => {
       Object.assign(reactive(topology), patch)
-      placed.push(place(graphId, topology))
-    }
-    return placed
+      return place(graphId, topology)
+    })
   }
 
   /** Applies one endpoint patch atomically. */
@@ -280,6 +281,7 @@ export const useLinkStore = defineStore('link', () => {
     registerLink,
     updateEndpoint,
     updateEndpoints,
+    validateEndpointUpdates,
     deleteLink: displace,
     isInputSlotConnected,
     getInputSlotLink,

@@ -23,7 +23,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import {
-  captureInputLinks,
+  captureInputLayout,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
@@ -113,7 +113,8 @@ function dynamicComboWidget(
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
 
-    const inputLinks = captureInputLinks(node)
+    const previous = captureInputLayout(node)
+    const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
     for (const widget of remove(node.widgets, isInGroup)) {
       widget.onRemove?.()
@@ -121,7 +122,9 @@ function dynamicComboWidget(
     }
 
     if (!newSpec) {
-      replaceNodeInputs(node, [...node.inputs], inputLinks)
+      const finalInputs = [...node.inputs]
+      node.inputs.splice(0, node.inputs.length, ...previous.inputs)
+      replaceNodeInputs(node, previous, finalInputs, inputLinks)
       syncNodeWidgetOrder(node)
       return
     }
@@ -167,7 +170,9 @@ function dynamicComboWidget(
       )
         //input is inputOnly, but lacks an insertion point
         throw new Error('Failed to find input socket for ' + widget.name)
-      replaceNodeInputs(node, [...node.inputs], inputLinks)
+      const finalInputs = [...node.inputs]
+      node.inputs.splice(0, node.inputs.length, ...previous.inputs)
+      replaceNodeInputs(node, previous, finalInputs, inputLinks)
       return
     }
     const addedInputs = node.inputs
@@ -188,7 +193,14 @@ function dynamicComboWidget(
       const link = inputLinks.get(input)
       if (replacement && link) inputLinks.set(replacement, link)
     }
-    const replacements = replaceNodeInputs(node, [...node.inputs], inputLinks)
+    const finalInputs = [...node.inputs]
+    node.inputs.splice(0, node.inputs.length, ...previous.inputs)
+    const replacements = replaceNodeInputs(
+      node,
+      previous,
+      finalInputs,
+      inputLinks
+    )
     for (const { input, link, slot } of replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
@@ -402,7 +414,8 @@ function addAutogrowGroup(
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   if (ordinal >= max) return
 
-  const inputLinks = captureInputLinks(node)
+  const previous = captureInputLayout(node)
+  const inputLinks = new Map(previous.links)
   const namedSpecs = inputSpecs.map((input) => ({
     ...input,
     isOptional: ordinal >= (min ?? 0) || input.isOptional,
@@ -438,7 +451,9 @@ function addAutogrowGroup(
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
-  replaceNodeInputs(node, [...node.inputs], inputLinks)
+  const finalInputs = [...node.inputs]
+  node.inputs.splice(0, node.inputs.length, ...previous.inputs)
+  replaceNodeInputs(node, previous, finalInputs, inputLinks)
   app.canvas?.setDirty(true, true)
 }
 
@@ -500,9 +515,9 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     return
   }
   app.canvas?.setDirty(true, true)
-  const inputLinks = captureInputLinks(node)
+  const previous = captureInputLayout(node)
+  const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []
-  const emptiedInputs: INodeInputSlot[] = []
 
   for (let column = 0; column < stride; column++) {
     for (
@@ -520,8 +535,6 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
         transplants.push({ input, link })
       }
     }
-    const lastInput = groupInputs.at(column - stride)
-    if (lastInput) emptiedInputs.push(lastInput)
   }
 
   const removalChecks = groupInputs.slice(min * stride)
@@ -534,21 +547,12 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   }
   const toRemove = removalChecks.slice(i + stride * 2)
   const finalInputs = node.inputs.filter((input) => !toRemove.includes(input))
-  replaceNodeInputs(node, finalInputs, inputLinks)
+  replaceNodeInputs(node, previous, finalInputs, inputLinks)
 
   for (const { input, link } of transplants) {
     const slot = node.inputs.indexOf(input)
     if (slot === -1) continue
     node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
-  }
-  for (const input of emptiedInputs) {
-    node.onConnectionsChange?.(
-      LiteGraph.INPUT,
-      node.inputs.indexOf(input),
-      false,
-      null,
-      input
-    )
   }
   for (const input of toRemove) {
     const widgetName = input?.widget?.name

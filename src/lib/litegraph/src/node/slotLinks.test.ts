@@ -7,7 +7,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import {
-  captureInputLinks,
+  captureInputLayout,
   inputHasLink,
   inputLink,
   inputLinkId,
@@ -154,9 +154,9 @@ describe('slotLinks', () => {
     graph.add(target)
     const first = source.connect(0, target, 0)!
     const second = source.connect(0, target, 1)!
-    const assignments = captureInputLinks(target)
+    const previous = captureInputLayout(target)
 
-    replaceNodeInputs(target, target.inputs.toReversed(), assignments)
+    replaceNodeInputs(target, previous, target.inputs.toReversed())
 
     expect(target.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
     expect(target.getInputLink(0)).toBe(second)
@@ -181,11 +181,56 @@ describe('slotLinks', () => {
       }
     }
 
-    replaceNodeInputs(target, [target.inputs[0]], captureInputLinks(target))
+    replaceNodeInputs(target, captureInputLayout(target), [target.inputs[0]])
 
     expect(disconnected).toHaveBeenCalledOnce()
     expect(disconnected).toHaveBeenCalledWith(1, removedInput)
     expect(graph.getLink(removedLink.id)).toBeUndefined()
     expect(target.inputs).toHaveLength(1)
+  })
+  it('rejects a stale layout snapshot before changing topology', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    target.addInput('extra', 'INT')
+    const previous = captureInputLayout(target)
+    const link = target.getInputLink(0)
+    target.inputs.reverse()
+
+    expect(() => replaceNodeInputs(target, previous, previous.inputs)).toThrow(
+      'changed after it was captured'
+    )
+    expect(graph.getLink(link!.id)).toBe(link)
+    expect(target.isInputConnected(0)).toBe(true)
+  })
+
+  it('preflights assignments before disconnecting removed links', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('keep', 'INT')
+    target.addInput('remove', 'INT')
+    graph.add(target)
+    const kept = source.connect(0, target, 0)!
+    const removed = source.connect(0, target, 1)!
+    const staleTarget = new LGraphNode('Stale')
+    staleTarget.addInput('in', 'INT')
+    graph.add(staleTarget)
+    const stale = source.connect(0, staleTarget, 0)!
+    staleTarget.disconnectInput(0)
+    const previous = captureInputLayout(target)
+    const assignments = new Map(previous.links)
+    assignments.set(target.inputs[0], stale)
+    const onConnectionsChange = vi.fn()
+    target.onConnectionsChange = onConnectionsChange
+
+    expect(() =>
+      replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
+    ).toThrow('does not own its current placement')
+
+    expect(target.getInputLink(0)).toBe(kept)
+    expect(target.getInputLink(1)).toBe(removed)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
   })
 })

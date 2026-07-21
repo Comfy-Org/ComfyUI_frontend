@@ -79,7 +79,10 @@ export function outputLinks(
   return links
 }
 
-export type InputLinkAssignments = Map<INodeInputSlot, LLink>
+export interface InputLayoutSnapshot {
+  inputs: readonly INodeInputSlot[]
+  links: ReadonlyMap<INodeInputSlot, LLink>
+}
 
 export interface InputReplacement {
   input: INodeInputSlot
@@ -87,27 +90,29 @@ export interface InputReplacement {
   slot: number
 }
 
-/** Captures input connectivity by slot identity before an array rebuild. */
-export function captureInputLinks(node: LGraphNode): InputLinkAssignments {
-  const assignments: InputLinkAssignments = new Map()
-  if (!node.graph) return assignments
-
-  for (const [slot, input] of node.inputs.entries()) {
-    const link = inputLink(node.graph, node.id, slot)
-    if (link) assignments.set(input, link)
+export function captureInputLayout(node: LGraphNode): InputLayoutSnapshot {
+  const links = new Map<INodeInputSlot, LLink>()
+  if (node.graph) {
+    for (const [slot, input] of node.inputs.entries()) {
+      const link = inputLink(node.graph, node.id, slot)
+      if (link) links.set(input, link)
+    }
   }
-  return assignments
+  return { inputs: [...node.inputs], links }
 }
 
-/**
- * Commits a complete input layout and its retained link assignments.
- * Removed links disconnect while their old slot indices are still valid.
- */
 export function replaceNodeInputs(
   node: LGraphNode,
+  previous: InputLayoutSnapshot,
   finalInputs: readonly INodeInputSlot[],
-  assignments: ReadonlyMap<INodeInputSlot, LLink>
+  assignments: ReadonlyMap<INodeInputSlot, LLink> = previous.links
 ): InputReplacement[] {
+  if (
+    node.inputs.length !== previous.inputs.length ||
+    node.inputs.some((input, slot) => input !== previous.inputs[slot])
+  ) {
+    throw new Error('Input layout changed after it was captured')
+  }
   if (new Set(finalInputs).size !== finalInputs.length) {
     throw new Error('An input slot may only appear once in the final layout')
   }
@@ -124,24 +129,29 @@ export function replaceNodeInputs(
   }
 
   const retainedLinks = new Set(finalAssignments.map(({ link }) => link))
-  if (node.graph) {
-    for (let slot = node.inputs.length - 1; slot >= 0; slot--) {
-      const link = inputLink(node.graph, node.id, slot)
-      if (link && !retainedLinks.has(link)) node.disconnectInput(slot)
-    }
+  const removals = previous.inputs.flatMap((input, slot) => {
+    const link = previous.links.get(input)
+    return link && !retainedLinks.has(link) ? [{ link, slot }] : []
+  })
 
-    useLinkStore().updateEndpoints(
+  if (node.graph) {
+    const store = useLinkStore()
+    const updates = finalAssignments.map(({ link, slot }) => ({
+      topology: link._state,
+      patch: { targetNodeId: node.id, targetSlot: slot }
+    }))
+    store.validateEndpointUpdates(
       node.graph.rootGraph.id,
-      finalAssignments.map(({ link, slot }) => ({
-        topology: link._state,
-        patch: { targetNodeId: node.id, targetSlot: slot }
-      }))
+      updates,
+      removals.map(({ link }) => link._state)
     )
+    for (const { slot } of removals.toReversed()) node.disconnectInput(slot)
+    store.updateEndpoints(node.graph.rootGraph.id, updates)
   } else if (finalAssignments.length) {
     throw new Error('Cannot assign input links to a node without a graph')
   }
 
-  const oldInputs = new Set(node.inputs)
   node.inputs.splice(0, node.inputs.length, ...finalInputs)
+  const oldInputs = new Set(previous.inputs)
   return finalAssignments.filter(({ input }) => !oldInputs.has(input))
 }

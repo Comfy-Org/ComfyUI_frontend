@@ -5,7 +5,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import {
-  captureInputLinks,
+  captureInputLayout,
   inputLinkId,
   outputLinkIds,
   replaceNodeInputs
@@ -535,13 +535,13 @@ export function reorderSubgraphInputs(
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
-  const outerLinks = captureInputLinks(subgraphNode)
+  const previousInputs = captureInputLayout(subgraphNode)
   const orderedHostInputs = orderedIndices.flatMap(
-    (index) => subgraphNode.inputs[index] ?? []
+    (index) => previousInputs.inputs[index] ?? []
   )
 
   reorderInPlace(subgraph.inputs, orderedIndices)
-  replaceNodeInputs(subgraphNode, orderedHostInputs, outerLinks)
+  replaceNodeInputs(subgraphNode, previousInputs, orderedHostInputs)
   subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
