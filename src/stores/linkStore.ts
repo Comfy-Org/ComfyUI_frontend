@@ -21,6 +21,17 @@ export interface EndpointUpdate {
   patch: EndpointPatch
 }
 
+function patchedEndpoints(
+  topology: LinkTopology,
+  patch: EndpointPatch
+): EndpointPatch {
+  return {
+    originNodeId: patch.originNodeId ?? topology.originNodeId,
+    originSlot: patch.originSlot ?? topology.originSlot,
+    targetNodeId: patch.targetNodeId ?? topology.targetNodeId,
+    targetSlot: patch.targetSlot ?? topology.targetSlot
+  }
+}
 /**
  * Endpoint slot keys are `${nodeId}:${slot}`; slot is numeric so the
  * separator is unambiguous for any node id. Target (input side) and origin
@@ -164,7 +175,7 @@ export const useLinkStore = defineStore('link', () => {
 
     const finalOwners = new Set<TargetSlotKey>()
     for (const { topology, patch } of updates) {
-      const final = { ...toRaw(topology), ...patch }
+      const final = { ...toRaw(topology), ...patchedEndpoints(topology, patch) }
       if (!hasUniqueTarget(final)) continue
 
       const key = targetKey(final.targetNodeId, final.targetSlot)
@@ -189,7 +200,7 @@ export const useLinkStore = defineStore('link', () => {
     for (const { topology } of updates) displace(graphId, topology)
 
     return updates.map(({ topology, patch }) => {
-      Object.assign(reactive(topology), patch)
+      Object.assign(reactive(topology), patchedEndpoints(topology, patch))
       return place(graphId, topology)
     })
   }

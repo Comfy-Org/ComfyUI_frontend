@@ -57,6 +57,26 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
   })
 
+  it('ignores undefined endpoint patch values', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+
+    store.updateEndpoint(graphA, topology, {
+      originNodeId: undefined,
+      originSlot: undefined,
+      targetNodeId: undefined,
+      targetSlot: undefined
+    })
+
+    expect(topology).toMatchObject({
+      originNodeId: toNodeId(5),
+      originSlot: 0,
+      targetNodeId: toNodeId(9),
+      targetSlot: 2
+    })
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+  })
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
