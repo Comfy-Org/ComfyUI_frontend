@@ -71,10 +71,10 @@
                 >
                   ${{ getPrice(tier) }}
                   <span
-                    v-show="currentBillingCycle === 'yearly'"
+                    v-if="getStruckPrice(tier) !== null"
                     class="text-2xl text-muted-foreground line-through"
                   >
-                    ${{ tier.pricing.monthly }}
+                    ${{ getStruckPrice(tier) }}
                   </span>
                 </span>
                 <span class="font-inter text-xl/normal text-base-foreground">
@@ -268,9 +268,11 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  TIER_TO_KEY,
+  applyEduDiscount
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -449,11 +451,23 @@ const getButtonTextClass = (tier: PricingTierConfig): string =>
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
-const getPrice = (tier: PricingTierConfig): number =>
-  tier.pricing[currentBillingCycle.value]
+const { isEduPricingActive } = useEduPricing()
 
-const getAnnualTotal = (tier: PricingTierConfig): number =>
-  tier.pricing.yearly * 12
+const getPrice = (tier: PricingTierConfig): number => {
+  const base = tier.pricing[currentBillingCycle.value]
+  return isEduPricingActive.value ? applyEduDiscount(base) : base
+}
+
+// Undiscounted reference price rendered struck through next to the active price.
+const getStruckPrice = (tier: PricingTierConfig): number | null => {
+  if (isEduPricingActive.value) return tier.pricing[currentBillingCycle.value]
+  return currentBillingCycle.value === 'yearly' ? tier.pricing.monthly : null
+}
+
+const getAnnualTotal = (tier: PricingTierConfig): number => {
+  const total = tier.pricing.yearly * 12
+  return isEduPricingActive.value ? applyEduDiscount(total) : total
+}
 
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)

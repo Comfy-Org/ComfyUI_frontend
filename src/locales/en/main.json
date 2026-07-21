@@ -2560,6 +2560,7 @@
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
+    "eduPromoHeader": "Education discount: {percent}% off for verified students and educators",
     "teamWorkspace": "Team Workspace",
     "soloUseOnly": "Solo use only",
     "needTeamWorkspace": "Need team workspace?",

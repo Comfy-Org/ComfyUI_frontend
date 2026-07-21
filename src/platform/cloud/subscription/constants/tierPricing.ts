@@ -52,6 +52,13 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
+export const EDU_DISCOUNT_PERCENT = 25
+
+/** Display-only EDU price; the backend coupon applies the same cut at checkout. */
+export function applyEduDiscount(price: number): number {
+  return Math.round(price * (1 - EDU_DISCOUNT_PERCENT / 100) * 100) / 100
+}
+
 const FOUNDER_MONTHLY_PRICE = 20
 const FOUNDER_MONTHLY_CREDITS = 5460
 

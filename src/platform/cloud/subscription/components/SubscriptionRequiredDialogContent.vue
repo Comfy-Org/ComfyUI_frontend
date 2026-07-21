@@ -31,6 +31,14 @@
           </span>
         </template>
       </i18n-t>
+      <div
+        v-if="isEduPricingActive"
+        class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
+      >
+        {{
+          $t('subscription.eduPromoHeader', { percent: EDU_DISCOUNT_PERCENT })
+        }}
+      </div>
     </div>
 
     <PricingTable
@@ -154,7 +162,9 @@ import { computed, watch } from 'vue'
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
+import { EDU_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -174,6 +184,7 @@ const emit = defineEmits<{
 }>()
 
 const { isActiveSubscription } = useBillingContext()
+const { isEduPricingActive } = useEduPricing()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)

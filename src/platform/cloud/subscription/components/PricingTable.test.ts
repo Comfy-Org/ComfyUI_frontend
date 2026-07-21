@@ -64,6 +64,14 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
+const mockIsEduPricingActive = ref(false)
+
+vi.mock('@/platform/cloud/subscription/composables/useEduPricing', () => ({
+  useEduPricing: () => ({
+    isEduPricingActive: computed(() => mockIsEduPricingActive.value)
+  })
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -229,6 +237,7 @@ describe('PricingTable', () => {
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
+    mockIsEduPricingActive.value = false
     mockUserId.value = 'user-123'
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
@@ -469,6 +478,40 @@ describe('PricingTable', () => {
       await userEvent.click(teamLink!)
 
       expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('EDU pricing', () => {
+    it('shows discounted prices with the list price struck through when active', async () => {
+      mockIsEduPricingActive.value = true
+      const { container } = renderComponent()
+      await flushPromises()
+
+      // Yearly default: standard $16/mo -> $12/mo, annual total $192 -> $144.
+      expect(screen.getByText('Billed yearly ($144)')).toBeInTheDocument()
+      expect(container.textContent).toContain('$12')
+      expect(container.textContent).toContain('$16')
+    })
+
+    it('keeps list prices when inactive', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getByText('Billed yearly ($192)')).toBeInTheDocument()
+      expect(screen.queryByText('Billed yearly ($144)')).toBeNull()
+    })
+
+    it('discounts fractional monthly prices exactly', async () => {
+      mockIsEduPricingActive.value = true
+      const { container } = renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByText('Monthly'))
+      await flushPromises()
+
+      // Creator $35 -> $26.25; display must match the coupon-adjusted charge.
+      expect(container.textContent).toContain('$26.25')
+      expect(container.textContent).toContain('$35')
     })
   })
 })
