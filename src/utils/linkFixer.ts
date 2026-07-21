@@ -27,6 +27,7 @@
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import { toLinkId } from '@/types/linkId'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -57,6 +58,26 @@ function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
   }
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
+}
+
+/**
+ * Output link ids for either shape of node: live slots read through the link
+ * store, serialized slots through their own array. Mirrors what the deprecated
+ * `output.links` getter reported, `undefined` included, so the checks below
+ * can still tell "slot absent" from "slot has no links".
+ */
+function outputLinkIdsOf(
+  node: ISerialisedNode | LGraphNode,
+  slot: number
+): readonly number[] | undefined {
+  const slotData = node.outputs?.[slot]
+  if (!slotData) return undefined
+  if (!(slotData instanceof NodeOutputSlot)) return slotData.links ?? undefined
+
+  const { graph, id } = slotData.node
+  if (!graph) return undefined
+  const ids = outputLinkIds(graph, id, slot)
+  return ids.length ? ids : undefined
 }
 
 function extendLink(link: SerialisedLLinkArray) {
@@ -158,7 +179,7 @@ export function fixBadLinks(
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
       patchedNode['outputs']![slot] = patchedNode['outputs']![slot] || {
-        links: [...(node.outputs?.[slot]?.links || [])],
+        links: [...(outputLinkIdsOf(node, slot) ?? [])],
         changes: {}
       }
       if (patchedNode['outputs']![slot]!['changes']![linkId] !== undefined) {
@@ -235,7 +256,7 @@ export function fixBadLinks(
         has = !!nodeHasIt
       }
     } else {
-      const nodeHasIt = node.outputs?.[slot]?.links?.includes(toLinkId(linkId))
+      const nodeHasIt = outputLinkIdsOf(node, slot)?.includes(toLinkId(linkId))
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
         const patchedHasIt =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
@@ -275,7 +296,7 @@ export function fixBadLinks(
         hasAny = !!nodeHasAny
       }
     } else {
-      const nodeHasAny = node.outputs?.[slot]?.links?.length
+      const nodeHasAny = outputLinkIdsOf(node, slot)?.length
       if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes']) {
         const patchedHasAny =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length

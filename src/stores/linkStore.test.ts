@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -35,6 +37,11 @@ describe('useLinkStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
+
+  function originLinkIds(nodeId: NodeId, slot: number): LinkId[] {
+    const links = useLinkStore().getOutputSlotLinks(graphA, nodeId, slot)
+    return [...links].map((l) => l.id).sort((a, b) => a - b)
+  }
 
   it('answers input-slot connectedness with one lookup', () => {
     const store = useLinkStore()
@@ -344,5 +351,55 @@ describe('useLinkStore', () => {
 
     store.deleteLink(graphA, topology)
     expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+  })
+
+  it('leaves an unrelated output slot untouched when another slot changes', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    let evaluations = 0
+    const connected = computed(() => {
+      evaluations++
+      return store.isOutputSlotConnected(graphA, toNodeId(5), 0)
+    })
+    expect(connected.value).toBe(true)
+    expect(evaluations).toBe(1)
+
+    store.registerLink(graphA, link(2, 7, 0, 8, 1))
+
+    expect(connected.value).toBe(true)
+    expect(evaluations).toBe(1)
+  })
+
+  it('re-keys the output index when the origin moves', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+
+    store.updateEndpoint(graphA, topology, { originSlot: 3 })
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+    expect(originLinkIds(toNodeId(5), 3)).toEqual([toLinkId(1)])
+  })
+
+  it('drops an evicted link from the output index', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    const mover = link(2, 7, 0, 9, 3)
+    store.registerLink(graphA, mover)
+
+    store.updateEndpoint(graphA, mover, { targetSlot: 2 })
+
+    expect(originLinkIds(toNodeId(7), 0)).toEqual([toLinkId(2)])
+    expect(originLinkIds(toNodeId(5), 0)).toEqual([])
+  })
+
+  it('stops answering output queries for a cleared graph', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+
+    store.clearGraph(graphA)
+
+    expect(store.isOutputSlotConnected(graphA, toNodeId(5), 0)).toBe(false)
+    expect(store.getOutputSlotLinks(graphA, toNodeId(5), 0).size).toBe(0)
   })
 })

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, toRaw } from 'vue'
-import type { ComputedRef } from 'vue'
+import { reactive, ref, toRaw } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -91,7 +90,7 @@ function hasUniqueTarget(topology: LinkTopology): boolean {
 export const useLinkStore = defineStore('link', () => {
   const targetIndex = ref<TargetIndex>(new Map())
   const unkeyedLinks = ref<UnkeyedLinks>(new Map())
-  const outputIndexes = new Map<UUID, ComputedRef<OriginIndex>>()
+  const originIndex = ref<Map<UUID, OriginIndex>>(new Map())
 
   function graphTargets(graphId: UUID): Map<TargetSlotKey, LinkTopology> {
     const existing = targetIndex.value.get(graphId)
@@ -109,6 +108,43 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
+  function graphOrigins(graphId: UUID): OriginIndex {
+    const existing = originIndex.value.get(graphId)
+    if (existing) return existing
+    const next = reactive(new Map<OriginSlotKey, Set<LinkTopology>>())
+    originIndex.value.set(graphId, next)
+    return next
+  }
+
+  /**
+   * Adds a link to the reverse index over origin endpoints. Floating links are
+   * skipped: link queries return fully-assigned links only, matching the
+   * `output.links` mirror this index replaces. Entries are held raw so a
+   * topology indexes and unindexes under one identity whether the caller
+   * passes the raw object or the reactive state handed back by `placeValidated`.
+   */
+  function indexOrigin(graphId: UUID, topology: LinkTopology): void {
+    if (isFloatingTopology(topology)) return
+    const origins = graphOrigins(graphId)
+    const key = originKey(topology.originNodeId, topology.originSlot)
+    const existing = origins.get(key)
+    if (existing) {
+      existing.add(toRaw(topology))
+      return
+    }
+    origins.set(key, reactive(new Set([toRaw(topology)])))
+  }
+
+  /** Removes a link from the origin index, dropping the key when it empties. */
+  function unindexOrigin(graphId: UUID, topology: LinkTopology): void {
+    const origins = originIndex.value.get(graphId)
+    if (!origins) return
+    const key = originKey(topology.originNodeId, topology.originSlot)
+    const links = origins.get(key)
+    if (!links?.delete(toRaw(topology))) return
+    if (!links.size) origins.delete(key)
+  }
+
   /** Places a link whose target availability has already been validated. */
   function placeValidated(graphId: UUID, topology: LinkTopology): LinkTopology {
     if (hasUniqueTarget(topology)) {
@@ -117,6 +153,7 @@ export const useLinkStore = defineStore('link', () => {
     } else {
       graphUnkeyed(graphId).add(topology)
     }
+    indexOrigin(graphId, topology)
     return reactive(topology)
   }
 
@@ -141,12 +178,17 @@ export const useLinkStore = defineStore('link', () => {
 
   /** Removes a link's placement; only the registered topology may vacate it. */
   function displace(graphId: UUID, topology: LinkTopology): boolean {
-    if (unkeyedLinks.value.get(graphId)?.delete(topology)) return true
+    if (unkeyedLinks.value.get(graphId)?.delete(topology)) {
+      unindexOrigin(graphId, topology)
+      return true
+    }
     const targets = targetIndex.value.get(graphId)
     if (!targets) return false
     const key = targetKey(topology.targetNodeId, topology.targetSlot)
     if (toRaw(targets.get(key)) !== toRaw(topology)) return false
-    return targets.delete(key)
+    if (!targets.delete(key)) return false
+    unindexOrigin(graphId, topology)
+    return true
   }
 
   function ownsPlacement(graphId: UUID, topology: LinkTopology): boolean {
@@ -251,38 +293,12 @@ export const useLinkStore = defineStore('link', () => {
     return targetIndex.value.get(graphId)?.get(targetKey(nodeId, slot))
   }
 
-  /**
-   * Reverse index over origin endpoints, keyed `${originNodeId}:${originSlot}`.
-   * Spans both collections `graphTopologies` yields. Floating links are
-   * skipped: link queries return fully-assigned links only, matching the
-   * `output.links` mirror this index replaces.
-   */
-  function buildOutputIndex(graphId: UUID): OriginIndex {
-    const index: OriginIndex = new Map()
-    for (const topology of graphTopologies(graphId)) {
-      if (isFloatingTopology(topology)) continue
-      const key = originKey(topology.originNodeId, topology.originSlot)
-      const links = index.get(key) ?? new Set<LinkTopology>()
-      links.add(topology)
-      index.set(key, links)
-    }
-    return index
-  }
-
-  function outputIndex(graphId: UUID): ComputedRef<OriginIndex> {
-    const existing = outputIndexes.get(graphId)
-    if (existing) return existing
-    const next = computed(() => buildOutputIndex(graphId))
-    outputIndexes.set(graphId, next)
-    return next
-  }
-
   function isOutputSlotConnected(
     graphId: UUID,
     nodeId: NodeId,
     slot: number
   ): boolean {
-    return outputIndex(graphId).value.has(originKey(nodeId, slot))
+    return originIndex.value.get(graphId)?.has(originKey(nodeId, slot)) ?? false
   }
 
   function getOutputSlotLinks(
@@ -291,7 +307,8 @@ export const useLinkStore = defineStore('link', () => {
     slot: number
   ): ReadonlySet<LinkTopology> {
     return (
-      outputIndex(graphId).value.get(originKey(nodeId, slot)) ?? EMPTY_LINKS
+      originIndex.value.get(graphId)?.get(originKey(nodeId, slot)) ??
+      EMPTY_LINKS
     )
   }
 
@@ -306,7 +323,7 @@ export const useLinkStore = defineStore('link', () => {
   function clearGraph(graphId: UUID): void {
     targetIndex.value.delete(graphId)
     unkeyedLinks.value.delete(graphId)
-    outputIndexes.delete(graphId)
+    originIndex.value.delete(graphId)
   }
 
   return {

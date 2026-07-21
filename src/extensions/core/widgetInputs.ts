@@ -150,7 +150,12 @@ export class PrimitiveNode extends LGraphNode {
     }
     const [link] = outputLinks(this.graph, this.id, 0)
     if (!link) {
-      if (!outputHasLinks(this.graph, this.id, 0)) this.onLastDisconnect()
+      if (outputHasLinks(this.graph, this.id, 0)) {
+        console.warn(
+          `PrimitiveNode ${this.id}: link store reports output 0 connected but no link resolves in the graph; resetting the widget.`
+        )
+      }
+      this.onLastDisconnect()
       return
     }
 
