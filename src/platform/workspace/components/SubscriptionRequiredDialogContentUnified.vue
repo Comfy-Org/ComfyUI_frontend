@@ -158,7 +158,12 @@ const {
 } = useSubscriptionCheckout(emit, reason)
 
 onMounted(() => {
-  if (initialCheckout) void handleSubscribeClick(initialCheckout)
+  if (!initialCheckout) return
+  if (initialCheckout.planMode === 'team') {
+    void handleSubscribeTeamClick(initialCheckout)
+    return
+  }
+  void handleSubscribeClick(initialCheckout)
 })
 
 // Backspace mirrors the back arrow on the confirm step, but never while an

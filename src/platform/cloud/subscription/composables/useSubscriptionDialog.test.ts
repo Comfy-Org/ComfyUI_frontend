@@ -183,6 +183,7 @@ describe('useSubscriptionDialog', () => {
       mockShouldUseWorkspaceBilling.value = true
       const { showPricingTable } = useSubscriptionDialog()
       const initialCheckout = {
+        planMode: 'personal',
         tierKey: 'creator',
         billingCycle: 'monthly'
       } as const

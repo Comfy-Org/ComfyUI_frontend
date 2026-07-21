@@ -163,7 +163,9 @@ const {
 })
 
 onMounted(() => {
-  if (initialCheckout) void handleSubscribeClick(initialCheckout)
+  if (initialCheckout?.planMode === 'personal') {
+    void handleSubscribeClick(initialCheckout)
+  }
 })
 </script>
 

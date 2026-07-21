@@ -118,6 +118,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   it('opens the selected personal plan confirmation on mount', async () => {
     renderComponent({
       initialCheckout: {
+        planMode: 'personal',
         tierKey: 'creator',
         billingCycle: 'monthly'
       }
@@ -125,9 +126,29 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
     await vi.waitFor(() => {
       expect(mockHandleSubscribeClick).toHaveBeenCalledWith({
+        planMode: 'personal',
         tierKey: 'creator',
         billingCycle: 'monthly'
       })
     })
+  })
+
+  it('opens a resolved Team stop confirmation on mount', async () => {
+    renderComponent({
+      initialCheckout: {
+        planMode: 'team',
+        stop: TEAM_PAYLOAD.stop,
+        billingCycle: TEAM_PAYLOAD.billingCycle
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith({
+        planMode: 'team',
+        stop: TEAM_PAYLOAD.stop,
+        billingCycle: TEAM_PAYLOAD.billingCycle
+      })
+    })
+    expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
 })

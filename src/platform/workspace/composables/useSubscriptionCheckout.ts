@@ -25,10 +25,17 @@ import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/worksp
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
-export interface SubscriptionCheckoutSelection {
-  tierKey: CheckoutTierKey
-  billingCycle: BillingCycle
-}
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+    }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
