@@ -261,7 +261,7 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
         continue
       }
       staleEntries.push(
-        `${key}: pair no longer planned by the sweep - remove the stale entry`
+        `${key}: pair no longer planned by the sweep - remove the stale entry, or (on floating canary defs) the pair plan reshuffled under core/pack drift`
       )
     }
   }

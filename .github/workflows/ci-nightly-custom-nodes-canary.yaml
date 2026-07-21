@@ -54,7 +54,10 @@ jobs:
     # own lower timeout so an overrun FAILS the step (failure() stays true,
     # the report uploads, the issue files); this job ceiling is headroom only
     # - a job-level timeout CANCELS, and cancelled steps skip failure() gates.
-    timeout-minutes: 90
+    # 100, not 90: setup (pip/torch installs) runs before the 75-min suite
+    # step, and a slow setup day must not let the job cancel beat the step
+    # timeout.
+    timeout-minutes: 100
     permissions:
       contents: read
       issues: write
@@ -167,7 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          body="Nightly custom-nodes canary (core at master, packs pinned) went red: $run_url
+          body="Nightly custom-nodes canary (core at master, packs pinned) went red or was cancelled mid-run: $run_url
           Triage: core drift broke the frontend contract, or exposed a pack bug. Playbook in ci-nightly-custom-nodes-canary.yaml; ledger/pin/count mechanics in browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md. Failure detail: download the playwright-report-custom-nodes-canary artifact from the run."
           existing=$(gh issue list --repo "${{ github.repository }}" \
             --label custom-nodes-canary --state open --json number --jq '.[0].number // empty')
@@ -185,9 +188,9 @@ jobs:
     # core stays at the gate's exact pin. Don't run the cron on forks.
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    # 90/75 split for the same reason as Job A: red is this job's expected
+    # 100/75 split for the same reason as Job A: red is this job's expected
     # steady state, and the report must survive it.
-    timeout-minutes: 90
+    timeout-minutes: 100
     permissions:
       contents: read
       issues: write
@@ -295,7 +298,7 @@ jobs:
         run: |
           set -euo pipefail
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          body="Nightly custom-nodes canary (core pinned, packs at HEAD) went red: $run_url
+          body="Nightly custom-nodes canary (core pinned, packs at HEAD) went red or was cancelled mid-run: $run_url
           A red here means the authors' latest packs diverge from what we verified - expected whenever our pins lag. Triage by a human: crashes or execution failures likely mean a pack author broke something (a maintainer should report it on the pack's repo); count or membership drift alone means our pins are stale (bump pins and recalibrate browser_tests/fixtures/data/customNodeManifest.json per browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md). Failure detail: download the playwright-report-custom-nodes-canary-packs artifact from the run."
           existing=$(gh issue list --repo "${{ github.repository }}" \
             --label custom-nodes-canary-packs --state open --json number --jq '.[0].number // empty')
