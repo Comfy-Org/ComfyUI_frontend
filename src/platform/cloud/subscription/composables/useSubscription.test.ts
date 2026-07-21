@@ -321,6 +321,44 @@ describe('useSubscription', () => {
 
       await expect(fetchStatus()).rejects.toThrow()
     })
+
+    it('coalesces concurrent callers into one fetch', async () => {
+      let resolveFetch: (value: Response) => void = () => {}
+      vi.mocked(global.fetch).mockReturnValue(
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        })
+      )
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      const first = fetchStatus()
+      const second = fetchStatus()
+      resolveFetch({
+        ok: true,
+        json: async () => ({ is_active: true })
+      } as Response)
+      await Promise.all([first, second])
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not downgrade known-good status on a failed fetch', async () => {
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ is_active: true, subscription_id: 'sub_1' })
+      } as Response)
+      const { fetchStatus, isActiveSubscription } = useSubscriptionWithScope()
+      await fetchStatus()
+      expect(isActiveSubscription.value).toBe(true)
+
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Invalid token' })
+      } as Response)
+      await fetchStatus().catch(() => {})
+
+      expect(isActiveSubscription.value).toBe(true)
+    })
   })
 
   describe('subscribe', () => {
@@ -723,7 +761,6 @@ describe('useSubscription', () => {
 
       vi.mocked(global.fetch)
         .mockResolvedValueOnce(activeResponse as Response)
-        .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(cancelledResponse as Response)
 
       try {
@@ -766,7 +803,6 @@ describe('useSubscription', () => {
       }
 
       vi.mocked(global.fetch)
-        .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(activeResponse as Response)
         .mockResolvedValueOnce(cancelledResponse as Response)
 

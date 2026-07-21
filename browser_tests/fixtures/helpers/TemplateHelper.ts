@@ -6,6 +6,10 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import { mockTemplateIndex } from '@e2e/fixtures/data/templateFixtures'
 
+const ROUTE_PATTERN_WORKFLOW_TEMPLATES = /\/api\/workflow_templates(?:\?.*)?$/
+const ROUTE_PATTERN_TEMPLATE_INDEX = /\/templates\/index\.json(?:\?.*)?$/
+const ROUTE_PATTERN_TEMPLATE_THUMBNAILS = /\/templates\/.*\.webp(?:\?.*)?$/
+
 interface TemplateConfig {
   readonly templates: readonly TemplateInfo[]
   readonly index: readonly WorkflowTemplates[] | null
@@ -41,10 +45,6 @@ export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
 export class TemplateHelper {
   private templates: TemplateInfo[]
   private index: WorkflowTemplates[] | null
-  private routeHandlers: Array<{
-    pattern: string
-    handler: (route: Route) => Promise<void>
-  }> = []
 
   constructor(
     private readonly page: Page,
@@ -64,29 +64,30 @@ export class TemplateHelper {
   }
 
   async mock(): Promise<void> {
+    await this.mockCustomTemplates()
     await this.mockIndex()
     await this.mockThumbnails()
   }
 
-  async mockIndex(): Promise<void> {
+  async mockCustomTemplates(): Promise<void> {
     const customTemplatesHandler = async (route: Route) => {
-      const customTemplates: Record<string, string[]> = {}
       await route.fulfill({
         status: 200,
-        body: JSON.stringify(customTemplates),
+        body: '{}',
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store'
         }
       })
     }
-    const customTemplatesPattern = '**/api/workflow_templates'
-    this.routeHandlers.push({
-      pattern: customTemplatesPattern,
-      handler: customTemplatesHandler
-    })
-    await this.page.route(customTemplatesPattern, customTemplatesHandler)
 
+    await this.page.route(
+      ROUTE_PATTERN_WORKFLOW_TEMPLATES,
+      customTemplatesHandler
+    )
+  }
+
+  async mockIndex(): Promise<void> {
     const indexHandler = async (route: Route) => {
       const payload = this.index ?? mockTemplateIndex(this.templates)
       await route.fulfill({
@@ -98,9 +99,8 @@ export class TemplateHelper {
         }
       })
     }
-    const indexPattern = '**/templates/index.json'
-    this.routeHandlers.push({ pattern: indexPattern, handler: indexHandler })
-    await this.page.route(indexPattern, indexHandler)
+
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_INDEX, indexHandler)
   }
 
   async mockThumbnails(): Promise<void> {
@@ -114,12 +114,8 @@ export class TemplateHelper {
         }
       })
     }
-    const thumbnailPattern = '**/templates/**.webp'
-    this.routeHandlers.push({
-      pattern: thumbnailPattern,
-      handler: thumbnailHandler
-    })
-    await this.page.route(thumbnailPattern, thumbnailHandler)
+
+    await this.page.route(ROUTE_PATTERN_TEMPLATE_THUMBNAILS, thumbnailHandler)
   }
 
   getTemplates(): TemplateInfo[] {
@@ -128,15 +124,6 @@ export class TemplateHelper {
 
   get templateCount(): number {
     return this.templates.length
-  }
-
-  async clearMocks(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
-      await this.page.unroute(pattern, handler)
-    }
-    this.routeHandlers = []
-    this.templates = []
-    this.index = null
   }
 }
 

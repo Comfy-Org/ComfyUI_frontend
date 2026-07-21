@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "Генерируйте речь, музыку, звуковые эффекты и многоголосый диалог по одному промпту с помощью ByteDance Seed Audio 1.0. Опишите голос(а), эмоции, атмосферу, фоновую музыку и звуковые эффекты в промпте, а также включите реплики для озвучивания. Дополнительно можно выбрать встроенный пресет голоса, клонировать голоса с до 3 референсных клипов (отмеченных как @Audio1-3 в промпте) или получить голос из изображения персонажа. До 2 минут аудио за запуск.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "Громкость. 0 = нормально, 100 = 2.0x, -50 = 0.5x."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "Сдвиг высоты тона в полутонах (-12 до 12)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "Как задать голос: 'text only' (всё описывается в промпте), 'audio reference' (клонировать до 3 голосов, отмеченных @Audio1-3), 'image reference' (получить голос из изображения одного персонажа) или 'preset voice' (выбрать встроенный голос для чтения промпта)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Частота дискретизации на выходе в Гц."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел перезапущен; результат всегда недетерминированный независимо от seed."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "Скорость речи. 0 = нормально, 100 = 2.0x, -50 = 0.5x."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Опишите голос(а), эмоции, темп, атмосферу, фоновую музыку и звуковые эффекты, а также включите реплики для озвучивания (имена персонажей указывайте в тексте для диалога). В режиме 'audio reference' ссылайтесь на подключённые клипы по порядку как @Audio1, @Audio2, @Audio3. Максимум 3000 символов."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "Генерируйте текстовые ответы с помощью моделей Seed 2.0 от ByteDance. Введите текстовый запрос и при необходимости одно или несколько изображений или видео для мультимодального контекста.",
     "display_name": "ByteDance Seed",
@@ -1266,14 +1308,8 @@
       "model": {
         "name": "model"
       },
-      "model_fail_on_partial": {
-        "name": "fail_on_partial"
-      },
       "model_height": {
         "name": "height"
-      },
-      "model_max_images": {
-        "name": "max_images"
       },
       "model_size_preset": {
         "name": "size_preset"
@@ -1288,6 +1324,10 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для генерации."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Включить оптимизацию промпта модели («мышление») для лучшего соответствия. Может значительно увеличить время генерации — особенно на Seedream 5.0 Pro. Может быть отключено только для текст-в-изображение (не работает при наличии референсных изображений)."
       },
       "watermark": {
         "name": "watermark",
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "условие_к"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Conditioning (Multiply)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2780,6 +2835,10 @@
         "name": "фон",
         "tooltip": "Необязательное изображение, используемое как фон на холсте и в предпросмотре."
       },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Границы (bounding boxes), элементы или JSON-строка для инициализации холста. Новое входящее значение инициализирует холст; изменения, внесённые на холсте, имеют приоритет и сохраняются до следующего изменения входящего значения."
+      },
       "editor_state": {
         "name": "состояние_редактора",
         "tooltip": "Нарисуйте ограничивающие рамки и задайте для каждой рамки тип, текст, описание, цветовую палитру. Начинайте с фонового элемента, затем передний план."
@@ -2787,6 +2846,10 @@
       "height": {
         "name": "высота",
         "tooltip": "Высота холста и пиксельной сетки для ограничивающих рамок."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "Внутреннее состояние, управляемое холстом: последнее входящее значение bboxes, которым он был инициализирован. Оставьте пустым, чтобы переинициализировать холст из входа bboxes при следующем запуске."
       },
       "width": {
         "name": "ширина",
@@ -5196,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "Генерируйте видео со звуком по текстовому промпту с помощью модели Google Gemini Omni Flash. Дополнительно можно добавить референсные изображения и/или видео для направления или редактирования результата. Опишите желаемую длительность (3-10 сек) и соотношение сторон (16:9 или 9:16) прямо в промпте.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini video, используемая для генерации видео."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел перезапущен; результат всегда недетерминированный независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "width": {
         "name": "ширина"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "Генерирует изображения синхронно с использованием модели Ideogram V1.\n\nСсылки на изображения доступны ограниченное время; если вы хотите сохранить изображение, его необходимо скачать.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон для генерации изображения."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Определяет, использовать ли MagicPrompt при генерации"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Описание того, что нужно исключить из изображения"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации изображения"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Использовать ли turbo-режим (более быстрая генерация, возможно, с пониженным качеством)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "Генерирует изображения синхронно с использованием модели Ideogram V2.\n\nСсылки на изображения доступны ограниченное время; если вы хотите сохранить изображение, его необходимо скачать.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон для генерации изображения. Игнорируется, если разрешение не установлено в AUTO."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Определяет, использовать ли MagicPrompt при генерации"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Описание того, что следует исключить из изображения"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации изображения"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Разрешение для генерации изображения. Если не установлено в AUTO, этот параметр переопределяет настройку aspect_ratio."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "Тип стиля для генерации (только для V2)"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Использовать ли turbo-режим (более быстрая генерация, возможно, с пониженным качеством)"
       }
     },
     "outputs": {
@@ -10568,6 +10577,12 @@
       "mask": {
         "name": "mask"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
+      }
     }
   },
   "MaskToImage": {
@@ -14576,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предварительный просмотр 3D",
     "inputs": {
       "bg_image": {
@@ -14594,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Просмотр 3D-модели без сохранения в выходной каталог ComfyUI.",
     "display_name": "Просмотр 3D (расширенный)",
     "inputs": {
       "camera_info": {
@@ -14640,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "Просмотр любого входного значения в виде текста.",
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Предпросмотр"
-      },
-      "preview_text": {
-        "name": "Предпросмотр"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "источник"
       }
     }
   },
   "PreviewAudio": {
+    "description": "Прослушать аудио без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предварительное прослушивание аудио",
     "inputs": {
       "audio": {
@@ -14672,6 +14686,7 @@
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Просмотр 3D-файла gaussian splat без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предпросмотр Splat",
     "inputs": {
       "camera_info": {
@@ -14732,6 +14747,7 @@
     }
   },
   "PreviewPointCloud": {
+    "description": "Просмотр 3D-файла облака точек без сохранения в выходной каталог ComfyUI.",
     "display_name": "Предпросмотр облака точек",
     "inputs": {
       "camera_info": {
@@ -17509,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Сохранить 3D (расширенно)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели от вышестоящего 3D-узла."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "Сохранить анимированный PNG",
     "inputs": {
@@ -17669,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Сохранить Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D Gaussian Splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
     "display_name": "Сохранить изображение",
@@ -17807,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Сохранить облако точек",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл облака точек (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Сохранить SVG файлы на диске.",
     "display_name": "SaveSVGNode",
@@ -17822,6 +17985,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Сохранить текстовое содержимое в файл в выходной директории.",
+    "display_name": "Сохранить текст",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17950,6 +18136,117 @@
       "0": {
         "name": "seed",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Создать положительное/отрицательное conditioning SeedVR2 из VAE latent.",
+    "display_name": "Применить SeedVR2 Conditioning",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Положительное conditioning для сэмплирования."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Отрицательное conditioning для сэмплирования."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Выровнять сгенерированное изображение с исходным изменённым по размеру изображением и применить цветокоррекцию.",
+    "display_name": "Постобработка вывода SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Метод сопоставления цветов сгенерированного изображения с оригиналом. lab: перенос цвета в пространстве CIELAB с сохранением деталей (наиболее точный). wavelet: перенос низкочастотного цвета с сохранением высокочастотных деталей при увеличении. adain: сопоставление средних/стандартных отклонений по каналам (самый быстрый, глобальный оттенок). none: пропустить перенос цвета (только выравнивание геометрии)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Сгенерированное изображение для обработки."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "Исходное изменённое по размеру изображение до предобработки, используется как эталон."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Выровненное, цветокорректированное изображение."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Добавить отступы к изменённому по размеру изображению для модели SeedVR2. Альфа-канал удаляется. Узел 'Постобработка вывода SeedVR2' повторно применяет его из исходного изменённого по размеру изображения.",
+    "display_name": "Предобработка входных данных SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "Изменённое по размеру изображение для обработки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Изображение с отступами для кодирования VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Разделить видео latent SeedVR2 на перекрывающиеся временные фрагменты, достаточно маленькие, чтобы обрабатывать их по одному в VRAM. Выходы latent подключаются как к Apply SeedVR2 Conditioning, так и к входу sampler latent перед объединением с помощью Merge SeedVR2 Latents.",
+    "display_name": "Разделить SeedVR2 latent",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = использовать frames_per_chunk точно; auto = подобрать максимальный фрагмент, который поместится в свободную VRAM."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Закодированный VAE latent SeedVR2 для разделения."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Кадры latent, общие для соседних фрагментов и смешиваемые при объединении; 0 = без перекрытия."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Временные фрагменты в порядке следования."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "Фактическое перекрытие кадров latent между соседними фрагментами для Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Объединить обработанные временные фрагменты latent SeedVR2 в один latent, смешивая каждое перекрытие с помощью окна Ханна, размер которого задаётся temporal_overlap, переданного из Split SeedVR2 Latent.",
+    "display_name": "Объединить SeedVR2 latents",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Обработанные временные фрагменты в порядке следования."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Выход temporal_overlap из Split SeedVR2 Latent. 0 = простая конкатенация."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "Объединённый latent полной длины."
       }
     }
   },
@@ -18465,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "Преобразует часть существующего аудиосэмпла с использованием текстовых инструкций.",
-    "display_name": "Stability AI Audio Inpaint",
-    "inputs": {
-      "audio": {
-        "name": "аудио",
-        "tooltip": "Длительность аудио должна быть от 6 до 190 секунд."
-      },
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "duration": {
-        "name": "длительность",
-        "tooltip": "Определяет длительность генерируемого аудио в секундах."
-      },
-      "mask_end": {
-        "name": "конец_маски"
-      },
-      "mask_start": {
-        "name": "начало_маски"
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное начальное значение, используемое для генерации."
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Определяет количество шагов сэмплирования."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "Преобразует существующие аудиосэмплы в новые высококачественные композиции с использованием текстовых инструкций.",
-    "display_name": "Stability AI Audio To Audio",
-    "inputs": {
-      "audio": {
-        "name": "аудио",
-        "tooltip": "Длительность аудио должна быть от 6 до 190 секунд."
-      },
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "duration": {
-        "name": "длительность",
-        "tooltip": "Определяет длительность генерируемого аудио в секундах."
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное начальное значение, используемое для генерации."
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Определяет количество шагов сэмплирования."
-      },
-      "strength": {
-        "name": "интенсивность",
-        "tooltip": "Параметр определяет степень влияния аудиопараметра на генерируемое аудио."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "Генерирует изображения синхронно на основе запроса и разрешения.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон сгенерированного изображения."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "Насколько строго процесс диффузии следует тексту запроса (более высокие значения делают изображение ближе к вашему запросу)"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Уровень удаления шума исходного изображения; 0.0 — изображение идентично входному, 1.0 — как если бы изображение не было предоставлено вовсе."
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Ключевые слова того, что вы не хотите видеть на выходном изображении. Это расширенная функция."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Что вы хотите увидеть на выходном изображении. Сильный, описательный запрос, который чётко определяет элементы, цвета и объекты, приведёт к лучшим результатам."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Случайное зерно, используемое для создания шума."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Необязательный желаемый стиль сгенерированного изображения."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "Генерирует изображения синхронно на основе запроса и разрешения.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон генерируемого изображения."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Уровень удаления шума с входного изображения; 0.0 даст изображение, идентичное входному, 1.0 — как если бы изображение не было предоставлено вовсе."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Текст, описывающий, что вы НЕ хотите видеть на выходном изображении. Это расширенная функция."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Что вы хотите увидеть на выходном изображении. Сильный, описательный запрос, который чётко определяет элементы, цвета и объекты, приведёт к лучшим результатам. Чтобы управлять весом определённого слова, используйте формат `(word:weight)`, где `word` — это слово, вес которого вы хотите изменить, а `weight` — значение от 0 до 1. Например: `The sky was a crisp (blue:0.3) and (green:0.8)` будет означать, что небо было синим и зелёным, но больше зелёным, чем синим."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Случайное зерно, используемое для создания шума."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Необязательный желаемый стиль генерируемого изображения."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "Генерирует высококачественную музыку и звуковые эффекты по текстовым описаниям.",
-    "display_name": "Stability AI Text To Audio",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "duration": {
-        "name": "длительность",
-        "tooltip": "Управляет продолжительностью генерируемого аудио в секундах."
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное начальное значение, используемое для генерации."
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Управляет количеством шагов сэмплирования."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "Увеличивает изображение до 4K с минимальными изменениями.",
-    "display_name": "Stability AI Увеличение (Консервативное)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "creativity": {
-        "name": "креативность",
-        "tooltip": "Управляет вероятностью создания дополнительных деталей, не сильно обусловленных исходным изображением."
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "negative_prompt": {
-        "name": "негативный промпт",
-        "tooltip": "Ключевые слова того, что вы не хотите видеть на выходном изображении. Это расширенная функция."
-      },
-      "prompt": {
-        "name": "промпт",
-        "tooltip": "Что вы хотите видеть на выходном изображении. Сильный, описательный промпт, чётко определяющий элементы, цвета и объекты, приведёт к лучшим результатам."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Случайное значение seed, используемое для создания шума."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "Увеличение изображения до 4K разрешения с минимальными изменениями.",
-    "display_name": "Stability AI Upscale Creative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "creativity": {
-        "name": "креативность",
-        "tooltip": "Управляет вероятностью создания дополнительных деталей, не сильно обусловленных исходным изображением."
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "negative_prompt": {
-        "name": "негативный промпт",
-        "tooltip": "Ключевые слова того, что вы не хотите видеть на выходном изображении. Это расширенная функция."
-      },
-      "prompt": {
-        "name": "промпт",
-        "tooltip": "Что вы хотите видеть на выходном изображении. Сильный, описательный промпт, чётко определяющий элементы, цвета и объекты, приведёт к лучшим результатам."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Случайное значение, используемое для создания шума."
-      },
-      "style_preset": {
-        "name": "стиль",
-        "tooltip": "Необязательный желаемый стиль сгенерированного изображения."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "Быстро увеличивает изображение через Stability API до 4x от исходного размера; предназначено для увеличения изображений низкого качества или сжатых изображений.",
-    "display_name": "Stability AI Быстрое Увеличение",
-    "inputs": {
-      "image": {
-        "name": "изображение"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_Пустое латентное изображение",
     "inputs": {
@@ -19122,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "название_модели_стиля"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Повторная синхронизация движения рта на видео с новой речевой дорожкой с помощью sync.so. Автоматически обрабатывает крупные планы, профиль и препятствия, сохраняя выражение лица говорящего. Стоимость зависит от продолжительности результата.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Речевая аудиодорожка для синхронизации с движением рта."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Генеративная модель sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Видеозапись говорящего для повторной синхронизации. До 4K (4096x2160); оптимально использовать постоянную частоту кадров 24/25/30 fps."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Анимируйте статичный портрет в говорящее видео, управляемое речевой аудиодорожкой, с помощью модели sync-3 от sync.so. Длительность результата соответствует длительности аудио. Стоимость зависит от продолжительности результата.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Речевая аудиодорожка, управляющая говорящим видео; длительность результата будет соответствовать ей. Для анимации по тексту подключите сюда любой TTS-узел."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Одиночное изображение с чётко видимым лицом, до 4K (4096x2160)."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Генеративная модель sync.so. Ввод изображения поддерживается только sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Необязательное указание, как должен оживать портрет, например: «заставьте персонажа улыбнуться и смотреть в камеру». Оставьте пустым для естественного движения при разговоре."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результаты всегда недетерминированы, независимо от значения seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19755,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "Наложить текст на изображение или пакет изображений.",
+    "display_name": "Наложение текста",
+    "inputs": {
+      "align": {
+        "name": "выравнивание"
+      },
+      "color": {
+        "name": "цвет",
+        "tooltip": "Цвет текста."
+      },
+      "font_size": {
+        "name": "размер_шрифта",
+        "tooltip": "Размер шрифта в процентах от высоты изображения."
+      },
+      "images": {
+        "name": "изображения"
+      },
+      "outline": {
+        "name": "контур",
+        "tooltip": "Нарисовать черный контур вокруг текста."
+      },
+      "position": {
+        "name": "позиция"
+      },
+      "text": {
+        "name": "текст"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображения",
         "tooltip": null
       }
     }

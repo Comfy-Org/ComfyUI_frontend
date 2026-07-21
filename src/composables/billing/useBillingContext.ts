@@ -1,12 +1,12 @@
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   KEY_TO_TIER,
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   PreviewSubscribeOptions,
@@ -18,10 +18,10 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
-  BillingType,
   BillingState,
   SubscriptionInfo
 } from './types'
+import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
@@ -30,13 +30,23 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // carries a team_credit_stop. The hyphen prefix alone separates the two, so a
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
+const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
+
+function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
+  const normalizedSlug = planSlug?.toLowerCase()
+  return (
+    normalizedSlug?.startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) === true ||
+    normalizedSlug?.startsWith(PER_CREDIT_TEAM_PLAN_SLUG_PREFIX) === true
+  )
+}
 
 /**
  * Unified billing context that selects the billing implementation by build/flag.
  *
  * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
- * - Team workspaces enabled: workspace billing via /api/billing/* for both
- *   personal (single-seat workspace) and team workspaces
+ * - Team workspaces enabled: workspace billing via /api/billing/* for team
+ *   workspaces, and for personal workspaces once consolidated billing is
+ *   enabled; personal workspaces otherwise stay on legacy billing
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -69,7 +79,7 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
  */
 function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
-  const { flags } = useFeatureFlags()
+  const { type } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
@@ -95,16 +105,6 @@ function useBillingContextInternal(): BillingContext {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-
-  /**
-   * Determines which billing type to use, keyed only on the build/flag:
-   * - Team workspaces feature disabled (OSS/Desktop): legacy (/customers)
-   * - Team workspaces feature enabled: workspace (/api/billing), for both
-   *   personal (single-seat workspace) and team workspaces
-   */
-  const type = computed<BillingType>(() =>
-    flags.teamWorkspacesEnabled ? 'workspace' : 'legacy'
-  )
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
@@ -139,6 +139,16 @@ function useBillingContextInternal(): BillingContext {
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
+  const freeTierQuota = useFreeTierQuota()
+
+  const canRunWorkflows = computed(
+    () =>
+      isActiveSubscription.value &&
+      (!isFreeTier.value ||
+        !freeTierQuota.quotaEnabled.value ||
+        freeTierQuota.freeTierExecutionPermitted.value)
+  )
+
   const isLegacyTeamPlan = computed(
     () =>
       type.value === 'workspace' &&
@@ -149,6 +159,18 @@ function useBillingContextInternal(): BillingContext {
         ?.toLowerCase()
         .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
         false)
+  )
+
+  // Plan identity, independent of subscription health: the per-credit Team plan
+  // carries a credit stop, the retired seat-based ones a `team-` slug. Kept off
+  // isActiveSubscription on purpose — paused and payment_failed both force
+  // is_active=false, which is exactly when callers still need to know this is a
+  // team plan.
+  const isTeamPlan = computed(
+    () =>
+      type.value === 'workspace' &&
+      (currentTeamCreditStop.value !== null ||
+        isTeamPlanSlug(currentPlanSlug.value))
   )
 
   const billingStatus = computed(() =>
@@ -170,9 +192,12 @@ function useBillingContextInternal(): BillingContext {
     return plan?.max_seats ?? getTierFeatures(tierKey).maxMembers
   }
 
-  // Sync subscription info to workspace store for display in workspace switcher
-  // A subscription is considered "subscribed" for workspace purposes if it's active AND not cancelled
-  // This ensures the delete button is enabled after cancellation, even before the period ends
+  // Sync subscription info to workspace store for display in workspace switcher.
+  // Subscribed means active AND not cancelled, so the delete button enables
+  // after cancellation, even before the period ends. A null subscription means
+  // "not loaded yet" (adapters are discarded on every workspace/type switch);
+  // skip it so the transient reinit gap can't clobber the list-derived baseline
+  // (personal workspaces and subscribed teams already read subscribed there).
   watch(
     subscription,
     (sub) => {
@@ -186,24 +211,27 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
+  // Discarding the adapter instances forces a fresh fetch and lets an in-flight
+  // init detect that it was superseded (its captured adapter is no longer the
+  // active one), so a stale response can't resolve into a ready state for the
+  // wrong workspace.
   function resetBillingState() {
+    legacyBillingRef.value = null
+    workspaceBillingRef.value = null
     isInitialized.value = false
+    isLoading.value = false
     error.value = null
   }
 
-  // type can flip after setup when the team-workspaces flag resolves from
-  // authenticated config, swapping the active backend; a fresh init is needed.
-  // The watch fires only when id or type actually changes, so any fire with a
-  // workspace selected warrants a reinit.
+  // type flips when the team-workspaces or consolidated-billing flag resolves
+  // from authenticated config, swapping the active backend. Reset then reinit
+  // on every workspace-id or type change.
   watch(
     [() => store.activeWorkspace?.id, () => type.value],
     async ([newWorkspaceId]) => {
-      if (!newWorkspaceId) {
-        resetBillingState()
-        return
-      }
+      resetBillingState()
+      if (!newWorkspaceId) return
 
-      isInitialized.value = false
       try {
         await initialize()
       } catch (err) {
@@ -216,17 +244,20 @@ function useBillingContextInternal(): BillingContext {
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
 
+    const adapter = activeContext.value
     isLoading.value = true
     error.value = null
     try {
-      await activeContext.value.initialize()
+      await adapter.initialize()
+      if (activeContext.value !== adapter) return
       isInitialized.value = true
     } catch (err) {
+      if (activeContext.value !== adapter) return
       error.value =
         err instanceof Error ? err.message : 'Failed to initialize billing'
       throw err
     } finally {
-      isLoading.value = false
+      if (activeContext.value === adapter) isLoading.value = false
     }
   }
 
@@ -298,8 +329,10 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    canRunWorkflows,
     isFreeTier,
     isLegacyTeamPlan,
+    isTeamPlan,
     billingStatus,
     subscriptionStatus,
     tier,

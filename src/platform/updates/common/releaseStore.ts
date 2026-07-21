@@ -23,12 +23,9 @@ export const useReleaseStore = defineStore('release', () => {
   const systemStatsStore = useSystemStatsStore()
   const settingStore = useSettingStore()
 
-  const currentVersion = computed(() => {
-    if (isCloud) {
-      return systemStatsStore?.systemStats?.system?.cloud_version ?? ''
-    }
-    return systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
-  })
+  const currentVersion = computed(
+    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+  )
 
   // Release data from settings
   const locale = computed(() => settingStore.get('Comfy.Locale'))

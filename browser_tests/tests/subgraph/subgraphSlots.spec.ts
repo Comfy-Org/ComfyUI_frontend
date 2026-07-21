@@ -691,7 +691,8 @@ test(
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
       await comfyPage.canvas.hover({ position: emptySlotPos })
       await comfyPage.page.mouse.down()
-      await stepsSlot.hover()
+      const { width, height } = (await stepsSlot.boundingBox())!
+      await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
       await expect.poll(hasSnap).toBe(true)
       await comfyPage.page.mouse.up()
 
