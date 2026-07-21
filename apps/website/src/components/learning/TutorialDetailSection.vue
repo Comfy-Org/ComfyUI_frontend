@@ -81,6 +81,7 @@ const related = computed(() =>
         :poster="tutorial.poster"
         :tracks="tutorial.caption"
         autoplay
+        autoplay-unmuted
         fit="contain"
         :aria-label="tutorial.title[locale]"
         class="aspect-video w-full"
