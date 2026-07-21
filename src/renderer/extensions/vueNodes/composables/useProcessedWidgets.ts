@@ -41,13 +41,13 @@ import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
+import { executionIdToNodeLocatorId,getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -185,8 +185,18 @@ function getProcessedNodeExecutionId(
 
 function getWidgetNodeLocatorId(
   nodeData: VueNodeData,
-  bareWidgetId: NodeId | null
+  bareWidgetId: NodeId | null,
+  sourceExecutionId: NodeExecutionId | undefined,
+  rootGraph: LGraph | null
 ): NodeLocatorId | undefined {
+  if (sourceExecutionId && rootGraph) {
+    const sourceLocator = executionIdToNodeLocatorId(
+      rootGraph,
+      sourceExecutionId
+    )
+    if (sourceLocator) return sourceLocator
+  }
+
   if (!bareWidgetId) return undefined
 
   return (
@@ -330,7 +340,12 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = getWidgetNodeLocatorId(nodeData, bareWidgetId)
+    const nodeLocatorId = getWidgetNodeLocatorId(
+      nodeData,
+      bareWidgetId,
+      widget.sourceExecutionId,
+      rootGraph
+    )
 
     const simplified: SimplifiedWidget = {
       name: widgetState?.name ?? widget.name,
