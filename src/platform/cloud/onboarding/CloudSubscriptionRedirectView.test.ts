@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -82,7 +83,17 @@ const createI18nInstance = () =>
         },
         subscription: {
           subscribeTo: 'Subscribe to {plan}',
-          teamPlan: { name: 'Team Plan' },
+          teamPlan: {
+            name: 'Team Plan',
+            confirmHeading: 'Confirm your Team subscription',
+            confirmCreditsPerMonth: '{credits} credits / month',
+            billedMonthly: 'Billed monthly',
+            billedYearly: 'Billed yearly',
+            confirmChargeNotice:
+              'Continuing subscribes your workspace and charges the payment method on file.',
+            confirmCta: 'Confirm & subscribe',
+            confirmCancel: 'Cancel'
+          },
           tiers: {
             standard: { name: 'Standard' },
             creator: { name: 'Creator' },
@@ -179,11 +190,27 @@ describe('CloudSubscriptionRedirectView', () => {
     )
   })
 
-  test('checks out the team plan via the workspace path with the chosen stop and cycle', async () => {
+  test('stages the team plan and does not charge until the user confirms', async () => {
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
+    // A confirmation is shown instead of an immediate charge
+    expect(
+      screen.getByText('Confirm your Team subscription')
+    ).toBeInTheDocument()
+    expect(screen.getByText(/147,700 credits \/ month/)).toBeInTheDocument()
+    // Nothing is charged on mount
+    expect(mockPerformTeamSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  test('checks out the team plan via the workspace path once confirmed', async () => {
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /confirm & subscribe/i })
+    )
+    await flushPromises()
+
     expect(mockPerformTeamSubscriptionCheckout).toHaveBeenCalledWith(
       'team_700',
       'yearly',
@@ -191,6 +218,16 @@ describe('CloudSubscriptionRedirectView', () => {
     )
     // Team never goes through the personal checkout path
     expect(mockPerformSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  test('cancelling the team confirmation goes home without charging', async () => {
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    await flushPromises()
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/')
+    expect(mockPerformTeamSubscriptionCheckout).not.toHaveBeenCalled()
   })
 
   test('redirects to home for a team link with no stop', async () => {

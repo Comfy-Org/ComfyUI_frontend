@@ -2757,7 +2757,14 @@
       "ctaMonthly": "Subscribe to Team Monthly",
       "unavailable": "This team plan is not available right now.",
       "changePlan": "Change plan",
-      "currentPlan": "Current plan"
+      "currentPlan": "Current plan",
+      "confirmHeading": "Confirm your Team subscription",
+      "confirmCreditsPerMonth": "{credits} credits / month",
+      "billedMonthly": "Billed monthly",
+      "billedYearly": "Billed yearly",
+      "confirmChargeNotice": "Continuing subscribes your workspace and charges the payment method on file.",
+      "confirmCta": "Confirm & subscribe",
+      "confirmCancel": "Cancel"
     },
     "enterprise": {
       "name": "Enterprise",

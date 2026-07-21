@@ -8,6 +8,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { TEAM_PLAN_CREDIT_STOPS } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { performTeamSubscriptionCheckout } from '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'
@@ -45,10 +46,32 @@ const tierDisplayName = computed(() => {
   return names[selectedTierKey.value]
 })
 
-const isTeamCheckout = ref(false)
+// The team plan checks out through the workspace endpoint, which charges the
+// payment method on file directly rather than opening a hosted Stripe page. So
+// unlike personal tiers (whose checkout URL / billing portal is itself the
+// confirmation), a team deep link must present its own confirmation before it
+// can charge — otherwise a subscribed user following the link is billed with no
+// consent step.
+const pendingTeam = ref<{ stopId: string; cycle: BillingCycle } | null>(null)
+const teamCheckoutStarted = ref(false)
+
+const teamCreditsLabel = computed(() => {
+  if (!pendingTeam.value) return null
+  const usd = Number(pendingTeam.value.stopId.replace(/^team_/, ''))
+  const stop = TEAM_PLAN_CREDIT_STOPS.find((s) => s.usd === usd)
+  return stop ? stop.credits.toLocaleString() : null
+})
+
+const teamCycleLabel = computed(() =>
+  pendingTeam.value?.cycle === 'yearly'
+    ? t('subscription.teamPlan.billedYearly')
+    : t('subscription.teamPlan.billedMonthly')
+)
 
 const planLabel = computed(() =>
-  isTeamCheckout.value ? t('subscription.teamPlan.name') : tierDisplayName.value
+  teamCheckoutStarted.value
+    ? t('subscription.teamPlan.name')
+    : tierDisplayName.value
 )
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
@@ -79,8 +102,8 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     : 'monthly'
 
   // Team is a per-credit plan picked on a slider, so it carries a `stop` (the
-  // chosen credit commitment) instead of a tier and checks out through the
-  // workspace billing endpoint rather than the personal one.
+  // chosen credit commitment) instead of a tier. Stage the checkout and wait
+  // for explicit confirmation instead of charging on mount.
   if (tierKeyParam === 'team') {
     const rawStop = route.query.stop
     const stopId =
@@ -93,10 +116,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
       await router.push('/')
       return
     }
-    isTeamCheckout.value = true
-    await performTeamSubscriptionCheckout(stopId, billingCycle, {
-      paymentIntentSource: 'deep_link'
-    })
+    pendingTeam.value = { stopId, cycle: billingCycle }
     return
   }
 
@@ -121,6 +141,19 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   }
 }, reportError)
 
+const confirmTeamCheckout = wrapWithErrorHandlingAsync(async () => {
+  const staged = pendingTeam.value
+  if (!staged || teamCheckoutStarted.value) return
+  teamCheckoutStarted.value = true
+  await performTeamSubscriptionCheckout(staged.stopId, staged.cycle, {
+    paymentIntentSource: 'deep_link'
+  })
+}, reportError)
+
+const cancelTeamCheckout = async () => {
+  await router.push('/')
+}
+
 onMounted(() => {
   void runRedirect()
 })
@@ -130,7 +163,45 @@ onMounted(() => {
   <div
     class="bg-comfy-menu-secondary-bg flex size-full items-center justify-center"
   >
-    <div class="flex flex-col items-center gap-4">
+    <div
+      v-if="pendingTeam && !teamCheckoutStarted"
+      class="flex w-full max-w-sm flex-col items-center gap-4 px-6 text-center"
+    >
+      <img
+        src="/assets/images/comfy-logo-single.svg"
+        :alt="t('g.comfyOrgLogoAlt')"
+        class="size-16"
+      />
+      <h1 class="font-inter text-lg/normal font-medium text-base-foreground">
+        {{ t('subscription.teamPlan.confirmHeading') }}
+      </h1>
+      <p
+        v-if="teamCreditsLabel"
+        class="font-inter text-base/normal font-normal text-base-foreground"
+      >
+        {{
+          t('subscription.teamPlan.confirmCreditsPerMonth', {
+            credits: teamCreditsLabel
+          })
+        }}
+        · {{ teamCycleLabel }}
+      </p>
+      <p class="font-inter text-sm/normal font-normal text-muted">
+        {{ t('subscription.teamPlan.confirmChargeNotice') }}
+      </p>
+      <Button
+        class="w-full"
+        :label="t('subscription.teamPlan.confirmCta')"
+        @click="confirmTeamCheckout"
+      />
+      <Button
+        link
+        :label="t('subscription.teamPlan.confirmCancel')"
+        @click="cancelTeamCheckout"
+      />
+    </div>
+
+    <div v-else class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
         :alt="t('g.comfyOrgLogoAlt')"
