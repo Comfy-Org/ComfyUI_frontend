@@ -148,6 +148,36 @@ describe('agentEventTransport thinking chip', () => {
   })
 })
 
+describe('agentEventTransport thinking narration', () => {
+  it('thinking deltas accumulate into thinkingText on the snapshot', () => {
+    const message = drive([thinking('Reading '), thinking('the graph')])
+    expect(message.thinkingText).toBe('Reading the graph')
+  })
+
+  it('a tool call clears the narration', () => {
+    const message = drive([
+      thinking('Adding a node'),
+      toolCall('add_node', 'ok')
+    ])
+    expect(message.thinkingText).toBeUndefined()
+  })
+
+  it('the first text delta clears the narration', () => {
+    const message = drive([thinking('Writing a reply'), delta('Here')])
+    expect(message.thinkingText).toBeUndefined()
+  })
+
+  it('settle clears the narration', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(thinking('Wrapping up'))
+    transport.settle()
+    const final = emit.mock.calls.at(-1)?.[0] ?? message
+    expect(final.thinkingText).toBeUndefined()
+  })
+})
+
 describe('agentEventTransport text and tool parts', () => {
   it('two deltas append into one text part', () => {
     const message = drive([delta('foo '), delta('bar')])
