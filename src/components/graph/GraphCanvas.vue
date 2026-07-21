@@ -175,12 +175,14 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import type { TemplateUrlLoadResult } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/useFirstRunTourController'
+import type { BeginTourOptions } from '@/renderer/extensions/firstRunTour/useFirstRunTourController'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
@@ -505,11 +507,7 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
-  let templateFromUrl:
-    | Awaited<
-        ReturnType<typeof workflowPersistence.loadTemplateFromUrlIfPresent>
-      >
-    | undefined
+  let templateFromUrl: TemplateUrlLoadResult | undefined
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -574,31 +572,26 @@ onMounted(async () => {
   const sharedFromUrl =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // A ?template=/?share= URL loads a workflow directly (Getting Started is
-  // skipped). Start the onboarding tour on it; beginTour() self-gates and reads
-  // the now-loaded graph, so the loaders above must have finished first.
-  const startTourFromUrl = (
-    options?: Parameters<
-      ReturnType<typeof useFirstRunTourController>['beginTour']
-    >[0]
-  ) =>
-    useFirstRunTourController()
-      .beginTour(options)
+  /**
+   * If the URL has ?template= or ?share=, load that workflow directly and skip Getting Started.
+   * Starts the onboarding tour on the loaded graph. Shared URLs override templates if both are present.
+   * Requires loaders above to finish so the tour can read the loaded graph.
+   */
+  function getTourOptions(): BeginTourOptions | undefined {
+    if (sharedFromUrl === 'loaded' || sharedFromUrl === 'loaded-without-assets')
+      return { entry: 'share_url' }
+    if (templateFromUrl?.loaded)
+      return { templateId: templateFromUrl.templateId, entry: 'template_url' }
+    return undefined
+  }
+
+  const tourOptions = getTourOptions()
+  if (tourOptions)
+    void useFirstRunTourController()
+      .beginTour(tourOptions)
       .catch((error: unknown) => {
         console.error('[onboardingTour] failed to start from URL', error)
       })
-
-  if (templateFromUrl?.loaded) {
-    void startTourFromUrl({
-      templateId: templateFromUrl.templateId,
-      entry: 'template_url'
-    })
-  } else if (
-    sharedFromUrl === 'loaded' ||
-    sharedFromUrl === 'loaded-without-assets'
-  ) {
-    void startTourFromUrl({ entry: 'share_url' })
-  }
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,

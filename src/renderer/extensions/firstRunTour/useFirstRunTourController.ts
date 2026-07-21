@@ -53,7 +53,7 @@ function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()))
 }
 
-interface BeginTourOptions {
+export interface BeginTourOptions {
   templateId?: string
   entry?: OnboardingTourEntry
 }
