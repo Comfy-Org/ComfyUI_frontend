@@ -1,3 +1,5 @@
+import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { registerLinkTopology } from './LLink'
 import { inputLinkId } from './node/slotLinks'
@@ -87,13 +89,20 @@ export function realignInputLinkSlots(
   nodesData: Iterable<ISerialisedNode>,
   survivorByPurged: ReadonlyMap<LinkId, LinkId> = new Map()
 ): void {
+  const updates: EndpointUpdate[] = []
   for (const nodeData of nodesData) {
     for (const [slot, input] of (nodeData.inputs ?? []).entries()) {
       if (input.link == null) continue
       const serializedId = toLinkId(input.link)
       const linkId = survivorByPurged.get(serializedId) ?? serializedId
       const link = graph._links.get(linkId)
-      if (link && link.target_slot !== slot) link.target_slot = slot
+      if (link && link.target_slot !== slot) {
+        updates.push({
+          topology: link._state,
+          patch: { targetSlot: slot }
+        })
+      }
     }
   }
+  useLinkStore().updateEndpoints(graph.rootGraph.id, updates)
 }

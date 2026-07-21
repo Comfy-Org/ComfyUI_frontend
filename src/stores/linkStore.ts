@@ -16,6 +16,11 @@ export type EndpointPatch = Partial<
   >
 >
 
+export interface EndpointUpdate {
+  topology: LinkTopology
+  patch: EndpointPatch
+}
+
 /**
  * Endpoint slot keys are `${nodeId}:${slot}`; slot is numeric so the
  * separator is unambiguous for any node id. Target (input side) and origin
@@ -81,16 +86,16 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
-  /**
-   * Places a link under its current endpoints, evicting any incumbent under
-   * the same target key.
-   * @returns The store-held reactive state — callers keep it as their live
-   * state object so later field writes are tracked.
-   */
+  /** Places a validated link under its current endpoints. */
   function place(graphId: UUID, topology: LinkTopology): LinkTopology {
     if (hasUniqueTarget(topology)) {
       const key = targetKey(topology.targetNodeId, topology.targetSlot)
-      graphTargets(graphId).set(key, topology)
+      const targets = graphTargets(graphId)
+      const existing = targets.get(key)
+      if (existing && toRaw(existing) !== toRaw(topology)) {
+        throw new Error('Link target slot ' + key + ' is already occupied')
+      }
+      targets.set(key, topology)
     } else {
       graphUnkeyed(graphId).add(topology)
     }
@@ -126,25 +131,75 @@ export const useLinkStore = defineStore('link', () => {
     return targets.delete(key)
   }
 
-  /**
-   * Applies an endpoint patch and re-places the link under its new target.
-   * The move is authoritative: it evicts any incumbent under the new key, so
-   * slot permutations re-keyed one link at a time cannot drop links — an
-   * evicted link re-places itself when its own endpoint write arrives.
-   * @returns The store-held reactive state.
-   */
+  function ownsPlacement(graphId: UUID, topology: LinkTopology): boolean {
+    if (!hasUniqueTarget(topology)) {
+      return unkeyedLinks.value.get(graphId)?.has(topology) ?? false
+    }
+    const key = targetKey(topology.targetNodeId, topology.targetSlot)
+    return toRaw(targetIndex.value.get(graphId)?.get(key)) === toRaw(topology)
+  }
+
+  /** Atomically validates and applies endpoint updates. */
+  function updateEndpoints(
+    graphId: UUID,
+    updates: readonly EndpointUpdate[]
+  ): LinkTopology[] {
+    if (updates.length === 0) return []
+
+    const participants = new Set(updates.map(({ topology }) => toRaw(topology)))
+    if (participants.size !== updates.length) {
+      throw new Error(
+        'A link topology may only appear once in an endpoint batch'
+      )
+    }
+
+    const finalTopologies = updates.map(({ topology, patch }) => ({
+      topology,
+      final: { ...toRaw(topology), ...patch }
+    }))
+    const finalOwners = new Map<TargetSlotKey, LinkTopology>()
+
+    for (const { topology, final } of finalTopologies) {
+      if (!ownsPlacement(graphId, topology)) {
+        throw new Error(
+          'Link ' + topology.id + ' does not own its current placement'
+        )
+      }
+      if (!hasUniqueTarget(final)) continue
+
+      const key = targetKey(final.targetNodeId, final.targetSlot)
+      if (finalOwners.has(key)) {
+        throw new Error('Multiple links target input slot ' + key)
+      }
+      finalOwners.set(key, topology)
+
+      const incumbent = targetIndex.value.get(graphId)?.get(key)
+      if (
+        incumbent &&
+        toRaw(incumbent) !== toRaw(topology) &&
+        !participants.has(toRaw(incumbent))
+      ) {
+        throw new Error('Link target slot ' + key + ' is already occupied')
+      }
+    }
+
+    for (const { topology } of updates) displace(graphId, topology)
+
+    const placed: LinkTopology[] = []
+    for (const { topology, patch } of updates) {
+      Object.assign(reactive(topology), patch)
+      placed.push(place(graphId, topology))
+    }
+    return placed
+  }
+
+  /** Applies one endpoint patch atomically. */
   function updateEndpoint(
     graphId: UUID,
     topology: LinkTopology,
     patch: EndpointPatch
   ): LinkTopology {
-    displace(graphId, topology)
-    const live = reactive(topology)
-    if (patch.originNodeId !== undefined) live.originNodeId = patch.originNodeId
-    if (patch.originSlot !== undefined) live.originSlot = patch.originSlot
-    if (patch.targetNodeId !== undefined) live.targetNodeId = patch.targetNodeId
-    if (patch.targetSlot !== undefined) live.targetSlot = patch.targetSlot
-    return place(graphId, topology)
+    return updateEndpoints(graphId, [{ topology, patch }])[0]
   }
 
   function isInputSlotConnected(
@@ -224,6 +279,7 @@ export const useLinkStore = defineStore('link', () => {
   return {
     registerLink,
     updateEndpoint,
+    updateEndpoints,
     deleteLink: displace,
     isInputSlotConnected,
     getInputSlotLink,

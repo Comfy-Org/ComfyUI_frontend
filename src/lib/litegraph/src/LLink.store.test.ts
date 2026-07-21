@@ -209,10 +209,12 @@ describe('LLink ↔ linkStore integration', () => {
     const first = a.connect(0, b, 0)!
     const second = a.connect(0, b, 1)!
 
-    first.target_slot = 1
-    second.target_slot = 0
-
     const store = useLinkStore()
+    store.updateEndpoints(graph.rootGraph.id, [
+      { topology: first._state, patch: { targetSlot: 1 } },
+      { topology: second._state, patch: { targetSlot: 0 } }
+    ])
+
     const graphId = graph.rootGraph.id
     expect(b.isInputConnected(0)).toBe(true)
     expect(b.isInputConnected(1)).toBe(true)

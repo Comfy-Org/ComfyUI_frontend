@@ -82,18 +82,16 @@ of the primary index:
   safely for losers.
 - `deleteLink` is **identity-checked** (`toRaw` comparison): only the
   registered topology can vacate its slot.
-- `updateEndpoint` re-keys atomically — identity-checked displace,
-  patch fields through a reactive wrapper, re-place under the new key —
-  and the move is **authoritative**: an incumbent under the new key is
-  evicted. First-wins only guards _registration_; a re-key is a move of
-  a link that already proved ownership by vacating its old key, so the
-  write wins. This is what keeps slot permutations safe when callers
-  re-key links one write at a time (input reorder, splice shifts): a
-  transiently evicted link re-places itself when its own endpoint write
-  arrives, and every lawful final state is collision-free. The
-  `reactive()` wrap stays even though registered links already hold the
-  proxy: the store is public API and may be handed a raw topology
-  object.
+- updateEndpoints validates a complete endpoint batch before mutation.
+  Every participant must own its current placement, final target keys must
+  be unique, and an occupied destination is valid only when its incumbent
+  participates and vacates that key. After validation, the store removes all
+  old placements, patches every reactive topology, and inserts all final
+  placements. Swaps and rotations therefore commit without transient
+  eviction; an invalid move leaves every topology and index unchanged.
+  updateEndpoint is the single-item form and rejects occupied targets.
+  Graph-owned systems disconnect links before removal because only the graph
+  can coordinate callbacks, reroutes, and link-map lifecycle.
 
 ## Decision 5: Mutation chokepoints
 

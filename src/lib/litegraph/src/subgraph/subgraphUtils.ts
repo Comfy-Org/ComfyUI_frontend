@@ -5,9 +5,10 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import {
-  inputLink,
+  captureInputLinks,
   inputLinkId,
-  outputLinkIds
+  outputLinkIds,
+  replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
@@ -534,16 +535,13 @@ export function reorderSubgraphInputs(
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
-  // Capture outer links by pre-reorder index: the store is keyed by
-  // target_slot, which the physical reorder does not move.
-  const outerLinks = subgraphNode.inputs.map((_input, index) =>
-    subgraphNode.graph
-      ? inputLink(subgraphNode.graph, subgraphNode.id, index)
-      : undefined
+  const outerLinks = captureInputLinks(subgraphNode)
+  const orderedHostInputs = orderedIndices.flatMap(
+    (index) => subgraphNode.inputs[index] ?? []
   )
 
   reorderInPlace(subgraph.inputs, orderedIndices)
-  reorderInPlace(subgraphNode.inputs, orderedIndices)
+  replaceNodeInputs(subgraphNode, orderedHostInputs, outerLinks)
   subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
@@ -551,11 +549,6 @@ export function reorderSubgraphInputs(
   }
   for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
     link.origin_slot = slot
-  }
-
-  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
-    const link = outerLinks[oldIndex]
-    if (link) link.target_slot = newIndex
   }
 
   const newOrder = subgraph.inputs.map((i) => i.id)

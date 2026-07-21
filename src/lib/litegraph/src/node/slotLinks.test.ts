@@ -7,12 +7,14 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import {
+  captureInputLinks,
   inputHasLink,
   inputLink,
   inputLinkId,
   outputHasLinks,
   outputLinkIds,
-  outputLinks
+  outputLinks,
+  replaceNodeInputs
 } from './slotLinks'
 
 function createConnectedGraph(targetCount: number) {
@@ -140,5 +142,50 @@ describe('slotLinks', () => {
     source.disconnectOutput(0)
 
     expect(seen).toEqual([true, false])
+  })
+  it('atomically reorders connected inputs', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(target)
+    const first = source.connect(0, target, 0)!
+    const second = source.connect(0, target, 1)!
+    const assignments = captureInputLinks(target)
+
+    replaceNodeInputs(target, target.inputs.toReversed(), assignments)
+
+    expect(target.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+    expect(target.getInputLink(0)).toBe(second)
+    expect(target.getInputLink(1)).toBe(first)
+  })
+
+  it('disconnects a removed linked input before replacing the layout', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('keep', 'INT')
+    target.addInput('remove', 'INT')
+    graph.add(target)
+    const removedLink = source.connect(0, target, 1)!
+    const removedInput = target.inputs[1]
+    const disconnected = vi.fn()
+    target.onConnectionsChange = (type, slot, connected, _link, input) => {
+      if (type === NodeSlotType.INPUT && !connected) {
+        disconnected(slot, input)
+      }
+    }
+
+    replaceNodeInputs(target, [target.inputs[0]], captureInputLinks(target))
+
+    expect(disconnected).toHaveBeenCalledOnce()
+    expect(disconnected).toHaveBeenCalledWith(1, removedInput)
+    expect(graph.getLink(removedLink.id)).toBeUndefined()
+    expect(target.inputs).toHaveLength(1)
   })
 })
