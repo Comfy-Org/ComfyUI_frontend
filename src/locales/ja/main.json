@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count}件のモデル",
     "noResults": "テンプレートが見つかりません",
     "noResultsHint": "検索条件やフィルターを調整してみてください",
-    "resetFilters": "フィルターをクリア",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
