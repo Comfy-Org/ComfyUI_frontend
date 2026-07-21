@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count} modelos",
     "noResults": "No se encontraron plantillas",
     "noResultsHint": "Intenta ajustar tu búsqueda o filtros",
-    "resetFilters": "Limpiar filtros",
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
