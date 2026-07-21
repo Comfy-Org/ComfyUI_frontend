@@ -1,0 +1,139 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+
+import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+class WidgetLabelTestNode extends LGraphNode {
+  static override title = 'WidgetLabelTestNode'
+  constructor() {
+    super('WidgetLabelTestNode')
+    this.serialize_widgets = true
+    this.addWidget('text', 'my_widget', 'v', null)
+  }
+}
+
+LiteGraph.registerNodeType('test/WidgetLabelTestNode', WidgetLabelTestNode)
+
+/**
+ * Regression: renamed widget labels were lost after node delete + undo and
+ * copy-paste. `serialize()` persisted only `widgets_values`, and `configure()`
+ * restored the rename solely from the `input.label` mirror, which does not
+ * exist for socketless / DOM widgets. Undo's clearGraph wiped the live store
+ * label, so on re-configure the label was gone.
+ *
+ * Fix: #13861 — persist socketless widget labels through serialize/configure.
+ */
+describe('LGraphNode widget label persistence (regression #13861)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    Object.assign(LiteGraph, {
+      NODE_TITLE_HEIGHT: 20,
+      NODE_SLOT_HEIGHT: 15,
+      NODE_TEXT_SIZE: 14,
+      isValidConnection: vi.fn().mockReturnValue(true)
+    })
+  })
+
+  function makeNodeWithRenamedWidget(): LGraphNode {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('text', 'my_widget', 'v', null)
+    node.widgets![0].label = 'Renamed Label'
+    return node
+  }
+
+  test('serialize persists a socketless widget label', () => {
+    const serialized = makeNodeWithRenamedWidget().serialize()
+
+    expect(serialized.widgets_labels).toEqual({ my_widget: 'Renamed Label' })
+  })
+
+  test('configure restores a socketless widget label after the store is cleared', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('text', 'my_widget', 'v', null)
+
+    node.configure({
+      id: 1,
+      type: 'TestNode',
+      pos: [0, 0],
+      size: [100, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      widgets_values: ['v'],
+      widgets_labels: { my_widget: 'Renamed Label' }
+    } as ISerialisedNode)
+
+    expect(node.widgets![0].label).toBe('Renamed Label')
+  })
+
+  test('label survives a full serialize -> configure round-trip', () => {
+    const serialized = makeNodeWithRenamedWidget().serialize()
+
+    const restored = new LGraphNode('TestNode')
+    restored.serialize_widgets = true
+    restored.addWidget('text', 'my_widget', 'v', null)
+    restored.configure(serialized)
+
+    expect(restored.widgets![0].label).toBe('Renamed Label')
+  })
+
+  test('input.label mirror takes precedence over widgets_labels', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('number', 'seed', 0, null)
+    const input = node.addInput('seed', 'INT')
+    input.widget = { name: 'seed' }
+
+    node.configure({
+      id: 1,
+      type: 'TestNode',
+      pos: [0, 0],
+      size: [100, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [
+        {
+          name: 'seed',
+          type: 'INT',
+          link: null,
+          label: 'From Input',
+          widget: { name: 'seed' }
+        }
+      ],
+      widgets_values: [0],
+      widgets_labels: { seed: 'From Labels' }
+    } as unknown as ISerialisedNode)
+
+    expect(node.widgets![0].label).toBe('From Input')
+  })
+
+  test('input-backed widget labels are not duplicated into widgets_labels', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('number', 'seed', 0, null)
+    const input = node.addInput('seed', 'INT')
+    input.widget = { name: 'seed' }
+    input.label = 'From Input'
+    node.widgets![0].label = 'From Input'
+
+    expect(node.serialize().widgets_labels).toBeUndefined()
+  })
+
+  test('label survives the full graph serialize -> configure path (undo/save)', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode('test/WidgetLabelTestNode')!
+    graph.add(node)
+    node.widgets![0].label = 'Renamed Label'
+
+    const restored = new LGraph()
+    restored.configure(graph.serialize())
+
+    const restoredNode = restored.getNodeById(node.id)!
+    expect(restoredNode.widgets![0].label).toBe('Renamed Label')
+  })
+})
