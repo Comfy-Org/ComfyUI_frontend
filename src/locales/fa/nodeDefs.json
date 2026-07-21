@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "همگام‌سازی مجدد حرکت دهان در یک ویدیو با صدای گفتاری جدید با استفاده از sync.so. به‌طور خودکار کلوزآپ‌ها، نمای نیم‌رخ و موانع را مدیریت می‌کند و در عین حال حالت چهره گوینده را حفظ می‌نماید. هزینه بر اساس مدت زمان خروجی افزایش می‌یابد.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدای گفتاری برای همگام‌سازی حرکت دهان."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل تولید sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید مجدداً اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "تصویربرداری از گوینده برای همگام‌سازی مجدد. تا کیفیت ۴K (۴۰۹۶×۲۱۶۰)؛ نرخ فریم ثابت ۲۴/۲۵/۳۰ فریم بر ثانیه بهترین عملکرد را دارد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "یک تصویر پرتره ثابت را با صدای گفتاری به ویدیوی صحبت‌کننده تبدیل کنید، با استفاده از مدل sync-3 از sync.so. مدت زمان خروجی مطابق با صوت خواهد بود. هزینه بر اساس مدت زمان خروجی افزایش می‌یابد.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "صدای گفتاری که ویدیوی صحبت‌کننده را هدایت می‌کند؛ مدت زمان خروجی مطابق با آن است. هر node تبدیل متن به گفتار (TTS) را می‌توانید اینجا متصل کنید تا انیمیشن از متن هدایت شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "یک تصویر با چهره واضح، تا کیفیت ۴K (۴۰۹۶×۲۱۶۰)."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل تولید sync.so. ورودی تصویر فقط برای sync-3 فعال است."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "راهنمای اختیاری برای نحوه جان گرفتن پرتره، مثلاً «سوژه را لبخند بزن و به دوربین نگاه کند». برای حرکت طبیعی صحبت کردن، خالی بگذارید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید مجدداً اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "گزینه‌های T5Tokenizer",
     "inputs": {

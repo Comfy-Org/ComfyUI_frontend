@@ -295,11 +295,11 @@ function surfaceAgentError(
   type: 'agent_api_failed' | 'agent_draft_apply_failed',
   details: string
 ): void {
-  executionErrorStore.lastPromptError = {
+  executionErrorStore.recordPromptError({
     type,
     message: t(`errorCatalog.promptErrors.${type}.desc`),
     details
-  }
+  })
   executionErrorStore.showErrorOverlay()
 }
 

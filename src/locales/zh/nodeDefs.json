@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "使用 sync.so 重新同步视频中嘴部动作与新的语音音频。可自动处理特写、侧脸和遮挡，同时保留说话者的表情。费用随输出时长增加。",
+    "display_name": "sync.so 唇形同步",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "用于同步嘴部动作的语音音频。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "sync.so 生成模型。"
+      },
+      "model_speaker_frame": {
+        "name": "说话者帧"
+      },
+      "model_speaker_selection": {
+        "name": "说话者选择"
+      },
+      "model_speaker_x": {
+        "name": "说话者 X"
+      },
+      "model_speaker_y": {
+        "name": "说话者 Y"
+      },
+      "model_sync_mode": {
+        "name": "同步模式"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "需要重新同步的说话者视频素材。支持最高 4K (4096x2160)；建议使用恒定帧率 24/25/30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "使用 sync.so 的 sync-3 模型，将静态肖像动画化为由语音音频驱动的说话视频。输出时长与音频一致。费用随输出时长增加。",
+    "display_name": "sync.so 说话图像",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "驱动说话视频的语音音频；输出时长与其一致。可在此连接任意 TTS 节点，实现文本驱动动画。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "包含清晰可见人脸的单张图片，支持最高 4K (4096x2160)。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "sync.so 生成模型。图像输入仅支持 sync-3。"
+      },
+      "model_auto_downscale": {
+        "name": "自动降采样"
+      },
+      "model_speaker_selection": {
+        "name": "说话者选择"
+      },
+      "model_speaker_x": {
+        "name": "说话者 X"
+      },
+      "model_speaker_y": {
+        "name": "说话者 Y"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "可选，用于指导肖像如何生动起来，例如“让人物微笑并看向镜头”。留空则为自然说话动作。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5Tokenizer设置",
     "inputs": {

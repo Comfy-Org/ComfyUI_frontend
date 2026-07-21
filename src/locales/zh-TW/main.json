@@ -366,6 +366,7 @@
     "typeText": "文字"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode} 模式，工作流程操作",
     "app": "應用程式",
     "blueprint": "藍圖",
     "clearWorkflow": "清除工作流程",
@@ -2078,7 +2079,10 @@
       "appBuilder": "應用建立器",
       "apps": "應用",
       "appsEmptyMessage": "已儲存的應用程式將顯示在這裡。\n點擊下方開始建立您的第一個應用程式。",
-      "appsEmptyMessageAction": "點擊下方開始建立你的第一個應用程式。"
+      "appsEmptyMessageAction": "點擊下方開始建立你的第一個應用程式。",
+      "buildAnApp": "建立應用程式",
+      "create": "建立",
+      "createApp": "建立應用程式"
     },
     "arrange": {
       "atLeastOne": "至少一個",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "切換到輸出"
     },
     "backToWorkflow": "返回工作流程",
-    "beta": "App 模式 Beta - 提供回饋",
-    "buildAnApp": "建立應用程式",
     "builder": {
       "exit": "離開建構器",
       "exitConfirmMessage": "您有尚未儲存的變更將會遺失\n確定要不儲存直接離開嗎？",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "產生過程中發生錯誤。可能原因包括無效的隱藏輸入、缺少資源或工作流程設定問題。",
       "support": "聯絡我們的支援"
     },
+    "feedbackLoadError": "意見回饋表單載入失敗。請稍後再試。",
     "giveFeedback": "提供回饋",
     "graphMode": "圖形模式",
     "hasCreditCost": "需要額外點數",
@@ -2198,6 +2201,7 @@
     "loadingModel": "正在載入 3D 模型...",
     "materialMode": "材質模式",
     "materialModes": {
+      "clay": "陶土",
       "depth": "深度",
       "lineart": "線稿",
       "normal": "一般",
@@ -2205,7 +2209,29 @@
       "pointCloud": "點雲",
       "wireframe": "線框"
     },
+    "menuBar": {
+      "bgColor": "背景顏色",
+      "bgImage": "背景圖片",
+      "deleteRecording": "刪除錄影",
+      "downloadRecording": "下載錄影",
+      "fov": "視野(FOV)",
+      "intensity": "強度",
+      "material": "材質",
+      "originalMaterialOnly": "僅原始材質",
+      "panorama": "全景",
+      "record": "錄製",
+      "recording": "錄製中",
+      "removeBackground": "移除背景",
+      "showGrid": "顯示格線",
+      "skeleton": "骨架",
+      "startNewRecording": "開始新錄製",
+      "stopRecording": "停止錄製",
+      "switchProjection": "切換投影",
+      "upDirection": "上方方向",
+      "videoRecordingTooltip": "場景錄影 [mp4]"
+    },
     "model": "模型",
+    "model3d": "3D模型",
     "openIn3DViewer": "在 3D 檢視器中開啟",
     "panoramaMode": "全景",
     "previewOutput": "預覽輸出",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "文字",
     "training": "訓練",
     "transform": "轉換",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "已存在同名的機密",
       "duplicateProvider": "此供應商已存在機密",
+      "fileReadFailed": "無法讀取所選檔案。請再試一次",
+      "fileTooLarge": "檔案過大。請上傳小於1 MB的JSON憑證",
+      "invalidJson": "檔案必須包含有效的JSON物件",
       "nameRequired": "名稱為必填項目",
       "nameTooLong": "名稱長度必須在 255 個字元以內",
       "providerRequired": "供應商為必填項目",
       "secretValueRequired": "機密值為必填項目"
     },
+    "jsonFileHint": "請貼上JSON或上傳檔案。將會加密儲存且無法再次檢視。",
+    "jsonFileHintEdit": "若要保留目前的值請留空，或上傳新的JSON檔案以取代。",
+    "jsonFilePlaceholder": "上傳或貼上提供者的JSON憑證",
     "lastUsed": "上次使用 {date}",
     "modelProviders": "模型供應商",
     "name": "名稱",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "若要保留目前的值，請留空。",
     "secretValuePlaceholder": "請輸入您的 API 金鑰",
     "secretValuePlaceholderEdit": "輸入新值以變更",
-    "title": "API 金鑰與機密"
+    "title": "API 金鑰與機密",
+    "uploadJsonFile": "上傳JSON檔案"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "繞過群組節點",
@@ -4124,7 +4158,6 @@
     "modelsSelected": "{count} 個模型",
     "noResults": "找不到範本",
     "noResultsHint": "請嘗試調整您的搜尋或篩選條件",
-    "resetFilters": "清除篩選",
     "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
     "runsOnFilter": "運行於",
     "runsOnSelected": "{count} 次運行於",

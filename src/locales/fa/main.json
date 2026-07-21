@@ -366,6 +366,7 @@
     "typeText": "متن"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "حالت {mode}، عملیات گردش‌کار",
     "app": "برنامه",
     "blueprint": "نقشه راه",
     "clearWorkflow": "پاک‌سازی workflow",
@@ -2078,7 +2079,10 @@
       "appBuilder": "سازنده اپلیکیشن",
       "apps": "اپلیکیشن‌ها",
       "appsEmptyMessage": "اپلیکیشن‌های ذخیره‌شده اینجا نمایش داده می‌شوند.\nبرای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
-      "appsEmptyMessageAction": "برای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید."
+      "appsEmptyMessageAction": "برای ساخت اولین اپلیکیشن خود، روی دکمه زیر کلیک کنید.",
+      "buildAnApp": "ساخت اپلیکیشن",
+      "create": "ایجاد",
+      "createApp": "ایجاد اپلیکیشن"
     },
     "arrange": {
       "atLeastOne": "یک",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "رفتن به خروجی‌ها"
     },
     "backToWorkflow": "بازگشت به جریان کاری",
-    "beta": "حالت برنامه بتا - ارسال بازخورد",
-    "buildAnApp": "ساخت اپلیکیشن",
     "builder": {
       "exit": "خروج از حالت ساخت",
       "exitConfirmMessage": "تغییرات ذخیره‌نشده شما از بین خواهد رفت\nخروج بدون ذخیره؟",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "در طول تولید مشکلی پیش آمد. ممکن است به دلیل ورودی‌های مخفی نامعتبر، منابع گمشده یا مشکلات پیکربندی workflow باشد.",
       "support": "تماس با پشتیبانی ما"
     },
+    "feedbackLoadError": "بارگذاری فرم بازخورد ناموفق بود. لطفاً بعداً دوباره تلاش کنید.",
     "giveFeedback": "ارسال بازخورد",
     "graphMode": "حالت گراف",
     "hasCreditCost": "نیازمند اعتبار اضافی",
@@ -2198,6 +2201,7 @@
     "loadingModel": "در حال بارگذاری مدل سه‌بعدی...",
     "materialMode": "حالت متریال",
     "materialModes": {
+      "clay": "خاک رس",
       "depth": "عمق",
       "lineart": "خطی",
       "normal": "عادی",
@@ -2205,7 +2209,29 @@
       "pointCloud": "ابر نقاط",
       "wireframe": "سیمی"
     },
+    "menuBar": {
+      "bgColor": "رنگ پس‌زمینه",
+      "bgImage": "تصویر پس‌زمینه",
+      "deleteRecording": "حذف ضبط‌شده",
+      "downloadRecording": "دانلود ضبط‌شده",
+      "fov": "زاویه دید (FOV)",
+      "intensity": "شدت",
+      "material": "متریال",
+      "originalMaterialOnly": "فقط متریال اصلی",
+      "panorama": "پانوراما",
+      "record": "ضبط",
+      "recording": "در حال ضبط",
+      "removeBackground": "حذف پس‌زمینه",
+      "showGrid": "نمایش شبکه",
+      "skeleton": "اسکلت",
+      "startNewRecording": "شروع ضبط جدید",
+      "stopRecording": "توقف ضبط",
+      "switchProjection": "تغییر پرسپکتیو",
+      "upDirection": "جهت بالا",
+      "videoRecordingTooltip": "ضبط ویدیویی صحنه [mp4]"
+    },
     "model": "مدل",
+    "model3d": "مدل سه‌بعدی",
     "openIn3DViewer": "باز کردن در نمایشگر سه‌بعدی",
     "panoramaMode": "حالت پانوراما",
     "previewOutput": "پیش‌نمایش خروجی",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "ویدیوی سه‌بعدی stable",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "متن",
     "training": "آموزش",
     "transform": "تبدیل",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "کلیدی با این نام قبلاً وجود دارد",
       "duplicateProvider": "کلیدی برای این ارائه‌دهنده قبلاً وجود دارد",
+      "fileReadFailed": "خواندن فایل انتخاب‌شده امکان‌پذیر نبود",
+      "fileTooLarge": "فایل بیش از حد بزرگ است. لطفاً یک اعتبارنامه JSON کمتر از ۱ مگابایت بارگذاری کنید",
+      "invalidJson": "فایل باید شامل یک شیء JSON معتبر باشد",
       "nameRequired": "وارد کردن نام الزامی است",
       "nameTooLong": "نام باید حداکثر ۲۵۵ کاراکتر باشد",
       "providerRequired": "وارد کردن ارائه‌دهنده الزامی است",
       "secretValueRequired": "وارد کردن مقدار کلید محرمانه الزامی است"
     },
+    "jsonFileHint": "JSON را جای‌گذاری یا فایل را بارگذاری کنید. این اطلاعات رمزگذاری می‌شود و دیگر قابل مشاهده نخواهد بود.",
+    "jsonFileHintEdit": "برای حفظ مقدار فعلی، خالی بگذارید یا برای جایگزینی، فایل JSON جدید بارگذاری کنید.",
+    "jsonFilePlaceholder": "فایل JSON اعتبارسنجی ارائه‌دهنده را بارگذاری یا جای‌گذاری کنید",
     "lastUsed": "آخرین استفاده {date}",
     "modelProviders": "ارائه‌دهندگان مدل",
     "name": "نام",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "برای حفظ مقدار فعلی، این قسمت را خالی بگذارید.",
     "secretValuePlaceholder": "کلید API خود را وارد کنید",
     "secretValuePlaceholderEdit": "برای تغییر مقدار جدید را وارد کنید",
-    "title": "کلیدها و اسرار API"
+    "title": "کلیدها و اسرار API",
+    "uploadJsonFile": "بارگذاری فایل JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "عبور از نودهای گروه",
@@ -4136,7 +4170,6 @@
     "modelsSelected": "{count} مدل",
     "noResults": "قالبی یافت نشد",
     "noResultsHint": "لطفاً جستجو یا فیلترهای خود را تغییر دهید",
-    "resetFilters": "پاک‌کردن فیلترها",
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",

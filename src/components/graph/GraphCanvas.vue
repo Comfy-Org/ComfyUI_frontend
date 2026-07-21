@@ -42,6 +42,10 @@
       <DockedAgentPanel v-if="!linearMode" />
     </template>
     <template #graph-canvas-panel>
+      <div
+        ref="canvasPanelBoundsRef"
+        class="pointer-events-none absolute inset-0"
+      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -92,7 +96,10 @@
   />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle v-if="comfyAppReady" />
+  <SelectionRectangle
+    v-if="comfyAppReady"
+    :panel-el="canvasPanelBoundsRef ?? undefined"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -119,6 +126,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -206,6 +214,7 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)

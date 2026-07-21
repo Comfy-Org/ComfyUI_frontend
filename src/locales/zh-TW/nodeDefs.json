@@ -19135,6 +19135,97 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "description": "使用 sync.so 重新同步影片中說話者的嘴型與新的語音音訊。可自動處理特寫、側臉及遮擋，同時保留說話者的表情。費用依輸出時長計算。",
+    "display_name": "sync.so 口型同步",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要同步嘴型的語音音訊。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要重新同步的說話者影片。最高支援 4K (4096x2160)；建議使用恆定幀率 24/25/30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "使用 sync.so 的 sync-3 模型，將靜態肖像圖像動畫化為由語音音訊驅動的說話影片。輸出時長與音訊相同。費用依輸出時長計算。",
+    "display_name": "sync.so 說話肖像",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "驅動說話影片的語音音訊；輸出時長與其一致。可串接任意 TTS 節點，從文字驅動動畫。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "一張清晰可見臉部的單一圖像，最高支援 4K (4096x2160)。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。圖像輸入僅支援 sync-3。"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選的肖像動畫指引，例如「讓主角微笑並看向鏡頭」。留空則呈現自然說話動作。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
     "display_name": "T5 分詞器選項",
     "inputs": {

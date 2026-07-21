@@ -366,6 +366,7 @@
     "typeText": "texte"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "Mode {mode}, actions du workflow",
     "app": "Application",
     "blueprint": "Plan",
     "clearWorkflow": "Effacer le workflow",
@@ -2078,7 +2079,10 @@
       "appBuilder": "Créateur d'applications",
       "apps": "Applications",
       "appsEmptyMessage": "Les applications enregistrées apparaîtront ici.\nCliquez ci-dessous pour créer votre première application.",
-      "appsEmptyMessageAction": "Cliquez ci-dessous pour créer votre première application."
+      "appsEmptyMessageAction": "Cliquez ci-dessous pour créer votre première application.",
+      "buildAnApp": "Créer une application",
+      "create": "Créer",
+      "createApp": "Créer une application"
     },
     "arrange": {
       "atLeastOne": "au moins un",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "Passer aux sorties"
     },
     "backToWorkflow": "Retour au workflow",
-    "beta": "Mode App Bêta - Donnez votre avis",
-    "buildAnApp": "Créer une application",
     "builder": {
       "exit": "Quitter le mode créateur",
       "exitConfirmMessage": "Vous avez des modifications non enregistrées qui seront perdues\nQuitter sans enregistrer ?",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "Une erreur s’est produite lors de la génération. Cela peut être dû à des entrées cachées invalides, des ressources manquantes ou des problèmes de configuration du workflow.",
       "support": "contacter notre support"
     },
+    "feedbackLoadError": "Échec du chargement du formulaire de retour. Veuillez réessayer plus tard.",
     "giveFeedback": "Donner un avis",
     "graphMode": "Mode graphique",
     "hasCreditCost": "Nécessite des crédits supplémentaires",
@@ -2198,6 +2201,7 @@
     "loadingModel": "Chargement du modèle 3D...",
     "materialMode": "Mode Matériel",
     "materialModes": {
+      "clay": "Argile",
       "depth": "Profondeur",
       "lineart": "Lineart",
       "normal": "Normal",
@@ -2205,7 +2209,29 @@
       "pointCloud": "Nuage de points",
       "wireframe": "Fil de fer"
     },
+    "menuBar": {
+      "bgColor": "Couleur de fond",
+      "bgImage": "Image de fond",
+      "deleteRecording": "Supprimer l'enregistrement",
+      "downloadRecording": "Télécharger l'enregistrement",
+      "fov": "Champ de vision",
+      "intensity": "Intensité",
+      "material": "Matériau",
+      "originalMaterialOnly": "Matériau d'origine uniquement",
+      "panorama": "Panorama",
+      "record": "Enregistrer",
+      "recording": "Enregistrement",
+      "removeBackground": "Supprimer le fond",
+      "showGrid": "Afficher la grille",
+      "skeleton": "Squelette",
+      "startNewRecording": "Commencer un nouvel enregistrement",
+      "stopRecording": "Arrêter l'enregistrement",
+      "switchProjection": "Changer de projection",
+      "upDirection": "Direction vers le haut",
+      "videoRecordingTooltip": "Enregistrement vidéo de la scène [mp4]"
+    },
     "model": "Modèle",
+    "model3d": "Modèle 3D",
     "openIn3DViewer": "Ouvrir dans le visualiseur 3D",
     "panoramaMode": "Panorama",
     "previewOutput": "Aperçu de la sortie",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "texte",
     "training": "entraînement",
     "transform": "transformer",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "Un secret avec ce nom existe déjà",
       "duplicateProvider": "Un secret pour ce fournisseur existe déjà",
+      "fileReadFailed": "Impossible de lire le fichier sélectionné.",
+      "fileTooLarge": "Le fichier est trop volumineux. Téléversez un identifiant JSON de moins de 1 Mo",
+      "invalidJson": "Le fichier doit contenir un objet JSON valide",
       "nameRequired": "Le nom est requis",
       "nameTooLong": "Le nom doit comporter 255 caractères ou moins",
       "providerRequired": "Le fournisseur est requis",
       "secretValueRequired": "La valeur du secret est requise"
     },
+    "jsonFileHint": "Collez le JSON ou téléversez un fichier. Il sera chiffré et ne pourra plus être consulté.",
+    "jsonFileHintEdit": "Laissez vide pour conserver la valeur actuelle, ou téléversez un nouveau fichier JSON pour remplacer.",
+    "jsonFilePlaceholder": "Téléversez ou collez les identifiants JSON du fournisseur",
     "lastUsed": "Dernière utilisation le {date}",
     "modelProviders": "Fournisseurs de modèles",
     "name": "Nom",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "Laissez vide pour conserver la valeur actuelle.",
     "secretValuePlaceholder": "Saisissez votre clé API",
     "secretValuePlaceholderEdit": "Saisissez une nouvelle valeur pour modifier",
-    "title": "Clés API et secrets"
+    "title": "Clés API et secrets",
+    "uploadJsonFile": "Téléverser un fichier JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Contourner les nœuds de groupe",
@@ -4124,7 +4158,6 @@
     "modelsSelected": "{count} Modèles",
     "noResults": "Aucun modèle trouvé",
     "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres",
-    "resetFilters": "Effacer les filtres",
     "resultsCount": "Affichage de {count} sur {total} modèles",
     "runsOnFilter": "Exécute sur",
     "runsOnSelected": "{count} exécutions sur",

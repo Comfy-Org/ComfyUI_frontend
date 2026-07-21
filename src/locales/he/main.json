@@ -366,6 +366,7 @@
     "typeText": "טקסט"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "מצב {mode}, פעולות תהליך עבודה",
     "app": "יישום",
     "blueprint": "תבנית",
     "clearWorkflow": "ניקוי תהליך העבודה",
@@ -2078,7 +2079,10 @@
       "appBuilder": "בונה היישומים",
       "apps": "יישומים",
       "appsEmptyMessage": "יישומים שנשמרו יופיעו כאן.",
-      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך."
+      "appsEmptyMessageAction": "לחץ למטה כדי לבנות את היישום הראשון שלך.",
+      "buildAnApp": "בנה אפליקציה",
+      "create": "צור",
+      "createApp": "צור אפליקציה"
     },
     "arrange": {
       "atLeastOne": "לפחות אחד",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "מעבר לפלטים"
     },
     "backToWorkflow": "חזרה לתהליך העבודה",
-    "beta": "מצב יישום בבטא",
-    "buildAnApp": "בניית יישום",
     "builder": {
       "exit": "יציאה מהבונה",
       "exitConfirmMessage": "יש לך שינויים שלא נשמרו אשר יאבדו\nלצאת מבלי לשמור?",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "משהו השתבש במהלך היצירה. הדבר עשוי לנבוע מקלטים מוסתרים לא תקינים, משאבים חסרים או בעיות בהגדרת תהליך העבודה.",
       "support": "צור קשר עם התמיכה שלנו"
     },
+    "feedbackLoadError": "טעינת טופס המשוב נכשלה. נסה שוב מאוחר יותר.",
     "giveFeedback": "שליחת משוב",
     "graphMode": "מצב גרף",
     "hasCreditCost": "דורש קרדיטים נוספים",
@@ -2198,6 +2201,7 @@
     "loadingModel": "טוען מודל תלת-ממד...",
     "materialMode": "מצב חומר",
     "materialModes": {
+      "clay": "חימר",
       "depth": "עומק",
       "lineart": "ציור קווי (Lineart)",
       "normal": "רגיל",
@@ -2205,7 +2209,29 @@
       "pointCloud": "ענן נקודות",
       "wireframe": "מסגרת חוטים (Wireframe)"
     },
+    "menuBar": {
+      "bgColor": "צבע רקע",
+      "bgImage": "תמונת רקע",
+      "deleteRecording": "מחק הקלטה",
+      "downloadRecording": "הורד הקלטה",
+      "fov": "שדה ראייה (FOV)",
+      "intensity": "עוצמה",
+      "material": "חומר",
+      "originalMaterialOnly": "חומר מקורי בלבד",
+      "panorama": "פנורמה",
+      "record": "הקלט",
+      "recording": "בהקלטה",
+      "removeBackground": "הסר רקע",
+      "showGrid": "הצג רשת",
+      "skeleton": "שלד",
+      "startNewRecording": "התחל הקלטה חדשה",
+      "stopRecording": "הפסק הקלטה",
+      "switchProjection": "החלף הקרנה",
+      "upDirection": "כיוון מעלה",
+      "videoRecordingTooltip": "הקלטת וידאו של הסצנה [mp4]"
+    },
     "model": "מודל",
+    "model3d": "מודל תלת-ממד",
     "openIn3DViewer": "פתיחה במציג התלת-ממד",
     "panoramaMode": "פנורמה",
     "previewOutput": "תצוגה מקדימה של הפלט",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "text",
     "training": "training",
     "transform": "transform",
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "כבר קיים סוד עם שם זה",
       "duplicateProvider": "כבר קיים סוד עבור ספק זה",
+      "fileReadFailed": "לא ניתן לקרוא את הקובץ שנבחר",
+      "fileTooLarge": "הקובץ גדול מדי. העלה אישור JSON קטן מ-1 מגה-בייט",
+      "invalidJson": "הקובץ חייב להכיל אובייקט JSON תקני",
       "nameRequired": "שם הוא שדה חובה",
       "nameTooLong": "השם חייב להכיל 255 תווים או פחות",
       "providerRequired": "ספק הוא שדה חובה",
       "secretValueRequired": "ערך הסוד הוא שדה חובה"
     },
+    "jsonFileHint": "הדבק את ה-JSON או העלה קובץ. הוא יוצפן ולא יהיה ניתן לצפייה חוזרת.",
+    "jsonFileHintEdit": "השאר ריק כדי לשמור את הערך הנוכחי, או העלה קובץ JSON חדש להחלפה.",
+    "jsonFilePlaceholder": "העלה או הדבק את אישור ה-JSON של הספק",
     "lastUsed": "שימוש אחרון {date}",
     "modelProviders": "ספקי מודלים",
     "name": "שם",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "השאר ריק כדי לשמור על הערך הנוכחי.",
     "secretValuePlaceholder": "הזן את מפתח ה-API שלך",
     "secretValuePlaceholderEdit": "הזן ערך חדש כדי לשנות",
-    "title": "מפתחות API וסודות"
+    "title": "מפתחות API וסודות",
+    "uploadJsonFile": "העלה קובץ JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "עקיפת צמתי הקבוצה",
@@ -4136,7 +4170,6 @@
     "modelsSelected": "{count} מודלים",
     "noResults": "לא נמצאו תבניות",
     "noResultsHint": "נסה לשנות את החיפוש או המסננים",
-    "resetFilters": "ניקוי המסננים",
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",

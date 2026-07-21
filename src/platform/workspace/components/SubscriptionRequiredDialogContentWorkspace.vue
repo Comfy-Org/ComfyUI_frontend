@@ -154,7 +154,9 @@ const {
   handleConfirmTransition,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason)
+} = useSubscriptionCheckout(emit, reason, {
+  tierPlanType: isPersonal ? 'personal' : 'team'
+})
 </script>
 
 <style scoped>
