@@ -58,7 +58,8 @@ describe('isEmbeddedWebView', () => {
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
 
-    it('does not flag iPadOS Safari reporting as Macintosh Mobile', () => {
+    it('does not flag iPadOS Safari reporting as Macintosh Mobile, even with webkit.messageHandlers present', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
       const ua =
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       expect(isEmbeddedWebView(ua)).toBe(false)
