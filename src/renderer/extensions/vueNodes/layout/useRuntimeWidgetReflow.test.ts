@@ -115,6 +115,28 @@ describe('useRuntimeWidgetReflow', () => {
     expect(layoutRef.value?.size.height).toBe(100)
   })
 
+  it('preserves the wider layout width when only height grows', () => {
+    const { node } = setup()
+    const { setSource, resizeNode } = useLayoutMutations()
+
+    // Layout already holds a wider width than the node (e.g. an earlier resize
+    // that node.size has not caught up to yet).
+    setSource(LayoutSource.External)
+    resizeNode(node.id, { width: 320, height: 100 })
+    const layoutRef = layoutStore.getNodeLayoutRef(node.id)
+    expect(layoutRef.value?.size.width).toBe(320)
+
+    mountReflow(() => node)
+
+    // Image preview grows only height; node.size[0] stays the narrower 210.
+    node.size[1] = 300
+    flushFrame()
+
+    expect(layoutRef.value?.size.height).toBe(300)
+    // The wider width must be preserved, not clobbered back down to 210.
+    expect(layoutRef.value?.size.width).toBe(320)
+  })
+
   it('does not clobber a pending resize when layout is larger than the node', () => {
     const { node } = setup()
     const { setSource, resizeNode } = useLayoutMutations()

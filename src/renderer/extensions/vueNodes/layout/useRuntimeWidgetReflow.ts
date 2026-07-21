@@ -68,8 +68,14 @@ function reconcile() {
     const size = { width: node.size[0], height: node.size[1] }
     if (!isNodeLarger(size, layout.size)) continue
 
+    // Commit the per-axis maximum so a single-axis grow never shrinks the
+    // other axis (e.g. an image preview grows only height while the layout
+    // already holds a wider width from an earlier resize).
     setSource(LayoutSource.External)
-    resizeNode(nodeId, size)
+    resizeNode(nodeId, {
+      width: Math.max(size.width, layout.size.width),
+      height: Math.max(size.height, layout.size.height)
+    })
   }
 }
 
