@@ -2,19 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockFlags, mockActiveWorkspace } = vi.hoisted(() => ({
-  mockFlags: {
-    teamWorkspacesEnabled: false,
-    consolidatedBillingEnabled: false
-  },
-  mockActiveWorkspace: {
-    value: null as {
-      id: string
-      type: 'personal' | 'team'
-      billingRail?: 'legacy_stripe' | 'stripe'
-    } | null
-  }
-}))
+const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
+  vi.hoisted(() => ({
+    mockFlags: {
+      teamWorkspacesEnabled: false,
+      consolidatedBillingEnabled: false
+    },
+    mockActiveWorkspace: {
+      value: null as { id: string; type: 'personal' | 'team' } | null
+    },
+    mockActiveWorkspaceBillingRail: {
+      value: null as 'legacy_stripe' | 'stripe' | null
+    }
+  }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
@@ -24,6 +24,9 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     get activeWorkspace() {
       return mockActiveWorkspace.value
+    },
+    get activeWorkspaceBillingRail() {
+      return mockActiveWorkspaceBillingRail.value
     }
   })
 }))
@@ -36,6 +39,7 @@ describe('useBillingRouting', () => {
     mockFlags.teamWorkspacesEnabled = false
     mockFlags.consolidatedBillingEnabled = false
     mockActiveWorkspace.value = personal
+    mockActiveWorkspaceBillingRail.value = null
   })
 
   it('uses legacy billing when team workspaces are disabled', () => {
@@ -72,10 +76,8 @@ describe('useBillingRouting', () => {
   it('keeps legacy Stripe personal workspaces on Stripe Checkout', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = true
-    mockActiveWorkspace.value = {
-      ...personal,
-      billingRail: 'legacy_stripe'
-    }
+    mockActiveWorkspace.value = personal
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
@@ -86,7 +88,8 @@ describe('useBillingRouting', () => {
   it('uses workspace billing for migrated Stripe personal workspaces', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = true
-    mockActiveWorkspace.value = { ...personal, billingRail: 'stripe' }
+    mockActiveWorkspace.value = personal
+    mockActiveWorkspaceBillingRail.value = 'stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
@@ -98,6 +101,7 @@ describe('useBillingRouting', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = false
     mockActiveWorkspace.value = team
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
@@ -109,6 +113,7 @@ describe('useBillingRouting', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.consolidatedBillingEnabled = true
     mockActiveWorkspace.value = team
+    mockActiveWorkspaceBillingRail.value = 'stripe'
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 

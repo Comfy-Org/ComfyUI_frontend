@@ -118,15 +118,19 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
+    const workspaceId = workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
       if (requestId === latestBillingReadIds.status) {
         statusData.value = status
-        workspaceStore.updateActiveWorkspace({
-          billingRail: status.billing_rail
-        })
+        if (workspaceId && status.billing_rail) {
+          workspaceStore.setWorkspaceBillingRail(
+            workspaceId,
+            status.billing_rail
+          )
+        }
       }
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {

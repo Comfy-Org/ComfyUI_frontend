@@ -8,9 +8,10 @@ import type { BillingType } from './types'
 /**
  * Selects the billing backend for the active workspace: legacy user-scoped
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
- * on a declared legacy Stripe rail stay on `/customers/*`; team workspaces are
- * always workspace-scoped. The routing matrix is covered in
- * useBillingRouting.test.ts.
+ * stay legacy until `consolidatedBillingEnabled`, and known legacy Stripe
+ * workspaces remain legacy after it is enabled. An unknown rail keeps the
+ * flag-based route so workspace status can load it. Team workspaces are always
+ * workspace-scoped. The routing matrix is covered in useBillingRouting.test.ts.
  */
 export function useBillingRouting() {
   const { flags } = useFeatureFlags()
@@ -24,11 +25,11 @@ export function useBillingRouting() {
     const workspaceType = workspaceStore.activeWorkspace?.type
     if (!workspaceType) return 'legacy'
 
-    if (workspaceStore.activeWorkspace?.billingRail === 'legacy_stripe') {
-      return 'legacy'
-    }
-
-    if (workspaceType === 'personal' && !flags.consolidatedBillingEnabled) {
+    if (
+      workspaceType === 'personal' &&
+      (!flags.consolidatedBillingEnabled ||
+        workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe')
+    ) {
       return 'legacy'
     }
 
