@@ -101,9 +101,10 @@
 </template>
 
 <script setup lang="ts">
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { FocusScope } from 'reka-ui'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -174,10 +175,9 @@ const cards = computed(() => {
 
 // Cards and per-card loads no-op until the templates store is loaded; nothing
 // else loads it on this path, so load it (and focus the takeover) on open.
-watch(
+whenever(
   visible,
-  (isVisible) => {
-    if (!isVisible) return
+  () => {
     if (!templatesStore.isLoaded) {
       loadFailed.value = false
       templatesStore.loadWorkflowTemplates().catch((error: unknown) => {

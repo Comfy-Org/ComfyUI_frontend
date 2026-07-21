@@ -715,15 +715,17 @@ describe('useWorkflowPersistenceV2', () => {
       )
     })
 
-    it('prefetches templates when Getting Started is shown so its cards are ready', async () => {
+    it('leaves the template load to the Getting Started screen, not this path', async () => {
       onboardingMocks.isCloud = true
       onboardingMocks.onboardingTourEnabled = true
       onboardingMocks.isNewUser = true
+      const entryStore = useOnboardingEntryStore()
 
       const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
-      expect(onboardingMocks.loadWorkflowTemplates).toHaveBeenCalled()
+      expect(entryStore.shouldShowGettingStarted).toBe(true)
+      expect(onboardingMocks.loadWorkflowTemplates).not.toHaveBeenCalled()
     })
 
     it('opens the templates browser when the flag is on but the user is not new', async () => {

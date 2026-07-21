@@ -31,7 +31,6 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useNewUserService } from '@/services/useNewUserService'
 
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
@@ -63,7 +62,6 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const templatesStore = useWorkflowTemplatesStore()
   const entryStore = useOnboardingEntryStore()
   const onboardingDeps: OnboardingCandidateDeps = {
     subscription: useSubscription(),
@@ -82,20 +80,6 @@ export function useWorkflowPersistenceV2() {
       clearAllV2Storage()
     }
   })
-
-  const ensureTemplateQueryFromIntent = async () => {
-    hydratePreservedQuery(TEMPLATE_NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(
-      TEMPLATE_NAMESPACE,
-      route.query
-    )
-
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    return mergedQuery ?? route.query
-  }
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -194,19 +178,19 @@ export function useWorkflowPersistenceV2() {
     hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
   const loadDefaultWorkflow = async () => {
-    if (!settingStore.get('Comfy.TutorialCompleted')) {
-      await settingStore.set('Comfy.TutorialCompleted', true)
-      await useWorkflowService().loadBlankWorkflow()
-      if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
-        if (isOnboardingCandidate(onboardingDeps)) {
-          void templatesStore.loadWorkflowTemplates()
-          entryStore.showGettingStarted()
-        } else {
-          await useCommandStore().execute('Comfy.BrowseTemplates')
-        }
-      }
-    } else {
+    if (settingStore.get('Comfy.TutorialCompleted')) {
       await comfyApp.loadGraphData()
+      return
+    }
+
+    await settingStore.set('Comfy.TutorialCompleted', true)
+    await useWorkflowService().loadBlankWorkflow()
+    if (hasSharedWorkflowIntent() || hasTemplateUrlIntent()) return
+
+    if (isOnboardingCandidate(onboardingDeps)) {
+      entryStore.showGettingStarted()
+    } else {
+      await useCommandStore().execute('Comfy.BrowseTemplates')
     }
   }
 
@@ -247,9 +231,10 @@ export function useWorkflowPersistenceV2() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
-    // Hydrate any preserved ?template= intent into the route first; the loader
-    // reads the route and returns the id only after validating it.
-    await ensureTemplateQueryFromIntent()
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const query = mergePreservedQueryIntoQuery(TEMPLATE_NAMESPACE, route.query)
+    if (query) await router.replace({ query })
+
     return templateUrlLoader.loadTemplateFromUrl()
   }
 
