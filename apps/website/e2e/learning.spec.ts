@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import {
+  categoryPath,
   featuredFor,
   filterByCategory,
   learningCategories,
@@ -164,25 +165,65 @@ test.describe('Learning tutorial page @smoke', () => {
     await expect(page).toHaveTitle(`${firstTutorial.title.en} - Comfy`)
   })
 
-  test('the page exposes an indexable heading, video, and workflow link', async ({
+  test('the page exposes an indexable heading and autoplay video', async ({
     page
   }) => {
     await page.goto(tutorialPath(firstTutorial))
 
+    const dialog = page.getByRole('dialog', { name: firstTutorial.title.en })
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title.en
+      `${t('learning.tutorials.titlePrefix', 'en')} ${firstTutorial.title.en}`
     )
     // Attribute-level autoplay check: blockExternalMedia aborts the video
     // request, so actual playback never starts in e2e.
-    const video = page.locator('video')
+    const video = dialog.locator('video')
     await expect(video).toBeVisible()
     await expect(video).toHaveAttribute('autoplay', '')
     await expect(video).toHaveAttribute('muted', '')
-    if (firstTutorial.href) {
-      await expect(
-        page.getByRole('link', { name: t('cta.tryWorkflow', 'en') }).first()
-      ).toHaveAttribute('href', firstTutorial.href)
-    }
+  })
+
+  test('opens as a dialog over the directory', async ({ page }) => {
+    await page.goto(tutorialPath(firstTutorial))
+
+    await expect(
+      page.getByRole('dialog', { name: firstTutorial.title.en })
+    ).toBeVisible()
+    await expect(categoryNav(page)).toBeVisible()
+  })
+
+  test('closing a direct visit lands on the category page', async ({
+    page
+  }) => {
+    await page.goto(tutorialPath(firstTutorial))
+
+    // The dialog is SSR'd open; retry until hydration wires the close button.
+    const dialog = page.getByRole('dialog', { name: firstTutorial.title.en })
+    await expect(async () => {
+      await dialog
+        .getByRole('button', { name: t('learning.detail.close', 'en') })
+        .click()
+      await expect(page).toHaveURL(categoryPath(firstTutorial.category), {
+        timeout: 1_000
+      })
+    }).toPass({ timeout: 10_000 })
+  })
+
+  test('Escape returns to the directory the visitor came from', async ({
+    page
+  }) => {
+    await page.goto('/learning')
+    await page
+      .getByRole('link', {
+        name: thumbnailLinkName(firstTutorial.title.en, 'en')
+      })
+      .click()
+    await expect(page).toHaveURL(tutorialPath(firstTutorial))
+
+    // Retry until hydration upgrades the dialog to a modal (cancel event).
+    await expect(async () => {
+      await page.keyboard.press('Escape')
+      await expect(page).toHaveURL('/learning', { timeout: 1_000 })
+    }).toPass({ timeout: 10_000 })
   })
 
   test('the page emits VideoObject structured data', async ({ page }) => {
@@ -197,7 +238,7 @@ test.describe('Learning tutorial page @smoke', () => {
     await page.goto(zhPath)
     await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']} - Comfy`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      firstTutorial.title['zh-CN']
+      `${t('learning.tutorials.titlePrefix', 'zh-CN')} ${firstTutorial.title['zh-CN']}`
     )
   })
 })

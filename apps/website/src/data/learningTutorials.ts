@@ -345,9 +345,8 @@ export interface LearningCrumb {
 }
 
 /**
- * Breadcrumb trail for learning pages: Home → Learning (→ category). The
- * single source for both the visible breadcrumb nav and the BreadcrumbList
- * JSON-LD, so the two can't drift apart.
+ * Breadcrumb trail for learning pages: Home → Learning (→ category).
+ * Feeds the BreadcrumbList JSON-LD on directory and tutorial pages.
  */
 export const learningCrumbs = (
   locale: Locale,

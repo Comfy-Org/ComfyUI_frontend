@@ -25,9 +25,16 @@ import { ButtonMask } from '../ui/button-mask'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import PlayOverlay from './PlayOverlay.vue'
 
-const { locale = 'en', category } = defineProps<{
+const {
+  locale = 'en',
+  category,
+  headingTag = 'h1'
+} = defineProps<{
   locale?: Locale
   category?: LearningCategory
+  /** Demote the sidebar heading on pages whose h1 lives elsewhere
+   * (the tutorial dialog). */
+  headingTag?: 'h1' | 'p'
 }>()
 
 interface NavOption {
@@ -65,11 +72,12 @@ const rows = computed(() =>
       <!-- Sidebar -->
       <aside class="lg:w-72 lg:shrink-0">
         <div class="lg:sticky lg:top-10">
-          <h1
+          <component
+            :is="headingTag"
             class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-4xl"
           >
             {{ t('learning.title', locale) }}
-          </h1>
+          </component>
           <p class="text-primary-warm-gray mt-3 text-sm/relaxed">
             {{ t('learning.tagline', locale) }}
           </p>

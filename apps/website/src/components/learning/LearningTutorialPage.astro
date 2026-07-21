@@ -4,7 +4,8 @@
 // VideoObject JSON-LD stay defined once. Locale comes from the page's URL.
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CallToActionSection from '../common/CallToActionSection.vue'
-import TutorialDetailSection from './TutorialDetailSection.vue'
+import LearningDirectorySection from './LearningDirectorySection.vue'
+import TutorialDetailDialog from './TutorialDetailDialog.vue'
 import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
@@ -67,7 +68,13 @@ const routes = getRoutes(locale)
   breadcrumbs={breadcrumbs}
   extraJsonLd={[video]}
 >
-  <TutorialDetailSection tutorial={tutorial} locale={locale} client:load />
+  <LearningDirectorySection
+    locale={locale}
+    category={tutorial.category}
+    headingTag="p"
+    client:load
+  />
+  <TutorialDetailDialog tutorial={tutorial} locale={locale} client:load />
   <CallToActionSection
     locale={locale}
     headingKey="learning.cta.heading"
