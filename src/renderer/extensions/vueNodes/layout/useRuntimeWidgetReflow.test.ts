@@ -2,12 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRuntimeWidgetReflow } from '@/renderer/extensions/vueNodes/layout/useRuntimeWidgetReflow'
+import { toNodeId } from '@/types/nodeId'
 
 function mountReflow(node: LGraphNode) {
   return render(
@@ -80,5 +81,63 @@ describe('useRuntimeWidgetReflow', () => {
     unsubscribe()
     expect(changes).toBe(0)
     expect(layoutRef.value?.size.height).toBe(100)
+  })
+
+  it('does not reflow when the node has gone away', async () => {
+    const { node } = setup()
+    const widgetCount = ref(0)
+
+    let changes = 0
+    const unsubscribe = layoutStore.onNodeChange(node.id, () => {
+      changes++
+    })
+
+    render(
+      defineComponent({
+        setup() {
+          useRuntimeWidgetReflow(
+            node.id,
+            () => null,
+            () => widgetCount.value
+          )
+          return () => null
+        }
+      })
+    )
+
+    widgetCount.value = 1
+    await nextTick()
+
+    unsubscribe()
+    expect(changes).toBe(0)
+  })
+
+  it('exits safely when the node has no layout entry', async () => {
+    setup()
+    const orphan = new LGraphNode('orphan')
+    orphan.id = toNodeId('orphan-999')
+    orphan.size[0] = 180
+    orphan.size[1] = 90
+    const widgetCount = ref(0)
+
+    expect(layoutStore.getNodeLayoutRef(orphan.id).value).toBeNull()
+
+    render(
+      defineComponent({
+        setup() {
+          useRuntimeWidgetReflow(
+            orphan.id,
+            () => orphan,
+            () => widgetCount.value
+          )
+          return () => null
+        }
+      })
+    )
+
+    widgetCount.value = 1
+    await nextTick()
+
+    expect(layoutStore.getNodeLayoutRef(orphan.id).value).toBeNull()
   })
 })
