@@ -69,7 +69,7 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
-  it('opens the pricing table for an owner', async () => {
+  it('opens the pricing table for any owner capability', async () => {
     mockRouteQuery.value = { pricing: '1' }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -136,8 +136,12 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
-  it('denies, strips, and clears together when the user is not eligible', async () => {
-    mockRouteQuery.value = { pricing: '1', other: 'param' }
+  it('denies selected-plan entry and strips its params for a member', async () => {
+    mockRouteQuery.value = {
+      pricing: 'creator',
+      cycle: 'monthly',
+      other: 'param'
+    }
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
