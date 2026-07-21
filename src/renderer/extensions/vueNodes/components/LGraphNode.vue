@@ -285,7 +285,6 @@ import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/compo
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
-import { useRuntimeWidgetReflow } from '@/renderer/extensions/vueNodes/layout/useRuntimeWidgetReflow'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -713,8 +712,6 @@ const lgraphNode = computed(() => {
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
-
-useRuntimeWidgetReflow(nodeId.value, () => lgraphNode.value)
 
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
