@@ -108,6 +108,11 @@ export type RemoteConfig = {
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
+  free_tier_balance?: {
+    allowance: number
+    used: number
+    remaining: number
+  }
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean

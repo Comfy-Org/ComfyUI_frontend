@@ -27,6 +27,7 @@ export function useBillingContext(): BillingContext {
     isLoading: ref(false),
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => false),
+    canRunWorkflows: computed(() => false),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => false),

@@ -1,8 +1,15 @@
+import { createSharedComposable } from '@vueuse/core'
+import { computed, toValue } from 'vue'
+
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { app } from '@/scripts/app'
+import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
 const componentIconSvg = new Image()
 componentIconSvg.src =
@@ -76,3 +83,20 @@ export const usePriceBadge = () => {
     updateSubgraphCredits
   }
 }
+export const useCreditsBadgesInGraph = createSharedComposable(() => {
+  const { isCreditsBadge } = usePriceBadge()
+  const vueNodeLifecycle = useVueNodeLifecycle()
+  return computed(() => {
+    void vueNodeLifecycle.nodeManager.value?.vueNodeData.size
+    if (!app.graph) return []
+    return mapAllNodes(app.graph, (node) => {
+      if (node.isSubgraphNode()) return
+
+      const priceBadge = node.badges.find(isCreditsBadge)
+      if (!priceBadge) return
+
+      trackNodePrice(node)
+      return [node.title, toValue(priceBadge).text, node.id] as const
+    })
+  })
+})

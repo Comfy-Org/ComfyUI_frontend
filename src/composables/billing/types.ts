@@ -114,4 +114,5 @@ export interface BillingContext extends BillingState, BillingActions {
   isLegacyTeamPlan: ComputedRef<boolean>
   isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
 }
