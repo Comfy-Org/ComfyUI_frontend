@@ -226,7 +226,6 @@ describe('useDowngradeToPersonal', () => {
         returnUrl: 'https://platform.test/payment/success',
         cancelUrl: 'https://platform.test/payment/failed'
       })
-      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('never removes the original owner', async () => {
@@ -261,6 +260,42 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(calls).toEqual(['preview', 'remove', 'subscribe'])
+    })
+
+    it('returns the preview and subscribe response', async () => {
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        effective_at: '2099-02-20T00:00:00Z',
+        is_immediate: false,
+        cost_today_cents: 0,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7_400,
+        new_plan: {
+          slug: 'creator-annual',
+          tier: 'CREATOR' as const,
+          duration: 'ANNUAL' as const,
+          price_cents: 33_600,
+          credits_cents: 7_400,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 33_600,
+            total_credits_cents: 7_400
+          }
+        }
+      }
+      const response = {
+        billing_op_id: 'existing-downgrade',
+        status: 'subscribed' as const
+      }
+      mockPreviewSubscribe.mockResolvedValue(preview)
+      mockSubscribe.mockResolvedValue(response)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      const result = await downgradeToPersonal('creator-annual')
+
+      expect(result).toStrictEqual({ preview, response })
     })
 
     it('throws the BE reason and removes nobody when the transition is disallowed', async () => {

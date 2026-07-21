@@ -5,9 +5,18 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import type {
+  PreviewSubscribeResponse,
+  SubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+export interface DowngradeToPersonalResult {
+  preview: PreviewSubscribeResponse
+  response: SubscribeResponse
+}
 
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
@@ -48,7 +57,9 @@ export function useDowngradeToPersonal() {
     ensureCanDowngrade()
   }
 
-  async function downgradeToPersonal(planSlug: string): Promise<void> {
+  async function downgradeToPersonal(
+    planSlug: string
+  ): Promise<DowngradeToPersonalResult | null> {
     ensureCanDowngrade()
     const preview = await previewSubscribe(planSlug)
     if (!preview?.allowed) {
@@ -96,7 +107,7 @@ export function useDowngradeToPersonal() {
         response.billing_op_id,
         'subscription'
       )
-      return
+      return null
     }
 
     if (response.status === 'pending_payment') {
@@ -104,7 +115,10 @@ export function useDowngradeToPersonal() {
         response.billing_op_id,
         'subscription'
       )
+      return null
     }
+
+    return { preview, response }
   }
 
   return {
