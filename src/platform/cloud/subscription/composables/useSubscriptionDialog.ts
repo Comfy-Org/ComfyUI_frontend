@@ -6,6 +6,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -21,6 +22,7 @@ export interface SubscriptionDialogOptions {
    * always lands on the team tab even from a personal workspace).
    */
   planMode?: 'personal' | 'team'
+  initialCheckout?: SubscriptionCheckoutSelection
 }
 
 function getInitialPlanMode(
@@ -114,7 +116,8 @@ export const useSubscriptionDialog = () => {
           ),
           props: {
             onClose: hide,
-            reason: options?.reason
+            reason: options?.reason,
+            initialCheckout: options?.initialCheckout
           },
           // The legacy table hosts a PrimeVue Popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
@@ -136,6 +139,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
             isTeamPlan.value,

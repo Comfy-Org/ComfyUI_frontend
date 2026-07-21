@@ -7,13 +7,39 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 
+function isCheckoutTier(
+  value: string
+): value is SubscriptionCheckoutSelection['tierKey'] {
+  return value === 'standard' || value === 'creator' || value === 'pro'
+}
+
+function isBillingCycle(
+  value: unknown
+): value is SubscriptionCheckoutSelection['billingCycle'] {
+  return value === 'monthly' || value === 'yearly'
+}
+
+function getCheckoutSelection(
+  pricing: string,
+  cycle: unknown
+): SubscriptionCheckoutSelection | undefined {
+  if (!isCheckoutTier(pricing) || !isBillingCycle(cycle)) return
+
+  return {
+    tierKey: pricing,
+    billingCycle: cycle
+  }
+}
+
 /**
  * Opens the pricing table from a `?pricing=` deep link, to send pilot users
- * straight to subscribe. Values: `1` (default tab), `team`, `personal`.
+ * straight to subscribe. Values: `1` (default tab), `team`, `personal`, or a
+ * paid personal tier with `cycle=monthly|yearly` to open its confirmation.
  *
  * Gated to workspace owners (`canManageSubscription`); a member is a silent
  * no-op with the param stripped. Survives the login redirect via the
@@ -38,6 +64,7 @@ export function usePricingTableUrlLoader() {
     // is guaranteed even if the replace rejects or the gate later denies.
     const cleanQuery = { ...query }
     delete cleanQuery.pricing
+    delete cleanQuery.cycle
     router.replace({ query: cleanQuery }).catch((error) => {
       console.warn(
         '[usePricingTableUrlLoader] Failed to clean URL params:',
@@ -52,10 +79,22 @@ export function usePricingTableUrlLoader() {
 
     if (!permissions.value.canManageSubscription) return
 
-    const planMode =
-      param === 'team' || param === 'personal' ? param : undefined
+    const initialCheckout = getCheckoutSelection(param, query.cycle)
+    if (isCheckoutTier(param) && !initialCheckout) return
 
-    subscriptionDialog.showPricingTable({ reason: 'deep_link', planMode })
+    const planMode = initialCheckout
+      ? 'personal'
+      : param === 'team' || param === 'personal'
+        ? param
+        : undefined
+
+    if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
+
+    subscriptionDialog.showPricingTable({
+      reason: 'deep_link',
+      planMode,
+      initialCheckout
+    })
   }
 
   return {

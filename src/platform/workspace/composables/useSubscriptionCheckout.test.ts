@@ -231,6 +231,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.previewData.value).toStrictEqual(preview)
+      expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
     it('shows error toast when preview is disallowed', async () => {

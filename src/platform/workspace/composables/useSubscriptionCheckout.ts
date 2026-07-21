@@ -23,7 +23,12 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export interface SubscriptionCheckoutSelection {
+  tierKey: CheckoutTierKey
+  billingCycle: BillingCycle
+}
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection

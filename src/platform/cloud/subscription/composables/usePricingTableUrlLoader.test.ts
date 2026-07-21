@@ -77,7 +77,8 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
-      planMode: undefined
+      planMode: undefined,
+      initialCheckout: undefined
     })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
@@ -90,7 +91,8 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
-      planMode: 'team'
+      planMode: 'team',
+      initialCheckout: undefined
     })
   })
 
@@ -102,8 +104,26 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
-      planMode: 'personal'
+      planMode: 'personal',
+      initialCheckout: undefined
     })
+  })
+
+  it('opens the selected plan confirmation from a marketing deep link', async () => {
+    mockRouteQuery.value = { pricing: 'creator', cycle: 'monthly' }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'personal',
+      initialCheckout: {
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      }
+    })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('is a silent no-op for a member', async () => {
@@ -135,7 +155,8 @@ describe('usePricingTableUrlLoader', () => {
   it('restores preserved query and opens the table', async () => {
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
-      pricing: '1'
+      pricing: 'pro',
+      cycle: 'yearly'
     })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -144,7 +165,14 @@ describe('usePricingTableUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'pricing'
     )
-    expect(mockShowPricingTable).toHaveBeenCalledOnce()
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'personal',
+      initialCheckout: {
+        tierKey: 'pro',
+        billingCycle: 'yearly'
+      }
+    })
   })
 
   it('strips but does not open for an empty param', async () => {
@@ -170,15 +198,27 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('opens the default tab for an unrecognized pricing value', async () => {
+  it('strips but does not open for an unrecognized pricing value', async () => {
     mockRouteQuery.value = { pricing: 'garbage' }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
-      reason: 'deep_link',
-      planMode: undefined
-    })
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it.for<Record<string, string>>([
+    { pricing: 'creator' },
+    { pricing: 'creator', cycle: 'weekly' },
+    { pricing: 'founder', cycle: 'yearly' }
+  ])('strips but does not open an unsupported checkout: %o', async (query) => {
+    mockRouteQuery.value = query
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 })

@@ -179,6 +179,20 @@ describe('useSubscriptionDialog', () => {
       expect(props.initialPlanMode).toBe('team')
     })
 
+    it('passes a deep-linked checkout selection to the unified dialog', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+      const initialCheckout = {
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      } as const
+
+      showPricingTable({ planMode: 'personal', initialCheckout })
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialCheckout).toEqual(initialCheckout)
+    })
+
     it('defaults to the team tab for a Team plan in a personal workspace', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = true
