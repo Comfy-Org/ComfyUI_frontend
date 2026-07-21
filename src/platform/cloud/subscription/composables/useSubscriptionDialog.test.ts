@@ -309,6 +309,19 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
+    it('uses the unified table when pricing is unified but billing remains legacy', () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockShouldUseUnifiedPricing.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('personal')
+      expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
       mockShouldUseWorkspaceBilling.value = true
       mockIsInPersonalWorkspace.value = false
