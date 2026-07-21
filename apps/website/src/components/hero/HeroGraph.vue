@@ -8,7 +8,6 @@ import { resolveAsset } from './assetResolver'
 import AngleNode from './AngleNode.vue'
 import GraphLinks from './GraphLinks.vue'
 import HeroImageCard from './HeroImageCard.vue'
-import PromptWords from './PromptWords.vue'
 import type { ElementKey } from './graphLayout'
 import { ELEMENT_KEYS, FLOW } from './graphLayout'
 
@@ -140,14 +139,6 @@ function wrapperStyle(key: ElementKey) {
           label="OUTPUT"
         />
       </div>
-    </div>
-
-    <div class="mt-8 flex justify-center">
-      <PromptWords
-        :azimuth="pose.azimuth"
-        :elevation="pose.elevation"
-        :zoom="pose.zoom"
-      />
     </div>
   </div>
 </template>
