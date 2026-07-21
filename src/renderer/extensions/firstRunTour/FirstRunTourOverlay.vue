@@ -287,7 +287,10 @@ const rects = useTourSpotlightRects({
   isResultStep,
   revealedNodeIds,
   spotlitNodeIds,
-  onFrame: choreography.sampleFrame
+  onFrame: () => {
+    choreography.sampleFrame()
+    updateFloating()
+  }
 })
 const { focusRect } = rects
 
@@ -313,25 +316,23 @@ const reference = computed<VirtualElement | null>(() =>
   focusRect.value ? referenceEl : null
 )
 
-const { floatingStyles, middlewareData, placement } = useFloating(
-  reference,
-  bubbleRef,
-  {
-    strategy: 'fixed',
-    // Position via top/left, not transform, so the mark's glide transition animates.
-    transform: false,
-    // The Run button lives in the top toolbar, so its mark sits below it.
-    placement: () => (isRunStep.value ? 'bottom' : 'right-start'),
-    middleware: [
-      offset(COACH_MARK_GAP),
-      flip({ fallbackPlacements: ['left-start', 'bottom', 'top'] }),
-      shift({ crossAxis: true, padding: VIEWPORT_MARGIN }),
-      hide()
-    ],
-    whileElementsMounted: (ref_, floating, update) =>
-      autoUpdate(ref_, floating, update, { animationFrame: true })
-  }
-)
+const {
+  floatingStyles,
+  middlewareData,
+  placement,
+  update: updateFloating
+} = useFloating(reference, bubbleRef, {
+  strategy: 'fixed',
+  transform: false,
+  placement: () => (isRunStep.value ? 'bottom' : 'right-start'),
+  middleware: [
+    offset(COACH_MARK_GAP),
+    flip({ fallbackPlacements: ['left-start', 'bottom', 'top'] }),
+    shift({ crossAxis: true, padding: VIEWPORT_MARGIN }),
+    hide()
+  ],
+  whileElementsMounted: autoUpdate
+})
 
 /** True while the target is clipped out of view; the ring hides and the mark recentres. */
 const targetHidden = computed(

@@ -9,11 +9,11 @@ import {
 } from './canvasSpotlightAdapter'
 import type { SettleState } from './canvasSpotlightAdapter'
 
-/** Undimmed preview of the whole workflow before the tour dims to the first target. */
+/** Undimmed preview before the tour dims to the first target. */
 const INTRO_PREVIEW_MS = 500
-/** The camera waits this out, so the mark's glide and the framing never run at once. */
+/** Glide runs before framing so the two never overlap. */
 export const MARK_GLIDE_MS = 400
-/** A camera that never settles (the user keeps panning) must not strand the copy. */
+/** Ceiling on the settle wait: tween duration plus a cushion for the last frames. */
 const SETTLE_WATCHDOG_MS = TOUR_FOCUS_DURATION_MS + 200
 
 interface ChoreographyOptions {
@@ -27,9 +27,9 @@ interface ChoreographyOptions {
 /**
  * Sequences a step's motion so only one thing moves at a time.
  *
- * The camera is watched rather than counted out: `animateToBounds` reports no
- * completion and cannot be cancelled, so an unchanged transform is the only honest
- * "it stopped" signal. A watchdog bounds that wait.
+ * Watches the transform for a stop rather than counting out `animateToBounds`'s
+ * duration: the tween can't be cancelled or awaited, and the click-through scrim
+ * lets the user pan mid-tween. A watchdog bounds the wait.
  */
 export function useTourChoreography({
   reduceMotion,
@@ -39,9 +39,9 @@ export function useTourChoreography({
   /** False during the intro preview, so the workflow shows undimmed first. */
   const revealed = ref(false)
   const copyVisible = ref(false)
-  /** The mark's side latches only once framing is final. */
+  /** True once framing is final; gates the mark's arrival. */
   const cameraSettled = ref(false)
-  /** Pinned while the canvas moves, so the mark rides it rather than chasing it. */
+  /** True while the canvas moves, so the mark rides it instead of chasing. */
   const markGlides = ref(false)
 
   let timers: ReturnType<typeof setTimeout>[] = []
@@ -61,10 +61,7 @@ export function useTourChoreography({
     watchdogTimer = null
   }
 
-  /**
-   * Cancels only the watchdog, never a pending framing: on a step whose transform is
-   * already at rest the camera settles before it has moved, and the framing must still run.
-   */
+  /** Clears the watchdog only, never a pending framing, which must still run. */
   function showCopy() {
     awaitingSettle = false
     if (watchdogTimer !== null) clearTimeout(watchdogTimer)
@@ -127,7 +124,7 @@ export function useTourChoreography({
     copyVisible,
     cameraSettled,
     markGlides,
-    /** True while the camera is still being waited on, so a resize must not re-frame. */
+    /** True while the camera is still being waited on; a resize must not re-frame. */
     isAwaitingSettle: () => awaitingSettle,
     sampleFrame,
     beginStep,

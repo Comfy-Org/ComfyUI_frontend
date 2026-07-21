@@ -19,11 +19,7 @@ function domClientRect(selector: string): ScreenRect | null {
   return { left, top, width, height }
 }
 
-/**
- * Assigning primitives rather than replacing the object keeps Vue's equality check in
- * play: a stationary canvas writes identical numbers and nothing recomputes. Replacing
- * it every frame re-rendered the overlay at 60fps at rest.
- */
+/** Mutates in place so a stationary canvas writes equal numbers and nothing recomputes. */
 function assignRect(target: ScreenRect, rect: ScreenRect): void {
   target.left = rect.left
   target.top = rect.top
@@ -31,11 +27,7 @@ function assignRect(target: ScreenRect, rect: ScreenRect): void {
   target.height = rect.height
 }
 
-/**
- * Whether two rect lists hold the same geometry, so an unchanged frame can bail.
- * Hand-rolled rather than a deep-equal: this runs twice per frame on a flat shape
- * of four numbers, where a generic recursive compare would dominate the cost.
- */
+/** Flat geometry compare, so an unchanged frame bails without a re-render. */
 function sameRects(
   a: readonly ScreenRect[],
   b: readonly ScreenRect[]
@@ -77,12 +69,8 @@ export function useTourSpotlightRects({
   const holeRects = ref<ScreenRect[]>([])
   const spotRects = ref<ScreenRect[]>([])
 
-  /**
-   * The canvas rect, not the window: the app insets the canvas below the top bar and
-   * beside the panels, so placing against the window put the mark under that chrome.
-   * Falls back to the window until the canvas exists.
-   */
   const { width: windowWidth, height: windowHeight } = useWindowSize()
+  /** The canvas rect, inset below the top bar and beside the panels; falls back to the window. */
   const canvasRect = reactive<ScreenRect>({
     left: 0,
     top: 0,
