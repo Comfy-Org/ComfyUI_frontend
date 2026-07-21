@@ -5,6 +5,13 @@ import { computed } from 'vue'
 import { buildVideoSources, videoKey } from '../../utils/video'
 import type { VideoFormat } from '../../utils/video'
 
+/**
+ * Autoplay note: browsers require `muted` for autoplay to actually start.
+ * `muted` is a Boolean prop, so Vue coerces an omitted value to `false`
+ * (see https://vuejs.org/guide/components/props#boolean-casting) — that
+ * means we cannot fall back to `autoplay` inside the component. Callers
+ * that pass `autoplay` must also pass `muted` explicitly.
+ */
 const {
   name,
   baseUrl,
@@ -14,9 +21,9 @@ const {
   alt,
   autoplay = false,
   loop = false,
-  muted = autoplay,
+  muted = false,
   controls = false,
-  preload = autoplay ? 'auto' : 'metadata',
+  preload,
   containerClass,
   videoClass
 } = defineProps<{
@@ -35,6 +42,16 @@ const {
   videoClass?: string
 }>()
 
+if (import.meta.env.DEV && autoplay && !muted) {
+  console.warn(
+    `[SiteVideo] "${name}" uses autoplay without muted. Browsers block ` +
+      'unmuted autoplay by default; pass `muted` explicitly.'
+  )
+}
+
+const resolvedPreload = computed(
+  () => preload ?? (autoplay ? 'auto' : 'metadata')
+)
 const sources = computed(() =>
   buildVideoSources({ name, baseUrl, width, formats })
 )
@@ -48,7 +65,7 @@ const decorative = computed(() => !alt && !controls)
       :key="remountKey"
       :class="cn('size-full', videoClass)"
       :poster
-      :preload
+      :preload="resolvedPreload"
       :autoplay
       :loop
       :muted
