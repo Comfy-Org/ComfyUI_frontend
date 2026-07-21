@@ -915,7 +915,7 @@ export class LGraphNode
 
         const input = this.inputs.find((i) => i.widget?.name === w.name)
         const persistedLabel = info.widgets_labels?.[w.name]
-        if (input?.label) w.label = input.label
+        if (input?.label != null) w.label = input.label
         else if (persistedLabel != null) w.label = persistedLabel
 
         if (
