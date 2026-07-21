@@ -33,8 +33,8 @@ export interface Member {
   joined_at: string
   role: WorkspaceRole
   // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
 }
@@ -58,7 +58,7 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
+  token?: string
   invited_at: string
   expires_at: string
 }
@@ -250,6 +250,9 @@ export type BillingStatus =
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {
@@ -324,25 +327,14 @@ interface GetBillingEventsParams {
   limit?: number
 }
 
-interface WorkspaceApiErrorOptions {
-  code?: string
-  /** Seconds to wait before retrying, parsed from a 429 `Retry-After` header. */
-  retryAfter?: number
-}
-
-export class WorkspaceApiError extends Error {
-  readonly code?: string
-  readonly retryAfter?: number
-
+class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    { code, retryAfter }: WorkspaceApiErrorOptions = {}
+    public readonly code?: string
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
-    this.code = code
-    this.retryAfter = retryAfter
   }
 }
 
@@ -359,25 +351,11 @@ async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()
 }
 
-// Over an hour signals a server bug, not a real wait, so drop it rather than clamp.
-const MAX_RETRY_AFTER_SECONDS = 3600
-
-function parseRetryAfterSeconds(value: unknown): number | undefined {
-  if (typeof value !== 'string' || value.trim() === '') return undefined
-  const seconds = Number(value)
-  if (!Number.isFinite(seconds) || seconds <= 0) return undefined
-  return seconds <= MAX_RETRY_AFTER_SECONDS ? seconds : undefined
-}
-
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const message = err.response?.data?.message ?? err.message
-    const retryAfter =
-      status === 429
-        ? parseRetryAfterSeconds(err.response?.headers?.['retry-after'])
-        : undefined
-    throw new WorkspaceApiError(message, status, { retryAfter })
+    throw new WorkspaceApiError(message, status)
   }
   throw err
 }
@@ -574,10 +552,6 @@ export const workspaceApi = {
     }
   },
 
-  /**
-   * Resend a pending invite (refreshes expiry, re-sends the email).
-   * POST /api/workspace/invites/:inviteId/resend
-   */
   async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
     const headers = await getAuthHeaderOrThrow()
     try {

@@ -280,7 +280,6 @@ describe('workspaceApi', () => {
       const invite = {
         id: 'inv-1',
         email: 'a@b.com',
-        token: 't',
         invited_at: '2024-02-01T00:00:00Z',
         expires_at: '2024-02-08T00:00:00Z'
       }
@@ -294,60 +293,6 @@ describe('workspaceApi', () => {
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(invite)
-    })
-
-    it('resendInvite() surfaces a 429 with the Retry-After cooldown', async () => {
-      mockAxiosInstance.post.mockRejectedValue({
-        isAxiosError: true,
-        message: 'Too Many Requests',
-        response: {
-          status: 429,
-          headers: { 'retry-after': '30' },
-          data: {}
-        }
-      })
-
-      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
-        name: 'WorkspaceApiError',
-        status: 429,
-        retryAfter: 30
-      })
-    })
-
-    it('resendInvite() ignores a Retry-After header on a non-429 error', async () => {
-      mockAxiosInstance.post.mockRejectedValue({
-        isAxiosError: true,
-        message: 'Server Error',
-        response: {
-          status: 500,
-          headers: { 'retry-after': '30' },
-          data: {}
-        }
-      })
-
-      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
-        name: 'WorkspaceApiError',
-        status: 500,
-        retryAfter: undefined
-      })
-    })
-
-    it('resendInvite() drops an implausibly large Retry-After cooldown', async () => {
-      mockAxiosInstance.post.mockRejectedValue({
-        isAxiosError: true,
-        message: 'Too Many Requests',
-        response: {
-          status: 429,
-          headers: { 'retry-after': '99999' },
-          data: {}
-        }
-      })
-
-      await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
-        name: 'WorkspaceApiError',
-        status: 429,
-        retryAfter: undefined
-      })
     })
 
     it('acceptInvite() uses firebase auth and POST /invites/:token/accept', async () => {

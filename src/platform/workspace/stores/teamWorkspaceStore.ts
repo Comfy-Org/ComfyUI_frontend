@@ -14,19 +14,7 @@ import type {
   SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
-
-/**
- * Thrown when a rate-limited operation (HTTP 429) must not be retried yet.
- * Carries the server's cooldown so the presentation layer can tell the user
- * when to try again without depending on the API client's error types.
- */
-export class RateLimitError extends Error {
-  constructor(readonly retryAfter?: number) {
-    super('Rate limited')
-    this.name = 'RateLimitError'
-  }
-}
+import { workspaceApi } from '../api/workspaceApi'
 
 export interface WorkspaceMember {
   id: string
@@ -527,25 +515,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     await renameWorkspace(activeWorkspaceId.value, name)
   }
 
-  /**
-   * Leave the current workspace.
-   * Switches to personal workspace after leaving.
-   */
   async function leaveWorkspace(): Promise<void> {
     const current = activeWorkspace.value
-    if (!current || current.type === 'personal') {
-      throw new Error('Cannot leave personal workspace')
-    }
+    if (!current) throw new Error('No active workspace')
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     await workspaceApi.leave()
 
-    // Go to personal workspace
-    const personal = personalWorkspace.value
+    const personal = workspaces.value.find(
+      (workspace) =>
+        workspace.type === 'personal' && workspace.id !== current.id
+    )
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
+    } else {
+      clearLastWorkspaceId()
     }
     window.location.reload()
     // Code after this won't run (page reloads)
@@ -558,7 +544,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
@@ -566,20 +551,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
-  // Tracks which team workspaces have already loaded their members so the
+  // Tracks which workspaces have already loaded their members so the
   // lifecycle gate resolves without redundant or duplicate fetches.
   const loadedMemberWorkspaceIds = new Set<string>()
   let inFlightMembersWorkspaceId: string | null = null
 
   /**
-   * Load the active team workspace's members once. No-ops for personal or
-   * already-loaded workspaces and dedupes concurrent calls. A failed request is
-   * logged and leaves the workspace unloaded so a later call retries.
+   * Load the active workspace's members once. No-ops for already-loaded
+   * workspaces and dedupes concurrent calls. A failed request is logged and
+   * leaves the workspace unloaded so a later call retries.
    */
   async function ensureMembersLoaded(): Promise<void> {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return
-    if (activeWorkspace.value?.type === 'personal') return
     if (loadedMemberWorkspaceIds.has(workspaceId)) return
     if (inFlightMembersWorkspaceId === workspaceId) return
 
@@ -616,7 +600,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
-    if (userId === originalOwnerId.value) {
+    if (
+      activeWorkspace.value?.type === 'personal' &&
+      userId === originalOwnerId.value
+    ) {
       throw new Error("Cannot change the workspace creator's role")
     }
     // Only the role changes; merge it onto the existing row rather than trusting
@@ -638,7 +625,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
@@ -678,33 +664,30 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const resendingInviteIds = new Set<string>()
 
-  /**
-   * Resend a pending invite via the dedicated endpoint, replacing the stored
-   * invite with the refreshed one. The in-flight guard blocks a double-submit.
-   */
   async function resendInvite(inviteId: string): Promise<PendingInvite> {
     if (resendingInviteIds.has(inviteId)) {
       throw new Error('Invite resend already in progress')
+    }
+    const workspace = activeWorkspace.value
+    if (!workspace?.pendingInvites.some((invite) => invite.id === inviteId)) {
+      throw new Error('Invite not found')
     }
     resendingInviteIds.add(inviteId)
     try {
       const refreshed = mapApiInviteToPendingInvite(
         await workspaceApi.resendInvite(inviteId)
       )
-      const current = activeWorkspace.value
-      if (current) {
-        updateWorkspace(current.id, {
-          pendingInvites: current.pendingInvites.map((i) =>
-            i.id === inviteId ? refreshed : i
+      const currentWorkspace = workspaces.value.find(
+        (candidate) => candidate.id === workspace.id
+      )
+      if (currentWorkspace) {
+        updateWorkspace(workspace.id, {
+          pendingInvites: currentWorkspace.pendingInvites.map((invite) =>
+            invite.id === inviteId ? refreshed : invite
           )
         })
       }
       return refreshed
-    } catch (err) {
-      if (err instanceof WorkspaceApiError && err.status === 429) {
-        throw new RateLimitError(err.retryAfter)
-      }
-      throw err
     } finally {
       resendingInviteIds.delete(inviteId)
     }

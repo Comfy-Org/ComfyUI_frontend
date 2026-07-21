@@ -17,9 +17,7 @@ import { mockSystemStats } from '../fixtures/data/systemStats'
 
 // Extend the base set with test-specific nodes
 const nodeDefs = createMockNodeDefinitions({
-  MyCustomNode: {
-    /* ... */
-  }
+  MyCustomNode: {/* ... */}
 })
 
 await page.route('**/api/object_info', (route) =>
