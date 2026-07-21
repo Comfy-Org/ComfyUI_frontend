@@ -8,6 +8,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
+  BillingRail,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
@@ -35,6 +36,7 @@ export interface PendingInvite {
 type SubscriptionPlan = string | null
 
 interface WorkspaceState extends WorkspaceWithRole {
+  billingRail?: BillingRail
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlan
   subscriptionTier: SubscriptionTier | null

@@ -14,6 +14,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
   BalanceInfo,
@@ -30,6 +31,7 @@ import type {
 export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
+  const workspaceStore = useTeamWorkspaceStore()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -120,7 +122,12 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
-      if (requestId === latestBillingReadIds.status) statusData.value = status
+      if (requestId === latestBillingReadIds.status) {
+        statusData.value = status
+        workspaceStore.updateActiveWorkspace({
+          billingRail: status.billing_rail
+        })
+      }
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
         error.value =
