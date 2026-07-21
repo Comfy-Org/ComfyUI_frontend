@@ -121,6 +121,7 @@
     "primevue": "catalog:",
     "reka-ui": "catalog:",
     "semver": "^7.7.2",
+    "shiki": "catalog:",
     "three": "catalog:",
     "tiptap-markdown": "^0.8.10",
     "typegpu": "catalog:",

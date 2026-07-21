@@ -327,6 +327,9 @@ catalogs:
     rollup-plugin-visualizer:
       specifier: ^6.0.4
       version: 6.0.4
+    shiki:
+      specifier: ^4.3.0
+      version: 4.3.1
     storybook:
       specifier: ^10.2.10
       version: 10.2.10
@@ -615,6 +618,9 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.4
+      shiki:
+        specifier: 'catalog:'
+        version: 4.3.1
       three:
         specifier: 'catalog:'
         version: 0.184.0
