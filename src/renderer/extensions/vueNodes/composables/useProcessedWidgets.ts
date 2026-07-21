@@ -41,7 +41,10 @@ import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
-import { executionIdToNodeLocatorId,getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import {
+  executionIdToNodeLocatorId,
+  getExecutionIdFromNodeData
+} from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
