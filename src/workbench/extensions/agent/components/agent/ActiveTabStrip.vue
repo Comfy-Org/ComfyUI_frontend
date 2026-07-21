@@ -2,6 +2,7 @@
 export interface ActiveTab {
   path: string
   name: string
+  modified?: boolean
 }
 
 const { tab } = defineProps<{ tab: ActiveTab | null }>()
