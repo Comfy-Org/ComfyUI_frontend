@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 
 const mockEduFlag = ref(false)
 const mockIsEduCustomer = ref(false)
+const mockIsCloud = ref(true)
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
@@ -22,9 +23,20 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 describe('useEduPricing', () => {
+  afterEach(() => {
+    localStorage.removeItem('ff:edu_customer')
+    mockIsCloud.value = true
+    mockEduFlag.value = false
+    mockIsEduCustomer.value = false
+  })
+
   it('is inactive unless both the flag and the customer marker are set', () => {
     const { isEduPricingActive } = useEduPricing()
 
@@ -41,6 +53,15 @@ describe('useEduPricing', () => {
     expect(isEduPricingActive.value).toBe(true)
   })
 
+  it('is inactive off cloud builds', () => {
+    mockIsCloud.value = false
+    mockEduFlag.value = true
+    mockIsEduCustomer.value = true
+
+    const { isEduPricingActive } = useEduPricing()
+    expect(isEduPricingActive.value).toBe(false)
+  })
+
   it('dev override fakes the customer marker', () => {
     mockEduFlag.value = true
     mockIsEduCustomer.value = false
@@ -48,7 +69,5 @@ describe('useEduPricing', () => {
 
     const { isEduPricingActive } = useEduPricing()
     expect(isEduPricingActive.value).toBe(true)
-
-    localStorage.removeItem('ff:edu_customer')
   })
 })
