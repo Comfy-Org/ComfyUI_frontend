@@ -58,6 +58,12 @@ describe('isEmbeddedWebView', () => {
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
 
+    it('does not flag Opera on iOS (OPiOS + Safari/)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 OPiOS/16.0.14 Mobile/15E148 Safari/9537.53'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
     it('does not flag iPadOS Safari reporting as Macintosh Mobile, even with webkit.messageHandlers present', () => {
       vi.stubGlobal('webkit', { messageHandlers: {} })
       const ua =
@@ -153,6 +159,20 @@ describe('isEmbeddedWebView', () => {
       vi.stubGlobal('webkit', { messageHandlers: {} })
       const ua =
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('ignores webkit.messageHandlers bridge in Edge on iOS', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/120.0.0.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('ignores webkit.messageHandlers bridge in Opera on iOS', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 OPiOS/16.0.14 Mobile/15E148 Safari/9537.53'
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
 
