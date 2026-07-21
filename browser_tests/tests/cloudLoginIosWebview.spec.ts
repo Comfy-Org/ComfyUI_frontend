@@ -25,16 +25,22 @@ test.describe(
       browser
     }) => {
       const context = await browser.newContext({ userAgent: CHROME_IOS_UA })
-      const page = await context.newPage()
-      await injectWkWebViewBridge(page)
+      try {
+        const page = await context.newPage()
+        await injectWkWebViewBridge(page)
 
-      await page.goto(APP_URL)
-      await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+        await page.goto(APP_URL)
+        await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
 
-      await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
-      await expect(page.getByRole('button', { name: /github/i })).toBeVisible()
-
-      await context.close()
+        await expect(
+          page.getByRole('button', { name: /google/i })
+        ).toBeVisible()
+        await expect(
+          page.getByRole('button', { name: /github/i })
+        ).toBeVisible()
+      } finally {
+        await context.close()
+      }
     })
 
     test('shows Google sign-in button on iOS Safari with webkit.messageHandlers present', async ({
@@ -54,16 +60,20 @@ test.describe(
       const wkWebViewUa =
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
       const context = await browser.newContext({ userAgent: wkWebViewUa })
-      const page = await context.newPage()
-      await injectWkWebViewBridge(page)
+      try {
+        const page = await context.newPage()
+        await injectWkWebViewBridge(page)
 
-      await page.goto(APP_URL)
-      await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+        await page.goto(APP_URL)
+        await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
 
-      await expect(page.getByRole('button', { name: /google/i })).toBeHidden()
-      await expect(page.getByRole('button', { name: /github/i })).toBeVisible()
-
-      await context.close()
+        await expect(page.getByRole('button', { name: /google/i })).toBeHidden()
+        await expect(
+          page.getByRole('button', { name: /github/i })
+        ).toBeVisible()
+      } finally {
+        await context.close()
+      }
     })
   }
 )

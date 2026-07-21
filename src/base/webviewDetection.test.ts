@@ -156,11 +156,11 @@ describe('isEmbeddedWebView', () => {
       expect(isEmbeddedWebView(ua)).toBe(true)
     })
 
-    it('detects ReactNativeWebView bridge even when UA looks like Chrome iOS', () => {
+    it('still detects ReactNativeWebView bridge when UA looks like Chrome iOS', () => {
       vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() })
       const ua =
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1'
-      expect(isEmbeddedWebView(ua)).toBe(false)
+      expect(isEmbeddedWebView(ua)).toBe(true)
     })
   })
 })

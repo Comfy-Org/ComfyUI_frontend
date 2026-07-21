@@ -81,7 +81,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
       grep: /@cloud/,
-      grepInvert: /@oss/
+      grepInvert: /@oss|@mobile-ios/
     },
 
     {

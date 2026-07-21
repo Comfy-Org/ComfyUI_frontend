@@ -9,11 +9,12 @@
  *   • Android WebView (`wv` token in UA)
  *   • iOS WKWebView (has `AppleWebKit` but lacks `Safari/`)
  *   • Social app in-app browsers (Facebook, Instagram, TikTok, etc.)
- *   • JS bridge objects (`window.webkit.messageHandlers`, `ReactNativeWebView`)
- *     — gated by UA, because iOS forces every browser (Chrome, Firefox,
- *     Edge, Opera, Safari itself) onto WKWebView, and modern iOS Chrome
- *     exposes `window.webkit.messageHandlers` on the global for its own
- *     internal native bridge. Treating that as a webview signal in
+ *   • `window.ReactNativeWebView` — unconditional; no shipping browser
+ *     exposes this.
+ *   • `window.webkit.messageHandlers` — UA-gated, because iOS forces
+ *     every browser (Chrome, Firefox, Edge, Opera, Safari itself) onto
+ *     WKWebView, and modern iOS Chrome exposes this global for its own
+ *     internal native bridge. Treating it as a webview signal in
  *     first-party iOS browsers is a false positive that hides the Google
  *     SSO button for regular mobile users.
  */
@@ -43,29 +44,35 @@ function isFirstPartyIOSBrowser(ua: string): boolean {
   return /Safari\//i.test(ua) && /Version\//i.test(ua)
 }
 
-function hasWebViewBridge(): boolean {
+function hasWkWebViewMessageBridge(): boolean {
   try {
     const win = globalThis as Record<string, unknown>
-    if (
+    return (
       typeof win.webkit === 'object' &&
       win.webkit !== null &&
       typeof (win.webkit as Record<string, unknown>).messageHandlers ===
         'object'
-    ) {
-      return true
-    }
-    if (win.ReactNativeWebView != null) return true
+    )
   } catch {
-    // Access to bridge objects may throw in sandboxed contexts
+    return false
   }
-  return false
+}
+
+function hasReactNativeWebViewBridge(): boolean {
+  try {
+    const win = globalThis as Record<string, unknown>
+    return win.ReactNativeWebView != null
+  } catch {
+    return false
+  }
 }
 
 export function isEmbeddedWebView(ua: string = navigator.userAgent): boolean {
   if (isSocialAppBrowser(ua)) return true
   if (isAndroidWebView(ua)) return true
   if (isIOSWebView(ua)) return true
-  if (!isFirstPartyIOSBrowser(ua) && hasWebViewBridge()) return true
+  if (hasReactNativeWebViewBridge()) return true
+  if (!isFirstPartyIOSBrowser(ua) && hasWkWebViewMessageBridge()) return true
   return false
 }
 
