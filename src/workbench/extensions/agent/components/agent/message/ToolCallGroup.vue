@@ -11,7 +11,10 @@ import type { ToolPart } from '../../../services/agent/agentMessageParts'
 
 import ToolCallCard from './ToolCallCard.vue'
 
-const { tools } = defineProps<{ tools: ToolPart[] }>()
+const { tools, streaming = false } = defineProps<{
+  tools: ToolPart[]
+  streaming?: boolean
+}>()
 
 const { t } = useI18n()
 
@@ -46,9 +49,12 @@ const failed = computed(() =>
   tools.some((tool) => tool.state === 'done' && tool.ok === false)
 )
 
+// Live tool events arrive only on completion, so per-tool streaming never
+// occurs on real turns; the turn's own streaming flag keeps the list open
+// while the agent works and collapses it when the turn settles.
 const open = ref(true)
 watch(
-  () => running.value || failed.value,
+  () => streaming || running.value || failed.value,
   (stayOpen) => {
     open.value = stayOpen
   },

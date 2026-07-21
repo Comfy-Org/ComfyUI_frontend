@@ -64,7 +64,11 @@ const showActions = computed(
 
     <template v-for="(group, index) in groups" :key="index">
       <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
-      <ToolCallGroup v-else-if="group.kind === 'tools'" :tools="group.parts" />
+      <ToolCallGroup
+        v-else-if="group.kind === 'tools'"
+        :tools="group.parts"
+        :streaming="message.streaming"
+      />
       <div
         v-else
         :class="
