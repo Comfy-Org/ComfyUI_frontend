@@ -29,11 +29,4 @@
     position: absolute;
     width: 100%;
   }
-
-  /* Drag-reorderable lists animate their reorder via the drag library's own
-     transform transitions. Suppress the redundant TransitionGroup FLIP that
-     otherwise fights it and makes the whole section jump on drop. */
-  .list-move-disabled .list-scale-move {
-    transition: none;
-  }
 }
