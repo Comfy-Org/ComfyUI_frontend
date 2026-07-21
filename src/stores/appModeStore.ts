@@ -87,14 +87,22 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function pruneLinearData(data: Partial<LinearData> | undefined): {
+  /**
+   * Validates stored linear data against `graph` — the graph the data belongs
+   * to — upgrading legacy id forms and dropping entries whose nodes or widgets
+   * no longer exist. Omit `graph` when the owning workflow's graph is not
+   * loaded (e.g. a non-active workflow): ids are normalized but never dropped.
+   */
+  function pruneLinearData(
+    data: Partial<LinearData> | undefined,
+    graph?: LGraph | null
+  ): {
     inputs: LinearInput[]
     outputs: NodeId[]
   } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    const rootGraph = app.rootGraph
-    if (!rootGraph) {
+    if (!graph) {
       return {
         inputs: rawInputs,
         outputs: rawOutputs.flatMap((nodeId) => {
@@ -105,12 +113,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
     return {
       inputs: rawInputs
-        .map((input) => upgradeAndValidateInput(input, rootGraph))
+        .map((input) => upgradeAndValidateInput(input, graph))
         .filter((entry): entry is LinearInput => entry !== null),
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId, graph)
           ? [parsedNodeId]
           : []
       })
@@ -127,7 +135,7 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function upgradeAndValidateInput(
     input: LinearInput,
-    rootGraph: NonNullable<typeof app.rootGraph>
+    rootGraph: LGraph
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
@@ -142,7 +150,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
-      const [, widget] = resolveNodeWidget(storedId, widgetName)
+      const [, widget] = resolveNodeWidget(storedId, widgetName, rootGraph)
       if (!widget?.widgetId) return null
       return buildEntry(widget.widgetId, widgetName, config)
     }
@@ -188,7 +196,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function loadSelections(data: Partial<LinearData> | undefined) {
-    const { inputs, outputs } = pruneLinearData(data)
+    const { inputs, outputs } = pruneLinearData(data, app.rootGraph)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
   }
