@@ -24,9 +24,14 @@ const SESSION_START_MS = Date.now()
 type EmailVerificationNudgeVariant = 'credits' | 'generic'
 
 function readDismissedAt(): number {
-  const raw = localStorage.getItem(DISMISSED_AT_KEY)
-  const parsed = raw === null ? NaN : Number(raw)
-  return Number.isFinite(parsed) ? parsed : 0
+  try {
+    const raw = localStorage.getItem(DISMISSED_AT_KEY)
+    const parsed = raw === null ? NaN : Number(raw)
+    return Number.isFinite(parsed) ? parsed : 0
+  } catch {
+    // Storage blocked (sandboxed iframe / privacy mode) — treat as undismissed.
+    return 0
+  }
 }
 
 /**
@@ -91,13 +96,21 @@ function useEmailVerificationInternal() {
   function dismiss(): void {
     const now = Date.now()
     dismissedAt.value = now
-    localStorage.setItem(DISMISSED_AT_KEY, String(now))
+    try {
+      localStorage.setItem(DISMISSED_AT_KEY, String(now))
+    } catch {
+      // Storage blocked — the in-memory dismissal still hides the nudge for
+      // this session; it just won't survive a reload.
+    }
   }
+
+  let isRefreshing = false
 
   async function refresh(): Promise<void> {
     const user = currentUser.value
-    if (!user || user.emailVerified) return
+    if (!user || user.emailVerified || isRefreshing) return
 
+    isRefreshing = true
     try {
       await user.reload()
       reloadTick.value++
@@ -109,6 +122,8 @@ function useEmailVerificationInternal() {
       }
     } catch (error) {
       console.error('Failed to refresh email verification status:', error)
+    } finally {
+      isRefreshing = false
     }
   }
 
@@ -117,7 +132,7 @@ function useEmailVerificationInternal() {
     if (!user || !canResend.value) return
 
     canResend.value = false
-    window.setTimeout(() => {
+    const cooldownTimeout = window.setTimeout(() => {
       canResend.value = true
     }, RESEND_COOLDOWN_MS)
 
@@ -127,6 +142,12 @@ function useEmailVerificationInternal() {
       const isRateLimited =
         error instanceof FirebaseError &&
         error.code === 'auth/too-many-requests'
+      // A rate-limit error means the cooldown is warranted; any other failure
+      // (e.g. transient network) should let the user retry immediately.
+      if (!isRateLimited) {
+        window.clearTimeout(cooldownTimeout)
+        canResend.value = true
+      }
       toastStore.add({
         severity: 'error',
         summary: t('auth.emailVerification.resendFailed'),
@@ -148,7 +169,9 @@ function useEmailVerificationInternal() {
   }
 
   useEventListener(window, 'focus', () => {
-    if (nudgeVariant.value) void refresh()
+    // Gate on the underlying need, not the nudge's visibility: a dismissed
+    // generic nudge still needs to pick up a verification done in another tab.
+    if (needsEmailVerification.value) void refresh()
   })
 
   return {
