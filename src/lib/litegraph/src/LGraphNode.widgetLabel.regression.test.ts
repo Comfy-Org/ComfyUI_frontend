@@ -236,6 +236,26 @@ describe('LGraphNode widget label persistence (regression #13861)', () => {
     })
   })
 
+  test('a widget named __proto__ round-trips as data (no prototype pollution)', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    node.addWidget('text', '__proto__', 'v', null)
+    rename(node.widgets![0], 'Renamed Label')
+
+    const serialized = node.serialize()
+    expect(Object.getPrototypeOf(serialized.widgets_labels)).toBeNull()
+    expect(serialized.widgets_labels!['__proto__']).toBe('Renamed Label')
+
+    const restored = new LGraphNode('TestNode')
+    restored.serialize_widgets = true
+    restored.addWidget('text', '__proto__', 'v', null)
+    restored.configure(
+      JSON.parse(JSON.stringify(serialized)) as ISerialisedNode
+    )
+
+    expect(restored.widgets![0].label).toBe('Renamed Label')
+  })
+
   test('configure restores an explicit empty input label', () => {
     const node = new LGraphNode('TestNode')
     node.serialize_widgets = true

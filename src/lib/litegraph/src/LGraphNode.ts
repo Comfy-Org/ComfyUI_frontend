@@ -997,7 +997,10 @@ export class LGraphNode
             : (val ?? null)
       }
 
-      const widgetLabels: Record<string, string> = {}
+      // Null-prototype: widget names are arbitrary extension-defined strings, so
+      // a widget named `__proto__` (or `constructor`) must round-trip as data
+      // rather than mutate the object's prototype.
+      const widgetLabels: Record<string, string> = Object.create(null)
       for (const widget of widgets) {
         if (widget.serialize === false || widget.userLabel == null) continue
         const mirroredByInput = this.inputs?.some(
