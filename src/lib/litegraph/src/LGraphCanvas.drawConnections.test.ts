@@ -199,6 +199,32 @@ describe('drawConnections', () => {
     }
   })
 
+  it('renders links in target order instead of generated id order', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.pos = [300, 100]
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.pos = [300, 200]
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    canvas.visible_area[2] = 800
+    canvas.visible_area[3] = 600
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.drawConnections(createMockCtx())
+
+    expect([...canvas.renderedPaths]).toEqual([firstLink, secondLink])
+  })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [0, 100]
