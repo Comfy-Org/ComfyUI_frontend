@@ -188,18 +188,12 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-export const AGENT_WS_EVENT_TYPES: ReadonlySet<string> = new Set([
-  'agent_thinking',
-  'agent_tool_call',
-  'draft_patch',
-  'agent_message_delta',
-  'agent_message_done',
-  'draft_version',
-  'agent_active_tab'
-])
+export const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
+  zAgentWsEvent.options.map((option) => option.shape.type.value)
+)
 
-export function isAgentEvent(type: string): boolean {
-  return AGENT_WS_EVENT_TYPES.has(type)
+export function isAgentEvent(type: string): type is AgentWsEvent['type'] {
+  return AGENT_WS_EVENT_TYPES.has(type as AgentWsEvent['type'])
 }
 
 export function parseAgentWsEvent(
