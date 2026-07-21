@@ -1171,4 +1171,373 @@ describe('useAuthStore', () => {
       expect((error as AuthStoreError).status).toBe(422)
     })
   })
+
+  describe('fetchWithCustomerRecovery', () => {
+    function make409(message: string) {
+      const body = { message }
+      return {
+        ok: false,
+        status: 409,
+        statusText: 'Conflict',
+        json: () => Promise.resolve(body),
+        clone: () => ({ json: () => Promise.resolve(body) })
+      }
+    }
+    function makeConflictResponse() {
+      return make409('Failed to find customer')
+    }
+
+    function countCustomerPosts() {
+      return mockFetch.mock.calls.filter(
+        ([url, init]) =>
+          typeof url === 'string' &&
+          url.endsWith('/customers') &&
+          (init as RequestInit | undefined)?.method === 'POST'
+      ).length
+    }
+
+    it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/balance')) {
+          balanceCalls++
+          return Promise.resolve(
+            balanceCalls === 1
+              ? makeConflictResponse()
+              : mockFetchBalanceResponse
+          )
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const result = await store.fetchBalance()
+
+      expect(result).toEqual({ balance: 0 })
+      expect(balanceCalls).toBe(2)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should deduplicate concurrent recovery attempts into a single customer creation', async () => {
+      const seenUrls = new Set<string>()
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url)
+          return Promise.resolve(makeConflictResponse())
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      const [first, second] = await Promise.all([
+        store.fetchWithCustomerRecovery('https://api.test/customers/balance'),
+        store.fetchWithCustomerRecovery(
+          'https://api.test/customers/cloud-subscription-status'
+        )
+      ])
+
+      expect(first.ok).toBe(true)
+      expect(second.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should not provision the customer again after a successful recovery', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        // Endpoint keeps conflicting even after recovery succeeds
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const first = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      const second = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(first.status).toBe(409)
+      expect(second.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should return the original 409 response when customer provisioning fails', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error'
+          })
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should pass through non-409 responses without provisioning', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 that is not a missing-customer conflict', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(make409('Subscription already active'))
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/cloud-subscription-checkout/standard',
+        { method: 'POST' }
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 from a non-customer endpoint', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/workflows'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision when /customers/ is not the root path segment', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/foo/customers/bar'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should re-provision after the auth state changes to a different session', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // Sign out, then a different account signs in: the memoized recovery
+      // from the previous account must not short-circuit the new one.
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('re-provisions when the active uid changes without an auth-state reset', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // A uid change that did not pass through onAuthStateChanged (which would
+      // otherwise clear the memo) must still start a fresh recovery rather than
+      // reuse the previous account's settled one.
+      store.currentUser = {
+        ...mockUser,
+        uid: 'different-uid'
+      } as Partial<User> as User
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('should return the original 409 when the retry fails at the network level', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        balanceCalls++
+        return balanceCalls === 1
+          ? Promise.resolve(makeConflictResponse())
+          : Promise.reject(new TypeError('network down'))
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should share one customer creation between concurrent credit pre-flights', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await Promise.all([
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        }),
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ])
+
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('stale rejection from previous session does not null out a new in-flight recovery', async () => {
+      let rejectSession1Create!: (reason: unknown) => void
+      let resolveSession2Create!: (value: Response) => void
+      let postCount = 0
+
+      const session1CreateP = new Promise<Response>((_, reject) => {
+        rejectSession1Create = reject
+      })
+      const session2CreateP = new Promise<Response>((resolve) => {
+        resolveSession2Create = resolve
+      })
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1 ? session1CreateP : session2CreateP
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1: trigger a recovery whose POST will hang
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session1')
+        .catch(() => 'session1-failed')
+
+      // Drain microtasks so session1's POST is registered
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Auth resets; new session starts
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Session 2 recovery — should create a new independent in-flight promise
+      const session2Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session2')
+        .catch(() => 'session2-failed')
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Session 1's POST fails — stale rejection fires; must NOT null out session 2's recovery
+      rejectSession1Create(new Error('network error'))
+      await session1Done
+
+      // Session 2's POST resolves successfully
+      resolveSession2Create({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'id-2' })
+      } as Response)
+      const session2Result = await session2Done
+
+      // Session 2 must succeed, proving its recovery was not nulled by session 1's rejection
+      expect(session2Result).toBe('session2')
+    })
+
+    it('does not skip re-provisioning when createCustomer resolves after sign-out', async () => {
+      let resolveCreate!: (value: Response) => void
+      const slowCreateP = new Promise<Response>((resolve) => {
+        resolveCreate = resolve
+      })
+      let postCount = 0
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1
+            ? slowCreateP
+            : Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1 triggers recovery with a slow POST
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .catch(() => {})
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // User signs out before the POST resolves
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Stale POST resolves successfully after session reset
+      resolveCreate!({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'stale-id' })
+      } as Response)
+      await session1Done
+
+      // A fresh recovery for the new session must POST again;
+      // customerCreated must not have been set by the stale resolution.
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(postCount).toBe(2)
+    })
+  })
 })
