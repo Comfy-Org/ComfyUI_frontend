@@ -291,8 +291,10 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
     await expect
       .poll(() => workspaceMintOwners, { timeout: 15_000 })
-      .toContain('a')
-    await expect.poll(() => sessionOwners, { timeout: 15_000 }).toContain('a')
+      .toContain(ACCOUNT_A.id)
+    await expect
+      .poll(() => sessionOwners, { timeout: 15_000 })
+      .toContain(ACCOUNT_A.id)
 
     await page.evaluate(() => {
       sessionStorage.setItem(
@@ -331,10 +333,12 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
     await page.keyboard.press('Escape')
     await expect
       .poll(() => workspaceMintOwners, { timeout: 15_000 })
-      .toContain('b')
-    await expect.poll(() => sessionOwners, { timeout: 15_000 }).toContain('b')
-    expect(credentialEvents.indexOf('session:b')).toBeLessThan(
-      credentialEvents.indexOf('workspace:b')
+      .toContain(ACCOUNT_B.id)
+    await expect
+      .poll(() => sessionOwners, { timeout: 15_000 })
+      .toContain(ACCOUNT_B.id)
+    expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
+      credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
     )
 
     await new AssetsSidebarTab(page).open()
@@ -348,8 +352,8 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         image.evaluate((element: HTMLImageElement) => element.naturalWidth)
       )
       .toBeGreaterThan(0)
-    expect(jobsAuthorization).toBe('Bearer workspace-jwt-b')
-    expect(viewCookie).toContain('mock-cloud-session=b')
+    expect(jobsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
+    expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
     expect(viewStatus).toBe(200)
   })
 })
