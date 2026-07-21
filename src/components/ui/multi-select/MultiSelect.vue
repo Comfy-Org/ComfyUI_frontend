@@ -32,7 +32,7 @@
             v-if="selectedCount > 0"
             :class="
               cn(
-                'pointer-events-none absolute -top-2 -right-2 z-10',
+                'pointer-events-none absolute -top-1.5 -right-1.5 z-10',
                 selectCountBadgeClass
               )
             "
