@@ -636,7 +636,7 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({
-      displayTitle: 'An error was found',
+      displayTitle: "Couldn't apply agent changes",
       displayMessage: "Couldn't apply the agent's draft to the canvas."
     })
   })

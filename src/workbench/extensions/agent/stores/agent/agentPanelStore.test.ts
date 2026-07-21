@@ -171,4 +171,27 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.isOpen).toBe(true)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
+
+  it('clamps setWidth to the panel min and max bounds', () => {
+    const store = useAgentPanelStore()
+
+    store.setWidth(100)
+    expect(store.width).toBe(420)
+
+    store.setWidth(2000)
+    expect(store.width).toBe(960)
+  })
+
+  it('toggleMaximize flips width between the min and max bounds', () => {
+    const store = useAgentPanelStore()
+    expect(store.isMaximized).toBe(false)
+
+    store.toggleMaximize()
+    expect(store.width).toBe(960)
+    expect(store.isMaximized).toBe(true)
+
+    store.toggleMaximize()
+    expect(store.width).toBe(420)
+    expect(store.isMaximized).toBe(false)
+  })
 })
