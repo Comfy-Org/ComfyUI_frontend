@@ -65,7 +65,7 @@ vi.mock('@/i18n', () => {
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
     'errorCatalog.promptErrors.agent_draft_apply_failed.title':
-      'An error was found',
+      "Couldn't apply agent changes",
     'errorCatalog.promptErrors.agent_draft_apply_failed.desc':
       "Couldn't apply the agent's draft to the canvas.",
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
@@ -722,7 +722,9 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'execution' && g.displayTitle === 'An error was found'
+        (g) =>
+          g.type === 'execution' &&
+          g.displayTitle === "Couldn't apply agent changes"
       )
       const details =
         promptGroup && 'cards' in promptGroup

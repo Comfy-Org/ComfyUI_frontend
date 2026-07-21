@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onKeyStroke, useWindowSize } from '@vueuse/core'
 import { ref, watchEffect } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
@@ -12,7 +11,6 @@ const { step, storageKey } = defineProps<{
   storageKey?: string
 }>()
 
-const { t } = useI18n()
 const { active, finish } = useOnboarding(storageKey)
 
 onKeyStroke('Escape', () => {
@@ -68,7 +66,7 @@ watchEffect(
           size="md"
           class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
           @click="finish"
-          >{{ t('agent.skip') }}</Button
+          >{{ $t('agent.skip') }}</Button
         >
         <Button
           variant="primary"
@@ -76,7 +74,7 @@ watchEffect(
           class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
           @click="finish"
         >
-          {{ t('agent.gotIt') }}
+          {{ $t('agent.gotIt') }}
         </Button>
       </div>
     </div>
