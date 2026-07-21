@@ -81,7 +81,7 @@ describe('ConversationView', () => {
     store.startTurn(T)
 
     store.ingest(thinking('msg-1', 'pondering'))
-    expect(await screen.findByText('Thinking...')).toBeInTheDocument()
+    expect(await screen.findByText('pondering')).toBeInTheDocument()
 
     store.ingest(delta('msg-1', 'Here is a **cat**'))
     store.ingest(toolCall('msg-1', 'add_node', 'ok'))
