@@ -24,7 +24,7 @@ export class MeshModelAdapter implements ModelAdapter {
     gizmoTransform: true,
     lighting: true,
     exportable: true,
-    materialModes: ['original', 'normal', 'wireframe'],
+    materialModes: ['original', 'clay', 'normal', 'wireframe'],
     fitTargetSize: 5
   }
 

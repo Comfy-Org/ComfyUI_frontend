@@ -28,6 +28,7 @@ import {
   ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
+  SidebarTab,
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -70,6 +71,7 @@ class ComfyPropertiesPanel {
 }
 
 class ComfyMenu {
+  private _appsTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -102,6 +104,11 @@ class ComfyMenu {
   get nodeLibraryTabV2() {
     this._nodeLibraryTabV2 ??= new NodeLibrarySidebarTabV2(this.page)
     return this._nodeLibraryTabV2
+  }
+
+  get appsTab() {
+    this._appsTab ??= new SidebarTab(this.page, 'apps')
+    return this._appsTab
   }
 
   get assetsTab() {
@@ -537,7 +544,6 @@ export const comfyPageFixture = base.extend<{
         'Comfy.TutorialCompleted': true,
         'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,

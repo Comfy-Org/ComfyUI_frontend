@@ -28,7 +28,7 @@ jobs:
     if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-noble
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     permissions:
       contents: read
@@ -67,7 +67,15 @@ jobs:
 
       - name: Deploy report to Cloudflare
         id: deploy
-        if: always() && !cancelled()
+        if: >-
+          ${{
+            always() &&
+            !cancelled() &&
+            (
+              github.event_name != 'pull_request' ||
+              github.event.pull_request.head.repo.fork == false
+            )
+          }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

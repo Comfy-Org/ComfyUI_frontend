@@ -2,9 +2,28 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import { models } from '../../../config/models'
 import { t } from '../../../i18n/translations'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext,
+} from '../../../utils/jsonLd'
 
 const title = t('models.index.title')
 const subtitle = t('models.index.subtitle')
+
+const { url, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const modelList = itemListNode(
+  url,
+  title,
+  models.map((model) => ({
+    url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`),
+  })),
+)
 
 const dirLabel: Record<string, string> = {
   diffusion_models: 'Diffusion',
@@ -24,8 +43,15 @@ const dirLabel: Record<string, string> = {
 ---
 
 <BaseLayout
-  title={`${title} — Comfy`}
+  title={`${title} - Comfy`}
   description={subtitle}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: title },
+  ]}
+  extraJsonLd={[modelList]}
 >
   <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
     <header class="mb-12">

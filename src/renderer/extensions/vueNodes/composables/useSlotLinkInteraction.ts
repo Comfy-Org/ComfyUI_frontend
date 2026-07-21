@@ -530,8 +530,6 @@ export function useSlotLinkInteraction({
 
     raf.flush()
 
-    raf.flush()
-
     if (!state.source) {
       cleanupInteraction()
       app.canvas?.setDirty(true, true)
@@ -579,24 +577,18 @@ export function useSlotLinkInteraction({
     const graph = app.canvas?.graph ?? null
     const context = { adapter, graph, session: dragContext }
 
-    const attemptSnapped = () => tryConnectToCandidate(snappedCandidate)
-
     const domSlotCandidate = resolveSlotTargetCandidate(target, context)
-    const attemptDomSlot = () => tryConnectToCandidate(domSlotCandidate)
-
     const nodeSurfaceSlotCandidate = resolveNodeSurfaceSlotCandidate(
       target,
       context
     )
-    const attemptNodeSurface = () =>
-      tryConnectToCandidate(nodeSurfaceSlotCandidate)
-    const attemptReroute = () => tryConnectViaRerouteAtPointer()
 
-    if (attemptSnapped()) return true
-    if (attemptDomSlot()) return true
-    if (attemptNodeSurface()) return true
-    if (attemptReroute()) return true
-    return false
+    return (
+      tryConnectToCandidate(snappedCandidate) ||
+      tryConnectToCandidate(domSlotCandidate) ||
+      tryConnectToCandidate(nodeSurfaceSlotCandidate) ||
+      tryConnectViaRerouteAtPointer()
+    )
   }
 
   const onPointerDown = (event: PointerEvent) => {

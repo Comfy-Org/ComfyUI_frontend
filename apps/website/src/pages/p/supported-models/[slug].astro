@@ -4,6 +4,13 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { t } from '../../../i18n/translations'
+import type { JsonLdNode } from '../../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = () => {
   return models.map((model) => ({
@@ -19,7 +26,6 @@ if (model.canonicalSlug) {
 }
 
 const { displayName } = model
-const canonicalURL = new URL(`/p/supported-models/${model.slug}`, Astro.site)
 
 const dirDescriptions: Record<string, string> = {
   diffusion_models: 'a diffusion model that generates images or video from text and image prompts',
@@ -38,57 +44,33 @@ const dirDescriptions: Record<string, string> = {
 }
 
 const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Hub, ready to load and customize.`
+const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
 
-const softwareAppJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
+const pageTitle = `${displayName} in ComfyUI`
+const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
   name: displayName,
+  url,
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
-  url: canonicalURL.href,
-  author: {
-    '@type': 'Organization',
-    name: 'Comfy Org',
-    url: 'https://comfy.org'
-  }
-}
-
-const breadcrumbJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    {
-      '@type': 'ListItem',
-      position: 1,
-      name: t('models.breadcrumb.home'),
-      item: 'https://comfy.org'
-    },
-    {
-      '@type': 'ListItem',
-      position: 2,
-      name: t('models.breadcrumb.models'),
-      item: 'https://comfy.org/p/supported-models'
-    },
-    {
-      '@type': 'ListItem',
-      position: 3,
-      name: displayName
-    }
-  ]
-}
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
+})
+const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
+  '@id': jsonLdId(url, 'faq'),
   mainEntity: [
     {
       '@type': 'Question',
       name: `What is ${displayName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: whatIsDescription
-      }
+      acceptedAnswer: { '@type': 'Answer', text: whatIsDescription },
     },
     {
       '@type': 'Question',
@@ -97,54 +79,44 @@ const faqJsonLd = {
         '@type': 'Answer',
         text: model.docsUrl
           ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
-          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`
-      }
+          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`,
+      },
     },
     {
       '@type': 'Question',
       name: `How many ComfyUI workflows use ${displayName}?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Hub. Each template is ready to run in ComfyUI and can be customized to suit your project.`
-      }
+        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
+      },
     },
     {
       '@type': 'Question',
       name: `Is ${displayName} free to use in ComfyUI?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`
-      }
-    }
-  ]
+        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+      },
+    },
+  ],
 }
-
-const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
 ---
 
 <BaseLayout
-  title={`${pageTitle} — Comfy`}
+  title={`${pageTitle} - Comfy`}
   description={pageDescription}
   ogImage={model.thumbnailUrl}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('models.breadcrumb.models', locale),
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: displayName },
+  ]}
+  extraJsonLd={[software, faqPage]}
 >
-  <Fragment slot="head">
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(softwareAppJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(breadcrumbJsonLd)}
-    />
-    <script
-      is:inline
-      type="application/ld+json"
-      set:html={JSON.stringify(faqJsonLd)}
-    />
-  </Fragment>
 
   <ModelHeroSection
     displayName={displayName}

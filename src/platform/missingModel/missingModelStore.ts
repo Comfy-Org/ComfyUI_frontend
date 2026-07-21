@@ -241,12 +241,15 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     return error instanceof Error && error.name === 'AbortError'
   }
 
-  async function refreshMissingModels() {
+  async function refreshMissingModels(options: { reloadDefs?: boolean } = {}) {
     if (isRefreshingMissingModels.value) return
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({ silent: true })
+      await app.refreshMissingModels({
+        silent: true,
+        reloadDefs: options.reloadDefs
+      })
     } catch (error) {
       if (isAbortError(error)) return
 
