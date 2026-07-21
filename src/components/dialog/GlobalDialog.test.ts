@@ -32,6 +32,9 @@ const Body = defineComponent({
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 const ClosedNonModalDialog = defineComponent({
   name: 'ClosedNonModalDialog',
   setup: () => () =>
@@ -358,6 +361,82 @@ describe('GlobalDialog Reka overlay scrim', () => {
     await waitFor(() =>
       expect(store.isDialogOpen('reka-scrim-dismiss')).toBe(false)
     )
+  })
+})
+
+describe('GlobalDialog Reka focus-outside binding', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  // Reka's DismissableLayer fires focus-outside off a real focus transition
+  // (blur inside the layer, then focusin on the new target), so drive the
+  // mounted binding by moving focus to a fresh element outside the dialog
+  // rather than dispatching a synthetic event.
+  async function moveFocusToPlainElementOutside() {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    return () => outside.remove()
+  }
+
+  it('dismisses on focus-outside by default', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-default',
+      title: 'Focus dismisses',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka', modal: false }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      await waitFor(() =>
+        expect(store.isDialogOpen('focus-default')).toBe(false)
+      )
+    } finally {
+      removeOutside()
+    }
+  })
+
+  it('does not dismiss on focus-outside when dismissOnFocusOutside is false', async () => {
+    // Exercises GlobalDialog's own template wiring
+    // `@focus-outside="(e) => onRekaFocusOutside(e, item.dialogComponentProps)"`
+    // through a mounted dialog — the direct `onRekaFocusOutside` unit test can't
+    // catch a regression that drops the props argument here. The positive
+    // control above proves the focus-outside path really fires, so this staying
+    // open isolates the opt-out flag rather than a dead event.
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-opted-out',
+      title: 'Focus blocked',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        modal: false,
+        dismissOnFocusOutside: false
+      }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      // Drain every pending microtask so a wrongful dismiss lands before we
+      // assert, regardless of how many awaits deep the handler chain runs.
+      await flushPromises()
+      expect(store.isDialogOpen('focus-opted-out')).toBe(true)
+    } finally {
+      removeOutside()
+    }
   })
 })
 
