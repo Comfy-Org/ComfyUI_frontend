@@ -57,6 +57,12 @@ describe('isEmbeddedWebView', () => {
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/120.0.0.0 Mobile/15E148 Safari/604.1'
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
+
+    it('does not flag iPadOS Safari reporting as Macintosh Mobile', () => {
+      const ua =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
   })
 
   describe('social app in-app browsers', () => {
@@ -153,6 +159,13 @@ describe('isEmbeddedWebView', () => {
       vi.stubGlobal('webkit', { messageHandlers: {} })
       const ua =
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+      expect(isEmbeddedWebView(ua)).toBe(true)
+    })
+
+    it('still detects webkit.messageHandlers bridge in a macOS Safari-shaped WKWebView (Mac Catalyst / Electron host)', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
       expect(isEmbeddedWebView(ua)).toBe(true)
     })
 
