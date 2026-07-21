@@ -2441,6 +2441,17 @@
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
+    },
+    "emailVerification": {
+      "genericMessage": "Verify your email to unlock account benefits",
+      "creditsMessage": "Verify your email to receive free credits",
+      "resendButton": "Resend verification email",
+      "dismiss": "Dismiss",
+      "resentSuccess": "Verification email sent",
+      "resentSuccessDetail": "Check your inbox for a link to verify your email.",
+      "resendFailed": "Couldn't send verification email",
+      "resendFailedDetail": "Something went wrong. Please try again in a moment.",
+      "cooldownMessage": "Too many requests. Please wait a moment before trying again."
     }
   },
   "desktopLogin": {
