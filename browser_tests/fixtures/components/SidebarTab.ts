@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-class SidebarTab {
+export class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
 
@@ -93,7 +93,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly searchInput: Locator
   public readonly sidebarContent: Locator
   public readonly allTab: Locator
-  public readonly blueprintsTab: Locator
+  public readonly essentialsTab: Locator
   public readonly sortButton: Locator
   public readonly nodePreview: Locator
 
@@ -101,8 +101,8 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     super(page, 'node-library')
     this.searchInput = page.getByPlaceholder('Search...')
     this.sidebarContent = page.locator('.sidebar-content-container')
-    this.allTab = this.getTab('All')
-    this.blueprintsTab = this.getTab('Blueprints')
+    this.allTab = this.getTab('All nodes')
+    this.essentialsTab = this.getTab('Essentials')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
     this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
@@ -322,6 +322,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
 
+  // --- Panel chrome ---
+  public readonly panelHeader: Locator
+
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
@@ -352,21 +355,13 @@ export class AssetsSidebarTab extends SidebarTab {
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
-    this.selectionFooter = page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
-    this.selectionCountButton = page.getByText(/Assets Selected: \d+/)
-    this.deselectAllButton = page.getByText('Deselect all')
-    this.deleteSelectedButton = page
-      .getByTestId('assets-delete-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
-      .first()
-    this.downloadSelectedButton = page
-      .getByTestId('assets-download-selected')
-      .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
-      .first()
+    this.selectionFooter = page.getByTestId('assets-selection-bar')
+    this.selectionCountButton = page.getByText(/\d+ selected/)
+    this.deselectAllButton = page.getByTestId('assets-deselect-selected')
+    this.deleteSelectedButton = page.getByTestId('assets-delete-selected')
+    this.downloadSelectedButton = page.getByTestId('assets-download-selected')
     this.backToAssetsButton = page.getByText('Back to all assets')
+    this.panelHeader = page.locator('.comfy-vue-side-bar-header')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 type Faq = { id: string; question: string; answer: string }
 
@@ -8,6 +8,31 @@ const { faqs } = defineProps<{
   heading: string
   faqs: readonly Faq[]
 }>()
+
+type AnswerPart = { type: 'text' | 'link'; value: string }
+
+function parseAnswer(answer: string): AnswerPart[] {
+  const urlPattern = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
+  const parts: AnswerPart[] = []
+  let lastIndex = 0
+  for (const match of answer.matchAll(urlPattern)) {
+    const start = match.index ?? 0
+    const url = match[0].replace(/[.,;:]+$/, '')
+    if (start > lastIndex) {
+      parts.push({ type: 'text', value: answer.slice(lastIndex, start) })
+    }
+    parts.push({ type: 'link', value: url })
+    lastIndex = start + url.length
+  }
+  if (lastIndex < answer.length) {
+    parts.push({ type: 'text', value: answer.slice(lastIndex) })
+  }
+  return parts
+}
+
+const parsedFaqs = computed(() =>
+  faqs.map((faq) => ({ ...faq, answerParts: parseAnswer(faq.answer) }))
+)
 
 const expanded = reactive<boolean[]>(faqs.map(() => false))
 
@@ -26,13 +51,13 @@ function toggle(index: number) {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-24 md:px-20 md:py-40">
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div
-        class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 md:top-28 md:w-80 md:py-0"
+        class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-primary-comfy-canvas text-4xl font-light md:text-5xl">
+        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
           {{ heading }}
         </h2>
       </div>
@@ -40,9 +65,9 @@ function toggle(index: number) {
       <!-- Right FAQ list -->
       <div class="flex-1">
         <div
-          v-for="(faq, index) in faqs"
+          v-for="(faq, index) in parsedFaqs"
           :key="faq.id"
-          class="border-primary-comfy-canvas/20 border-b"
+          class="border-b border-primary-comfy-canvas/20"
         >
           <button
             :id="`faq-trigger-${faq.id}`"
@@ -83,8 +108,23 @@ function toggle(index: number) {
             :aria-labelledby="`faq-trigger-${faq.id}`"
             class="pb-6"
           >
-            <p class="text-primary-comfy-canvas/70 text-sm whitespace-pre-line">
-              {{ faq.answer }}
+            <p
+              class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
+            >
+              <template
+                v-for="(part, partIndex) in faq.answerParts"
+                :key="partIndex"
+              >
+                <a
+                  v-if="part.type === 'link'"
+                  :href="part.value"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+                  >{{ part.value }}</a
+                >
+                <template v-else>{{ part.value }}</template>
+              </template>
             </p>
           </section>
         </div>

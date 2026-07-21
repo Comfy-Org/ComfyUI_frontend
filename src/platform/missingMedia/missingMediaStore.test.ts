@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -94,14 +95,6 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaNodeIds.size).toBe(2)
     expect(store.missingMediaNodeIds.has('1')).toBe(true)
     expect(store.missingMediaNodeIds.has('2')).toBe(true)
-  })
-
-  it('hasMissingMediaOnNode checks node presence', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('42', 'photo.png')])
-
-    expect(store.hasMissingMediaOnNode('42')).toBe(true)
-    expect(store.hasMissingMediaOnNode('99')).toBe(false)
   })
 
   it('removeMissingMediaByWidget removes matching node+widget entry', () => {
@@ -296,7 +289,7 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
-    it('preserves candidates with a nullish nodeId (defensive)', () => {
+    it('preserves candidates with a nullish toNodeId(defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
         nodeId: undefined as unknown as string,

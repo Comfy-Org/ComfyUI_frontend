@@ -2,7 +2,7 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -155,7 +155,10 @@ function createInnerPreview(
     () => nodeRef.value?.graph?.rootGraph?.id as UUID | undefined
   )
 
-  const nodeId = computed(() => nodeRef.value?.id as NodeId | undefined)
+  const nodeId = computed(() => {
+    const id = nodeRef.value?.id
+    return id == null ? undefined : id
+  })
 
   const hasExecutionOutput = computed(() => {
     const node = nodeRef.value
@@ -202,7 +205,7 @@ function createInnerPreview(
     const inner = innerGLSLNode
     if (inner) {
       return widgetValueStore.getWidget(
-        widgetId(gId, inner.id as NodeId, 'fragment_shader')
+        widgetId(gId, inner.id, 'fragment_shader')
       )?.value as string | undefined
     }
 
@@ -284,9 +287,7 @@ function createInnerPreview(
     const gId = graphId.value
     if (!gId) return null
 
-    const sizeModeNodeId = innerGLSLNode
-      ? (innerGLSLNode.id as NodeId)
-      : nodeId.value
+    const sizeModeNodeId = innerGLSLNode ? innerGLSLNode.id : nodeId.value
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(

@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "Génère une invite JSON pour le modèle Ideogram 4.",
+    "display_name": "Générer une invite JSON (Ideogram)",
+    "inputs": {
+      "aesthetics": {
+        "name": "esthétique",
+        "tooltip": "Mots-clés esthétiques obligatoires (ex : sombre, cinématographique, désaturé)."
+      },
+      "background": {
+        "name": "arrière-plan",
+        "tooltip": "Description obligatoire de l’arrière-plan ou de l’environnement de l’image."
+      },
+      "color_palette": {
+        "name": "palette_de_couleurs",
+        "tooltip": "Codes couleur hexadécimaux pour orienter les couleurs dominantes de l’image. Jusqu’à 16 entrées."
+      },
+      "element": {
+        "name": "élément",
+        "tooltip": "Éléments d'invite provenant du nœud Créer des boîtes englobantes."
+      },
+      "high_level_description": {
+        "name": "description_de_haut_niveau",
+        "tooltip": "Description optionnelle de l’image en une ou deux phrases. Fortement recommandé."
+      },
+      "lighting": {
+        "name": "éclairage",
+        "tooltip": "Description obligatoire de l’éclairage (ex : heure dorée, contre-jour, ombres dramatiques)."
+      },
+      "medium": {
+        "name": "support",
+        "tooltip": "Type de support obligatoire (ex : photographie, illustration, rendu_3d, peinture, conception_graphique). Lorsque style = photo, choisir photographie."
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "invite",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
     "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
@@ -1123,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues multi-interlocuteurs à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez la/les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores dans le prompt, et incluez les répliques à prononcer. Vous pouvez choisir une voix prédéfinie intégrée, cloner jusqu’à 3 voix à partir de clips de référence (étiquetés @Audio1-3 dans le prompt), ou dériver une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par génération.",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "Volume. 0 = normal, 100 = 2,0x, -50 = 0,5x."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "Décalage de hauteur en demi-tons (-12 à 12)."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "Comment conditionner la voix : « texte uniquement » (tout décrire dans le prompt), « référence audio » (cloner jusqu’à 3 voix, étiquetées @Audio1-3), « référence image » (dériver une voix à partir de l’image d’un personnage), ou « voix prédéfinie » (choisir une voix intégrée qui lit le prompt)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Fréquence d’échantillonnage de sortie en Hz."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "Vitesse de parole. 0 = normal, 100 = 2,0x, -50 = 0,5x."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Décrivez la/les voix, l’émotion, le rythme, l’ambiance, la musique de fond et les effets sonores, et incluez les répliques à prononcer (nommez les personnages dans le texte pour les dialogues). En mode « référence audio », faites référence aux clips connectés par ordre : @Audio1, @Audio2, @Audio3. Maximum 3000 caractères."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "Générez des réponses textuelles avec les modèles Seed 2.0 de ByteDance. Fournissez une invite textuelle et, en option, une ou plusieurs images ou vidéos pour un contexte multimodal.",
     "display_name": "ByteDance Seed",
@@ -1223,14 +1308,8 @@
       "model": {
         "name": "modèle"
       },
-      "model_fail_on_partial": {
-        "name": "échec_sur_partiel"
-      },
       "model_height": {
         "name": "hauteur"
-      },
-      "model_max_images": {
-        "name": "images_max"
       },
       "model_size_preset": {
         "name": "préréglage_taille"
@@ -1245,6 +1324,10 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine à utiliser pour la génération."
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Activez le raisonnement d'optimisation du prompt du modèle (« thinking ») pour une meilleure conformité. Peut augmenter considérablement le temps de génération — notamment sur Seedream 5.0 Pro. Ne peut être désactivé que pour le texte-vers-image (pas lorsque des images de référence sont fournies)."
       },
       "watermark": {
         "name": "filigrane",
@@ -1966,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2190,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "conditionnement_vers"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Conditionnement (Multiplication)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2471,6 +2569,10 @@
         "name": "méthode_fusion",
         "tooltip": "La méthode à utiliser pour fusionner les fenêtres de contexte."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "Liste des indices latents à conserver dans le latent de bruit lui-même pour chaque fenêtre. À utiliser pour les workflows où le contenu de référence (par exemple, une image de départ) se trouve directement dans le latent de bruit plutôt que dans des canaux de conditionnement séparés (par exemple, I2V de type inplace comme LTXV, AnimateDiff). Indépendant de cond_retain_index_list."
+      },
       "model": {
         "name": "modèle",
         "tooltip": "Le modèle auquel appliquer les fenêtres de contexte pendant l'échantillonnage."
@@ -2629,6 +2731,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "Convertir un tableau en chaîne",
+    "inputs": {
+      "array": {
+        "name": "tableau"
+      },
+      "indent": {
+        "name": "indentation",
+        "tooltip": "Espaces par niveau d’indentation. 0 produit une chaîne compacte sur une seule ligne."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "Convertir un dictionnaire en chaîne",
+    "inputs": {
+      "dictionary": {
+        "name": "dictionnaire"
+      },
+      "indent": {
+        "name": "indentation",
+        "tooltip": "Espaces par niveau d’indentation. 0 produit une chaîne compacte sur une seule ligne."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "CosmosImageVersVidéoLatent",
     "inputs": {
@@ -2687,6 +2823,50 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "Dessinez des boîtes englobantes sur une toile. Génère des éléments d’invite Ideogram, des boîtes englobantes en espace pixel et une image d’aperçu.",
+    "display_name": "Créer des boîtes englobantes",
+    "inputs": {
+      "background": {
+        "name": "arrière-plan",
+        "tooltip": "Image optionnelle utilisée comme arrière-plan sur la toile et dans l’aperçu."
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Boîtes englobantes, éléments ou une chaîne JSON pour initialiser le canvas. Une nouvelle valeur en amont initialise le canvas ; les modifications effectuées sur le canvas sont prioritaires et conservées jusqu'à ce que la valeur en amont change à nouveau."
+      },
+      "editor_state": {
+        "name": "état_éditeur",
+        "tooltip": "Dessinez des boîtes englobantes et définissez pour chaque boîte le type, le texte, la description, la palette de couleurs. Commencez par l’élément d’arrière-plan et terminez par le premier plan."
+      },
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Hauteur de la toile et de la grille de pixels pour les boîtes englobantes."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "État interne géré par le canvas : la dernière valeur bboxes en amont qui l'a initialisé. Laissez vide pour réinitialiser le canvas à partir de l'entrée bboxes lors de la prochaine exécution."
+      },
+      "width": {
+        "name": "largeur",
+        "tooltip": "Largeur de la toile et de la grille de pixels pour les boîtes englobantes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "aperçu",
+        "tooltip": null
+      },
+      "1": {
+        "name": "boîtes_englobantes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "éléments",
         "tooltip": null
       }
     }
@@ -5079,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "Générez une vidéo avec audio à partir d’un prompt texte en utilisant le modèle Gemini Omni Flash de Google. Vous pouvez fournir des images et/ou vidéos de référence pour guider ou éditer le résultat. Décrivez la durée souhaitée (3-10s) et le format d’image (16:9 ou 9:16) directement dans le prompt.",
+    "display_name": "Google Gemini Omni (Vidéo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle vidéo Gemini utilisé pour générer la vidéo."
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6045,94 +6259,6 @@
       },
       "width": {
         "name": "largeur"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V1.\n\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Le format d'image pour la génération."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Déterminer si MagicPrompt doit être utilisé lors de la génération"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description de ce qu'il faut exclure de l'image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite pour la génération d'image"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V2.\n\nLes liens vers les images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Le format d'image pour la génération. Ignoré si la résolution n'est pas définie sur AUTO."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Déterminer si MagicPrompt doit être utilisé lors de la génération"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description de ce qu'il faut exclure de l'image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Invite pour la génération d'image"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "La résolution pour la génération d'image. Si elle n'est pas définie sur AUTO, cela remplace le paramètre aspect_ratio."
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "Type de style pour la génération (V2 uniquement)"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Activer le mode turbo (génération plus rapide, qualité potentiellement inférieure)"
       }
     },
     "outputs": {
@@ -8324,6 +8450,57 @@
       }
     }
   },
+  "LTXVContextWindows": {
+    "description": "Définir les fenêtres de contexte pour les modèles de type LTXV.",
+    "display_name": "Fenêtres de contexte LTXV",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Détermine si la boucle de la fenêtre de contexte doit être fermée ; applicable uniquement aux planifications en boucle."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "La longueur de la fenêtre de contexte en images réelles. Doit être 8*n + 1."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "Le recouvrement de la fenêtre de contexte en images réelles."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Algorithme de planification dépendant de l'étape pour les fenêtres de contexte."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "Le pas de la fenêtre de contexte ; applicable uniquement aux planifications uniformes."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Appliquer ou non le mélange de bruit FreeNoise, améliore la fusion des fenêtres."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "La méthode à utiliser pour fusionner les fenêtres de contexte."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle auquel appliquer les fenêtres de contexte pendant l'échantillonnage."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Conserver la première frame latente dans chaque fenêtre de contexte (peut aider à garder la référence initiale)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Séparer ou non les multiples conditionnements (créés par ConditionCombine) dans chaque fenêtre selon l'indice de région."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle avec fenêtres de contexte appliquées pendant l'échantillonnage."
+      }
+    }
+  },
   "LTXVCropGuides": {
     "display_name": "LTXVCropGuides",
     "inputs": {
@@ -9084,6 +9261,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "Charger 3D (Avancé)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "ChargerAudio",
     "inputs": {
@@ -9747,6 +9963,262 @@
       }
     }
   },
+  "LumaRay32ExtendVideoNode": {
+    "description": "Prolongez une génération Ray 3.2 précédente vers l’avant (continuer après) ou vers l’arrière (ajouter avant). Connectez la sortie generation_id d’un nœud Luma Ray 3.2 précédent. Les extensions durent toujours 5 secondes.",
+    "display_name": "Luma Ray 3.2 Extension Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Avant continue après le clip précédent ; arrière est ajouté avant celui-ci."
+      },
+      "direction_loop": {
+        "name": "boucle"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour le nouveau contenu."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "generation_id de la vidéo Ray 3.2 précédente à prolonger. Connectez la sortie generation_id d’un autre nœud Luma Ray 3.2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Générez une vidéo à partir d’une image de début et/ou de fin en utilisant le modèle Ray 3.2 de Luma. Les générations ancrées sur une image durent toujours 5 secondes.",
+    "display_name": "Luma Ray 3.2 Image vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Dernière image de la vidéo générée."
+      },
+      "loop": {
+        "name": "boucle",
+        "tooltip": "Rendez la vidéo en boucle parfaite. Non disponible si une end_frame est définie."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour la génération vidéo."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Première image de la vidéo générée."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Ancrez une image guide à une position sur la timeline de la vidéo générée par Ray 3.2. Connectez ce nœud à l’entrée 'keyframes' du nœud Luma Ray 3.2 Images Clés vers Vidéo ; enchaînez-en plusieurs via l’entrée optionnelle 'keyframes' ci-dessous.",
+    "display_name": "Luma Ray 3.2 Image Clé",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image guide à placer au moment choisi sur la vidéo générée."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Images clés précédentes optionnelles à enchaîner avec celle-ci."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Comment placer cette image sur la timeline de la vidéo générée."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Générez une vidéo qui interpole une séquence d’images guides, chacune étant ancrée à une position sur la timeline, en utilisant Luma Ray 3.2. Construisez la séquence avec des nœuds d’images clés Luma Ray 3.2 (au moins 2).",
+    "display_name": "Luma Ray 3.2 : Images clés en vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "keyframes": {
+        "name": "images clés",
+        "tooltip": "Séquence d’images clés provenant des nœuds d’images clés Luma Ray 3.2 (au moins 2)."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour la génération de la vidéo."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "identifiant_génération",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Générez une vidéo à partir d’une invite textuelle en utilisant le modèle Ray 3.2 de Luma.",
+    "display_name": "Luma Ray 3.2 : Texte en vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "loop": {
+        "name": "boucle",
+        "tooltip": "Rend la vidéo en boucle parfaite. Disponible uniquement pour une durée de 5s."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour la génération de la vidéo."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "identifiant_génération",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Re-générez une vidéo existante avec une nouvelle invite en utilisant Luma Ray 3.2 (restyliser, rééclairer, ajouter ou supprimer des éléments) tout en conservant le mouvement original. Vidéo source jusqu’à 18 secondes ; la vidéo éditée conserve la durée de la source.",
+    "display_name": "Luma Ray 3.2 : Édition vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrit la modification souhaitée."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "strength": {
+        "name": "intensité",
+        "tooltip": "Degré de préservation ou de réinvention de la source. 'auto' laisse Ray 3.2 choisir ; adhere_* préserve au maximum, flex_* est équilibré, reimagine_* modifie le plus."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo source à éditer. Jusqu’à 18 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "identifiant_génération",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "Modifiez le format d'image d'une vidéo existante, en utilisant Luma Ray 3.2 pour remplir les nouvelles zones exposées de la toile. Vidéo source jusqu'à 30 secondes. Facturation à la seconde de sortie.",
+    "display_name": "Luma Ray 3.2 Recadrage Vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Décrit comment les nouvelles zones exposées de la toile doivent être remplies."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo source à recadrer. Jusqu'à 30 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "identifiant_génération",
+        "tooltip": null
+      }
+    }
+  },
   "LumaReferenceNode": {
     "description": "Contient une image et un poids à utiliser avec le nœud Luma Générer Image.",
     "display_name": "Référence Luma",
@@ -10104,6 +10576,12 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -11672,6 +12150,131 @@
       },
       "vector_in_": {
         "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocs.0."
+      },
+      "blocks_10_": {
+        "name": "blocs.10."
+      },
+      "blocks_11_": {
+        "name": "blocs.11."
+      },
+      "blocks_12_": {
+        "name": "blocs.12."
+      },
+      "blocks_13_": {
+        "name": "blocs.13."
+      },
+      "blocks_14_": {
+        "name": "blocs.14."
+      },
+      "blocks_15_": {
+        "name": "blocs.15."
+      },
+      "blocks_16_": {
+        "name": "blocs.16."
+      },
+      "blocks_17_": {
+        "name": "blocs.17."
+      },
+      "blocks_18_": {
+        "name": "blocs.18."
+      },
+      "blocks_19_": {
+        "name": "blocs.19."
+      },
+      "blocks_1_": {
+        "name": "blocs.1."
+      },
+      "blocks_20_": {
+        "name": "blocs.20."
+      },
+      "blocks_21_": {
+        "name": "blocs.21."
+      },
+      "blocks_22_": {
+        "name": "blocs.22."
+      },
+      "blocks_23_": {
+        "name": "blocs.23."
+      },
+      "blocks_24_": {
+        "name": "blocs.24."
+      },
+      "blocks_25_": {
+        "name": "blocs.25."
+      },
+      "blocks_26_": {
+        "name": "blocs.26."
+      },
+      "blocks_27_": {
+        "name": "blocs.27."
+      },
+      "blocks_2_": {
+        "name": "blocs.2."
+      },
+      "blocks_3_": {
+        "name": "blocs.3."
+      },
+      "blocks_4_": {
+        "name": "blocs.4."
+      },
+      "blocks_5_": {
+        "name": "blocs.5."
+      },
+      "blocks_6_": {
+        "name": "blocs.6."
+      },
+      "blocks_7_": {
+        "name": "blocs.7."
+      },
+      "blocks_8_": {
+        "name": "blocs.8."
+      },
+      "blocks_9_": {
+        "name": "blocs.9."
+      },
+      "first_": {
+        "name": "premier."
+      },
+      "last_": {
+        "name": "dernier."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -13988,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu 3D",
     "inputs": {
       "bg_image": {
@@ -14006,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "Prévisualisez un fichier de modèle 3D sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu 3D (Avancé)",
     "inputs": {
       "camera_info": {
@@ -14052,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "Prévisualisez n'importe quelle valeur d'entrée sous forme de texte.",
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "Aperçu"
-      },
-      "preview_text": {
-        "name": "Aperçu"
-      },
+      "preview_mode": {},
+      "preview_text": {},
       "source": {
         "name": "source"
       }
     }
   },
   "PreviewAudio": {
+    "description": "Prévisualisez l'audio sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "AperçuAudio",
     "inputs": {
       "audio": {
@@ -14075,9 +14677,16 @@
       "audioUI": {
         "name": "audioUI"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
+    "description": "Prévisualisez un fichier 3D gaussian splat sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu Splat",
     "inputs": {
       "camera_info": {
@@ -14130,9 +14739,15 @@
       "images": {
         "name": "images"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "PreviewPointCloud": {
+    "description": "Prévisualisez un fichier 3D de nuage de points sans l'enregistrer dans le répertoire de sortie ComfyUI.",
     "display_name": "Aperçu Nuage de Points",
     "inputs": {
       "camera_info": {
@@ -16910,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Enregistrer 3D (Avancé)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Fichier de modèle 3D provenant d'un nœud 3D en amont."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
     "inputs": {
@@ -16924,6 +17588,12 @@
       },
       "images": {
         "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -16948,6 +17618,12 @@
       "quality": {
         "name": "qualité"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16961,6 +17637,12 @@
       },
       "filename_prefix": {
         "name": "préfixe_du_nom_de_fichier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16983,6 +17665,12 @@
         "name": "format",
         "tooltip": "Le format de fichier dans lequel enregistrer l’audio."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16999,6 +17687,12 @@
       },
       "quality": {
         "name": "qualité"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -17017,6 +17711,12 @@
       "quality": {
         "name": "qualité"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveGLB": {
@@ -17034,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Enregistrer Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Un fichier 3D gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "Enregistre les images d'entrée dans votre répertoire de sortie ComfyUI.",
     "display_name": "Enregistrer Image",
@@ -17045,6 +17794,11 @@
       "images": {
         "name": "images",
         "tooltip": "Les images à enregistrer."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -17069,6 +17823,12 @@
       "images": {
         "name": "images",
         "tooltip": "Les images à enregistrer."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17137,6 +17897,11 @@
       "samples": {
         "name": "échantillons"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "échantillons"
+      }
     }
   },
   "SaveLoRA": {
@@ -17156,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Enregistrer le nuage de points",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Fichier nuage de points (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Enregistrer les fichiers SVG sur le disque.",
     "display_name": "NoeudEnregistrerSVG",
@@ -17166,6 +17980,35 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "Enregistrer le contenu texte dans un fichier du répertoire de sortie.",
+    "display_name": "Enregistrer le texte",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
       }
     }
   },
@@ -17211,6 +18054,12 @@
         "name": "vidéo",
         "tooltip": "La vidéo à enregistrer."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéo",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17232,6 +18081,12 @@
       "images": {
         "name": "images",
         "tooltip": "Les images RGBA sont enregistrées avec leur canal alpha comme transparence (codec vp9 uniquement)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17264,6 +18119,134 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "Graine",
+    "inputs": {
+      "fixed": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "graine",
+        "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "Générer le conditionnement positif/négatif SeedVR2 à partir d'un latent VAE.",
+    "display_name": "Appliquer le conditionnement SeedVR2",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle SeedVR2."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Le conditionnement positif pour l'échantillonnage."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Le conditionnement négatif pour l'échantillonnage."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "Aligne l’image générée avec l’image redimensionnée d’origine et applique une correction des couleurs.",
+    "display_name": "Post-traitement de la sortie SeedVR2",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Méthode pour faire correspondre les couleurs de l’image générée à l’image d’origine. lab : transfert de couleur dans l’espace CIELAB, préservant les détails (le plus fidèle). wavelet : transfert des couleurs basses fréquences, en conservant les détails haute fréquence suréchantillonnés. adain : correspondance moyenne/écart-type par canal (le plus rapide, teinte globale). none : pas de transfert de couleur (alignement géométrique uniquement)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "L’image générée à traiter."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "L’image redimensionnée d’origine avant prétraitement, utilisée comme référence."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "L’image alignée et corrigée en couleur."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "Ajoute un remplissage à une image redimensionnée pour le modèle SeedVR2. Le canal alpha est supprimé. Le nœud Post-traitement SeedVR2 réapplique le canal alpha à partir de l’image redimensionnée d’origine.",
+    "display_name": "Prétraitement de l’entrée SeedVR2",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "L’image redimensionnée à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "L’image rembourrée pour l’encodage VAE."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "Découpe un latent vidéo SeedVR2 en segments temporels qui se chevauchent, suffisamment petits pour être traités un à un dans la VRAM. Les sorties latentes sont connectées à la fois à Appliquer le conditionnement SeedVR2 et à l’entrée latente du sampler, avant de les recombiner avec Fusionner les latents SeedVR2.",
+    "display_name": "Découper le latent SeedVR2",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = utilise exactement frames_per_chunk ; auto = prédit le plus grand segment possible selon la VRAM disponible."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent SeedVR2 encodé par VAE à découper."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Images latentes partagées entre segments adjacents et fondues lors de la fusion ; 0 = pas de chevauchement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Les segments temporels dans l’ordre de la séquence."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "Le chevauchement effectif d’images latentes entre segments adjacents, pour Fusionner les latents SeedVR2."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "Recombine les segments temporels latents SeedVR2 échantillonnés en un seul latent, en fondant chaque chevauchement avec une fenêtre de Hann dimensionnée par le temporal_overlap issu de Découper le latent SeedVR2.",
+    "display_name": "Fusionner les latents SeedVR2",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "Les segments temporels échantillonnés dans l’ordre de la séquence."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "La sortie temporal_overlap de Découper le latent SeedVR2. 0 = simple concaténation."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "Le latent recombiné sur toute la durée."
       }
     }
   },
@@ -17779,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
-    "display_name": "Restauration audio Stability AI",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "L'audio doit durer entre 6 et 190 secondes."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "mask_end": {
-        "name": "fin_masque"
-      },
-      "mask_start": {
-        "name": "début_masque"
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "Transforme des échantillons audio existants en nouvelles compositions de haute qualité à l'aide d'instructions textuelles.",
-    "display_name": "Stability AI Audio vers Audio",
-    "inputs": {
-      "audio": {
-        "name": "audio",
-        "tooltip": "L'audio doit durer entre 6 et 190 secondes."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "consigne"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      },
-      "strength": {
-        "name": "intensité",
-        "tooltip": "Ce paramètre contrôle l'influence du paramètre audio sur l'audio généré."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "Génère des images de manière synchrone à partir d'un prompt et d'une résolution.",
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapport d’aspect de l’image générée."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "À quel point le processus de diffusion suit strictement le texte du prompt (des valeurs plus élevées rapprochent l’image de votre prompt)."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Dénuagement de l’image d’entrée ; 0,0 donne une image identique à l’entrée, 1,0 équivaut à ne pas fournir d’image du tout."
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Il s’agit d’une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif qui définit clairement les éléments, les couleurs et les sujets donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Style optionnel souhaité pour l’image générée."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "Génère des images de manière synchrone à partir d'un prompt et d'une résolution.",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapport d'aspect de l'image générée."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Dénuage de l'image d'entrée ; 0.0 donne une image identique à l'entrée, 1.0 comme si aucune image n'avait été fournie."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Un texte décrivant ce que vous ne souhaitez pas voir dans l'image générée. Il s'agit d'une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l'image générée. Un prompt fort et descriptif qui définit clairement les éléments, les couleurs et les sujets donnera de meilleurs résultats. Pour contrôler le poids d'un mot donné, utilisez le format `(mot:poids)`, où `mot` est le mot dont vous souhaitez contrôler le poids et `poids` est une valeur entre 0 et 1. Par exemple : `Le ciel était d'un (bleu:0.3) vif et (vert:0.8)` indiquerait un ciel bleu et vert, mais plus vert que bleu."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Style souhaité optionnel de l'image générée."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "Génère de la musique et des effets sonores de haute qualité à partir de descriptions textuelles.",
-    "display_name": "Stability AI Texte vers Audio",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée",
-        "tooltip": "Contrôle la durée en secondes de l'audio généré."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "consigne"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour la génération."
-      },
-      "steps": {
-        "name": "étapes",
-        "tooltip": "Contrôle le nombre d'étapes d'échantillonnage."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "Agrandit l’image avec des modifications minimales jusqu’à une résolution 4K.",
-    "display_name": "Stability AI Upscale Conservateur",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "creativity": {
-        "name": "créativité",
-        "tooltip": "Contrôle la probabilité de créer des détails supplémentaires non fortement conditionnés par l’image initiale."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "prompt négatif",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Il s’agit d’une fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif, définissant clairement les éléments, couleurs et sujets, donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "La graine aléatoire utilisée pour générer le bruit."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "Agrandir l’image avec des modifications minimales jusqu’à une résolution 4K.",
-    "display_name": "Stability AI Upscale Creative",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "creativity": {
-        "name": "créativité",
-        "tooltip": "Contrôle la probabilité de créer des détails supplémentaires non fortement conditionnés par l’image initiale."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "prompt_négatif",
-        "tooltip": "Mots-clés de ce que vous ne souhaitez pas voir dans l’image générée. Fonctionnalité avancée."
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Ce que vous souhaitez voir dans l’image générée. Un prompt fort et descriptif, définissant clairement les éléments, couleurs et sujets, donnera de meilleurs résultats."
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
-      },
-      "style_preset": {
-        "name": "style_prédéfini",
-        "tooltip": "Style souhaité de l’image générée (optionnel)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "Agrandit rapidement une image via un appel à l’API Stability jusqu’à 4x sa taille d’origine ; destiné à l’agrandissement d’images de faible qualité ou compressées.",
-    "display_name": "Stability AI Agrandissement Rapide",
-    "inputs": {
-      "image": {
-        "name": "image"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -18436,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "nom_du_modèle_de_style"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "Re-synchronisez le mouvement de la bouche dans une vidéo avec un nouvel audio de parole grâce à sync.so. Gère automatiquement les gros plans, les profils et les obstructions tout en préservant l'expression du locuteur. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Lip Sync",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole auquel synchroniser la bouche."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so."
+      },
+      "model_speaker_frame": {
+        "name": "image_locuteur"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "model_sync_mode": {
+        "name": "mode_sync"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Séquence du locuteur à resynchroniser. Jusqu'à 4K (4096x2160) ; un taux d'images constant de 24/25/30 fps est optimal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "Animez un portrait fixe en une vidéo parlante pilotée par un audio de parole, grâce au modèle sync-3 de sync.so. La durée de sortie correspond à celle de l'audio. Le coût dépend de la durée de la sortie.",
+    "display_name": "sync.so Talking Image",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio de parole pilotant la vidéo parlante ; la durée de sortie correspond à celle-ci. Chaînez ici n'importe quel nœud TTS pour animer à partir d'un texte."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une seule image avec un visage clairement visible, jusqu'à 4K (4096x2160)."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle de génération sync.so. L'entrée image est exclusive à sync-3."
+      },
+      "model_auto_downscale": {
+        "name": "auto_redimensionnement"
+      },
+      "model_speaker_selection": {
+        "name": "sélection_locuteur"
+      },
+      "model_speaker_x": {
+        "name": "locuteur_x"
+      },
+      "model_speaker_y": {
+        "name": "locuteur_y"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Indication optionnelle sur la façon dont le portrait prend vie, par exemple « faire sourire le sujet et regarder la caméra ». Laissez vide pour un mouvement naturel de la parole."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19069,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "Superposez du texte sur une image ou un lot d’images.",
+    "display_name": "Superposer du texte",
+    "inputs": {
+      "align": {
+        "name": "alignement"
+      },
+      "color": {
+        "name": "couleur",
+        "tooltip": "Couleur du texte."
+      },
+      "font_size": {
+        "name": "taille_de_police",
+        "tooltip": "Taille de la police en pourcentage de la hauteur de l’image."
+      },
+      "images": {
+        "name": "images"
+      },
+      "outline": {
+        "name": "contour",
+        "tooltip": "Dessiner un contour noir autour du texte."
+      },
+      "position": {
+        "name": "position"
+      },
+      "text": {
+        "name": "texte"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
         "tooltip": null
       }
     }
@@ -21935,6 +22758,14 @@
       "model": {
         "name": "modèle",
         "tooltip": "Le modèle auquel appliquer les fenêtres de contexte pendant l'échantillonnage."
+      },
+      "retain_first_frame": {
+        "name": "conserver_première_image",
+        "tooltip": "Conserver la première image I2V dans chaque fenêtre de contexte (peut aider à garder la référence initiale)."
+      },
+      "split_conds_to_windows": {
+        "name": "diviser_conditions_fenêtres",
+        "tooltip": "Indique s'il faut répartir plusieurs conditionnements (créés par ConditionCombine) dans chaque fenêtre selon l'index de région."
       }
     },
     "outputs": {

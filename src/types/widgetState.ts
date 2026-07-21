@@ -1,8 +1,8 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
 
 export interface WidgetState<
   TValue = unknown,

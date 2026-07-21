@@ -37,7 +37,7 @@
         <Message v-if="userIsInChina" severity="warn" class="mb-4">
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
-        <SignUpForm v-else @submit="signUpWithEmail" />
+        <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
       <!-- Divider -->
@@ -126,7 +126,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy"
+          href="https://www.comfy.org/privacy-policy"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -206,9 +206,21 @@ const signInWithEmail = async (values: SignInData) => {
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
+
+const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      turnstileToken
+    )
+  ) {
     onSuccess()
+  } else {
+    // Signup failed while the form is still mounted: re-arm the single-use
+    // Turnstile token so the next attempt sends a fresh one.
+    signUpForm.value?.resetTurnstile()
   }
 }
 

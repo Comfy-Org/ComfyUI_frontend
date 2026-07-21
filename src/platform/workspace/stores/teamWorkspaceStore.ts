@@ -8,6 +8,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
+  BillingRail,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
@@ -28,7 +29,6 @@ export interface WorkspaceMember {
 export interface PendingInvite {
   id: string
   email: string
-  token: string
   inviteDate: Date
   expiryDate: Date
 }
@@ -60,7 +60,6 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
   return {
     id: invite.id,
     email: invite.email,
-    token: invite.token,
     inviteDate: new Date(invite.invited_at),
     expiryDate: new Date(invite.expires_at)
   }
@@ -105,8 +104,16 @@ function setLastWorkspaceId(workspaceId: string): void {
   }
 }
 
+function clearLastWorkspaceId(): void {
+  try {
+    localStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
+  } catch {
+    console.warn('Failed to clear last workspace ID from localStorage')
+  }
+}
+
 const MAX_OWNED_WORKSPACES = 10
-const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -114,6 +121,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const activeWorkspaceId = ref<string | null>(null)
+  const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
   const isCreating = ref(false)
@@ -133,6 +141,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.type === 'personal'
   )
 
+  const activeWorkspaceBillingRail = computed(() => {
+    const workspaceId = activeWorkspaceId.value
+    return workspaceId
+      ? (billingRailByWorkspaceId.value[workspaceId] ?? null)
+      : null
+  })
+
   const sharedWorkspaces = computed(() =>
     workspaces.value.filter((w) => w.type !== 'personal')
   )
@@ -149,16 +164,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.members ?? []
   )
 
-  // True when the current user is the active workspace's original owner,
-  // resolved from the self-row of the loaded members list. Matches by email
-  // (the stable current-user join key; member.id is a cloud user id, not the
-  // Firebase uid). Fails closed when members are not loaded or no self-row
-  // matches, so lifecycle gating stays hidden until the real signal arrives.
+  // The active workspace's original owner (creator). Prefers the
+  // `is_original_owner` flag; without it, falls back to the earliest-joined
+  // owner — never a plain member, who must stay role-changeable.
+  const originalOwnerId = computed<string | null>(() => {
+    const flagged = members.value.find((m) => m.isOriginalOwner)
+    if (flagged) return flagged.id
+    const owners = members.value.filter((m) => m.role === 'owner')
+    if (owners.length === 0) return null
+    return owners.reduce((earliest, m) =>
+      m.joinDate < earliest.joinDate ? m : earliest
+    ).id
+  })
+
+  // True when the current user is that original owner. Single-sourced from
+  // `originalOwnerId` so the two creator signals can never disagree. Matches the
+  // self-row by email (the stable current-user join key; member.id is a cloud
+  // user id, not the Firebase uid) and fails closed until members load.
   const isCurrentUserOriginalOwner = computed(() => {
     const email = useCurrentUser().userEmail.value?.toLowerCase()
     if (!email) return false
     const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
-    return selfRow?.isOriginalOwner ?? false
+    return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
   const pendingInvites = computed<PendingInvite[]>(
@@ -204,6 +231,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   function updateActiveWorkspace(updates: Partial<WorkspaceState>) {
     if (!activeWorkspaceId.value) return
     updateWorkspace(activeWorkspaceId.value, updates)
+  }
+
+  function setWorkspaceBillingRail(
+    workspaceId: string,
+    billingRail: BillingRail
+  ) {
+    billingRailByWorkspaceId.value = {
+      ...billingRailByWorkspaceId.value,
+      [workspaceId]: billingRail
+    }
   }
 
   /**
@@ -353,6 +390,20 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Drop a revoked/deleted active workspace and reload so init falls back to the
+   * personal workspace. Skips the personal workspace to avoid a reload loop.
+   */
+  function forgetRevokedActiveWorkspace(workspaceId: string): void {
+    if (activeWorkspaceId.value !== workspaceId) return
+
+    const revoked = workspaces.value.find((w) => w.id === workspaceId)
+    if (revoked?.type === 'personal') return
+
+    clearLastWorkspaceId()
+    window.location.reload()
+  }
+
+  /**
    * Switch to a different workspace.
    * Clears workspace context and reloads the page.
    */
@@ -483,25 +534,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     await renameWorkspace(activeWorkspaceId.value, name)
   }
 
-  /**
-   * Leave the current workspace.
-   * Switches to personal workspace after leaving.
-   */
   async function leaveWorkspace(): Promise<void> {
     const current = activeWorkspace.value
-    if (!current || current.type === 'personal') {
-      throw new Error('Cannot leave personal workspace')
-    }
+    if (!current) throw new Error('No active workspace')
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     await workspaceApi.leave()
 
-    // Go to personal workspace
-    const personal = personalWorkspace.value
+    const personal = workspaces.value.find(
+      (workspace) =>
+        workspace.type === 'personal' && workspace.id !== current.id
+    )
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
+    } else {
+      clearLastWorkspaceId()
     }
     window.location.reload()
     // Code after this won't run (page reloads)
@@ -514,7 +563,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
@@ -522,20 +570,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
-  // Tracks which team workspaces have already loaded their members so the
+  // Tracks which workspaces have already loaded their members so the
   // lifecycle gate resolves without redundant or duplicate fetches.
   const loadedMemberWorkspaceIds = new Set<string>()
   let inFlightMembersWorkspaceId: string | null = null
 
   /**
-   * Load the active team workspace's members once. No-ops for personal or
-   * already-loaded workspaces and dedupes concurrent calls. A failed request is
-   * logged and leaves the workspace unloaded so a later call retries.
+   * Load the active workspace's members once. No-ops for already-loaded
+   * workspaces and dedupes concurrent calls. A failed request is logged and
+   * leaves the workspace unloaded so a later call retries.
    */
   async function ensureMembersLoaded(): Promise<void> {
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return
-    if (activeWorkspace.value?.type === 'personal') return
     if (loadedMemberWorkspaceIds.has(workspaceId)) return
     if (inFlightMembersWorkspaceId === workspaceId) return
 
@@ -566,11 +613,37 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Change a member's role in the current workspace.
+   */
+  async function changeMemberRole(
+    userId: string,
+    role: WorkspaceMember['role']
+  ): Promise<void> {
+    if (
+      activeWorkspace.value?.type === 'personal' &&
+      userId === originalOwnerId.value
+    ) {
+      throw new Error("Cannot change the workspace creator's role")
+    }
+    // Only the role changes; merge it onto the existing row rather than trusting
+    // the PATCH response to echo a full Member (a 204/partial body would
+    // otherwise drop joined_at / is_original_owner).
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
     if (!activeWorkspaceId.value) return []
-    if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
@@ -608,6 +681,40 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
+  const resendingInviteIds = new Set<string>()
+
+  /**
+   * Resend a pending invite by issuing a fresh one before revoking the old.
+   * Create-first so a failed resend never destroys the original invite. If the
+   * revoke fails, the store is resynced (so the leftover original surfaces) and
+   * the error is rethrown so the caller can report the partial failure rather
+   * than show success over two live invites for the same email.
+   */
+  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    if (resendingInviteIds.has(inviteId)) {
+      throw new Error('Invite resend already in progress')
+    }
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    resendingInviteIds.add(inviteId)
+    try {
+      const newInvite = await createInvite(invite.email)
+      try {
+        await revokeInvite(inviteId)
+      } catch (error) {
+        await fetchPendingInvites()
+        throw error
+      }
+      return newInvite
+    } finally {
+      resendingInviteIds.delete(inviteId)
+    }
+  }
+
   /**
    * Accept a workspace invite.
    * Returns workspace info so UI can offer "View Workspace" button.
@@ -624,44 +731,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaceId: response.workspace_id,
       workspaceName: response.workspace_name
     }
-  }
-
-  function buildInviteLink(token: string): string {
-    const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
-  }
-
-  /**
-   * Get the invite link for a pending invite.
-   */
-  function getInviteLink(inviteId: string): string | null {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    return invite ? buildInviteLink(invite.token) : null
-  }
-
-  /**
-   * Create an invite link for a given email.
-   */
-  async function createInviteLink(email: string): Promise<string> {
-    const invite = await createInvite(email)
-    return buildInviteLink(invite.token)
-  }
-
-  /**
-   * Copy an invite link to clipboard.
-   */
-  async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
-    const inviteLink = buildInviteLink(invite.token)
-    await navigator.clipboard.writeText(inviteLink)
-    return inviteLink
   }
 
   //TODO: when billing lands update this
@@ -693,12 +762,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     activeWorkspace,
     personalWorkspace,
     isInPersonalWorkspace,
+    activeWorkspaceBillingRail,
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
     members,
     isCurrentUserOriginalOwner,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     workspaceId,
@@ -713,6 +784,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Workspace Actions
     switchWorkspace,
+    forgetRevokedActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
     renameWorkspace,
@@ -723,18 +795,18 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchMembers,
     ensureMembersLoaded,
     removeMember,
+    changeMemberRole,
 
     // Invite Actions
     fetchPendingInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
     acceptInvite,
-    getInviteLink,
-    createInviteLink,
-    copyInviteLink,
 
     // Subscription
     subscribeWorkspace,
-    updateActiveWorkspace
+    updateActiveWorkspace,
+    setWorkspaceBillingRail
   }
 })

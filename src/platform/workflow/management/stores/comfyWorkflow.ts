@@ -2,23 +2,27 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
+import type { WidgetId } from '@/types/widgetId'
 
 export interface InputWidgetConfig {
   height?: number
 }
 
-export type LinearInput = [NodeId, string, InputWidgetConfig?]
+type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
+type LinearOutputNodeId = SerializedNodeId
+export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
 export interface LinearData {
   inputs: LinearInput[]
-  outputs: NodeId[]
+  outputs: LinearOutputNodeId[]
 }
 
 export interface PendingWarnings {

@@ -34,18 +34,16 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     let observedContentType = ''
     let observedBodyLength = 0
 
-    await comfyPage.page.route('**/upload/mask', async (route) => {
+    await comfyPage.page.route('**/upload/image', async (route) => {
       const request = route.request()
-      observedContentType = (await request.headerValue('content-type')) ?? ''
-      observedBodyLength = request.postDataBuffer()?.byteLength ?? 0
+      if (!observedContentType) {
+        observedContentType = (await request.headerValue('content-type')) ?? ''
+        observedBodyLength = request.postDataBuffer()?.byteLength ?? 0
+      }
       await route.fulfill(
         fulfillJson(successResponse('clipspace-mask-123.png'))
       )
     })
-
-    await comfyPage.page.route('**/upload/image', (route) =>
-      route.fulfill(fulfillJson(successResponse('clipspace-painted-123.png')))
-    )
 
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(dialog).toBeHidden()
@@ -69,24 +67,27 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeVisible()
   })
 
-  test('Save failure on partial upload keeps dialog open', async ({
-    comfyPage,
+  test('Reopening the editor after save restores the drawn mask', async ({
     maskEditor
   }) => {
     const dialog = await maskEditor.openDialog()
     await maskEditor.drawStrokeAndExpectPixels(dialog)
+    const savedMask = await maskEditor.getCanvasSnapshot(MASK_CANVAS_INDEX)
 
-    // The saver uploads sequentially: mask layer first, then image layers.
-    // Let the mask upload succeed and the image upload fail to exercise both
-    // endpoints and verify the dialog stays open after a partial failure.
-    let maskUploadHit = false
+    await dialog.getByRole('button', { name: 'Save' }).click()
+    await expect(dialog).toBeHidden()
+
+    await maskEditor.reopenDialog()
+    await expect
+      .poll(() => maskEditor.getCanvasSnapshot(MASK_CANVAS_INDEX))
+      .toBe(savedMask)
+  })
+
+  test('Save failure keeps dialog open', async ({ comfyPage, maskEditor }) => {
+    const dialog = await maskEditor.openDialog()
+    await maskEditor.drawStrokeAndExpectPixels(dialog)
+
     let imageUploadHit = false
-    await comfyPage.page.route('**/upload/mask', (route) => {
-      maskUploadHit = true
-      return route.fulfill(
-        fulfillJson(successResponse('clipspace-mask-999.png'))
-      )
-    })
     await comfyPage.page.route('**/upload/image', (route) => {
       imageUploadHit = true
       return route.fulfill({ status: 500 })
@@ -95,7 +96,6 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const saveButton = dialog.getByRole('button', { name: 'Save' })
     await saveButton.click()
 
-    await expect.poll(() => maskUploadHit).toBe(true)
     await expect.poll(() => imageUploadHit).toBe(true)
     await expect(dialog).toBeVisible()
     await expect(saveButton).toBeVisible()

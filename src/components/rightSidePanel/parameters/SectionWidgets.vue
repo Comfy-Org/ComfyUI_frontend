@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -25,11 +26,12 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
@@ -133,6 +135,7 @@ watchDebounced(
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, 'h-7')
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -149,10 +152,11 @@ function isWidgetShownOnParents(
   const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
     if (source) {
+      const widgetNodeId = widgetNode.id
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
           ? source.nodeId
-          : String(widgetNode.id)
+          : widgetNodeId
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
@@ -160,7 +164,7 @@ function isWidgetShownOnParents(
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: String(widgetNode.id),
+      sourceNodeId: widgetNode.id,
       sourceWidgetName: widget.name
     })
   })
@@ -233,12 +237,49 @@ function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
 
-function setWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+function clearWidgetErrors(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
+  const rootGraph = widgetNode.graph?.rootGraph
+  if (!rootGraph) return
+
+  const executionId = getExecutionIdByNode(rootGraph, widgetNode)
+  if (!executionId) return
+
+  const options = { min: widget.options?.min, max: widget.options?.max }
+  const source = resolvePromotedWidgetSource(rootGraph, widgetNode, widget)
+  if (source?.sourceExecutionId) {
+    executionErrorStore.clearWidgetRelatedErrors(
+      source.sourceExecutionId,
+      source.sourceWidgetName,
+      source.sourceWidgetName,
+      value,
+      options
+    )
+  }
+
+  executionErrorStore.clearWidgetRelatedErrors(
+    executionId,
+    widget.name,
+    widget.name,
+    value,
+    options
+  )
+}
+
+function setWidgetValue(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
   // Store-backed widgets (interior node widgets and promoted subgraph inputs)
   // are addressed by widgetId; writing there keeps the displayed value in sync.
   if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
   widget.value = value
   widget.callback?.(value)
+  clearWidgetErrors(widgetNode, widget, value)
   canvasStore.canvas?.setDirty(true, true)
 }
 
@@ -247,18 +288,26 @@ function handleResetAllWidgets() {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
-      setWidgetValue(widget, defaultValue)
+      setWidgetValue(widgetNode, widget, defaultValue)
     }
   }
 }
 
-function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
+function handleWidgetValueUpdate(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
   if (newValue === undefined) return
-  setWidgetValue(widget, newValue)
+  setWidgetValue(widgetNode, widget, newValue)
 }
 
-function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
-  setWidgetValue(widget, newValue)
+function handleWidgetReset(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
+  setWidgetValue(widgetNode, widget, newValue)
 }
 
 defineExpose({
@@ -354,8 +403,8 @@ defineExpose({
             :show-node-name="showNodeName"
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @update:widget-value="handleWidgetValueUpdate(widget, $event)"
-            @reset-to-default="handleWidgetReset(widget, $event)"
+            @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+            @reset-to-default="handleWidgetReset(node, widget, $event)"
           />
         </TransitionGroup>
       </div>

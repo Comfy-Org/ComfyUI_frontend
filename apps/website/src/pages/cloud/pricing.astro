@@ -2,9 +2,41 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PriceSection from '../../components/pricing/PriceSection.vue'
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
+import { pricingOffers } from '../../config/pricing'
+import { t } from '../../i18n/translations'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  productNode,
+} from '../../utils/jsonLd'
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const productId = jsonLdId(url, 'product')
 ---
 
-<BaseLayout title="Pricing — Comfy Cloud">
+<BaseLayout
+  title="Pricing - Comfy Cloud"
+  mainEntityId={productId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/cloud') },
+    { name: t('breadcrumb.pricing', locale) },
+  ]}
+  extraJsonLd={[
+    productNode({
+      siteUrl,
+      id: productId,
+      name: 'Comfy Cloud',
+      url,
+      offers: pricingOffers(locale),
+    }),
+  ]}
+>
   <PriceSection client:load />
   <WhatsIncludedSection />
 </BaseLayout>

@@ -730,6 +730,49 @@
       }
     }
   },
+  "BuildJsonPromptIdeogram": {
+    "description": "為 Ideogram 4 模型建立 JSON 格式的提示詞。",
+    "display_name": "建立 JSON 提示（Ideogram）",
+    "inputs": {
+      "aesthetics": {
+        "name": "美學",
+        "tooltip": "必填，美學關鍵詞（例如：情緒化、電影感、去飽和）。"
+      },
+      "background": {
+        "name": "背景",
+        "tooltip": "必填，圖像背景或環境的描述。"
+      },
+      "color_palette": {
+        "name": "色板",
+        "tooltip": "主導圖像色彩的十六進位色碼，最多 16 組。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "來自節點 Create Bounding Boxes 的提示元素。"
+      },
+      "high_level_description": {
+        "name": "高階描述",
+        "tooltip": "可選的圖像描述，一至兩句話。強烈建議填寫。"
+      },
+      "lighting": {
+        "name": "光線",
+        "tooltip": "必填，光線描述（例如：黃金時刻、邊緣光、戲劇性陰影）。"
+      },
+      "medium": {
+        "name": "媒材",
+        "tooltip": "必填，媒材類型（例如：攝影、插畫、3d_render、繪畫、平面設計）。當 style = photo 時，請設為攝影。"
+      },
+      "style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1123,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "description": "使用 ByteDance Seed Audio 1.0，從單一提示生成語音、音樂、音效及多角色對話。在提示中描述聲音、情感、氛圍、背景音樂與音效，並包含要說的台詞。可選擇內建預設聲音、從最多 3 個參考 clip（在提示中標記為 @Audio1-3）進行聲音克隆，或從角色圖像推導聲音。每次最多可生成 2 分鐘音訊。",
+    "display_name": "ByteDance Seed Audio 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "音量。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "音高變化（半音，-12 至 12）。"
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "聲音條件設定方式：「僅文字」（所有內容皆於提示中描述）、 「音訊參考」（最多克隆 3 種聲音，標記為 @Audio1-3）、 「圖像參考」（從單一角色圖像推導聲音）、或「預設聲音」（選擇內建命名聲音朗讀提示）。"
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "輸出取樣率（Hz）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "語速。0 = 正常，100 = 2.0 倍，-50 = 0.5 倍。"
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "描述聲音、情感、語速、氛圍、背景音樂與音效，並包含要說的台詞（對話時請直接標註角色名稱）。在「音訊參考」模式下，依順序引用連接的 clip，如 @Audio1、@Audio2、@Audio3。最多 3000 字元。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "description": "使用 ByteDance 的 Seed 2.0 模型生成文字回應。請提供文字提示，並可選擇性地加入一張或多張圖片或影片作為多模態上下文。",
     "display_name": "ByteDance Seed",
@@ -1223,14 +1308,8 @@
       "model": {
         "name": "模型"
       },
-      "model_fail_on_partial": {
-        "name": "部分失敗時終止"
-      },
       "model_height": {
         "name": "高度"
-      },
-      "model_max_images": {
-        "name": "最大圖像數"
       },
       "model_size_preset": {
         "name": "尺寸預設"
@@ -1245,6 +1324,10 @@
       "seed": {
         "name": "種子",
         "tooltip": "用於生成的隨機種子。"
+      },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "啟用模型的提示優化推理（「thinking」），以提升遵循度。可能大幅增加生成時間——特別是在 Seedream 5.0 Pro 上。僅可在文字轉圖像時停用（若有參考圖像則無法停用）。"
       },
       "watermark": {
         "name": "浮水印",
@@ -1966,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2190,6 +2277,17 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "條件（乘法）",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2471,6 +2569,10 @@
         "name": "融合方法",
         "tooltip": "用於融合上下文窗口的方法。"
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "每個視窗中要在 noise latent 本身中保留的 latent 索引列表。適用於參考內容（例如起始圖像）直接存在於 noise latent 中，而不是在單獨的 conditioning channel 中的工作流程（例如 inplace 風格的 I2V，如 LTXV、AnimateDiff）。與 cond_retain_index_list 無關。"
+      },
       "model": {
         "name": "模型",
         "tooltip": "在取樣期間應用上下文窗口的模型。"
@@ -2629,6 +2731,40 @@
       }
     }
   },
+  "ConvertArrayToString": {
+    "display_name": "陣列轉字串",
+    "inputs": {
+      "array": {
+        "name": "陣列"
+      },
+      "indent": {
+        "name": "縮排",
+        "tooltip": "每層縮排的空格數。0 會產生單行緊湊字串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ConvertDictionaryToString": {
+    "display_name": "字典轉字串",
+    "inputs": {
+      "dictionary": {
+        "name": "字典"
+      },
+      "indent": {
+        "name": "縮排",
+        "tooltip": "每層縮排的空格數。0 會產生單行緊湊字串。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CosmosImageToVideoLatent": {
     "display_name": "Cosmos 圖片轉影片潛在編碼",
     "inputs": {
@@ -2687,6 +2823,50 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateBoundingBoxes": {
+    "description": "在畫布上繪製邊界框。輸出 Ideogram 提示元素、像素空間邊界框，以及預覽圖像。",
+    "display_name": "建立邊界框",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "可選，作為畫布及預覽背景的圖像。"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "邊界框、元素，或用於初始化畫布的 JSON 字串。每當上游值變動時會重新初始化畫布；在畫布上的編輯將優先並保留，直到上游值再次變動。"
+      },
+      "editor_state": {
+        "name": "編輯器狀態",
+        "tooltip": "繪製邊界框並設定每個框的類型、文字、描述、色板。請先設定背景元素，最後設定前景元素。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "畫布及邊界框像素網格的高度。"
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "由畫布管理的內部狀態：最後一次初始化畫布的上游 bboxes 值。留空則於下次執行時，從 bboxes 輸入重新初始化畫布。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "畫布及邊界框像素網格的寬度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "預覽",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "元素",
         "tooltip": null
       }
     }
@@ -5079,6 +5259,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，從文字提示生成帶音訊的影片。可選擇提供參考圖像及／或影片以引導或編輯結果。請直接在提示中描述所需長度（3-10 秒）及長寬比（16:9 或 9:16）。",
+    "display_name": "Google Gemini Omni（影片）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成影片的 Gemini 影片模型。"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6045,94 +6259,6 @@
       },
       "width": {
         "name": "寬度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "description": "使用 Ideogram V1 模型同步產生影像。\n\n影像連結僅限時有效；如需保留影像，請務必下載。",
-    "display_name": "Ideogram V1",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述要從影像中排除的內容"
-      },
-      "num_images": {
-        "name": "影像數量"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值"
-      },
-      "turbo": {
-        "name": "加速模式",
-        "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "description": "使用 Ideogram V2 模型同步產生影像。\n\n影像連結僅限時有效；若您想保留影像，請務必下載。",
-    "display_name": "Ideogram V2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "影像生成的長寬比。若解析度未設為自動，則此設定會被忽略。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "magic_prompt_option": {
-        "name": "MagicPrompt 選項",
-        "tooltip": "決定生成時是否使用 MagicPrompt"
-      },
-      "negative_prompt": {
-        "name": "排除提示詞",
-        "tooltip": "描述影像中要排除的內容"
-      },
-      "num_images": {
-        "name": "影像數量"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度",
-        "tooltip": "影像生成的解析度。若未設為自動，將覆蓋長寬比設定。"
-      },
-      "seed": {
-        "name": "種子值"
-      },
-      "style_type": {
-        "name": "風格類型",
-        "tooltip": "生成時的風格類型（僅限 V2）"
-      },
-      "turbo": {
-        "name": "加速模式",
-        "tooltip": "是否啟用加速模式（生成速度更快，但品質可能較低）"
       }
     },
     "outputs": {
@@ -8324,6 +8450,57 @@
       }
     }
   },
+  "LTXVContextWindows": {
+    "description": "為 LTXV 類型模型設定上下文視窗。",
+    "display_name": "LTXV 上下文視窗",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "是否閉合上下文視窗循環；僅適用於循環排程。"
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "上下文視窗的實際幀數長度。必須為 8*n + 1。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "上下文視窗的實際幀數重疊。"
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "上下文視窗的步驟依賴排程演算法。"
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "上下文視窗的步幅；僅適用於均勻排程。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "是否套用 FreeNoise 噪聲洗牌，可提升視窗融合效果。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "用於融合上下文視窗的方法。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "在取樣時要套用上下文視窗的模型。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "在每個上下文視窗中保留第一個 latent 幀（有助於保留初始參考）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根據區域索引將多個 conditioning（由 ConditionCombine 建立）分配到各個視窗。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "在取樣時已套用上下文視窗的模型。"
+      }
+    }
+  },
   "LTXVCropGuides": {
     "display_name": "LTXV 裁剪引導",
     "inputs": {
@@ -9084,6 +9261,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "載入 3D（進階）",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "載入音訊",
     "inputs": {
@@ -9747,6 +9963,262 @@
       }
     }
   },
+  "LumaRay32ExtendVideoNode": {
+    "description": "將先前的 Ray 3.2 生成結果向前（接續之後）或向後（插入之前）延伸。請連接前一個 Luma Ray 3.2 節點的 generation_id 輸出。每次延伸皆為 5 秒。",
+    "display_name": "Luma Ray 3.2 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "Forward 代表接續前一個片段之後；backward 代表插入於其之前。"
+      },
+      "direction_loop": {
+        "name": "loop"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "新內容的文字提示。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；無論種子為何，結果皆為非決定性。"
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "要延伸的前一個 Ray 3.2 影片的 generation_id。請連接另一個 Luma Ray 3.2 節點的 generation_id 輸出。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "使用 Luma 的 Ray 3.2 模型，從起始和/或結束影格產生影片。以圖像為錨點的生成長度皆為 5 秒。",
+    "display_name": "Luma Ray 3.2 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "生成影片的最後一個影格。"
+      },
+      "loop": {
+        "name": "loop",
+        "tooltip": "讓影片無縫循環。若設定 end_frame 則無法使用。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "影片生成的文字提示。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子值；無論種子為何，結果皆為非決定性。"
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "生成影片的第一個影格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "將引導圖像錨定於 Ray 3.2 輸出影片時間軸上的特定位置。請將此節點連接至 Luma Ray 3.2 Keyframes to Video 節點的「keyframes」輸入；可透過下方的「keyframes」選填輸入串接多個關鍵影格。",
+    "display_name": "Luma Ray 3.2 關鍵影格",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要放置於輸出影片指定時刻的引導圖像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可選的較早關鍵影格，與本影格串接。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "將此圖像放置於輸出影片時間軸上的方式。"
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "使用 Luma Ray 3.2，根據一系列導引圖像（每個圖像對應時間軸上的一個位置）進行插值，生成影片。請使用 Luma Ray 3.2 關鍵影格節點建立序列（至少 2 個）。",
+    "display_name": "Luma Ray 3.2 關鍵影格轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "keyframes": {
+        "name": "關鍵影格",
+        "tooltip": "來自 Luma Ray 3.2 關鍵影格節點的關鍵影格序列（至少 2 個）。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於影片生成的文字提示。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定節點是否重新執行的種子；無論種子為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "使用 Luma 的 Ray 3.2 模型，根據文字提示生成影片。",
+    "display_name": "Luma Ray 3.2 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "loop": {
+        "name": "循環",
+        "tooltip": "讓影片無縫循環。僅限 5 秒時長可用。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於影片生成的文字提示。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定節點是否重新執行的種子；無論種子為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "使用 Luma Ray 3.2 以新提示詞重新渲染現有影片（可重新風格化、重新打光、增減元素），同時保留原始動作。來源影片最長 18 秒；編輯後影片長度與來源相同。",
+    "display_name": "Luma Ray 3.2 影片編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述想要的編輯效果。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定節點是否重新執行的種子；無論種子為何，結果皆為非確定性。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "保留原始內容與重新想像的程度。'auto' 由 Ray 3.2 自動選擇；adhere_* 最保留原始內容，flex_* 平衡，reimagine_* 變化最大。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要編輯的來源影片。最長 18 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "更改現有影片的長寬比，使用 Luma Ray 3.2 填補新顯露的畫布區域。來源影片最長 30 秒。依輸出秒數計費。",
+    "display_name": "Luma Ray 3.2 影片重構比例",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "描述新顯露畫布區域應如何填補。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定是否重新執行節點的種子值；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要重構比例的來源影片。最長 30 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
   "LumaReferenceNode": {
     "description": "保存一張圖片及其權重，供 Luma 生成圖片節點使用。",
     "display_name": "Luma 參考",
@@ -10104,6 +10576,12 @@
     "inputs": {
       "mask": {
         "name": "遮罩"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -11672,6 +12150,131 @@
       },
       "vector_in_": {
         "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeKrea2": {
+    "display_name": "ModelMergeKrea2",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "first_": {
+        "name": "first."
+      },
+      "last_": {
+        "name": "last."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "tmlp_": {
+        "name": "tmlp."
+      },
+      "tproj_": {
+        "name": "tproj."
+      },
+      "txtfusion_layerwise_blocks_0_": {
+        "name": "txtfusion.layerwise_blocks.0."
+      },
+      "txtfusion_layerwise_blocks_1_": {
+        "name": "txtfusion.layerwise_blocks.1."
+      },
+      "txtfusion_projector_": {
+        "name": "txtfusion.projector."
+      },
+      "txtfusion_refiner_blocks_0_": {
+        "name": "txtfusion.refiner_blocks.0."
+      },
+      "txtfusion_refiner_blocks_1_": {
+        "name": "txtfusion.refiner_blocks.1."
+      },
+      "txtmlp_": {
+        "name": "txtmlp."
       }
     }
   },
@@ -13988,6 +14591,7 @@
     }
   },
   "Preview3D": {
+    "description": "預覽 3D 模型檔案，無需儲存至 ComfyUI 輸出目錄。",
     "display_name": "3D 預覽",
     "inputs": {
       "bg_image": {
@@ -14006,6 +14610,7 @@
     }
   },
   "Preview3DAdvanced": {
+    "description": "預覽 3D 模型檔案，無需儲存至 ComfyUI 輸出目錄。",
     "display_name": "3D 預覽（進階）",
     "inputs": {
       "camera_info": {
@@ -14052,21 +14657,18 @@
     }
   },
   "PreviewAny": {
+    "description": "將任意輸入值以文字預覽。",
     "display_name": "預覽任意",
     "inputs": {
-      "previewMode": {},
-      "preview_markdown": {
-        "name": "預覽"
-      },
-      "preview_text": {
-        "name": "預覽"
-      },
+      "preview_mode": "預覽模式",
+      "preview_text": {},
       "source": {
         "name": "來源"
       }
     }
   },
   "PreviewAudio": {
+    "description": "預覽音訊，無需儲存至 ComfyUI 輸出目錄。",
     "display_name": "預覽音訊",
     "inputs": {
       "audio": {
@@ -14075,9 +14677,16 @@
       "audioUI": {
         "name": "音訊介面"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
+    "description": "預覽 gaussian splat 3D 檔案，無需儲存至 ComfyUI 輸出目錄。",
     "display_name": "預覽 Splat",
     "inputs": {
       "camera_info": {
@@ -14130,9 +14739,15 @@
       "images": {
         "name": "圖片"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "PreviewPointCloud": {
+    "description": "預覽點雲 3D 檔案，無需儲存至 ComfyUI 輸出目錄。",
     "display_name": "預覽點雲",
     "inputs": {
       "camera_info": {
@@ -16910,6 +17525,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "儲存 3D（進階）",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "SaveAnimatedPNG",
     "inputs": {
@@ -16924,6 +17588,12 @@
       },
       "images": {
         "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -16948,6 +17618,12 @@
       "quality": {
         "name": "品質"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16961,6 +17637,12 @@
       },
       "filename_prefix": {
         "name": "檔名前綴"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16983,6 +17665,12 @@
         "name": "format",
         "tooltip": "儲存音訊的檔案格式。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16999,6 +17687,12 @@
       },
       "quality": {
         "name": "quality"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -17017,6 +17711,12 @@
       "quality": {
         "name": "quality"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveGLB": {
@@ -17034,6 +17734,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "儲存 Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "一個 gaussian splat 3D 檔案。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveImage": {
     "description": "將輸入的圖片儲存到您的 ComfyUI 輸出目錄。",
     "display_name": "儲存圖片",
@@ -17045,6 +17794,11 @@
       "images": {
         "name": "影像",
         "tooltip": "要儲存的圖片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -17069,6 +17823,12 @@
       "images": {
         "name": "影像",
         "tooltip": "要儲存的影像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17137,6 +17897,11 @@
       "samples": {
         "name": "samples"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17156,6 +17921,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "儲存點雲",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "點雲檔案 (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "在磁碟上儲存 SVG 檔案。",
     "display_name": "儲存SVG節點",
@@ -17166,6 +17980,35 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "description": "將文字內容儲存到輸出目錄的檔案中。",
+    "display_name": "儲存文字",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {},
+      "text": {
+        "name": "text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
       }
     }
   },
@@ -17211,6 +18054,12 @@
         "name": "video",
         "tooltip": "要儲存的影片。"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17232,6 +18081,12 @@
       "images": {
         "name": "images",
         "tooltip": "RGBA 影像將以 alpha 通道作為透明度儲存（僅限 vp9 編解碼器）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17264,6 +18119,134 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "SeedNode": {
+    "display_name": "種子",
+    "inputs": {
+      "fixed": {
+        "name": "生成後鎖定"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "種子",
+        "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "description": "從 VAE latent 建立 SeedVR2 正/負 conditioning。",
+    "display_name": "套用 SeedVR2 Conditioning",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "SeedVR2 模型。"
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "用於取樣的正向 conditioning。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "用於取樣的負向 conditioning。"
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "description": "將生成的影像與原始調整尺寸後的影像對齊，並套用色彩校正。",
+    "display_name": "後處理 SeedVR2 輸出",
+    "inputs": {
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "將生成影像色彩匹配到原始影像的方法。lab：在 CIELAB 空間轉換色彩，保留細節（最忠實）。wavelet：轉換低頻色彩，保留升頻後的高頻細節。adain：匹配每通道平均值/標準差（最快，整體色調）。none：跳過色彩轉換（僅幾何對齊）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要處理的生成影像。"
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "預處理前的原始調整尺寸影像，作為參考用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "對齊並色彩校正後的影像。"
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "description": "為 SeedVR2 模型填充調整尺寸後的影像。Alpha 通道會被移除。Post-Process SeedVR2 Output 節點會從原始調整尺寸影像重新套用 Alpha 通道。",
+    "display_name": "預處理 SeedVR2 輸入",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "要處理的調整尺寸影像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "用於 VAE 編碼的填充影像。"
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "description": "將 SeedVR2 影片 latent 分割為重疊的時間區塊，每次僅取一個區塊以適應 VRAM，將 latents 輸出同時連接到 Apply SeedVR2 Conditioning 及取樣器 latent 輸入，最後用 Merge SeedVR2 Latents 合併。",
+    "display_name": "分割 SeedVR2 latent",
+    "inputs": {
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = 精確使用 frames_per_chunk；auto = 預測可容納於 VRAM 的最大區塊。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "要分割的 VAE 編碼 SeedVR2 latent。"
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "相鄰區塊間共享的 latent 幀數，合併時進行交叉淡化；0 代表無重疊。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "依序排列的時間區塊。"
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "相鄰區塊間實際的 latent 幀重疊數，供 Merge SeedVR2 Latents 使用。"
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "description": "將已取樣的 SeedVR2 latent 時間區塊重新組合為一個 latent，並以 Hann 窗函數根據 Split SeedVR2 Latent 輸出的 temporal_overlap 進行交叉淡化。",
+    "display_name": "合併 SeedVR2 latents",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "依序排列的已取樣時間區塊。"
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Split SeedVR2 Latent 的 temporal_overlap 輸出。0 代表直接串接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "重新組合後的完整 latent。"
       }
     }
   },
@@ -17779,293 +18762,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "description": "使用文字指令轉換現有音訊樣本的部分內容。",
-    "display_name": "Stability AI 音訊修補",
-    "inputs": {
-      "audio": {
-        "name": "音訊",
-        "tooltip": "音訊長度必須介於 6 到 190 秒之間。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（秒）。"
-      },
-      "mask_end": {
-        "name": "遮罩結束"
-      },
-      "mask_start": {
-        "name": "遮罩開始"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "步數",
-        "tooltip": "控制取樣步數。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "description": "使用文字指令將現有音訊樣本轉換為新的高品質作品。",
-    "display_name": "Stability AI 音訊轉音訊",
-    "inputs": {
-      "audio": {
-        "name": "音訊",
-        "tooltip": "音訊長度必須介於 6 到 190 秒之間。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（單位：秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "採樣步數",
-        "tooltip": "控制採樣步驟的數量。"
-      },
-      "strength": {
-        "name": "強度",
-        "tooltip": "參數控制音訊參數對生成音訊的影響程度。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "description": "根據提示詞與解析度同步生成圖像。",
-    "display_name": "Stability AI Stable Diffusion 3.5 圖像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "生成圖像的長寬比。"
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "擴散過程對提示詞文本的遵循程度（數值越高，圖像越貼近您的提示詞）"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入圖像的去噪程度；0.0 代表與輸入圖像完全相同，1.0 則如同未提供任何圖像。"
-      },
-      "model": {
-        "name": "model"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出圖像中出現的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "您希望在輸出圖像中看到的內容。明確且具體描述元素、顏色與主題的強力提示詞，將帶來更佳的結果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "可選的圖像風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "description": "根據提示詞與解析度同步生成影像。",
-    "display_name": "Stability AI Stable Image Ultra",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "生成影像的長寬比。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "輸入影像的去噪程度；0.0 代表與輸入影像完全相同，1.0 則如同未提供任何影像。"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "描述您不希望在輸出影像中出現內容的文字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "您希望在輸出影像中看到的內容。強而有力且具體的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。若要控制特定詞語的權重，請使用格式 `(word:weight)`，其中 `word` 是您想控制權重的詞語，`weight` 是介於 0 到 1 之間的數值。例如：`The sky was a crisp (blue:0.3) and (green:0.8)` 代表天空同時有藍色與綠色，但綠色比例高於藍色。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "（選填）希望生成影像的風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "description": "從文字描述生成高品質音樂和音效。",
-    "display_name": "Stability AI 文字轉音訊",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "持續時間",
-        "tooltip": "控制生成音訊的持續時間（單位：秒）。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "用於生成的隨機種子。"
-      },
-      "steps": {
-        "name": "採樣步數",
-        "tooltip": "控制採樣步驟的數量。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "description": "將影像以最小變動放大至 4K 解析度。",
-    "display_name": "Stability AI 保守放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "creativity": {
-        "name": "創意度",
-        "tooltip": "控制產生未受初始影像強烈影響的額外細節的可能性。"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出影像中看到的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "您希望在輸出影像中看到什麼。明確且具描述性的提示詞，能清楚定義元素、顏色與主題，將帶來更佳的結果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "description": "將影像以最小變動放大至 4K 解析度。",
-    "display_name": "Stability AI 創意放大",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "creativity": {
-        "name": "創意度",
-        "tooltip": "控制產生未受初始影像強烈限制的額外細節的可能性。"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "您不希望在輸出影像中出現的關鍵字。這是進階功能。"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "您希望在輸出影像中看到什麼。明確描述元素、顏色與主題的強烈提示詞將帶來更佳效果。"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "用於產生雜訊的隨機種子。"
-      },
-      "style_preset": {
-        "name": "風格預設",
-        "tooltip": "可選擇產生影像的期望風格。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "description": "透過 Stability API 快速將影像放大至原始尺寸的 4 倍；適用於提升低品質或壓縮影像的解析度。",
-    "display_name": "Stability AI 快速放大",
-    "inputs": {
-      "image": {
-        "name": "影像"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade 空白潛在影像",
     "inputs": {
@@ -18436,6 +19132,97 @@
     "inputs": {
       "style_model_name": {
         "name": "style_model_name"
+      }
+    }
+  },
+  "SyncLipSyncNode": {
+    "description": "使用 sync.so 重新同步影片中說話者的嘴型與新的語音音訊。可自動處理特寫、側臉及遮擋，同時保留說話者的表情。費用依輸出時長計算。",
+    "display_name": "sync.so 口型同步",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要同步嘴型的語音音訊。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要重新同步的說話者影片。最高支援 4K (4096x2160)；建議使用恆定幀率 24/25/30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "description": "使用 sync.so 的 sync-3 模型，將靜態肖像圖像動畫化為由語音音訊驅動的說話影片。輸出時長與音訊相同。費用依輸出時長計算。",
+    "display_name": "sync.so 說話肖像",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "驅動說話影片的語音音訊；輸出時長與其一致。可串接任意 TTS 節點，從文字驅動動畫。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "一張清晰可見臉部的單一圖像，最高支援 4K (4096x2160)。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so 生成模型。圖像輸入僅支援 sync-3。"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "可選的肖像動畫指引，例如「讓主角微笑並看向鏡頭」。留空則呈現自然說話動作。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19069,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "description": "在單張或多張圖片上繪製文字覆蓋。",
+    "display_name": "繪製文字覆蓋",
+    "inputs": {
+      "align": {
+        "name": "對齊"
+      },
+      "color": {
+        "name": "顏色",
+        "tooltip": "文字的顏色。"
+      },
+      "font_size": {
+        "name": "字型大小",
+        "tooltip": "字型大小為圖片高度的百分比。"
+      },
+      "images": {
+        "name": "圖片"
+      },
+      "outline": {
+        "name": "外框",
+        "tooltip": "在文字周圍繪製黑色外框。"
+      },
+      "position": {
+        "name": "位置"
+      },
+      "text": {
+        "name": "文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "圖片",
         "tooltip": null
       }
     }
@@ -21935,6 +22758,14 @@
       "model": {
         "name": "模型",
         "tooltip": "在採樣期間應用上下文窗口的模型。"
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "在每個 context window 中保留第一個 I2V 畫格（有助於保留初始參考）。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根據區域索引，將多個條件（由 ConditionCombine 建立）分配到各自的 window。"
       }
     },
     "outputs": {

@@ -1,6 +1,8 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
@@ -10,14 +12,12 @@ interface WorkspacePermissions {
   canViewPendingInvites: boolean
   canInviteMembers: boolean
   canManageInvites: boolean
-  canRemoveMembers: boolean
+  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
-  // Creator-only subscription lifecycle: cancel / reactivate / downgrade.
-  // Any owner has `canManageSubscription` (manage payment, top-up, change
-  // commit); only the original owner gets `canManageSubscriptionLifecycle`.
   canManageSubscriptionLifecycle: boolean
+  canDowngradeToPersonal: boolean
   canTopUp: boolean
 }
 
@@ -26,64 +26,73 @@ interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean
-  showDateColumn: boolean
-  showRoleBadge: boolean
+  showRoleColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
   showEditWorkspaceMenuItem: boolean
-  workspaceMenuAction: 'leave' | 'delete' | null
+  workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  isOriginalOwner: boolean
+  isOriginalOwner: boolean,
+  isOriginalOwnerResolved: boolean,
+  hasActiveWorkspace: boolean,
+  isTeamPlan: boolean
 ): WorkspacePermissions {
+  const canManageBilling = hasActiveWorkspace && role === 'owner'
+  const canLeaveWorkspace =
+    hasActiveWorkspace &&
+    (type === 'personal'
+      ? isTeamPlan &&
+        !isOriginalOwner &&
+        (role === 'member' || isOriginalOwnerResolved)
+      : true)
+  const billingPermissions = {
+    canManageSubscription: canManageBilling,
+    canManageSubscriptionLifecycle: canManageBilling,
+    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
+    canTopUp: canManageBilling
+  }
+
+  if (role === 'member') {
+    return {
+      canViewOtherMembers: true,
+      canViewPendingInvites: false,
+      canInviteMembers: false,
+      canManageInvites: false,
+      canManageMembers: false,
+      canLeaveWorkspace,
+      canAccessWorkspaceMenu: canLeaveWorkspace,
+      ...billingPermissions
+    }
+  }
+
   if (type === 'personal') {
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
       canInviteMembers: false,
       canManageInvites: false,
-      canRemoveMembers: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
-      canManageSubscription: true,
-      // Personal workspace is single-member: the user is the sole owner/creator.
-      canManageSubscriptionLifecycle: true,
-      canTopUp: true
+      canManageMembers: false,
+      canLeaveWorkspace,
+      canAccessWorkspaceMenu: canLeaveWorkspace,
+      ...billingPermissions
     }
   }
 
-  if (role === 'owner') {
-    return {
-      canViewOtherMembers: true,
-      canViewPendingInvites: true,
-      canInviteMembers: true,
-      canManageInvites: true,
-      canRemoveMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: isOriginalOwner,
-      canTopUp: true
-    }
-  }
-
-  // member role
   return {
     canViewOtherMembers: true,
-    canViewPendingInvites: false,
-    canInviteMembers: false,
-    canManageInvites: false,
-    canRemoveMembers: false,
-    canLeaveWorkspace: true,
+    canViewPendingInvites: true,
+    canInviteMembers: true,
+    canManageInvites: true,
+    canManageMembers: true,
+    canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
-    canManageSubscription: false,
-    canManageSubscriptionLifecycle: false,
-    canTopUp: false
+    ...billingPermissions
   }
 }
 
@@ -91,52 +100,48 @@ function getUIConfig(
   type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspaceUIConfig {
-  if (type === 'personal') {
+  if (role === 'member') {
     return {
-      showMembersList: false,
+      showMembersList: true,
       showPendingTab: false,
-      showSearch: false,
-      showDateColumn: false,
-      showRoleBadge: false,
-      membersGridCols: 'grid-cols-1',
+      showSearch: true,
+      showRoleColumn: true,
+      membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-1',
+      headerGridCols: 'grid-cols-[1fr_auto]',
       showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
   }
 
-  if (role === 'owner') {
+  if (type === 'personal') {
     return {
-      showMembersList: true,
-      showPendingTab: true,
-      showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
+      showMembersList: false,
+      showPendingTab: false,
+      showSearch: false,
+      showRoleColumn: false,
+      membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
+      headerGridCols: 'grid-cols-1',
       showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete',
-      workspaceMenuDisabledTooltip:
-        'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+      workspaceMenuAction: null,
+      workspaceMenuDisabledTooltip: null
     }
   }
 
-  // member role
   return {
     showMembersList: true,
-    showPendingTab: false,
+    showPendingTab: true,
     showSearch: true,
-    showDateColumn: true,
-    showRoleBadge: true,
-    membersGridCols: 'grid-cols-[1fr_auto]',
+    showRoleColumn: true,
+    membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-    headerGridCols: 'grid-cols-[1fr_auto]',
-    showEditWorkspaceMenuItem: false,
-    workspaceMenuAction: 'leave',
-    workspaceMenuDisabledTooltip: null
+    headerGridCols: 'grid-cols-[50%_40%_10%]',
+    showEditWorkspaceMenuItem: true,
+    workspaceMenuAction: 'delete',
+    workspaceMenuDisabledTooltip:
+      'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
   }
 }
 
@@ -145,6 +150,10 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
+  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+
+  const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
+  const isWorkspaceSubscribed = computed(() => store.isWorkspaceSubscribed)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -154,14 +163,10 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  // The original-owner signal lives on the members-list self-row, so a team
-  // workspace's members must be loaded before its lifecycle gate can resolve.
-  // The store dedupes in-flight/already-loaded requests and logs failures;
-  // until members arrive the getter fails closed.
   watch(
-    () => store.activeWorkspace?.id,
+    [() => store.activeWorkspace?.id, () => store.activeWorkspace?.role],
     () => {
-      if (store.activeWorkspace?.type === 'team') {
+      if (store.activeWorkspace?.role === 'owner') {
         void store.ensureMembersLoaded()
       }
     },
@@ -172,7 +177,10 @@ function useWorkspaceUIInternal() {
     getPermissions(
       workspaceType.value,
       workspaceRole.value,
-      store.isCurrentUserOriginalOwner
+      store.isCurrentUserOriginalOwner,
+      store.originalOwnerId !== null,
+      store.activeWorkspace !== null,
+      isTeamPlan.value
     )
   )
 
@@ -180,12 +188,42 @@ function useWorkspaceUIInternal() {
     getUIConfig(workspaceType.value, workspaceRole.value)
   )
 
+  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
+
+  const isSubscriptionCancelled = computed(
+    () => subscription.value?.isCancelled ?? false
+  )
+
+  const isTeamPlanCancelled = computed(
+    () => isTeamPlan.value && isSubscriptionCancelled.value
+  )
+
+  // A workspace can't be deleted while its subscription is active and not yet
+  // cancelled — the owner must cancel first. Both settings panels read this so
+  // their menus can't desync on a billing-flag change.
+  const isDeleteDisabled = computed(
+    () =>
+      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
+  )
+
+  const deleteDisabledTooltipKey = computed(() =>
+    isDeleteDisabled.value ? uiConfig.value.workspaceMenuDisabledTooltip : null
+  )
+
   return {
     // Permissions and config
     permissions,
     uiConfig,
     workspaceType,
-    workspaceRole
+    workspaceRole,
+    isInPersonalWorkspace,
+    isWorkspaceSubscribed,
+    isActiveSubscription,
+    isOriginalOwner,
+    isSubscriptionCancelled,
+    isTeamPlanCancelled,
+    isDeleteDisabled,
+    deleteDisabledTooltipKey
   }
 }
 

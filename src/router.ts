@@ -16,8 +16,10 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -42,8 +44,6 @@ function getBasePath(): string {
 const basePath = getBasePath()
 
 function trackPageView(): void {
-  if (!isCloud || typeof window === 'undefined') return
-
   useTelemetry()?.trackPageView(document.title, {
     path: window.location.href
   })
@@ -115,6 +115,15 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
     keys: ['oauth_request_id']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
+    keys: ['pricing']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+    keys: ['desktop_login_code'],
+    stripAfterCapture: true
   }
 ])
 
@@ -169,6 +178,7 @@ if (isCloud) {
     // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
     const isLoggedIn = !!authHeader
+    preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
     if (isPublicRoute(to)) {
@@ -245,6 +255,8 @@ if (isCloud) {
     // User is logged in and accessing protected route
     return next()
   })
+
+  installDesktopLoginRedemption(router)
 }
 
 export default router

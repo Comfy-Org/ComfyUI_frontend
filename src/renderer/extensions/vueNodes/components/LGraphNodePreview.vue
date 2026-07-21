@@ -43,11 +43,17 @@ import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { toNodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { nodeDef, position = 'absolute' } = defineProps<{
+const {
+  nodeDef,
+  position = 'absolute',
+  widgetValues
+} = defineProps<{
   nodeDef: ComfyNodeDefV2
   position?: 'absolute' | 'relative'
+  widgetValues?: Record<string, string>
 }>()
 
 const widgetStore = useWidgetStore()
@@ -56,27 +62,32 @@ const widgetStore = useWidgetStore()
 const nodeData = computed<VueNodeData>(() => {
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
-    .map(([name, input]) => ({
-      nodeId: '-1',
-      name,
-      type: input.widgetType || input.type,
-      value:
-        input.default !== undefined
-          ? input.default
-          : input.type === 'COMBO' &&
-              Array.isArray(input.options) &&
-              input.options.length > 0
-            ? input.options[0]
-            : '',
-      options: {
-        hidden: input.hidden,
-        advanced: input.advanced,
-        values:
-          input.type === 'COMBO' && Array.isArray(input.options)
-            ? input.options
-            : undefined
-      } satisfies IWidgetOptions
-    }))
+    .map(([name, input]) => {
+      const comboValues =
+        input.type === 'COMBO' && Array.isArray(input.options)
+          ? input.options
+          : undefined
+      // Preview nodes have no widget-value store entry, so combo widgets
+      // render their first option; lead with the requested value to show it.
+      const leadValue = widgetValues?.[name]
+      return {
+        nodeId: toNodeId('-1'),
+        name,
+        type: input.widgetType || input.type,
+        value:
+          input.default !== undefined
+            ? input.default
+            : (comboValues?.[0] ?? ''),
+        options: {
+          hidden: input.hidden,
+          advanced: input.advanced,
+          values:
+            leadValue && comboValues
+              ? [leadValue, ...comboValues.filter((o) => o !== leadValue)]
+              : comboValues
+        } satisfies IWidgetOptions
+      }
+    })
 
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => !widgetStore.inputIsWidget(input))
@@ -105,7 +116,7 @@ const nodeData = computed<VueNodeData>(() => {
   })
 
   return {
-    id: `preview-${nodeDef.name}`,
+    id: toNodeId(`preview-${nodeDef.name}`),
     title: nodeDef.display_name || nodeDef.name,
     type: nodeDef.name,
     mode: 0, // Normal mode

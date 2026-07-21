@@ -10,7 +10,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
-  NodeId,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -33,6 +32,8 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -49,7 +50,7 @@ interface QueuedJob {
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
    */
-  nodes: Record<NodeId, boolean>
+  nodes: Record<string, boolean>
   /**
    * The workflow that is queued to be executed
    */
@@ -112,7 +113,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -283,14 +284,14 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // Easily access all currently executing node IDs
-  const executingNodeIds = computed<NodeId[]>(() => {
+  const executingNodeIds = computed<string[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
-  const executingNodeId = computed<NodeId | null>(() => {
+  const executingNodeId = computed<string | null>(() => {
     return executingNodeIds.value[0] ?? null
   })
 
@@ -431,14 +432,14 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+  function handleExecuting(e: CustomEvent<string | number | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
     if (!activeJob.value) return
 
     // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
+    if (e.detail == null) {
       if (activeJobId.value) {
         delete queuedJobs.value[activeJobId.value]
       }
@@ -487,7 +488,8 @@ export const useExecutionStore = defineStore('execution', () => {
         // here intentionally. That way, we don't clear the preview every time a new node
         // within an expanded graph starts executing.
         const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
+        const executionId = tryNormalizeNodeExecutionId(nodeId)
+        if (executionId) revokePreviewsByExecutionId(executionId)
       }
     }
 
@@ -552,7 +554,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     setWorkflowStatus(e.detail.prompt_id, 'failed')
-    executionErrorStore.lastExecutionError = e.detail
+    executionErrorStore.recordExecutionError(e.detail)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -578,13 +580,13 @@ export const useExecutionStore = defineStore('execution', () => {
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.lastPromptError = {
+    executionErrorStore.recordPromptError({
       type: detail.exception_type ?? 'error',
       message: detail.exception_type
         ? `${detail.exception_type}: ${detail.exception_message}`
         : (detail.exception_message ?? ''),
       details: detail.traceback?.join('\n') ?? ''
-    }
+    })
     return true
   }
 
@@ -598,9 +600,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.lastNodeErrors = result.nodeErrors
+      executionErrorStore.recordNodeErrors(result.nodeErrors)
     } else {
-      executionErrorStore.lastPromptError = result.promptError
+      executionErrorStore.recordPromptError(result.promptError)
     }
     return true
   }
@@ -704,7 +706,9 @@ export const useExecutionStore = defineStore('execution', () => {
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
-    const node = canvasStore.canvas?.graph?.getNodeById(currentId)
+    const parsedCurrentId = parseNodeId(currentId)
+    if (!parsedCurrentId) return
+    const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
     if (!node) return
 
     useNodeProgressText().showTextPreview(node, text)
@@ -788,7 +792,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * @returns The execution ID or null if conversion fails
    */
   const nodeLocatorIdToExecutionId = (
-    locatorId: NodeLocatorId | string
+    locatorId: NodeLocatorId
   ): string | null => {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId

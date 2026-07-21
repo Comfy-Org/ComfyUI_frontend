@@ -4,14 +4,13 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 
-type BenefitType = 'metric' | 'feature' | 'icon'
+type BenefitType = 'metric' | 'feature'
 
 export interface TierBenefit {
   key: string
   type: BenefitType
   label: string
   value?: string
-  icon?: string
 }
 
 export function getCommonTierBenefits(

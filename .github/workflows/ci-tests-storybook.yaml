@@ -95,6 +95,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch'
       || (github.event_name == 'pull_request'
+          && github.event.pull_request.head.repo.fork == false
           && startsWith(github.head_ref, 'version-bump-')
           && (needs.changes.outputs.storybook-changes == 'true'
               || needs.changes.outputs.app-frontend-changes == 'true'

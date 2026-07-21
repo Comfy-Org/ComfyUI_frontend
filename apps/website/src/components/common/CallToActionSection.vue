@@ -25,7 +25,7 @@ const {
   <section class="max-w-9xl mx-auto px-6 py-20 lg:py-32">
     <div class="flex flex-col items-center text-center">
       <h2
-        class="text-primary-comfy-canvas max-w-5xl text-3xl font-light tracking-tight lg:text-5xl"
+        class="max-w-5xl text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t(headingKey, locale) }}
       </h2>

@@ -6,10 +6,11 @@ import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**
@@ -19,6 +20,7 @@ import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
  */
 export const useMissingModelStore = defineStore('missingModel', () => {
   const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
@@ -179,6 +181,34 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     }
   }
 
+  function removeMissingModelsBySourceScope(executionId: string) {
+    if (!missingModelCandidates.value) return
+    const prefix = `${executionId}:`
+    const removedNames = new Set<string>()
+    const remaining: MissingModelCandidate[] = []
+    for (const candidate of missingModelCandidates.value) {
+      const sourceExecutionId =
+        candidate.sourceExecutionId == null
+          ? undefined
+          : String(candidate.sourceExecutionId)
+      if (
+        sourceExecutionId === executionId ||
+        sourceExecutionId?.startsWith(prefix)
+      ) {
+        removedNames.add(candidate.name)
+      } else {
+        remaining.push(candidate)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingModelCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((candidate) => candidate.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
   function addMissingModels(models: MissingModelCandidate[]) {
     if (!models.length) return
     const existing = missingModelCandidates.value ?? []
@@ -193,8 +223,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCandidates.value = [...existing, ...newModels]
   }
 
-  function hasMissingModelOnNode(nodeLocatorId: string): boolean {
-    return missingModelNodeIds.value.has(nodeLocatorId)
+  function hasMissingModelOnNode(nodeLocatorId: NodeLocatorId): boolean {
+    const executionId =
+      workflowStore.nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingModelNodeIds.value.has(executionId) : false
   }
 
   function isWidgetMissingModel(nodeId: string, widgetName: string): boolean {
@@ -228,12 +260,15 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     return error instanceof Error && error.name === 'AbortError'
   }
 
-  async function refreshMissingModels() {
+  async function refreshMissingModels(options: { reloadDefs?: boolean } = {}) {
     if (isRefreshingMissingModels.value) return
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({ silent: true })
+      await app.refreshMissingModels({
+        silent: true,
+        reloadDefs: options.reloadDefs
+      })
     } catch (error) {
       if (isAbortError(error)) return
 
@@ -263,6 +298,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelByWidget,
     removeMissingModelsByNodeId,
     removeMissingModelsByPrefix,
+    removeMissingModelsBySourceScope,
     clearMissingModels,
     refreshMissingModels,
     createVerificationAbortController,

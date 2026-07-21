@@ -5,10 +5,9 @@ import type {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -42,11 +41,12 @@ export class NodeOperationsHelper {
   }
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
-    return await this.page.evaluate(() => {
+    const selectedNodeIds = await this.page.evaluate(() => {
       const selected = window.app?.canvas?.selected_nodes
       if (!selected) return []
-      return Object.keys(selected).map(Number)
+      return Object.keys(selected)
     })
+    return selectedNodeIds.map(toNodeId)
   }
 
   /**
@@ -114,8 +114,8 @@ export class NodeOperationsHelper {
     return this.getNodeRefById(id)
   }
 
-  async getNodeRefById(id: NodeId): Promise<NodeReference> {
-    return new NodeReference(id, this.comfyPage)
+  async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
+    return new NodeReference(toNodeId(id), this.comfyPage)
   }
 
   async getNodeRefsByType(
@@ -136,7 +136,7 @@ export class NodeOperationsHelper {
           },
           { type, includeSubgraph }
         )
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 
@@ -148,7 +148,7 @@ export class NodeOperationsHelper {
             .app!.graph.nodes.filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
-      ).map((id: NodeId) => this.getNodeRefById(id))
+      ).map((id: SerializedNodeId) => this.getNodeRefById(id))
     )
   }
 

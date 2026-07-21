@@ -1,9 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { EssentialTile } from '@/constants/essentialsNodes'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
@@ -31,160 +34,118 @@ vi.mock('@/components/node/NodePreviewCard.vue', () => ({
   }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      essentials: {
+        LoadImage: 'Load Image'
+      }
+    }
+  }
+})
+
+function createNodeDef(name: string): ComfyNodeDefV1 {
+  return {
+    name,
+    display_name: name,
+    category: 'test',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {}, optional: {} },
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false
+  }
+}
+
+const REGISTERED_TILE: EssentialTile = {
+  icon: 'icon-s1.5-[lucide--image-up]',
+  media: 'image',
+  nodeName: 'LoadImage'
+}
+
+const UNRESOLVED_TILE: EssentialTile = {
+  icon: 'icon-[comfy--node]',
+  nodeName: 'NotARegisteredNode'
+}
+
 describe('EssentialNodeCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
+    useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })
 
-  function createMockNode(
-    overrides: Partial<ComfyNodeDefImpl> = {}
-  ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
-    const data = {
-      name: 'TestNode',
-      display_name: 'Test Node',
-      ...overrides
-    } as ComfyNodeDefImpl
-
-    return {
-      key: 'test-key',
-      label: data.display_name,
-      icon: 'icon-[comfy--node]',
-      type: 'node',
-      totalLeaves: 1,
-      data
-    }
-  }
-
-  function renderComponent(
-    node: RenderedTreeExplorerNode<ComfyNodeDefImpl> = createMockNode()
-  ) {
-    const onClick = vi.fn()
+  function renderComponent(tile: EssentialTile = REGISTERED_TILE) {
     const user = userEvent.setup()
     const { container } = render(EssentialNodeCard, {
-      props: { node, onClick },
+      props: { tile },
       global: {
+        plugins: [i18n],
         stubs: {
           Teleport: true
         }
       }
     })
-    return { user, onClick, container }
+    return { user, container }
   }
 
   function getCard(container: Element) {
     /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    const card = container.querySelector('[data-node-name]') as HTMLElement
+    return container.querySelector('[draggable]') as HTMLElement
     /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-    return card
   }
 
   describe('rendering', () => {
-    it('should display the node display_name', () => {
-      renderComponent(createMockNode({ display_name: 'Load Image' }))
-      expect(screen.getAllByText('Load Image').length).toBeGreaterThan(0)
+    it('should display the tile label', () => {
+      renderComponent()
+      expect(screen.getAllByText('LoadImage').length).toBeGreaterThan(0)
+    })
+
+    it('should render the tile icon', () => {
+      const { container } = renderComponent()
+      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      const icon = container.querySelector('i')
+      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+      expect(icon).toHaveClass('icon-s1.5-[lucide--image-up]')
     })
 
     it('should set data-node-name attribute', () => {
-      const { container } = renderComponent(
-        createMockNode({ display_name: 'Save Image' })
-      )
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const card = container.querySelector('[data-node-name]')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(card).toHaveAttribute('data-node-name', 'Save Image')
-    })
-
-    it('should be draggable', () => {
       const { container } = renderComponent()
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const card = container.querySelector('[draggable]')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(card).toHaveAttribute('draggable', 'true')
+      expect(getCard(container)).toHaveAttribute('data-node-name', 'LoadImage')
+    })
+
+    it('should be draggable when the tile resolves to a node def', () => {
+      const { container } = renderComponent()
+      expect(getCard(container)).toHaveAttribute('draggable', 'true')
+    })
+
+    it('should not be draggable when the tile does not resolve', () => {
+      const { container } = renderComponent(UNRESOLVED_TILE)
+      expect(getCard(container)).toHaveAttribute('draggable', 'false')
     })
   })
 
-  describe('icon generation', () => {
-    it('should use override icon for LoadImage', () => {
-      const { container } = renderComponent(
-        createMockNode({ name: 'LoadImage' })
-      )
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(icon).toHaveClass('icon-s1.3-[lucide--image-up]')
-    })
-
-    it('should use override icon for SaveImage', () => {
-      const { container } = renderComponent(
-        createMockNode({ name: 'SaveImage' })
-      )
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(icon).toHaveClass('icon-s1.3-[lucide--image-down]')
-    })
-
-    it('should use override icon for ImageCrop', () => {
-      const { container } = renderComponent(
-        createMockNode({ name: 'ImageCrop' })
-      )
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(icon).toHaveClass('icon-s1.3-[lucide--crop]')
-    })
-
-    it('should use kebab-case for complex node names', () => {
-      const { container } = renderComponent(
-        createMockNode({ name: 'RecraftRemoveBackgroundNode' })
-      )
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(icon).toHaveClass('icon-[comfy--recraft-remove-background-node]')
-    })
-
-    it('should use default node icon when nodeDef has no name', () => {
-      const node: RenderedTreeExplorerNode<ComfyNodeDefImpl> = {
-        key: 'test-key',
-        label: 'Test',
-        icon: 'icon',
-        type: 'node',
-        totalLeaves: 1,
-        data: undefined
-      }
-      const { container } = renderComponent(node)
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-      const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
-      expect(icon).toHaveClass('icon-[comfy--node]')
-    })
-  })
-
-  describe('events', () => {
-    it('should emit click event when clicked', async () => {
-      const node = createMockNode()
-      const { user, onClick, container } = renderComponent(node)
+  describe('click to add', () => {
+    it('should start drag-to-canvas on click', async () => {
+      const { user, container } = renderComponent()
 
       await user.click(getCard(container))
 
-      expect(onClick).toHaveBeenCalledWith(node)
+      expect(mockStartDrag).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'LoadImage' })
+      )
     })
 
-    it('should not emit click when nodeDef is undefined', async () => {
-      const node: RenderedTreeExplorerNode<ComfyNodeDefImpl> = {
-        key: 'test-key',
-        label: 'Test',
-        icon: 'icon',
-        type: 'node',
-        totalLeaves: 1,
-        data: undefined
-      }
-      const { user, onClick, container } = renderComponent(node)
+    it('should do nothing on click when the tile does not resolve', async () => {
+      const { user, container } = renderComponent(UNRESOLVED_TILE)
 
       await user.click(getCard(container))
 
-      expect(onClick).not.toHaveBeenCalled()
+      expect(mockStartDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -194,7 +155,10 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragStart(getCard(container))
 
-      expect(mockStartDrag).toHaveBeenCalled()
+      expect(mockStartDrag).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'LoadImage' }),
+        { mode: 'native' }
+      )
     })
 
     it('should call handleNativeDrop on dragend', async () => {
@@ -203,6 +167,14 @@ describe('EssentialNodeCard', () => {
       await fireEvent.dragEnd(getCard(container))
 
       expect(mockHandleNativeDrop).toHaveBeenCalled()
+    })
+
+    it('should not start drag when the tile does not resolve', async () => {
+      const { container } = renderComponent(UNRESOLVED_TILE)
+
+      await fireEvent.dragStart(getCard(container))
+
+      expect(mockStartDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -222,6 +194,14 @@ describe('EssentialNodeCard', () => {
       expect(screen.getByTestId('node-preview')).toBeInTheDocument()
 
       await user.unhover(getCard(container))
+      expect(screen.queryByTestId('node-preview')).not.toBeInTheDocument()
+    })
+
+    it('should not show preview when the tile does not resolve', async () => {
+      const { user, container } = renderComponent(UNRESOLVED_TILE)
+
+      await user.hover(getCard(container))
+
       expect(screen.queryByTestId('node-preview')).not.toBeInTheDocument()
     })
   })

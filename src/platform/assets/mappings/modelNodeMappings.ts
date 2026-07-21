@@ -6,7 +6,7 @@
  * input key where the model name is inserted.
  *
  * An empty key ('') means the node auto-loads models without a widget
- * selector (createModelNodeFromAsset skips widget assignment).
+ * selector, so no widget value is assigned when the node is added.
  *
  * Hierarchical fallback is handled by the store: "a/b/c" tries
  * "a/b/c" → "a/b" → "a", so registering a parent directory covers

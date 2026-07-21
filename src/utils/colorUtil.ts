@@ -95,6 +95,28 @@ export function rgbToHex({ r, g, b }: RGB): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
+export function luminance({ r, g, b }: RGB): number {
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
+export function readableTextColor(hex: string): string {
+  const rgb = hexToRgb(hex)
+  let { r, g, b } = rgb
+  const lum = luminance(rgb)
+  const MIN = 130
+  if (lum < MIN) {
+    const t = (MIN - lum) / (255 - lum)
+    r = Math.round(r + (255 - r) * t)
+    g = Math.round(g + (255 - g) * t)
+    b = Math.round(b + (255 - b) * t)
+  }
+  return `rgb(${r},${g},${b})`
+}
+
+export function textOnColor(hex: string): string {
+  return luminance(hexToRgb(hex)) > 140 ? '#000' : '#fff'
+}
+
 export function hsbToRgb({ h, s, b }: HSB): RGB {
   // Normalize
   const hh = ((h % 360) + 360) % 360

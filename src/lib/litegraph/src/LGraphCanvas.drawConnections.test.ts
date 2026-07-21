@@ -9,6 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -68,7 +69,8 @@ function createTestLink(
   targetNode: LGraphNode,
   inputSlot: number
 ): LLink {
-  const linkId = ++graph.state.lastLinkId
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
   const link = new LLink(
     linkId,
     sourceNode.outputs[outputSlot].type,

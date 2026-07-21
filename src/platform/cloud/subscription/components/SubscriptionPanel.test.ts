@@ -132,6 +132,18 @@ const i18n = createI18n({
         partnerNodesCredits: 'Partner nodes pricing',
         renewsDate: 'Renews {date}',
         expiresDate: 'Expires {date}',
+        monthlyCreditsLabel: 'monthly credits',
+        maxDurationLabel: 'max run duration',
+        maxDuration: {
+          free: '5 min',
+          standard: '30 min',
+          creator: '30 min',
+          pro: '1 hr',
+          founder: '30 min'
+        },
+        gpuLabel: 'RTX 6000 Pro (96GB VRAM)',
+        addCreditsLabel: 'Add more credits whenever',
+        customLoRAsLabel: 'Import your own LoRAs',
         tiers: {
           founder: {
             name: "Founder's Edition",
@@ -200,6 +212,7 @@ function createComponent(overrides = {}) {
         CloudBadge: true,
         SubscribeButton: true,
         SubscriptionBenefits: true,
+        CreditsTile: true,
         Button: {
           template:
             '<button v-bind="$attrs" @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
@@ -240,7 +253,6 @@ describe('SubscriptionPanel', () => {
       mockIsActiveSubscription.value = true
       const { container } = createComponent()
       expect(container.textContent).toContain('Manage Subscription')
-      expect(container.textContent).toContain('Add Credits')
     })
 
     it('shows correct UI for inactive subscription', () => {
@@ -249,7 +261,6 @@ describe('SubscriptionPanel', () => {
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('subscribe-button-stub')).not.toBeNull()
       expect(container.textContent).not.toContain('Manage Subscription')
-      expect(container.textContent).not.toContain('Add Credits')
     })
 
     it('shows renewal date for active non-cancelled subscription', () => {
@@ -266,58 +277,19 @@ describe('SubscriptionPanel', () => {
       expect(container.textContent).toContain('Expires 2024-12-31')
     })
 
-    it('displays FOUNDERS_EDITION tier correctly', () => {
+    it('displays FOUNDERS_EDITION tier without the custom-LoRA perk', () => {
       mockSubscriptionTier.value = 'FOUNDERS_EDITION'
       const { container } = createComponent()
       expect(container.textContent).toContain("Founder's Edition")
-      expect(container.textContent).toContain('5,460')
+      expect(container.textContent).toContain('RTX 6000 Pro (96GB VRAM)')
+      expect(container.textContent).not.toContain('Import your own LoRAs')
     })
 
-    it('displays CREATOR tier correctly', () => {
+    it('displays CREATOR tier with the custom-LoRA perk', () => {
       mockSubscriptionTier.value = 'CREATOR'
       const { container } = createComponent()
       expect(container.textContent).toContain('Creator')
-      expect(container.textContent).toContain('7,400')
-    })
-  })
-
-  describe('credit display functionality', () => {
-    it('displays dynamic credit values correctly', () => {
-      const { container } = createComponent()
-      expect(container.textContent).toContain('10.00 Credits')
-      expect(container.textContent).toContain('5.00 Credits')
-    })
-
-    it('shows loading skeleton when fetching balance', () => {
-      mockCreditsData.isLoadingBalance = true
-      createComponent()
-      expect(
-        screen.getAllByRole('status', { name: 'Loading' }).length
-      ).toBeGreaterThan(0)
-    })
-
-    it('hides skeleton when balance loaded', () => {
-      mockCreditsData.isLoadingBalance = false
-      createComponent()
-      expect(screen.queryAllByRole('status', { name: 'Loading' })).toHaveLength(
-        0
-      )
-    })
-
-    it('renders refill date with literal slashes', () => {
-      vi.useFakeTimers()
-      vi.stubEnv('TZ', 'UTC')
-      try {
-        mockIsActiveSubscription.value = true
-        const { container } = createComponent()
-        expect(container.textContent).toMatch(
-          /Included \(Refills \d{2}\/\d{2}\/\d{2}\)/
-        )
-        expect(container.textContent).not.toContain('&#x2F;')
-      } finally {
-        vi.useRealTimers()
-        vi.unstubAllEnvs()
-      }
+      expect(container.textContent).toContain('Import your own LoRAs')
     })
   })
 
@@ -335,15 +307,6 @@ describe('SubscriptionPanel', () => {
       await userEvent.click(supportButton)
       expect(mockActionsData.handleMessageSupport).toHaveBeenCalledOnce()
     })
-
-    it('should call handleRefresh when refresh button is clicked', async () => {
-      createComponent()
-      const refreshButton = screen.getByRole('button', {
-        name: 'Refresh credits'
-      })
-      await userEvent.click(refreshButton)
-      expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
-    })
   })
 
   describe('loading states', () => {
@@ -352,15 +315,6 @@ describe('SubscriptionPanel', () => {
       createComponent()
       const supportButton = findButtonByText('Message Support')
       expect(supportButton).toBeDisabled()
-    })
-
-    it('should show loading state on refresh button when loading balance', () => {
-      mockCreditsData.isLoadingBalance = true
-      createComponent()
-      const refreshButton = screen.getByRole('button', {
-        name: 'Refresh credits'
-      })
-      expect(refreshButton).toBeDisabled()
     })
   })
 })

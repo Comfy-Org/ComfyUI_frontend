@@ -103,14 +103,20 @@ export const TestIds = {
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
-    actionBarButtons: 'action-bar-buttons'
+    actionBarButtons: 'action-bar-buttons',
+    freeTierQuota: 'free-tier-quota'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
     root: 'properties-panel',
-    errorsTab: 'panel-tab-errors'
+    errorsTab: 'panel-tab-errors',
+    selectionContextStrip: 'selection-context-strip'
+  },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -168,6 +174,9 @@ export const TestIds = {
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
+    runButton: 'linear-run-button',
+    validationWarning: 'linear-validation-warning',
+    viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },
   builder: {
@@ -231,6 +240,9 @@ export const TestIds = {
     renameInput: 'subgraph-breadcrumb-rename-input',
     menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
+  workflowActions: {
+    viewModeToggle: 'view-mode-toggle'
+  },
   templates: {
     content: 'template-workflows-content',
     workflowCard: (id: string) => `template-workflow-${id}`
@@ -268,6 +280,7 @@ export const TestIds = {
     overlay: 'loading-overlay'
   },
   load3d: {
+    categoryMenu: 'load3d-category-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {

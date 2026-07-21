@@ -27,6 +27,7 @@ export async function initTelemetry(): Promise<void> {
       { ImpactTelemetryProvider },
       { PostHogTelemetryProvider },
       { ClickHouseTelemetryProvider },
+      { SyftTelemetryProvider },
       { CustomerIoTelemetryProvider }
     ] = await Promise.all([
       import('./TelemetryRegistry'),
@@ -35,6 +36,7 @@ export async function initTelemetry(): Promise<void> {
       import('./providers/cloud/ImpactTelemetryProvider'),
       import('./providers/cloud/PostHogTelemetryProvider'),
       import('./providers/cloud/ClickHouseTelemetryProvider'),
+      import('./providers/cloud/SyftTelemetryProvider'),
       import('./providers/cloud/CustomerIoTelemetryProvider')
     ])
 
@@ -44,6 +46,7 @@ export async function initTelemetry(): Promise<void> {
     registry.registerProvider(new ImpactTelemetryProvider())
     registry.registerProvider(new PostHogTelemetryProvider())
     registry.registerProvider(new ClickHouseTelemetryProvider())
+    registry.registerProvider(new SyftTelemetryProvider())
     registry.registerProvider(new CustomerIoTelemetryProvider())
 
     setTelemetryRegistry(registry)

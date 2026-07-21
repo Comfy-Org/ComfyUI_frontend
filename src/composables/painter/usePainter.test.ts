@@ -7,6 +7,8 @@ import { defineComponent, nextTick, ref } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
@@ -94,7 +96,10 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
  */
-function mountPainter(nodeId = 'test-node', initialModelValue = '') {
+function mountPainter(
+  nodeId: NodeId = toNodeId('test-node'),
+  initialModelValue = ''
+) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
   const cursorEl = ref<HTMLElement | null>(null)
@@ -353,7 +358,7 @@ describe('usePainter', () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter('test-node', 'painter/existing.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/existing.png [temp]')
@@ -375,7 +380,7 @@ describe('usePainter', () => {
         toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
       } as unknown as HTMLCanvasElement
 
-      const { canvasEl } = mountPainter('test-node', '')
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
       canvasEl.value = fakeCanvas
       await nextTick()
 
@@ -384,14 +389,70 @@ describe('usePainter', () => {
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
-      expect(result).toBe('painter/uploaded.png [temp]')
+      expect(result).toBe('uploaded.png [input]')
+
+      const [, init] = fetchApiMock.mock.calls[0]
+      const body = init?.body as FormData
+      expect(body).toBeInstanceOf(FormData)
+      expect(body.get('type')).toBe('input')
+      expect(body.get('subfolder')).toBeNull()
+    })
+
+    it('throws when the upload response is missing a name', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({})
+      } as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/missing 'name'/)
+    })
+
+    it('throws when the upload response body is not valid JSON', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => {
+          throw new SyntaxError('Unexpected token')
+        }
+      } as unknown as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/painter\.uploadError/)
     })
 
     it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter('test-node', 'painter/cached.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('painter/cached.png [temp]')
@@ -410,7 +471,7 @@ describe('usePainter', () => {
       } as unknown as HTMLCanvasElement
 
       const { painter, canvasEl, modelValue } = mountPainter(
-        'test-node',
+        toNodeId('test-node'),
         'painter/old-upload.png [temp]'
       )
       canvasEl.value = fakeCanvas
@@ -425,7 +486,7 @@ describe('usePainter', () => {
     it('calls api.apiURL with parsed filename params when modelValue is set', () => {
       vi.mocked(api.apiURL).mockClear()
 
-      mountPainter('test-node', 'painter/my-image.png [temp]')
+      mountPainter(toNodeId('test-node'), 'painter/my-image.png [temp]')
 
       expect(api.apiURL).toHaveBeenCalledWith(
         expect.stringContaining('filename=my-image.png')

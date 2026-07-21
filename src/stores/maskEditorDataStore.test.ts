@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/stores/maskEditorDataStore'
+import { toNodeId } from '@/types/nodeId'
+
+const SOURCE_NODE_ID = toNodeId(1)
+const RESET_NODE_ID = toNodeId(42)
 
 const createImage = (): HTMLImageElement => document.createElement('img')
 
@@ -40,7 +44,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: SOURCE_NODE_ID
       }
 
       expect(store.hasValidInput).toBe(true)
@@ -77,7 +81,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: SOURCE_NODE_ID
       }
 
       expect(store.isReady).toBe(true)
@@ -90,7 +94,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: SOURCE_NODE_ID
       }
       store.isLoading = true
 
@@ -137,10 +141,10 @@ describe('maskEditorDataStore', () => {
         maskLayer: { image: createImage(), url: 'mask' },
         paintLayer: { image: createImage(), url: 'paint' },
         sourceRef: { filename: 'src.png', subfolder: 'sub', type: 'input' },
-        nodeId: 42
+        nodeId: RESET_NODE_ID
       }
       store.outputData = createOutputData()
-      store.sourceNode = { id: 42 } as LGraphNode
+      store.sourceNode = { id: RESET_NODE_ID } as LGraphNode
       store.isLoading = true
       store.loadError = 'something broke'
 

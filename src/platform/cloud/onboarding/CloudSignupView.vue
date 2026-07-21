@@ -69,6 +69,7 @@
           </Message>
           <SignUpForm
             v-else
+            ref="signUpForm"
             :auth-error="authError"
             @submit="signUpWithEmail"
           />
@@ -135,7 +136,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
@@ -180,17 +180,27 @@ const signInWithGithub = async () => {
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
+const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
+
+const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      turnstileToken
+    )
+  ) {
     await onAuthSuccess()
+  } else {
+    // Signup failed while the form is still mounted: re-arm the single-use
+    // Turnstile token so the next attempt sends a fresh one.
+    signUpForm.value?.resetTurnstile()
   }
 }
 
 onMounted(async () => {
-  if (isCloud) {
-    telemetry?.trackSignupOpened()
-  }
+  telemetry?.trackSignupOpened()
 
   userIsInChina.value = await isInChina()
 })

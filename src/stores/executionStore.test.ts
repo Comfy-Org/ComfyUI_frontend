@@ -6,6 +6,7 @@ import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -13,9 +14,9 @@ import type * as WorkflowStoreModule from '@/platform/workflow/management/stores
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
-  mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
+  mockExecutionIdToCurrentId,
   mockActiveWorkflow,
   mockOpenWorkflows,
   mockShowTextPreview,
@@ -25,9 +26,9 @@ const {
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
-    mockNodeExecutionIdToNodeLocatorId: vi.fn(),
     mockNodeIdToNodeLocatorId: vi.fn(),
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+    mockExecutionIdToCurrentId: vi.fn(),
     mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
@@ -56,6 +57,7 @@ beforeEach(() => {
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
+import { toNodeId } from '@/types/nodeId'
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -65,9 +67,9 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   return {
     ComfyWorkflow,
     useWorkflowStore: vi.fn(() => ({
-      nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
       nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      executionIdToCurrentId: mockExecutionIdToCurrentId,
       get activeWorkflow() {
         return mockActiveWorkflow.value
       },
@@ -180,9 +182,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mock implementations
-    mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
+    mockExecutionIdToCurrentId.mockReset()
 
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -235,23 +237,27 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   describe('nodeLocatorIdToExecutionId', () => {
     it('should convert NodeLocatorId to execution ID', () => {
+      const locatorId = createNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        toNodeId(456)
+      )
       const mockExecutionId = '123:456'
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(mockExecutionId)
 
-      const result = store.nodeLocatorIdToExecutionId(
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
-      )
+      const result = store.nodeLocatorIdToExecutionId(locatorId)
 
-      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
-      )
+      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(locatorId)
       expect(result).toBe(mockExecutionId)
     })
 
     it('should return null when conversion fails', () => {
+      const locatorId = createNodeLocatorId(
+        'unknown-subgraph-id',
+        toNodeId(456)
+      )
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
 
-      const result = store.nodeLocatorIdToExecutionId('invalid:format')
+      const result = store.nodeLocatorIdToExecutionId(locatorId)
 
       expect(result).toBeNull()
     })
@@ -263,9 +269,9 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
+    mockExecutionIdToCurrentId.mockReset()
 
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -296,8 +302,15 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
     const result = store.nodeLocationProgressStates
 
-    expect(result['123']).toBeDefined()
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+    expect(result[createNodeLocatorId(null, toNodeId(123))]).toBeDefined()
+    expect(
+      result[
+        createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          toNodeId(456)
+        )
+      ]
+    ).toBeDefined()
   })
 
   it('should not re-traverse graph for same execution IDs across progress updates', () => {
@@ -324,7 +337,9 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     }
 
     // First evaluation triggers graph traversal
-    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toBeDefined()
     const callCountAfterFirst = vi.mocked(app.rootGraph.getNodeById).mock.calls
       .length
 
@@ -340,7 +355,9 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
       }
     }
 
-    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toBeDefined()
 
     // getNodeById should NOT be called again for the same execution ID
     expect(vi.mocked(app.rootGraph.getNodeById).mock.calls.length).toBe(
@@ -383,12 +400,28 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     const result = store.nodeLocationProgressStates
 
     // Both sibling nodes should be resolved with the correct subgraph UUID
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:789']).toBeDefined()
+    expect(
+      result[
+        createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          toNodeId(456)
+        )
+      ]
+    ).toBeDefined()
+    expect(
+      result[
+        createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          toNodeId(789)
+        )
+      ]
+    ).toBeDefined()
 
     // The shared parent "123" should also have a merged state
-    expect(result['123']).toBeDefined()
-    expect(result['123'].state).toBe('running')
+    expect(result[createNodeLocatorId(null, toNodeId(123))]).toBeDefined()
+    expect(result[createNodeLocatorId(null, toNodeId(123))].state).toBe(
+      'running'
+    )
   })
 })
 
@@ -847,7 +880,7 @@ describe('useExecutionStore - progress_text startup guard', () => {
 
     expect(() =>
       fireProgressText({
-        nodeId: '1',
+        nodeId: toNodeId('1'),
         text: 'warming up'
       })
     ).not.toThrow()
@@ -863,9 +896,24 @@ describe('useExecutionStore - progress_text startup guard', () => {
       graph: { getNodeById: vi.fn(() => mockNode) }
     } as unknown as LGraphCanvas
 
-    fireProgressText({ nodeId: '1', text: 'warming up' })
+    fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
 
     expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
+  })
+  it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn() }
+    } as unknown as LGraphCanvas
+    mockExecutionIdToCurrentId.mockReturnValue(undefined)
+
+    expect(() =>
+      fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
+    ).not.toThrow()
+
+    expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
 
@@ -880,12 +928,14 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
   describe('getNodeErrors', () => {
     it('should return undefined when no errors exist', () => {
-      const result = store.getNodeErrors('123')
+      const result = store.getNodeErrors(
+        createNodeLocatorId(null, toNodeId(123))
+      )
       expect(result).toBeUndefined()
     })
 
     it('should return node error by locator ID for root graph node', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -898,9 +948,11 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const result = store.getNodeErrors('123')
+      const result = store.getNodeErrors(
+        createNodeLocatorId(null, toNodeId(123))
+      )
       expect(result).toBeDefined()
       expect(result?.errors).toHaveLength(1)
       expect(result?.errors[0].message).toBe('Invalid input')
@@ -922,7 +974,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123:456': {
           errors: [
             {
@@ -935,9 +987,9 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'SubgraphNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const locatorId = `${subgraphUuid}:456`
+      const locatorId = createNodeLocatorId(subgraphUuid, toNodeId(456))
       const result = store.getNodeErrors(locatorId)
       expect(result).toBeDefined()
       expect(result?.errors[0].message).toBe('Invalid subgraph input')
@@ -946,12 +998,15 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
   describe('slotHasError', () => {
     it('should return false when node has no errors', () => {
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(
+        createNodeLocatorId(null, toNodeId(123)),
+        'width'
+      )
       expect(result).toBe(false)
     })
 
     it('should return false when node has errors but slot is not mentioned', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -964,14 +1019,17 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const result = store.slotHasError('123', 'height')
+      const result = store.slotHasError(
+        createNodeLocatorId(null, toNodeId(123)),
+        'height'
+      )
       expect(result).toBe(false)
     })
 
     it('should return true when slot has error', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -984,14 +1042,17 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(
+        createNodeLocatorId(null, toNodeId(123)),
+        'width'
+      )
       expect(result).toBe(true)
     })
 
     it('should return true when multiple errors exist for the same slot', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1010,14 +1071,17 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(
+        createNodeLocatorId(null, toNodeId(123)),
+        'width'
+      )
       expect(result).toBe(true)
     })
 
     it('should handle errors without extra_info', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1029,9 +1093,12 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(
+        createNodeLocatorId(null, toNodeId(123)),
+        'width'
+      )
       expect(result).toBe(false)
     })
   })
@@ -1175,16 +1242,16 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
 
   it('deduplicates object entries with the same nodeId', () => {
     store.setMissingNodeTypes([
-      { type: 'NodeA', nodeId: 1 },
-      { type: 'NodeA', nodeId: 1 }
+      { type: 'NodeA', nodeId: toNodeId(1) },
+      { type: 'NodeA', nodeId: toNodeId(1) }
     ])
     expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
   })
 
   it('keeps object entries with different nodeIds even if same type', () => {
     store.setMissingNodeTypes([
-      { type: 'NodeA', nodeId: 1 },
-      { type: 'NodeA', nodeId: 2 }
+      { type: 'NodeA', nodeId: toNodeId(1) },
+      { type: 'NodeA', nodeId: toNodeId(2) }
     ])
     expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
   })
@@ -1208,9 +1275,9 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
     store.setMissingNodeTypes([
       'GroupNode',
       'GroupNode', // string dup
-      { type: 'NodeA', nodeId: 1 },
-      { type: 'NodeA', nodeId: 1 }, // object dup by nodeId
-      { type: 'NodeA', nodeId: 2 }, // same type, different nodeId → kept
+      { type: 'NodeA', nodeId: toNodeId(1) },
+      { type: 'NodeA', nodeId: toNodeId(1) }, // object dup by nodeId
+      { type: 'NodeA', nodeId: toNodeId(2) }, // same type, different nodeId → kept
       { type: 'NodeB' },
       { type: 'NodeB' } // object dup by type
     ])
@@ -1272,7 +1339,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
           ]
         }
       }
-      errorStore.lastExecutionError = {
+      errorStore.recordExecutionError({
         prompt_id: 'old-job',
         timestamp: 0,
         node_id: '1',
@@ -1281,13 +1348,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         exception_message: 'boom',
         exception_type: 'RuntimeError',
         traceback: []
-      }
-      errorStore.lastPromptError = {
+      })
+      errorStore.recordPromptError({
         type: 'old-error',
         message: 'old prompt error',
         details: ''
-      }
-      errorStore.lastNodeErrors = nodeErrors
+      })
+      errorStore.recordNodeErrors(nodeErrors)
       errorStore.showErrorOverlay()
 
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
@@ -1511,6 +1578,15 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store._executingNodeProgress).toBeNull()
       expect(store.activeJobId).toBeNull()
+    })
+
+    it('keeps the active job when a numeric node id is executing', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('executing', 123)
+
+      expect(store.activeJobId).toBe('job-1')
+      expect(store.queuedJobs['job-1']).toBeDefined()
     })
   })
 

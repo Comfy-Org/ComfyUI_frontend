@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { WidgetId } from '@/types/widgetId'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
 
@@ -84,10 +86,10 @@ describe('resolveNode', () => {
 
 describe('createNode', () => {
   function makeCanvas(graph: LGraph): LGraphCanvas {
-    return {
+    return fromPartial<LGraphCanvas>({
       graph,
-      graph_mouse: [100, 200] as [number, number]
-    } as Partial<LGraphCanvas> as LGraphCanvas
+      graph_mouse: [100, 200]
+    })
   }
 
   beforeEach(() => {
@@ -136,7 +138,7 @@ describe('createNode', () => {
     const newNode = new LGraphNode('LoadImage')
     const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)
     const graph = new LGraph()
-    vi.spyOn(graph, 'add').mockReturnValue(null as unknown as LGraphNode)
+    vi.spyOn(graph, 'add').mockReturnValue(fromAny<LGraphNode, null>(null))
 
     await createNode(makeCanvas(graph), 'LoadImage')
 
@@ -149,32 +151,33 @@ describe('getWidgetIdForNode', () => {
   const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
   function fakeNode(id: number, opts: { detached?: boolean } = {}): LGraphNode {
-    return {
+    return createMockLGraphNode({
       id,
       graph: opts.detached ? undefined : { rootGraph: { id: graphId } }
-    } as unknown as LGraphNode
+    })
   }
 
   it('returns widget.widgetId when present', () => {
     const node = fakeNode(7)
+    const existingWidgetId = widgetId(graphId, toNodeId(7), 'seed')
     const widget = {
       name: 'seed',
-      widgetId: 'precomputed:7:seed' as WidgetId
+      widgetId: existingWidgetId
     }
-    expect(getWidgetIdForNode(node, widget)).toBe('precomputed:7:seed')
+    expect(getWidgetIdForNode(node, widget)).toBe(existingWidgetId)
   })
 
   it('derives an widgetId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
-      widgetId(graphId, 42, 'legacy_widget')
+      widgetId(graphId, toNodeId(42), 'legacy_widget')
     )
   })
 
   it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, 42, 'UNKNOWN#1')
+      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
     )
   })
 

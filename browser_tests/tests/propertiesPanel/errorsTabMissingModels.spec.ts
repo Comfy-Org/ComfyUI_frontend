@@ -143,7 +143,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const objectInfo = await response.json()
         const ckptName =
           objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
-        ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
+        ckptName[0] = [...ckptName[0], FAKE_MODEL_NAME]
         await route.fulfill({ response, json: objectInfo })
       })
 
@@ -151,21 +151,11 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         const url = new URL(response.url())
         return url.pathname.endsWith('/object_info') && response.ok()
       })
-      const modelFoldersResponse = comfyPage.page.waitForResponse(
-        (response) => {
-          const url = new URL(response.url())
-          return url.pathname.endsWith('/experiment/models') && response.ok()
-        }
-      )
       const refreshButton = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelRefresh
       )
 
-      await Promise.all([
-        objectInfoResponse,
-        modelFoldersResponse,
-        refreshButton.click()
-      ])
+      await Promise.all([objectInfoResponse, refreshButton.click()])
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
       ).toBeHidden()

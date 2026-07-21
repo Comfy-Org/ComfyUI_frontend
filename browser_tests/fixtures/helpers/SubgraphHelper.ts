@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
@@ -549,6 +550,7 @@ export class SubgraphHelper {
   }
 
   static getTextSlotPosition(page: Page, nodeId: string) {
+    const localNodeId = toNodeId(nodeId)
     return page.evaluate((id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
       if (!node) return null
@@ -565,7 +567,7 @@ export class SubgraphHelper {
         }
       }
       return null
-    }, nodeId)
+    }, localNodeId)
   }
 
   static async expectWidgetBelowHeader(

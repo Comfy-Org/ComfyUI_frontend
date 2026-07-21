@@ -1,4 +1,5 @@
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { toLinkId } from '@/types/linkId'
 import type {
   INodeInputSlot,
   IWidgetLocator
@@ -100,7 +101,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second'),
         makeFakeInputSlot('third', true),
-        makeFakeInputSlot('fourth', true, 1)
+        makeFakeInputSlot('fourth', true, toLinkId(1))
       ]
       const nodeData = makeFakeNodeData(inputs)
 
@@ -114,8 +115,8 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second'),
         makeFakeInputSlot('third', true),
-        makeFakeInputSlot('fourth', true, 1),
-        makeFakeInputSlot('fifth', true, 2)
+        makeFakeInputSlot('fourth', true, toLinkId(1)),
+        makeFakeInputSlot('fifth', true, toLinkId(2))
       ]
       const nodeData = makeFakeNodeData(inputs)
 

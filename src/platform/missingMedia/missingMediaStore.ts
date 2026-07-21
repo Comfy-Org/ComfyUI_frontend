@@ -68,10 +68,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = media.length ? media : null
   }
 
-  function hasMissingMediaOnNode(nodeLocatorId: string): boolean {
-    return missingMediaNodeIds.value.has(nodeLocatorId)
-  }
-
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
@@ -157,7 +153,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     clearMissingMedia,
     createVerificationAbortController,
 
-    hasMissingMediaOnNode,
     isContainerWithMissingMedia
   }
 })

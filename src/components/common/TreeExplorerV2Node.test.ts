@@ -355,7 +355,7 @@ describe('TreeExplorerV2Node', () => {
       const nodeDiv = getTreeNode(container)
       await fireEvent.dragStart(nodeDiv)
 
-      expect(mockStartDrag).toHaveBeenCalledWith(mockData, 'native')
+      expect(mockStartDrag).toHaveBeenCalledWith(mockData, { mode: 'native' })
     })
 
     it('does not call startDrag for folder items on dragstart', async () => {

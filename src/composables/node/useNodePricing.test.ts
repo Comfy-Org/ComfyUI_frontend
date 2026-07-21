@@ -12,6 +12,7 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
@@ -619,14 +620,15 @@ describe('useNodePricing', () => {
 
       LiteGraph.vueNodesMode = true
       try {
-        const revBefore = getNodeRevisionRef(node.id).value
+        const nodeId = node.id
+        const revBefore = getNodeRevisionRef(nodeId).value
         const tickBefore = pricingRevision.value
 
         getNodeDisplayPrice(node)
         await new Promise((r) => setTimeout(r, 50))
 
         // VueNodes path bumps per-node ref and the global tick.
-        expect(getNodeRevisionRef(node.id).value).toBeGreaterThan(revBefore)
+        expect(getNodeRevisionRef(nodeId).value).toBeGreaterThan(revBefore)
         expect(pricingRevision.value).toBeGreaterThan(tickBefore)
       } finally {
         LiteGraph.vueNodesMode = false
@@ -658,7 +660,7 @@ describe('useNodePricing', () => {
   describe('getNodeRevisionRef', () => {
     it('should return a ref for a node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref = getNodeRevisionRef('node-1')
+      const ref = getNodeRevisionRef(toNodeId('node-1'))
 
       expect(ref).toBeDefined()
       expect(ref.value).toBe(0)
@@ -666,25 +668,24 @@ describe('useNodePricing', () => {
 
     it('should return the same ref for the same node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-same')
-      const ref2 = getNodeRevisionRef('node-same')
+      const ref1 = getNodeRevisionRef(toNodeId('node-same'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-same'))
 
       expect(ref1).toBe(ref2)
     })
 
     it('should return different refs for different node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-a')
-      const ref2 = getNodeRevisionRef('node-b')
+      const ref1 = getNodeRevisionRef(toNodeId('node-a'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-b'))
 
       expect(ref1).not.toBe(ref2)
     })
 
     it('should handle both string and number node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      // Number ID gets stringified, so '123' and 123 should return the same ref
-      const refFromNumber = getNodeRevisionRef(123)
-      const refFromString = getNodeRevisionRef('123')
+      const refFromNumber = getNodeRevisionRef(toNodeId(123))
+      const refFromString = getNodeRevisionRef(toNodeId('123'))
 
       expect(refFromNumber).toBe(refFromString)
     })

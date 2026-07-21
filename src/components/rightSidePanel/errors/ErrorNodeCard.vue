@@ -1,9 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-    <div
-      v-if="card.nodeId && !compact"
-      class="flex min-h-8 flex-wrap items-center gap-2"
-    >
+    <div v-if="card.nodeId" class="flex min-h-8 flex-wrap items-center gap-2">
       <span class="flex min-w-0 flex-1">
         <button
           v-if="hasRuntimeError && (card.nodeTitle || card.title)"
@@ -21,15 +18,6 @@
         </span>
       </span>
       <div class="flex shrink-0 items-center">
-        <Button
-          v-if="card.isSubgraphNode"
-          variant="secondary"
-          size="sm"
-          class="shrink-0 focus-visible:ring-inset"
-          @click.stop="handleEnterSubgraph"
-        >
-          {{ t('rightSidePanel.enterSubgraph') }}
-        </Button>
         <Button
           v-if="hasRuntimeError"
           variant="textonly"
@@ -112,7 +100,7 @@
 
         <TransitionCollapse>
           <div
-            v-if="error.isRuntimeError && isRuntimeDisclosureExpanded"
+            v-if="error.isRuntimeError && runtimeDetailsExpanded"
             :id="getRuntimeDetailsId(idx)"
             role="region"
             data-testid="runtime-error-panel"
@@ -195,14 +183,12 @@ import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
 
-const { card, compact = false } = defineProps<{
+const { card } = defineProps<{
   card: ErrorCardData
-  compact?: boolean
 }>()
 
 const emit = defineEmits<{
   locateNode: [nodeId: string]
-  enterSubgraph: [nodeId: string]
   copyToClipboard: [text: string]
 }>()
 
@@ -212,9 +198,6 @@ const { findOnGitHub, contactSupport: handleGetHelp } = useErrorActions()
 const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
-)
-const isRuntimeDisclosureExpanded = computed(
-  () => compact || runtimeDetailsExpanded.value
 )
 const runtimeDetailsControlIds = computed(() =>
   card.errors
@@ -230,12 +213,6 @@ function toggleRuntimeDetails() {
 function handleLocateNode() {
   if (card.nodeId) {
     emit('locateNode', card.nodeId)
-  }
-}
-
-function handleEnterSubgraph() {
-  if (card.nodeId) {
-    emit('enterSubgraph', card.nodeId)
   }
 }
 

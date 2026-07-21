@@ -1,5 +1,8 @@
 import { expect } from '@playwright/test'
 
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -13,9 +16,10 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/input_order_swap')
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => {
-          return window.app!.graph!.links.get(1)?.target_slot
-        })
+        comfyPage.page.evaluate(
+          (linkId) => window.app!.graph!.links.get(linkId)?.target_slot,
+          toLinkId(1)
+        )
       )
       .toBe(1)
   })
@@ -39,16 +43,22 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await comfyPage.workflow.loadWorkflow('links/duplicate_links_slot_drift')
 
     function evaluateGraph() {
-      return comfyPage.page.evaluate(() => {
+      const nodeIds = {
+        switchCfg: toNodeId(120),
+        ksampler85: toNodeId(85),
+        ksampler86: toNodeId(86)
+      }
+
+      return comfyPage.page.evaluate((nodeIds) => {
         const graph = window.app!.graph!
 
         const subgraph = graph.subgraphs.values().next().value
         if (!subgraph) return { error: 'No subgraph found' }
 
         // Node 120 = Switch (CFG), connects to both KSamplerAdvanced 85 and 86
-        const switchCfg = subgraph.getNodeById(120)
-        const ksampler85 = subgraph.getNodeById(85)
-        const ksampler86 = subgraph.getNodeById(86)
+        const switchCfg = subgraph.getNodeById(nodeIds.switchCfg)
+        const ksampler85 = subgraph.getNodeById(nodeIds.ksampler85)
+        const ksampler86 = subgraph.getNodeById(nodeIds.ksampler86)
         if (!switchCfg || !ksampler85 || !ksampler86)
           return { error: 'Required nodes not found' }
 
@@ -74,7 +84,10 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
         // Count links from Switch(CFG) to node 85 cfg (should be 1, not 2)
         let cfgLinkToNode85Count = 0
         for (const link of subgraph.links.values()) {
-          if (link.origin_id === 120 && link.target_id === 85)
+          if (
+            String(link.origin_id) === '120' &&
+            String(link.target_id) === '85'
+          )
             cfgLinkToNode85Count++
         }
 
@@ -89,7 +102,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
           switchOutputLinkCount,
           cfgLinkToNode85Count
         }
-      })
+      }, nodeIds)
     }
 
     // Poll graph state once, then assert all properties

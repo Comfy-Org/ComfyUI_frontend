@@ -79,6 +79,26 @@ const config: StorybookConfig = {
             replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
           },
           {
+            find: '@/composables/billing/useBillingContext',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useBillingContext.ts'
+          },
+          {
+            find: '@/composables/useFeatureFlags',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useFeatureFlags.ts'
+          },
+          {
+            find: '@/platform/workspace/composables/useWorkspaceUI',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
+          },
+          {
+            find: '@/platform/workspace/stores/teamWorkspaceStore',
+            replacement:
+              process.cwd() + '/src/storybook/mocks/teamWorkspaceStore.ts'
+          },
+          {
             find: '@/utils/formatUtil',
             replacement:
               process.cwd() +

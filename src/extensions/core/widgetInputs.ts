@@ -7,7 +7,6 @@ import type {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -273,17 +272,7 @@ export class PrimitiveNode extends LGraphNode {
       widgetName: 'value',
       nodeTypeForBrowser: targetNode.comfyClass ?? '',
       inputNameForBrowser: targetInputName,
-      defaultValue,
-      onValueChange: (widget, newValue, oldValue) => {
-        widget.callback?.(
-          widget.value,
-          app.canvas,
-          this,
-          app.canvas.graph_mouse,
-          {} as CanvasPointerEvent
-        )
-        this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
-      }
+      defaultValue
     })
   }
 
@@ -469,7 +458,7 @@ export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
   if (!(slot instanceof NodeSlot)) return
   const graph = slot.node.graph
   if (!graph) return
-  const link = graph.links[slot.link ?? -1]
+  const link = graph.getLink(slot.link)
   if (!link) return
   const originNode = graph.getNodeById(link.origin_id)
   if (!originNode || !isPrimitiveNode(originNode)) return

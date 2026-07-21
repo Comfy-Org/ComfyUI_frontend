@@ -114,6 +114,35 @@ const zGalleriaInputSpec = zBaseInputOptions.extend({
     .optional()
 })
 
+const zColorsInputSpec = zBaseInputOptions.extend({
+  type: z.literal('COLORS'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z.array(z.string()).optional()
+})
+
+const zBoundingBoxesInputSpec = zBaseInputOptions.extend({
+  type: z.literal('BOUNDING_BOXES'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: z
+    .array(
+      z.object({
+        x: z.number(),
+        y: z.number(),
+        width: z.number(),
+        height: z.number(),
+        metadata: z.object({
+          type: z.enum(['obj', 'text']),
+          text: z.string(),
+          desc: z.string(),
+          palette: z.array(z.string())
+        })
+      })
+    )
+    .optional()
+})
+
 const zTextareaInputSpec = zBaseInputOptions.extend({
   type: z.literal('TEXTAREA'),
   name: z.string(),
@@ -179,6 +208,8 @@ const zInputSpec = z.union([
   zMarkdownInputSpec,
   zChartInputSpec,
   zGalleriaInputSpec,
+  zColorsInputSpec,
+  zBoundingBoxesInputSpec,
   zTextareaInputSpec,
   zCurveInputSpec,
   zRangeInputSpec,
@@ -225,6 +256,8 @@ export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
 export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
 export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
+export type ColorsInputSpec = z.infer<typeof zColorsInputSpec>
+export type BoundingBoxesInputSpec = z.infer<typeof zBoundingBoxesInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>

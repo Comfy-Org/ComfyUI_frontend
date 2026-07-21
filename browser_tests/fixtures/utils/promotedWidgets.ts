@@ -1,4 +1,5 @@
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { toNodeId } from '@/types/nodeId'
 
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
@@ -44,6 +45,7 @@ export async function getPromotedWidgets(
   comfyPage: ComfyPage,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
+  const localNodeId = toNodeId(nodeId)
   const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
     (id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
@@ -91,7 +93,7 @@ export async function getPromotedWidgets(
       })
       return { widgetSources, previewExposures }
     },
-    nodeId
+    localNodeId
   )
 
   const exposures = isNodeProperty(previewExposures)

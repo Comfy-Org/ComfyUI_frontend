@@ -11,10 +11,24 @@ const translations = {
     'zh-CN': '图像生成视频'
   },
 
+  // UI (global, reusable across sections)
+  'ui.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'ui.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+
   // CTAs (global, reusable across sections)
   'cta.tryWorkflow': {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
+  },
+  'cta.getStarted': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
   },
   'cta.watchNow': {
     en: 'Watch Now',
@@ -69,8 +83,8 @@ const translations = {
       '如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。'
   },
   'showcase.feature3.title': {
-    en: 'Community Workflows on Comfy Hub',
-    'zh-CN': 'Comfy Hub 上的社区工作流'
+    en: 'Community Workflows on Comfy Workflows',
+    'zh-CN': 'Comfy Workflows 上的社区工作流'
   },
   'showcase.feature3.description': {
     en: 'Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs.',
@@ -809,7 +823,7 @@ const translations = {
     'zh-CN': 'Comfy Cloud 支持的自定义节点包'
   },
   'cloudNodes.meta.title': {
-    en: 'Custom-node packs on Comfy Cloud — supported by default',
+    en: 'Custom-node packs on Comfy Cloud - supported by default',
     'zh-CN': 'Comfy Cloud 自定义节点包合集——开箱即用'
   },
   'cloudNodes.meta.description': {
@@ -918,9 +932,9 @@ const translations = {
     'zh-CN': '所有模型。\n商业许可保证。'
   },
   'cloud.reason.2.description': {
-    en: 'Run open-source models like Wan 2.2, Flux, LTX and Qwen alongside partner models like Nano Banana, Seedance, Seedream, Grok, Kling, Hunyuan 3D and more. Every model on Comfy Cloud is cleared for commercial use. No license ambiguity. All through one credit balance.',
+    en: 'Run open-source models like Wan 2.2, Flux, LTX and Qwen alongside partner models like Nano Banana, Seedance, Seedream, Grok, Kling, Hunyuan 3D, GPT Image 2 and more. Every model on Comfy Cloud is cleared for commercial use. No license ambiguity. All through one credit balance.',
     'zh-CN':
-      '运行 Wan 2.2、Flux、LTX 和 Qwen 等开源模型，以及 Nano Banana、Seedance、Seedream、Grok、Kling、Hunyuan 3D 等合作伙伴模型。Comfy Cloud 上的每个模型都已获得商业使用许可。无许可证歧义。通过统一的积分余额使用。'
+      '运行 Wan 2.2、Flux、LTX 和 Qwen 等开源模型，以及 Nano Banana、Seedance、Seedream、Grok、Kling、Hunyuan 3D、GPT Image 2 等合作伙伴模型。Comfy Cloud 上的每个模型都已获得商业使用许可。无许可证歧义。通过统一的积分余额使用。'
   },
   'cloud.reason.2.badge.onlyOn': {
     en: 'ONLY ON',
@@ -981,6 +995,10 @@ const translations = {
   'cloud.aiModels.card.wan22TextToVideo': {
     en: 'Wan 2.2',
     'zh-CN': 'Wan 2.2'
+  },
+  'cloud.aiModels.card.gptImage2': {
+    en: 'GPT Image 2',
+    'zh-CN': 'GPT Image 2'
   },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
@@ -1825,6 +1843,474 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // MCP – Meta
+  'mcp.meta.title': {
+    en: 'Comfy MCP - Drive ComfyUI from any AI agent',
+    'zh-CN': 'Comfy MCP - 让任何 AI 智能体驱动 ComfyUI'
+  },
+  'mcp.meta.description': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎，可在 Claude Code、Claude Desktop 及任何兼容 MCP 的客户端中生成图像、视频、音频和 3D 内容。'
+  },
+
+  // MCP – HeroSection
+  'mcp.hero.heading': {
+    en: 'Drive ComfyUI from\nany AI agent.',
+    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
+  },
+  'mcp.hero.subtitle': {
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'mcp.hero.demoPromptKeyframeBoard': {
+    en: 'board the launch film — 8 key frames from the brief',
+    'zh-CN': '为发布影片做分镜——从简报生成 8 张关键帧'
+  },
+  'mcp.hero.demoPromptCharacterConcepts': {
+    en: 'explore 4 hero directions — pick one to take forward',
+    'zh-CN': '探索 4 个主角方向——挑一个继续推进'
+  },
+  'mcp.hero.demoPromptStyleTransfer': {
+    en: 'stylize all 12 previz frames — photoreal, one pass',
+    'zh-CN': '把 12 张预演帧统一风格化——写实，一次完成'
+  },
+  'mcp.hero.demoPromptFrameToVideo': {
+    en: 'animate each shot — first + last frame, 9:16, batch',
+    'zh-CN': '逐镜生成动画——首帧加尾帧，9:16，批量'
+  },
+  'mcp.hero.demoPromptProductPlacement': {
+    en: 'drop the can into all 8 hero shots, matched light',
+    'zh-CN': '把罐子放进 8 张主视觉里，光影匹配'
+  },
+  'mcp.hero.demoPromptCharacterDesign': {
+    en: 'design the hero — 4 turnarounds, game-ready',
+    'zh-CN': '设计主角——4 视图转面，可直接用于游戏'
+  },
+  'mcp.hero.demoPrompt3dAsset': {
+    en: 'build a 3D hero prop for the scene I have open',
+    'zh-CN': '为我打开的场景做一个 3D 主道具'
+  },
+  'mcp.hero.demoPromptCampaignKeyArt': {
+    en: "match this frame's palette, make the campaign key art",
+    'zh-CN': '匹配这一帧的配色，生成营销主视觉'
+  },
+  'mcp.hero.demoPromptSetExtension': {
+    en: 'extend the set — matte painting from this plate',
+    'zh-CN': '扩展场景——用这张底板做接景绘制'
+  },
+  'mcp.hero.viewDocs': {
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
+  'mcp.hero.installMcp': {
+    en: 'INSTALL MCP',
+    'zh-CN': '安装 MCP'
+  },
+  'mcp.hero.demoGenerate': {
+    en: 'GENERATE',
+    'zh-CN': '生成'
+  },
+  'mcp.hero.demoToolKeyframeBoard': {
+    en: 'keyframe board',
+    'zh-CN': '关键帧分镜'
+  },
+  'mcp.hero.demoToolCharacterConcepts': {
+    en: 'character concepts',
+    'zh-CN': '角色概念'
+  },
+  'mcp.hero.demoToolStyleTransfer': {
+    en: 'style transfer',
+    'zh-CN': '风格迁移'
+  },
+  'mcp.hero.demoToolFrameToVideo': {
+    en: 'frame to video',
+    'zh-CN': '帧生视频'
+  },
+  'mcp.hero.demoToolProductPlacement': {
+    en: 'product placement',
+    'zh-CN': '产品植入'
+  },
+  'mcp.hero.demoToolCharacterDesign': {
+    en: 'character design',
+    'zh-CN': '角色设计'
+  },
+  'mcp.hero.demoTool3dAsset': {
+    en: '3d asset',
+    'zh-CN': '3D 资产'
+  },
+  'mcp.hero.demoToolCampaignKeyArt': {
+    en: 'campaign key art',
+    'zh-CN': '营销主视觉'
+  },
+  'mcp.hero.demoToolSetExtension': {
+    en: 'set extension',
+    'zh-CN': '场景扩展'
+  },
+  'mcp.hero.demoStatusIdle': {
+    en: "your agent has Comfy's tools",
+    'zh-CN': '你的智能体已接入 Comfy 工具'
+  },
+  'mcp.hero.demoStatusBridging': {
+    en: 'bridging {app} → {tool}…',
+    'zh-CN': '正在桥接 {app} → {tool}…'
+  },
+  'mcp.hero.demoStatusRunning': {
+    en: 'running {tool}…',
+    'zh-CN': '正在运行 {tool}…'
+  },
+
+  // MCP – SetupSection
+  'mcp.setup.label': {
+    en: 'GET STARTED',
+    'zh-CN': '快速开始'
+  },
+  'mcp.setup.heading': {
+    en: 'Set up Comfy MCP',
+    'zh-CN': '配置 Comfy MCP'
+  },
+  'mcp.setup.subtitle': {
+    en: 'Two ways to connect: add the server yourself, or ask your agent to install it. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    'zh-CN':
+      '两种接入方式：自行添加服务器，或让你的智能体自动安装。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+  },
+  'mcp.setup.manual.title': {
+    en: 'Install manually',
+    'zh-CN': '手动安装'
+  },
+  'mcp.setup.manual.description': {
+    en: 'Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
+    'zh-CN':
+      '将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
+  },
+  'mcp.setup.manual.tabsLabel': {
+    en: 'Pick your client',
+    'zh-CN': '选择你的客户端'
+  },
+  'mcp.setup.agent.title': {
+    en: 'Ask your agent to install Comfy MCP',
+    'zh-CN': '让你的智能体安装 Comfy MCP'
+  },
+  'mcp.setup.agent.command': {
+    en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
+    'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
+  },
+  'mcp.setup.agent.description': {
+    en: 'Prefer to let your agent do it? Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
+    'zh-CN':
+      '想让智能体代劳？将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
+  },
+  'mcp.setup.clients.claudeCode.step': {
+    en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
+    'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
+  },
+  'mcp.setup.walkthroughAlt': {
+    en: '{client} setup walkthrough',
+    'zh-CN': '{client} 设置演示'
+  },
+  'mcp.setup.clients.claudeDesktop.manualTitle': {
+    en: 'Add Custom Connector',
+    'zh-CN': '添加自定义连接器'
+  },
+  'mcp.setup.clients.claudeDesktop.step': {
+    en: 'Click Customize in the sidebar, open Connectors, choose Add custom connector, paste the URL above, and sign in.',
+    'zh-CN':
+      '点击侧边栏的 Customize，进入 Connectors，选择添加自定义连接器，粘贴上方 URL 并登录。'
+  },
+  'mcp.setup.clients.cursor.step': {
+    en: 'Add the URL above to ~/.cursor/mcp.json with an X-API-Key header. Create your key at ',
+    'zh-CN':
+      '将上方 URL 添加到 ~/.cursor/mcp.json，并附带 X-API-Key 请求头。在此创建密钥：'
+  },
+  'mcp.setup.clients.cursor.linkLabel': {
+    en: 'platform.comfy.org',
+    'zh-CN': 'platform.comfy.org'
+  },
+  'mcp.setup.clients.codex.step': {
+    en: 'Run this in your terminal, then codex mcp login comfy-cloud to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 codex mcp login comfy-cloud 登录。'
+  },
+  'mcp.setup.clients.openclaw.step': {
+    en: 'Run these in your terminal, then openclaw mcp login comfy to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 openclaw mcp login comfy 登录。'
+  },
+  'mcp.setup.clients.other.name': {
+    en: 'Others',
+    'zh-CN': '其他'
+  },
+  'mcp.setup.clients.other.step': {
+    en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the ',
+    'zh-CN':
+      '将上方 URL 添加为远程 MCP 服务器。客户端不支持 OAuth？改用 X-API-Key 请求头。完整教程见'
+  },
+  'mcp.setup.clients.other.linkLabel': {
+    en: 'setup docs',
+    'zh-CN': '设置文档'
+  },
+  'mcp.setup.skillsNote': {
+    en: 'Using Claude Code? The Comfy skills plugin adds ready-made slash commands. ',
+    'zh-CN': '在用 Claude Code？Comfy 技能插件提供现成的斜杠命令。'
+  },
+  'mcp.setup.skillsLink': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
+  },
+
+  // MCP – WhyBuildSection
+  'mcp.why.heading': {
+    en: 'Why build on\n',
+    'zh-CN': '为什么选择\n'
+  },
+  'mcp.why.headingHighlight': {
+    en: 'Comfy MCP?',
+    'zh-CN': 'Comfy MCP？'
+  },
+  'mcp.why.subtitle': {
+    en: 'A trusted infrastructure that lets engineers and professionals ship faster.',
+    'zh-CN': '一套值得信赖的基础设施，让工程师和专业人士交付更快。'
+  },
+  'mcp.why.1.title': {
+    en: 'Open protocol,\nany client.',
+    'zh-CN': '开放协议，\n任意客户端。'
+  },
+  'mcp.why.1.description': {
+    en: 'MCP is an open standard, so any MCP-compatible client can connect. Claude Code, Claude Desktop, and Codex sign in with OAuth; every other agent connects with an API key.',
+    'zh-CN':
+      'MCP 是开放标准，因此任何兼容 MCP 的客户端都能接入。Claude Code、Claude Desktop 和 Codex 通过 OAuth 登录，其他智能体使用 API 密钥连接。'
+  },
+  'mcp.why.2.title': {
+    en: 'The full engine,\nnot a sandbox.',
+    'zh-CN': '完整引擎，\n非沙箱环境。'
+  },
+  'mcp.why.2.description': {
+    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows. Everything available now and in the future.',
+    'zh-CN':
+      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流。当前及未来的所有功能均可使用。'
+  },
+  'mcp.why.3.title': {
+    en: 'Outputs you keep.',
+    'zh-CN': '输出归你所有。'
+  },
+  'mcp.why.3.description': {
+    en: 'Downloads go to your Comfy library — store, reuse, remix, and share without leaving the ecosystem.',
+    'zh-CN':
+      '下载内容保存到你的 Comfy 库——在生态系统内存储、复用、二次创作和分享。'
+  },
+  'mcp.why.4.title': {
+    en: 'Powered by\nComfy Cloud.',
+    'zh-CN': '由 Comfy Cloud\n提供支持。'
+  },
+  'mcp.why.4.description': {
+    en: 'Run without a local GPU through the same infrastructure your team already trusts.',
+    'zh-CN': '无需本地 GPU，通过你团队信赖的相同基础设施运行。'
+  },
+
+  // MCP – ToolsSection
+  'mcp.tools.heading': {
+    en: 'Everything ComfyUI can do,\nnow available as tools.',
+    'zh-CN': 'ComfyUI 能做的一切，\n现在都可作为工具调用。'
+  },
+  'mcp.tools.1.title': {
+    en: 'Generate anything',
+    'zh-CN': '生成任意内容'
+  },
+  'mcp.tools.1.description': {
+    en: 'Generate images, video, audio, 3D, upscale, or remove backgrounds. Add or remove elements in images, create or modify any visual, audio, or 3D asset at any scale.',
+    'zh-CN':
+      '生成图像、视频、音频、3D 内容，放大分辨率或移除背景。添加或删除图像元素，以任意规模创建或修改任何视觉、音频或 3D 资产。'
+  },
+  'mcp.tools.1.alt': {
+    en: 'Comfy MCP generating images, video, audio, and 3D assets from a single prompt',
+    'zh-CN': 'Comfy MCP 通过单个提示生成图像、视频、音频和 3D 资产'
+  },
+  'mcp.tools.2.title': {
+    en: 'Search the ecosystem',
+    'zh-CN': '搜索生态系统'
+  },
+  'mcp.tools.2.description': {
+    en: 'Query thousands of models, browse rankings, and choose workflow templates straight from your response.',
+    'zh-CN': '查询数千个模型，浏览排名，直接在对话中选择工作流模板。'
+  },
+  'mcp.tools.2.alt': {
+    en: 'Comfy MCP searching the ecosystem of models, rankings, and workflow templates',
+    'zh-CN': 'Comfy MCP 搜索模型、排名和工作流模板的生态系统'
+  },
+  'mcp.tools.3.title': {
+    en: 'Run real workflows',
+    'zh-CN': '运行真实工作流'
+  },
+  'mcp.tools.3.description': {
+    en: 'Submit graphs, track jobs, and pull outputs back. Save and share workflows, reuse a saved one, or open any run on the ComfyUI canvas — the full engine, driven by tool calls.',
+    'zh-CN':
+      '提交计算图、跟踪任务并取回输出。保存和分享工作流，复用已保存的工作流，或在 ComfyUI 画布上打开任意运行——完整的引擎，由工具调用驱动。'
+  },
+  'mcp.tools.3.alt': {
+    en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
+    'zh-CN': 'Comfy MCP 在对话中将 ComfyUI 工作流作为可调用工具运行'
+  },
+  'mcp.tools.4.title': {
+    en: 'Direct any model',
+    'zh-CN': '直接调用任意模型'
+  },
+  'mcp.tools.4.description': {
+    en: 'Kling, Veo, Seedance, Flux, GPT-Image, Nano Banana, and ElevenLabs. Closed partner APIs and open-source models, reached through one set of tools.',
+    'zh-CN':
+      'Kling、Veo、Seedance、Flux、GPT-Image、Nano Banana 和 ElevenLabs。封闭的合作伙伴 API 与开源模型，通过同一套工具即可调用。'
+  },
+  'mcp.tools.4.alt': {
+    en: 'Comfy MCP directing closed partner APIs and open-source models through one set of tools',
+    'zh-CN': 'Comfy MCP 通过同一套工具调用封闭合作伙伴 API 和开源模型'
+  },
+  'mcp.tools.5.title': {
+    en: 'Generate in batches',
+    'zh-CN': '批量生成'
+  },
+  'mcp.tools.5.description': {
+    en: 'Stack a batch on the Queue, track it, and pull back every output. Dozens of runs from a single call.',
+    'zh-CN':
+      '将一批任务加入队列，跟踪进度，并取回每一个输出。一次调用即可完成数十次运行。'
+  },
+  'mcp.tools.5.alt': {
+    en: 'Comfy MCP stacking a batch on the Queue and pulling back every output',
+    'zh-CN': 'Comfy MCP 将一批任务加入队列并取回每个输出'
+  },
+  'mcp.tools.6.title': {
+    en: 'Ship it as an app',
+    'zh-CN': '作为应用发布'
+  },
+  'mcp.tools.6.description': {
+    en: 'Turn any workflow into an app with a shareable URL. Collaborators run it in the browser — only the inputs you expose, nothing to install.',
+    'zh-CN':
+      '将任意工作流变成带可分享链接的应用。协作者在浏览器中运行——只暴露你开放的输入，无需安装任何东西。'
+  },
+  'mcp.tools.6.alt': {
+    en: 'Comfy MCP turning a workflow into a shareable browser app',
+    'zh-CN': 'Comfy MCP 将工作流变成可在浏览器中分享的应用'
+  },
+
+  // MCP – HowItWorksSection
+  'mcp.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '工作原理'
+  },
+  'mcp.howItWorks.step1.number': { en: '01', 'zh-CN': '01' },
+  'mcp.howItWorks.step1.title': {
+    en: 'CONNECT',
+    'zh-CN': '连接'
+  },
+  'mcp.howItWorks.step1.description': {
+    en: 'Add the Comfy Cloud MCP server to Claude Code or Claude Desktop and sign in once with OAuth. No API keys to manage.',
+    'zh-CN':
+      '将 Comfy Cloud MCP 服务器添加到 Claude Code 或 Claude Desktop，通过 OAuth 一次性登录。无需管理 API 密钥。'
+  },
+  'mcp.howItWorks.step2.number': { en: '02', 'zh-CN': '02' },
+  'mcp.howItWorks.step2.title': {
+    en: 'DISCOVER',
+    'zh-CN': '发现'
+  },
+  'mcp.howItWorks.step2.description': {
+    en: "Your agent gets Comfy's tools: search, generate, submit, and retrieve — everything it needs to create.",
+    'zh-CN':
+      '你的智能体获得 Comfy 的工具：搜索、生成、提交和获取——一切所需，应有尽有。'
+  },
+  'mcp.howItWorks.step3.number': { en: '03', 'zh-CN': '03' },
+  'mcp.howItWorks.step3.title': {
+    en: 'CREATE',
+    'zh-CN': '创作'
+  },
+  'mcp.howItWorks.step3.description': {
+    en: 'Request what you want, the agent queues and runs the workflow, and returns the finished result.',
+    'zh-CN': '描述你的需求，智能体排队执行工作流，并返回最终结果。'
+  },
+
+  // MCP – FAQSection
+  'mcp.faq.heading': {
+    en: 'Q&As',
+    'zh-CN': '常见问答'
+  },
+  'mcp.faq.1.q': {
+    en: 'Which clients are supported?',
+    'zh-CN': '支持哪些客户端？'
+  },
+  'mcp.faq.1.a': {
+    en: "For Claude Code, Claude Desktop, or Codex, add https://cloud.comfy.org/mcp as a custom connector or remote MCP server in any client, then sign in when prompted.\nFor clients that don't support OAuth, connect with a Comfy API key. Send the docs https://docs.comfy.org/agent-tools/cloud to your agent and it will figure out the installation for you.",
+    'zh-CN':
+      '对于 Claude Code、Claude Desktop 或 Codex，在任意客户端中将 https://cloud.comfy.org/mcp 添加为自定义连接器或远程 MCP 服务器，然后在提示时登录。\n对于不支持 OAuth 的客户端，请使用 Comfy API 密钥连接。将文档 https://docs.comfy.org/agent-tools/cloud 发送给你的智能体，它会为你完成安装。'
+  },
+  'mcp.faq.2.q': {
+    en: "What's the server URL?",
+    'zh-CN': '服务器 URL 是什么？'
+  },
+  'mcp.faq.2.a': {
+    en: 'https://cloud.comfy.org/mcp — add it as a custom connector or remote MCP server in any client, then sign in when prompted.',
+    'zh-CN':
+      'https://cloud.comfy.org/mcp——在任意客户端中将它添加为自定义连接器或远程 MCP 服务器，然后在提示时登录。'
+  },
+  'mcp.faq.3.q': {
+    en: 'Do I need an API key?',
+    'zh-CN': '我需要 API 密钥吗？'
+  },
+  'mcp.faq.3.a': {
+    en: 'Not for Claude Code, Claude Desktop, Codex, or OpenClaw. You need a Comfy API key for Cursor and Hermes for now. Just copy https://docs.comfy.org/agent-tools/cloud and your agent will figure out the installation for you.',
+    'zh-CN':
+      'Claude Code、Claude Desktop、Codex 和 OpenClaw 不需要。Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/cloud，你的智能体就会为你完成安装。'
+  },
+  'mcp.faq.4.q': {
+    en: 'Does it cost anything?',
+    'zh-CN': '需要付费吗？'
+  },
+  'mcp.faq.4.a': {
+    en: "Connecting is free with a Comfy account, and searching models, nodes, and templates doesn't cost credits. Running a generation uses Comfy Cloud credits and needs a subscription or credit balance. Your agent confirms with you before it spends.",
+    'zh-CN':
+      '使用 Comfy 账户连接是免费的，搜索模型、节点和模板也不消耗积分。运行生成会使用 Comfy Cloud 积分，需要订阅或积分余额。智能体在消费前会先与你确认。'
+  },
+  'mcp.faq.5.q': {
+    en: 'Can I use it with my local ComfyUI?',
+    'zh-CN': '可以配合我的本地 ComfyUI 使用吗？'
+  },
+  'mcp.faq.5.a': {
+    en: 'Coming soon. Today, to drive a local ComfyUI, you can use comfy-cli: https://github.com/Comfy-Org/comfy-cli',
+    'zh-CN':
+      '即将推出。目前，若要操作本地 ComfyUI，你可以使用 comfy-cli：https://github.com/Comfy-Org/comfy-cli'
+  },
+  'mcp.faq.6.q': {
+    en: 'What can my agent do once connected?',
+    'zh-CN': '连接后我的智能体能做什么？'
+  },
+  'mcp.faq.6.a': {
+    en: "• Generate images, video, audio, and 3D — including all open-source workflows and partner models like Seedance, GPT-Image, Nano Banana, and Kling\n• Build, edit, and run workflows; save and re-run workflows\n• Run and read in large batches\n• Search models, nodes, and template workflows\n• Read and execute shared workflow URLs\n• Upload and download assets for you\n\nEverything is now in natural language. No nodes, no downloads, no GPU, no node graphs if you don't want them.",
+    'zh-CN':
+      '• 生成图像、视频、音频和 3D——包括所有开源工作流以及 Seedance、GPT-Image、Nano Banana 和 Kling 等合作伙伴模型\n• 构建、编辑和运行工作流；保存并重新运行工作流\n• 大批量运行和读取\n• 搜索模型、节点和模板工作流\n• 读取并执行分享的工作流链接\n• 为你上传和下载资产\n\n现在一切都用自然语言完成。如果你愿意，无需节点、无需下载、无需 GPU、无需节点图。'
+  },
+  'mcp.faq.7.q': {
+    en: 'Where do my outputs go?',
+    'zh-CN': '我的输出会保存到哪里？'
+  },
+  'mcp.faq.7.a': {
+    en: 'Into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets locally for you.',
+    'zh-CN':
+      '保存到你的 Comfy Cloud 资产库，你可以复用、二次创作和分享——还能在画布上打开任意运行继续编辑。你也可以让智能体把资产下载到本地。'
+  },
+  'mcp.faq.8.q': {
+    en: 'Do slash commands work in Claude Desktop?',
+    'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
+  },
+  'mcp.faq.8.a': {
+    en: 'No. They ship with the Claude Code comfy-cloud plugin. Desktop connects to the same MCP server, so every tool works; just ask in plain language.',
+    'zh-CN':
+      '不可以。斜杠命令随 Claude Code 的 comfy-cloud 插件一起提供。Claude Desktop 连接的是同一个 MCP 服务器，因此所有工具都能使用；直接用自然语言提问即可。'
+  },
+  'mcp.faq.9.q': {
+    en: 'Is it generally available?',
+    'zh-CN': '现已正式发布了吗？'
+  },
+  'mcp.faq.9.a': {
+    en: 'Yes. Comfy Cloud MCP is in open beta and available to everyone with a Comfy account.',
+    'zh-CN':
+      '是的。Comfy Cloud MCP 目前处于公开测试阶段，任何拥有 Comfy 账户的人都可以使用。'
+  },
+
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
   'nav.pricing': { en: 'Pricing', 'zh-CN': '价格' },
@@ -1838,7 +2324,7 @@ const translations = {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
   },
-  'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
+  'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
   'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
@@ -1848,7 +2334,9 @@ const translations = {
   'nav.youtube': { en: 'YouTube', 'zh-CN': 'YouTube' },
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
+  'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
@@ -1856,6 +2344,13 @@ const translations = {
   'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
   'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
+  'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
+  'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -1866,6 +2361,8 @@ const translations = {
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns
+  'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
+  'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
@@ -1879,16 +2376,16 @@ const translations = {
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'New Release: Seedance 2.0',
-    'zh-CN': '全新发布：Seedance 2.0'
+    en: 'NEW: COMFY MCP',
+    'zh-CN': '全新发布：Comfy MCP'
   },
   'nav.featuredProductsAlt': {
-    en: 'Seedance 2.0 release feature image',
-    'zh-CN': 'Seedance 2.0 发布精选图片'
+    en: 'Comfy MCP feature image',
+    'zh-CN': 'Comfy MCP 精选图片'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Try the Seedance 2.0 workflow',
-    'zh-CN': '试用 Seedance 2.0 工作流'
+    en: 'Get started with Comfy MCP',
+    'zh-CN': '开始使用 Comfy MCP'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -1927,6 +2424,7 @@ const translations = {
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'footer.trustSafety': { en: 'Trust & Safety', 'zh-CN': '信任与安全' },
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
@@ -2596,18 +3094,18 @@ const translations = {
     'zh-CN': 'Plans; Fees; Free Tier.'
   },
   'tos.payment.block.1': {
-    en: 'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.',
+    en: 'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.',
     'zh-CN':
-      'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.'
+      'Your use of the Comfy Products is subject to the plan selected via the applicable ordering page, online sign-up flow, or order form (“Plan”). Comfy may offer a free or freemium tier (“Free Tier”) and one or more paid tiers; the applicable Plan may include usage caps, feature restrictions, throttling, overage charges, or upgrade requirements, each as described in the pricing page or applicable Order Form. If a Free Tier user provides a valid payment method in connection with their account (including for identity verification, future upgrade purposes, or any other reason), such user expressly authorizes Comfy to charge that payment method for any usage that exceeds the applicable Free Tier limits, including overages resulting from intentional use, usage by authorized users or third parties under the account, or technical factors. Comfy will use reasonable efforts to notify users when they approach or exceed Free Tier limits, but such notice is not a condition of Comfy’s right to charge for overages. You are responsible for all usage under your account, including usage by your Users and under your credentials and API keys. Comfy may modify, suspend, or discontinue any Plan (including the Free Tier) consistent with this Agreement and the Order Forms.'
   },
   'tos.payment.block.2.heading': {
     en: 'Self-Serve Credit Card Billing.',
     'zh-CN': 'Self-Serve Credit Card Billing.'
   },
   'tos.payment.block.3': {
-    en: 'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.',
+    en: 'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.',
     'zh-CN':
-      'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method.'
+      'For self-serve Plans, Customer will provide a valid payment method (e.g., credit card) and authorizes Comfy (and its payment processor) to charge all fees and taxes when due. Unless the Order Forms state otherwise, subscription components (if any) will be billed in advance on a recurring basis and usage-based components (including any overages) will be billed in arrears for the applicable billing period (and may be charged as usage accrues). This billing authorization applies regardless of whether the Customer is on a paid Plan or a Free Tier at the time the overage is incurred. Paid self-serve Plans automatically renew for successive billing periods until cancelled through the console or as otherwise described in the Order Forms; if a charge fails, Comfy may retry the charge and Customer must promptly update its payment method. The same retry rights apply to any failed overage charges incurred by Free Tier users.'
   },
   'tos.payment.block.4.heading': {
     en: 'Invoiced Billing.',
@@ -3140,8 +3638,8 @@ const translations = {
   },
 
   'affiliate-terms.page.title': {
-    en: 'Affiliate Terms — Comfy',
-    'zh-CN': 'Affiliate Terms — Comfy'
+    en: 'Affiliate Terms - Comfy',
+    'zh-CN': 'Affiliate Terms - Comfy'
   },
   'affiliate-terms.page.description': {
     en: 'Comfy.org Affiliate Program Terms and Conditions.',
@@ -3158,6 +3656,429 @@ const translations = {
   'affiliate-terms.page.effectiveDateLabel': {
     en: 'Effective Date',
     'zh-CN': '生效日期'
+  },
+
+  // ── Enterprise MSA ─────────────────────────────────────────────────
+  // English-only, by design. This is a legal-reviewed customer-facing
+  // template. Serving a translated variant would expose Comfy to
+  // liability from the translation diverging from the approved English
+  // source. See the matching header comment in
+  // src/pages/enterprise-msa.astro and the LOCALE_INVARIANT_ROUTE_KEYS
+  // entry in src/config/routes.ts.
+  'enterprise-msa.effective-date': {
+    en: 'May 22, 2026',
+    'zh-CN': 'May 22, 2026'
+  },
+  'enterprise-msa.1-definitions.label': {
+    en: 'DEFINITIONS',
+    'zh-CN': 'DEFINITIONS'
+  },
+  'enterprise-msa.1-definitions.title': {
+    en: '1. Definitions',
+    'zh-CN': '1. Definitions'
+  },
+  'enterprise-msa.1-definitions.block.0': {
+    en: '<strong>“Affiliates”</strong> means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.',
+    'zh-CN':
+      '<strong>“Affiliates”</strong> means any entity that directly or indirectly controls, is controlled by, or is under common control with a party, where “control” means the ownership of more than fifty percent (50%) of the voting securities or other voting interests of such entity.'
+  },
+  'enterprise-msa.1-definitions.block.1': {
+    en: '<strong>“Applicable Laws”</strong> means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.',
+    'zh-CN':
+      '<strong>“Applicable Laws”</strong> means all federal and state laws, treaties, rules, regulations, regulatory and supervisory guidance, directives, policies, orders or determinations of a regulatory authority applicable to the activities and obligations contemplated under this Agreement.'
+  },
+  'enterprise-msa.1-definitions.block.2': {
+    en: '<strong>“Comfy API”</strong> means the application programming interface and related developer tools made available by Comfy that allows Customer to access and execute visual AI workflows programmatically as production endpoints from within Customer’s own applications or systems.',
+    'zh-CN':
+      '<strong>“Comfy API”</strong> means the application programming interface and related developer tools made available by Comfy that allows Customer to access and execute visual AI workflows programmatically as production endpoints from within Customer’s own applications or systems.'
+  },
+  'enterprise-msa.1-definitions.block.3': {
+    en: '<strong>“Comfy Branding”</strong> means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.',
+    'zh-CN':
+      '<strong>“Comfy Branding”</strong> means the names, logos, and associated trademarks owned or in progress of being owned by Comfy.'
+  },
+  'enterprise-msa.1-definitions.block.4': {
+    en: '<strong>“Comfy Cloud”</strong> means the cloud-based hosting environment made available by Comfy that allows Customer to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.',
+    'zh-CN':
+      '<strong>“Comfy Cloud”</strong> means the cloud-based hosting environment made available by Comfy that allows Customer to access and run visual AI workflows remotely through Comfy’s infrastructure, without requiring local installation or hardware.'
+  },
+  'enterprise-msa.1-definitions.block.5': {
+    en: '<strong>“Comfy Enterprise”</strong> means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.',
+    'zh-CN':
+      '<strong>“Comfy Enterprise”</strong> means the enterprise-grade product tier made available by Comfy that provides organizations with dedicated infrastructure, enhanced security, administrative controls, and related support services for deploying and managing visual AI workflows at scale.'
+  },
+  'enterprise-msa.1-definitions.block.6': {
+    en: '<strong>“Comfy OSS”</strong> means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href="https://github.com/Comfy-Org" class="text-white underline">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under this Agreement or in connection with any commercial product or offering.',
+    'zh-CN':
+      '<strong>“Comfy OSS”</strong> means the open-source software, source code, libraries, tools, and related components made available by Comfy under one or more open source licenses, including the software repositories published by Comfy at <a href="https://github.com/Comfy-Org" class="text-white underline">https://github.com/Comfy-Org</a>, as updated, modified, or supplemented from time to time. For the avoidance of doubt, Comfy OSS does not include any proprietary software, infrastructure, or functionality made available by Comfy under this Agreement or in connection with any commercial product or offering.'
+  },
+  'enterprise-msa.1-definitions.block.7': {
+    en: '<strong>“Comfy Products”</strong> means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to Customer under this Agreement, excluding any Comfy OSS.',
+    'zh-CN':
+      '<strong>“Comfy Products”</strong> means Comfy Cloud, Comfy API, Comfy Enterprise and other products, software, features, tools, and functionality made available by Comfy to Customer under this Agreement, excluding any Comfy OSS.'
+  },
+  'enterprise-msa.1-definitions.block.8': {
+    en: '<strong>“Customer Data”</strong> means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.',
+    'zh-CN':
+      '<strong>“Customer Data”</strong> means electronic data and information submitted or generated by Customer in connection with its use of the Comfy Products, including all Inputs and Outputs.'
+  },
+  'enterprise-msa.1-definitions.block.9': {
+    en: '<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.',
+    'zh-CN':
+      '<strong>“Open Source License”</strong> means the open source license(s) under which Comfy makes Comfy OSS available, as identified in the applicable source code repository.'
+  },
+  'enterprise-msa.1-definitions.block.10': {
+    en: '<strong>“Operational Metadata”</strong> means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.',
+    'zh-CN':
+      '<strong>“Operational Metadata”</strong> means usage and diagnostic information generated by the Comfy Products and collected by Comfy to support, maintain, and optimize the performance and security of the Comfy Products, including information regarding software versions, system configuration, uptime, error logs, health metrics, and feature usage. Operational Metadata does not include Customer Data or Confidential Information.'
+  },
+  'enterprise-msa.1-definitions.block.11': {
+    en: '<strong>“Order Form”</strong> means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement. The initial Order Form is attached as Exhibit A.',
+    'zh-CN':
+      '<strong>“Order Form”</strong> means the online sign-up flow, order form or other ordering document entered into or otherwise agreed by Customer that references this Agreement. The initial Order Form is attached as Exhibit A.'
+  },
+  'enterprise-msa.1-definitions.block.12': {
+    en: '<strong>“User”</strong> means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement.',
+    'zh-CN':
+      '<strong>“User”</strong> means Customer’s or Customer’s Affiliates’ employees and contractors who are authorized by Customer to access and use the Comfy Products on Customer’s or Customer’s Affiliates’ behalf according to the terms of this Agreement.'
+  },
+  'enterprise-msa.2-comfy-products.label': {
+    en: 'PRODUCTS',
+    'zh-CN': 'PRODUCTS'
+  },
+  'enterprise-msa.2-comfy-products.title': {
+    en: '2. Comfy Products',
+    'zh-CN': '2. Comfy Products'
+  },
+  'enterprise-msa.2-comfy-products.block.0': {
+    en: '<strong>Right to Access and Use Comfy Products.</strong> Subject to Customer’s compliance with all of the terms and conditions of this Agreement, Comfy grants Customer and Customer’s Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for Customer’s internal business purposes.',
+    'zh-CN':
+      '<strong>Right to Access and Use Comfy Products.</strong> Subject to Customer’s compliance with all of the terms and conditions of this Agreement, Comfy grants Customer and Customer’s Users a non-exclusive, non-sublicensable, non-transferable right during the term of this Agreement to access and use the Comfy Products as set forth in the applicable Order Form for Customer’s internal business purposes.'
+  },
+  'enterprise-msa.2-comfy-products.block.1': {
+    en: '<strong>Customer Data.</strong> As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.',
+    'zh-CN':
+      '<strong>Customer Data.</strong> As between Comfy and Customer, Customer retains all right, title, and interest in and to any data, images, videos, prompts, models, workflows, nodes, parameters, or other materials submitted or uploaded by Customer to the Comfy Products (“Input”), as well as any images, videos, designs, or other visual content generated through Customer’s use of the Comfy Products as a result of processing Customer’s Input (“Output”). Customer acknowledges that due to the nature of artificial intelligence, Comfy may generate the same or similar Output for other customers, and Customer shall have no right, title, or interest in or to Output generated for any other customer.'
+  },
+  'enterprise-msa.2-comfy-products.block.2': {
+    en: '<strong>No AI Training.</strong> Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.',
+    'zh-CN':
+      '<strong>No AI Training.</strong> Comfy will not use Input or Output to train generative AI or diffusion models. Comfy may, however, collect and use limited metadata derived from Customer’s use of the Comfy Products, such as prompt classifications, workflow structures, and node configurations, to improve the performance, functionality, and user experience of the Comfy Products.'
+  },
+  'enterprise-msa.2-comfy-products.block.3': {
+    en: '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.',
+    'zh-CN':
+      '<strong>Comfy OSS.</strong> Customer may use Comfy OSS under the terms of the applicable Open Source License(s) governing each respective component, as identified in the corresponding source code repository, rather than under this Agreement. Nothing in this Agreement shall be construed to limit, supersede, or modify any rights or obligations arising under an applicable Open Source License. If Customer chooses to use the Comfy Products in conjunction with Comfy OSS, this Agreement applies solely to Customer’s use of the Comfy Products and not to the Comfy OSS itself.'
+  },
+  'enterprise-msa.2-comfy-products.block.4': {
+    en: '<strong>Partner Nodes.</strong> Certain features of the Comfy Products allow Customer to access third-party AI model providers (“Partner Nodes”) through Comfy. When Customer uses a Partner Node, Comfy proxies Customer’s request to the applicable third-party provider, transmitting the information necessary to fulfill Customer’s request, including prompts, images, models, and parameters. Comfy does not transmit Customer’s identity or account information to third-party providers in connection with Partner Node requests. Customer’s use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.',
+    'zh-CN':
+      '<strong>Partner Nodes.</strong> Certain features of the Comfy Products allow Customer to access third-party AI model providers (“Partner Nodes”) through Comfy. When Customer uses a Partner Node, Comfy proxies Customer’s request to the applicable third-party provider, transmitting the information necessary to fulfill Customer’s request, including prompts, images, models, and parameters. Comfy does not transmit Customer’s identity or account information to third-party providers in connection with Partner Node requests. Customer’s use of Partner Nodes is subject to the terms and policies of the applicable third-party provider, and Comfy is not responsible for the data practices of such providers. Usage of Partner Nodes is metered and billed through Comfy.'
+  },
+  'enterprise-msa.2-comfy-products.block.5': {
+    en: '<strong>Modification of Comfy Products.</strong> Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.',
+    'zh-CN':
+      '<strong>Modification of Comfy Products.</strong> Comfy may, at any time and in its sole discretion, modify, update, enhance, restrict, suspend, or discontinue the Comfy Products, in whole or in part, including by changing or removing features, functionality, endpoints, specifications, documentation, access methods, usage limits, or availability. Comfy has no obligation to maintain or support any particular version of the Comfy Products or to ensure backward compatibility. Any such modifications may be made with or without notice and may result in interruptions to or degradation of the Comfy Products. Comfy shall have no liability arising out of or related to any modification, suspension, or discontinuation of the Comfy Products, and Customer acknowledges that its use of the Comfy Products is at its own risk and that it should not rely on the continued availability of any aspect of the Comfy Products.'
+  },
+  'enterprise-msa.2-comfy-products.block.6': {
+    en: '<strong>Data Retention and Deletion.</strong> Comfy retains Customer Data for as long as Customer’s account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href="https://docs.comfy.org/support/data-retention" class="text-white underline">docs.comfy.org/support/data-retention</a>, as updated from time to time. Customer may request deletion of Customer’s account and associated Customer Data by contacting Comfy at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify Customer’s personal information from its primary systems within a reasonable time. Customer acknowledges that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from Customer’s use of the Comfy Products may be retained indefinitely.',
+    'zh-CN':
+      '<strong>Data Retention and Deletion.</strong> Comfy retains Customer Data for as long as Customer’s account remains active or as otherwise necessary to provide the Comfy Products, comply with applicable legal obligations, resolve disputes, and enforce this Agreement. Specific retention periods for different categories of Customer Data are set forth in Comfy’s retention documentation, available at <a href="https://docs.comfy.org/support/data-retention" class="text-white underline">docs.comfy.org/support/data-retention</a>, as updated from time to time. Customer may request deletion of Customer’s account and associated Customer Data by contacting Comfy at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>. Upon receipt of a verified deletion request, Comfy will use commercially reasonable efforts to delete or de-identify Customer’s personal information from its primary systems within a reasonable time. Customer acknowledges that: (i) deletion may not propagate immediately to all backup systems, third-party analytics providers, or observability systems, which retain data subject to their own retention policies; (ii) certain Customer Data may be retained as required by applicable law or for legitimate business purposes such as billing records; and (iii) aggregated or de-identified data derived from Customer’s use of the Comfy Products may be retained indefinitely.'
+  },
+  'enterprise-msa.3-customer-responsibilities.label': {
+    en: 'CUSTOMER',
+    'zh-CN': 'CUSTOMER'
+  },
+  'enterprise-msa.3-customer-responsibilities.title': {
+    en: '3. Customer Responsibilities',
+    'zh-CN': '3. Customer Responsibilities'
+  },
+  'enterprise-msa.3-customer-responsibilities.block.0': {
+    en: '<strong>Registration.</strong> To access and use the Comfy Products, Customer may be required to register one or more accounts by providing Comfy with the information specified in the applicable registration form, including Customer’s email address. Customer shall ensure that all registration information provided to Comfy is complete and accurate, and shall promptly update such information as necessary to keep it current. Customer shall be liable for all activities conducted through its account, including any unauthorized access or use resulting from Customer’s failure to implement reasonable access controls or to limit access to its systems and devices.',
+    'zh-CN':
+      '<strong>Registration.</strong> To access and use the Comfy Products, Customer may be required to register one or more accounts by providing Comfy with the information specified in the applicable registration form, including Customer’s email address. Customer shall ensure that all registration information provided to Comfy is complete and accurate, and shall promptly update such information as necessary to keep it current. Customer shall be liable for all activities conducted through its account, including any unauthorized access or use resulting from Customer’s failure to implement reasonable access controls or to limit access to its systems and devices.'
+  },
+  'enterprise-msa.3-customer-responsibilities.block.1': {
+    en: '<strong>General Technology Restrictions.</strong> Customer agrees that it will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.',
+    'zh-CN':
+      '<strong>General Technology Restrictions.</strong> Customer agrees that it will not, directly or indirectly: (i) sublicense the Comfy Products for use by a third party; (ii) reverse engineer or attempt to extract the source code or underlying methodology from the Comfy Products or any related software, except to the extent that this restriction is expressly prohibited by Applicable Laws; (iii) use or facilitate the use of the Comfy Products for any activities that are prohibited by Applicable Laws or otherwise; (iv) bypass or circumvent measures employed to prevent or limit access to the Comfy Products; (v) use the Comfy Products to create a product or service competitive with Comfy’s products or services; (vi) create derivative works of or otherwise create, attempt to create or derive, or knowingly assist any third party to create or derive, the source code underlying the Comfy Products; or (vii) otherwise use or interact with the Comfy Products for any purpose not expressly permitted under this Agreement.'
+  },
+  'enterprise-msa.3-customer-responsibilities.block.2': {
+    en: '<strong>Acceptable Use; Prohibited Customer Data.</strong> Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group.',
+    'zh-CN':
+      '<strong>Acceptable Use; Prohibited Customer Data.</strong> Customer is solely responsible for ensuring that all Input submitted to the Comfy Products complies with all Applicable Laws, and Customer agrees that it will not, and will not permit any third party to submit to Comfy or the Comfy Products or otherwise use the Comfy Products to create: (i) any data, designs, or other materials subject to U.S. export control laws and regulations; (ii) any viruses, malware, ransomware, Trojan horses, worms, spyware, or other malicious or harmful code or content that could damage, disrupt, interfere with, or compromise the Comfy Products, Comfy’s systems or infrastructure, or the data or systems of any other user or third party; (iii) any Customer Data that depicts, promotes, or facilitates illegal activity, including without limitation child sexual abuse material, non-consensual intimate imagery, or content that incites violence or hatred against any individual or group; (iv) any Customer Data that infringes or misappropriates the intellectual property rights, privacy rights, or publicity rights of any third party, including without limitation by submitting models, images, or other materials without the right to do so; (v) any content or information that is intentionally deceptive or misleading, including without limitation synthetic media designed to impersonate a real individual without their consent; or (vi) any Customer Data that could reasonably be expected to cause harm to any individual or group.'
+  },
+  'enterprise-msa.4-payment.label': {
+    en: 'PAYMENT',
+    'zh-CN': 'PAYMENT'
+  },
+  'enterprise-msa.4-payment.title': {
+    en: '4. Payment',
+    'zh-CN': '4. Payment'
+  },
+  'enterprise-msa.4-payment.block.0': {
+    en: '<strong>Fees.</strong> Customer will pay Comfy the fees set forth in the applicable Order Form. Customer shall pay those amounts due and not disputed in good faith within seven (7) days of the date of receipt of the applicable invoice, unless a specific date for payment is set forth in such Order Form, in which case payment will be due on the date specified. Except as otherwise specified herein or in any applicable Order Form, (a) fees are quoted and payable in United States dollars and (b) payment obligations are non-cancelable and non-pro-ratable for partial months, and fees paid are non-refundable. Comfy reserves the right to change its fees upon each renewal term. Customer is responsible for all usage under Customer’s account, including usage by Customer’s Users and under Customer’s credentials and API keys.',
+    'zh-CN':
+      '<strong>Fees.</strong> Customer will pay Comfy the fees set forth in the applicable Order Form. Customer shall pay those amounts due and not disputed in good faith within seven (7) days of the date of receipt of the applicable invoice, unless a specific date for payment is set forth in such Order Form, in which case payment will be due on the date specified. Except as otherwise specified herein or in any applicable Order Form, (a) fees are quoted and payable in United States dollars and (b) payment obligations are non-cancelable and non-pro-ratable for partial months, and fees paid are non-refundable. Comfy reserves the right to change its fees upon each renewal term. Customer is responsible for all usage under Customer’s account, including usage by Customer’s Users and under Customer’s credentials and API keys.'
+  },
+  'enterprise-msa.4-payment.block.1': {
+    en: '<strong>Prepaid Credits.</strong> Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.',
+    'zh-CN':
+      '<strong>Prepaid Credits.</strong> Customer may prepay for usage credits (“Credits”) which may be applied toward usage of the Comfy Products at the rates set forth on Comfy’s pricing page. Except for documented billing errors or similar service issues attributed to Comfy, all purchases of Credits are final and non-refundable, and Comfy will not issue refunds or credits for any unused, partially used, or remaining Credits under any circumstances, including upon termination or expiration of Customer’s account. Comfy reserves the right to modify the pricing or Credit redemption rates applicable to future Credit purchases upon reasonable notice, but any Credits purchased prior to such modification will be honored at the rates in effect at the time of purchase.'
+  },
+  'enterprise-msa.4-payment.block.2': {
+    en: '<strong>Taxes.</strong> Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law.',
+    'zh-CN':
+      '<strong>Taxes.</strong> Fees are exclusive of all taxes, duties, levies, and similar governmental assessments (including sales, use, VAT/GST, and withholding taxes), and Customer is responsible for all such amounts other than taxes based on Comfy’s net income; if withholding is required by law, Customer will gross up payments so Comfy receives the invoiced amount, unless prohibited by law.'
+  },
+  'enterprise-msa.4-payment.block.3': {
+    en: '<strong>Late Payments; Suspension.</strong> Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws.',
+    'zh-CN':
+      '<strong>Late Payments; Suspension.</strong> Overdue undisputed amounts may accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law, plus reasonable collection costs. Comfy may suspend or limit access to the Comfy Products (including throttling, disabling API keys, or downgrading to the Free Tier) for non-payment of undisputed amounts after providing commercially reasonable notice and an opportunity to cure, unless Comfy reasonably determines immediate suspension is necessary to protect the Comfy Products or comply with Applicable Laws.'
+  },
+  'enterprise-msa.5-term-termination.label': {
+    en: 'TERM',
+    'zh-CN': 'TERM'
+  },
+  'enterprise-msa.5-term-termination.title': {
+    en: '5. Term; Termination',
+    'zh-CN': '5. Term; Termination'
+  },
+  'enterprise-msa.5-term-termination.block.0': {
+    en: '<strong>Term.</strong> The term of this Agreement will commence on the Effective Date and continue until terminated as set forth below (“Term”). The initial term of each Order Form will begin on the Subscription Start Date of such Order Form and will continue for the subscription term set forth therein. Except as set forth in such Order Form, the Order Form will renew for successive renewal terms equal to the length of the Initial Subscription Term.',
+    'zh-CN':
+      '<strong>Term.</strong> The term of this Agreement will commence on the Effective Date and continue until terminated as set forth below (“Term”). The initial term of each Order Form will begin on the Subscription Start Date of such Order Form and will continue for the subscription term set forth therein. Except as set forth in such Order Form, the Order Form will renew for successive renewal terms equal to the length of the Initial Subscription Term.'
+  },
+  'enterprise-msa.5-term-termination.block.1': {
+    en: '<strong>Termination of Agreement.</strong> Each party may terminate this Agreement upon written notice to the other party if there are no Order Forms then in effect. Each party may also terminate this Agreement or the applicable Order Form upon written notice in the event (a) the other party commits any material breach of this Agreement or the applicable Order Form and fails to remedy such breach within thirty (30) days after written notice of such breach or (b) subject to applicable law, upon the other party’s liquidation, commencement of dissolution proceedings or assignment of substantially all its assets for the benefit of creditors, or if the other party becomes the subject of bankruptcy or similar proceeding that is not dismissed within sixty (60) days.',
+    'zh-CN':
+      '<strong>Termination of Agreement.</strong> Each party may terminate this Agreement upon written notice to the other party if there are no Order Forms then in effect. Each party may also terminate this Agreement or the applicable Order Form upon written notice in the event (a) the other party commits any material breach of this Agreement or the applicable Order Form and fails to remedy such breach within thirty (30) days after written notice of such breach or (b) subject to applicable law, upon the other party’s liquidation, commencement of dissolution proceedings or assignment of substantially all its assets for the benefit of creditors, or if the other party becomes the subject of bankruptcy or similar proceeding that is not dismissed within sixty (60) days.'
+  },
+  'enterprise-msa.5-term-termination.block.2': {
+    en: '<strong>Deletion of Customer Data Upon Termination.</strong> Upon expiration or termination of this Agreement, Comfy will delete Customer Data from its primary production systems within sixty (60) days. Notwithstanding the foregoing, Customer Data may persist in routine backup systems beyond such period solely to the extent necessary under Comfy’s standard backup retention schedule, provided that such data is not actively accessed or used by Comfy and remains subject to the confidentiality obligations of this Agreement.',
+    'zh-CN':
+      '<strong>Deletion of Customer Data Upon Termination.</strong> Upon expiration or termination of this Agreement, Comfy will delete Customer Data from its primary production systems within sixty (60) days. Notwithstanding the foregoing, Customer Data may persist in routine backup systems beyond such period solely to the extent necessary under Comfy’s standard backup retention schedule, provided that such data is not actively accessed or used by Comfy and remains subject to the confidentiality obligations of this Agreement.'
+  },
+  'enterprise-msa.5-term-termination.block.3': {
+    en: '<strong>Survival.</strong> Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers.',
+    'zh-CN':
+      '<strong>Survival.</strong> Termination or expiration will not affect any rights or obligations, including the payment of amounts due, which have accrued under this Agreement up to the date of termination or expiration. Upon termination or expiration of this Agreement, the provisions that are intended by their nature to survive termination will survive and continue in full force and effect in accordance with their terms, including confidentiality obligations, proprietary rights, indemnification, limitations of liability, and disclaimers.'
+  },
+  'enterprise-msa.6-confidentiality.label': {
+    en: 'CONFIDENTIALITY',
+    'zh-CN': 'CONFIDENTIALITY'
+  },
+  'enterprise-msa.6-confidentiality.title': {
+    en: '6. Confidentiality',
+    'zh-CN': '6. Confidentiality'
+  },
+  'enterprise-msa.6-confidentiality.block.0': {
+    en: '<strong>Definition of Confidential Information.</strong> “Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.',
+    'zh-CN':
+      '<strong>Definition of Confidential Information.</strong> “Confidential Information” means all non-public information disclosed by a party (“Disclosing Party”) to the other party (“Receiving Party”), whether oral or written, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and circumstances of disclosure. Confidential Information of Customer includes Customer Data; Confidential Information of Comfy includes the Comfy Products; and each party’s Confidential Information includes the terms of this Agreement and any Order Forms (including pricing), as well as business, financial, marketing, technical, and product information. Confidential Information excludes information that the Receiving Party can demonstrate: (i) is or becomes publicly available without breach; (ii) was known prior to disclosure without breach; (iii) is received from a third party without breach; or (iv) was independently developed without use of or reference to the Disclosing Party’s Confidential Information.'
+  },
+  'enterprise-msa.6-confidentiality.block.1': {
+    en: '<strong>Protection of Confidential Information.</strong> The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.',
+    'zh-CN':
+      '<strong>Protection of Confidential Information.</strong> The Receiving Party will: (a) protect Confidential Information using at least reasonable care; (b) use it solely to perform under this Agreement; and (c) limit access to its and its Affiliates’ employees and contractors with a need to know and confidentiality obligations at least as protective as those herein. Neither party may disclose the terms of this Agreement or any Order Form except to its Affiliates, legal counsel, or accountants, and remains responsible for their compliance. Upon written request, the Receiving Party will promptly return or destroy Confidential Information, except for information retained in routine backups or as required by law or internal retention policies.'
+  },
+  'enterprise-msa.6-confidentiality.block.2': {
+    en: '<strong>Compelled Disclosure.</strong> The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.',
+    'zh-CN':
+      '<strong>Compelled Disclosure.</strong> The Receiving Party may disclose Confidential Information if legally required, provided it gives prior notice (where permitted) and reasonable assistance, at the Disclosing Party’s expense, to seek protective treatment. Any disclosure will be limited to what is legally required, and the Receiving Party will request confidential treatment. These obligations survive while Confidential Information remains in the Receiving Party’s possession.'
+  },
+  'enterprise-msa.6-confidentiality.block.3': {
+    en: '<strong>Data Security.</strong> Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure.',
+    'zh-CN':
+      '<strong>Data Security.</strong> Comfy will implement and maintain commercially reasonable administrative, technical, and physical safeguards designed to protect Customer Data against unauthorized access, disclosure, alteration, or destruction. These measures will be no less protective than those Comfy uses to protect its own confidential information of a similar nature. In the event Comfy becomes aware of a confirmed security breach that results in unauthorized access to or disclosure of Customer Data, Comfy will notify Customer without undue delay and will provide reasonable cooperation to assist Customer in investigating and mitigating the effects of such breach. Customer acknowledges that no security measures are perfect or impenetrable, and Comfy does not guarantee that Customer Data will be free from unauthorized access or disclosure.'
+  },
+  'enterprise-msa.7-proprietary-rights.label': {
+    en: 'IP',
+    'zh-CN': 'IP'
+  },
+  'enterprise-msa.7-proprietary-rights.title': {
+    en: '7. Proprietary Rights',
+    'zh-CN': '7. Proprietary Rights'
+  },
+  'enterprise-msa.7-proprietary-rights.block.0': {
+    en: '<strong>Reservation of Rights.</strong> Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.',
+    'zh-CN':
+      '<strong>Reservation of Rights.</strong> Comfy and its licensors retain all right, title, and interest, including all intellectual property and proprietary rights, in and to the Comfy Products, Comfy Branding, and all software, code, algorithms, protocols, interfaces, tools, documentation, data structures, and other technology underlying or embodied in, or used to provide, the Comfy Products (collectively, “Comfy Materials”). Except for the limited rights expressly granted to Customer under this Agreement, no rights or licenses are granted, whether by implication, estoppel, or otherwise. Comfy expressly reserves all rights in and to the Comfy Materials not expressly granted hereunder.'
+  },
+  'enterprise-msa.7-proprietary-rights.block.1': {
+    en: '<strong>Feedback.</strong> Customer may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding Customer’s experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and Customer hereby grants Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.',
+    'zh-CN':
+      '<strong>Feedback.</strong> Customer may from time to time provide feedback (including suggestions, comments for enhancements, functionality or usability, etc.) (“Feedback”) to Comfy regarding Customer’s experience using, and needs and integration requirements for, the Comfy Products. Comfy shall have full discretion to determine whether or not to proceed with the development of any requested enhancements, new features or functionality, and Customer hereby grants Comfy the full, unencumbered, royalty-free right to incorporate and otherwise fully exploit Feedback in connection with Comfy’s products and services.'
+  },
+  'enterprise-msa.7-proprietary-rights.block.2': {
+    en: '<strong>Operational Metadata.</strong> Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information.',
+    'zh-CN':
+      '<strong>Operational Metadata.</strong> Customer agrees that Comfy may collect and use Operational Metadata to operate, maintain, improve, and support the Comfy Products, including for diagnostics, analytics, system performance, and reporting purposes. Comfy will only disclose Operational Metadata externally if such data is (a) aggregated or anonymized with data across other customers, and (b) does not disclose the identity of Customer or any Customer Confidential Information.'
+  },
+  'enterprise-msa.8-warranties-disclaimer.label': {
+    en: 'WARRANTIES',
+    'zh-CN': 'WARRANTIES'
+  },
+  'enterprise-msa.8-warranties-disclaimer.title': {
+    en: '8. Warranties; Disclaimer',
+    'zh-CN': '8. Warranties; Disclaimer'
+  },
+  'enterprise-msa.8-warranties-disclaimer.block.0': {
+    en: '<strong>Comfy.</strong> Comfy warrants that it will, consistent with prevailing industry standards, provide the Comfy Products in a professional and workmanlike manner and the Comfy Products will conform in all material respects with the Documentation. For material breach of the foregoing express warranty, Customer’s exclusive remedy shall be the re-performance of the deficient Comfy Products or, if Comfy cannot re-perform such deficient Comfy Products as warranted within thirty (30) days after receipt of written notice of the warranty breach, Customer shall be entitled to terminate the applicable Order Form and recover a pro-rata portion of the prepaid subscription fees corresponding to the terminated portion of the applicable subscription term.',
+    'zh-CN':
+      '<strong>Comfy.</strong> Comfy warrants that it will, consistent with prevailing industry standards, provide the Comfy Products in a professional and workmanlike manner and the Comfy Products will conform in all material respects with the Documentation. For material breach of the foregoing express warranty, Customer’s exclusive remedy shall be the re-performance of the deficient Comfy Products or, if Comfy cannot re-perform such deficient Comfy Products as warranted within thirty (30) days after receipt of written notice of the warranty breach, Customer shall be entitled to terminate the applicable Order Form and recover a pro-rata portion of the prepaid subscription fees corresponding to the terminated portion of the applicable subscription term.'
+  },
+  'enterprise-msa.8-warranties-disclaimer.block.1': {
+    en: '<strong>Customer.</strong> Customer represents and warrants that it owns or has obtained all necessary rights, licenses, and permissions to submit Customer Data to the Comfy Products, and that Customer Data does not include any content that Customer is legally prohibited from sharing or processing through the Comfy Products.',
+    'zh-CN':
+      '<strong>Customer.</strong> Customer represents and warrants that it owns or has obtained all necessary rights, licenses, and permissions to submit Customer Data to the Comfy Products, and that Customer Data does not include any content that Customer is legally prohibited from sharing or processing through the Comfy Products.'
+  },
+  'enterprise-msa.8-warranties-disclaimer.block.2': {
+    en: '<strong>Disclaimer.</strong> EXCEPT AS SET FORTH HEREIN, THE COMFY PRODUCTS AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. COMFY DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE COMFY PRODUCTS (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. CUSTOMER AGREES AND ACKNOWLEDGES THAT CUSTOMER’S USE OF ANY OUTPUT PROVIDED BY THE COMFY PRODUCTS IS AT CUSTOMER’S OWN RISK. Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. IN NO EVENT WILL COMFY BE LIABLE FOR ANY DAMAGES OR LOSSES ARISING FROM OR RELATED TO CUSTOMER’S USE OF OR RELIANCE ON THE OUTPUT, INCLUDING ANY DECISIONS MADE OR ACTIONS TAKEN BASED ON THE OUTPUT.',
+    'zh-CN':
+      '<strong>Disclaimer.</strong> EXCEPT AS SET FORTH HEREIN, THE COMFY PRODUCTS AND OUTPUT ARE PROVIDED “AS IS” WITHOUT ANY WARRANTY OF ANY KIND. COMFY DISCLAIMS ANY AND ALL WARRANTIES, REPRESENTATIONS, AND CONDITIONS RELATING TO THE COMFY PRODUCTS (INCLUDING ANY OUTPUT), WHETHER EXPRESS, IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY REPRESENTATION, WARRANTY, OR CONDITION OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT. CUSTOMER AGREES AND ACKNOWLEDGES THAT CUSTOMER’S USE OF ANY OUTPUT PROVIDED BY THE COMFY PRODUCTS IS AT CUSTOMER’S OWN RISK. Customer is solely responsible for (a) verifying the Output is appropriate for Customer’s use case, and (b) any decisions, actions, or omissions taken in reliance on the OUTPUT. IN NO EVENT WILL COMFY BE LIABLE FOR ANY DAMAGES OR LOSSES ARISING FROM OR RELATED TO CUSTOMER’S USE OF OR RELIANCE ON THE OUTPUT, INCLUDING ANY DECISIONS MADE OR ACTIONS TAKEN BASED ON THE OUTPUT.'
+  },
+  'enterprise-msa.9-limitation-of-liability.label': {
+    en: 'LIABILITY',
+    'zh-CN': 'LIABILITY'
+  },
+  'enterprise-msa.9-limitation-of-liability.title': {
+    en: '9. Limitation of Liability',
+    'zh-CN': '9. Limitation of Liability'
+  },
+  'enterprise-msa.9-limitation-of-liability.block.0': {
+    en: 'UNDER NO LEGAL THEORY, WHETHER IN TORT, CONTRACT, OR OTHERWISE, WILL EITHER PARTY BE LIABLE TO THE OTHER UNDER THIS AGREEMENT FOR (A) ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL OR PUNITIVE DAMAGES OF ANY CHARACTER, INCLUDING DAMAGES FOR LOSS OF GOODWILL, LOST PROFITS, LOST SALES OR BUSINESS, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, LOST CONTENT OR DATA, EVEN IF A REPRESENTATIVE OF SUCH PARTY HAS BEEN ADVISED, KNEW OR SHOULD HAVE KNOWN OF THE POSSIBILITY OF SUCH DAMAGES, OR (B) EXCLUDING CUSTOMER’S PAYMENT OBLIGATIONS, ANY AGGREGATE DAMAGES, COSTS, OR LIABILITIES IN EXCESS OF THE AMOUNTS PAID BY CUSTOMER UNDER THE APPLICABLE ORDER FORM DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM.',
+    'zh-CN':
+      'UNDER NO LEGAL THEORY, WHETHER IN TORT, CONTRACT, OR OTHERWISE, WILL EITHER PARTY BE LIABLE TO THE OTHER UNDER THIS AGREEMENT FOR (A) ANY INDIRECT, SPECIAL, INCIDENTAL, CONSEQUENTIAL OR PUNITIVE DAMAGES OF ANY CHARACTER, INCLUDING DAMAGES FOR LOSS OF GOODWILL, LOST PROFITS, LOST SALES OR BUSINESS, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION, LOST CONTENT OR DATA, EVEN IF A REPRESENTATIVE OF SUCH PARTY HAS BEEN ADVISED, KNEW OR SHOULD HAVE KNOWN OF THE POSSIBILITY OF SUCH DAMAGES, OR (B) EXCLUDING CUSTOMER’S PAYMENT OBLIGATIONS, ANY AGGREGATE DAMAGES, COSTS, OR LIABILITIES IN EXCESS OF THE AMOUNTS PAID BY CUSTOMER UNDER THE APPLICABLE ORDER FORM DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM.'
+  },
+  'enterprise-msa.10-indemnification.label': {
+    en: 'INDEMNITY',
+    'zh-CN': 'INDEMNITY'
+  },
+  'enterprise-msa.10-indemnification.title': {
+    en: '10. Indemnification',
+    'zh-CN': '10. Indemnification'
+  },
+  'enterprise-msa.10-indemnification.block.0': {
+    en: '<strong>Indemnity by Comfy.</strong> Comfy will defend Customer against any claim, demand, suit, or proceeding (“Claim”) made or brought against Customer by a third party alleging that the Comfy Products as provided by Comfy infringes or misappropriates a U.S. patent, copyright or trade secret and will indemnify Customer for any damages finally awarded against Customer (or any settlement approved by Comfy) in connection with any such Claim; provided that (a) Customer will promptly notify Comfy of such Claim, (b) Comfy will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Comfy may not settle any Claim without Customer’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Customer of all related liability) and (c) Customer reasonably cooperates with Comfy in connection therewith. If the use of the Comfy Products by Customer has become, or in Comfy’s opinion is likely to become, the subject of any claim of infringement, Comfy may at its option and expense (i) procure for Customer the right to continue using and receiving the Comfy Products as set forth hereunder; (ii) replace or modify the Comfy Products to make it non-infringing (with comparable functionality); or (iii) if the options in clauses (i) or (ii) are not reasonably practicable, terminate the applicable Order Form and provide a pro rata refund of any prepaid subscription fees corresponding to the terminated portion of the applicable subscription term. Comfy will have no liability or obligation with respect to any Claim to the extent such Claim is caused by (A) prompts, inputs, or other instructions or materials submitted by Customer or its Users; (B) Customer’s use of any outputs, generated content, or models in a manner not authorized under this Agreement; (C) modification of any generated outputs by or on behalf of Customer; (D) Customer Data, including any third-party intellectual property, likenesses, or other proprietary material incorporated therein; or (E) Customer’s failure to obtain rights, consents, or clearances required for the submission or use of any content through the Comfy Products (clauses (A) through (E), “Excluded Claims”). This Section states Comfy’s sole and exclusive liability and obligation, and Customer’s exclusive remedy, for any claim of any nature related to infringement or misappropriation of intellectual property.',
+    'zh-CN':
+      '<strong>Indemnity by Comfy.</strong> Comfy will defend Customer against any claim, demand, suit, or proceeding (“Claim”) made or brought against Customer by a third party alleging that the Comfy Products as provided by Comfy infringes or misappropriates a U.S. patent, copyright or trade secret and will indemnify Customer for any damages finally awarded against Customer (or any settlement approved by Comfy) in connection with any such Claim; provided that (a) Customer will promptly notify Comfy of such Claim, (b) Comfy will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Comfy may not settle any Claim without Customer’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Customer of all related liability) and (c) Customer reasonably cooperates with Comfy in connection therewith. If the use of the Comfy Products by Customer has become, or in Comfy’s opinion is likely to become, the subject of any claim of infringement, Comfy may at its option and expense (i) procure for Customer the right to continue using and receiving the Comfy Products as set forth hereunder; (ii) replace or modify the Comfy Products to make it non-infringing (with comparable functionality); or (iii) if the options in clauses (i) or (ii) are not reasonably practicable, terminate the applicable Order Form and provide a pro rata refund of any prepaid subscription fees corresponding to the terminated portion of the applicable subscription term. Comfy will have no liability or obligation with respect to any Claim to the extent such Claim is caused by (A) prompts, inputs, or other instructions or materials submitted by Customer or its Users; (B) Customer’s use of any outputs, generated content, or models in a manner not authorized under this Agreement; (C) modification of any generated outputs by or on behalf of Customer; (D) Customer Data, including any third-party intellectual property, likenesses, or other proprietary material incorporated therein; or (E) Customer’s failure to obtain rights, consents, or clearances required for the submission or use of any content through the Comfy Products (clauses (A) through (E), “Excluded Claims”). This Section states Comfy’s sole and exclusive liability and obligation, and Customer’s exclusive remedy, for any claim of any nature related to infringement or misappropriation of intellectual property.'
+  },
+  'enterprise-msa.10-indemnification.block.1': {
+    en: '<strong>Indemnification by Customer.</strong> Customer will defend Comfy against any Claim made or brought against Comfy by a third party to the extent arising out of Customer’s breach of Section 3 or the Excluded Claims, and Customer will indemnify Comfy for any damages finally awarded against Comfy (or any settlement approved by Customer) in connection with any such Claim; provided that (a) Comfy will promptly notify Customer of such Claim, (b) Customer will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Customer may not settle any Claim without Comfy’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Comfy of all liability) and (c) Comfy reasonably cooperates with Customer in connection therewith.',
+    'zh-CN':
+      '<strong>Indemnification by Customer.</strong> Customer will defend Comfy against any Claim made or brought against Comfy by a third party to the extent arising out of Customer’s breach of Section 3 or the Excluded Claims, and Customer will indemnify Comfy for any damages finally awarded against Comfy (or any settlement approved by Customer) in connection with any such Claim; provided that (a) Comfy will promptly notify Customer of such Claim, (b) Customer will have the sole and exclusive authority to defend and/or settle any such Claim (provided that Customer may not settle any Claim without Comfy’s prior written consent, which will not be unreasonably withheld, unless it unconditionally releases Comfy of all liability) and (c) Comfy reasonably cooperates with Customer in connection therewith.'
+  },
+  'enterprise-msa.11-miscellaneous.label': {
+    en: 'MISCELLANEOUS',
+    'zh-CN': 'MISCELLANEOUS'
+  },
+  'enterprise-msa.11-miscellaneous.title': {
+    en: '11. Miscellaneous',
+    'zh-CN': '11. Miscellaneous'
+  },
+  'enterprise-msa.11-miscellaneous.block.0': {
+    en: '<strong>Governing Law.</strong> This Agreement will be governed by the laws of the State of California, exclusive of its rules governing choice of law and conflict of laws. The parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum. This Agreement will not be governed by the United Nations Convention on Contracts for the International Sale of Goods.',
+    'zh-CN':
+      '<strong>Governing Law.</strong> This Agreement will be governed by the laws of the State of California, exclusive of its rules governing choice of law and conflict of laws. The parties agree to the exclusive jurisdiction and venue of the state and federal courts located in San Francisco, CA and each party irrevocably submits to such jurisdiction and venue and waives any objection based on inconvenient forum. This Agreement will not be governed by the United Nations Convention on Contracts for the International Sale of Goods.'
+  },
+  'enterprise-msa.11-miscellaneous.block.1': {
+    en: '<strong>Export Compliance.</strong> Customer will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in using the Comfy Products.',
+    'zh-CN':
+      '<strong>Export Compliance.</strong> Customer will comply with the export laws and regulations of the United States, the European Union and other applicable jurisdictions in using the Comfy Products.'
+  },
+  'enterprise-msa.11-miscellaneous.block.2': {
+    en: '<strong>Publicity.</strong> Customer agrees that Comfy may refer to Customer’s name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use Customer’s name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without Customer’s prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.',
+    'zh-CN':
+      '<strong>Publicity.</strong> Customer agrees that Comfy may refer to Customer’s name, logo, and trademarks in Comfy’s marketing materials and website; however, Comfy will not use Customer’s name or trademarks in any other publicity (e.g., press releases, customer references and case studies) without Customer’s prior written consent (which may be by email) not to be unreasonably withheld, conditioned, or delayed.'
+  },
+  'enterprise-msa.11-miscellaneous.block.3': {
+    en: '<strong>Third-Party Infrastructure.</strong> Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.',
+    'zh-CN':
+      '<strong>Third-Party Infrastructure.</strong> Customer acknowledges that the Comfy Products relies on third-party infrastructure, hardware, and services, including cloud computing providers and GPU infrastructure providers (collectively, “Third-Party Infrastructure”), and that the availability, performance, and security of the Comfy Products may be affected by the operation, maintenance, or failure of such Third-Party Infrastructure. Comfy will use commercially reasonable efforts to maintain Comfy Products availability but makes no representation or warranty regarding the performance or availability of any Third-Party Infrastructure, and Comfy shall have no liability to Customer for any interruption, degradation, loss of data, or other harm arising out of or related to any failure, outage, or limitation of Third-Party Infrastructure, whether or not within Comfy’s control.'
+  },
+  'enterprise-msa.11-miscellaneous.block.4': {
+    en: '<strong>Assignment; Delegation.</strong> Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.',
+    'zh-CN':
+      '<strong>Assignment; Delegation.</strong> Neither party hereto may assign or otherwise transfer this Agreement, in whole or in part, without the other party’s prior written consent, except that Comfy may assign this Agreement without consent to a successor to all or substantially all of its assets or business related to this Agreement. Any attempted assignment, delegation, or transfer by either party in violation hereof will be null and void. Subject to the foregoing, this Agreement will be binding on the parties and their successors and assigns.'
+  },
+  'enterprise-msa.11-miscellaneous.block.5': {
+    en: '<strong>Amendment; Waiver.</strong> No amendment or modification to this Agreement, nor any waiver of any rights hereunder, will be effective unless assented to in writing by both parties. Any such waiver will be only to the specific provision and under the specific circumstances for which it was given and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.',
+    'zh-CN':
+      '<strong>Amendment; Waiver.</strong> No amendment or modification to this Agreement, nor any waiver of any rights hereunder, will be effective unless assented to in writing by both parties. Any such waiver will be only to the specific provision and under the specific circumstances for which it was given and will not apply with respect to any repeated or continued violation of the same provision or any other provision. Failure or delay by either party to enforce any provision of this Agreement will not be deemed a waiver of future enforcement of that or any other provision.'
+  },
+  'enterprise-msa.11-miscellaneous.block.6': {
+    en: '<strong>Relationship.</strong> Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.',
+    'zh-CN':
+      '<strong>Relationship.</strong> Nothing contained herein will in any way constitute any association, partnership, agency, employment or joint venture between the parties hereto, or be construed to evidence the intention of the parties to establish any such relationship. Neither party will have the authority to obligate or bind the other in any manner, and nothing herein contained will give rise to, or is intended to give rise to any rights of any kind in favor of any third parties.'
+  },
+  'enterprise-msa.11-miscellaneous.block.7': {
+    en: '<strong>Unenforceability.</strong> If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.',
+    'zh-CN':
+      '<strong>Unenforceability.</strong> If a court of competent jurisdiction determines that any provision of this Agreement is invalid, illegal, or otherwise unenforceable, such provision will be enforced as nearly as possible in accordance with the stated intention of the parties, while the remainder of this Agreement will remain in full force and effect and bind the parties according to its terms.'
+  },
+  'enterprise-msa.11-miscellaneous.block.8': {
+    en: '<strong>Notices.</strong> Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to the parties must be sent to the respective address set forth in the signature blocks below, or such other address designated pursuant to this Section.',
+    'zh-CN':
+      '<strong>Notices.</strong> Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to the parties must be sent to the respective address set forth in the signature blocks below, or such other address designated pursuant to this Section.'
+  },
+  'enterprise-msa.11-miscellaneous.block.9': {
+    en: '<strong>Force Majeure.</strong> Neither party will be deemed in breach hereunder for any cessation, interruption or delay in the performance of its obligations due to causes beyond its reasonable control, including earthquake, flood, or other natural disaster, act of God, labor controversy, civil disturbance, terrorism, war (whether or not officially declared), cyber attacks (e.g., denial of service attacks), or the inability to obtain sufficient supplies, transportation, or other essential commodity or service required in the conduct of its business, or any change in or the adoption of any law, regulation, judgment or decree for which the party could not reasonably prepare mitigation in advance.',
+    'zh-CN':
+      '<strong>Force Majeure.</strong> Neither party will be deemed in breach hereunder for any cessation, interruption or delay in the performance of its obligations due to causes beyond its reasonable control, including earthquake, flood, or other natural disaster, act of God, labor controversy, civil disturbance, terrorism, war (whether or not officially declared), cyber attacks (e.g., denial of service attacks), or the inability to obtain sufficient supplies, transportation, or other essential commodity or service required in the conduct of its business, or any change in or the adoption of any law, regulation, judgment or decree for which the party could not reasonably prepare mitigation in advance.'
+  },
+  'enterprise-msa.11-miscellaneous.block.10': {
+    en: '<strong>Entire Agreement.</strong> This Agreement comprises the entire agreement between Customer and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement.',
+    'zh-CN':
+      '<strong>Entire Agreement.</strong> This Agreement comprises the entire agreement between Customer and Comfy with respect to its subject matter, and supersedes all prior and contemporaneous proposals, statements, sales materials or presentations and agreements (oral and written). No oral or written information or advice given by Comfy, its agents or employees will create a warranty or in any way increase the scope of the warranties in this Agreement.'
+  },
+  'enterprise-msa.12-exhibit-a.label': {
+    en: 'EXHIBIT A',
+    'zh-CN': 'EXHIBIT A'
+  },
+  'enterprise-msa.12-exhibit-a.title': {
+    en: 'Exhibit A. Order Form',
+    'zh-CN': 'Exhibit A. Order Form'
+  },
+  'enterprise-msa.12-exhibit-a.block.0': {
+    en: 'The initial Order Form is attached as <strong>Exhibit A</strong> to the executed copy of this Agreement. Each Order Form is subject to the terms and conditions of this Agreement, and by executing an Order Form, Customer agrees to be bound by the terms and conditions of this Agreement.',
+    'zh-CN':
+      'The initial Order Form is attached as <strong>Exhibit A</strong> to the executed copy of this Agreement. Each Order Form is subject to the terms and conditions of this Agreement, and by executing an Order Form, Customer agrees to be bound by the terms and conditions of this Agreement.'
+  },
+  'enterprise-msa.12-exhibit-a.block.1': {
+    en: 'This document reproduces the current template of the Enterprise Customer Agreement for reference only. The executed Agreement between Comfy and Customer, together with any signed Order Forms, governs the relationship between the parties. To request an executable copy, please contact <a href="mailto:sales@comfy.org" class="text-white underline">sales@comfy.org</a>.',
+    'zh-CN':
+      'This document reproduces the current template of the Enterprise Customer Agreement for reference only. The executed Agreement between Comfy and Customer, together with any signed Order Forms, governs the relationship between the parties. To request an executable copy, please contact <a href="mailto:sales@comfy.org" class="text-white underline">sales@comfy.org</a>.'
+  },
+  'enterprise-msa.page.title': {
+    en: 'Enterprise MSA - Comfy',
+    'zh-CN': 'Enterprise MSA - Comfy'
+  },
+  'enterprise-msa.page.description': {
+    en: 'Comfy Enterprise Customer Agreement — the master services agreement that governs Comfy Enterprise deployments of Comfy Cloud, Comfy API, and related products.',
+    'zh-CN':
+      'Comfy Enterprise Customer Agreement — the master services agreement that governs Comfy Enterprise deployments of Comfy Cloud, Comfy API, and related products.'
+  },
+  'enterprise-msa.page.heading': {
+    en: 'Enterprise Customer Agreement',
+    'zh-CN': 'Enterprise Customer Agreement'
+  },
+  'enterprise-msa.page.tocLabel': {
+    en: 'On this page',
+    'zh-CN': 'On this page'
+  },
+  'enterprise-msa.page.effectiveDateLabel': {
+    en: 'Effective Date',
+    'zh-CN': 'Effective Date'
+  },
+  'enterprise-msa.page.parties': {
+    en: 'This Enterprise Customer Agreement (the “Agreement”) is entered into by and between Comfy Organization, Inc., a Delaware corporation (“Comfy”), and the entity identified on the applicable Order Form (“Customer”), and is effective as of the date set forth on the applicable Order Form (the “Effective Date”).',
+    'zh-CN':
+      'This Enterprise Customer Agreement (the “Agreement”) is entered into by and between Comfy Organization, Inc., a Delaware corporation (“Comfy”), and the entity identified on the applicable Order Form (“Customer”), and is effective as of the date set forth on the applicable Order Form (the “Effective Date”).'
+  },
+  'footer.enterpriseMsa': {
+    en: 'Enterprise MSA',
+    'zh-CN': 'Enterprise MSA'
   },
 
   // Customers page
@@ -3181,1312 +4102,9 @@ const translations = {
       '有兴趣与 ComfyUI 合作案例研究？点击<a href="https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">此处</a>联系我们'
   },
 
-  'customers.story.series-entertainment.category': {
-    en: 'GAME & VIDEO PRODUCTION',
-    'zh-CN': '游戏与视频制作'
-  },
-  'customers.story.series-entertainment.title': {
-    en: 'How Series Entertainment Rebuilt Game and Video Production with ComfyUI',
-    'zh-CN': 'Series Entertainment 如何使用 ComfyUI 重塑游戏和视频制作'
-  },
-  'customers.story.series-entertainment.body': {
-    en: 'Scaling emotional storytelling across 100,000+ assets and multiple Netflix titles, using repeatable ComfyUI production systems.',
-    'zh-CN':
-      '使用可复用的 ComfyUI 生产系统，在 100,000+ 资产和多部 Netflix 作品中实现情感叙事的规模化。'
-  },
-  'customers.story.open-story-movement.category': {
-    en: 'OPEN SOURCE × BRAND',
-    'zh-CN': '开源 × 品牌'
-  },
-  'customers.story.open-story-movement.title': {
-    en: 'How Doodles, SYSTMS, and Open-Source Tools Like ComfyUI Are Rewriting the Rules for Artists',
-    'zh-CN': 'Doodles、SYSTMS 和 ComfyUI 等开源工具如何重写艺术家的规则'
-  },
-  'customers.story.open-story-movement.body': {
-    en: 'Doodles and SYSTMS built Doodles AI — a generative platform powered by PRISM 1.0 — on open-source infrastructure including ComfyUI, proving that open-source workflows can power brand-quality, commercially successful products.',
-    'zh-CN':
-      'Doodles 和 SYSTMS 在包括 ComfyUI 在内的开源基础设施上构建了 Doodles AI——一个由 PRISM 1.0 驱动的生成平台，证明了开源工作流可以支撑品牌级、商业成功的产品。'
-  },
-  'customers.story.moment-factory.category': {
-    en: 'CASE STUDY',
-    'zh-CN': '案例研究'
-  },
-  'customers.story.moment-factory.title': {
-    en: 'How Moment Factory Reimagined 3D Projection Mapping at Architectural Scale with ComfyUI',
-    'zh-CN': 'Moment Factory 如何使用 ComfyUI 在建筑尺度重新定义 3D 投影映射'
-  },
-  'customers.story.moment-factory.body': {
-    en: 'Moment Factory used ComfyUI to reimagine their 3D projection mapping pipeline, enabling architectural-scale visual experiences with AI-driven content generation and real-time iteration.',
-    'zh-CN':
-      'Moment Factory 使用 ComfyUI 重新定义了 3D 投影映射管线，通过 AI 驱动的内容生成和实时迭代，实现建筑尺度的视觉体验。'
-  },
-  'customers.story.ubisoft-chord.category': {
-    en: 'AAA GAME PRODUCTION',
-    'zh-CN': 'AAA 游戏制作'
-  },
-  'customers.story.ubisoft-chord.title': {
-    en: 'Ubisoft Open-Sources the CHORD Model with ComfyUI for AAA PBR Material Generation',
-    'zh-CN': '育碧开源 CHORD 模型，通过 ComfyUI 实现 AAA 级 PBR 材质生成'
-  },
-  'customers.story.ubisoft-chord.body': {
-    en: 'Ubisoft La Forge open-sourced its CHORD PBR material estimation model with ComfyUI custom nodes, enabling end-to-end texture generation workflows for AAA game production.',
-    'zh-CN':
-      '育碧 La Forge 开源了 CHORD PBR 材质估算模型及 ComfyUI 自定义节点，为 AAA 游戏制作实现了端到端的纹理生成工作流。'
-  },
-  'customers.story.groove-jones.category': {
-    en: 'CASE STUDY',
-    'zh-CN': '案例研究'
-  },
-  'customers.story.groove-jones.title': {
-    en: "How Groove Jones Delivered a Holiday FOOH Campaign for Dick's Sporting Goods with Comfy",
-    'zh-CN':
-      "Groove Jones 如何借助 Comfy 为 Dick's Sporting Goods 打造节日 FOOH 营销"
-  },
-  'customers.story.groove-jones.body': {
-    en: 'Groove Jones, a Dallas-based creative studio, used Comfy to deliver a hyper-realistic FOOH holiday campaign for the Crocs x NFL collection on a fast-approaching deadline.',
-    'zh-CN':
-      '达拉斯创意工作室 Groove Jones 借助 Comfy，在紧迫的节日档期内为 Crocs x NFL 联名系列交付了超写实的 FOOH 营销内容。'
-  },
   'customers.story.readMore': {
     en: 'READ MORE ON THIS TOPIC',
     'zh-CN': '阅读更多相关内容'
-  },
-
-  // Customer Detail: Series Entertainment
-  // Topic 1: Intro
-  'customers.detail.series-entertainment.topic-1.label': {
-    en: 'INTRO',
-    'zh-CN': '简介'
-  },
-  'customers.detail.series-entertainment.topic-1.block.0': {
-    en: 'Series Entertainment builds story-driven games and short-form video experiences where characters, emotion, and visual consistency matter. As the scope of their work expanded across internal projects, partner collaborations, and Netflix titles, the team faced a growing challenge: they needed to produce more content, across more projects, without slowing down or losing consistency.',
-    'zh-CN':
-      'Series Entertainment 构建以故事为驱动的游戏和短视频体验，其中角色、情感和视觉一致性至关重要。随着工作范围扩展到内部项目、合作伙伴协作和 Netflix 作品，团队面临日益增长的挑战：他们需要在更多项目中生产更多内容，同时不能放慢速度或失去一致性。'
-  },
-  'customers.detail.series-entertainment.topic-1.block.1': {
-    en: 'To meet that challenge, Series leveraged ComfyUI to scale their workflows. By building custom, repeatable workflows on top of ComfyUI, Series changed how they create characters, emotions, and video. The result was a scalable production system that supported over 100,000 assets, shipped Netflix games, and continues to power multiple projects in active development.',
-    'zh-CN':
-      '为了应对这一挑战，Series 利用 ComfyUI 扩展了工作流。通过在 ComfyUI 之上构建自定义的可复用工作流，Series 改变了创建角色、情感和视频的方式。最终打造出一个支持超过 100,000 个资产、交付 Netflix 游戏并持续为多个在研项目提供动力的可扩展生产系统。'
-  },
-  'customers.detail.series-entertainment.topic-1.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/series.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/series.webp'
-  },
-  'customers.detail.series-entertainment.topic-1.block.2.alt': {
-    en: 'Series Entertainment game titles including Olympus Rising, Gilded Scales, Evergrove, and The Wandering Teahouse',
-    'zh-CN':
-      'Series Entertainment 游戏作品，包括 Olympus Rising、Gilded Scales、Evergrove 和 The Wandering Teahouse'
-  },
-  'customers.detail.series-entertainment.topic-1.block.2.caption': {
-    en: 'Series Entertainment produces story-driven games and video experiences across multiple titles and visual styles.',
-    'zh-CN':
-      'Series Entertainment 制作跨多个作品和视觉风格的故事驱动游戏和视频体验。'
-  },
-  // Topic 2: The Output
-  'customers.detail.series-entertainment.topic-2.label': {
-    en: 'THE OUTPUT',
-    'zh-CN': '产出成果'
-  },
-  'customers.detail.series-entertainment.topic-2.title': {
-    en: 'The Output Series Achieved Using ComfyUI',
-    'zh-CN': 'Series 使用 ComfyUI 达成的产出成果'
-  },
-  'customers.detail.series-entertainment.topic-2.block.0': {
-    en: 'With ComfyUI integrated into its production workflows, Series achieved:',
-    'zh-CN': '将 ComfyUI 集成到生产工作流后，Series 实现了：'
-  },
-  'customers.detail.series-entertainment.topic-2.block.1': {
-    en: '100,000+ assets generated across games and video\n180× faster production speed\nSix distinct character emotions generated in seconds\n15 minutes of final video per creator per week\nMultiple Netflix titles shipped, with many more experiences in active development',
-    'zh-CN':
-      '在游戏和视频中生成超过 100,000 个资产\n180 倍的生产速度提升\n数秒内生成六种不同的角色情感\n每位创作者每周生产 15 分钟的最终视频\n多部 Netflix 作品交付，更多体验正在积极开发中'
-  },
-  'customers.detail.series-entertainment.topic-2.block.2': {
-    en: 'These outputs span character assets, emotional variations, background consistency, and short-form video — all created through repeatable ComfyUI-powered workflows.',
-    'zh-CN':
-      '这些产出涵盖角色资产、情感变体、背景一致性和短视频——全部通过可复用的 ComfyUI 工作流创建。'
-  },
-  // Topic 3: The Problem
-  'customers.detail.series-entertainment.topic-3.label': {
-    en: 'THE PROBLEM',
-    'zh-CN': '面临的问题'
-  },
-  'customers.detail.series-entertainment.topic-3.title': {
-    en: 'The Problem Series Was Trying to Solve',
-    'zh-CN': 'Series 试图解决的问题'
-  },
-  'customers.detail.series-entertainment.topic-3.block.0': {
-    en: "Series' work depends on expressive characters and consistent visual identity. As projects grew in size and complexity, the team needed a way to scale content creation without breaking timelines.",
-    'zh-CN':
-      'Series 的工作依赖于富有表现力的角色和一致的视觉标识。随着项目规模和复杂度的增长，团队需要一种在不打破时间线的前提下扩展内容创作的方法。'
-  },
-  'customers.detail.series-entertainment.topic-3.block.1': {
-    en: 'Traditional animation workflows rely on manual keyframing, multiple disconnected tools, and long production cycles that can stretch into weeks per video. Producing variations often means redoing work from scratch, and experimentation can be slow and expensive.',
-    'zh-CN':
-      '传统动画工作流依赖手动关键帧、多个断开的工具和漫长的制作周期——每个视频可能需要数周。制作变体通常意味着从头返工，实验过程缓慢且昂贵。'
-  },
-  'customers.detail.series-entertainment.topic-3.block.2': {
-    en: 'Series needed workflows that could be reused across teams and projects, while still supporting emotional storytelling, character consistency, and fast iteration.',
-    'zh-CN':
-      'Series 需要能够在团队和项目间复用的工作流，同时仍然支持情感叙事、角色一致性和快速迭代。'
-  },
-  // Topic 4: The Solution
-  'customers.detail.series-entertainment.topic-4.label': {
-    en: 'THE SOLUTION',
-    'zh-CN': '解决方案'
-  },
-  'customers.detail.series-entertainment.topic-4.title': {
-    en: 'How Series Used ComfyUI to Solve the Problem',
-    'zh-CN': 'Series 如何使用 ComfyUI 解决问题'
-  },
-  'customers.detail.series-entertainment.topic-4.block.0': {
-    en: "Series rebuilt their production process around ComfyUI's node-based workflow system. Instead of treating generation as a one-off step, they treated workflows as long-term production assets. ComfyUI became the place where creative structure lived — from character creation to emotion generation to video output.",
-    'zh-CN':
-      'Series 围绕 ComfyUI 的节点式工作流系统重建了制作流程。他们不再将生成视为一次性步骤，而是将工作流作为长期生产资产。ComfyUI 成为了创意结构的所在——从角色创建到情感生成再到视频输出。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.1.heading': {
-    en: 'Emotion Generation at Scale',
-    'zh-CN': '规模化情感生成'
-  },
-  'customers.detail.series-entertainment.topic-4.block.2': {
-    en: 'Series built a custom avatar system using ComfyUI that generates six distinct emotions in seconds: Happy, Sad, Serious, Snarky, Thinking, and Surprised. This made it possible to create expressive characters with multiple emotional states without manually recreating each variation.',
-    'zh-CN':
-      'Series 使用 ComfyUI 构建了一个自定义头像系统，可在数秒内生成六种不同的情感：开心、悲伤、严肃、讽刺、思考和惊讶。这使得创建具有多种情感状态的表现力角色成为可能，而无需手动重新创建每个变体。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.3.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/panel.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/panel.webp'
-  },
-  'customers.detail.series-entertainment.topic-4.block.3.alt': {
-    en: 'ComfyUI Expression Editor node for facial expression manipulation',
-    'zh-CN': 'ComfyUI 表情编辑器节点，用于面部表情操控'
-  },
-  'customers.detail.series-entertainment.topic-4.block.3.caption': {
-    en: 'The Expression Editor node in ComfyUI enables fine-grained control over character emotions.',
-    'zh-CN': 'ComfyUI 中的表情编辑器节点实现了对角色情感的精细控制。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.4.heading': {
-    en: 'Replicable Pipelines from Test to Production',
-    'zh-CN': '从测试到生产的可复用管线'
-  },
-  'customers.detail.series-entertainment.topic-4.block.5': {
-    en: "Using ComfyUI's modular node system, Series built four streamlined pipelines that support the full production cycle — from early exploration to final output. These workflows deliver results up to <strong>180× faster</strong> than traditional manual processes that can take six hours or more per asset, while maintaining production quality.",
-    'zh-CN':
-      '利用 ComfyUI 的模块化节点系统，Series 构建了四条精简管线，支持从早期探索到最终输出的完整生产周期。这些工作流的效率比传统手工流程（每个资产可能需要六小时以上）<strong>提高了 180 倍</strong>，同时保持生产品质。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.6': {
-    en: 'The pipelines range from quick 512×512 single-emotion tests to high-resolution batch generation, allowing teams to experiment quickly and move directly into production using the same workflows.',
-    'zh-CN':
-      '管线范围从快速的 512×512 单情感测试到高分辨率批量生成，使团队能够快速实验并使用相同的工作流直接进入生产。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.7.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/workflows.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/workflows.webp'
-  },
-  'customers.detail.series-entertainment.topic-4.block.7.alt': {
-    en: 'ComfyUI workflow for facial expression manipulation and upscaling pipeline',
-    'zh-CN': 'ComfyUI 面部表情操控和放大管线工作流'
-  },
-  'customers.detail.series-entertainment.topic-4.block.7.caption': {
-    en: 'A ComfyUI workflow showing parallel expression editing, upscaling, and face detailing pipelines.',
-    'zh-CN': 'ComfyUI 工作流展示了并行的表情编辑、放大和面部细化管线。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.8.heading': {
-    en: 'Consistency Across Games and Branching Stories',
-    'zh-CN': '跨游戏和分支叙事的一致性'
-  },
-  'customers.detail.series-entertainment.topic-4.block.9': {
-    en: 'For multiple Netflix titles, Series used ComfyUI to build workflows that keep characters and backgrounds consistent across complex, branching narratives. Styling and consistency pipelines help ensure that characters stay visually aligned across scenes, emotions, and story paths — even as asset counts grow.',
-    'zh-CN':
-      '在多部 Netflix 作品中，Series 使用 ComfyUI 构建了工作流，确保角色和背景在复杂的分支叙事中保持一致。风格化和一致性管线帮助确保角色在场景、情感和故事路径之间保持视觉统一——即使资产数量不断增长。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.10.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/consistency.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/consistency.webp'
-  },
-  'customers.detail.series-entertainment.topic-4.block.10.alt': {
-    en: 'Consistent character across multiple scenes and emotional states',
-    'zh-CN': '角色在多个场景和情感状态中保持一致'
-  },
-  'customers.detail.series-entertainment.topic-4.block.10.caption': {
-    en: 'A single character maintained across six different scenes and emotional states using ComfyUI consistency pipelines.',
-    'zh-CN': '使用 ComfyUI 一致性管线在六个不同场景和情感状态中保持同一角色。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.11.heading': {
-    en: 'Production at Scale with ComfyUI',
-    'zh-CN': '使用 ComfyUI 实现规模化生产'
-  },
-  'customers.detail.series-entertainment.topic-4.block.12': {
-    en: 'Series also uses ComfyUI as part of an AI-assisted animation pipeline that connects story development directly to image and video generation. This pipeline includes bot-assisted video generation, allowing creators to repeatedly run the same workflows to produce video efficiently. Using this approach, each creator can generate Lorespark videos at scale, delivering over <strong>15 minutes of final video per week</strong>.',
-    'zh-CN':
-      'Series 还将 ComfyUI 作为 AI 辅助动画管线的一部分，将故事开发直接连接到图像和视频生成。该管线包含机器人辅助视频生成，允许创作者反复运行相同的工作流以高效生产视频。使用这种方法，每位创作者可以规模化生成 Lorespark 视频，每周交付超过 <strong>15 分钟的最终视频</strong>。'
-  },
-  'customers.detail.series-entertainment.topic-4.block.13.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/batch.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/batch.webp'
-  },
-  'customers.detail.series-entertainment.topic-4.block.13.alt': {
-    en: 'ComfyUI batch processing workflow using Nano Banana and Google Gemini',
-    'zh-CN': 'ComfyUI 使用 Nano Banana 和 Google Gemini 的批处理工作流'
-  },
-  'customers.detail.series-entertainment.topic-4.block.13.caption': {
-    en: 'A batch processing workflow connecting multiple character images to Nano Banana for style-consistent generation.',
-    'zh-CN':
-      '批处理工作流将多个角色图像连接到 Nano Banana，实现风格一致的生成。'
-  },
-  // Topic 5: Why ComfyUI
-  'customers.detail.series-entertainment.topic-5.label': {
-    en: 'WHY COMFYUI',
-    'zh-CN': '为何选择 ComfyUI'
-  },
-  'customers.detail.series-entertainment.topic-5.title': {
-    en: 'Why ComfyUI Worked for Series',
-    'zh-CN': '为什么 ComfyUI 适合 Series'
-  },
-  'customers.detail.series-entertainment.topic-5.block.0': {
-    en: 'ComfyUI worked well because its node-based structure makes workflows explicit and reusable — once a workflow is built, it can be refined and shared across projects. This allowed Series to turn video generation into a repeatable system rather than a one-off process.',
-    'zh-CN':
-      'ComfyUI 之所以有效，是因为其节点式结构使工作流显式且可复用——一旦构建了工作流，就可以在项目间优化和共享。这使 Series 能够将视频生成从一次性过程转变为可重复的系统。'
-  },
-  'customers.detail.series-entertainment.topic-5.block.1': {
-    en: 'Batch execution and bot integration allow those workflows to run at scale. Because the same workflows support both low-resolution testing and high-resolution final output, teams can move from exploration to delivery without switching tools or rebuilding pipelines.',
-    'zh-CN':
-      '批量执行和机器人集成使这些工作流能够大规模运行。由于相同的工作流同时支持低分辨率测试和高分辨率最终输出，团队可以从探索无缝过渡到交付，无需切换工具或重建管线。'
-  },
-  'customers.detail.series-entertainment.topic-5.block.2': {
-    en: 'Most importantly, ComfyUI let Series focus on building structure instead of relying on trial-and-error prompting. Emotions, consistency, and production logic live inside the workflows themselves.',
-    'zh-CN':
-      '最重要的是，ComfyUI 让 Series 专注于构建结构，而非依赖试错式提示。情感、一致性和生产逻辑都存在于工作流本身之中。'
-  },
-  'customers.detail.series-entertainment.topic-5.block.3.src': {
-    en: 'https://media.comfy.org/website/customers/series-entertainment/scale.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/series-entertainment/scale.webp'
-  },
-  'customers.detail.series-entertainment.topic-5.block.3.alt': {
-    en: 'Six variations of the same character generated with consistent style',
-    'zh-CN': '以一致风格生成的同一角色的六个变体'
-  },
-  'customers.detail.series-entertainment.topic-5.block.3.caption': {
-    en: 'Multiple pose and expression variations of a single character, generated at scale while maintaining visual consistency.',
-    'zh-CN':
-      '同一角色的多个姿态和表情变体，在保持视觉一致性的同时实现规模化生成。'
-  },
-  // Topic 6: Conclusion
-  'customers.detail.series-entertainment.topic-6.label': {
-    en: 'CONCLUSION',
-    'zh-CN': '总结'
-  },
-  'customers.detail.series-entertainment.topic-6.title': {
-    en: 'Conclusion',
-    'zh-CN': '总结'
-  },
-  'customers.detail.series-entertainment.topic-6.block.0': {
-    en: 'By making ComfyUI a core creative platform, Series Entertainment transformed how it produces games and video. What started as a need for scale and consistency became a workflow-driven production system that supports emotional storytelling, large asset volumes, and ongoing development across multiple teams.',
-    'zh-CN':
-      '通过将 ComfyUI 作为核心创意平台，Series Entertainment 彻底改变了游戏和视频的制作方式。最初只是对规模和一致性的需求，最终演变成一个以工作流驱动的生产系统，支持情感叙事、大规模资产和多团队的持续开发。'
-  },
-  'customers.detail.series-entertainment.topic-6.block.1.text': {
-    en: 'For Series, ComfyUI is not an experiment. It is how entertainment gets made.',
-    'zh-CN': '对 Series 来说，ComfyUI 不是实验。它就是娱乐内容的制作方式。'
-  },
-  'customers.detail.series-entertainment.topic-6.block.1.name': {
-    en: 'Series Entertainment',
-    'zh-CN': 'Series Entertainment'
-  },
-
-  // Customer Detail: Open Story Movement
-  // Topic 1: Intro
-  'customers.detail.open-story-movement.topic-1.label': {
-    en: 'INTRO',
-    'zh-CN': '简介'
-  },
-  'customers.detail.open-story-movement.topic-1.block.0': {
-    en: "Doodles, the entertainment brand built around the iconic pastel-palette artwork of Canadian illustrator Scott Martin (known as Burnt Toast), is about to launch <strong>Doodles AI</strong> — a generative platform powered by <strong>PRISM 1.0</strong>, a generative image model trained on Doodles' extensive body of work that can reimagine people and objects in the unmistakable Doodles visual language.",
-    'zh-CN':
-      'Doodles 是一个围绕加拿大插画师 Scott Martin（又名 Burnt Toast）标志性柔和色彩作品构建的娱乐品牌，即将推出 <strong>Doodles AI</strong>——一个由 <strong>PRISM 1.0</strong> 驱动的生成平台，这是一个基于 Doodles 大量作品训练的生成图像模型，能够以标志性的 Doodles 视觉语言重新想象人物和物体。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.1': {
-    en: 'Behind the scenes, the engineering is being handled by <strong>SYSTMS</strong>, an AI studio whose tagline — "Engineering the Impossible" — reflects their approach to building bespoke creative pipelines using open-source infrastructure, including node-based workflow tools like ComfyUI.',
-    'zh-CN':
-      '幕后的工程由 <strong>SYSTMS</strong> 负责，这是一家 AI 工作室，其口号"Engineering the Impossible"反映了他们使用开源基础设施构建定制创意管线的方法，包括像 ComfyUI 这样的基于节点的工作流工具。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/open-story-movement/cover.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/open-story-movement/cover.webp'
-  },
-  'customers.detail.open-story-movement.topic-1.block.2.alt': {
-    en: 'Doodles AI generative platform powered by PRISM 1.0',
-    'zh-CN': '由 PRISM 1.0 驱动的 Doodles AI 生成平台'
-  },
-  'customers.detail.open-story-movement.topic-1.block.2.caption': {
-    en: 'The Doodles AI platform reimagines people and objects in the Doodles visual language.',
-    'zh-CN': 'Doodles AI 平台以 Doodles 视觉语言重新想象人物和物体。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.3': {
-    en: 'The story of how these pieces came together offers a compelling blueprint for anyone watching the intersection of open-source, AI, artist-driven brands, and the emerging concept the Doodles team is calling "open story."',
-    'zh-CN':
-      '这些部分如何整合在一起的故事，为关注开源、AI、艺术家驱动品牌以及 Doodles 团队所称的"开放叙事"这一新兴概念交汇点的所有人提供了一个引人注目的蓝图。'
-  },
-  // Topic 2: IP Without Walls
-  'customers.detail.open-story-movement.topic-2.label': {
-    en: 'IP WITHOUT WALLS',
-    'zh-CN': '无墙 IP'
-  },
-  'customers.detail.open-story-movement.topic-2.title': {
-    en: 'IP Without Walls',
-    'zh-CN': '无墙 IP'
-  },
-  'customers.detail.open-story-movement.topic-2.block.0': {
-    en: "Artists have traditionally been protective of their IP, and for good reason. But the Doodles team is exploring a new model where the community doesn't just consume the brand — they co-create it. Every generation a user produces on the Doodles AI platform makes the model stronger.",
-    'zh-CN':
-      '艺术家传统上一直保护自己的知识产权，这有充分的理由。但 Doodles 团队正在探索一种新模式，社区不仅仅是消费品牌——他们共同创造品牌。用户在 Doodles AI 平台上生成的每一次创作都会使模型更强大。'
-  },
-  'customers.detail.open-story-movement.topic-2.block.1': {
-    en: "Through reinforcement learning, user-generated content becomes part of the training data for future iterations of the PRISM. Users aren't just customers; they're collaborators shaping the brand's visual DNA.",
-    'zh-CN':
-      '通过强化学习，用户生成的内容成为 PRISM 未来迭代的训练数据的一部分。用户不仅仅是客户；他们是塑造品牌视觉 DNA 的协作者。'
-  },
-  'customers.detail.open-story-movement.topic-2.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/open-story-movement/walls.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/open-story-movement/walls.webp'
-  },
-  'customers.detail.open-story-movement.topic-2.block.2.alt': {
-    en: 'Doodles community co-creation',
-    'zh-CN': 'Doodles 社区共创'
-  },
-  'customers.detail.open-story-movement.topic-2.block.2.caption': {
-    en: 'Users become collaborators, co-creating the Doodles brand through AI-generated content.',
-    'zh-CN': '用户成为协作者，通过 AI 生成的内容共同创造 Doodles 品牌。'
-  },
-  'customers.detail.open-story-movement.topic-2.block.3': {
-    en: 'As Scott Martin put it when he returned as CEO in early 2025, the goal is to recalibrate — creativity first, community at the center, art driving everything. Martin, who built his career as an illustrator working with Google, Snapchat, Dropbox, and Adobe before co-founding Doodles in 2021 alongside Evan Keast and Jordan Castro, understands both the commercial and artistic sides of this equation.',
-    'zh-CN':
-      '正如 Scott Martin 在 2025 年初重新担任 CEO 时所说，目标是重新校准——创意优先、社区为中心、艺术驱动一切。Martin 在 2021 年与 Evan Keast 和 Jordan Castro 共同创立 Doodles 之前，曾与 Google、Snapchat、Dropbox 和 Adobe 合作建立了自己的插画师职业生涯，他深谙这个等式的商业和艺术两面。'
-  },
-  // Topic 3: The Last Mile
-  'customers.detail.open-story-movement.topic-3.label': {
-    en: 'THE LAST MILE',
-    'zh-CN': '最后一英里'
-  },
-  'customers.detail.open-story-movement.topic-3.title': {
-    en: 'The Last Mile Is the Whole Game',
-    'zh-CN': '最后一英里就是整个游戏'
-  },
-  'customers.detail.open-story-movement.topic-3.block.0': {
-    en: 'Doodles AI represents something powerful: proof that open-source tools can power commercially successful, brand-quality products.',
-    'zh-CN':
-      'Doodles AI 代表着一种强大的证明：开源工具可以驱动商业成功、品牌级品质的产品。'
-  },
-  'customers.detail.open-story-movement.topic-3.block.1': {
-    en: 'The SYSTMS team uses open-source tools in their rawest form, prioritizing control and innovation at the bleeding edge of the space. The fact that these same tools are now producing output with the kind of brand fidelity that differentiates Doodles from generalized platforms like MidJourney or Sora is significant. It\'s the "last mile" problem in creative AI — getting from 85% to 100% fidelity — and it\'s where the real value lies.',
-    'zh-CN':
-      'SYSTMS 团队以最原始的形式使用开源工具，在该领域的最前沿优先考虑控制和创新。这些工具现在能够生成具有品牌保真度的输出，使 Doodles 区别于 MidJourney 或 Sora 等通用平台，这一点意义重大。这就是创意 AI 中的"最后一英里"问题——从 85% 到 100% 的保真度——也是真正价值所在。'
-  },
-  'customers.detail.open-story-movement.topic-3.block.2': {
-    en: "Doodles AI is a showcase of what's possible when open-source workflows meet professional creative direction. ComfyUI's powerful node-based platform allows users to package complex systems of open-source models, APIs, and other tools into consumer-facing applications, making it a natural fit for projects like this.",
-    'zh-CN':
-      'Doodles AI 展示了当开源工作流遇上专业创意方向时的可能性。ComfyUI 强大的基于节点的平台允许用户将开源模型、API 和其他工具的复杂系统打包成面向消费者的应用程序，使其成为此类项目的天然选择。'
-  },
-  'customers.detail.open-story-movement.topic-3.block.3.src': {
-    en: 'https://media.comfy.org/website/customers/open-story-movement/workflow.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/open-story-movement/workflow.webp'
-  },
-  'customers.detail.open-story-movement.topic-3.block.3.alt': {
-    en: 'ComfyUI workflow powering Doodles AI',
-    'zh-CN': '驱动 Doodles AI 的 ComfyUI 工作流'
-  },
-  'customers.detail.open-story-movement.topic-3.block.3.caption': {
-    en: 'Open-source workflows powering brand-quality generative output.',
-    'zh-CN': '开源工作流驱动品牌级生成输出。'
-  },
-  // Topic 4: Coded DNA
-  'customers.detail.open-story-movement.topic-4.label': {
-    en: 'CODED DNA',
-    'zh-CN': '编码 DNA'
-  },
-  'customers.detail.open-story-movement.topic-4.title': {
-    en: 'Coded DNA',
-    'zh-CN': '编码 DNA'
-  },
-  'customers.detail.open-story-movement.topic-4.block.0': {
-    en: "Doodles AI launches with PRISM 1.0 as an image-to-image model, but the roadmap is ambitious: 2D and 3D output generation, video with sound, real-time AR, and gaming applications. Original Doodles holders receive 100 free generations on launch day — a deliberate move to seed the community and let them flood every timeline with the platform's output.",
-    'zh-CN':
-      'Doodles AI 以 PRISM 1.0 作为图像到图像模型推出，但路线图雄心勃勃：2D 和 3D 输出生成、带声音的视频、实时 AR 和游戏应用。原始 Doodles 持有者在发布当天获得 100 次免费生成——这是一个有意识的举措，旨在为社区注入活力，让他们用平台的输出刷遍每一条时间线。'
-  },
-  'customers.detail.open-story-movement.topic-4.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/open-story-movement/dna.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/open-story-movement/dna.webp'
-  },
-  'customers.detail.open-story-movement.topic-4.block.1.alt': {
-    en: 'Doodles AI output examples',
-    'zh-CN': 'Doodles AI 输出示例'
-  },
-  'customers.detail.open-story-movement.topic-4.block.1.caption': {
-    en: 'Doodles AI output demonstrating brand-fidelity generative results.',
-    'zh-CN': 'Doodles AI 输出展示品牌保真的生成结果。'
-  },
-  'customers.detail.open-story-movement.topic-4.block.2': {
-    en: "The deeper play is alignment with the speed and scale of the entire AI industry. By building on open-source infrastructure and fostering a community of co-creators, Doodles has positioned itself to plug its \"coded DNA\" into future technologies that don't yet exist. It's a bet that openness — open source, open story, open creation — isn't just philosophically appealing but strategically sound.",
-    'zh-CN':
-      '更深层的布局是与整个 AI 行业的速度和规模保持一致。通过在开源基础设施上构建并培育共创者社区，Doodles 已将自己定位为可以将其"编码 DNA"接入尚未存在的未来技术。这是一个赌注：开放性——开源、开放叙事、开放创造——不仅在哲学上有吸引力，而且在战略上是明智的。'
-  },
-  // Topic 5: What It Means
-  'customers.detail.open-story-movement.topic-5.label': {
-    en: 'TAKEAWAY',
-    'zh-CN': '要点'
-  },
-  'customers.detail.open-story-movement.topic-5.title': {
-    en: 'What It Means for Artists',
-    'zh-CN': '对艺术家意味着什么'
-  },
-  'customers.detail.open-story-movement.topic-5.block.0': {
-    en: "For artists watching from the sidelines, the message is clear: the building blocks are here, the community is building, and the line between creator and consumer is disappearing. The question isn't whether open source will reshape creative industries. It's whether you'll be building with it when it does.",
-    'zh-CN':
-      '对于在场外观望的艺术家来说，信息很明确：构建模块已经就位，社区正在建设，创作者和消费者之间的界限正在消失。问题不在于开源是否会重塑创意产业。而在于当它发生时，你是否在用它构建。'
-  },
-  'customers.detail.open-story-movement.topic-5.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/open-story-movement/output.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/open-story-movement/output.webp'
-  },
-  'customers.detail.open-story-movement.topic-5.block.1.alt': {
-    en: 'Doodles AI creative output',
-    'zh-CN': 'Doodles AI 创意输出'
-  },
-  'customers.detail.open-story-movement.topic-5.block.1.caption': {
-    en: 'Open-source tools powering brand-quality creative output at scale.',
-    'zh-CN': '开源工具大规模驱动品牌级创意输出。'
-  },
-  'customers.detail.open-story-movement.topic-5.block.2.label': {
-    en: 'LINKS',
-    'zh-CN': '链接'
-  },
-  'customers.detail.open-story-movement.topic-5.block.2.name': {
-    en: 'Doodles: doodles.app | SYSTMS: systms.ai | ComfyUI: comfy.org',
-    'zh-CN': 'Doodles: doodles.app | SYSTMS: systms.ai | ComfyUI: comfy.org'
-  },
-  'customers.detail.open-story-movement.topic-5.block.2.role': {
-    en: 'Official websites',
-    'zh-CN': '官方网站'
-  },
-
-  // Customer Detail: Moment Factory
-  // Topic 1: INTRO
-  'customers.detail.moment-factory.topic-1.label': {
-    en: 'INTRO',
-    'zh-CN': '简介'
-  },
-  'customers.detail.moment-factory.topic-1.block.0': {
-    en: 'How do you make generative AI work at architectural scale? Moment Factory used ComfyUI to fundamentally transform how they handle early concept, look development, and design exploration for architectural projection mapping.',
-    'zh-CN':
-      '如何让生成式 AI 在建筑尺度下发挥作用？Moment Factory 使用 ComfyUI 从根本上改变了他们在建筑投影映射中处理早期概念、外观开发和设计探索的方式。'
-  },
-  'customers.detail.moment-factory.topic-1.block.1': {
-    en: 'Before ComfyUI, this phase was slower, more abstract, and carried greater risk. After ComfyUI, it became faster, more concrete, and spatially grounded from the start.',
-    'zh-CN':
-      '在使用 ComfyUI 之前，这一阶段更慢、更抽象，风险也更大。使用 ComfyUI 之后，它变得更快、更具体，从一开始就在空间上有了坚实的基础。'
-  },
-  'customers.detail.moment-factory.topic-1.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/moment-factory/hero.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/moment-factory/hero.webp'
-  },
-  'customers.detail.moment-factory.topic-1.block.2.alt': {
-    en: 'Moment Factory architectural projection mapping',
-    'zh-CN': 'Moment Factory 建筑投影映射'
-  },
-  'customers.detail.moment-factory.topic-1.block.2.caption': {
-    en: 'Arched interior architectural projection by Moment Factory.',
-    'zh-CN': 'Moment Factory 的拱形室内建筑投影。'
-  },
-  // Topic 2: BEFORE COMFY
-  'customers.detail.moment-factory.topic-2.label': {
-    en: 'BEFORE COMFY',
-    'zh-CN': '使用前'
-  },
-  'customers.detail.moment-factory.topic-2.title': {
-    en: 'Before ComfyUI: Slow Iteration, Abstract Decisions, Late Risk',
-    'zh-CN': '使用 ComfyUI 之前：迭代缓慢、决策抽象、风险滞后'
-  },
-  'customers.detail.moment-factory.topic-2.block.0': {
-    en: 'Early concept and look development traditionally relied on:',
-    'zh-CN': '早期概念和外观开发传统上依赖于：'
-  },
-  'customers.detail.moment-factory.topic-2.block.1': {
-    en: 'Static sketches\nReference decks\nMoodboards\nAbstract discussions about intent',
-    'zh-CN': '静态草图\n参考资料集\n情绪板\n关于意图的抽象讨论'
-  },
-  'customers.detail.moment-factory.topic-2.block.2': {
-    en: 'For architectural projection mapping, this creates a problem. You do not really know if something works until it is projected at scale. Seams, pixel density, spatial drift, and composition issues usually reveal themselves later in the process, when changes have a massive impact on production.',
-    'zh-CN':
-      '对于建筑投影映射来说，这带来了一个问题。在实际投影到建筑上之前，你无法真正知道某个方案是否可行。接缝、像素密度、空间偏移和构图问题通常在流程后期才暴露出来，而此时的修改对制作的影响是巨大的。'
-  },
-  'customers.detail.moment-factory.topic-2.block.3': {
-    en: 'Traditionally, this means:',
-    'zh-CN': '传统上，这意味着：'
-  },
-  'customers.detail.moment-factory.topic-2.block.4': {
-    en: 'Fewer directions explored\nLonger back-and-forth cycles\nCreative decisions made without spatial proof\nRisk pushed downstream into production',
-    'zh-CN':
-      '探索的方向更少\n反复沟通的周期更长\n创意决策缺乏空间验证\n风险被推迟到制作阶段'
-  },
-  // Topic 3: WHAT CHANGED
-  'customers.detail.moment-factory.topic-3.label': {
-    en: 'WHAT CHANGED?',
-    'zh-CN': '发生了什么变化？'
-  },
-  'customers.detail.moment-factory.topic-3.title': {
-    en: 'What Changed with ComfyUI',
-    'zh-CN': '使用 ComfyUI 后发生了什么变化'
-  },
-  'customers.detail.moment-factory.topic-3.block.0': {
-    en: 'Moment Factory built a custom ComfyUI workflow and used it to enhance and accelerate large parts of early concept sketching, look-dev exploration, and part of the design phase.',
-    'zh-CN':
-      'Moment Factory 构建了自定义的 ComfyUI 工作流，并将其用于增强和加速早期概念草图、外观开发探索以及部分设计阶段。'
-  },
-  'customers.detail.moment-factory.topic-3.block.1': {
-    en: 'They did not just generate images. They changed how decisions were made.',
-    'zh-CN': '他们不仅仅是生成图像，而是改变了决策方式。'
-  },
-  'customers.detail.moment-factory.topic-3.block.2.heading': {
-    en: '1. Iteration stopped being the bottleneck',
-    'zh-CN': '1. 迭代不再是瓶颈'
-  },
-  'customers.detail.moment-factory.topic-3.block.3': {
-    en: 'ComfyUI transformed the iteration process, making it faster, sharper, and more intentional. Grounded in real production parameters, they explored:',
-    'zh-CN':
-      'ComfyUI 改变了迭代过程，使其更快、更精准、更有目的性。基于真实的制作参数，他们探索了：'
-  },
-  'customers.detail.moment-factory.topic-3.block.4': {
-    en: 'Over 20 main artistic directions\n20 to 40 iterations per direction\nStyles ranging from hyper-realism to illustrative engraving',
-    'zh-CN':
-      '20 多个主要艺术方向\n每个方向 20 到 40 次迭代\n风格从超写实到插画版画不等'
-  },
-  'customers.detail.moment-factory.topic-3.block.5.src': {
-    en: 'https://media.comfy.org/website/customers/moment-factory/variations.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/moment-factory/variations.webp'
-  },
-  'customers.detail.moment-factory.topic-3.block.5.alt': {
-    en: 'Grid of generated artistic variations',
-    'zh-CN': '生成的艺术变体网格'
-  },
-  'customers.detail.moment-factory.topic-3.block.5.caption': {
-    en: 'A grid of generated variations exploring different artistic directions.',
-    'zh-CN': '探索不同艺术方向的生成变体网格。'
-  },
-  'customers.detail.moment-factory.topic-3.block.6': {
-    en: 'The studio used batching and parameter tweaks to move quickly, while intentionally stress-testing the system to understand its limits.',
-    'zh-CN':
-      '工作室通过批处理和参数调整快速推进，同时有意地对系统进行压力测试以了解其极限。'
-  },
-  'customers.detail.moment-factory.topic-3.block.7.text': {
-    en: "With any GenAI tool, it's easy to over-iterate, to believe the best result is always one click away. Imposing real production constraints, whether financial or time-based, was essential to ensure these explorations remained meaningful and truly impacted our pipelines.",
-    'zh-CN':
-      '使用任何生成式 AI 工具，都很容易过度迭代，认为最佳结果总是只差一次点击。施加真实的制作约束，无论是财务上还是时间上的，对于确保这些探索保持有意义并真正影响我们的管线至关重要。'
-  },
-  'customers.detail.moment-factory.topic-3.block.7.name': {
-    en: 'Guillaume Borgomano | Senior Multimedia Director & Innovation Creative Lead @ Moment Factory',
-    'zh-CN':
-      'Guillaume Borgomano | Moment Factory 高级多媒体总监 & 创新创意负责人'
-  },
-  'customers.detail.moment-factory.topic-3.block.8': {
-    en: 'That volume of exploration would not have been realistic in their previous workflow.',
-    'zh-CN': '在他们之前的工作流中，如此大量的探索是不现实的。'
-  },
-  'customers.detail.moment-factory.topic-3.block.9.heading': {
-    en: '2. Concept work moved from days to hours',
-    'zh-CN': '2. 概念工作从数天缩短到数小时'
-  },
-  'customers.detail.moment-factory.topic-3.block.10': {
-    en: 'The biggest acceleration happened early. What would normally involve days of back-and-forth between static concepts and reference decks could happen within a few hours.',
-    'zh-CN':
-      '最大的加速发生在早期阶段。通常需要在静态概念和参考资料集之间来回数天的工作，现在可以在几个小时内完成。'
-  },
-  'customers.detail.moment-factory.topic-3.block.11': {
-    en: 'They generated intentionally low-resolution outputs around 2K, reviewed them quickly, and even generated new variations live on site. Those outputs could be checked directly in the media server timeline minutes later.',
-    'zh-CN':
-      '他们有意生成约 2K 的低分辨率输出，快速审查，甚至在现场实时生成新的变体。这些输出可以在几分钟后直接在媒体服务器时间线中查看。'
-  },
-  'customers.detail.moment-factory.topic-3.block.12': {
-    en: 'This low-resolution stage was not about polish. It was about validation and decision-making. That shift alone changed the pace of the entire project.',
-    'zh-CN':
-      '这个低分辨率阶段不是关于打磨，而是关于验证和决策。仅这一转变就改变了整个项目的节奏。'
-  },
-  'customers.detail.moment-factory.topic-3.block.13.heading': {
-    en: '3. Spatial credibility came first, not last',
-    'zh-CN': '3. 空间可信度优先，而非滞后'
-  },
-  'customers.detail.moment-factory.topic-3.block.14': {
-    en: 'A major reason this worked is that every generation was already spatially constrained. Moment Factory built the entire workflow around architectural surface templates, so outputs were pre-mapped from the start. The pipeline supported multiple template types in parallel, including flat UVs, 360 layouts, and camera-projection setups.',
-    'zh-CN':
-      '这之所以有效的一个主要原因是，每次生成已经在空间上受到约束。Moment Factory 围绕建筑表面模板构建了整个工作流，因此输出从一开始就是预映射的。管线同时支持多种模板类型，包括平面 UV、360 布局和相机投影设置。'
-  },
-  'customers.detail.moment-factory.topic-3.block.15': {
-    en: 'ControlNet injected structural information from those templates directly into the diffusion process, enforcing scale, layout, and spatial logic early.',
-    'zh-CN':
-      'ControlNet 将这些模板的结构信息直接注入扩散过程，提前强制执行比例、布局和空间逻辑。'
-  },
-  'customers.detail.moment-factory.topic-3.block.16': {
-    en: 'Because of this, visuals were already spatially credible during the concept phase. Abstract intent turned into shared reference points. The team could react to something grounded instead of imagining how it might look later.',
-    'zh-CN':
-      '因此，视觉效果在概念阶段就已经具有空间可信度。抽象的意图转变为共享的参考点。团队可以对有据可依的东西做出反应，而不是想象它以后可能的样子。'
-  },
-  'customers.detail.moment-factory.topic-3.block.17.heading': {
-    en: '4. Approval no longer meant starting over',
-    'zh-CN': '4. 审批不再意味着重新开始'
-  },
-  'customers.detail.moment-factory.topic-3.block.18': {
-    en: 'Once a direction was approved, the workflow did not reset. They could:',
-    'zh-CN': '一旦方向获批，工作流不会重置。他们可以：'
-  },
-  'customers.detail.moment-factory.topic-3.block.19': {
-    en: 'Inpaint specific regions\nPreserve composition\nUpscale selected outputs to 18K in ~20 minutes',
-    'zh-CN': '局部修复特定区域\n保留构图\n在约 20 分钟内将选定的输出放大到 18K'
-  },
-  'customers.detail.moment-factory.topic-3.block.20': {
-    en: 'This completely changed how fast ideas moved from concept to projection-ready content. Previously, approval often meant rebuilding work. With ComfyUI, approval meant pushing forward.',
-    'zh-CN':
-      '这完全改变了创意从概念到投影就绪内容的速度。以前，审批通常意味着重新制作。有了 ComfyUI，审批意味着继续推进。'
-  },
-  'customers.detail.moment-factory.topic-3.block.21.heading': {
-    en: '5. Fewer people, better collaboration',
-    'zh-CN': '5. 更少的人，更好的协作'
-  },
-  'customers.detail.moment-factory.topic-3.block.22': {
-    en: 'Once the system was stable, one main artist operated inside ComfyUI. Around that setup, two additional team members were continuously involved in art direction, prompt tuning, selection, and alignment discussions.',
-    'zh-CN':
-      '一旦系统稳定，一名主要艺术家在 ComfyUI 中操作。在此设置周围，另外两名团队成员持续参与艺术指导、提示词调优、选择和对齐讨论。'
-  },
-  'customers.detail.moment-factory.topic-3.block.23': {
-    en: 'They had to define a new working methodology to keep creative intent at the center, but in practice, ComfyUI functioned as a shared exploration tool, not a solo technical setup.',
-    'zh-CN':
-      '他们必须定义新的工作方法以保持创意意图在核心位置，但在实践中，ComfyUI 作为共享的探索工具运作，而非单独的技术设置。'
-  },
-  'customers.detail.moment-factory.topic-3.block.24.heading': {
-    en: '6. The moment it became undeniable',
-    'zh-CN': '6. 不可否认的时刻'
-  },
-  'customers.detail.moment-factory.topic-3.block.25': {
-    en: "Within Moment Factory's innovation team, it felt like a breakthrough early on — the level of malleability and control simply wasn't achievable with more rigid tools. But the real turning point came during an in-situ live demo, held at 25 Broadway. Late in the process, Moment Factory swapped the surface template and reran the entire pipeline without re-authoring a single asset. The composition held and the spatial logic remained intact. The content dropped straight into the media server timeline.",
-    'zh-CN':
-      '在 Moment Factory 的创新团队中，这在早期就感觉像是一个突破——这种程度的可塑性和控制力在更僵化的工具中根本无法实现。但真正的转折点出现在百老汇 25 号的一次现场演示中。在流程后期，Moment Factory 更换了表面模板，并重新运行了整个管线，没有重新制作任何资产。构图保持不变，空间逻辑完好无损。内容直接进入媒体服务器时间线。'
-  },
-  'customers.detail.moment-factory.topic-3.block.26': {
-    en: 'The room went quiet.',
-    'zh-CN': '全场安静了。'
-  },
-  'customers.detail.moment-factory.topic-3.block.27': {
-    en: 'In that moment, it stopped being a promising experiment and became a shared realization. People weren\'t asking "what if" anymore — they were asking how to prompt, and in what other context it could apply.',
-    'zh-CN':
-      '在那一刻，它不再是一个有前景的实验，而成为一种共识。人们不再问"如果怎样"——他们在问如何编写提示词，以及它还能应用在哪些场景中。'
-  },
-  'customers.detail.moment-factory.topic-3.block.28': {
-    en: "That's when it became undeniable: this wasn't just a powerful tool for R&D. It was a shift in how teams across Moment Factory could think, iterate, and produce.",
-    'zh-CN':
-      '那时它变得不可否认：这不仅仅是研发的强大工具，而是 Moment Factory 各团队思考、迭代和制作方式的一次转变。'
-  },
-  'customers.detail.moment-factory.topic-3.block.29.src': {
-    en: 'https://media.comfy.org/website/customers/moment-factory/demo.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/moment-factory/demo.webp'
-  },
-  'customers.detail.moment-factory.topic-3.block.29.alt': {
-    en: 'Moment Factory live projection mapping demo',
-    'zh-CN': 'Moment Factory 现场投影映射演示'
-  },
-  'customers.detail.moment-factory.topic-3.block.29.caption': {
-    en: 'Interior crowd view with projection mapping at architectural scale.',
-    'zh-CN': '建筑尺度投影映射的室内观众视角。'
-  },
-  // Topic 4: WHY COMFYUI WAS CRITICAL
-  'customers.detail.moment-factory.topic-4.label': {
-    en: 'WHY COMFYUI WAS CRITICAL',
-    'zh-CN': '为什么 ComfyUI 至关重要'
-  },
-  'customers.detail.moment-factory.topic-4.title': {
-    en: 'Why ComfyUI Was Critical at Architectural Scale',
-    'zh-CN': '为什么 ComfyUI 在建筑尺度至关重要'
-  },
-  'customers.detail.moment-factory.topic-4.block.0': {
-    en: 'Moment Factory had been exploring diffusion-based workflows for projection mapping for years. The ambition was clear: use generative systems not just for images, but as structured spatial material within complex, large-scale environments.',
-    'zh-CN':
-      'Moment Factory 多年来一直在探索基于扩散的投影映射工作流。目标很明确：将生成系统不仅用于图像，还作为复杂大规模环境中的结构化空间素材。'
-  },
-  'customers.detail.moment-factory.topic-4.block.1': {
-    en: 'What architectural scale demanded, however, was not just image generation. It required:',
-    'zh-CN': '然而，建筑尺度所要求的不仅仅是图像生成，还需要：'
-  },
-  'customers.detail.moment-factory.topic-4.block.2': {
-    en: 'Precise control over spatial conditioning\nThe ability to inject UV layouts and depth constraints directly into inference\nRapid template switching without breaking composition\nIterative refinement without rebuilding from scratch\nA pipeline that could evolve as constraints changed',
-    'zh-CN':
-      '对空间条件的精确控制\n将 UV 布局和深度约束直接注入推理的能力\n不破坏构图的快速模板切换\n无需从头重建的迭代优化\n可以随约束变化而发展的管线'
-  },
-  'customers.detail.moment-factory.topic-4.block.3': {
-    en: 'This level of structural malleability was essential.',
-    'zh-CN': '这种程度的结构可塑性是必不可少的。'
-  },
-  'customers.detail.moment-factory.topic-4.block.4': {
-    en: "ComfyUI's node-based architecture allowed the team to design and reshape the workflow itself, not just the outputs. Conditioning logic, batching strategies, template inputs, and upscaling stages could be reconfigured as the project evolved.",
-    'zh-CN':
-      'ComfyUI 基于节点的架构使团队能够设计和重塑工作流本身，而不仅仅是输出。条件逻辑、批处理策略、模板输入和放大阶段可以随着项目的发展而重新配置。'
-  },
-  'customers.detail.moment-factory.topic-4.block.5': {
-    en: 'Rather than adapting the project to fit a tool, the tool could be adapted to fit the architecture.',
-    'zh-CN': '项目无需适应工具，工具可以适应建筑。'
-  },
-  'customers.detail.moment-factory.topic-4.block.6': {
-    en: 'At that point, it became clear: achieving reliable architectural-scale generative workflows required a system flexible enough to be re-authored alongside the creative process. ComfyUI provided that flexibility.',
-    'zh-CN':
-      '在那一刻变得清晰：实现可靠的建筑尺度生成式工作流需要一个足够灵活的系统，可以在创意过程中被重新构建。ComfyUI 提供了这种灵活性。'
-  },
-  'customers.detail.moment-factory.topic-4.block.7.src': {
-    en: 'https://media.comfy.org/website/customers/moment-factory/workflow.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/moment-factory/workflow.webp'
-  },
-  'customers.detail.moment-factory.topic-4.block.7.alt': {
-    en: 'ComfyUI node-based workflow',
-    'zh-CN': 'ComfyUI 基于节点的工作流'
-  },
-  'customers.detail.moment-factory.topic-4.block.7.caption': {
-    en: 'Screenshot of the ComfyUI node-based workflow used by Moment Factory.',
-    'zh-CN': 'Moment Factory 使用的 ComfyUI 基于节点工作流截图。'
-  },
-  // Topic 5: THE TAKEAWAY
-  'customers.detail.moment-factory.topic-5.label': {
-    en: 'THE TAKEAWAY',
-    'zh-CN': '总结'
-  },
-  'customers.detail.moment-factory.topic-5.title': {
-    en: 'The Takeaway',
-    'zh-CN': '总结'
-  },
-  'customers.detail.moment-factory.topic-5.block.0': {
-    en: 'ComfyUI did not make the creative decisions. The vision stayed human. The constraints were architectural, and the expectations were production-level from the start.',
-    'zh-CN':
-      'ComfyUI 没有做出创意决策。愿景始终是人类的。约束是建筑性的，期望从一开始就是制作级别的。'
-  },
-  'customers.detail.moment-factory.topic-5.block.1': {
-    en: 'What ComfyUI brought to the table was structural flexibility. It allowed the workflow itself to be shaped and reshaped as the project evolved. Spatial inputs could be injected directly into inference. Templates could be swapped without collapsing the composition. Refinements could happen without rebuilding entire directions.',
-    'zh-CN':
-      'ComfyUI 带来的是结构灵活性。它允许工作流本身随着项目的发展而被塑造和重塑。空间输入可以直接注入推理。模板可以在不破坏构图的情况下切换。优化可以在不重建整个方向的情况下进行。'
-  },
-  'customers.detail.moment-factory.topic-5.block.2': {
-    en: 'Generative systems stopped behaving like black boxes and started behaving like controllable material. Spatial logic was embedded early, and scaling to architectural resolution became a managed step rather than a gamble.',
-    'zh-CN':
-      '生成系统不再像黑箱一样运作，而开始像可控材料一样行为。空间逻辑被提前嵌入，扩展到建筑分辨率成为一个可管理的步骤，而非赌博。'
-  },
-  'customers.detail.moment-factory.topic-5.block.3': {
-    en: 'The impact was not just speed. Decisions could be validated earlier, directly against geometry and projection conditions. Spatial alignment became part of concept development instead of a late-stage correction. That shift reduced uncertainty before entering production.',
-    'zh-CN':
-      '影响不仅仅是速度。决策可以更早地得到验证，直接针对几何形状和投影条件。空间对齐成为概念开发的一部分，而不是后期修正。这种转变减少了进入制作前的不确定性。'
-  },
-  'customers.detail.moment-factory.topic-5.block.4': {
-    en: 'In that sense, ComfyUI did more than accelerate exploration. It made architectural-scale generative workflows structurally viable within real production constraints.',
-    'zh-CN':
-      '从这个意义上说，ComfyUI 不仅加速了探索，还使建筑尺度的生成式工作流在真实制作约束下具有结构可行性。'
-  },
-  'customers.detail.moment-factory.topic-5.block.5.label': {
-    en: 'MOMENT FACTORY CONTRIBUTORS',
-    'zh-CN': 'MOMENT FACTORY 贡献者'
-  },
-  'customers.detail.moment-factory.topic-5.block.5.name': {
-    en: 'Guillaume Borgomano',
-    'zh-CN': 'Guillaume Borgomano'
-  },
-  'customers.detail.moment-factory.topic-5.block.5.role': {
-    en: 'Senior Multimedia Director & Innovation Creative Lead',
-    'zh-CN': '高级多媒体总监 & 创新创意负责人'
-  },
-  'customers.detail.moment-factory.topic-5.block.5.name2': {
-    en: 'Conner Tozier',
-    'zh-CN': 'Conner Tozier'
-  },
-  'customers.detail.moment-factory.topic-5.block.5.role2': {
-    en: 'Lead Motion Designer & Generative AI Lead',
-    'zh-CN': '首席动效设计师 & 生成式 AI 负责人'
-  },
-
-  // Customer Detail: Ubisoft CHORD
-  // Topic 1: Intro
-  'customers.detail.ubisoft-chord.topic-1.label': {
-    en: 'INTRO',
-    'zh-CN': '简介'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.0': {
-    en: 'Ubisoft La Forge has open-sourced its PBR material estimation model, <strong>CHORD (Chain of Rendering Decomposition)</strong>, together with <strong>ComfyUI-Chord</strong> custom node implementation to build an end-to-end material generation workflow with AI.',
-    'zh-CN':
-      '育碧 La Forge 开源了其 PBR 材质估算模型 <strong>CHORD（Chain of Rendering Decomposition）</strong>，以及 <strong>ComfyUI-Chord</strong> 自定义节点实现，用于构建端到端的 AI 材质生成工作流。'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.1': {
-    en: 'The model weights and code are released with a Research-Only license. Beyond research, this is a significant step toward integrating ComfyUI into AAA-scale video game production workflows.',
-    'zh-CN':
-      '模型权重和代码以仅限研究的许可证发布。除了研究之外，这是将 ComfyUI 集成到 AAA 级视频游戏制作工作流中的重要一步。'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/cover.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/cover.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.2.alt': {
-    en: 'CHORD PBR material generation in ComfyUI',
-    'zh-CN': 'ComfyUI 中的 CHORD PBR 材质生成'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.2.caption': {
-    en: 'PBR materials generated using the CHORD model in ComfyUI.',
-    'zh-CN': '使用 ComfyUI 中的 CHORD 模型生成的 PBR 材质。'
-  },
-  // Topic 2: The Problem
-  'customers.detail.ubisoft-chord.topic-2.label': {
-    en: 'THE PROBLEM',
-    'zh-CN': '挑战'
-  },
-  'customers.detail.ubisoft-chord.topic-2.title': {
-    en: 'PBR Material Production in AAA Games Today',
-    'zh-CN': '当今 AAA 游戏中的 PBR 材质制作'
-  },
-  'customers.detail.ubisoft-chord.topic-2.block.0': {
-    en: 'In AAA game development, PBR materials are the foundation of visual realism. Large-scale titles require hundreds of reusable materials, each with full Base Color, Normal, Height, Roughness, and Metalness maps that meet strict svBRDF standards.',
-    'zh-CN':
-      '在 AAA 游戏开发中，PBR 材质是视觉真实感的基础。大型游戏需要数百种可复用的材质，每种都包含完整的基础颜色、法线、高度、粗糙度和金属度贴图，并须满足严格的 svBRDF 标准。'
-  },
-  'customers.detail.ubisoft-chord.topic-2.block.1': {
-    en: 'Traditionally, these assets are crafted by texture artists using photogrammetry, procedural tools, and extensive manual tuning — making the process time-consuming and highly expertise-dependent.',
-    'zh-CN':
-      '传统上，这些资产由纹理艺术家使用摄影测量、程序化工具和大量手动调整来制作——这使得流程耗时且高度依赖专业知识。'
-  },
-  'customers.detail.ubisoft-chord.topic-2.block.2': {
-    en: "Ubisoft's Generative Base Material prototype directly targets this production bottleneck. The ComfyUI workflow outputs PBR texture sets that integrate directly into DCC tools and game engines for prototyping and placeholder assets.",
-    'zh-CN':
-      '育碧的生成式基础材质原型直接针对这一制作瓶颈。ComfyUI 工作流输出的 PBR 纹理集可直接集成到 DCC 工具和游戏引擎中，用于原型制作和占位资产。'
-  },
-  // Topic 3: Why ComfyUI
-  'customers.detail.ubisoft-chord.topic-3.label': {
-    en: 'WHY COMFYUI',
-    'zh-CN': '为什么选择 ComfyUI'
-  },
-  'customers.detail.ubisoft-chord.topic-3.title': {
-    en: 'Why Ubisoft Chose ComfyUI as The Workflow Platform',
-    'zh-CN': '育碧为何选择 ComfyUI 作为工作流平台'
-  },
-  'customers.detail.ubisoft-chord.topic-3.block.0': {
-    en: "Ubisoft's choice of ComfyUI is rooted in production realities. For large studios, the requirement is not another image generator — it is a controllable and integratable AI workflow platform that can meet the bespoke requirements of game development.",
-    'zh-CN':
-      '育碧选择 ComfyUI 源于生产实际需求。对于大型工作室来说，需要的不是另一个图像生成器——而是一个可控且可集成的 AI 工作流平台，能够满足游戏开发的定制需求。'
-  },
-  'customers.detail.ubisoft-chord.topic-3.block.1.text': {
-    en: 'Considering the multi-stage nature of our prototype, ComfyUI provides us with an efficient framework to build integrated workflows doing texture image synthesis, material estimation and material upscaling. This also enables us to leverage state-of-the-art generative models and the powerful features of ComfyUI that provide fine-grain control to creators with ControlNets, image guidance, inpainting, and countless other options.',
-    'zh-CN':
-      '考虑到我们原型的多阶段特性，ComfyUI 为我们提供了一个高效的框架来构建集成工作流，涵盖纹理图像合成、材质估算和材质放大。这也使我们能够利用最先进的生成模型和 ComfyUI 的强大功能，通过 ControlNet、图像引导、修复等众多选项为创作者提供精细控制。'
-  },
-  'customers.detail.ubisoft-chord.topic-3.block.1.name': {
-    en: 'Ubisoft La Forge Blog',
-    'zh-CN': '育碧 La Forge 博客'
-  },
-  // Topic 4: The Pipeline
-  'customers.detail.ubisoft-chord.topic-4.label': {
-    en: 'THE PIPELINE',
-    'zh-CN': '流水线'
-  },
-  'customers.detail.ubisoft-chord.topic-4.title': {
-    en: '3 Stages of The Generative Base Material Pipeline',
-    'zh-CN': '生成式基础材质流水线的三个阶段'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.0': {
-    en: 'The CHORD model is integrated into a broader pipeline consisting of 3 core stages.',
-    'zh-CN': 'CHORD 模型集成在一个更广泛的流水线中，由三个核心阶段组成。'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/pipeline.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/pipeline.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.1.alt': {
-    en: 'The 3-stage generative base material pipeline',
-    'zh-CN': '三阶段生成式基础材质流水线'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.1.caption': {
-    en: 'The 3-stage generative base material pipeline: texture generation, CHORD estimation, and upscaling.',
-    'zh-CN': '三阶段生成式基础材质流水线：纹理生成、CHORD 估算和放大。'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.2.heading': {
-    en: 'Stage 1 — Texture Image Generation',
-    'zh-CN': '阶段一 — 纹理图像生成'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.3': {
-    en: 'The first stage generates seamless, tileable 2D textures from text prompts or reference inputs such as lineart and height maps using a custom diffusion model with full conditional control.',
-    'zh-CN':
-      '第一阶段使用具有完全条件控制的自定义扩散模型，从文本提示或参考输入（如线稿和高度图）生成无缝、可平铺的 2D 纹理。'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.4.heading': {
-    en: 'Stage 2 — CHORD Image-to-Material Estimation',
-    'zh-CN': '阶段二 — CHORD 图像到材质估算'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.5': {
-    en: 'A single texture is converted into a full set of PBR maps — including Base Color, Normal, Height, Roughness, and Metalness — using chained decomposition, unified multi-modal prediction, and efficient single-step diffusion inference for controllable and scalable results.',
-    'zh-CN':
-      '将单一纹理转换为完整的 PBR 贴图集——包括基础颜色、法线、高度、粗糙度和金属度——使用链式分解、统一多模态预测和高效的单步扩散推理，实现可控且可扩展的结果。'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.6.heading': {
-    en: 'Stage 3 — Material Upscaling',
-    'zh-CN': '阶段三 — 材质放大'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.7': {
-    en: 'Since CHORD operates optimally at 1024 resolution, the third stage applies industrial-grade PBR upscaling. All channels are upscaled by 2x or 4x to produce 2K and 4K texture assets for real-time game production.',
-    'zh-CN':
-      '由于 CHORD 在 1024 分辨率下运行最佳，第三阶段应用工业级 PBR 放大。所有通道放大 2 倍或 4 倍，以生成用于实时游戏制作的 2K 和 4K 纹理资产。'
-  },
-  'customers.detail.ubisoft-chord.topic-4.block.8': {
-    en: 'This complete pipeline enables artists to rapidly iterate on ideas and mix and match AI-generated outputs within their existing workflows, lowering the barrier to industrial-grade PBR material creation.',
-    'zh-CN':
-      '这条完整的流水线使艺术家能够快速迭代创意，在现有工作流中混合搭配 AI 生成的输出，降低了工业级 PBR 材质创建的门槛。'
-  },
-  // Topic 5: How to Try
-  'customers.detail.ubisoft-chord.topic-5.label': {
-    en: 'TRY IT',
-    'zh-CN': '试用'
-  },
-  'customers.detail.ubisoft-chord.topic-5.title': {
-    en: 'How to Try CHORD in ComfyUI',
-    'zh-CN': '如何在 ComfyUI 中试用 CHORD'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.0': {
-    en: 'Ubisoft has open-sourced the CHORD model weights, ComfyUI custom nodes, and example workflows covering the texture image generation stage and the image-to-material estimation stage of the pipeline.',
-    'zh-CN':
-      '育碧开源了 CHORD 模型权重、ComfyUI 自定义节点和示例工作流，涵盖流水线中的纹理图像生成阶段和图像到材质估算阶段。'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/workflow.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/workflow.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.1.alt': {
-    en: 'CHORD example workflow in ComfyUI',
-    'zh-CN': 'ComfyUI 中的 CHORD 示例工作流'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.1.caption': {
-    en: 'The CHORD example workflow in ComfyUI for end-to-end PBR material generation.',
-    'zh-CN': 'ComfyUI 中端到端 PBR 材质生成的 CHORD 示例工作流。'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.2.ol': {
-    en: 'Install or update ComfyUI to the latest version\nInstall the CHORD ComfyUI custom node from Ubisoft\nDownload the CHORD model and place it in ./ComfyUI/models/checkpoints\nLoad the CHORD example workflow in ComfyUI',
-    'zh-CN':
-      '安装或更新 ComfyUI 至最新版本\n从育碧安装 CHORD ComfyUI 自定义节点\n下载 CHORD 模型并放置在 ./ComfyUI/models/checkpoints 目录\n在 ComfyUI 中加载 CHORD 示例工作流'
-  },
-  'customers.detail.ubisoft-chord.topic-5.block.3': {
-    en: 'You can switch the texture image generation model to any other image model, and use the workflow modules for each stage separately.',
-    'zh-CN':
-      '您可以将纹理图像生成模型替换为任何其他图像模型，也可以单独使用每个阶段的工作流模块。'
-  },
-  // Topic 6: Example Outputs
-  'customers.detail.ubisoft-chord.topic-6.label': {
-    en: 'RESULTS',
-    'zh-CN': '成果'
-  },
-  'customers.detail.ubisoft-chord.topic-6.title': {
-    en: 'Example Outputs',
-    'zh-CN': '输出示例'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.0.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/example1.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example1.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.0.alt': {
-    en: 'CHORD PBR material example output 1',
-    'zh-CN': 'CHORD PBR 材质输出示例 1'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.0.caption': {
-    en: 'Generated PBR material set showing Base Color, Normal, Height, Roughness, and Metalness maps.',
-    'zh-CN': '生成的 PBR 材质集，展示基础颜色、法线、高度、粗糙度和金属度贴图。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/example2.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example2.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.1.alt': {
-    en: 'CHORD PBR material example output 2',
-    'zh-CN': 'CHORD PBR 材质输出示例 2'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.1.caption': {
-    en: 'Another generated PBR material set demonstrating the variety of textures achievable with CHORD.',
-    'zh-CN': '另一组生成的 PBR 材质集，展示 CHORD 可实现的多样纹理效果。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/example3.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example3.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.2.alt': {
-    en: 'CHORD PBR material example output 3',
-    'zh-CN': 'CHORD PBR 材质输出示例 3'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.2.caption': {
-    en: 'Material generation output with full PBR channel decomposition.',
-    'zh-CN': '具有完整 PBR 通道分解的材质生成输出。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.3.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/example4.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example4.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.3.alt': {
-    en: 'CHORD PBR material example output 4',
-    'zh-CN': 'CHORD PBR 材质输出示例 4'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.3.caption': {
-    en: 'High-quality PBR texture set generated from a single input texture.',
-    'zh-CN': '从单一输入纹理生成的高质量 PBR 纹理集。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.4.src': {
-    en: 'https://media.comfy.org/website/customers/ubisoft/example5.webp',
-    'zh-CN': 'https://media.comfy.org/website/customers/ubisoft/example5.webp'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.4.alt': {
-    en: 'CHORD PBR material example output 5',
-    'zh-CN': 'CHORD PBR 材质输出示例 5'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.4.caption': {
-    en: 'Final rendered PBR material demonstrating production-ready quality.',
-    'zh-CN': '最终渲染的 PBR 材质，展示可用于生产的质量。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.5': {
-    en: 'The release of CHORD demonstrates how ComfyUI has grown from a community-driven tool into a platform for real production. Studio users can build end-to-end pipelines from prompt or reference input through texture generation, material estimation, PBR upscaling, and finally export to DCC tools or game engines. Each stage can also operate independently and be embedded into an existing production system.',
-    'zh-CN':
-      'CHORD 的发布表明，ComfyUI 已从一个社区驱动的工具成长为一个真正的生产平台。工作室用户可以构建端到端流水线，从提示或参考输入到纹理生成、材质估算、PBR 放大，最终导出到 DCC 工具或游戏引擎。每个阶段也可以独立运行并嵌入现有的生产系统中。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.6.label': {
-    en: 'AUTHOR',
-    'zh-CN': '作者'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.6.name': {
-    en: 'Jo Zhang',
-    'zh-CN': 'Jo Zhang'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.6.role': {
-    en: 'ComfyUI Blog',
-    'zh-CN': 'ComfyUI 博客'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.6.name2': {
-    en: 'Daxiong (Lin)',
-    'zh-CN': 'Daxiong (Lin)'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.6.role2': {
-    en: 'ComfyUI Blog',
-    'zh-CN': 'ComfyUI 博客'
-  },
-
-  // Customer Detail: Groove Jones
-  // Topic 1: Intro
-  'customers.detail.groove-jones.topic-1.label': {
-    en: 'INTRO',
-    'zh-CN': '简介'
-  },
-  'customers.detail.groove-jones.topic-1.block.0': {
-    en: 'Groove Jones, a Dallas-based creative studio, builds AI-driven campaigns and immersive experiences for major brands where photoreal polish, creative ambition, and social-ready speed all have to land together. As their work expanded across AI Video, AR, VR, and WebGL for clients like Crocs, the NFL, and Dick\u2019s Sporting Goods, they faced a recurring challenge: delivering feature-film-quality VFX on commercial timelines and budgets.',
-    'zh-CN':
-      '位于达拉斯的创意工作室 Groove Jones，为众多大牌客户打造由 AI 驱动的营销活动和沉浸式体验，需要同时兼顾照片级的精细度、创意野心，以及适配社交媒体的交付速度。随着他们为 Crocs、NFL 和 Dick\u2019s Sporting Goods 等客户的工作扩展到 AI 视频、AR、VR 和 WebGL，他们反复遇到同一个挑战：用商业项目的工期和预算，交付电影级的 VFX 质量。'
-  },
-  'customers.detail.groove-jones.topic-1.block.1': {
-    en: 'For the Crocs x NFL collection holiday launch, that challenge came to a head. The brief called for hyper-realistic video of giant NFL-licensed Crocs parachuting into real Dick\u2019s Sporting Goods parking lots, across multiple locations, delivered on a fast-approaching holiday deadline. A live-action shoot plus a traditional CG pipeline was off the table.',
-    'zh-CN':
-      '在 Crocs x NFL 联名系列的节日上市项目中，这个挑战被推到了极致。Brief 要求制作超写实视频：巨型 NFL 授权 Crocs 鞋款跳伞落入多个真实的 Dick\u2019s Sporting Goods 停车场，并要在紧迫的节日档期前交付。实地拍摄加传统 CG 流水线的方案，已经完全行不通。'
-  },
-  // Topic 2: The Output
-  'customers.detail.groove-jones.topic-2.label': {
-    en: 'THE OUTPUT',
-    'zh-CN': '交付成果'
-  },
-  'customers.detail.groove-jones.topic-2.title': {
-    en: 'The Output Groove Jones Achieved Using Comfy',
-    'zh-CN': 'Groove Jones 借助 Comfy 实现的交付成果'
-  },
-  'customers.detail.groove-jones.topic-2.block.0': {
-    en: 'A full FOOH (faux out-of-home) social campaign delivered on a tight holiday deadline\nHyper-realistic videos of giant NFL-licensed Crocs parachuting onto Dick\u2019s Sporting Goods parking lots\nVertical 9:16 deliverables at 2K for Instagram Reels, TikTok, and YouTube Shorts\nSame-day iteration on client notes instead of week-long asset updates\nWinner, Aaron Awards 2024: Best AI Workflow for Production',
-    'zh-CN':
-      '在紧迫的节日档期内交付完整的 FOOH（虚构户外广告）社媒营销活动\n超写实视频：巨型 NFL 授权 Crocs 鞋款跳伞落入 Dick\u2019s Sporting Goods 停车场\n面向 Instagram Reels、TikTok、YouTube Shorts 的 9:16 竖屏 2K 交付物\n客户反馈当天迭代，不再需要数周的资产更新周期\n荣获 2024 年 Aaron Awards：最佳 AI 制作工作流奖'
-  },
-  // Topic 3: The Problem
-  'customers.detail.groove-jones.topic-3.label': {
-    en: 'THE PROBLEM',
-    'zh-CN': '挑战'
-  },
-  'customers.detail.groove-jones.topic-3.title': {
-    en: 'The Problem Groove Jones Was Trying to Solve',
-    'zh-CN': 'Groove Jones 试图解决的问题'
-  },
-  'customers.detail.groove-jones.topic-3.block.0': {
-    en: 'A traditional pipeline for this creative meant a live-action shoot at multiple store locations plus a full CG build: high-res modeling of every team\u2019s clog, look development, lighting, rendering, compositing, and a new render every time the client wanted a variation. It also meant a large crew (modelers, texture artists, lighting artists, compositors) and a schedule measured in months. Neither the budget nor the holiday window supported that path.',
-    'zh-CN':
-      '按照传统流水线做这个创意，意味着要在多家门店实地拍摄，加上完整的 CG 制作：每支球队鞋款的高精建模、look development、灯光、渲染、合成，客户每次想要新变体都要重新渲染。这也意味着庞大的团队（建模师、纹理师、灯光师、合成师），以及以"月"为单位的工期。无论是预算还是节日档期，都无法支撑这条路径。'
-  },
-  // Topic 4: How Comfy Solved the Problem
-  'customers.detail.groove-jones.topic-4.label': {
-    en: 'HOW COMFY SOLVED THE PROBLEM',
-    'zh-CN': 'Comfy 如何解决问题'
-  },
-  'customers.detail.groove-jones.topic-4.title': {
-    en: 'How Groove Jones Used Comfy to Solve the Problem',
-    'zh-CN': 'Groove Jones 如何用 Comfy 解决问题'
-  },
-  'customers.detail.groove-jones.topic-4.block.0': {
-    en: 'Groove Jones\u2019s Senior Creative Technologist, Doug Hogan, rebuilt the production process around Comfy\u2019s node-based workflow system, using their proprietary GrooveTech GenVFX pipeline. Custom LoRAs handled brand accuracy, a single Comfy graph orchestrated multiple generative models, and Nuke handled final polish. For a team with feature-film and commercial roots, the environment was immediately familiar.',
-    'zh-CN':
-      'Groove Jones 的高级创意技术总监 Doug Hogan 围绕 Comfy 的节点式工作流系统重新搭建了制作流程，并基于他们自研的 GrooveTech GenVFX 流水线展开。自定义 LoRA 负责保证品牌一致性，一张 Comfy 图编排多个生成模型，Nuke 负责最终精修。对于有电影和广告制作背景的团队，这套环境上手没有任何门槛。'
-  },
-  'customers.detail.groove-jones.topic-4.block.1.text': {
-    en: 'Comfy felt very similar to working inside a traditional CG and compositing pipeline. Node-based logic, clear data flow, modular builds. It felt natural to our artists already.',
-    'zh-CN':
-      'Comfy 用起来非常像传统 CG 和合成流水线：节点逻辑、清晰的数据流、模块化构建。我们的艺术家用起来毫无违和感。'
-  },
-  'customers.detail.groove-jones.topic-4.block.1.name': {
-    en: 'Doug Hogan | Senior Creative Technologist @ Groove Jones',
-    'zh-CN': 'Doug Hogan | Groove Jones 高级创意技术总监'
-  },
-  // Topic 5: Brand-Trained LoRAs
-  'customers.detail.groove-jones.topic-5.label': {
-    en: 'BRAND-TRAINED LORAS',
-    'zh-CN': '品牌定制 LORA'
-  },
-  'customers.detail.groove-jones.topic-5.title': {
-    en: 'Brand-Trained LoRAs for Hero Assets',
-    'zh-CN': '为主视觉资产定制的品牌 LoRA'
-  },
-  'customers.detail.groove-jones.topic-5.block.0': {
-    en: 'Groove Jones trained custom LoRAs on the Crocs NFL Team Clogs and on Dick\u2019s Sporting Goods storefronts, so every generation came out anchored in brand-accurate references. Real team colorways, real product silhouettes, and real store exteriors stayed consistent across shots without per-frame correction, replacing what would normally take weeks of manual look development.',
-    'zh-CN':
-      'Groove Jones 基于 Crocs NFL 球队联名鞋款和 Dick\u2019s Sporting Goods 门店外景训练了定制 LoRA，让每一次生成都能锚定品牌精准的参考素材。真实的球队配色、产品轮廓和门店外观在不同镜头之间保持一致，不需要逐帧修正——而这通常意味着数周的 look development 工作量。'
-  },
-  'customers.detail.groove-jones.topic-5.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp'
-  },
-  'customers.detail.groove-jones.topic-5.block.1.alt': {
-    en: 'Grid of brand-accurate NFL team Crocs generated via custom LoRAs',
-    'zh-CN': '通过定制 LoRA 生成的多支 NFL 球队联名 Crocs 网格'
-  },
-  'customers.detail.groove-jones.topic-5.block.1.caption': {
-    en: 'Brand-accurate NFL team colorways generated through custom LoRAs.',
-    'zh-CN': '通过定制 LoRA 生成的、与品牌精准一致的 NFL 球队配色。'
-  },
-  // Topic 6: Multi-Model Orchestration
-  'customers.detail.groove-jones.topic-6.label': {
-    en: 'MULTI-MODEL ORCHESTRATION',
-    'zh-CN': '多模型编排'
-  },
-  'customers.detail.groove-jones.topic-6.title': {
-    en: 'Multi-Model Orchestration in a Single Graph',
-    'zh-CN': '单张图内的多模型编排'
-  },
-  'customers.detail.groove-jones.topic-6.block.0': {
-    en: 'The creative required different generative models at different stages: Flux for key-frame still development, Gemini Flash 2.5 (Nano Banana) for fast ideation and variants, and Veo 3.1 plus Moonvalley\u2019s Marey for final video generation. Comfy routed between all four inside one graph, so outputs from one model fed directly into the next without ever leaving the environment.',
-    'zh-CN':
-      '这个创意在不同阶段需要不同的生成模型：Flux 用于关键帧静帧开发，Gemini Flash 2.5（Nano Banana）用于快速构思和变体生成，Veo 3.1 加上 Moonvalley 的 Marey 用于最终的视频生成。Comfy 在一张图里就把这四个模型串起来，前一个模型的输出直接喂给下一个模型，全程无需切换环境。'
-  },
-  'customers.detail.groove-jones.topic-6.block.1.text': {
-    en: 'The Comfy community develops at an almost exponential curve, and we were able to leverage their existing nodes and tools to solve very specific production challenges instead of reinventing the wheel ourselves.',
-    'zh-CN':
-      'Comfy 社区几乎是指数级增长的，我们可以直接利用社区已有的节点和工具去解决非常具体的制作问题，而不必自己重新造轮子。'
-  },
-  'customers.detail.groove-jones.topic-6.block.1.name': {
-    en: 'Dale Carman | Co-founder @ Groove Jones',
-    'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
-  },
-  // Topic 7: The Pipeline
-  'customers.detail.groove-jones.topic-7.label': {
-    en: 'THE PIPELINE',
-    'zh-CN': '流水线'
-  },
-  'customers.detail.groove-jones.topic-7.title': {
-    en: 'Storyboards to Previz to Final Shot in One Pipeline',
-    'zh-CN': '从故事板到 Previz 再到成片，全部在一条流水线内'
-  },
-  'customers.detail.groove-jones.topic-7.block.0': {
-    en: 'The workflow opened with traditional storyboards for narrative approval, then moved into CGI blocking to lock composition, camera framing, and story beats. Comfy drove generation from there: the shoe drop, the parking lot reactions, the crowd coverage, and the environmental conversions that turned static summer storefronts into snow-covered holiday scenes, all inside the same graph.',
-    'zh-CN':
-      '工作流从传统故事板开始用于叙事确认，再进入 CGI blocking，锁定构图、镜头取景和叙事节奏。从这里开始 Comfy 接管生成：鞋款空投、停车场反应镜头、人群覆盖、把夏季静态门店外景转换成被雪覆盖的节日场景——全部在同一张图里完成。'
-  },
-  'customers.detail.groove-jones.topic-7.block.1.src': {
-    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp'
-  },
-  'customers.detail.groove-jones.topic-7.block.1.alt': {
-    en: 'Storyboard grid for the Crocs x NFL holiday campaign',
-    'zh-CN': 'Crocs x NFL 节日营销的故事板网格'
-  },
-  'customers.detail.groove-jones.topic-7.block.1.caption': {
-    en: 'Grayscale storyboards used to lock narrative beats before generation.',
-    'zh-CN': '在生成之前用于锁定叙事节奏的灰度故事板。'
-  },
-  'customers.detail.groove-jones.topic-7.block.2.src': {
-    en: 'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp',
-    'zh-CN':
-      'https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp'
-  },
-  'customers.detail.groove-jones.topic-7.block.2.alt': {
-    en: 'Composition progression from blocking to mid-render to final shot',
-    'zh-CN': '从 blocking 到中间渲染再到最终镜头的构图演进'
-  },
-  'customers.detail.groove-jones.topic-7.block.2.caption': {
-    en: 'Composition progression: wireframe blocking, mid-render, and final shot.',
-    'zh-CN': '构图演进：线框 blocking、中间渲染、最终成片。'
-  },
-  // Topic 8: Version Control
-  'customers.detail.groove-jones.topic-8.label': {
-    en: 'VERSION CONTROL',
-    'zh-CN': '版本管理'
-  },
-  'customers.detail.groove-jones.topic-8.title': {
-    en: 'Workflow Files as Version Control',
-    'zh-CN': '把工作流文件当作版本管理'
-  },
-  'customers.detail.groove-jones.topic-8.block.0': {
-    en: 'Every variant of every shot lived as a Comfy workflow file, which doubled as version control. When notes came in requesting a different team colorway, store exterior, or time of day, the team duplicated a branch instead of rebuilding, which made same-day iteration possible. GPU usage and API credit burn were trackable inside the same environment as the work itself, giving Production real-time visibility into compute cost per iteration.',
-    'zh-CN':
-      '每个镜头的每个变体都以 Comfy 工作流文件的形式存在，文件本身就是版本管理。当客户反馈要求换一支球队配色、换一个门店外景或者换一个时间段时，团队只需复制一个分支，而不是重建——这才让"当天迭代"成为可能。GPU 使用量和 API 额度消耗也都能在同一个环境里追踪到，让制作部门实时看到每次迭代的算力成本。'
-  },
-  // Topic 9: Finishing in Nuke
-  'customers.detail.groove-jones.topic-9.label': {
-    en: 'FINISHING IN NUKE',
-    'zh-CN': 'Nuke 终修'
-  },
-  'customers.detail.groove-jones.topic-9.title': {
-    en: 'Finishing in Nuke',
-    'zh-CN': '在 Nuke 中完成终修'
-  },
-  'customers.detail.groove-jones.topic-9.block.0': {
-    en: 'Generated shots moved into Nuke for final compositing: falling snow, camera shake, crowd ambience, holiday audio, and 2K mastering in 9:16 for Instagram Reels, TikTok, and YouTube Shorts. Because Comfy handled generation cleanly, Nuke focused on polish and motion enhancement rather than patching generative artifacts.',
-    'zh-CN':
-      '生成的镜头进入 Nuke 完成最终合成：飘雪、镜头抖动、人群环境音、节日氛围音效，以及面向 Instagram Reels、TikTok、YouTube Shorts 的 9:16 2K 母带。由于 Comfy 把生成环节处理得很干净，Nuke 可以专注于精修和动态增强，而不是去修补生成模型留下的瑕疵。'
-  },
-  // Topic 10: The Takeaway
-  'customers.detail.groove-jones.topic-10.label': {
-    en: 'THE TAKEAWAY',
-    'zh-CN': '总结'
-  },
-  'customers.detail.groove-jones.topic-10.title': {
-    en: 'Conclusion',
-    'zh-CN': '结语'
-  },
-  'customers.detail.groove-jones.topic-10.block.0': {
-    en: 'By building the FOOH pipeline inside Comfy, Groove Jones turned a brief that would have required an expensive live-action shoot plus months of CG into a fast, iterative, single-environment workflow the client could direct in real time. The project recently won the Aaron Award for Best AI Workflow for Production.',
-    'zh-CN':
-      '通过在 Comfy 中搭建整套 FOOH 流水线，Groove Jones 把一个原本需要昂贵实地拍摄加数月 CG 制作的项目，变成了一套高速迭代、单一环境、客户可以实时指挥的工作流。该项目近期还荣获 Aaron Award 的"最佳 AI 制作工作流"奖。'
-  },
-  'customers.detail.groove-jones.topic-10.block.1.text': {
-    en: 'At Groove Jones, we care deeply about delivering work that makes people say WOW! But we also care about delivering on time and on budget. VFX projects used to operate at razor thin margins. Comfy solved that for us.',
-    'zh-CN':
-      '在 Groove Jones，我们非常在意交付让人说"WOW！"的作品，但我们同样在意按时按预算交付。VFX 项目以前的利润率薄得像刀刃，Comfy 帮我们彻底解决了这个问题。'
-  },
-  'customers.detail.groove-jones.topic-10.block.1.name': {
-    en: 'Dale Carman | Co-founder @ Groove Jones',
-    'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
   },
 
   // Contact – FormSection
@@ -4605,16 +4223,11 @@ const translations = {
     en: 'This page is being redesigned. Check back soon.',
     'zh-CN': '此页面正在重新设计中，请稍后再来。'
   },
-  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
     en: "What's next?",
     'zh-CN': '接下来看什么？'
-  },
-  'customers.story.backToStories': {
-    en: '← BACK TO CUSTOMER STORIES',
-    'zh-CN': '← 返回客户故事'
   },
   'customers.story.viewArticle': {
     en: 'VIEW ARTICLE',
@@ -4705,10 +4318,6 @@ const translations = {
     en: "Run the world's leading AI models in ComfyUI",
     'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
   },
-  'models.breadcrumb.home': {
-    en: 'Home',
-    'zh-CN': '首页'
-  },
   'models.breadcrumb.models': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
@@ -4746,8 +4355,8 @@ const translations = {
     'zh-CN': '{count} 个工作流'
   },
   'models.list.contact.label': {
-    en: 'COMFY HUB',
-    'zh-CN': 'COMFY HUB'
+    en: 'COMFY WORKFLOWS',
+    'zh-CN': 'COMFY WORKFLOWS'
   },
   'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
   'models.showcase.heading': {
@@ -4783,9 +4392,9 @@ const translations = {
     'zh-CN': 'Wan 2.2\n文字转视频'
   },
   'models.list.contact.heading': {
-    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Workflows</a> for the newest workflows.',
     'zh-CN':
-      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Workflows</a> 查看最新工作流。'
   },
 
   // Payment status pages
@@ -4907,8 +4516,8 @@ const translations = {
 
   // Affiliate page (/affiliates) — head metadata
   'affiliate.page.title': {
-    en: 'Comfy.org Affiliate Program — Become a Partner',
-    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
+    en: 'Comfy.org Affiliate Program - Become a Partner',
+    'zh-CN': 'Comfy.org 联盟计划 - 成为合作伙伴'
   },
   'affiliate.page.description': {
     en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
@@ -4928,6 +4537,225 @@ const translations = {
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
     'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Launches page (/launches) — head metadata
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.page.title': {
+    en: 'ComfyUI Live Demo & Q&A - June 29 Launch Livestream',
+    'zh-CN': 'ComfyUI 直播演示与问答 - 6 月 29 日发布直播'
+  },
+  'launches.page.description': {
+    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    'zh-CN':
+      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+  },
+
+  // Launches page (/launches) — hero section
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.hero.title': {
+    en: 'Everything new in ComfyUI',
+    'zh-CN': 'ComfyUI 全新内容'
+  },
+  'launches.hero.primary': {
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
+  },
+  'launches.hero.secondary': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'launches.hero.visualAlt': {
+    en: 'Comfy',
+    'zh-CN': 'Comfy'
+  },
+
+  // Launches page (/launches) — subscribe banner
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.banner.text': {
+    en: 'Now turn your agent into a creative technologist.',
+    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+  },
+  'launches.banner.cta': {
+    en: 'Start Comfy MCP',
+    'zh-CN': '启动 Comfy MCP'
+  },
+
+  // Launches page (/launches) — closing CTA
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.cta.heading': {
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
+  },
+  'launches.cta.primary': {
+    en: 'Open Comfy Cloud',
+    'zh-CN': '打开 Comfy Cloud'
+  },
+  'launches.cta.secondary': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // Launches page (/launches) — launches grid
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'launches.section.title': {
+    en: 'Latest Launches',
+    'zh-CN': '最新发布'
+  },
+
+  // Brand Portal page (/brand)
+  'brand.page.title': {
+    en: 'Brand — Comfy',
+    'zh-CN': '品牌 — Comfy'
+  },
+  'brand.page.description': {
+    en: 'The Comfy brand portal: logos, color, typography, and voice. Everything you need to build something that looks and sounds like Comfy.',
+    'zh-CN':
+      'Comfy 品牌门户：标志、色彩、字体与语调。打造与 Comfy 观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.label': {
+    en: 'Brand Portal',
+    'zh-CN': '品牌门户'
+  },
+  'brand.hero.heading': {
+    en: 'Create with ComfyUI',
+    'zh-CN': '用 ComfyUI 创作'
+  },
+  'brand.hero.subheading': {
+    en: 'Logo, color, type, and voice. Everything you need to build something that looks and sounds like us.',
+    'zh-CN': '标志、色彩、字体与语调。打造与我们观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.viewGuidelines': {
+    en: 'View brand guidelines',
+    'zh-CN': '查看品牌规范'
+  },
+  'brand.hero.downloadLogos': {
+    en: 'Download logos',
+    'zh-CN': '下载标志'
+  },
+  'brand.logos.heading': {
+    en: 'One mark, many dimensions.',
+    'zh-CN': '一个标志，多种维度。'
+  },
+  'brand.logos.subheading': {
+    en: 'Logos come in light and dark options. Use as provided. Do not distort, recolor, or outline. Make sure the logo is legible against its background.',
+    'zh-CN':
+      '标志提供浅色和深色两种版本。请按原样使用，不要变形、改色或描边。确保标志在其背景上清晰可辨。'
+  },
+  'brand.colors.heading': {
+    en: 'Every color earns its place.',
+    'zh-CN': '每种颜色都各得其所。'
+  },
+  'brand.colors.subheading': {
+    en: 'Our color palette helps build brand recognition. When people think of Comfy, we want them to associate it with the following colors.',
+    'zh-CN':
+      '我们的调色板有助于建立品牌辨识度。当人们想到 Comfy 时，我们希望他们联想到以下这些颜色。'
+  },
+  'brand.colors.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'brand.colors.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+  'brand.voice.heading': {
+    en: 'Precise, never cute.',
+    'zh-CN': '精准，绝不卖弄。'
+  },
+  'brand.voice.direct.title': {
+    en: 'Direct',
+    'zh-CN': '直接'
+  },
+  'brand.voice.direct.body': {
+    en: 'We state things. We don’t hedge, qualify, or suggest. Short sentences. Active voice. One idea at a time.',
+    'zh-CN':
+      '我们直陈其事。不含糊、不设限、不暗示。短句。主动语态。一次只讲一个观点。'
+  },
+  'brand.voice.precise.title': {
+    en: 'Precise',
+    'zh-CN': '精准'
+  },
+  'brand.voice.precise.body': {
+    en: 'We use the real names for things. Nodes, samplers, seeds, checkpoints. We don’t talk around the product or reach for metaphor when the technical term is already good.',
+    'zh-CN':
+      '我们直呼其名：nodes、samplers、seeds、checkpoints。当技术术语已经足够贴切时，我们不绕弯子，也不借用比喻。'
+  },
+  'brand.voice.human.title': {
+    en: 'Human-first',
+    'zh-CN': '以人为先'
+  },
+  'brand.voice.human.body': {
+    en: 'The human creates. Comfy makes every step visible. We never write as though the AI is doing the work.',
+    'zh-CN':
+      '创作的是人。Comfy 让每一步都清晰可见。我们绝不把功劳写成是 AI 完成的。'
+  },
+  'brand.voice.antihype.title': {
+    en: 'Anti-hype',
+    'zh-CN': '拒绝浮夸'
+  },
+  'brand.voice.antihype.body': {
+    en: 'We don’t write “stunning,” “revolutionary,” or “effortless.” We don’t promise magic. Our tagline says exactly what we mean: Method, not magic.',
+    'zh-CN':
+      '我们不写“惊艳”“革命性”或“毫不费力”。我们不承诺魔法。我们的口号恰如其分：方法，而非魔法。'
+  },
+  'brand.voice.doLabel': {
+    en: 'Do',
+    'zh-CN': '推荐'
+  },
+  'brand.voice.dontLabel': {
+    en: 'Don’t',
+    'zh-CN': '避免'
+  },
+  'brand.voice.do.0': {
+    en: 'Route your prompt through a ControlNet. Wire the output to the VAE decode.',
+    'zh-CN': '让你的 prompt 经过 ControlNet，再将输出连接到 VAE decode。'
+  },
+  'brand.voice.do.1': {
+    en: 'Comfy runs on your hardware. Nothing leaves your machine.',
+    'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
+  },
+  'brand.voice.dont.0': {
+    en: 'Simply connect your AI blocks and watch the magic happen!',
+    'zh-CN': '只需连接你的 AI 模块，见证奇迹的发生！'
+  },
+  'brand.voice.dont.1': {
+    en: 'Oops! Something went wrong. Please try again later.',
+    'zh-CN': '哎呀！出了点问题，请稍后再试。'
+  },
+  'brand.trademark.heading': {
+    en: 'Trademark guidelines.',
+    'zh-CN': '商标使用规范。'
+  },
+  'brand.trademark.body1': {
+    en: 'Comfy and ComfyUI are trademarks of Comfy Org. You’re welcome to reference them in content that accurately describes your work with our platform. Tutorials, reviews, integrations, and affiliate content all qualify.',
+    'zh-CN':
+      'Comfy 和 ComfyUI 是 Comfy Org 的商标。欢迎在准确描述你与我们平台相关工作的内容中引用它们。教程、评测、集成以及联盟内容均可。'
+  },
+  'brand.trademark.body2': {
+    en: 'A few rules: don’t modify the logo, don’t use the Comfy name in your own product or company name, and don’t present your content in a way that implies official endorsement or partnership beyond what’s been agreed.',
+    'zh-CN':
+      '几条规则：不要修改标志，不要在你自己的产品或公司名称中使用 Comfy 这一名称，也不要以暗示官方认可或合作关系（超出双方已达成的约定）的方式呈现你的内容。'
+  },
+  'brand.trademark.body3': {
+    en: 'For permissions outside these guidelines,',
+    'zh-CN': '如需本规范之外的授权，请'
+  },
+  'brand.trademark.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
+  },
+  'brand.questions.heading': {
+    en: 'Questions?',
+    'zh-CN': '有疑问？'
+  },
+  'brand.questions.body': {
+    en: 'For press, partnerships, or anything outside these guidelines,',
+    'zh-CN': '如涉及媒体、合作，或本规范未涵盖的任何事宜，请'
+  },
+  'brand.questions.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

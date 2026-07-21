@@ -8,7 +8,6 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { useLitegraphService } from '@/services/litegraphService'
 
 async function navigateToGraph(targetGraph: LGraph) {
   const canvasStore = useCanvasStore()
@@ -49,23 +48,7 @@ export function useFocusNode() {
     canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
   }
 
-  async function enterSubgraph(
-    nodeId: string,
-    executionIdMap?: Map<string, LGraphNode>
-  ) {
-    if (!canvasStore.canvas) return
-
-    const graphNode = executionIdMap
-      ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
-
-    await navigateToGraph(graphNode.graph as LGraph)
-    useLitegraphService().fitView()
-  }
-
   return {
-    focusNode,
-    enterSubgraph
+    focusNode
   }
 }

@@ -9,13 +9,13 @@ import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
-  capturePreservedQuery,
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -48,10 +48,6 @@ export function useSharedWorkflowUrlLoader() {
   const { isLoggedIn } = useCurrentUser()
   const { mode, isAppMode } = useAppMode()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
-
-  function isValidParameter(param: string): boolean {
-    return /^[a-zA-Z0-9_.-]+$/.test(param)
-  }
 
   async function ensureShareQueryFromIntent() {
     hydratePreservedQuery(SHARE_NAMESPACE)
@@ -129,7 +125,7 @@ export function useSharedWorkflowUrlLoader() {
       return 'not-present'
     }
 
-    if (!isValidParameter(shareParam)) {
+    if (!isValidShareId(shareParam)) {
       console.warn(
         `[useSharedWorkflowUrlLoader] Invalid share parameter format: ${shareParam}`
       )
@@ -148,13 +144,6 @@ export function useSharedWorkflowUrlLoader() {
       view_mode: mode.value,
       is_app_mode: isAppMode.value
     })
-    if (!isLoggedIn.value) {
-      capturePreservedQuery(
-        PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
-        { share: shareParam },
-        ['share']
-      )
-    }
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 

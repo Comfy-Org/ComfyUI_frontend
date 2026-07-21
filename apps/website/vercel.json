@@ -14,6 +14,24 @@
         { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
       ],
       "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    },
+    {
+      "source": "/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/:locale/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ],
   "redirects": [
@@ -36,6 +54,11 @@
       "source": "/press",
       "destination": "/about",
       "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/login",
+      "permanent": false
     }
   ]
 }

@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { toNodeId } from '@/types/nodeId'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -139,7 +140,7 @@ describe('resolveSubgraphInputTarget', () => {
       (slot) => slot.name === 'seed'
     )!
     const node = new LGraphNode('Interior-seed')
-    node.id = 42
+    node.id = toNodeId(42)
     const input = node.addInput('seed_input', '*')
     node.addWidget('number', 'seed', 0, () => undefined)
     input.widget = { name: 'seed' }
@@ -224,7 +225,7 @@ describe('resolveSubgraphInputTarget', () => {
       inputs: [{ name: 'seed', type: '*' }]
     })
     const concreteNode = new LGraphNode('ConcreteNode')
-    concreteNode.id = 900
+    concreteNode.id = toNodeId(900)
     const concreteInput = concreteNode.addInput('seed_input', '*')
     concreteNode.addWidget('number', 'seed', 0, () => undefined)
     concreteInput.widget = { name: 'seed' }

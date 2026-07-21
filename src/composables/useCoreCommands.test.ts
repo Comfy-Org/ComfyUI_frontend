@@ -5,11 +5,14 @@ import { ref } from 'vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
@@ -77,6 +80,23 @@ vi.mock('@/stores/modelStore', async (importOriginal) => {
   }
 })
 
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
+const mockMissingModelStoreRefresh = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined)
+)
+vi.mock('@/platform/missingModel/missingModelStore', () => ({
+  useMissingModelStore: () => ({
+    refreshMissingModels: mockMissingModelStoreRefresh
+  })
+}))
+
 vi.mock('@/platform/settings/settingStore')
 
 vi.mock('@/stores/authStore', () => ({
@@ -133,6 +153,23 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
+}))
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
+}))
+
+const mockAssetBrowse = vi.hoisted(() =>
+  vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
+)
+vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
+  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
+}))
+
+const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
+  startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
@@ -273,6 +310,10 @@ describe('useCoreCommands', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDistributionState.isCloud = false
+    vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
+    mockModelStoreRefresh.mockResolvedValue(undefined)
+    mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
     // Set up Pinia
     setActivePinia(createPinia())
@@ -568,11 +609,56 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
-    it('Comfy.RefreshNodeDefinitions refreshes combos and the model library', async () => {
+    it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
+      const order: string[] = []
+      let resolveComboRefresh: () => void = () => {}
+      vi.mocked(app.refreshComboInNodes).mockImplementation(async () => {
+        order.push('combo:start')
+        await new Promise<void>((resolve) => {
+          resolveComboRefresh = resolve
+        })
+        order.push('combo:end')
+      })
+      mockModelStoreRefresh.mockImplementation(async () => {
+        order.push('models')
+      })
+      mockMissingModelStoreRefresh.mockImplementation(async () => {
+        order.push('missing')
+      })
+
+      const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
+
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      resolveComboRefresh()
+      await commandPromise
+
+      expect(app.refreshComboInNodes).toHaveBeenCalled()
+      expect(mockModelStoreRefresh).toHaveBeenCalled()
+      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
+        reloadDefs: false
+      })
+      expect(order.indexOf('missing')).toBeGreaterThan(
+        order.indexOf('combo:end')
+      )
+    })
+
+    it('Comfy.RefreshNodeDefinitions skips the rescan when combo refresh fails', async () => {
+      vi.mocked(app.refreshComboInNodes).mockRejectedValue(new Error('boom'))
+
+      await expect(
+        findCmd('Comfy.RefreshNodeDefinitions').function()
+      ).rejects.toThrow('boom')
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
+      mockDistributionState.isCloud = true
+
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(mockModelStoreRefresh).toHaveBeenCalled()
+      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
     })
   })
 
@@ -616,6 +702,49 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
+    })
+  })
+
+  describe('BrowseModelAssets command', () => {
+    const asset = fromPartial<AssetItem>({ id: 'asset-1' })
+
+    async function selectAssetFromBrowser() {
+      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
+      )!
+      await command.function()
+
+      const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
+      onAssetSelected?.(asset)
+    }
+
+    it('starts a model node drag for the selected asset', async () => {
+      mockStartModelNodeDrag.mockReturnValue(undefined)
+
+      await selectAssetFromBrowser()
+
+      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(
+        asset,
+        'asset_browser'
+      )
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('shows an error toast when the asset cannot start a drag', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockStartModelNodeDrag.mockReturnValue({
+        code: 'NO_PROVIDER',
+        message: 'No node provider registered',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
   })
 })

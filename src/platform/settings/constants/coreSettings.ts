@@ -779,7 +779,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {
@@ -945,6 +945,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
+    telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
       // Legacy custom palettes were prefixed with 'custom_'
@@ -1205,18 +1206,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',
     defaultValue: false
-  },
-  {
-    id: 'Comfy.VueNodes.AutoScaleLayout',
-    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
-    name: 'Auto-scale layout (Nodes 2.0)',
-    tooltip:
-      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
-    type: 'boolean',
-    sortOrder: 50,
-    experimental: true,
-    defaultValue: true,
-    versionAdded: '1.30.3'
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',

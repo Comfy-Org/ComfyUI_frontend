@@ -1,0 +1,367 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "בדיקת עדכונים"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "פתיחת תיקיית הצמתים המותאמים"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "פתיחת תיקיית הקלטים"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "פתיחת תיקיית היומנים"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "פתיחת extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "פתיחת תיקיית המודלים"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "פתיחת תיקיית הפלטים"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "פתיחת כלי המפתחים"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "מדריך למשתמש בגרסת שולחן העבודה"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "יציאה"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "התקנה מחדש"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "הפעלה מחדש"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "פתיחת מציג התלת-ממד (בטא) עבור הצומת הנבחר"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "ניסיוני: עיון בנכסי מודלים"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "עיון בתבניות"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "העתקה"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "מחיקת הפריטים הנבחרים"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "התאמת התצוגה לצמתים הנבחרים"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "נעילת הקנבס"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "הזזת הצמתים הנבחרים מטה"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "הזזת הצמתים הנבחרים שמאלה"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "הזזת הצמתים הנבחרים ימינה"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "הזזת הצמתים הנבחרים מעלה"
+  },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "הדבקה"
+  },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "הדבקה עם חיבור"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "איפוס התצוגה"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "שינוי גודל הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "בחירת הכול"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "הצגה/הסתרה של נראות הקישורים בקנבס"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "החלפת מצב נעילת הקנבס"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "הצגה/הסתרה של מפת המיני בקנבס"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "הצמדה/ביטול הצמדה של הפריטים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "עקיפה/ביטול עקיפה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "כיווץ/הרחבה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "השתקה/ביטול השתקה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "הצמדה/ביטול הצמדה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "שחרור נעילת הקנבס"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "התקרבות"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "התרחקות"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "ניקוי המשימות הממתינות"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "ניקוי תהליך העבודה"
+  },
+  "Comfy_ContactSupport": {
+    "label": "יצירת קשר עם התמיכה"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "הצגת בורר המודלים (פיתוח)"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "שכפול תהליך העבודה הנוכחי"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "ייצוא תהליך העבודה"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "ייצוא תהליך העבודה (פורמט API)"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "המרת הבחירה לתת-גרף"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "עריכת פקדי תת-הגרף"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "יציאה מתת-הגרף"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "התאמת הקבוצה לתוכן"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "קיבוץ הצמתים הנבחרים"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "החלפת מצב קידום הפקד שמעליו הסמן"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "פריסת תת-הגרף הנבחר"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "ניהול צמתי הקבוצה"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "ביטול קיבוץ צמתי הקבוצה הנבחרים"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "פתיחת 'אודות ComfyUI'"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "פתיחת ה-Discord של Comfy-Org"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "פתיחת התיעוד של ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "פתיחת הפורום של ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "פתיחת בעיות (Issues) של ComfyUI"
+  },
+  "Comfy_Interrupt": {
+    "label": "הפסקה"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "טעינת תהליך העבודה ברירת המחדל"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "מנהל הצמתים המותאמים"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "צמתים מותאמים (גרסה ישנה)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "תפריט המנהל (גרסה ישנה)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "התקנת צמתים מותאמים חסרים"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "בדיקת עדכונים לצמתים מותאמים"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "הקטנת גודל המברשת בעורך המסכות"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "הגדלת גודל המברשת בעורך המסכות"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "פתיחת בורר הצבעים בעורך המסכות"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "שיקוף אופקי בעורך המסכות"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "שיקוף אנכי בעורך המסכות"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "פתיחת עורך המסכות עבור הצומת הנבחר"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "סיבוב שמאלה בעורך המסכות"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "סיבוב ימינה בעורך המסכות"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "פריקת המודלים מהזיכרון"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "פריקת המודלים ומטמון ההרצה מהזיכרון"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "תהליך עבודה ריק חדש"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Clipspace"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "מנהל"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "פתיחת תהליך עבודה"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "פרסום תת-גרף"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "הצגה/הסתרה של היסטוריית המשימות"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "הוספה לתור"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "הוספה לראש התור"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "הוספת צמתי הפלט הנבחרים לתור"
+  },
+  "Comfy_Redo": {
+    "label": "ביצוע חוזר"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "רענון הגדרות הצמתים"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "שינוי שם תהליך העבודה"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "שמירת תהליך העבודה"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "שמירת תהליך העבודה בשם"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "הצגת חלון ההגדרות"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "הגדרת תיאור לתת-הגרף"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "הגדרת כינויי חיפוש לתת-הגרף"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "ניסיוני: הפעלת AssetAPI"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "ביצועי הקנבס"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "מרכז העזרה"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "החלפת מצב התצוגה של היישום"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "הצגה/הסתרה של פאנל התור V2"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "החלפת ערכת הנושא (כהה/בהיר)"
+  },
+  "Comfy_Undo": {
+    "label": "ביטול פעולה"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "פתיחת חלון ההתחברות"
+  },
+  "Comfy_User_SignOut": {
+    "label": "התנתקות"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "ניסיוני: הפעלת Nodes 2.0"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "סגירת תהליך העבודה הנוכחי"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "תהליך העבודה הפתוח הבא"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "תהליך העבודה הפתוח הקודם"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "הצגה/הסתרה של תיבת החיפוש"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "הצגה/הסתרה של הפאנל התחתון"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "הצגת חלון מקשי הקיצור"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "הצגה/הסתרה של פאנל הטרמינל התחתון"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "הצגה/הסתרה של פאנל היומנים התחתון"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "הצגה/הסתרה של הפאנל התחתון 'בסיסי'"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "הצגה/הסתרה של הפאנל התחתון 'בקרות תצוגה'"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "החלפת מצב מיקוד"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "הצגה/הסתרה של סרגל היישומים",
+    "tooltip": "יישומים"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "הצגה/הסתרה של סרגל הנכסים",
+    "tooltip": "נכסים"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "הצגה/הסתרה של סרגל ספריית המודלים",
+    "tooltip": "ספריית המודלים"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "הצגה/הסתרה של סרגל ספריית הצמתים",
+    "tooltip": "ספריית הצמתים"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "הצגה/הסתרה של סרגל תהליכי העבודה",
+    "tooltip": "תהליכי עבודה"
+  }
+}
