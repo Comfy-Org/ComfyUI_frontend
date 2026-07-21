@@ -28,6 +28,7 @@ const mockBillingPlans = vi.hoisted(() => ({
 
 const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
+const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: mockWorkspaceApi
@@ -49,6 +50,13 @@ vi.mock(
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     startOperation: mockStartOperation
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    activeWorkspace: { id: 'workspace-1' },
+    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
   })
 }))
 
@@ -203,6 +211,7 @@ describe('useWorkspaceBilling', () => {
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
+        billing_rail: 'stripe',
         subscription_status: 'canceled',
         cancel_at: '2026-06-01T00:00:00Z'
       })
@@ -222,6 +231,10 @@ describe('useWorkspaceBilling', () => {
       })
       expect(billing.isActiveSubscription.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
+      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+        'workspace-1',
+        'stripe'
+      )
     })
 
     it("keeps a 'scheduled' subscription on the active treatment", async () => {
@@ -244,6 +257,7 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.isFreeTier.value).toBe(true)
+      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
     })
 
     it('sets error and rethrows when fetchStatus fails', async () => {
