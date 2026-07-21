@@ -116,7 +116,7 @@ describe('useLinkStore', () => {
     expect(mover.targetSlot).toBe(3)
   })
 
-  it.each([
+  it.for([
     { name: 'pairwise swap', targets: [1, 0] },
     { name: 'three-slot rotation', targets: [1, 2, 0] }
   ])('keeps every link registered across a $name', ({ targets }) => {

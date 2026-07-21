@@ -245,7 +245,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     LiteGraph.registerNodeType('test/RealignTarget', ReorderTargetNode)
   })
 
-  it.each([
+  it.for([
     ['root workflow', {}, toNodeId(2)],
     [
       'root workflow cloned for definitions',
@@ -255,7 +255,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     ['subgraph definition', { insideSubgraph: true }, toNodeId(20)]
   ] satisfies [string, WorkflowOptions, NodeId][])(
     're-keys links in %s',
-    (_name, options, targetNodeId) => {
+    ([_name, options, targetNodeId]) => {
       const graph = new LGraph()
       graph.configure(savedWorkflow(options))
       const configuredGraph =
