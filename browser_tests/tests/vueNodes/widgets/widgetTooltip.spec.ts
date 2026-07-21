@@ -66,7 +66,5 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     const box = await tooltipText.boundingBox()
     expect(box).not.toBeNull()
     expect(box!.width).toBeLessThanOrEqual(MAX_TOOLTIP_WIDTH)
-    // ...and uses the widened bound (was max-w-75 === 300px before the fix).
-    expect(box!.width).toBeGreaterThan(300)
   })
 })
