@@ -180,7 +180,7 @@ describe('useSettingUI', () => {
     expect(defaultCategory.value.key).toBe('about')
   })
 
-  describe('legacy billing in the workspace layout', () => {
+  describe('plan and credits navigation', () => {
     const navKeys = (groups: { items: { id: string }[] }[]) =>
       groups.flatMap((group) => group.items.map((item) => item.id))
 
@@ -196,42 +196,23 @@ describe('useSettingUI', () => {
       } as typeof window.__CONFIG__
     })
 
-    it('exposes the legacy plan panel when billing is legacy', () => {
-      env.state.billingType = 'legacy'
-      const { defaultCategory, navGroups } = useSettingUI('subscription')
+    it.for(['legacy', 'workspace'] as const)(
+      'uses only the Workspace panel for %s billing in the workspace layout',
+      (billingType) => {
+        env.state.billingType = billingType
+        const { navGroups } = useSettingUI()
 
-      expect(defaultCategory.value.key).toBe('subscription')
-      expect(navKeys(navGroups.value)).toContain('subscription')
-      expect(navKeys(navGroups.value)).toContain('workspace')
-    })
+        expect(navKeys(navGroups.value)).not.toContain('subscription')
+        expect(navKeys(navGroups.value)).toContain('workspace')
+      }
+    )
 
-    it('hides the legacy plan panel when billing is workspace', () => {
-      env.state.billingType = 'workspace'
+    it('keeps the legacy plan panel in the legacy layout', () => {
+      env.state.teamWorkspacesEnabled = false
       const { navGroups } = useSettingUI()
 
-      expect(navKeys(navGroups.value)).not.toContain('subscription')
-      expect(navKeys(navGroups.value)).toContain('workspace')
-    })
-
-    it('never renders the plan panel in more than one tab', () => {
-      const countSubscription = () => {
-        const { navGroups } = useSettingUI()
-        return navKeys(navGroups.value).filter((id) => id === 'subscription')
-          .length
-      }
-
-      for (const teamWorkspacesEnabled of [true, false]) {
-        for (const billingType of ['legacy', 'workspace'] as const) {
-          for (const isLoggedIn of [true, false]) {
-            Object.assign(env.state, {
-              teamWorkspacesEnabled,
-              billingType,
-              isLoggedIn
-            })
-            expect(countSubscription()).toBeLessThanOrEqual(1)
-          }
-        }
-      }
+      expect(navKeys(navGroups.value)).toContain('subscription')
+      expect(navKeys(navGroups.value)).not.toContain('workspace')
     })
   })
 })
