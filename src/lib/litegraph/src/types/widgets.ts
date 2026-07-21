@@ -426,12 +426,12 @@ export interface IBaseWidget<
 
   label?: string
   /**
-   * The default (e.g. localized) display label applied when the widget is
-   * created, before any user rename. Used to persist only genuine label
-   * overrides — a label equal to this baseline is a locale-dependent default
-   * and must not be serialized.
+   * A user-assigned rename, distinct from {@link label} (which also holds
+   * localized/dynamic display text). Set only by the rename flow, so it is the
+   * signal used to persist socketless-widget renames — mirroring `input.label`
+   * for input-backed widgets, which dynamic-label code never touches.
    */
-  defaultLabel?: string
+  userLabel?: string
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue

@@ -58,6 +58,7 @@ export function renameWidget(
     : undefined
 
   widget.label = label
+  widget.userLabel = label
   if (widgetState) widgetState.label = label
   if (input) input.label = label
 

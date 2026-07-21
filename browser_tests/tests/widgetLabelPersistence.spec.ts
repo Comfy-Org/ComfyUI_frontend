@@ -31,7 +31,10 @@ async function renameFirstTextWidget(comfyPage: ComfyPage): Promise<NodeId> {
         (i) => i.widget?.name === widget.name && i.label != null
       )
       if (mirrored) throw new Error('text widget is not socketless')
+      // Mimic the rename flow (renameWidget): a rename writes both the display
+      // label and the userLabel signal that serialization keys off.
       widget.label = label
+      widget.userLabel = label
       return node.id
     },
     { widgetName: WIDGET_NAME, label: RENAMED_LABEL }

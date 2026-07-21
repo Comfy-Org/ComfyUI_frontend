@@ -84,7 +84,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   width?: number
   computedDisabled?: boolean
   tooltip?: string
-  defaultLabel?: string
+  userLabel?: string
 
   private _state: Omit<WidgetState, 'nodeId'> &
     Partial<Pick<WidgetState, 'nodeId'>>
