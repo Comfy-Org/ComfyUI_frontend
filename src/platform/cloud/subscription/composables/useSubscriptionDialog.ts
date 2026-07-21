@@ -36,7 +36,8 @@ function getInitialPlanMode(
 }
 
 export const useSubscriptionDialog = () => {
-  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+    useBillingRouting()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -93,10 +94,9 @@ export const useSubscriptionDialog = () => {
     } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) for workspaces on the workspace-scoped billing flow.
-    // Replaces the old personal-vs-team workspace fork. Personal workspaces
-    // still on the legacy flow get the legacy table.
-    if (shouldUseWorkspaceBilling.value) {
+    // one workspace). The billing rail still selects the checkout and top-up
+    // backend, but does not select the pricing table.
+    if (shouldUseUnifiedPricing.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
       // Resolved lazily (not at composable setup): these three composables form
