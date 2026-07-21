@@ -455,7 +455,9 @@ const { isEduPricingActive } = useEduPricing()
 
 const getPrice = (tier: PricingTierConfig): number => {
   const base = tier.pricing[currentBillingCycle.value]
-  return isEduPricingActive.value ? applyEduDiscount(base) : base
+  return isEduPricingActive.value
+    ? applyEduDiscount(base, tier.key, currentBillingCycle.value)
+    : base
 }
 
 // Undiscounted reference price rendered struck through next to the active price.
@@ -466,7 +468,9 @@ const getStruckPrice = (tier: PricingTierConfig): number | null => {
 
 const getAnnualTotal = (tier: PricingTierConfig): number => {
   const total = tier.pricing.yearly * 12
-  return isEduPricingActive.value ? applyEduDiscount(total) : total
+  return isEduPricingActive.value
+    ? applyEduDiscount(total, tier.key, 'yearly')
+    : total
 }
 
 const getCreditsDisplay = (tier: PricingTierConfig): number =>

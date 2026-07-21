@@ -36,7 +36,9 @@
         class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
       >
         {{
-          $t('subscription.eduPromoHeader', { percent: EDU_DISCOUNT_PERCENT })
+          $t('subscription.eduPromoHeader', {
+            percent: EDU_MAX_DISCOUNT_PERCENT
+          })
         }}
       </div>
       <div
@@ -48,7 +50,7 @@
         >
           {{
             $t('subscription.eduVerifyHeader', {
-              percent: EDU_DISCOUNT_PERCENT
+              percent: EDU_MAX_DISCOUNT_PERCENT
             })
           }}
         </div>
@@ -204,7 +206,7 @@ import { useEmailVerification } from '@/composables/auth/useEmailVerification'
 import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
-import { EDU_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
+import { EDU_MAX_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useAuthStore } from '@/stores/authStore'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'

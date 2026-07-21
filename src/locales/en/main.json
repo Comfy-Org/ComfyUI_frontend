@@ -2560,8 +2560,8 @@
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
-    "eduPromoHeader": "Education discount: {percent}% off for verified students and educators",
-    "eduVerifyHeader": "Verify your email to unlock {percent}% education pricing",
+    "eduPromoHeader": "Education discount: up to {percent}% off for verified students and educators",
+    "eduVerifyHeader": "Verify your email to unlock up to {percent}% education pricing",
     "eduVerifySend": "Send verification email",
     "eduVerifySentHint": "Check your inbox, then come back",
     "eduVerifyConfirm": "I've verified",
