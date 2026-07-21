@@ -180,11 +180,11 @@ const rows = computed(() =>
           <li
             v-for="tutorial in rows"
             :key="tutorial.id"
-            class="flex flex-wrap items-center gap-4 py-5 lg:flex-nowrap lg:gap-6"
+            class="group/row flex flex-wrap items-center gap-4 py-5 lg:flex-nowrap lg:gap-6"
           >
             <a
               :href="localizeHref(tutorialPath(tutorial), locale)"
-              class="group relative block aspect-video w-36 shrink-0 overflow-hidden rounded-2xl lg:w-44"
+              class="group/thumb relative block aspect-video w-36 shrink-0 overflow-hidden rounded-2xl lg:w-44"
               :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
             >
               <img
@@ -195,7 +195,7 @@ const rows = computed(() =>
               />
               <PlayOverlay
                 size="sm"
-                class="text-white opacity-0 transition-opacity group-hover:opacity-100"
+                class="text-white opacity-0 transition-opacity group-hover/thumb:opacity-100 group-has-[h3>a:hover]/row:opacity-100"
               />
             </a>
 
