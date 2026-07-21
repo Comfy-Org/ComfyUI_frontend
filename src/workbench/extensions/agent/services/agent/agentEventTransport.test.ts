@@ -162,6 +162,14 @@ describe('agentEventTransport thinking narration', () => {
     expect(message.thinkingText).toBeUndefined()
   })
 
+  it('a tool call after thinking clears the thinking status', () => {
+    const message = drive([
+      thinking('Adding a node'),
+      toolCall('add_node', 'ok')
+    ])
+    expect(message.thinking).toBe(false)
+  })
+
   it('the first text delta clears the narration', () => {
     const message = drive([thinking('Writing a reply'), delta('Here')])
     expect(message.thinkingText).toBeUndefined()

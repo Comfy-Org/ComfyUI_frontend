@@ -216,9 +216,13 @@ export const useAgentConversationStore = defineStore(
       const texts = new Map<TurnId, string>()
       const assistants = new Map<TurnId, AssistantMessage>()
       const turnOrder: TurnId[] = []
+      const seenTurns = new Set<TurnId>()
       for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
         const turnId = row.turn_id as TurnId
-        if (!turnOrder.includes(turnId)) turnOrder.push(turnId)
+        if (!seenTurns.has(turnId)) {
+          seenTurns.add(turnId)
+          turnOrder.push(turnId)
+        }
         const text =
           typeof row.content?.text === 'string' ? row.content.text : ''
         if (row.role === 'user') texts.set(turnId, text)

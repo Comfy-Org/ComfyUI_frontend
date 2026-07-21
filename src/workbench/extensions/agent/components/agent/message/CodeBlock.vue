@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, watchDebounced } from '@vueuse/core'
 import { default as DOMPurify } from 'dompurify'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -20,18 +20,17 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 // throwing. shiki emits its own trusted <span> markup, safe to inject.
 const highlighted = ref<string | null>(null)
 
-// watch (not watchEffect) so the code/lang deps are tracked even though the highlight body
-// awaits the lazy shiki import — after the first await a watchEffect tracks nothing.
-watch(
+// watchDebounced (not watchEffect) so the code/lang deps are tracked even though the highlight
+// body awaits the lazy shiki import, and streaming token bursts collapse into one re-highlight.
+// The previous highlight stays visible until the next one resolves, so the block never flashes
+// back to plain mid-stream.
+watchDebounced(
   () => [code, lang] as const,
   async ([currentCode, currentLang], _prev, onCleanup) => {
-    // Streaming re-runs this per token; a superseded run must not land its stale
-    // highlight after a newer one (async resolutions are not ordered).
     let cancelled = false
     onCleanup(() => {
       cancelled = true
     })
-    highlighted.value = null
     try {
       const { codeToHtml } = await import('shiki')
       const html = await codeToHtml(currentCode, {
@@ -44,7 +43,7 @@ watch(
       if (!cancelled) highlighted.value = null
     }
   },
-  { immediate: true }
+  { immediate: true, debounce: 100 }
 )
 </script>
 

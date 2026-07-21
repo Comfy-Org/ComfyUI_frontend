@@ -5,6 +5,8 @@ import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { ComponentProps } from 'vue-component-type-helpers'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
@@ -44,11 +46,7 @@ beforeEach(() => {
 })
 
 function renderChip(
-  props: Partial<{
-    activeTab: { path: string; name: string; modified?: boolean } | null
-    tabs: typeof tabs
-    detached: boolean
-  }> = {}
+  props: Partial<ComponentProps<typeof WorkflowSelectorChip>> = {}
 ) {
   const user = userEvent.setup()
   const emitted = render(WorkflowSelectorChip, {

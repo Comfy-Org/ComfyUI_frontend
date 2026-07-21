@@ -102,7 +102,6 @@
               : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
         "
-        :aria-label="$t('agent.askComfyAgent')"
         @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />

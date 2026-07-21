@@ -38,7 +38,7 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
-    <template #agent-panel>
+    <template v-if="showUI" #agent-panel>
       <DockedAgentPanel v-if="!linearMode" />
     </template>
     <template #graph-canvas-panel>

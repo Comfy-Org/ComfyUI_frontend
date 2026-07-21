@@ -12,6 +12,12 @@ describe('MarkdownStream', () => {
     expect(screen.getByText('bold', { selector: 'strong' })).toBeInTheDocument()
   })
 
+  it('renders empty text without error or content', () => {
+    const { html } = render(MarkdownStream, { props: { text: '' } })
+    expect(html()).not.toContain('<script')
+    expect(screen.queryByRole('link')).toBeNull()
+  })
+
   it('strips a script tag (XSS guard)', () => {
     const { html } = render(MarkdownStream, {
       props: { text: 'hi <script>alert(1)</script> there' }

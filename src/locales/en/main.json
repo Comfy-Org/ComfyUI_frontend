@@ -4401,11 +4401,11 @@
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
       },
       "agent_draft_apply_failed": {
-        "title": "An error was found",
+        "title": "Couldn't apply agent changes",
         "desc": "Couldn't apply the agent's draft to the canvas."
       },
       "agent_api_failed": {
-        "title": "An error was found",
+        "title": "Comfy Agent error",
         "desc": "Comfy Agent hit a server error."
       }
     }

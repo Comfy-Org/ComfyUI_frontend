@@ -51,6 +51,7 @@ export function createAgentEventTransport(
         break
       case 'agent_tool_call': {
         closeOpenText()
+        message.thinking = false
         message.thinkingText = undefined
         const part: ToolPart = {
           type: 'tool',

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 const {
   name,
   previewUrl,
@@ -11,8 +9,6 @@ const {
   uploading?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
-
-const { t } = useI18n()
 </script>
 
 <template>
@@ -21,7 +17,7 @@ const { t } = useI18n()
   >
     <span
       v-if="uploading"
-      :aria-label="t('agent.uploading')"
+      :aria-label="$t('agent.uploading')"
       class="text-agent-fg-subtle icon-[lucide--loader-circle] size-4 animate-spin"
     />
     <img
@@ -34,7 +30,7 @@ const { t } = useI18n()
     <span class="max-w-32 truncate">{{ name }}</span>
     <button
       type="button"
-      :aria-label="t('agent.remove')"
+      :aria-label="$t('agent.remove')"
       class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg -my-1 -mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full transition-colors"
       @click="emit('remove')"
     >

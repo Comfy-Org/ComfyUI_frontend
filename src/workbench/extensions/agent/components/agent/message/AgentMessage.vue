@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type {
   AssistantMessage,
@@ -16,8 +15,6 @@ import ToolCallGroup from './ToolCallGroup.vue'
 
 const { message } = defineProps<{ message: AssistantMessage }>()
 const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
-
-const { t } = useI18n()
 
 type Group =
   | { kind: 'text'; part: TextPart }
@@ -60,7 +57,7 @@ const showActions = computed(
     >
       <span class="icon-[lucide--brain] size-3.5 shrink-0" />
       <span class="agent-shimmer-text min-w-0 truncate">{{
-        message.thinkingText || t('agent.thinking')
+        message.thinkingText || $t('agent.thinking')
       }}</span>
     </div>
 

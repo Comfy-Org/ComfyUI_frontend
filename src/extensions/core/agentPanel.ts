@@ -10,14 +10,23 @@ useExtensionService().registerExtension({
     registerWorkflowTabActivityTracker()
 
     async function setupFlagGate(): Promise<void> {
-      const posthog = (await import('posthog-js')).default
-      const source = createPostHogFlagSource(posthog)
-      const sync = (): void => {
-        const forceInDev = import.meta.env.MODE === 'development'
-        agentPanelStore.enabled = forceInDev || source.isEnabled()
+      // posthog-js is a lazy chunk and is commonly blocked by ad blockers; a failed
+      // load must leave the panel gated off rather than surface as an unhandled rejection.
+      try {
+        const posthog = (await import('posthog-js')).default
+        const source = createPostHogFlagSource(posthog)
+        const sync = (): void => {
+          const forceInDev = import.meta.env.MODE === 'development'
+          agentPanelStore.enabled = forceInDev || source.isEnabled()
+        }
+        source.onChange?.(sync)
+        sync()
+      } catch (error) {
+        console.error(
+          '[Comfy.AgentPanel] feature-flag gate failed to load',
+          error
+        )
       }
-      source.onChange?.(sync)
-      sync()
     }
 
     void setupFlagGate()
