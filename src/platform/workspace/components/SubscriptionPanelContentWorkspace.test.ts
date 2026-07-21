@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
+import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   CurrentTeamCreditStop,
   TeamCreditStops
@@ -52,19 +53,8 @@ const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
-const mockMembers = ref([
-  {
-    id: 'member-1',
-    email: 'creator@example.com',
-    joinDate: new Date('2026-01-01T00:00:00Z')
-  },
-  {
-    id: 'member-2',
-    email: 'me@example.com',
-    joinDate: new Date('2026-02-01T00:00:00Z')
-  }
-])
-const mockUserEmail = ref<string | null>('me@example.com')
+const mockCanManageSubscriptionLifecycle = ref(true)
+const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
   id: 'team_700',
@@ -82,7 +72,7 @@ const mockShowDeleteWorkspaceDialog = vi.fn()
 
 type MenuUiConfig = {
   showEditWorkspaceMenuItem: boolean
-  workspaceMenuAction: 'leave' | 'delete' | null
+  workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
@@ -94,14 +84,13 @@ const ownerUiConfig: MenuUiConfig = {
 }
 const memberUiConfig: MenuUiConfig = {
   showEditWorkspaceMenuItem: false,
-  workspaceMenuAction: 'leave',
+  workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const personalUiConfig: MenuUiConfig = {
   showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: 'delete',
-  workspaceMenuDisabledTooltip:
-    'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+  workspaceMenuAction: null,
+  workspaceMenuDisabledTooltip: null
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
@@ -151,28 +140,15 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    members: mockMembers
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
 }))
 
-// Mirrors useWorkspaceUI's original-owner derivation (earliest join date, ties
-// broken by member id) so member/email toggles still drive owner-only menus.
-const mockIsOriginalOwner = computed(() => {
-  if (mockIsInPersonalWorkspace.value) return true
-  const email = mockUserEmail.value?.toLowerCase()
-  if (!email || mockMembers.value.length === 0) return false
-  const original = [...mockMembers.value].sort(
-    (a, b) =>
-      a.joinDate.getTime() - b.joinDate.getTime() || a.id.localeCompare(b.id)
-  )[0]
-  return original.email.toLowerCase() === email
-})
-
 const mockIsTeamPlanCancelled = computed(
-  () =>
-    !mockIsInPersonalWorkspace.value &&
-    (mockSubscription.value?.isCancelled ?? false)
+  () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
+)
+const mockIsSubscriptionCancelled = computed(
+  () => mockSubscription.value?.isCancelled ?? false
 )
 
 const mockIsDeleteDisabled = computed(
@@ -184,12 +160,14 @@ const mockIsDeleteDisabled = computed(
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value
+      canManageSubscription: mockCanManageSubscription.value,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    isOriginalOwner: mockIsOriginalOwner,
+    isSubscriptionCancelled: mockIsSubscriptionCancelled,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,
     deleteDisabledTooltipKey: computed(() =>
@@ -244,7 +222,9 @@ const ButtonStub = {
 }
 
 const SubscriptionFooterLinksStub = {
-  template: '<div data-testid="subscription-footer-links" />'
+  props: ['showInvoiceHistory'],
+  template:
+    '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
 const DropdownMenuStub = {
@@ -270,6 +250,10 @@ function renderComponent() {
 }
 
 describe('SubscriptionPanelContentWorkspace', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockSubscriptionStatus.value = 'active'
@@ -278,19 +262,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
-    mockMembers.value = [
-      {
-        id: 'member-1',
-        email: 'creator@example.com',
-        joinDate: new Date('2026-01-01T00:00:00Z')
-      },
-      {
-        id: 'member-2',
-        email: 'me@example.com',
-        joinDate: new Date('2026-02-01T00:00:00Z')
-      }
-    ]
-    mockUserEmail.value = 'me@example.com'
+    mockCanManageSubscriptionLifecycle.value = true
+    mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
     mockPlanSlug.value = 'team-monthly'
@@ -318,6 +291,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(screen.getByTestId('subscription-footer-links')).toBeInTheDocument()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'true'
+    )
   })
 
   it('uses the yearly stop price for an annual subscription, still shown per month', () => {
@@ -386,24 +363,63 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
-  it('hides plan management actions from members without permission', () => {
+  it('keeps a Personal workspace Team-plan member view read-only', () => {
+    mockIsInPersonalWorkspace.value = true
     mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
+    mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Manage billing' })
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Change plan' })
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Edit workspace details' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Invite members')).toBeInTheDocument()
+    expect(screen.getByTestId('subscription-footer-links')).toHaveAttribute(
+      'data-show-invoice-history',
+      'false'
+    )
   })
 
-  it('reactivates a cancelled plan as the original owner, keeping Manage billing', async () => {
+  it('uses Team-plan change copy in a Personal workspace', () => {
+    mockIsInPersonalWorkspace.value = true
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Change plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Upgrade plan' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps an inactive paid Team plan visible in a Personal workspace', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockIsActiveSubscription.value = false
+    renderComponent()
+
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.queryByText('Free')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('reactivates a cancelled plan for an owner, keeping Manage billing', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
-    mockUserEmail.value = 'creator@example.com'
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -423,15 +439,20 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockResubscribe).toHaveBeenCalledOnce()
   })
 
-  it('hides Reactivate plan from a promoted owner on a cancelled plan', () => {
+  it('keeps a cancelled Personal plan in a Team workspace reactivatable', () => {
     mockSubscriptionStatus.value = 'canceled'
+    mockHasTeamPlan.value = false
+    mockIsWorkspaceSubscribed.value = false
     renderComponent()
 
     expect(
-      screen.getByRole('button', { name: 'Manage billing' })
+      screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe Now' })
     ).not.toBeInTheDocument()
   })
 
@@ -483,6 +504,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     mockHasSubscription.value = false
     mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
     renderComponent()
 
     expect(
@@ -504,6 +526,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(screen.getByText('Free')).toBeInTheDocument()
@@ -530,6 +553,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -545,12 +569,13 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a subscribed personal workspace Edit, Cancel plan, and a locked Delete', () => {
+  it('offers a subscribed personal workspace Edit and Cancel without Delete', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsActiveSubscription.value = true
     mockHasSubscription.value = true
     mockIsWorkspaceSubscribed.value = false
     mockUiConfig.value = personalUiConfig
+    mockCanLeaveWorkspace.value = false
     renderComponent()
 
     expect(
@@ -560,14 +585,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Cancel plan' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Delete Workspace' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Delete Workspace' })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Leave Workspace' })
     ).not.toBeInTheDocument()
   })
 
   it('shows the personal plan identity when a team workspace holds a personal subscription', () => {
+    const getTierPriceSpy = vi
+      .spyOn(tierPricing, 'getTierPrice')
+      .mockReturnValue(42)
     mockSubscriptionTier.value = 'STANDARD'
     mockPlanSlug.value = 'standard-annual'
     mockHasTeamPlan.value = false
@@ -577,7 +605,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('Standard Yearly')).toBeInTheDocument()
     expect(screen.queryByText('Team')).not.toBeInTheDocument()
-    expect(screen.getByText('$16')).toBeInTheDocument()
+    expect(getTierPriceSpy).toHaveBeenCalledWith('standard', true)
+    expect(screen.getByText('$42')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
     expect(screen.getByText('RTX 6000 Pro (96GB VRAM)')).toBeInTheDocument()
@@ -623,6 +652,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('offers members only Leave Workspace in the menu', () => {
     mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -635,11 +665,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Edit workspace details' })
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete Workspace' })
+    ).not.toBeInTheDocument()
   })
 
   it('opens the leave-workspace dialog from a member menu', async () => {
     const user = userEvent.setup()
     mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -647,7 +681,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers a promoted owner Edit and Leave (no Cancel or Delete)', () => {
+  it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
+    const user = userEvent.setup()
     renderComponent()
 
     expect(
@@ -657,34 +692,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Leave Workspace' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Cancel plan' })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Delete Workspace' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('offers the original owner Edit, Cancel plan, and a subscription-locked Delete', async () => {
-    const user = userEvent.setup()
-    mockUserEmail.value = 'creator@example.com'
-    renderComponent()
-
-    expect(
-      screen.getByRole('button', { name: 'Edit workspace details' })
-    ).toBeInTheDocument()
-    expect(
       screen.getByRole('button', { name: 'Delete Workspace' })
     ).toBeDisabled()
-    expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
-    ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
     expect(mockShowCancelSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
-  it('enables Delete for the original owner once the plan is cancelled', () => {
-    mockUserEmail.value = 'creator@example.com'
+  it('enables Delete for any additional workspace owner once the plan is cancelled', () => {
     mockSubscriptionStatus.value = 'canceled'
     renderComponent()
 

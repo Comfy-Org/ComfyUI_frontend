@@ -14,6 +14,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import type { NodeError } from '@/schemas/apiSchema'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -39,6 +40,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -121,9 +123,7 @@ function createWidgetUpdateHandler(
 export function hasWidgetError(
   widget: SafeWidgetData,
   nodeExecId: NodeExecutionId,
-  nodeErrors:
-    | { errors: { extra_info?: { input_name?: string } }[] }
-    | undefined,
+  nodeErrors: Pick<NodeError, 'errors'> | undefined,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): boolean {
@@ -135,7 +135,7 @@ export function hasWidgetError(
     ? (widget.sourceWidgetName ?? widget.name)
     : widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === errorInputName) ||
+    (!!errors && hasErrorForSlot(errors, errorInputName)) ||
     missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }

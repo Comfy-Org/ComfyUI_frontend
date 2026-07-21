@@ -7,15 +7,25 @@ import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockCreateInvite, mockCloseDialog, mockToastAdd } = vi.hoisted(() => ({
-  mockCreateInvite: vi.fn(),
-  mockCloseDialog: vi.fn(),
-  mockToastAdd: vi.fn()
-}))
+const { mockCreateInvite, mockCloseDialog, mockToastAdd, mockTrackInviteSent } =
+  vi.hoisted(() => ({
+    mockCreateInvite: vi.fn(),
+    mockCloseDialog: vi.fn(),
+    mockToastAdd: vi.fn(),
+    mockTrackInviteSent: vi.fn()
+  }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite
+    createInvite: mockCreateInvite,
+    totalMemberSlots: 0
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWorkspaceInviteSent: mockTrackInviteSent
   })
 }))
 
@@ -72,14 +82,16 @@ describe('InviteMemberDialogContent', () => {
     )
   })
 
-  it('turns comma- and enter-delimited input into chips', async () => {
+  it('turns comma-, whitespace-, and enter-delimited input into chips', async () => {
     const { user } = renderDialog()
 
-    await user.type(emailInput(), 'a@b.com,')
-    await user.type(emailInput(), 'c@d.com{Enter}')
+    await user.type(emailInput(), 'a@b.com ')
+    await user.type(emailInput(), 'c@d.com,')
+    await user.type(emailInput(), 'e@f.com{Enter}')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
   })
 
   it('splits a pasted comma-separated list into chips', async () => {
@@ -128,6 +140,10 @@ describe('InviteMemberDialogContent', () => {
     expect(mockCreateInvite).toHaveBeenCalledTimes(2)
     expect(mockCreateInvite).toHaveBeenCalledWith('a@b.com')
     expect(mockCreateInvite).toHaveBeenCalledWith('c@d.com')
+    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'settings_members',
+      count: 2
+    })
 
     const closeButton = screen
       .getAllByRole('button', { name: 'g.close' })
@@ -153,6 +169,10 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
+    expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'settings_members',
+      count: 1
+    })
     expect(inviteButton()).toBeEnabled()
   })
 
@@ -172,6 +192,7 @@ describe('InviteMemberDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
+    expect(mockTrackInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })
 
