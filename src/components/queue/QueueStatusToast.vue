@@ -23,7 +23,7 @@
           <button
             v-tooltip.bottom="stopTooltip"
             type="button"
-            class="flex cursor-pointer items-center gap-1.5 border-none bg-transparent px-1 text-[13.8px] font-semibold whitespace-nowrap text-base-foreground"
+            class="flex cursor-pointer items-center justify-center border-none bg-transparent px-1 text-base-foreground opacity-90 transition-opacity hover:opacity-100"
             :aria-label="t('processToast.stop')"
             data-testid="queue-status-stop"
             @click="interruptAll"
@@ -32,7 +32,6 @@
               class="size-[11px] shrink-0 rounded-[2px] bg-base-foreground"
               aria-hidden="true"
             />
-            {{ t('processToast.stop') }}
           </button>
         </template>
       </template>
@@ -237,7 +236,8 @@ const toastView = computed<ToastView | null>(() => {
           ? t('queueStatus.queuedCount', { count: pendingCount.value })
           : t('queueStatus.queued'),
       percent: null,
-      showStop: true
+      // Only a job that is actually executing can be stopped.
+      showStop: false
     }
   }
   const notification = currentNotification.value
