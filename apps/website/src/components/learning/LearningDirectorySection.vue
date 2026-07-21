@@ -12,6 +12,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import {
   categoryBlurbKeys,
   categoryLabelKeys,
+  categoryPath,
   featuredFor,
   filterByCategory,
   populatedCategories,
@@ -46,7 +47,7 @@ const navOptions: readonly NavOption[] = [
     value,
     labelKey: categoryLabelKeys[value],
     blurbKey: categoryBlurbKeys[value],
-    href: `/learning/${value}`
+    href: categoryPath(value)
   }))
 ]
 

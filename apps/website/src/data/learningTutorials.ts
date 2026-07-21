@@ -139,9 +139,8 @@ export const learningTutorials: readonly LearningTutorial[] = [
     title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
-    // The bucket object really is named with the space; the clean name 404s.
     poster:
-      'https://media.comfy.org/website/learning/seedance seedance_demo_comfyui_v03_thumbnail.jpg',
+      'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=ef543bd4a773',
     caption: [
       {
@@ -332,9 +331,13 @@ export const getTutorialByCategoryAndSlug = (
     (tutorial) => tutorial.category === category && tutorial.slug === slug
   )
 
+/** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
+export const categoryPath = (category: LearningCategory): string =>
+  `/learning/${category}`
+
 /** Canonical path for a tutorial's detail page (wrap with localizeHref for zh-CN). */
 export const tutorialPath = (tutorial: LearningTutorial): string =>
-  `/learning/${tutorial.category}/${tutorial.slug}`
+  `${categoryPath(tutorial.category)}/${tutorial.slug}`
 
 export interface LearningCrumb {
   name: string
@@ -356,7 +359,7 @@ export const learningCrumbs = (
     ? [
         {
           name: t(categoryLabelKeys[category], locale),
-          path: `/learning/${category}`
+          path: categoryPath(category)
         }
       ]
     : [])
