@@ -45,9 +45,9 @@ test.describe('customNode manifest', () => {
     expect(rendererPassesFor({ vueNodesCompatible: false })).toEqual([false])
   })
 
-  test('pin must be a full commit SHA; only the canary override admits an empty one', () => {
-    // Deterministic regardless of ambient env (a canary environment sets
-    // the override): pin the var for the test, restore the prior value.
+  test('pin must be a full commit SHA; only the loader escape hatch admits an empty one', () => {
+    // Deterministic regardless of ambient env: pin the var for the test,
+    // restore the prior value.
     const prior = process.env.CUSTOM_NODES_ALLOW_UNPINNED
     delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
     try {

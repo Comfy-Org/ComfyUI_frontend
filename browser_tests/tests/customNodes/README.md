@@ -117,8 +117,9 @@ Any `-g` pattern works against the generic scripts, e.g.
 Two workflows deploy this suite; [ARCHITECTURE.md section 13](ARCHITECTURE.md#13-the-ci-deployment-view)
 has the full deployment view.
 
-- **The PR gate** (`custom-nodes-e2e` in `ci-tests-custom-nodes.yaml`, a
-  required check): runs the suite with every git surface pinned - ComfyUI
+- **The PR gate** (`custom-nodes-e2e` in `ci-tests-custom-nodes.yaml`; mark
+  it as a required check in branch protection once this lands): runs the
+  suite with every git surface pinned - ComfyUI
   core at the exact verified commit (`comfyui_ref`) and every pack at its
   manifest pin - so a red points at the PR, not at drift. Skipped tests
   are failures.

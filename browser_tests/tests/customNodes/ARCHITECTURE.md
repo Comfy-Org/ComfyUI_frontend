@@ -689,7 +689,7 @@ instead.
 
 Everything git-level is pinned: ComfyUI core is provisioned at the exact
 commit the suite was last verified green against, and every pack at its
-manifest pin, enforced before anything installs. A gate red therefore
+manifest pin, enforced per pack before it installs. A gate red therefore
 points at the PR itself. Python dependencies and the runner image still
 resolve fresh per run - a red that appears everywhere at once right after
 a dependency release is environment, not the PR.
