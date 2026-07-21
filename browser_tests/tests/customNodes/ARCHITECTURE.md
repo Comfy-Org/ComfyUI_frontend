@@ -130,6 +130,12 @@ re-discovered live on every run:
   renderer, as a rendered row), disconnecting removes the trailing empty. This behavior lives in
   pack JS (`onConnectionsChange` overrides), invisible to `/object_info`, so
   the def-driven tiers above cannot see it
+- the node's **rendered layout matches a committed baseline exactly**, in
+  both renderers: node size, widget-row offsets and heights, and slot
+  positions, recorded in the CI environment and compared with zero
+  tolerance. CI-only (local runs log and skip: baselines encode CI fonts
+  and pack-JS layout); two editor nodes with a nondeterministic init race
+  are excluded by mechanism (section 12, G15)
 
 Every tier also asserts the app shows **zero visible errors** while doing
 this, except the execution tier, which deliberately provokes expected
@@ -240,15 +246,15 @@ pinned by fixtures copied from a live census of both definition dialects
 
 ## 5. The verification tiers
 
-| Tier                 | Verifies                                                                                                                                                                                 | Renderers                                                  | Notes                                                                                               |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both; a pack declared Vue-incompatible runs canvas only    | missing parts fail; extras are tolerated                                                            |
-| Layout Geometry      | every node's rendered geometry (canvas model numbers; DOM rects normalized to graph space) matches a committed per-pack baseline exactly - the shrinking/collapse class fails by name    | both; a pack declared Vue-incompatible records canvas only | baselines recorded in CI for font parity; racy nodes ledgered by mechanism and registration-guarded |
-| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both; a pack declared Vue-incompatible runs canvas only    | application-added dynamic widgets are legal; see section 8                                          |
-| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | breadth sweep: one, by decision 7; curated drags: both     | dropdown slots pair only on identical option sets; see section 10 for exception routing             |
-| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7                                         | the full flow is section 7                                                                          |
-| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass)                                         | plus a forced-error self-check proving the harness detects real failures                            |
-| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both                                                       | guards against packs breaking the base app                                                          |
+| Tier                 | Verifies                                                                                                                                                                                 | Renderers                                                  | Notes                                                                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mount Completeness   | every declared input and output actually materializes on the created node; the DOM renderer additionally shows at least the instance's widget/slot counts                                | both; a pack declared Vue-incompatible runs canvas only    | missing parts fail; extras are tolerated                                                                                                           |
+| Layout Geometry      | every node's rendered geometry (canvas model numbers; DOM rects normalized to graph space) matches a committed per-pack baseline exactly - the shrinking/collapse class fails by name    | both; a pack declared Vue-incompatible records canvas only | baselines recorded in CI for font parity; compared in CI only (local runs log and skip); racy nodes ledgered by mechanism and registration-guarded |
+| Persistence          | save/reload loses nothing and changes nothing; user-like writes stick and survive reload                                                                                                 | both; a pack declared Vue-incompatible runs canvas only    | application-added dynamic widgets are legal; see section 8                                                                                         |
+| Wiring Compatibility | one representative typed wire per slot connects through the real validator and survives save, reload, and prompt serialization                                                           | breadth sweep: one, by decision 7; curated drags: both     | dropdown slots pair only on identical option sets; see section 10 for exception routing                                                            |
+| Execution            | the node runs on a real backend and its output arrives at an observation sink                                                                                                            | one, by decision 7                                         | the full flow is section 7                                                                                                                         |
+| Curated workflows    | a small hand-authored graph per pack executes end to end; its named must-exist nodes are asserted present (a missing one fails the tier, catching a pack that renamed or dropped a node) | both (render pass)                                         | plus a forced-error self-check proving the harness detects real failures                                                                           |
+| Core smoke           | the core app loads a workflow cleanly with packs installed                                                                                                                               | both                                                       | guards against packs breaking the base app                                                                                                         |
 
 One vocabulary bridge, because the manifest predates these tier names: the
 manifest row's `tiers` field takes `load`, `run`, `connectivity`, and
@@ -428,7 +434,8 @@ Not every ledger can earn that two-way strength; the guards come in three
 grades. Ledgers whose nodes still execute (the known-failure baseline) are
 two-way behavioral: a new failure and a stale entry both flip the gate.
 Ledgers that stop a path from running at all (execution exclusions,
-probe-write exemptions) are registration guarded: the suite proves the
+probe-write exemptions, geometry-unstable exclusions) are registration
+guarded: the suite proves the
 named node still exists, but the excluded path never runs, so an entry
 that stopped being necessary cannot be observed; staleness there is
 caught by review, not observation. Weakest are the pattern allowlists
@@ -678,6 +685,18 @@ these answer: "green but broken" and "tests can never catch random bugs."
   result stays meaningful everywhere else.
 - **Answers**: tests can never catch random bugs.
 
+### G15. Nondeterministic initial layout (the editor_base race)
+
+The geometry tier's first live compare found exactly one delta across 823
+nodes: SplineEditor's widget block sat at y 915 in the record run and 920
+in the compare run, at identical code. Root cause is the same editor_base
+init race the console ledger documents for editor creation: whether the
+pack's editor DOM finished initializing when the frame drew decides the
+widget offsets. Defense: `GEOMETRY_UNSTABLE_NODES` excludes both
+editor_base subclasses by mechanism (never per incident), registration
+guarded and logged per run; every other node compares exactly, proven
+byte-identical across two independent CI runs.
+
 ## 13. The CI deployment view
 
 In today's implementation, the suite is Playwright driving bundled
@@ -778,7 +797,7 @@ The one place where architecture names meet code symbols.
 | Capability Classifier                 | `browser_tests/fixtures/customNode/autoRun.ts`                             | `classifyAutoRunnable`, `classifyInput`, `planAutoRuns`, `batchAutoRunnable`, `SYNTH_PRODUCERS`                                                                                                                                 |
 | Execution Harness                     | `browser_tests/fixtures/customNode/ComfyTarget.ts`                         | `LocalDesktopTarget.runWorkflow`: event tap, attempt + graph-membership filters, guarded submission                                                                                                                             |
 | Outcome classification                | `browser_tests/fixtures/customNode/runResult.ts`                           | `classifyRun`, `RunResult`                                                                                                                                                                                                      |
-| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, five in-spec exception ledgers                                                                        |
+| Mount / Persistence / Execution tiers | `browser_tests/tests/customNodes/allNodes.spec.ts`                         | `addChunk`, `declaredShape`, the staged rig on `window.__cnRt`, `runBatch`, monotonic identities via `window.__cnIdBase`, four in-spec exception ledgers                                                                        |
 | Layout geometry tier                  | `browser_tests/fixtures/customNode/geometry.ts` + `geometry/<pack>.json`   | `measureChunkGeometry` (in allNodes.spec.ts), `diffGeometry`, `GEOMETRY_UNSTABLE_NODES`, `CN_GEOMETRY` record/compare modes                                                                                                     |
 | Wiring tier                           | `browser_tests/tests/customNodes/connectivity.spec.ts`                     | breadth sweep, executor self-check, curated drags, two allowlists                                                                                                                                                               |
 | Curated workflows + self-check        | `browser_tests/tests/customNodes/customNode.regression.spec.ts`            | T0/T1 per pack, forced-error positive control                                                                                                                                                                                   |

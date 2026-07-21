@@ -216,12 +216,16 @@ Every pack commits a layout baseline
 (`browser_tests/fixtures/customNode/geometry/<pack>.json`): the mount sweep
 measures every node's geometry and compares it exactly, so a missing
 baseline fails CI rather than silently skipping the new pack. Record it in
-the CI environment, not on a dev machine - font metrics differ across
-platforms by whole pixels, so a locally recorded baseline false-fails CI.
-Run the all-nodes mount tests with `CN_GEOMETRY=record` there (a temporary
-workflow that uploads `browser_tests/fixtures/customNode/geometry/` as an
-artifact is the proven pattern), commit the resulting JSON, and re-run
-without the env var to confirm green. A node whose layout is genuinely
+the CI environment, not on a dev machine: font metrics differ across
+platforms by whole pixels, and the baselines encode pack-JS-built layout
+that the dev server never produces. Run the record workflow
+(`.github/workflows/record-custom-nodes-geometry.yaml`, manual dispatch):
+it runs the mount tests with `CN_GEOMETRY=record` plus `CN_GEOMETRY_CORE`
+set to the gate's pinned core SHA (stamping provenance into each file) and
+uploads `browser_tests/fixtures/customNode/geometry/` as an artifact.
+Commit the artifact; the next gate run compares against it, and its green
+is the confirmation. Local runs log and skip the compare for the same two
+reasons recording is CI-only. A node whose layout is genuinely
 non-deterministic run to run goes into `GEOMETRY_UNSTABLE_NODES`
 (`browser_tests/fixtures/customNode/geometry.ts`) with its mechanism
 written down; entries are registration-guarded, so a stale one fails the
@@ -247,7 +251,9 @@ the fastest loop.
 Two surfaces fail under 6a BY DESIGN and are proven in 6b/CI instead: the
 T0 `expectedExtensions` assert and the dynamic-inputs tier. Both depend on
 pack frontend JS, which the dev server never loads (see 6b) - so their 6a
-red is the assert working, not a setup problem. Everything else must be
+red is the assert working, not a setup problem. The geometry compare does
+not run here at all: it logs and skips off-CI, because the baselines
+encode CI fonts and pack-JS layout (Step 5b). Everything else must be
 green here.
 
 ### 6b - CI-parity run (required if the pack ships frontend JS)
@@ -291,6 +297,15 @@ means discovering that class of problem one CI round at a time.
   frontend JS rebuilt a declared input as a widget-only control (rgthree's
   Seed does this to `seed`), so there is no socket to wire. Recorded and
   excluded, like wildcards - pack design, not a regression.
+- **Geometry delta under the mount test** (`...: expected X, got Y`): the
+  node's rendered layout moved vs the committed baseline. Three causes,
+  three actions: a real layout regression - fix the code; an intended
+  restyle or a deliberate pin/core bump - re-record via the record
+  workflow in the same PR (Step 5b); the delta flips between identical
+  runs - the layout is racy, ledger the node by mechanism in
+  `GEOMETRY_UNSTABLE_NODES`. A `no geometry baseline` red means a new
+  pack or node needs Step 5b; a `stale baseline` red means a baselined
+  node left the corpus - re-record.
 - **Auto-run reports a node "not in cannotRunAlone"**: the node failed to
   execute on pure defaults or synthesized chain inputs (validation reject,
   or a real exception from degenerate inputs - empty expression, empty
@@ -337,6 +352,7 @@ the gate stays honest and none can grow silently:
 | `ROUNDTRIP_VALUE_ALLOWLIST`  | `allNodes.spec.ts`                          | node whose serialized widgets_values legitimately change on reload (pack JS initializes or rebuilds them); the widget-shrink check still applies                                       |
 | `MOUNT_WIDGET_ALLOWLIST`     | `allNodes.spec.ts`                          | node whose pack JS renders custom editor/preview widgets outside the node-widget rows; slot fidelity still applies                                                                     |
 | `CONSOLE_ERROR_ALLOWLIST`    | `fixtures/customNode/consoleErrorLedger.ts` | pack-attributed console noise with no visible error surface; shared by the all-nodes tiers and the curated run                                                                         |
+| `GEOMETRY_UNSTABLE_NODES`    | `fixtures/customNode/geometry.ts`           | node's initial layout is non-deterministic run to run (the editor_base init race); excluded from measurement and baselines, registration-guarded, exclusion logged per run             |
 | `CONNECT_REJECTED_ALLOWLIST` | `connectivity.spec.ts`                      | pack JS legitimately vetoes a planned wiring                                                                                                                                           |
 | `ROUNDTRIP_LOST_ALLOWLIST`   | `connectivity.spec.ts`                      | pack's own serialize/configure drops links it manages itself                                                                                                                           |
 

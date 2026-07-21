@@ -533,6 +533,10 @@ for (const entry of loadManifest()) {
       // first, Vue second per rendererPassesFor), then records or compares
       // once at the end of the test.
       const geometryRecordMode = process.env.CN_GEOMETRY === 'record'
+      if (process.env.CN_GEOMETRY && !geometryRecordMode)
+        throw new Error(
+          `unrecognized CN_GEOMETRY value "${process.env.CN_GEOMETRY}" - the only mode is "record"`
+        )
       const measuredGeometry: Record<string, NodeGeometry> = {}
       const geometryUnstable = GEOMETRY_UNSTABLE_NODES[entry.pack] ?? {}
       for (const ledgered of Object.keys(geometryUnstable))
@@ -719,11 +723,16 @@ for (const entry of loadManifest()) {
           `after all-nodes VueNodes=${vueNodesEnabled} pass`
         )
       }
-      // S14: record regenerates the baseline then fails loudly - recording
-      // must be a deliberate act, never a green run that rewrote its own
-      // expectations. Compare is exact: the world is pinned, so any delta
-      // names a real change; a missing baseline reds rather than skips (a
-      // silently uncovered pack is the failure mode this suite bans).
+      // S14 epilogue. The exclusion is announced like every other escape
+      // hatch, record fails loudly (never a green run that rewrote its own
+      // expectations), and compare runs in CI ONLY: the baselines encode
+      // pack-JS-built layout and CI font metrics, so a dev-server run (no
+      // pack JS) reds structurally and a non-Linux machine reds on fonts -
+      // neither is signal. The skip is loud and provably inert in CI.
+      if (Object.keys(geometryUnstable).length > 0)
+        console.log(
+          `${entry.pack}: ${Object.keys(geometryUnstable).length} node(s) ledgered geometry-unstable; geometry not asserted for them`
+        )
       if (geometryRecordMode) {
         savePackGeometry(entry.pack, {
           recordedAt: {
@@ -736,16 +745,21 @@ for (const entry of loadManifest()) {
         throw new Error(
           `geometry baselines recorded for ${entry.pack} - commit browser_tests/fixtures/customNode/geometry/${entry.pack}.json and re-run without CN_GEOMETRY`
         )
+      } else if (!process.env.CI) {
+        console.log(
+          `${entry.pack}: geometry compare skipped off-CI (baselines encode CI fonts and pack-JS layout); CI enforces`
+        )
+      } else {
+        const geometryBaseline = loadPackGeometry(entry.pack)
+        expect(
+          geometryBaseline,
+          `${entry.pack} has no geometry baseline - record one via the record workflow and commit it (ADDING_CUSTOM_NODES.md Step 5b)`
+        ).not.toBeNull()
+        expect(
+          diffGeometry(geometryBaseline!.nodes, measuredGeometry),
+          'node geometry deltas vs baseline - real layout regression: fix it; intended restyle or pin/core bump: re-record per ADDING_CUSTOM_NODES.md Step 5b; delta flips between identical runs: ledger by mechanism in GEOMETRY_UNSTABLE_NODES'
+        ).toEqual([])
       }
-      const geometryBaseline = loadPackGeometry(entry.pack)
-      expect(
-        geometryBaseline,
-        `${entry.pack} has no geometry baseline - record one (CN_GEOMETRY=record, in the CI environment for font parity) and commit it`
-      ).not.toBeNull()
-      expect(
-        diffGeometry(geometryBaseline!.nodes, measuredGeometry),
-        'node geometry deltas vs baseline'
-      ).toEqual([])
     })
 
     test('every registered node survives save/reload', async ({

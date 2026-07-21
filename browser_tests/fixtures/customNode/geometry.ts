@@ -11,7 +11,11 @@ const GEOMETRY_DIR = fileURLToPath(new URL('./geometry/', import.meta.url))
 // stored raw and compared with exact equality, no rounding: in a fully
 // pinned environment the render is deterministic, and rounding is a
 // tolerance in disguise. If jitter is ever observed, that red is the
-// evidence to justify one.
+// evidence to justify one. The scale division leaves ~1e-5 float
+// residuals in Vue values, so a chunk-composition change (the pack's
+// node count moved) perturbs them and forces a whole-pack re-record -
+// which the pin-bump flow performs anyway. Same-composition determinism
+// is proven: two independent CI runs came back byte-exact.
 export interface LitegraphNodeGeometry {
   w: number
   h: number
@@ -52,8 +56,9 @@ export interface PackGeometryFile {
 // MECHANISM that makes them racy (same discipline as the console ledger's
 // mechanism patterns): each exclusion carries a written reason, is
 // registration-guarded in the spec (an entry whose node leaves the corpus
-// reds), and excluded nodes are omitted from baselines entirely - never
-// silently skipped against a committed expectation.
+// reds), announced in the run output like every other escape hatch, and
+// excluded nodes are omitted from baselines entirely - never compared
+// against a committed expectation they cannot meet.
 export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
   'ComfyUI-KJNodes': {
     // Both editor_base subclasses: widget layout depends on whether the
@@ -100,7 +105,7 @@ function firstDelta(
     typeof expected !== 'object' ||
     typeof actual !== 'object'
   )
-    return Object.is(expected, actual)
+    return expected === actual
       ? null
       : `${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
   if (Array.isArray(expected) || Array.isArray(actual)) {
