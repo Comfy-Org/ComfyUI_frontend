@@ -150,8 +150,9 @@ field is a deprecated warning getter, litegraph and app code read through
 the slotLinks input helpers (`inputHasLink`, `inputLinkId`, `inputLink`)
 or `node.isInputConnected` / `node.getInputLink`, serialization derives
 `inputs[].link` from the store, and the mirror-carried association
-shuffles were reworked — `fixLinkInputSlots` consumes the serialized
-graph data, dynamicWidgets' group rebuilds carry slot→link association
+shuffles were reworked — `LGraph.configure()` realigns serialized input
+slots through `realignInputLinkSlots`, dynamicWidgets' group rebuilds carry
+slot→link association
 in a module-scoped WeakMap refreshed from the store, and link
 deduplication selects survivors from the store registration (the
 `repairInputLinks` mirror repair is gone; the derived view cannot be

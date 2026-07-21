@@ -183,9 +183,13 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
 
+      if (!subgraphNode.graph)
+        throw new NullGraphError(
+          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
+        )
       // Nothing connected
       const linkId =
-        inputLinkId(subgraphNode.graph!, subgraphNode.id, link.origin_slot) ??
+        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
         null
       if (linkId == null) {
         const id = subgraphNodeInput.widgetId
@@ -199,10 +203,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         }
       }
 
-      if (!subgraphNode.graph)
-        throw new NullGraphError(
-          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
-        )
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
         throw new InvalidLinkError(

@@ -375,7 +375,7 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const index = node.inputs.length - 1
   requestAnimationFrame(() => {
     const input = node.inputs[index]
-    if (!input) return
+    if (!input || !node.graph) return
     node.inputs[index] = shallowReactive(input)
     const existingLink = node.getInputLink(index)
     node.onConnectionsChange?.(
