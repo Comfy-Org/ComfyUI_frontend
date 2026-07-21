@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
+const MAX_BACKOFF = 30_000
 
 interface CacheEntry<T> {
   data: T
@@ -46,7 +47,7 @@ const createCacheKey = (config: RemoteWidgetConfig): string => {
 }
 
 const getBackoff = (retryCount: number) =>
-  Math.min(1000 * Math.pow(2, retryCount), 512)
+  Math.min(1000 * Math.pow(2, retryCount), MAX_BACKOFF)
 
 const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
   entry?.data !== undefined &&
