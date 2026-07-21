@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -13,7 +14,11 @@ import {
   getJobWorkflow,
   getOutputsForTask
 } from '@/services/jobOutputCache'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import {
+  ResultItemImpl,
+  TaskItemImpl,
+  useQueueStore
+} from '@/stores/queueStore'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
   fetchJobDetail: vi.fn(),
@@ -25,7 +30,11 @@ vi.mock('@/scripts/api', () => ({
     getJobDetail: vi.fn(),
     apiURL: vi.fn((path: string) => `/api${path}`),
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
+    deleteItem: vi.fn(),
+    clearItems: vi.fn(),
+    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
+    getHistory: vi.fn(async () => [])
   }
 }))
 
@@ -392,6 +401,59 @@ describe('jobOutputCache', () => {
       const result = await getJobWorkflow(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('invalidation when a job is deleted', () => {
+    beforeEach(() => {
+      setActivePinia(createPinia())
+    })
+
+    it('stops serving deleted job detail from the cache', async () => {
+      const jobId = uniqueId('job-deleted')
+      const job = createMockJob(jobId, 1)
+      const detail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {}
+      }
+      vi.mocked(api.getJobDetail).mockResolvedValue(detail)
+
+      expect(await getJobDetail(jobId)).toEqual(detail)
+
+      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
+      await useQueueStore().delete(task)
+
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      expect(await getJobDetail(jobId)).toBeUndefined()
+    })
+
+    it('stops serving deleted task outputs from the cache', async () => {
+      const jobId = uniqueId('task-deleted')
+      const job = createMockJob(jobId, 3)
+
+      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
+      task.loadFullOutputs = vi
+        .fn()
+        .mockResolvedValue(
+          new TaskItemImpl(job, {}, [createResultItem('full-1')])
+        )
+
+      expect(await getOutputsForTask(task)).toEqual([
+        createResultItem('full-1')
+      ])
+
+      await useQueueStore().delete(task)
+
+      const reloaded = new TaskItemImpl(job, {}, [createResultItem('preview')])
+      reloaded.loadFullOutputs = vi
+        .fn()
+        .mockResolvedValue(new TaskItemImpl(job, {}, []))
+
+      expect(await getOutputsForTask(reloaded)).toEqual([])
     })
   })
 })

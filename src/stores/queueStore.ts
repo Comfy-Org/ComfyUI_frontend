@@ -18,7 +18,11 @@ import { api } from '@/scripts/api'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
-import { getJobDetail } from '@/services/jobOutputCache'
+import {
+  clearJobOutputCache,
+  getJobDetail,
+  invalidateCachedJob
+} from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
@@ -615,11 +619,13 @@ export const useQueueStore = defineStore('queue', () => {
       return
     }
     await Promise.all(targets.map((type) => api.clearItems(type)))
+    clearJobOutputCache()
     await update()
   }
 
   const deleteTask = async (task: TaskItemImpl) => {
     await api.deleteItem(task.apiTaskType, task.jobId)
+    invalidateCachedJob(task.jobId)
     await update()
   }
 
