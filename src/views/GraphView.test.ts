@@ -189,15 +189,7 @@ vi.mock(
 )
 vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
 vi.mock(
-  '@/renderer/extensions/firstRunTour/GettingStartedScreen.vue',
-  () => stubModule
-)
-vi.mock(
-  '@/renderer/extensions/firstRunTour/FirstRunTourOverlay.vue',
-  () => stubModule
-)
-vi.mock(
-  '@/renderer/extensions/firstRunTour/FirstRunTourNudge.vue',
+  '@/renderer/extensions/firstRunTour/FirstRunTourGate.vue',
   () => stubModule
 )
 vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
