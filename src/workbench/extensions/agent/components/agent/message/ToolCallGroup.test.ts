@@ -73,6 +73,27 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 
+  it('stays open while the turn streams and collapses when it completes', async () => {
+    const { rerender } = render(ToolCallGroup, {
+      props: {
+        tools: [tool('c1', 'add_node', 'done', true)],
+        streaming: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const trigger = screen.getByRole('button', { name: /ran 1 tool call/i })
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Add node')).toBeInTheDocument()
+
+    await rerender({
+      tools: [tool('c1', 'add_node', 'done', true)],
+      streaming: false
+    })
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('reopens on a failure and folds it into the counted row', async () => {
     const { rerender } = render(ToolCallGroup, {
       props: { tools: [tool('c1', 'add_node', 'done', true)] },
@@ -94,6 +115,19 @@ describe('ToolCallGroup', () => {
 })
 
 describe('AgentMessage tool grouping', () => {
+  it('keeps the tool list expanded while the message is streaming', () => {
+    const message: AssistantMessage = {
+      id: 'msg-0' as TurnId,
+      role: 'assistant',
+      parts: [tool('c1', 'add_node', 'done', true)],
+      streaming: true,
+      thinking: false
+    }
+    render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
+
+    expect(screen.getByText('Add node')).toBeInTheDocument()
+  })
+
   it('groups adjacent tool parts into one pluralized card that opens on click', async () => {
     const message: AssistantMessage = {
       id: 'msg-1' as TurnId,
