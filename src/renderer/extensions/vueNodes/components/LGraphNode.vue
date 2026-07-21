@@ -714,11 +714,7 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
-useRuntimeWidgetReflow(
-  nodeId.value,
-  () => lgraphNode.value,
-  () => nodeData.widgets?.length ?? 0
-)
+useRuntimeWidgetReflow(nodeId.value, () => lgraphNode.value)
 
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
