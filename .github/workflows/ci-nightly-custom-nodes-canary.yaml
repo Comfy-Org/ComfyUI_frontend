@@ -1,7 +1,10 @@
 # Nightly drift radar for the custom-node suite - NON-GATING by design. The
-# PR gate (ci-tests-custom-nodes.yaml) pins core and packs so a PR red is
-# always the PR's fault; this workflow is where environment drift surfaces
-# instead, one moving variable per job so every red names its own culprit:
+# PR gate (ci-tests-custom-nodes.yaml) pins core and packs at the git level,
+# so no git surface moves underneath a PR; this workflow is where git-level
+# drift surfaces instead, one moving git variable per job so every red names
+# its own culprit. (Python deps and the runner image still resolve fresh in
+# every job, gate and canary alike - a red that appears everywhere at once
+# right after a dependency release is environment, not drift.)
 #
 #   Job A (canary-core-drift): core at master, packs pinned
 #     -> red = a core change broke the frontend contract or exposed a pack
@@ -20,7 +23,7 @@
 #
 # A canary red blocks nothing; it is a signal to triage. Both jobs mirror
 # the gate's steps minus the path filter (drift checks always run the full
-# suite); each job moves exactly ONE variable.
+# suite); each job moves exactly ONE git-level variable.
 name: 'CI: Custom Nodes Canary'
 
 on:
@@ -34,13 +37,24 @@ on:
   push:
     branches: [nathaniel/custom-node-e2e-suite]
 
+# Two overlapping failing runs could both pass the filing step's issue-list
+# check before either creates, double-filing past the dedup. Queue instead;
+# never cancel a drift run mid-flight.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   canary-core-drift:
     # Don't run the cron on forks.
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    # Drift reds run slower than green (retries multiply every failure).
-    timeout-minutes: 45
+    # Drift reds run slower than green (retries multiply every failure); the
+    # historical all-broken run needed ~90 minutes. The suite STEP carries its
+    # own lower timeout so an overrun FAILS the step (failure() stays true,
+    # the report uploads, the issue files); this job ceiling is headroom only
+    # - a job-level timeout CANCELS, and cancelled steps skip failure() gates.
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write
@@ -106,6 +120,10 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
+        # Step timeout below the job ceiling: an overlong run fails HERE
+        # (keeping failure() true for the filing step) instead of tripping
+        # the job-level cancel.
+        timeout-minutes: 75
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
@@ -139,9 +157,10 @@ jobs:
 
       # The radar must page someone: a red files (or updates) ONE tracked
       # issue, deduped on the label, so nightly reds never rot unseen in the
-      # Actions tab and never spam a new issue per night.
+      # Actions tab and never spam a new issue per night. cancelled() is
+      # included so an infra-cancelled red still pages instead of vanishing.
       - name: File drift issue on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -149,7 +168,7 @@ jobs:
           set -euo pipefail
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           body="Nightly custom-nodes canary (core at master, packs pinned) went red: $run_url
-          Triage: core drift broke the frontend contract, or exposed a pack bug. Playbook in ci-nightly-custom-nodes-canary.yaml."
+          Triage: core drift broke the frontend contract, or exposed a pack bug. Playbook in ci-nightly-custom-nodes-canary.yaml; ledger/pin/count mechanics in browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md. Failure detail: download the playwright-report-custom-nodes-canary artifact from the run."
           existing=$(gh issue list --repo "${{ github.repository }}" \
             --label custom-nodes-canary --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
@@ -162,11 +181,13 @@ jobs:
           fi
 
   canary-pack-drift:
-    # Job B: the ONE moving variable is the packs (default-branch HEAD);
+    # Job B: the ONE moving git variable is the packs (default-branch HEAD);
     # core stays at the gate's exact pin. Don't run the cron on forks.
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 90/75 split for the same reason as Job A: red is this job's expected
+    # steady state, and the report must survive it.
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write
@@ -230,6 +251,10 @@ jobs:
           wait-for-it --service 127.0.0.1:8188 -t 600
 
       - name: Run custom-node suite
+        # Step timeout below the job ceiling: an overlong run fails HERE
+        # (keeping failure() true for the filing step) instead of tripping
+        # the job-level cancel.
+        timeout-minutes: 75
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
         run: |
@@ -261,8 +286,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+      # cancelled() included for the same reason as Job A.
       - name: File drift issue on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -270,7 +296,7 @@ jobs:
           set -euo pipefail
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           body="Nightly custom-nodes canary (core pinned, packs at HEAD) went red: $run_url
-          A red here means the authors' latest packs diverge from what we verified - expected whenever our pins lag. Triage by a human: crashes or execution failures likely mean a pack author broke something (a maintainer should report it on the pack's repo); count or membership drift alone means our pins are stale (bump pins and recalibrate the manifest in a normal PR)."
+          A red here means the authors' latest packs diverge from what we verified - expected whenever our pins lag. Triage by a human: crashes or execution failures likely mean a pack author broke something (a maintainer should report it on the pack's repo); count or membership drift alone means our pins are stale (bump pins and recalibrate browser_tests/fixtures/data/customNodeManifest.json per browser_tests/tests/customNodes/ADDING_CUSTOM_NODES.md). Failure detail: download the playwright-report-custom-nodes-canary-packs artifact from the run."
           existing=$(gh issue list --repo "${{ github.repository }}" \
             --label custom-nodes-canary-packs --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then

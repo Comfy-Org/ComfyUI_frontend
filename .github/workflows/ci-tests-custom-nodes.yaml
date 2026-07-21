@@ -5,11 +5,14 @@
 # pointless. Mark `custom-nodes-e2e` as a required status check in branch
 # protection to block merges on failure.
 #
-# The gate is fully DETERMINISTIC: ComfyUI core and every pack are pinned at
-# verified commits, so nothing in the environment can move underneath a PR
-# and a red here is always caused by the PR itself. Environment drift (core
-# master moving, pack authors shipping changes) is the nightly canary's job
-# (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not a PR blocker.
+# The gate is deterministic at the GIT level: ComfyUI core and every pack are
+# pinned at verified commits, so no git surface moves underneath a PR. Python
+# deps (core's and packs' requirements.txt) still resolve fresh per run and
+# the runner image updates independently - a red that reproduces on a trivial
+# PR right after a dependency release is environment, not the PR. Git-level
+# drift (core master moving, pack authors shipping changes) is the nightly
+# canary's job (ci-nightly-custom-nodes-canary.yaml) - non-gating radar, not
+# a PR blocker.
 name: 'CI: Tests Custom Nodes'
 
 on:
@@ -81,7 +84,10 @@ jobs:
       # exact master commit the suite (incl. the KJNodes ledger entries and
       # per-pack node counts) was last verified green against. Bump it
       # deliberately, in its own PR, recalibrating ledgers/counts if the run
-      # says so. Core DRIFT is covered nightly by the canary, not here.
+      # says so - and bump the canary Job B's copy of this SHA
+      # (ci-nightly-custom-nodes-canary.yaml) in the SAME PR, or its reds
+      # stop isolating pack drift. Core DRIFT is covered nightly by the
+      # canary, not here.
       - name: Setup ComfyUI server
         uses: ./.github/actions/setup-comfyui-server
         with:
@@ -117,9 +123,11 @@ jobs:
               echo "::error::unsafe pack name: '$pack'"; exit 1
             fi
             # The gate tests exactly what was verified: a full SHA pin is
-            # mandatory here, before anything installs. The planned canary
-            # (pack HEADs) is the only intended unpinned consumer and runs
-            # with CUSTOM_NODES_ALLOW_UNPINNED=1 through the loader instead.
+            # mandatory here, before anything installs. The nightly canary's
+            # pack-drift job is the only intended unpinned INSTALL - it
+            # ignores the pin fields in its own install step
+            # (ci-nightly-custom-nodes-canary.yaml); the manifest itself
+            # stays pinned and validating everywhere.
             if ! [[ "$pin" =~ ^[0-9a-f]{40}$ ]]; then
               echo "::error::$pack: pin must be a full commit SHA (got '$pin')"; exit 1
             fi

@@ -36,13 +36,15 @@ const CONNECT_REJECTED_ALLOWLIST: string[] = [
   // expression variables; its JS vetoes text-list producers.
   'AddTextPrefix.texts -> MathExpression|pysssss.expression'
 ]
-// Pairs whose creation/wiring THROWS inside the pack's own JS. Filter-guarded
-// ONLY, deliberately outside the observed-firing stale guard: the throw is a
-// timing race (it fires when the KJNodes editor_base creation crash lands
-// before this node's instantiation, and passes on runners where it doesn't -
-// observed failing 2026-07-18, passing 2026-07-20 at the IDENTICAL core SHA),
-// and ARCHITECTURE section 10's rule is that environment-conditional
-// failures get filter guards, never observed-firing guards that false-fail.
+// Pairs whose creation/wiring THROWS inside the pack's own JS. Registration-
+// guarded, firing-optional: the throw is a timing race (it fires when the
+// KJNodes editor_base creation crash lands before this node's instantiation,
+// and passes on runners where it doesn't - observed failing 2026-07-18,
+// passing 2026-07-20 at the IDENTICAL core SHA), so per ARCHITECTURE
+// section 10 an observed-FIRING demand would false-fail on fast runners.
+// Section 10's guard floor still applies: each key must at least name a
+// pair the sweep still PLANS (asserted below), so an entry whose node the
+// pack renames or removes reds as stale instead of rotting forever.
 const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
   // TimerNodeKJ's widget JS throws `null.replace` when instantiated in the
   // sweep after the editor_base crash contaminates shared state
@@ -214,20 +216,21 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
   console.log(`connectivity sweep: ${passed}/${results.length} pairs PASS`)
   expect(failures, JSON.stringify(failures, null, 1)).toEqual([])
   expect(passed).toBeGreaterThan(0)
-  // Two-way guard, same discipline as cannotRunAlone: every allowlisted key
-  // must still be OBSERVED failing in its recorded way. An entry whose pair
-  // now passes (or is no longer even planned) is stale and would silently
-  // hide the fixed bug behind it. On a partially-installed local backend an
-  // absent key only logs; CI installs every pack, so it always enforces.
+  // Two-way guard, same discipline as cannotRunAlone, for the two allowlists
+  // in the loop below: every key must still be OBSERVED failing in its
+  // recorded way. An entry whose pair now passes (or is no longer even
+  // planned) is stale and would silently hide the fixed bug behind it. On a
+  // partially-installed local backend an absent key only logs; CI installs
+  // every pack, so it always enforces.
   const outcomeByKey = new Map(
     results.map((result) => [result.key, result.outcome])
   )
   const allPacksInstalled =
     installedEntries.length === connectivityEntries.length
   const staleEntries: string[] = []
-  // SLOT_CONTRACT_MISMATCH_ALLOWLIST is deliberately absent here: its
+  // SLOT_CONTRACT_MISMATCH_ALLOWLIST is deliberately not in this loop: its
   // failures are timing-conditional (see its comment), so demanding they
-  // fire every run false-fails on fast runners.
+  // FIRE every run false-fails on fast runners.
   for (const [allowlist, expected] of [
     [CONNECT_REJECTED_ALLOWLIST, 'CONNECT_REJECTED'],
     [ROUNDTRIP_LOST_ALLOWLIST, 'ROUNDTRIP_LOST']
@@ -245,6 +248,23 @@ test('connectivity: every type-paired link survives model, serialize, and prompt
           `${key}: expected ${expected}, observed ${observed ?? 'nothing'} - remove the stale entry`
         )
     }
+  // Registration guard for the timing-racy list (ARCHITECTURE section 10's
+  // floor): the key's pair must still be PLANNED by the sweep - any outcome
+  // is fine, absence means the pack renamed or removed the node and the
+  // entry is stale. Deterministic given pinned defs, so no false-fail.
+  for (const key of SLOT_CONTRACT_MISMATCH_ALLOWLIST) {
+    if (!outcomeByKey.has(key)) {
+      if (!allPacksInstalled) {
+        console.log(
+          `allowlist entry not observed (pack not installed here): ${key}`
+        )
+        continue
+      }
+      staleEntries.push(
+        `${key}: pair no longer planned by the sweep - remove the stale entry`
+      )
+    }
+  }
   expect(staleEntries, 'stale allowlist entries').toEqual([])
   await expectNoVisibleErrors(comfyPage.page, 'after breadth sweep')
 })
