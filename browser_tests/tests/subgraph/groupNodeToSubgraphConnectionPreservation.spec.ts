@@ -145,10 +145,49 @@ test.describe(
         'Group node should be fully migrated to a subgraph'
       ).toBe(0)
 
+      const topo = await comfyPage.page.evaluate(() => {
+        const rg = window.app!.graph!
+        const dumpNode = (n: any) => ({
+          id: n.id,
+          type: n.type,
+          isSub:
+            typeof n.isSubgraphNode === 'function' ? n.isSubgraphNode() : false,
+          inputs: (n.inputs ?? []).map((i: any) => ({
+            name: i.name,
+            type: i.type,
+            link: i.link
+          })),
+          outputs: (n.outputs ?? []).map((o: any) => ({
+            name: o.name,
+            type: o.type,
+            links: o.links
+          }))
+        })
+        const root = rg.nodes.map(dumpNode)
+        const links = Object.entries(rg.links).map(([id, l]: [string, any]) => ({
+          id,
+          origin_id: l?.origin_id,
+          origin_slot: l?.origin_slot,
+          target_id: l?.target_id,
+          target_slot: l?.target_slot,
+          type: l?.type
+        }))
+        const host = rg.nodes.find((n: any) =>
+          typeof n.isSubgraphNode === 'function' ? n.isSubgraphNode() : false
+        )
+        const sg = (host as any)?.subgraph
+        const interior = (sg?.nodes ?? []).map(dumpNode)
+        const sgInputs = (sg?.inputs ?? []).map((i: any) => ({
+          name: i.name,
+          type: i.type
+        }))
+        return { root, links, interior, sgInputs }
+      })
+
       // BUG-002 part 1: the external latent connection survived the conversion.
       expect(
         state.hostLatentConnected,
-        'External latent connection into the subgraph was dropped'
+        'DIAG ' + JSON.stringify(topo)
       ).toBe(true)
       expect(state.hostLatentOriginType).toBe('EmptyLatentImage')
 
