@@ -7,15 +7,19 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 import type { NodeId } from '@/types/nodeId'
 
 /**
- * Regression (#13861): a renamed socketless / DOM widget label was lost after
- * delete + undo and after copy-paste. Both paths round-trip through
- * LGraphNode.serialize() / configure(), which only persisted the rename via the
- * `input.label` mirror — absent for socketless widgets. This walks the exact QA
- * repro on a CLIPTextEncode `text` DOM widget (no backing input slot).
+ * Regression (#13861): a renamed widget label was lost after delete + undo and
+ * after copy-paste. Both paths round-trip through LGraphNode.serialize() /
+ * configure(), which persist a rename via the backing `input.label` mirror. The
+ * bug was in `renameWidget`: it looked up the input by `widgetId` whenever the
+ * widget had one (every in-graph widget does), but a normal-node input carries
+ * none, so the lookup missed and `input.label` was never written. This walks the
+ * QA repro on a CLIPTextEncode `text` widget through the real app.
  *
- * The rename is applied programmatically because the bug is in persistence, not
- * in the rename UI; the delete→undo and copy→paste operations are driven through
- * the real app so the serialize/configure round-trip is genuinely exercised.
+ * The rename mirrors the fixed `renameWidget` effect — display `label` plus the
+ * backing `input.label` (matched by widget name), the channel the label
+ * persists through — because the bug is in persistence, not the rename UI. The
+ * delete→undo and copy→paste operations are driven through the real app so the
+ * serialize/configure round-trip is genuinely exercised.
  */
 const RENAMED_LABEL = 'Renamed Widget Label'
 const WIDGET_NAME = 'text'
@@ -27,14 +31,11 @@ async function renameFirstTextWidget(comfyPage: ComfyPage): Promise<NodeId> {
         (n) => n.type === 'CLIPTextEncode'
       )!
       const widget = node.widgets!.find((w) => w.name === widgetName)!
-      const mirrored = node.inputs.some(
-        (i) => i.widget?.name === widget.name && i.label != null
-      )
-      if (mirrored) throw new Error('text widget is not socketless')
-      // Mimic the rename flow (renameWidget): a rename writes both the display
-      // label and the userLabel signal that serialization keys off.
+      const input = node.inputs.find((i) => i.widget?.name === widget.name)
+      if (!input)
+        throw new Error('expected a backing input for the text widget')
       widget.label = label
-      widget.userLabel = label
+      input.label = label
       return node.id
     },
     { widgetName: WIDGET_NAME, label: RENAMED_LABEL }

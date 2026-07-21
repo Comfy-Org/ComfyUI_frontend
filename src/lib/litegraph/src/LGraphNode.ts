@@ -914,12 +914,7 @@ export class LGraphNode
         if (!w) continue
 
         const input = this.inputs.find((i) => i.widget?.name === w.name)
-        const persistedLabel = info.widgets_labels?.[w.name]
-        if (input?.label != null) w.label = input.label
-        else if (persistedLabel != null) {
-          w.label = persistedLabel
-          w.userLabel = persistedLabel
-        }
+        if (input?.label) w.label = input.label
 
         if (
           w.options?.property &&
@@ -996,19 +991,6 @@ export class LGraphNode
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
       }
-
-      // Null-prototype: widget names are arbitrary extension-defined strings, so
-      // a widget named `__proto__` (or `constructor`) must round-trip as data
-      // rather than mutate the object's prototype.
-      const widgetLabels: Record<string, string> = Object.create(null)
-      for (const widget of widgets) {
-        if (widget.serialize === false || widget.userLabel == null) continue
-        const mirroredByInput = this.inputs?.some(
-          (input) => input.widget?.name === widget.name && input.label != null
-        )
-        if (!mirroredByInput) widgetLabels[widget.name] = widget.userLabel
-      }
-      if (Object.keys(widgetLabels).length > 0) o.widgets_labels = widgetLabels
     }
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type

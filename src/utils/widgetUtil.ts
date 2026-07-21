@@ -50,15 +50,15 @@ export function renameWidget(
 ): boolean {
   void parents
   const label = newLabel || undefined
-  const input = widget.widgetId
-    ? node.inputs?.find((inp) => inp.widgetId === widget.widgetId)
-    : node.inputs?.find((inp) => inp.widget?.name === widget.name)
+  const input =
+    (widget.widgetId &&
+      node.inputs?.find((inp) => inp.widgetId === widget.widgetId)) ||
+    node.inputs?.find((inp) => inp.widget?.name === widget.name)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
     : undefined
 
   widget.label = label
-  widget.userLabel = label
   if (widgetState) widgetState.label = label
   if (input) input.label = label
 

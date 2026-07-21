@@ -117,17 +117,6 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('records the rename as userLabel (the serialization signal)', () => {
-    const widget = makeWidget({ name: 'seed' })
-    const node = makeNode()
-
-    renameWidget(widget, node, 'My Seed')
-    expect(widget.userLabel).toBe('My Seed')
-
-    renameWidget(widget, node, '')
-    expect(widget.userLabel).toBeUndefined()
-  })
-
   it('writes the label to host widget state for a promoted subgraph input', () => {
     const hostWidgetId = 'graph-id:7:seed' as WidgetId
     useWidgetValueStore().registerWidget(hostWidgetId, {

@@ -425,13 +425,6 @@ export interface IBaseWidget<
   options: TOptions
 
   label?: string
-  /**
-   * A user-assigned rename, distinct from {@link label} (which also holds
-   * localized/dynamic display text). Set only by the rename flow, so it is the
-   * signal used to persist socketless-widget renames — mirroring `input.label`
-   * for input-backed widgets, which dynamic-label code never touches.
-   */
-  userLabel?: string
   /** Widget type (see {@link TWidgetType}) */
   type: TType
   value?: TValue
