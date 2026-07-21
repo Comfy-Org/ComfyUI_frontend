@@ -7,6 +7,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -585,6 +586,68 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await expect(subgraph.previewImage).toBeVisible()
       await subgraph.waitForBlobSrc()
       await subgraph.expectEveryPixelToBe([255, 0, 0, 255])
+    })
+  })
+
+  test.describe('GLSL inside a subgraph with a promoted uniform widget', () => {
+    const SUBGRAPH_NODE_ID = '1'
+    const SUBGRAPH_TITLE = 'GLSL Subgraph With Float'
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'nodes/glsl_shader_subgraph_with_float'
+      )
+      await comfyPage.vueNodes.waitForNodes(1)
+    })
+
+    // Regression guard for #13875: a promoted proxy widget's live value lives at
+    // the host widget key, but the uniform source is discovered from the interior
+    // node. Editing the promoted widget on the host node must reach the renderer.
+    test('reflects promoted host widget edits in the preview', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const subgraph = new GLSLShaderNode(
+        comfyPage,
+        SUBGRAPH_NODE_ID,
+        SUBGRAPH_TITLE
+      )
+
+      await test.step('promote the interior float value onto the host node', async () => {
+        await comfyPage.vueNodes.enterSubgraph(SUBGRAPH_NODE_ID)
+        await comfyPage.vueNodes.waitForNodes(2)
+        const interiorFloat = comfyPage.vueNodes.getNodeByTitle(
+          PRIMITIVE_FLOAT_NODE_TITLE
+        )
+        await comfyPage.subgraph.promoteWidget(interiorFloat, 'value')
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.vueNodes.waitForNodes(1)
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, SUBGRAPH_NODE_ID))
+          .toContain('value')
+      })
+
+      // Interior float defaults to 1.0; shader writes vec4(u_float0, 0, 0, 1).
+      await subgraph.simulateExecutionOutput(ws)
+      const initialSrc = await subgraph.waitForBlobSrc()
+      await subgraph.expectEveryPixelToBe([255, 0, 0, 255], 2)
+
+      await test.step('editing the promoted host widget re-renders the preview', async () => {
+        const promotedValue = comfyPage.vueNodes.getWidgetByName(
+          SUBGRAPH_TITLE,
+          'value'
+        )
+        const { input } =
+          comfyPage.vueNodes.getInputNumberControls(promotedValue)
+        await expect(input).toBeVisible()
+        await input.fill('0')
+        await input.blur()
+
+        await expect.poll(() => subgraph.getPreviewSrc()).not.toBe(initialSrc)
+        await expect.poll(() => subgraph.getPreviewSrc()).toMatch(/^blob:/)
+        await subgraph.expectEveryPixelToBe([0, 0, 0, 255], 2)
+      })
     })
   })
 })
