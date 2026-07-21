@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "et",
-      "backToGithubLogin": "S'inscrire avec Github à la place",
       "backToLogin": "Retour à la connexion",
       "backToSocialLogin": "Inscrivez-vous avec Google ou Github à la place",
       "confirmPasswordLabel": "Confirmer le mot de passe",

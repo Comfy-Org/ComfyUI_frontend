@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "y",
-      "backToGithubLogin": "Regístrate con Github en su lugar",
       "backToLogin": "Volver al inicio de sesión",
       "backToSocialLogin": "Regístrate con Google o Github en su lugar",
       "confirmPasswordLabel": "Confirmar contraseña",

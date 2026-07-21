@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "以及",
-      "backToGithubLogin": "改用 Github 註冊",
       "backToLogin": "返回登入",
       "backToSocialLogin": "改用 Google 或 Github 註冊",
       "confirmPasswordLabel": "確認密碼",

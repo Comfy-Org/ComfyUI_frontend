@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "и",
-      "backToGithubLogin": "Зарегистрироваться через Github",
       "backToLogin": "Вернуться к входу",
       "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",

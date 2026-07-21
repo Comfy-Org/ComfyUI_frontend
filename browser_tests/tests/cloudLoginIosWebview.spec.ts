@@ -18,10 +18,10 @@ const injectWkWebViewBridge = async (page: Page) => {
 }
 
 test.describe(
-  'Cloud login on iOS Chrome / Safari (WKWebView bridge exposed)',
+  'Cloud login on iOS: Google SSO is always offered (FE-1357)',
   { tag: '@mobile-ios' },
   () => {
-    test('shows Google sign-in button on iOS Chrome even when webkit.messageHandlers is present (FE-1357)', async ({
+    test('renders Google + GitHub + in-app-browser notice on iOS Chrome even when webkit.messageHandlers is present', async ({
       browser
     }) => {
       const context = await browser.newContext({ userAgent: CHROME_IOS_UA })
@@ -38,12 +38,15 @@ test.describe(
         await expect(
           page.getByRole('button', { name: /github/i })
         ).toBeVisible()
+        await expect(
+          page.getByTestId('google-sso-in-app-browser-notice')
+        ).toBeVisible()
       } finally {
         await context.close()
       }
     })
 
-    test('shows Google sign-in button on iOS Safari with webkit.messageHandlers present', async ({
+    test('renders Google + notice on iOS Safari with webkit.messageHandlers present', async ({
       page
     }) => {
       await injectWkWebViewBridge(page)
@@ -52,9 +55,12 @@ test.describe(
       await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
 
       await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
+      await expect(
+        page.getByTestId('google-sso-in-app-browser-notice')
+      ).toBeVisible()
     })
 
-    test('still hides Google sign-in in an actual WKWebView (UA lacks first-party browser marker)', async ({
+    test('renders Google + notice in a bare WKWebView host (UA lacks first-party browser marker)', async ({
       browser
     }) => {
       const wkWebViewUa =
@@ -67,9 +73,11 @@ test.describe(
         await page.goto(APP_URL)
         await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
 
-        await expect(page.getByRole('button', { name: /google/i })).toBeHidden()
         await expect(
-          page.getByRole('button', { name: /github/i })
+          page.getByRole('button', { name: /google/i })
+        ).toBeVisible()
+        await expect(
+          page.getByTestId('google-sso-in-app-browser-notice')
         ).toBeVisible()
       } finally {
         await context.close()

@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "و",
-      "backToGithubLogin": "سجّل باستخدام Github بدلاً من ذلك",
       "backToLogin": "العودة إلى تسجيل الدخول",
       "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
       "confirmPasswordLabel": "تأكيد كلمة المرور",

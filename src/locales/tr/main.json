@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "ve",
-      "backToGithubLogin": "Bunun yerine Github ile kaydol",
       "backToLogin": "Girişe dön",
       "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",

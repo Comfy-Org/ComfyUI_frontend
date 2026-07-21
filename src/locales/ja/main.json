@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "および",
-      "backToGithubLogin": "代わりにGithubでサインアップ",
       "backToLogin": "ログインに戻る",
       "backToSocialLogin": "GoogleまたはGithubでサインアップする",
       "confirmPasswordLabel": "パスワードの確認",

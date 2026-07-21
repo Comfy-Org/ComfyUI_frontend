@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "및",
-      "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",

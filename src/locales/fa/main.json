@@ -247,7 +247,6 @@
     },
     "login": {
       "andText": "و",
-      "backToGithubLogin": "ثبت‌نام با گیت‌هاب",
       "backToLogin": "بازگشت به ورود",
       "backToSocialLogin": "ثبت‌نام با Google یا Github",
       "confirmPasswordLabel": "تأیید رمز عبور",
