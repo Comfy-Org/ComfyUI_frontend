@@ -171,4 +171,36 @@ describe('SectionWidgets', () => {
       { min: undefined, max: undefined }
     )
   })
+
+  function renderWidgetsSection(isDraggable: boolean) {
+    const { host, promotedWidget } = createHostWithPromotedModel()
+    return render(SectionWidgets, {
+      props: {
+        widgets: [{ widget: promotedWidget, node: host }],
+        isDraggable
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Button: true,
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+  }
+
+  it('disables the reorder FLIP on draggable sections so they do not jump on drop', () => {
+    renderWidgetsSection(true)
+    expect(screen.getByTestId('section-widgets-list')).toHaveClass(
+      'list-move-disabled'
+    )
+  })
+
+  it('keeps the reorder FLIP on non-draggable sections', () => {
+    renderWidgetsSection(false)
+    expect(screen.getByTestId('section-widgets-list')).not.toHaveClass(
+      'list-move-disabled'
+    )
+  })
 })

@@ -390,7 +390,13 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
-        class="relative space-y-2 rounded-lg px-4 pt-1"
+        data-testid="section-widgets-list"
+        :class="
+          cn(
+            'relative space-y-2 rounded-lg px-4 pt-1',
+            isDraggable && 'list-move-disabled'
+          )
+        "
       >
         <TransitionGroup name="list-scale">
           <WidgetItem
