@@ -1,11 +1,14 @@
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import SiteVideo from './SiteVideo.vue'
 
+type SiteVideoProps = ComponentProps<typeof SiteVideo>
+
 async function renderSiteVideo(
-  props: Record<string, unknown> = {}
+  props: Partial<SiteVideoProps> = {}
 ): Promise<string> {
   const app = createSSRApp({
     render: () =>
@@ -21,6 +24,7 @@ async function renderSiteVideo(
 describe('SiteVideo', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders <video> with the caller-supplied muted attribute', async () => {
@@ -48,6 +52,13 @@ describe('SiteVideo', () => {
   it('does not warn when both autoplay and muted are set', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     await renderSiteVideo({ autoplay: true, muted: true })
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('stays silent in production even when autoplay is set without muted', async () => {
+    vi.stubEnv('DEV', false)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await renderSiteVideo({ autoplay: true })
     expect(warn).not.toHaveBeenCalled()
   })
 
