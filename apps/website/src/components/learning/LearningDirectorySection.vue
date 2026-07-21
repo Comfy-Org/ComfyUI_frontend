@@ -164,6 +164,8 @@ const rows = computed(() =>
               <ButtonPill
                 as="a"
                 :href="featured.href"
+                :target="featured.newTab ? '_blank' : undefined"
+                :rel="featured.newTab ? 'noopener noreferrer' : undefined"
                 icon-position="right"
                 variant="ghost"
                 size="default"
@@ -188,11 +190,11 @@ const rows = computed(() =>
           <li
             v-for="tutorial in rows"
             :key="tutorial.id"
-            class="group/row flex flex-wrap items-center gap-4 py-5 lg:flex-nowrap lg:gap-6"
+            class="group/row flex flex-wrap items-center gap-4 py-5 md:flex-nowrap md:gap-6"
           >
             <a
               :href="localizeHref(tutorialPath(tutorial), locale)"
-              class="group/thumb relative block aspect-video w-36 shrink-0 overflow-hidden rounded-2xl lg:w-44"
+              class="group/thumb relative block aspect-video w-full shrink-0 overflow-hidden rounded-2xl md:w-36 lg:w-44"
               :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
             >
               <img
@@ -207,7 +209,7 @@ const rows = computed(() =>
               />
             </a>
 
-            <div class="min-w-0 flex-1">
+            <div class="w-full min-w-0 md:w-auto md:flex-1">
               <Badge variant="category" size="xs">
                 {{ t(categoryLabelKeys[tutorial.category], locale) }}
               </Badge>
@@ -229,12 +231,28 @@ const rows = computed(() =>
               </ul>
             </div>
 
+            <!-- Plain labelled button on mobile; hover-mask animation from md up. -->
+            <ButtonPill
+              v-if="tutorial.href"
+              as="a"
+              :href="tutorial.href"
+              :target="tutorial.newTab ? '_blank' : undefined"
+              :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
+              icon-position="right"
+              variant="ghost"
+              size="default"
+              class="md:hidden"
+            >
+              {{ t('cta.tryWorkflow', locale) }}
+            </ButtonPill>
             <ButtonMask
               v-if="tutorial.href"
               as="a"
               :href="tutorial.href"
+              :target="tutorial.newTab ? '_blank' : undefined"
+              :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
               icon-position="right"
-              class="shrink-0"
+              class="hidden shrink-0 md:inline-flex"
               variant="ghost"
               size="default"
             >

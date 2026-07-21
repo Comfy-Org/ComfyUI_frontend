@@ -101,6 +101,27 @@ test.describe('Learning page @smoke', () => {
     }
   })
 
+  test('newTab tutorials open their workflow link in a new tab', async ({
+    page
+  }) => {
+    const links = page.getByRole('link', { name: t('cta.tryWorkflow', 'en') })
+    const attrs = await links.evaluateAll((elements) =>
+      elements.map((element) => ({
+        href: element.getAttribute('href') ?? '',
+        target: element.getAttribute('target')
+      }))
+    )
+    // The page-level CTA shares the label; only judge tutorial links.
+    const tutorialAttrs = attrs.filter(({ href }) =>
+      learningTutorials.some((item) => item.href === href)
+    )
+    expect(tutorialAttrs.length).toBeGreaterThan(0)
+    for (const { href, target } of tutorialAttrs) {
+      const tutorial = learningTutorials.find((item) => item.href === href)
+      expect(target, href).toBe(tutorial?.newTab ? '_blank' : null)
+    }
+  })
+
   test('call to action links to contact sales', async ({ page }) => {
     await expect(
       page.getByRole('heading', {

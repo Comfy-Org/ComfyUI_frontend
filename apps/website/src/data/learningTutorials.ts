@@ -20,14 +20,13 @@ export interface LearningTutorial {
   description?: LocalizedText
   videoSrc: string
   href?: string
+  /** Open the workflow link in a new tab (e.g. cloud.comfy.org). */
+  newTab?: boolean
   poster: string
   caption?: readonly VideoTrack[]
-  /** ISO date; feeds VideoObject.uploadDate. Falls back to the launch date. */
-  publishedDate?: string
+  /** ISO date the video was uploaded; feeds VideoObject.uploadDate. */
+  publishedDate: string
 }
-
-/** Fallback VideoObject.uploadDate when a tutorial has no explicit date. */
-export const LEARNING_DEFAULT_PUBLISHED_DATE = '2026-07-01'
 
 /** Category slugs, in nav order — also drives the /learning/[slug] routes. */
 export const learningCategories: readonly LearningCategory[] = [
@@ -54,6 +53,7 @@ const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 export const learningTutorials: readonly LearningTutorial[] = [
   {
     id: 'cleanplate_walkthrough_v03',
+    publishedDate: '2026-05-26',
     slug: 'cleanplate-walkthrough',
     category: 'vfx',
     title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
@@ -74,6 +74,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'deaging_workflow_v03',
+    publishedDate: '2026-05-26',
     slug: 'deaging-workflow',
     category: 'vfx',
     title: { en: 'Deaging Workflow', 'zh-CN': '减龄工作流' },
@@ -94,6 +95,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'frame_adjustments_demo_v03',
+    publishedDate: '2026-05-26',
     slug: 'frame-adjustments',
     category: 'vfx',
     title: { en: 'Frame Adjustments Demo', 'zh-CN': '帧调整演示' },
@@ -102,6 +104,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=7dca0438edf4',
+    newTab: true,
     caption: [
       {
         src: 'https://media.comfy.org/website/learning/frame_adjustments_demo_v03_vtt.en.vtt',
@@ -114,6 +117,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'mattes_and_utilities_v03',
+    publishedDate: '2026-05-26',
     slug: 'mattes-and-utilities',
     category: 'vfx',
     title: { en: 'Mattes and Utilities', 'zh-CN': '遮罩与实用工具' },
@@ -122,6 +126,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=be0889296f65',
+    newTab: true,
     caption: [
       {
         src: 'https://media.comfy.org/website/learning/mattes_and_utilities_v03_vtt.en.vtt',
@@ -134,6 +139,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'seedance_demo_comfyui_v03',
+    publishedDate: '2026-05-26',
     slug: 'seedance-demo',
     category: 'vfx',
     title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
@@ -142,6 +148,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
     poster:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03_thumbnail.jpg',
     href: 'https://cloud.comfy.org/?share=ef543bd4a773',
+    newTab: true,
     caption: [
       {
         src: 'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03_vtt.en.vtt',
@@ -154,6 +161,7 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'skyreplacement_smaller_v06',
+    publishedDate: '2026-05-26',
     slug: 'sky-replacement',
     category: 'vfx',
     title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
@@ -174,122 +182,146 @@ export const learningTutorials: readonly LearningTutorial[] = [
   },
   {
     id: 'animation_character_sheet',
+    publishedDate: '2026-07-16',
     slug: 'character-sheet',
     category: 'animations',
     title: { en: 'Character Sheet', 'zh-CN': '角色设定表' },
     videoSrc: 'https://media.comfy.org/website/learning/animation1.mp4',
     poster: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=d8414beacf91',
+    newTab: true,
     tags: []
   },
   {
     id: 'animation_keyframe_exploration',
+    publishedDate: '2026-07-16',
     slug: 'keyframe-exploration',
     category: 'animations',
     title: { en: 'Keyframe Exploration', 'zh-CN': '关键帧探索' },
     videoSrc: 'https://media.comfy.org/website/learning/animation2.mp4',
     poster: 'https://media.comfy.org/website/learning/animation2-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=78a07a3ce040',
+    newTab: true,
     tags: []
   },
   {
     id: 'animation_background_and_asset_generation',
+    publishedDate: '2026-07-16',
     slug: 'background-and-asset-generation',
     category: 'animations',
     title: { en: 'Background and Asset Generation', 'zh-CN': '背景与素材生成' },
     videoSrc: 'https://media.comfy.org/website/learning/animation3.mp4',
     poster: 'https://media.comfy.org/website/learning/animation3-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=1d905d914f11',
+    newTab: true,
     tags: []
   },
   {
     id: 'animation_concept_exploration',
+    publishedDate: '2026-07-16',
     slug: 'concept-exploration',
     category: 'animations',
     title: { en: 'Concept Exploration', 'zh-CN': '概念探索' },
     videoSrc: 'https://media.comfy.org/website/learning/animation4.mp4',
     poster: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=098f35ab854f',
+    newTab: true,
     tags: []
   },
   {
     id: 'animation_in_betweening',
+    publishedDate: '2026-07-16',
     slug: 'in-betweening',
     category: 'animations',
     title: { en: 'In-Betweening', 'zh-CN': '中间帧绘制' },
     videoSrc: 'https://media.comfy.org/website/learning/animation5.mp4',
     poster: 'https://media.comfy.org/website/learning/animation5-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=7e6419542193',
+    newTab: true,
     tags: []
   },
   {
     id: 'animation_background_and_compositing',
+    publishedDate: '2026-07-16',
     slug: 'background-and-compositing',
     category: 'animations',
     title: { en: 'Background and Compositing', 'zh-CN': '背景与合成' },
     videoSrc: 'https://media.comfy.org/website/learning/animation6.mp4',
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
     href: 'https://cloud.comfy.org/?share=ea6c80d417cf',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_moodboard_creation',
+    publishedDate: '2026-07-20',
     slug: 'moodboard-creation',
     category: 'ads',
     title: { en: 'Moodboard Creation', 'zh-CN': '情绪板制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising1.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
     href: 'https://cloud.comfy.org/?share=62f892c540e3',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_storyboard_creation',
+    publishedDate: '2026-07-20',
     slug: 'storyboard-creation',
     category: 'ads',
     title: { en: 'Storyboard Creation', 'zh-CN': '故事板制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising2.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
     href: 'https://cloud.comfy.org/?share=a598339548b3',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_product_photography',
+    publishedDate: '2026-07-20',
     slug: 'product-photography',
     category: 'ads',
     title: { en: 'Product Photography', 'zh-CN': '产品摄影' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising3.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
     href: 'https://cloud.comfy.org/?share=2d5b0cdf915a',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_talent_casting',
+    publishedDate: '2026-07-20',
     slug: 'talent-casting',
     category: 'ads',
     title: { en: 'Talent Casting', 'zh-CN': '演员选角' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising4.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
     href: 'https://cloud.comfy.org/?share=1233f85f1c96',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_broll_creation',
+    publishedDate: '2026-07-20',
     slug: 'b-roll-creation',
     category: 'ads',
     title: { en: 'B-Roll Creation', 'zh-CN': 'B-Roll 素材制作' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising5.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
     href: 'https://cloud.comfy.org/?share=dd1946bdd7c8',
+    newTab: true,
     tags: []
   },
   {
     id: 'ad_ooh_visualization',
+    publishedDate: '2026-07-20',
     slug: 'ooh-visualization',
     category: 'ads',
     title: { en: 'OOH Visualization', 'zh-CN': '户外广告可视化' },
     videoSrc: 'https://media.comfy.org/website/learning/advertising6.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',
     href: 'https://cloud.comfy.org/?share=9e36b66e188b',
+    newTab: true,
     tags: []
   }
 ] as const

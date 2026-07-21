@@ -9,7 +9,6 @@ import TutorialDetailDialog from './TutorialDetailDialog.vue'
 import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
 import {
-  LEARNING_DEFAULT_PUBLISHED_DATE,
   learningCrumbs,
   tutorialDescription
 } from '../../data/learningTutorials'
@@ -45,7 +44,7 @@ const video: JsonLdNode = videoObjectNode({
   description,
   thumbnailUrl: tutorial.poster,
   contentUrl: tutorial.videoSrc,
-  uploadDate: tutorial.publishedDate ?? LEARNING_DEFAULT_PUBLISHED_DATE,
+  uploadDate: tutorial.publishedDate,
   locale
 })
 
