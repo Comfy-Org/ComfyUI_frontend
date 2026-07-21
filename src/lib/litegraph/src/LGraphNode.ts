@@ -914,7 +914,9 @@ export class LGraphNode
         if (!w) continue
 
         const input = this.inputs.find((i) => i.widget?.name === w.name)
+        const persistedLabel = info.widgets_labels?.[w.name]
         if (input?.label) w.label = input.label
+        else if (persistedLabel != null) w.label = persistedLabel
 
         if (
           w.options?.property &&
@@ -991,6 +993,16 @@ export class LGraphNode
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
       }
+
+      const widgetLabels: Record<string, string> = {}
+      for (const widget of widgets) {
+        if (widget.serialize === false || widget.label == null) continue
+        const mirroredByInput = this.inputs?.some(
+          (input) => input.widget?.name === widget.name && input.label != null
+        )
+        if (!mirroredByInput) widgetLabels[widget.name] = widget.label
+      }
+      if (Object.keys(widgetLabels).length > 0) o.widgets_labels = widgetLabels
     }
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type

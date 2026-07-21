@@ -106,6 +106,13 @@ export interface ISerialisedNode {
    * See example in https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/8629188458dc6cb832f871ece3bd273507e8a766/web/js/VHS.core.js#L59-L84
    */
   widgets_values?: TWidgetValue[]
+  /**
+   * Renamed widget labels keyed by widget name. Only persisted for widgets
+   * whose label is not already mirrored on a backing input slot (socketless /
+   * DOM widgets). Input-backed widgets round-trip their label via
+   * {@link ISerialisableNodeInput.label}.
+   */
+  widgets_labels?: Record<string, string>
 }
 
 /** Properties of nodes that are used by subgraph instances. */
