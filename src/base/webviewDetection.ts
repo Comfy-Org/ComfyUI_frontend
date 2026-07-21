@@ -10,10 +10,18 @@
  *   • iOS WKWebView (has `AppleWebKit` but lacks `Safari/`)
  *   • Social app in-app browsers (Facebook, Instagram, TikTok, etc.)
  *   • JS bridge objects (`window.webkit.messageHandlers`, `ReactNativeWebView`)
+ *     — gated by UA, because iOS forces every browser (Chrome, Firefox,
+ *     Edge, Opera, Safari itself) onto WKWebView, and modern iOS Chrome
+ *     exposes `window.webkit.messageHandlers` on the global for its own
+ *     internal native bridge. Treating that as a webview signal in
+ *     first-party iOS browsers is a false positive that hides the Google
+ *     SSO button for regular mobile users.
  */
 
 const SOCIAL_APP_PATTERNS =
   /FBAN|FBAV|Instagram|Line\/|Snapchat|TikTok|musical_ly/i
+
+const IOS_FIRST_PARTY_BROWSER_PATTERNS = /CriOS|FxiOS|OPiOS|EdgiOS/i
 
 function isAndroidWebView(ua: string): boolean {
   return /\bwv\b/.test(ua) && /Android/.test(ua)
@@ -22,12 +30,17 @@ function isAndroidWebView(ua: string): boolean {
 function isIOSWebView(ua: string): boolean {
   if (!/AppleWebKit/i.test(ua)) return false
   if (/Safari\//i.test(ua)) return false
-  if (/CriOS|FxiOS|OPiOS|EdgiOS/i.test(ua)) return false
+  if (IOS_FIRST_PARTY_BROWSER_PATTERNS.test(ua)) return false
   return true
 }
 
 function isSocialAppBrowser(ua: string): boolean {
   return SOCIAL_APP_PATTERNS.test(ua)
+}
+
+function isFirstPartyIOSBrowser(ua: string): boolean {
+  if (IOS_FIRST_PARTY_BROWSER_PATTERNS.test(ua)) return true
+  return /Safari\//i.test(ua) && /Version\//i.test(ua)
 }
 
 function hasWebViewBridge(): boolean {
@@ -52,7 +65,7 @@ export function isEmbeddedWebView(ua: string = navigator.userAgent): boolean {
   if (isSocialAppBrowser(ua)) return true
   if (isAndroidWebView(ua)) return true
   if (isIOSWebView(ua)) return true
-  if (hasWebViewBridge()) return true
+  if (!isFirstPartyIOSBrowser(ua) && hasWebViewBridge()) return true
   return false
 }
 

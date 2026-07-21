@@ -87,7 +87,14 @@ export default defineConfig({
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'], hasTouch: true },
-      grep: /@mobile/
+      grep: /@mobile\b/,
+      grepInvert: /@mobile-ios/
+    },
+
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 15'] },
+      grep: /@mobile-ios/
     }
   ]
 })

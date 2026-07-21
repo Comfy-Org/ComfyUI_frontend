@@ -34,15 +34,27 @@ describe('isEmbeddedWebView', () => {
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
 
-    it('does not flag Chrome on iOS (CriOS)', () => {
+    it('does not flag Chrome on iOS 26 with real UA (CriOS + Safari/)', () => {
       const ua =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148'
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/144.0.7559.95 Mobile/15E148 Safari/604.1'
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
 
-    it('does not flag Firefox on iOS (FxiOS)', () => {
+    it('does not flag Chrome on iOS 27 with real UA (CriOS + Safari/)', () => {
       const ua =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148'
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/145.0.7000.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('does not flag Firefox on iOS (FxiOS + Safari/)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('does not flag Edge on iOS (EdgiOS + Safari/)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/120.0.0.0 Mobile/15E148 Safari/604.1'
       expect(isEmbeddedWebView(ua)).toBe(false)
     })
   })
@@ -114,6 +126,41 @@ describe('isEmbeddedWebView', () => {
     it('detects ReactNativeWebView bridge', () => {
       vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() })
       expect(isEmbeddedWebView('')).toBe(true)
+    })
+
+    it('ignores webkit.messageHandlers bridge in Chrome on iOS (regression: FE-1357)', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/145.0.7000.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('ignores webkit.messageHandlers bridge in Safari on iOS', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('ignores webkit.messageHandlers bridge in Firefox on iOS', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
+    })
+
+    it('still detects webkit.messageHandlers bridge when UA lacks a first-party iOS browser marker', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+      expect(isEmbeddedWebView(ua)).toBe(true)
+    })
+
+    it('detects ReactNativeWebView bridge even when UA looks like Chrome iOS', () => {
+      vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(false)
     })
   })
 })
