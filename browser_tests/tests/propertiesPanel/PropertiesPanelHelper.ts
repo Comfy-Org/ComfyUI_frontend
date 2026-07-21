@@ -10,6 +10,7 @@ export class PropertiesPanelHelper {
   readonly searchBox: Locator
   readonly closeButton: Locator
   readonly titleEditor: TitleEditor
+  readonly pinnedSwitch: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
@@ -17,6 +18,7 @@ export class PropertiesPanelHelper {
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.closeButton = this.root.locator('button[aria-pressed]')
     this.titleEditor = new TitleEditor(this.root)
+    this.pinnedSwitch = this.root.getByRole('switch', { name: 'Pinned' })
   }
 
   get tabs(): Locator {
@@ -37,10 +39,6 @@ export class PropertiesPanelHelper {
 
   getColorSwatch(colorName: string): Locator {
     return this.root.locator(`[data-testid="${colorName}"]`)
-  }
-
-  get pinnedSwitch(): Locator {
-    return this.root.locator('[data-p-checked]').first()
   }
 
   get subgraphEditButton(): Locator {
