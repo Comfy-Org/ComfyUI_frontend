@@ -6044,7 +6044,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Render every link at its target input (each input holds at most one link).
-    for (const link of graph._links.values()) {
+    const links = [...graph._links.values()].sort((a, b) => a.id - b.id)
+    for (const link of links) {
       const node = graph.getNodeById(link.target_id)
       const input = node?.inputs[link.target_slot]
       if (!node || !input) continue
