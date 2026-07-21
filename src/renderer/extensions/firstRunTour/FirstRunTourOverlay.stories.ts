@@ -2,8 +2,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import { toNodeId } from '@/types/nodeId'
 
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+
 import FirstRunTourOverlay from './FirstRunTourOverlay.vue'
 import { useFirstRunTourStore } from './firstRunTourStore'
+import { toCoachSteps } from './tourSequence'
 import type { TourStep } from './tourSequence'
 
 interface StoryArgs {
@@ -45,9 +48,13 @@ const meta: Meta<StoryArgs> = {
   decorators: [
     (_, context) => {
       const store = useFirstRunTourStore()
-      store.isActive = true
+      const engine = useOnboardingTourStore()
       store.steps = steps
-      store.stepIndex = context.args.stepIndex
+      engine.startTour('firstRun', {
+        force: true,
+        definition: toCoachSteps(steps)
+      })
+      for (let i = 0; i < context.args.stepIndex; i++) engine.next()
       const activeStep = steps[context.args.stepIndex]
       store.resultMedia =
         activeStep?.kind === 'result'

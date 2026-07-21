@@ -163,12 +163,6 @@ function _useFirstRunTourController() {
     return isOnboardingCandidate(onboardingDeps)
   }
 
-  /** The engine owns the sequence; this store only mirrors its position. */
-  function syncFromEngine() {
-    store.isActive = engine.activeTour === 'firstRun'
-    store.stepIndex = engine.countedStepIdx
-  }
-
   async function start(
     templateId?: string,
     entry: OnboardingTourEntry = 'getting_started'
@@ -190,7 +184,6 @@ function _useFirstRunTourController() {
       definition: toCoachSteps(store.steps)
     })
     if (engine.activeTour !== 'firstRun') return
-    syncFromEngine()
 
     activeTemplateId = templateId
     const roles = store.resolvedRoles
@@ -289,13 +282,11 @@ function _useFirstRunTourController() {
 
   async function advance() {
     engine.next()
-    syncFromEngine()
     await enterStep()
   }
 
   async function back() {
     engine.back()
-    syncFromEngine()
     await enterStep()
   }
 

@@ -29,6 +29,21 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ isDialogOpen })
 }))
 
+const engine = {
+  activeTour: ref<string | null>(null),
+  countedStepIdx: ref(0)
+}
+vi.mock('@/platform/onboarding/onboardingTourStore', () => ({
+  useOnboardingTourStore: () => ({
+    get activeTour() {
+      return engine.activeTour.value
+    },
+    get countedStepIdx() {
+      return engine.countedStepIdx.value
+    }
+  })
+}))
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { useFirstRunTourStore } from './firstRunTourStore'
@@ -62,12 +77,20 @@ const t2iRoles: ResolvedRoles = {
   mediaKind: 'image'
 }
 
+/** Put the engine on the first-run tour at `stepIndex`, the way the store reads it. */
+function activate(stepIndex = 0) {
+  engine.activeTour.value = 'firstRun'
+  engine.countedStepIdx.value = stepIndex
+}
+
 describe('firstRunTourStore', () => {
   let store: ReturnType<typeof useFirstRunTourStore>
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useFirstRunTourStore()
+    engine.activeTour.value = null
+    engine.countedStepIdx.value = 0
     resolveTourRoles.mockReset()
     restoreView.mockReset()
     resolveNode.mockReset()
@@ -120,17 +143,17 @@ describe('firstRunTourStore', () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
     store.prepare(workflow)
 
-    store.stepIndex = 1 // prompt (nodeId null, reveals the subgraph host)
+    engine.countedStepIdx.value = 1 // prompt (nodeId null, reveals the subgraph host)
     expect([...store.revealedNodeIds]).toEqual([toNodeId(97), toNodeId(10)])
 
-    store.stepIndex = 2 // run (no node)
+    engine.countedStepIdx.value = 2 // run (no node)
     expect([...store.revealedNodeIds]).toEqual([toNodeId(97), toNodeId(10)])
   })
 
   it('collapses to only the sink on the Result step', () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
     store.prepare(workflow)
-    store.stepIndex = 3 // result
+    engine.countedStepIdx.value = 3 // result
 
     // The final step focuses solely on the generated output, hiding the rest.
     expect([...store.revealedNodeIds]).toEqual([toNodeId(108)])
@@ -144,15 +167,15 @@ describe('firstRunTourStore', () => {
     expect([...store.revealedNodeIds]).toEqual([toNodeId(97)])
     expect([...store.spotlitNodeIds]).toEqual([toNodeId(97)])
 
-    store.stepIndex = 1 // prompt (reveals the subgraph host)
+    engine.countedStepIdx.value = 1 // prompt (reveals the subgraph host)
     // Reveals accumulate; the spotlight narrows to just the prompt host.
     expect([...store.revealedNodeIds]).toEqual([toNodeId(97), toNodeId(10)])
     expect([...store.spotlitNodeIds]).toEqual([toNodeId(10)])
 
-    store.stepIndex = 2 // run (no node)
+    engine.countedStepIdx.value = 2 // run (no node)
     expect([...store.spotlitNodeIds]).toEqual([])
 
-    store.stepIndex = 3 // result (sink)
+    engine.countedStepIdx.value = 3 // result (sink)
     // Result collapses to only the sink for both spotlight and reveal.
     expect([...store.spotlitNodeIds]).toEqual([toNodeId(108)])
     expect([...store.revealedNodeIds]).toEqual([toNodeId(108)])
@@ -161,23 +184,23 @@ describe('firstRunTourStore', () => {
   it('recomputes the prior reveal set when the step index steps back', () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
     store.prepare(workflow)
-    store.stepIndex = 1
+    engine.countedStepIdx.value = 1
 
-    store.stepIndex = 0
+    engine.countedStepIdx.value = 0
 
     expect([...store.revealedNodeIds]).toEqual([toNodeId(97)])
   })
 
-  it('end() restores the view and resets to idle', () => {
+  it('end() restores the view and clears the store-owned sequence', () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
     store.prepare(workflow)
-    store.stepIndex = 1
+    activate(1)
 
     store.end()
 
+    // isActive/stepIndex follow the engine, which the controller clears; end()
+    // owns only the view restore and the store's own sequence state.
     expect(restoreView).toHaveBeenCalledOnce()
-    expect(store.isActive).toBe(false)
-    expect(store.stepIndex).toBe(0)
     expect(store.resolvedRoles).toBeNull()
     expect(store.steps).toEqual([])
     expect(store.revealedNodeIds.size).toBe(0)
@@ -195,7 +218,7 @@ describe('firstRunTourStore', () => {
   it('captureResultMedia() records the sink output URL with the resolved media kind', async () => {
     resolveTourRoles.mockReturnValue(i2vRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
 
     await store.captureResultMedia()
 
@@ -210,7 +233,7 @@ describe('firstRunTourStore', () => {
   it('captureResultMedia() waits for the URL to appear before recording it', async () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     sinkOutput.value = undefined
 
     const pending = store.captureResultMedia()
@@ -234,12 +257,14 @@ describe('firstRunTourStore', () => {
   it('captureResultMedia() discards the URL if the tour ends mid-wait', async () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     sinkOutput.value = undefined
 
     // The tour ends (user skips) during the wait; the URL then resolves, but the
-    // post-await guard must drop it rather than record into a dead tour.
+    // post-await guard must drop it rather than record into a dead tour. Ending
+    // clears the engine (what isActive reads), the way the controller does.
     const pending = store.captureResultMedia()
+    engine.activeTour.value = null
     store.end()
     sinkOutput.value = ['blob:late-output']
     await pending
@@ -250,14 +275,14 @@ describe('firstRunTourStore', () => {
   it('captureResultMedia() discards the URL if a newer tour started mid-wait', async () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     sinkOutput.value = undefined
 
     // The original tour's capture is still waiting when a fresh tour starts
     // (prepare bumps tourRunId). The late URL must not write into the new run.
     const pending = store.captureResultMedia()
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     sinkOutput.value = ['blob:late-output']
     await pending
 
@@ -267,7 +292,7 @@ describe('firstRunTourStore', () => {
   it('captureResultMedia() is idempotent once the media is set', async () => {
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     await store.captureResultMedia()
     sinkOutput.value = ['blob:second-run']
 
@@ -286,7 +311,7 @@ describe('firstRunTourStore', () => {
     vi.useFakeTimers()
     resolveTourRoles.mockReturnValue(t2iRoles)
     store.prepare(workflow)
-    store.isActive = true
+    activate()
     sinkOutput.value = undefined
 
     const pending = store.captureResultMedia()

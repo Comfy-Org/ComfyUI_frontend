@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { UPGRADE_DIALOG_KEYS } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -36,10 +37,11 @@ function stepTargets(step: TourStep): NodeId[] {
   return ids
 }
 
-/** First-run tour view state; the coachmark engine owns the sequence, the controller mirrors its position here. */
+/** First-run tour view state; the coachmark engine owns activation and position, this store the sequence. */
 export const useFirstRunTourStore = defineStore('firstRunTour', () => {
-  const isActive = ref(false)
-  const stepIndex = ref(0)
+  const engine = useOnboardingTourStore()
+  const isActive = computed(() => engine.activeTour === 'firstRun')
+  const stepIndex = computed(() => engine.countedStepIdx)
   const steps = ref<TourStep[]>([])
   const resolvedRoles = ref<ResolvedRoles | null>(null)
   const resultMedia = ref<ResultMedia | null>(null)
@@ -78,7 +80,6 @@ export const useFirstRunTourStore = defineStore('firstRunTour', () => {
 
   function prepare(workflow: ComfyWorkflowJSON, templateId?: string) {
     resetNudge()
-    stepIndex.value = 0
     const roles = resolveTourRoles(workflow, templateId)
     resolvedRoles.value = roles
     steps.value = sequenceBuilder(roles)
@@ -136,8 +137,6 @@ export const useFirstRunTourStore = defineStore('firstRunTour', () => {
   }
 
   function reset() {
-    isActive.value = false
-    stepIndex.value = 0
     steps.value = []
     resolvedRoles.value = null
   }

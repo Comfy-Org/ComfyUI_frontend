@@ -47,7 +47,6 @@ const mocks = vi.hoisted(() => ({
   engineSkip: vi.fn(),
   steps: [] as TourStep[],
   stepIndex: { value: 0 },
-  isActive: { value: false },
   engineActiveTour: { value: null as string | null },
   resolvedRoles: { value: null as ResolvedRoles | null },
   telemetry: {
@@ -207,16 +206,10 @@ vi.mock('./firstRunTourStore', () => ({
     captureResultMedia: mocks.storeCaptureResultMedia,
     runFinished: false,
     get isActive() {
-      return mocks.isActive.value
-    },
-    set isActive(value: boolean) {
-      mocks.isActive.value = value
+      return mocks.engineActiveTour.value === 'firstRun'
     },
     get stepIndex() {
       return mocks.stepIndex.value
-    },
-    set stepIndex(value: number) {
-      mocks.stepIndex.value = value
     },
     get steps() {
       return mocks.steps
@@ -283,6 +276,7 @@ describe('useFirstRunTourController.shouldStartTour', () => {
     mocks.activeWorkflowState = activeState
     mocks.steps = []
     mocks.stepIndex.value = 0
+    mocks.engineActiveTour.value = null
   })
 
   afterEach(() => {
@@ -345,7 +339,7 @@ describe('useFirstRunTourController.start', () => {
     mocks.engineNext.mockReset()
     mocks.steps = []
     mocks.stepIndex.value = 0
-    mocks.isActive.value = true
+    mocks.engineActiveTour.value = null
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     mocks.showSubscriptionDialog.mockReset()
@@ -457,6 +451,7 @@ describe('useFirstRunTourController.start', () => {
 
   it('reports completion when the tour finishes', () => {
     mocks.steps = [{ kind: 'run', nodeId: null }]
+    mocks.engineActiveTour.value = 'firstRun'
 
     useFirstRunTourController().end('done')
 
@@ -486,7 +481,7 @@ describe('useFirstRunTourController.start', () => {
 
   it('reports no skip when the tour has no current step', () => {
     mocks.steps = []
-    mocks.isActive.value = true
+    mocks.engineActiveTour.value = 'firstRun'
 
     useFirstRunTourController().end('skip')
 
@@ -863,7 +858,7 @@ describe('useFirstRunTourController post-run nudge', () => {
     mocks.storeShowNudge.mockReset()
     mocks.steps = [{ kind: 'run', nodeId: null }]
     mocks.stepIndex.value = 0
-    mocks.isActive.value = true
+    mocks.engineActiveTour.value = null
     mocks.hasFunds = true
     apiEventHandlers.clear()
   })
@@ -913,7 +908,7 @@ describe('useFirstRunTourController.beginTour', () => {
     mocks.storePrepare.mockReset()
     mocks.steps = [{ kind: 'run', nodeId: null }]
     mocks.stepIndex.value = 0
-    mocks.isActive.value = false
+    mocks.engineActiveTour.value = null
     mocks.resolvedRoles.value = imageEditRoles
     mocks.hasFunds = true
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -970,7 +965,7 @@ describe('useFirstRunTourController.beginTour', () => {
   })
 
   it('does not start a second tour while one is already active', async () => {
-    mocks.isActive.value = true
+    mocks.engineActiveTour.value = 'firstRun'
 
     const started = await useFirstRunTourController().beginTour({
       templateId: 'x'
