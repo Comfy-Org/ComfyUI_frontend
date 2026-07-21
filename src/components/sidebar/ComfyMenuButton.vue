@@ -77,7 +77,7 @@
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
         <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
         <Switch
-          v-model="nodes2Enabled"
+          :model-value="nodes2Enabled"
           class="ml-4"
           :aria-label="item.label"
           @click.stop
@@ -125,12 +125,9 @@ const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
 
-const nodes2Enabled = computed({
-  get: () => settingStore.get('Comfy.VueNodes.Enabled') ?? false,
-  set: async (value: boolean) => {
-    await settingStore.set('Comfy.VueNodes.Enabled', value)
-  }
-})
+const nodes2Enabled = computed(
+  () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
+)
 
 const telemetry = useTelemetry()
 

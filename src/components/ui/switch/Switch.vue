@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { SwitchRootEmits } from 'reka-ui'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
@@ -8,20 +7,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   class: customClass = '',
   disabled = false,
-  modelValue = false,
   readonly = false
 } = defineProps<{
   class?: HTMLAttributes['class']
   disabled?: boolean
-  modelValue?: boolean
   readonly?: boolean
 }>()
 
-const emit = defineEmits<SwitchRootEmits>()
+const modelValue = defineModel<boolean>({ default: false })
 
 function updateModelValue(value: boolean) {
   if (readonly) return
-  emit('update:modelValue', value)
+  modelValue.value = value
 }
 </script>
 

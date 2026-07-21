@@ -4,16 +4,15 @@ import { describe, expect, it } from 'vitest'
 import FieldSwitch from './FieldSwitch.vue'
 
 describe('FieldSwitch', () => {
-  it('uses its visible label as the switch accessible name', () => {
+  it('forwards its identity and visible label to the switch', () => {
     render(FieldSwitch, {
-      props: { label: 'Enable preview' },
+      props: { id: 'enable-preview', label: 'Enable preview' },
       global: {
         directives: { tooltip: {} }
       }
     })
 
-    expect(
-      screen.getByRole('switch', { name: 'Enable preview' })
-    ).toBeInTheDocument()
+    const control = screen.getByRole('switch', { name: 'Enable preview' })
+    expect(control).toHaveAttribute('id', 'enable-preview')
   })
 })
