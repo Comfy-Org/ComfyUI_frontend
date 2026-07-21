@@ -12,7 +12,7 @@ import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const VISIBLE_CARDS = 5
-const START_DELAY_MS = 2400
+const START_DELAY_MS = 2600
 const TYPE_MIN_MS = 18
 const TYPE_MAX_MS = 55
 const AFTER_TYPING_MS = 520
@@ -22,14 +22,14 @@ const BETWEEN_PROMPTS_MS = 650
 const REDUCED_MOTION_DWELL_MS = 2600
 
 const promptTextClass =
-  'font-formula col-start-1 row-start-1 text-[17px] leading-relaxed font-light'
+  'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
 const caretClass =
-  'bg-primary-comfy-yellow ml-0.5 inline-block h-5.5 w-2 translate-y-0.5'
+  'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-5 w-2.25 translate-y-0.5'
 
 const generateLabel = t('mcp.hero.demoGenerate', locale)
 const idleStatus = t('mcp.hero.demoStatusIdle', locale)
 
-const index = ref(VISIBLE_CARDS - 1)
+const index = ref(0)
 const cards = computed(() =>
   visibleWindow(mcpDemoPrompts, index.value, VISIBLE_CARDS)
 )
@@ -38,7 +38,7 @@ const nextPrompt = computed(
 )
 
 const typed = ref(t(nextPrompt.value.promptKey, locale))
-const caretSteady = ref(true)
+const submitting = ref(false)
 const status = ref(idleStatus)
 const reducedMotion = computed(prefersReducedMotion)
 
@@ -62,7 +62,6 @@ function typeNextPrompt() {
   }
 
   typed.value = ''
-  caretSteady.value = false
 
   let typedLength = 0
   function typeCharacter() {
@@ -77,7 +76,6 @@ function typeNextPrompt() {
       return
     }
 
-    caretSteady.value = true
     schedule(runTool, AFTER_TYPING_MS)
   }
 
@@ -88,6 +86,7 @@ function runTool() {
   const { via, toolKey } = nextPrompt.value
   const tool = t(toolKey, locale)
 
+  submitting.value = true
   status.value = via
     ? t('mcp.hero.demoStatusBridging', locale)
         .replace('{app}', via)
@@ -98,6 +97,7 @@ function runTool() {
 }
 
 function commitCard() {
+  submitting.value = false
   index.value = (index.value + 1) % mcpDemoPrompts.length
   status.value = idleStatus
   schedule(restBeforeNextPrompt, AFTER_CARD_MS)
@@ -128,7 +128,7 @@ onUnmounted(() => clearTimeout(timer))
   <div ref="root" class="flex flex-col gap-6">
     <div
       data-testid="mcp-demo-panel"
-      class="rounded-5xl flex flex-col gap-8 bg-white/4 p-6 lg:p-8"
+      class="rounded-5xl flex flex-col gap-6 bg-white/4 p-6 lg:p-8"
     >
       <!-- Every prompt, caret included, is stacked in one grid cell so the
            panel is always as tall as the longest and typing cannot reflow
@@ -144,10 +144,7 @@ onUnmounted(() => clearTimeout(timer))
         </p>
 
         <p :class="cn(promptTextClass, 'text-primary-comfy-canvas')">
-          {{ typed
-          }}<span
-            :class="cn(caretClass, caretSteady && 'animate-cursor-blink')"
-          />
+          {{ typed }}<span :class="caretClass" />
         </p>
       </div>
 
@@ -164,7 +161,12 @@ onUnmounted(() => clearTimeout(timer))
           </p>
 
           <div
-            class="bg-primary-comfy-yellow font-formula shrink-0 rounded-2xl p-3 text-sm font-extrabold tracking-[0.7px] text-primary-comfy-ink uppercase lg:px-4"
+            :class="
+              cn(
+                'bg-primary-comfy-yellow font-formula shrink-0 rounded-2xl p-3 text-sm font-extrabold tracking-[0.7px] text-primary-comfy-ink uppercase transition-transform duration-100 lg:px-4',
+                submitting && 'scale-[0.97]'
+              )
+            "
           >
             {{ generateLabel }}
           </div>
@@ -233,7 +235,7 @@ onUnmounted(() => clearTimeout(timer))
 
           <div class="flex min-w-0 flex-1 flex-col gap-1">
             <p
-              class="font-formula text-primary-comfy-yellow line-clamp-2 text-xs font-extrabold tracking-[0.7px] uppercase"
+              class="font-formula text-primary-comfy-yellow line-clamp-2 text-xs font-extrabold tracking-[0.7px] uppercase lg:text-sm"
             >
               {{ t(card.toolKey, locale) }}
             </p>
@@ -254,8 +256,8 @@ onUnmounted(() => clearTimeout(timer))
           </span>
 
           <Check
-            class="hidden size-4 shrink-0 text-primary-comfy-canvas/60 lg:block"
-            :stroke-width="1.5"
+            class="text-primary-comfy-yellow hidden size-4 shrink-0 lg:block"
+            :stroke-width="2"
           />
         </div>
       </TransitionGroup>

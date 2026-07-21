@@ -188,24 +188,19 @@
 
 .card-slide-enter-active {
   transition:
-    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    opacity 0.4s ease;
+    transform 0.5s cubic-bezier(0.16, 0.84, 0.3, 1),
+    opacity 0.5s cubic-bezier(0.16, 0.84, 0.3, 1);
 }
 
 .card-slide-enter-from {
-  transform: translateX(56px);
+  transform: translateX(34px);
   opacity: 0;
-}
-
-/* Existing cards slide down smoothly when a new card is prepended. */
-.card-slide-move {
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .card-slide-leave-active {
   transition:
-    transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    opacity 0.4s ease;
+    transform 0.45s ease,
+    opacity 0.45s ease;
 }
 
 .card-slide-leave-to {
