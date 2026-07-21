@@ -4,14 +4,17 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as PartnerNodePolicyApi from '@/platform/workspace/api/partnerNodePolicyApi'
-import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
+import type {
+  PartnerProvider,
+  PartnerProviderPolicy
+} from '@/platform/workspace/api/partnerNodePolicyApi'
 import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
+const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
+const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockFlags = vi.hoisted(() => ({
   teamWorkspacesEnabled: true,
   partnerNodeGovernanceEnabled: true
@@ -27,30 +30,25 @@ vi.mock(
     const actual = await importOriginal<typeof PartnerNodePolicyApi>()
     return {
       ...actual,
-      getPartnerNodePolicy: mockGetPartnerNodePolicy
+      getPartnerNodePolicy: mockGetPartnerNodePolicy,
+      getPartnerProviders: mockGetPartnerProviders,
+      updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
     }
   }
 )
 
-function nodeDef(
-  name: string,
-  overrides: Partial<ComfyNodeDef> = {}
-): ComfyNodeDef {
-  return {
-    name,
-    display_name: `Display ${name}`,
-    category: 'partner/image/Provider',
-    python_module: 'comfy_api_nodes.provider',
-    description: '',
-    input: {},
-    output: [],
-    output_is_list: [],
-    output_name: [],
-    output_node: false,
-    api_node: true,
-    ...overrides
+const catalog: PartnerProvider[] = [
+  {
+    id: 'openai',
+    displayName: 'OpenAI (inc. Sora)',
+    nodeCategories: ['OpenAI', 'Sora']
+  },
+  {
+    id: 'kling',
+    displayName: 'Kling',
+    nodeCategories: ['Kling']
   }
-}
+]
 
 function activateWorkspace(id: string, type: 'personal' | 'team' = 'team') {
   const store = useTeamWorkspaceStore()
@@ -86,18 +84,12 @@ describe('partnerNodeGovernanceStore', () => {
     vi.clearAllMocks()
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.partnerNodeGovernanceEnabled = true
+    mockGetPartnerProviders.mockResolvedValue(catalog)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (policy: PartnerProviderPolicy) => policy
+    )
     activateWorkspace('workspace-one')
-    useNodeDefStore().updateNodeDefs([
-      nodeDef('AllowedNode'),
-      nodeDef('DisabledNode'),
-      nodeDef('UnreviewedNode'),
-      nodeDef('CoreNode', {
-        api_node: false,
-        category: 'sampling',
-        python_module: 'nodes'
-      })
-    ])
   })
 
   afterEach(() => {
@@ -105,57 +97,49 @@ describe('partnerNodeGovernanceStore', () => {
     store = undefined
   })
 
-  it('composes partner-node catalog metadata from object info', async () => {
-    useNodeDefStore().updateNodeDefs([
-      nodeDef('PartnerNode', {
-        display_name: 'Partner Node',
-        category: 'partner/video/Acme'
-      }),
-      nodeDef('CoreNode', { api_node: false })
-    ])
-
+  it('loads the server-owned provider catalog', async () => {
     store = await createLoadedStore()
 
-    expect(store.partnerNodes).toEqual([
-      { id: 'PartnerNode', name: 'Partner Node', provider: 'Acme' }
-    ])
-  })
-
-  it('treats 404 as unconfigured and allows every node', async () => {
-    store = await createLoadedStore()
-
+    expect(store.providers).toEqual(catalog)
     expect(store.status).toBe('unconfigured')
-    expect(store.isNodeDisabled('AllowedNode')).toBe(false)
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
   })
 
-  it('does not block nodes while enforcement is off', async () => {
-    mockGetPartnerNodePolicy.mockResolvedValue({
-      enforcementEnabled: false,
-      nodes: { AllowedNode: true, DisabledNode: false }
-    } satisfies PartnerNodePolicy)
-
+  it('initializes every current provider as allowed without enforcement', async () => {
     store = await createLoadedStore()
 
-    expect(store.isNodeDisabled('AllowedNode')).toBe(false)
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
+    expect(store.createInitialPolicy()).toEqual({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'kling', enabled: true }
+      ]
+    })
   })
 
-  it('allows only explicit true rules while enforcement is on', async () => {
+  it('treats a provider absent from a configured policy as denied', async () => {
     mockGetPartnerNodePolicy.mockResolvedValue({
       enforcementEnabled: true,
-      nodes: { AllowedNode: true, DisabledNode: false }
-    } satisfies PartnerNodePolicy)
+      providers: [{ providerId: 'openai', enabled: true }]
+    } satisfies PartnerProviderPolicy)
 
     store = await createLoadedStore()
 
-    expect(store.isNodeDisabled('AllowedNode')).toBe(false)
-    expect(store.isNodeDisabled('DisabledNode')).toBe(true)
-    expect(store.isNodeDisabled('UnreviewedNode')).toBe(true)
-    expect(store.isNodeDisabled('CoreNode')).toBe(false)
+    expect(store.isProviderEnabled('openai')).toBe(true)
+    expect(store.isProviderEnabled('kling')).toBe(false)
   })
 
-  it('fails closed for a 503 from an enforcing workspace', async () => {
+  it('hides governance when the backend returns 403', async () => {
+    mockGetPartnerNodePolicy.mockRejectedValue(
+      new PartnerNodePolicyApiError(403, 'Forbidden')
+    )
+
+    store = await createLoadedStore()
+
+    expect(store.status).toBe('ineligible')
+    expect(store.providers).toEqual([])
+  })
+
+  it('surfaces a temporarily unverifiable policy', async () => {
     mockGetPartnerNodePolicy.mockRejectedValue(
       new PartnerNodePolicyApiError(503, 'Service Unavailable')
     )
@@ -163,90 +147,21 @@ describe('partnerNodeGovernanceStore', () => {
     store = await createLoadedStore()
 
     expect(store.status).toBe('unavailable')
-    expect(store.isNodeDisabled('AllowedNode')).toBe(true)
-    expect(store.isNodeDisabled('CoreNode')).toBe(false)
   })
 
-  it('fails open during initial loading and a generic failure', async () => {
-    let rejectLoad!: (error: Error) => void
-    mockGetPartnerNodePolicy.mockReturnValue(
-      new Promise((_, reject) => {
-        rejectLoad = reject
-      })
-    )
-
-    store = usePartnerNodeGovernanceStore()
-
-    expect(store.status).toBe('loading')
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
-
-    rejectLoad(new Error('Network error'))
-    await vi.waitFor(() => expect(store?.status).toBe('error'))
-
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
-  })
-
-  it('stays fail-closed while retrying an unavailable policy', async () => {
-    mockGetPartnerNodePolicy.mockRejectedValueOnce(
-      new PartnerNodePolicyApiError(503, 'Service Unavailable')
-    )
-    store = await createLoadedStore()
-    let rejectRetry!: (error: Error) => void
-    mockGetPartnerNodePolicy.mockReturnValueOnce(
-      new Promise((_, reject) => {
-        rejectRetry = reject
-      })
-    )
-
-    const retry = store.loadPolicy()
-
-    expect(store.status).toBe('unavailable')
-    expect(store.isNodeDisabled('AllowedNode')).toBe(true)
-    rejectRetry(new Error('Network error'))
-    await retry
-    expect(store.status).toBe('unavailable')
-    expect(store.isNodeDisabled('AllowedNode')).toBe(true)
-  })
-
-  it('preserves the last enforcing policy after a generic refresh error', async () => {
-    mockGetPartnerNodePolicy.mockResolvedValue({
-      enforcementEnabled: true,
-      nodes: { AllowedNode: true, DisabledNode: false }
-    } satisfies PartnerNodePolicy)
-    store = await createLoadedStore()
-    mockGetPartnerNodePolicy.mockRejectedValue(new Error('Network error'))
-
-    await store.loadPolicy()
-
-    expect(store.status).toBe('error')
-    expect(store.isNodeDisabled('AllowedNode')).toBe(false)
-    expect(store.isNodeDisabled('DisabledNode')).toBe(true)
-  })
-
-  it('stays inactive when partner-node governance is disabled', async () => {
-    mockFlags.partnerNodeGovernanceEnabled = false
+  it('stays inactive outside an eligible team workspace', async () => {
+    activateWorkspace('personal', 'personal')
 
     store = usePartnerNodeGovernanceStore()
     await nextTick()
 
+    expect(mockGetPartnerProviders).not.toHaveBeenCalled()
     expect(mockGetPartnerNodePolicy).not.toHaveBeenCalled()
     expect(store.status).toBe('inactive')
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
-  })
-
-  it('stays inactive in a personal workspace', async () => {
-    activateWorkspace('personal-workspace', 'personal')
-
-    store = usePartnerNodeGovernanceStore()
-    await nextTick()
-
-    expect(mockGetPartnerNodePolicy).not.toHaveBeenCalled()
-    expect(store.status).toBe('inactive')
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
   })
 
   it('ignores a stale response after switching workspaces', async () => {
-    let resolveFirst!: (policy: PartnerNodePolicy) => void
+    let resolveFirst!: (policy: PartnerProviderPolicy) => void
     mockGetPartnerNodePolicy
       .mockReturnValueOnce(
         new Promise((resolve) => {
@@ -254,9 +169,9 @@ describe('partnerNodeGovernanceStore', () => {
         })
       )
       .mockResolvedValueOnce({
-        enforcementEnabled: true,
-        nodes: { DisabledNode: true }
-      } satisfies PartnerNodePolicy)
+        enforcementEnabled: false,
+        providers: [{ providerId: 'kling', enabled: true }]
+      } satisfies PartnerProviderPolicy)
     store = usePartnerNodeGovernanceStore()
     await vi.waitFor(() =>
       expect(mockGetPartnerNodePolicy).toHaveBeenCalledTimes(1)
@@ -266,11 +181,23 @@ describe('partnerNodeGovernanceStore', () => {
     await vi.waitFor(() => expect(store?.status).toBe('configured'))
     resolveFirst({
       enforcementEnabled: true,
-      nodes: { DisabledNode: false }
+      providers: [{ providerId: 'openai', enabled: true }]
     })
     await nextTick()
 
     expect(store.governedWorkspaceId).toBe('workspace-two')
-    expect(store.isNodeDisabled('DisabledNode')).toBe(false)
+    expect(store.policy?.providers).toEqual([
+      { providerId: 'kling', enabled: true }
+    ])
+  })
+
+  it('persists a complete provider policy document', async () => {
+    store = await createLoadedStore()
+    const nextPolicy = store.createInitialPolicy()
+
+    await expect(store.savePolicy(nextPolicy)).resolves.toBe(true)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith(nextPolicy)
+    expect(store.status).toBe('configured')
   })
 })

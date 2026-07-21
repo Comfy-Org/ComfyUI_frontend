@@ -2919,7 +2919,46 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "partnerProviders": "Partner Nodes"
+    },
+    "providerGovernance": {
+      "title": "Partner provider access",
+      "description": "Choose which partner providers are available to this workspace.",
+      "searchPlaceholder": "Search providers...",
+      "loading": "Loading provider policy...",
+      "loadError": "The provider policy could not be loaded.",
+      "retry": "Try Again",
+      "saveError": "The provider policy could not be saved. Try again.",
+      "saved": "Provider policy saved",
+      "empty": "No partner providers are available.",
+      "noMatches": "No providers match your search.",
+      "allowAll": "Allow all",
+      "blockAll": "Block all",
+      "providerToggle": "Allow {name}",
+      "newProviderDefault": "New providers are blocked until a workspace owner reviews them.",
+      "propagation": "Changes can take up to {minutes} minutes to apply.",
+      "setup": {
+        "title": "Set up partner provider access",
+        "description": "Start with every current provider allowed. You can review provider choices before restricting access.",
+        "action": "Set up governance"
+      },
+      "enforcement": {
+        "title": "Restrict partner provider access",
+        "unrestricted": "All partner providers are currently allowed. Provider choices are saved for review but do not block usage.",
+        "restricted": "Only enabled providers can be used in this workspace.",
+        "toggle": "Restrict partner provider access"
+      },
+      "confirmRestrict": {
+        "title": "Restrict partner provider access?",
+        "description": "Disabled providers will stop working after the policy change reaches the execution services. New providers will also be blocked until reviewed.",
+        "action": "Restrict access"
+      },
+      "confirmUnrestrict": {
+        "title": "Allow unrestricted partner provider access?",
+        "description": "Every partner provider, including newly added providers, will be allowed. Your provider choices will remain saved for future review.",
+        "action": "Allow unrestricted access"
+      }
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"

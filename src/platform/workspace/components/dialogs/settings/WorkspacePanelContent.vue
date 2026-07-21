@@ -39,6 +39,20 @@
               : $t('workspacePanel.members.header')
           }}
         </TabsTrigger>
+        <TabsTrigger
+          v-if="showProviderGovernanceTab"
+          value="provider-governance"
+          :class="
+            cn(
+              tabTriggerBase,
+              activeTab === 'provider-governance'
+                ? tabTriggerActive
+                : tabTriggerInactive
+            )
+          "
+        >
+          {{ $t('workspacePanel.tabs.partnerProviders') }}
+        </TabsTrigger>
       </TabsList>
 
       <BillingStatusBanner class="mt-4" />
@@ -49,13 +63,20 @@
       <TabsContent value="members" class="mt-4">
         <MembersPanelContent :key="workspaceRole" />
       </TabsContent>
+      <TabsContent
+        v-if="showProviderGovernanceTab"
+        value="provider-governance"
+        class="mt-4"
+      >
+        <PartnerProviderGovernancePanel />
+      </TabsContent>
     </TabsRoot>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
@@ -63,9 +84,11 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
+import PartnerProviderGovernancePanel from '@/platform/workspace/components/dialogs/settings/PartnerProviderGovernancePanel.vue'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -86,7 +109,27 @@ const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole } = useWorkspaceUI()
 const { hasTeamPlan, isPlanLoading } = useTeamPlan()
+const { governedWorkspaceId, status: providerGovernanceStatus } = storeToRefs(
+  usePartnerNodeGovernanceStore()
+)
+const showProviderGovernanceTab = computed(
+  () =>
+    !!governedWorkspaceId.value &&
+    providerGovernanceStatus.value !== 'ineligible' &&
+    workspaceRole.value === 'owner'
+)
 const activeTab = ref(defaultTab)
+
+watch(
+  showProviderGovernanceTab,
+  (isVisible) => {
+    if (!isVisible && activeTab.value === 'provider-governance') {
+      activeTab.value =
+        defaultTab === 'provider-governance' ? 'plan' : defaultTab
+    }
+  },
+  { immediate: true }
+)
 
 const showMembersTabCount = computed(
   () => hasTeamPlan.value && members.value.length > 1
