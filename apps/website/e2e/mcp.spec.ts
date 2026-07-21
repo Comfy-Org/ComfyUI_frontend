@@ -138,6 +138,58 @@ test.describe('MCP page @smoke', () => {
   })
 })
 
+type ShiftWindow = Window & { __cls?: number }
+
+/**
+ * The hero demo types and cascades forever, so any layout it disturbs is
+ * charged to the page's CLS on every cycle. Google treats 0.1 as the limit.
+ */
+const CLS_BUDGET = 0.1
+
+test.describe('MCP hero demo layout stability', () => {
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'desktop', width: 1440, height: 900 }
+  ]) {
+    test(`animating the hero demo does not shift the page on ${viewport.name}`, async ({
+      page
+    }) => {
+      await page.setViewportSize(viewport)
+      await page.addInitScript(() => {
+        ;(window as ShiftWindow).__cls = 0
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const shift = entry as PerformanceEntry & {
+              value: number
+              hadRecentInput: boolean
+            }
+            if (!shift.hadRecentInput) {
+              const w = window as ShiftWindow
+              w.__cls = (w.__cls ?? 0) + shift.value
+            }
+          }
+        }).observe({ type: 'layout-shift', buffered: true })
+      })
+
+      await page.goto('/mcp')
+
+      const cards = page.getByTestId('mcp-demo-card')
+      await expect(cards).toHaveCount(5)
+
+      // Let two full cascade cycles run, so the card-exit transition and the
+      // typing reflow both get charged to CLS before we read it.
+      for (let cycle = 0; cycle < 2; cycle++) {
+        const newest = await cards.first().innerText()
+        await expect(cards.first()).not.toHaveText(newest, { timeout: 20000 })
+        await expect(cards).toHaveCount(5)
+      }
+
+      const cls = await page.evaluate(() => (window as ShiftWindow).__cls ?? 0)
+      expect(cls).toBeLessThan(CLS_BUDGET)
+    })
+  }
+})
+
 test.describe('MCP page zh-CN @smoke', () => {
   test('setup section renders localized options', async ({ page }) => {
     await page.goto('/zh-CN/mcp')
