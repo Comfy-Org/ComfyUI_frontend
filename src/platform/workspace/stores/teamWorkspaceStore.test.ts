@@ -1372,7 +1372,8 @@ describe('useTeamWorkspaceStore', () => {
       )
     })
 
-    it('resendInvite leaves the original invite unchanged on failure', async () => {
+    it('resendInvite propagates a 404 and leaves the original invite unchanged', async () => {
+      const error = new mockWorkspaceApiError('Not Found', 404)
       mockWorkspaceApi.listInvites.mockResolvedValue({
         invites: [
           {
@@ -1384,9 +1385,7 @@ describe('useTeamWorkspaceStore', () => {
           }
         ]
       })
-      mockWorkspaceApi.resendInvite.mockRejectedValue(
-        new Error('resend failed')
-      )
+      mockWorkspaceApi.resendInvite.mockRejectedValue(error)
       mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
       mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
 
@@ -1394,7 +1393,7 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
       await store.fetchPendingInvites()
 
-      await expect(store.resendInvite('inv-1')).rejects.toThrow('resend failed')
+      await expect(store.resendInvite('inv-1')).rejects.toBe(error)
 
       expect(store.pendingInvites).toHaveLength(1)
       expect(store.pendingInvites[0].expiryDate).toEqual(
