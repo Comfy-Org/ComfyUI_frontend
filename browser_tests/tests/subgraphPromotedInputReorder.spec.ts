@@ -64,7 +64,7 @@ test.describe(
     test('dragging a promoted input to a new slot reorders the section', async ({
       comfyPage
     }) => {
-      const rows = comfyPage.page
+      const rows = comfyPage.menu.propertiesPanel.root
         .getByTestId('section-widgets-list')
         .first()
         .locator('.widget-item')
