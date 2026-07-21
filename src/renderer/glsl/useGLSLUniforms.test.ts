@@ -10,12 +10,12 @@ import {
   toNumber
 } from '@/renderer/glsl/useGLSLUniforms'
 
-const hostLookup = vi.hoisted(
-  () => ({ fn: () => undefined }) as { fn: (...args: unknown[]) => unknown }
-)
+const { findHostInputForPromotion } = vi.hoisted(() => ({
+  findHostInputForPromotion: vi.fn()
+}))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  findHostInputForPromotion: (...args: unknown[]) => hostLookup.fn(...args)
+  findHostInputForPromotion
 }))
 
 function createMockSubgraph(
@@ -122,10 +122,12 @@ describe('extractUniformSources', () => {
   })
 
   it('resolves hostWidgetId from the promoted host input when subgraphNode is given', () => {
-    hostLookup.fn = (_node, sourceNodeId, widgetName) =>
-      sourceNodeId === 10 && widgetName === 'curve'
-        ? { widgetId: 'graph:99:curve0' }
-        : undefined
+    findHostInputForPromotion.mockImplementationOnce(
+      (_node, sourceNodeId, widgetName) =>
+        sourceNodeId === 10 && widgetName === 'curve'
+          ? { widgetId: 'graph:99:curve0' }
+          : undefined
+    )
 
     const glslNode = fromAny<LGraphNode, unknown>({
       inputs: [{ name: 'curves.u_curve0', link: 1 }]
@@ -139,8 +141,6 @@ describe('extractUniformSources', () => {
     const result = extractUniformSources(glslNode, subgraph, subgraphNode)
 
     expect(result.curves[0].hostWidgetId).toBe('graph:99:curve0')
-
-    hostLookup.fn = () => undefined
   })
 })
 

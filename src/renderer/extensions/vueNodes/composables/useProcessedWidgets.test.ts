@@ -27,11 +27,15 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const GRAPH_ID = 'graph-test'
 
+const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn()
+}))
+
 vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   const actual = await importActual<typeof GraphTraversalUtil>()
   return {
     ...actual,
-    executionIdToNodeLocatorId: vi.fn(() => 'source:inner-node')
+    executionIdToNodeLocatorId
   }
 })
 
@@ -494,6 +498,7 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('resolves a promoted widget locator from its source execution id', () => {
+    executionIdToNodeLocatorId.mockReturnValueOnce('source:inner-node')
     const widget = createMockWidget({
       name: 'curve',
       type: 'curve',
