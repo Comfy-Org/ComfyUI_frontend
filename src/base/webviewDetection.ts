@@ -19,8 +19,8 @@ function isSocialAppBrowser(ua: string): boolean {
 }
 
 function isFirstPartyIOSBrowser(ua: string): boolean {
-  if (!/iPhone|iPad|iPod|Macintosh.*Mobile\//i.test(ua)) return false
   if (IOS_FIRST_PARTY_BROWSER_PATTERNS.test(ua)) return true
+  if (!/iPhone|iPad|iPod|Macintosh.*Mobile\//i.test(ua)) return false
   return /Safari\//i.test(ua) && /Version\//i.test(ua)
 }
 
