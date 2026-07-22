@@ -37,9 +37,18 @@ const reducedMotion = computed(prefersReducedMotion)
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 
+// Parse a CSS <time> (ms or s); malformed overrides fall back to the initial.
+function parseCssMs(value: string | undefined, fallbackMs: number) {
+  const match = /^([+-]?(?:\d+|\d*\.\d+))(ms|s)$/i.exec(value?.trim() ?? '')
+  if (!match) return fallbackMs
+  const amount = Number.parseFloat(match[1])
+  return match[2].toLowerCase() === 's' ? amount * 1000 : amount
+}
+
 function cssMs(name: string, initial: string) {
   const raw = useCssVar(name, root, { initialValue: initial, observe: true })
-  return computed(() => Number.parseFloat(raw.value ?? '0'))
+  const fallbackMs = parseCssMs(initial, 0)
+  return computed(() => parseCssMs(raw.value, fallbackMs))
 }
 
 const startDelayMs = cssMs('--mcp-start-delay', '2600ms')
