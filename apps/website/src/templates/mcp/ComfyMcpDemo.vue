@@ -20,16 +20,12 @@ const RUN_TOOL_MS = 360
 const AFTER_CARD_MS = 900
 const BETWEEN_PROMPTS_MS = 650
 
-const reducedMotion = computed(prefersReducedMotion)
-
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
-const caretClass = computed(() =>
-  cn(
-    'bg-primary-comfy-yellow ml-0.5 inline-block h-5 w-2.25 translate-y-0.5',
-    !reducedMotion.value && 'animate-cursor-blink'
-  )
-)
+// Caret blink and card-slide are pure CSS; the global prefers-reduced-motion
+// reset in global.css freezes them for free. Only the JS loop below needs a gate.
+const caretClass =
+  'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-5 w-2.25 translate-y-0.5'
 
 const generateLabel = t('mcp.hero.demoGenerate', locale)
 const idleStatus = t('mcp.hero.demoStatusIdle', locale)
@@ -105,8 +101,9 @@ function restBeforeNextPrompt() {
   schedule(typeNextPrompt, BETWEEN_PROMPTS_MS)
 }
 
-// Under reduced motion, settle on a static fully-typed frame and never loop.
-watch([visible, reducedMotion], ([onScreen, reduce]) => {
+// The only motion CSS can't stop is this JS typing/advance loop, so gate it here
+// (one place). Under reduced motion, settle on a static fully-typed frame.
+watch([visible, () => prefersReducedMotion()], ([onScreen, reduce]) => {
   clearTimeout(timer)
   if (reduce) {
     typed.value = t(nextPrompt.value.promptKey, locale)
@@ -179,7 +176,6 @@ onUnmounted(() => clearTimeout(timer))
       <TransitionGroup
         name="card-slide"
         tag="div"
-        :css="!reducedMotion"
         class="flex flex-col gap-2.5"
       >
         <div
