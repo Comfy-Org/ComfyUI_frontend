@@ -266,7 +266,7 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function fetchStatus(): Promise<void> {
-    return activeContext.value.fetchStatus()
+    return subscriptionContext.value.fetchStatus()
   }
 
   async function fetchBalance(): Promise<void> {

@@ -25,6 +25,7 @@ const {
   mockPlans,
   mockFetchPlans,
   mockPurchaseCredits,
+  mockSetWorkspaceBillingRail,
   mockUpdateActiveWorkspace,
   mockBillingStatus
 } = vi.hoisted(() => ({
@@ -37,6 +38,7 @@ const {
   mockPlans: { value: [] as Plan[] },
   mockFetchPlans: vi.fn(),
   mockPurchaseCredits: vi.fn(),
+  mockSetWorkspaceBillingRail: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
   mockBillingStatus: {
     value: {
@@ -88,22 +90,35 @@ vi.mock('@/composables/useFeatureFlags', async () => {
   }
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsPersonal.value
-    },
-    get activeWorkspace() {
-      return mockIsPersonal.value
-        ? { id: 'personal-123', type: 'personal' }
-        : { id: 'team-456', type: 'team' }
-    },
-    get activeWorkspaceBillingRail() {
-      return mockActiveWorkspaceBillingRail.value
-    },
-    updateActiveWorkspace: mockUpdateActiveWorkspace
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { ref } = await import('vue')
+  const activeWorkspaceBillingRailRef = ref(
+    mockActiveWorkspaceBillingRail.value
+  )
+  Object.defineProperty(mockActiveWorkspaceBillingRail, 'value', {
+    get: () => activeWorkspaceBillingRailRef.value,
+    set: (value: 'legacy_stripe' | 'stripe' | null) => {
+      activeWorkspaceBillingRailRef.value = value
+    }
   })
-}))
+  return {
+    useTeamWorkspaceStore: () => ({
+      get isInPersonalWorkspace() {
+        return mockIsPersonal.value
+      },
+      get activeWorkspace() {
+        return mockIsPersonal.value
+          ? { id: 'personal-123', type: 'personal' }
+          : { id: 'team-456', type: 'team' }
+      },
+      get activeWorkspaceBillingRail() {
+        return mockActiveWorkspaceBillingRail.value
+      },
+      setWorkspaceBillingRail: mockSetWorkspaceBillingRail,
+      updateActiveWorkspace: mockUpdateActiveWorkspace
+    })
+  }
+})
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -227,8 +242,16 @@ describe('useBillingContext', () => {
       }
     ]
 
-    const { type, plans, fetchPlans, previewSubscribe, subscribe, topup } =
-      useBillingContext()
+    const {
+      type,
+      subscription,
+      plans,
+      fetchStatus,
+      fetchPlans,
+      previewSubscribe,
+      subscribe,
+      topup
+    } = useBillingContext()
 
     expect(type.value).toBe('legacy')
     expect(plans.value).toEqual(mockPlans.value)
@@ -245,6 +268,33 @@ describe('useBillingContext', () => {
     )
     expect(workspaceApi.subscribe).toHaveBeenCalledWith('pro-annual', undefined)
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+
+    mockBillingStatus.value = {
+      is_active: true,
+      has_funds: true,
+      billing_rail: 'stripe',
+      subscription_status: 'active',
+      subscription_tier: 'CREATOR',
+      subscription_duration: 'ANNUAL',
+      plan_slug: 'creator-annual'
+    }
+    mockSetWorkspaceBillingRail.mockImplementationOnce((_workspaceId, rail) => {
+      mockActiveWorkspaceBillingRail.value = rail
+    })
+    await fetchStatus()
+    await nextTick()
+
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+      'personal-123',
+      'stripe'
+    )
+    expect(type.value).toBe('workspace')
+    expect(subscription.value).toMatchObject({
+      tier: 'CREATOR',
+      duration: 'ANNUAL',
+      planSlug: 'creator-annual'
+    })
   })
 
   it('selects workspace type for team regardless of consolidated billing', () => {
