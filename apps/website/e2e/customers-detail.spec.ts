@@ -71,7 +71,7 @@ test.describe('Customer story detail @smoke', () => {
     )
   })
 
-  test('renders a Creative Campus story with its content blocks', async ({
+  test('renders a Creative Campus story with its education blocks', async ({
     page
   }) => {
     await page.goto('/customers/xindi-zhang')
@@ -98,6 +98,11 @@ test.describe('Customer story detail @smoke', () => {
       page.getByRole('link', {
         name: /Download Xindi's style transfer workflow/i
       })
+    ).toBeVisible()
+
+    // Shared education call to action (EducationCta component).
+    await expect(
+      page.getByRole('link', { name: /Explore the Education Program/i })
     ).toBeVisible()
   })
 

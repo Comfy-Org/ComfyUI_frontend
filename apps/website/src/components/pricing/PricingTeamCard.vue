@@ -19,9 +19,14 @@ import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
 
-const { locale = 'en', billingPeriod } = defineProps<{
+const {
+  locale = 'en',
+  billingPeriod,
+  education = false
+} = defineProps<{
   billingPeriod: 'monthly' | 'yearly'
   locale?: Locale
+  education?: boolean
 }>()
 
 const teamCreditTierIndex = ref<number[]>([2])
@@ -31,6 +36,11 @@ const selectedTeamTier = computed(
 )
 const selectedTeamPrice = computed(() => {
   const tier = selectedTeamTier.value
+  if (education) {
+    return billingPeriod === 'yearly'
+      ? tier.eduYearlyPrice
+      : tier.eduMonthlyPrice
+  }
   return billingPeriod === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice
 })
 
@@ -45,7 +55,10 @@ const teamSaving = computed<string | undefined>(() => {
   // Round to 1 decimal so future tiers can't render repeating decimals
   // (e.g. 8.333333%), while preserving exact values like 2.5% / 7.5%.
   const pct = Math.round(((base - discounted) / base) * 1000) / 10
-  return t('pricing.savePercent', locale)
+  return t(
+    education ? 'pricing.team.educationalSaving' : 'pricing.savePercent',
+    locale
+  )
     .replace('{pct}', String(pct))
     .replace('{amount}', fmtPrice(base - discounted))
 })

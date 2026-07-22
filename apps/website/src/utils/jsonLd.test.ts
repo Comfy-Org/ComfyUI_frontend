@@ -11,6 +11,7 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -198,6 +199,25 @@ describe('productNode', () => {
     expect(offers[0].price).toBe('20')
     expect(offers[0].priceCurrency).toBe('USD')
     expect(offers[0].seller).toEqual({ '@id': organizationId(siteUrl) })
+  })
+})
+
+describe('faqPageNode', () => {
+  const pageUrl = 'https://comfy.org/education/'
+
+  it('maps each FAQ to a Question with an accepted answer', () => {
+    const node = faqPageNode(pageUrl, [
+      { question: 'What discount do I get?', answer: 'Up to 25% off.' }
+    ])
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe(jsonLdId(pageUrl, 'faq'))
+    const questions = node.mainEntity as Record<string, unknown>[]
+    expect(questions).toHaveLength(1)
+    expect(questions[0]).toMatchObject({
+      '@type': 'Question',
+      name: 'What discount do I get?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Up to 25% off.' }
+    })
   })
 })
 

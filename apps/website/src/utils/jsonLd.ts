@@ -357,6 +357,26 @@ export function productNode(input: ProductInput): JsonLdNode {
   }
 }
 
+export interface FaqEntry {
+  question: string
+  answer: string
+}
+
+export function faqPageNode(pageUrl: string, faqs: FaqEntry[]): JsonLdNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': jsonLdId(pageUrl, 'faq'),
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer
+      }
+    }))
+  }
+}
+
 export interface PageGraphInput {
   url: string
   name: string
