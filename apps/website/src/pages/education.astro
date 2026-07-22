@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import { eduHeroPoster } from '../templates/education/heroAssets'
 import PricingSection from '../components/pricing/PricingSection.vue'
 import CtaSection from '../templates/education/CtaSection.vue'
 import CustomerStoriesSection from '../templates/education/CustomerStoriesSection.vue'
@@ -58,6 +59,13 @@ const faqs = educationFaqs.map((faq) => ({
     faqPageNode(url, faqs)
   ]}
 >
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    href={eduHeroPoster}
+    fetchpriority="high"
+  />
   <HeroSection client:load />
   <PricingSection
     client:visible

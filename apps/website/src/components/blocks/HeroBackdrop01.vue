@@ -101,7 +101,7 @@ const scrimStyle = {
   <section
     :class="cn('max-w-9xl mx-auto px-4 pt-4 lg:px-6 lg:pt-6', className)"
   >
-    <div class="relative overflow-hidden rounded-3xl">
+    <div class="bg-primary-warm-white/60 relative overflow-hidden rounded-3xl">
       <slot name="backdrop">
         <picture v-if="responsiveImage" class="contents">
           <source

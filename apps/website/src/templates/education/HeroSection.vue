@@ -3,14 +3,13 @@ import type { Locale } from '../../i18n/translations'
 
 import HeroBackdrop01 from '../../components/blocks/HeroBackdrop01.vue'
 import { t } from '../../i18n/translations'
+import {
+  eduHeroBackdropSrc as backdropSrc,
+  eduHeroMobileBackdropSrc as mobileBackdropSrc,
+  eduHeroPoster as backdropPoster
+} from './heroAssets'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const backdropSrc = 'https://media.comfy.org/website/edu/edu_hero.mp4'
-const mobileBackdropSrc =
-  'https://media.comfy.org/website/edu/edu_hero-mobile.mp4'
-const backdropPoster =
-  'https://media.comfy.org/website/edu/edu_hero_thumbnail.png'
 </script>
 
 <template>
