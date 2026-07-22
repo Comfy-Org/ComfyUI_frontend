@@ -9,16 +9,20 @@ const { size = 'lg' } = defineProps<{ size?: 'sm' | 'lg' }>()
     class="absolute inset-0 flex items-center justify-center"
     aria-hidden="true"
   >
+    <!-- Below md, sm hosts are full-width thumbnails, so sm matches the
+         featured (lg) size there and shrinks from md up. -->
     <span
       class="flex items-center justify-center rounded-full bg-white/25 backdrop-blur-sm"
       :class="
         size === 'sm'
-          ? 'size-9'
+          ? 'size-14 md:size-9'
           : 'size-14 transition-transform group-hover:scale-105'
       "
     >
       <svg
-        :class="size === 'sm' ? 'ml-0.5 size-4' : 'ml-1 size-5'"
+        :class="
+          size === 'sm' ? 'ml-1 size-5 md:ml-0.5 md:size-4' : 'ml-1 size-5'
+        "
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"

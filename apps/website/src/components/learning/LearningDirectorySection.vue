@@ -94,7 +94,7 @@ const rows = computed(() =>
               class="shrink-0 rounded-xl px-4 py-3 text-left transition-colors lg:w-full"
               :class="
                 category === option.value
-                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                  ? 'lg:bg-primary-comfy-yellow bg-white/20 text-primary-comfy-canvas lg:text-primary-comfy-ink'
                   : 'bg-transparency-white-t4 text-primary-comfy-canvas hover:bg-white/10'
               "
             >
@@ -106,7 +106,7 @@ const rows = computed(() =>
                   class="text-xs tabular-nums"
                   :class="
                     category === option.value
-                      ? 'text-primary-comfy-ink/70'
+                      ? 'text-primary-comfy-canvas/70 lg:text-primary-comfy-ink/70'
                       : 'text-primary-warm-gray'
                   "
                 >
@@ -205,7 +205,7 @@ const rows = computed(() =>
               />
               <PlayOverlay
                 size="sm"
-                class="text-white opacity-0 transition-opacity group-hover/thumb:opacity-100 group-has-[h3>a:hover]/row:opacity-100"
+                class="text-white transition-opacity md:opacity-0 md:group-hover/thumb:opacity-100 md:group-has-[h3>a:hover]/row:opacity-100"
               />
             </a>
 
@@ -241,7 +241,7 @@ const rows = computed(() =>
               icon-position="right"
               variant="ghost"
               size="default"
-              class="md:hidden"
+              class="ps-0 md:hidden"
             >
               {{ t('cta.tryWorkflow', locale) }}
             </ButtonPill>
