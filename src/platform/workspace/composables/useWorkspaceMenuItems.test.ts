@@ -77,15 +77,30 @@ describe('useWorkspaceMenuItems', () => {
     state.isSubscriptionCancelled = false
   })
 
-  it('allows a promoted owner to cancel an active plan', () => {
-    state.canManageSubscriptionLifecycle = true
+  it.for([
+    { workspaceType: 'Personal', isInPersonalWorkspace: true },
+    { workspaceType: 'Team', isInPersonalWorkspace: false }
+  ])(
+    'uses the shared cancellation dialog for an active $workspaceType workspace plan',
+    ({ isInPersonalWorkspace }) => {
+      state.canManageSubscriptionLifecycle = true
+      state.isInPersonalWorkspace = isInPersonalWorkspace
 
-    const { menuItems } = useWorkspaceMenuItems()
+      const { menuItems } = useWorkspaceMenuItems()
+      const cancelItem = menuItems.value.find(
+        (item) => item.label === 'subscription.cancelPlan'
+      )
+      cancelItem?.command?.({
+        originalEvent: new Event('click'),
+        item: cancelItem
+      })
 
-    expect(menuItems.value.map((item) => item.label)).toContain(
-      'subscription.cancelPlan'
-    )
-  })
+      expect(cancelItem).toBeDefined()
+      expect(dialogMocks.showCancelSubscriptionDialog).toHaveBeenCalledWith(
+        '2026-08-01T00:00:00Z'
+      )
+    }
+  )
 
   it('withholds cancellation from a member', () => {
     const { menuItems } = useWorkspaceMenuItems()

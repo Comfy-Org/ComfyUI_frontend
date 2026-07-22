@@ -416,45 +416,72 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('reactivates a cancelled plan for an owner, keeping Manage billing', async () => {
-    const user = userEvent.setup()
-    mockSubscriptionStatus.value = 'canceled'
-    mockCanLeaveWorkspace.value = false
-    renderComponent()
+  it.for([
+    ...(['MONTHLY', 'ANNUAL'] as const).flatMap((duration) => [
+      {
+        workspaceType: 'Personal',
+        planType: 'Personal',
+        isPersonalWorkspace: true,
+        isTeamPlan: false,
+        duration
+      },
+      {
+        workspaceType: 'Personal',
+        planType: 'Team',
+        isPersonalWorkspace: true,
+        isTeamPlan: true,
+        duration
+      },
+      {
+        workspaceType: 'Team',
+        planType: 'Personal',
+        isPersonalWorkspace: false,
+        isTeamPlan: false,
+        duration
+      },
+      {
+        workspaceType: 'Team',
+        planType: 'Team',
+        isPersonalWorkspace: false,
+        isTeamPlan: true,
+        duration
+      }
+    ])
+  ])(
+    'shows canceled state and reactivation for a $planType $duration plan in a $workspaceType workspace',
+    async ({ isPersonalWorkspace, isTeamPlan, duration }) => {
+      const user = userEvent.setup()
+      mockSubscriptionStatus.value = 'canceled'
+      mockIsInPersonalWorkspace.value = isPersonalWorkspace
+      mockHasTeamPlan.value = isTeamPlan
+      mockSubscriptionTier.value = isTeamPlan ? 'PRO' : 'CREATOR'
+      mockPlanSlug.value = isTeamPlan
+        ? `team_per_credit_${duration.toLowerCase()}`
+        : `creator-${duration.toLowerCase()}`
+      mockSubscriptionDuration.value = duration
+      mockCanLeaveWorkspace.value = false
+      renderComponent()
 
-    expect(
-      screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
-    ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Manage billing' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Change plan' })
-    ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Manage billing' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Change plan' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Cancel plan' })
+      ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
-    expect(mockResubscribe).toHaveBeenCalledOnce()
-  })
-
-  it('keeps a cancelled Personal plan in a Team workspace reactivatable', () => {
-    mockSubscriptionStatus.value = 'canceled'
-    mockHasTeamPlan.value = false
-    mockIsWorkspaceSubscribed.value = false
-    renderComponent()
-
-    expect(
-      screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Reactivate plan' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
-    ).not.toBeInTheDocument()
-  })
+      await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
+      expect(mockResubscribe).toHaveBeenCalledOnce()
+    }
+  )
 
   it('shows the zero-state subscribe prompt to unsubscribed team owners', () => {
     mockIsActiveSubscription.value = false
