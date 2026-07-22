@@ -7,7 +7,6 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -139,10 +138,9 @@ function getDropIndicator(node: LGraphNode, id: WidgetId) {
 
 function nodeToNodeData(node: LGraphNode, id: WidgetId) {
   const dropIndicator = getDropIndicator(node, id)
-  const nodeData = extractVueNodeData(node)
 
   return {
-    ...nodeData,
+    ...node._state,
     hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
     dropIndicator,
     onDragDrop: node.onDragDrop,

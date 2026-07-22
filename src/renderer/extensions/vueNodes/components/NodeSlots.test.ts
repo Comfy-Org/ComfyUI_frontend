@@ -10,7 +10,11 @@ import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -33,13 +37,20 @@ import NodeSlots from './NodeSlots.vue'
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
+type NodeSlotsTestData = NodeState & {
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
+}
+
+const makeNodeData = (
+  overrides: Partial<NodeSlotsTestData> = {}
+): NodeSlotsTestData => ({
   id: toNodeId('123'),
+  // Empty = root graph: derives a null subgraphId in the node's locator.
+  graphId: '',
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
-  selected: false,
-  executing: false,
   inputs: [],
   outputs: [],
   flags: { collapsed: false },
@@ -133,8 +144,14 @@ function createTrackingStub(
   })
 }
 
+/** Splits test data into the component's `nodeData` + slot-override props. */
+function slotProps(nodeData: NodeSlotsTestData) {
+  const { inputs, outputs, ...state } = nodeData
+  return { nodeData: state, inputs, outputs }
+}
+
 function renderSlots(
-  nodeData: VueNodeData,
+  nodeData: NodeSlotsTestData,
   stubs: SlotComponentStubs = defaultSlotStubs,
   pinia = createTestingPinia({ stubActions: false })
 ) {
@@ -143,7 +160,7 @@ function renderSlots(
       plugins: [i18n, pinia],
       stubs
     },
-    props: { nodeData }
+    props: slotProps(nodeData)
   })
 }
 
@@ -170,7 +187,7 @@ function createConnectedGraph() {
 }
 
 function renderSlotsWithTracking(
-  nodeData: VueNodeData,
+  nodeData: NodeSlotsTestData,
   mountCounts: Map<string, number>,
   trackingTarget: 'InputSlot' | 'OutputSlot'
 ) {
@@ -384,7 +401,7 @@ describe('NodeSlots.vue', () => {
 
     const nodeData = makeNodeData({
       id: toVueNodeId(interiorNode.id),
-      subgraphId: subgraph.id,
+      graphId: subgraph.id,
       inputs: interiorNode.inputs
     })
     const { container } = renderSlots(nodeData)
@@ -421,7 +438,7 @@ describe('NodeSlots.vue', () => {
 
     const nodeData = makeNodeData({
       id: toVueNodeId(innerNode.id),
-      subgraphId: innerSubgraph.id,
+      graphId: innerSubgraph.id,
       inputs: innerNode.inputs
     })
     const { container } = renderSlots(nodeData)
@@ -453,14 +470,16 @@ describe('NodeSlots.vue', () => {
     expect(mountCounts.get('outC')).toBe(1)
     expect(getRenderedSlotIndex(container, 'outC')).toBe(2)
 
-    await rerender({
-      nodeData: makeNodeData({
-        outputs: [
-          createMockNodeOutputSlot({ name: 'outA', type: 'IMAGE' }),
-          createMockNodeOutputSlot({ name: 'outC', type: 'AUDIO' })
-        ]
-      })
-    })
+    await rerender(
+      slotProps(
+        makeNodeData({
+          outputs: [
+            createMockNodeOutputSlot({ name: 'outA', type: 'IMAGE' }),
+            createMockNodeOutputSlot({ name: 'outC', type: 'AUDIO' })
+          ]
+        })
+      )
+    )
 
     expect(getRenderedSlotIndex(container, 'outC')).toBe(1)
     expect(mountCounts.get('outC')).toBe(2)
@@ -502,7 +521,7 @@ describe('NodeSlots.vue', () => {
 
   describe('unified mode', () => {
     function renderUnified(
-      nodeData: VueNodeData,
+      nodeData: NodeSlotsTestData,
       pinia = createTestingPinia({ stubActions: false })
     ) {
       setActivePinia(pinia)
@@ -511,7 +530,7 @@ describe('NodeSlots.vue', () => {
           plugins: [i18n, pinia],
           stubs: defaultSlotStubs
         },
-        props: { nodeData, unified: true }
+        props: { ...slotProps(nodeData), unified: true }
       })
     }
 
@@ -553,15 +572,17 @@ describe('NodeSlots.vue', () => {
     expect(mountCounts.get('ref_videos.vid0')).toBe(1)
     expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(1)
 
-    await rerender({
-      nodeData: makeNodeData({
-        inputs: [
-          createMockNodeInputSlot({ name: 'ref_images.img0', type: 'IMAGE' }),
-          createMockNodeInputSlot({ name: 'ref_images.img1', type: 'IMAGE' }),
-          createMockNodeInputSlot({ name: 'ref_videos.vid0', type: 'VIDEO' })
-        ]
-      })
-    })
+    await rerender(
+      slotProps(
+        makeNodeData({
+          inputs: [
+            createMockNodeInputSlot({ name: 'ref_images.img0', type: 'IMAGE' }),
+            createMockNodeInputSlot({ name: 'ref_images.img1', type: 'IMAGE' }),
+            createMockNodeInputSlot({ name: 'ref_videos.vid0', type: 'VIDEO' })
+          ]
+        })
+      )
+    )
 
     expect(getRenderedSlotIndex(container, 'ref_videos.vid0')).toBe(2)
     expect(mountCounts.get('ref_videos.vid0')).toBe(2)

@@ -49,7 +49,7 @@
         lgraphNode?.constructor?.nodeData?.output_node &&
         isSelectOutputsMode &&
         nodeData.mode === LGraphEventMode.ALWAYS &&
-        !nodeData.hasErrors
+        !lgraphNode?.has_errors
       "
       :id="nodeId"
     />
@@ -249,7 +249,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -301,7 +301,8 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
-  getNodeByLocatorId
+  getNodeByLocatorId,
+  subgraphIdFromGraphId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toNodeId } from '@/types/nodeId'
@@ -321,7 +322,7 @@ import NodeWidgets from './NodeWidgets.vue'
 
 // Extended props for main node component
 interface LGraphNodeProps {
-  nodeData: VueNodeData
+  nodeData: NodeState
   error?: string | null
 }
 
@@ -344,13 +345,19 @@ const nodeId = computed(() => nodeData.id)
 
 useVueElementTracking(nodeId.value, 'node')
 
+const canvasStore = useCanvasStore()
+const nodeLocatorInput = computed(() => ({
+  id: nodeData.id,
+  subgraphId: subgraphIdFromGraphId(nodeData.graphId, canvasStore.rootGraphId)
+}))
+
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeId.value)
 })
 
 const nodeLocatorId = computed(
-  () => getLocatorIdFromNodeData(nodeData) ?? undefined
+  () => getLocatorIdFromNodeData(nodeLocatorInput.value) ?? undefined
 )
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
@@ -375,7 +382,7 @@ const hasAnyError = computed((): boolean => {
 
   return !!(
     hasExecutionError.value ||
-    nodeData.hasErrors ||
+    node?.has_errors ||
     error ||
     hasNodeScopedError ||
     hasContainerError
@@ -409,8 +416,10 @@ const nodeOpacity = computed(() => {
   return globalOpacity
 })
 
-const hasInputs = computed(() => nonWidgetedInputs(nodeData).length > 0)
-const hasOutputs = computed((): boolean => !!nodeData.outputs?.length)
+const hasInputs = computed(
+  () => nonWidgetedInputs(lgraphNode.value?.inputs).length > 0
+)
+const hasOutputs = computed((): boolean => !!lgraphNode.value?.outputs?.length)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -681,7 +690,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const locatorId = getLocatorIdFromNodeData(nodeLocatorInput.value)
   if (!locatorId) return
 
   const litegraphNode = getNodeByLocatorId(graph, locatorId)
@@ -702,18 +711,19 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = computed(() =>
-  nodeData.subgraphId ? `${nodeData.subgraphId}:${nodeData.id}` : nodeData.id
-)
+const nodeOutputLocatorId = computed(() => {
+  const subgraphId = nodeLocatorInput.value.subgraphId
+  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
+})
 
 const lgraphNode = computed(() => {
-  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const locatorId = getLocatorIdFromNodeData(nodeLocatorInput.value)
   if (!locatorId) return null
 
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
-// TODO: Surface subgraph info more cleanly in VueNodeData instead of
+// TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 

@@ -15,7 +15,9 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
     createNode: vi.fn(),
     registered_node_types: {}
-  }
+  },
+  registerNodeState: vi.fn(),
+  unregisterNodeState: vi.fn()
 }))
 
 vi.mock('@/scripts/app', () => ({

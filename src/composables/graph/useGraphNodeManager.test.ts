@@ -3,10 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import {
-  extractVueNodeData,
-  useGraphNodeManager
-} from '@/composables/graph/useGraphNodeManager'
+import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { widgetId } from '@/types/widgetId'
 import {
@@ -33,9 +30,9 @@ describe('Node Reactivity', () => {
     node.addWidget('number', 'testnum', 2, () => undefined, {})
     graph.add(node)
 
-    const { vueNodeData } = useGraphNodeManager(graph)
+    useGraphNodeManager(graph)
 
-    return { node, graph, vueNodeData }
+    return { node, graph }
   }
 
   it('widget values are reactive through the store', async () => {
@@ -66,16 +63,15 @@ describe('Node Reactivity', () => {
     expect(onValueChange).toHaveBeenCalledTimes(1)
   })
 
-  it('does not re-wrap node.widgets on repeated extraction', () => {
-    const { node } = createTestGraph()
+  it('does not re-wrap node.widgets across manager re-initialization', () => {
+    const { node, graph } = createTestGraph()
     const widgetsGetter = () =>
       Object.getOwnPropertyDescriptor(node, 'widgets')?.get
 
-    extractVueNodeData(node)
     const firstGetter = widgetsGetter()
 
-    extractVueNodeData(node)
-    extractVueNodeData(node)
+    useGraphNodeManager(graph)
+    useGraphNodeManager(graph)
 
     expect(widgetsGetter()).toBe(firstGetter)
   })
@@ -128,14 +124,12 @@ describe('Widget input link reactivity', () => {
     return { graph, node, upstream, linkId: link.id }
   }
 
-  it('exposes linked widget input slots through Vue node inputs', () => {
+  it('exposes linked widget input slots through the live node inputs', () => {
     const { graph, node } = createWidgetInputGraph()
-    const { vueNodeData } = useGraphNodeManager(graph)
+    useGraphNodeManager(graph)
 
-    const nodeData = vueNodeData.get(node.id)
-
-    expect(nodeData?.inputs?.[0]?.widget?.name).toBe('prompt')
-    expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs?.[0]?.widget?.name).toBe('prompt')
+    expect(node.inputs?.[0]?.link).not.toBeNull()
   })
 
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
@@ -152,12 +146,13 @@ describe('Widget input link reactivity', () => {
     if (!link)
       throw new Error('Expected SubgraphInput.connect to produce a link')
 
-    const { vueNodeData } = useGraphNodeManager(subgraph)
-    const nodeData = vueNodeData.get(node.id)
+    useGraphNodeManager(subgraph)
 
-    expect(nodeData?.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs?.[0]?.link).not.toBeNull()
     expect(
-      linkedWidgetedInputs(nodeData!, subgraph.rootGraph.id).map((s) => s.name)
+      linkedWidgetedInputs(node.id, node.inputs, subgraph.rootGraph.id).map(
+        (s) => s.name
+      )
     ).toEqual(['prompt'])
   })
 
@@ -207,13 +202,12 @@ describe('Subgraph output slot label reactivity', () => {
     node.addOutput('other_name', 'STRING')
     graph.add(node)
 
-    const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = node.id
-    const nodeData = vueNodeData.get(nodeId)
-    if (!nodeData?.outputs) throw new Error('Expected output data to exist')
+    const { getNode } = useGraphNodeManager(graph)
+    const liveNode = getNode(node.id)
+    if (!liveNode?.outputs) throw new Error('Expected output data to exist')
 
-    expect(nodeData.outputs[0].label).toBeUndefined()
-    expect(nodeData.outputs[1].label).toBeUndefined()
+    expect(liveNode.outputs[0].label).toBeUndefined()
+    expect(liveNode.outputs[1].label).toBeUndefined()
 
     // Simulate what SubgraphNode does: set the label, then fire the trigger
     node.outputs[0].label = 'custom_label'
@@ -224,9 +218,8 @@ describe('Subgraph output slot label reactivity', () => {
 
     await nextTick()
 
-    const updatedData = vueNodeData.get(nodeId)
-    expect(updatedData?.outputs?.[0]?.label).toBe('custom_label')
-    expect(updatedData?.outputs?.[1]?.label).toBeUndefined()
+    expect(liveNode.outputs?.[0]?.label).toBe('custom_label')
+    expect(liveNode.outputs?.[1]?.label).toBeUndefined()
   })
 
   it('updates input slot labels when node:slot-label:changed is triggered', async () => {
@@ -235,12 +228,11 @@ describe('Subgraph output slot label reactivity', () => {
     node.addInput('original_name', 'STRING')
     graph.add(node)
 
-    const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeId = node.id
-    const nodeData = vueNodeData.get(nodeId)
-    if (!nodeData?.inputs) throw new Error('Expected input data to exist')
+    const { getNode } = useGraphNodeManager(graph)
+    const liveNode = getNode(node.id)
+    if (!liveNode?.inputs) throw new Error('Expected input data to exist')
 
-    expect(nodeData.inputs[0].label).toBeUndefined()
+    expect(liveNode.inputs[0].label).toBeUndefined()
 
     node.inputs[0].label = 'custom_label'
     graph.trigger('node:slot-label:changed', {
@@ -250,8 +242,7 @@ describe('Subgraph output slot label reactivity', () => {
 
     await nextTick()
 
-    const updatedData = vueNodeData.get(nodeId)
-    expect(updatedData?.inputs?.[0]?.label).toBe('custom_label')
+    expect(liveNode.inputs?.[0]?.label).toBe('custom_label')
   })
 
   it('ignores node:slot-label:changed for unknown node ids', () => {
@@ -629,42 +620,43 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   })
 })
 
-describe('Pre-remove vueNodeData drain', () => {
+describe('Pre-remove node reference drain', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('drops vueNodeData entry before node.onRemoved fires', () => {
+  it('drops the node reference before node.onRemoved fires', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     graph.add(node)
-    const { vueNodeData } = useGraphNodeManager(graph)
+    const { getNode } = useGraphNodeManager(graph)
     const id = node.id
 
-    expect(vueNodeData.has(id)).toBe(true)
+    expect(getNode(id)).toBeDefined()
 
-    let dataPresentInOnRemoved: boolean | undefined
+    let refPresentInOnRemoved: boolean | undefined
     node.onRemoved = () => {
-      dataPresentInOnRemoved = vueNodeData.has(id)
+      refPresentInOnRemoved = getNode(id) !== undefined
     }
 
     graph.remove(node)
 
     expect(
-      dataPresentInOnRemoved,
-      'vueNodeData entry must be cleared before node.onRemoved fires so reactive consumers cannot observe the detached node'
+      refPresentInOnRemoved,
+      'the node reference must be dropped before node.onRemoved fires so reactive consumers cannot observe the detached node'
     ).toBe(false)
   })
 
-  it('clears vueNodeData when LGraph.clear() dispatches node:before-removed for each node', () => {
+  it('clears node references when LGraph.clear() dispatches node:before-removed for each node', () => {
     const graph = new LGraph()
     const nodeA = new LGraphNode('a')
     const nodeB = new LGraphNode('b')
     graph.add(nodeA)
     graph.add(nodeB)
-    const { vueNodeData } = useGraphNodeManager(graph)
+    const { getNode } = useGraphNodeManager(graph)
 
-    expect(vueNodeData.size).toBe(2)
+    expect(getNode(nodeA.id)).toBeDefined()
+    expect(getNode(nodeB.id)).toBeDefined()
 
     const beforeRemovedSpy = vi.fn()
     graph.events.addEventListener('node:before-removed', beforeRemovedSpy)
@@ -675,9 +667,7 @@ describe('Pre-remove vueNodeData drain', () => {
       beforeRemovedSpy,
       'clear() must dispatch node:before-removed so reactive consumers can drop refs before nodes detach'
     ).toHaveBeenCalledTimes(2)
-    expect(
-      vueNodeData.size,
-      'node:before-removed listener must drain vueNodeData when clear() removes every node'
-    ).toBe(0)
+    expect(getNode(nodeA.id)).toBeUndefined()
+    expect(getNode(nodeB.id)).toBeUndefined()
   })
 })

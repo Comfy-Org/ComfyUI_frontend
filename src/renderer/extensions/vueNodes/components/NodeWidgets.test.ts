@@ -5,7 +5,7 @@ import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -50,16 +50,14 @@ vi.mock(
 function createMockNodeData(
   nodeType = 'TestNode',
   id: NodeId = toNodeId(1)
-): VueNodeData {
+): NodeState {
   return {
     id,
+    graphId: 'test-graph',
     type: nodeType,
     title: 'Test Node',
     mode: 0,
-    selected: false,
-    executing: false,
-    inputs: [],
-    outputs: []
+    flags: {}
   }
 }
 
@@ -83,7 +81,7 @@ function renderComponent({
   widgetIds,
   setupStores
 }: {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
   setupStores?: () => void
 }) {

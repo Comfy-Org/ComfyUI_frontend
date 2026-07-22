@@ -3,7 +3,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -110,8 +109,7 @@ function processWidgets({
   nodeType = 'TestNode',
   showAdvanced = false,
   subgraphId,
-  rootGraph = null,
-  inputs = []
+  rootGraph = null
 }: {
   widgetIds: readonly WidgetId[]
   nodeId?: NodeId
@@ -119,24 +117,20 @@ function processWidgets({
   showAdvanced?: boolean
   subgraphId?: string | null
   rootGraph?: LGraph | null
-  inputs?: INodeInputSlot[]
 }) {
   return computeProcessedWidgets({
     nodeData: {
       id: nodeId,
+      graphId: subgraphId ?? GRAPH_ID,
       type: nodeType,
       title: 'Test',
       mode: 0,
-      selected: false,
-      executing: false,
-      inputs,
-      outputs: [],
-      subgraphId
+      flags: {}
     },
     widgetIds,
     graphId: GRAPH_ID,
     showAdvanced,
-    isGraphReady: false,
+    isGraphReady: rootGraph !== null,
     rootGraph,
     ui: noopUi
   })
@@ -154,27 +148,41 @@ describe('widget visibility', () => {
     const nodeId = toNodeId(1)
     const id = widgetId(GRAPH_ID, nodeId, 'w')
     registerWidgetState(id, { type: 'text', options })
-    const inputs: INodeInputSlot[] = linked
-      ? [
-          {
-            name: 'w',
-            type: 'STRING',
-            link: toLinkId(1),
-            boundingRect: [0, 0, 0, 0]
-          }
-        ]
-      : []
-    if (linked) {
-      useLinkStore().registerLink(GRAPH_ID, {
-        id: toLinkId(1),
-        originNodeId: toNodeId(2),
-        originSlot: 0,
-        targetNodeId: nodeId,
-        targetSlot: 0,
-        type: 'STRING'
-      })
+    if (!linked) {
+      return processWidgets({ widgetIds: [id], showAdvanced })[0]?.visible
     }
-    return processWidgets({ widgetIds: [id], showAdvanced, inputs })[0]?.visible
+
+    // A linked widget slot lives on the host node; build one so the widget's
+    // slot metadata resolves as connected.
+    const widget = createMockWidget({
+      name: 'w',
+      type: 'text',
+      options,
+      widgetId: id
+    })
+    const { graph, node } = createGraphWithNode([widget], nodeId)
+    node.inputs = [
+      {
+        name: 'w',
+        type: 'STRING',
+        link: toLinkId(1),
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    useLinkStore().registerLink(GRAPH_ID, {
+      id: toLinkId(1),
+      originNodeId: toNodeId(2),
+      originSlot: 0,
+      targetNodeId: nodeId,
+      targetSlot: 0,
+      type: 'STRING'
+    })
+    return processWidgets({
+      widgetIds: [id],
+      showAdvanced,
+      nodeId,
+      rootGraph: graph
+    })[0]?.visible
   }
 
   it('shows normal widgets', () => {

@@ -1,7 +1,6 @@
 import type { TooltipOptions } from 'primevue'
 import { computed } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
@@ -42,6 +41,7 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import type {
   LinkedUpstreamInfo,
@@ -53,7 +53,8 @@ import type { WidgetId } from '@/types/widgetId'
 import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData,
-  getNodeByLocatorId
+  getNodeByLocatorId,
+  subgraphIdFromGraphId
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
@@ -91,7 +92,7 @@ interface WidgetUiCallbacks {
 }
 
 interface ComputeProcessedWidgetsOptions {
-  nodeData: VueNodeData | undefined
+  nodeData: NodeState | undefined
   widgetIds?: readonly WidgetId[]
   graphId: string | undefined
   showAdvanced: boolean
@@ -149,33 +150,53 @@ function buildSlotMetadata(
   return metadata
 }
 
+/** The `{ id, subgraphId }` shape the graph-traversal locator helpers expect. */
+function nodeLocatorData(
+  nodeData: NodeState,
+  rootGraph: LGraph | null
+): { id: NodeId; subgraphId: string | null } {
+  return {
+    id: nodeData.id,
+    subgraphId: subgraphIdFromGraphId(nodeData.graphId, rootGraph?.id)
+  }
+}
+
 function getProcessedNodeExecutionId(
   isGraphReady: boolean,
   rootGraph: LGraph | null,
-  nodeData: VueNodeData
+  nodeData: NodeState
 ): NodeExecutionId | null {
   if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
 
-  return getExecutionIdFromNodeData(rootGraph, nodeData)
+  return getExecutionIdFromNodeData(
+    rootGraph,
+    nodeLocatorData(nodeData, rootGraph)
+  )
 }
 
 function getWidgetNodeLocatorId(
-  nodeData: VueNodeData,
-  bareWidgetId: NodeId | null
+  nodeData: NodeState,
+  bareWidgetId: NodeId | null,
+  rootGraph: LGraph | null
 ): NodeLocatorId | undefined {
   if (!bareWidgetId) return undefined
 
   return (
-    createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId) ?? undefined
+    createNodeLocatorId(
+      subgraphIdFromGraphId(nodeData.graphId, rootGraph?.id),
+      bareWidgetId
+    ) ?? undefined
   )
 }
 
 function getHostNode(
   rootGraph: LGraph | null,
-  nodeData: VueNodeData
+  nodeData: NodeState
 ): LGraphNode | null {
   if (!rootGraph) return null
-  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const locatorId = getLocatorIdFromNodeData(
+    nodeLocatorData(nodeData, rootGraph)
+  )
   return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
 }
 
@@ -323,7 +344,7 @@ function resolveLiveWidgetContext(
 }
 
 interface WidgetProcessingContext {
-  nodeData: VueNodeData
+  nodeData: NodeState
   showAdvanced: boolean
   rootGraph: LGraph | null
   hostNode: LGraphNode | null
@@ -389,7 +410,11 @@ function processWidget(
     controlWidget,
     label: widgetState.label,
     linkedUpstream,
-    nodeLocatorId: getWidgetNodeLocatorId(ctx.nodeData, bareWidgetId),
+    nodeLocatorId: getWidgetNodeLocatorId(
+      ctx.nodeData,
+      bareWidgetId,
+      ctx.rootGraph
+    ),
     options: widgetOptions,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
@@ -473,7 +498,7 @@ export function computeProcessedWidgets({
     ? orderedIds.filter((id) => liveWidgets.has(id))
     : orderedIds
   const slotMetadata = buildSlotMetadata(
-    nodeData.inputs ?? hostNode?.inputs,
+    hostNode?.inputs,
     hostNode?.graph ?? rootGraph,
     graphId,
     nodeData.id
@@ -500,7 +525,7 @@ export function computeProcessedWidgets({
 }
 
 export function useProcessedWidgets(
-  nodeDataGetter: () => VueNodeData | undefined,
+  nodeDataGetter: () => NodeState | undefined,
   widgetIdsGetter: () => readonly WidgetId[] | undefined = () => undefined
 ) {
   const canvasStore = useCanvasStore()
@@ -527,11 +552,14 @@ export function useProcessedWidgets(
 
   const canSelectInputs = computed(() => {
     const nodeData = nodeDataGetter()
+    if (!nodeData) return false
+    const rootGraph = app.isGraphReady ? app.rootGraph : null
+    const hostNode = getHostNode(rootGraph, nodeData)
     return (
       isSelectInputsMode.value &&
-      nodeData?.mode === LGraphEventMode.ALWAYS &&
+      nodeData.mode === LGraphEventMode.ALWAYS &&
       nodeTypeValidForApp(nodeData.type) &&
-      !nodeData.hasErrors
+      !hostNode?.has_errors
     )
   })
 
