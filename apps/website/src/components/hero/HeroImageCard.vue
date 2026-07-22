@@ -21,7 +21,8 @@ const { src, alt, label } = defineProps<{
         :key="src"
         :src
         :alt
-        class="absolute inset-0 size-full object-cover"
+        draggable="false"
+        class="absolute inset-0 size-full object-cover select-none"
         decoding="async"
       />
     </Transition>

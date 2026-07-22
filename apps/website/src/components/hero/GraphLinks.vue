@@ -9,11 +9,12 @@ const { positions } = defineProps<{
 }>()
 
 const links = computed(() => {
+  // The OUTPUT pill draws its own dot, so that wire end gets none here.
   const pairs = [
-    [PORTS.inputOut, PORTS.angleIn],
-    [PORTS.angleOut, PORTS.outputIn]
-  ] as const
-  return pairs.map(([from, to]) => {
+    { from: PORTS.inputOut, to: PORTS.angleIn, dotAtEnd: true },
+    { from: PORTS.angleOut, to: PORTS.outputIn, dotAtEnd: false }
+  ]
+  return pairs.map(({ from, to, dotAtEnd }) => {
     const a = portPoint(from, positions)
     const b = portPoint(to, positions)
     const x1 = a.x * 10
@@ -21,12 +22,11 @@ const links = computed(() => {
     const x2 = b.x * 10
     const y2 = b.y * 10
     const d = Math.max(30, Math.abs(x2 - x1) * 0.5)
+    const dots = [{ cx: x1, cy: y1 }]
+    if (dotAtEnd) dots.push({ cx: x2, cy: y2 })
     return {
       path: `M ${x1} ${y1} C ${x1 + d} ${y1}, ${x2 - d} ${y2}, ${x2} ${y2}`,
-      dots: [
-        { cx: x1, cy: y1 },
-        { cx: x2, cy: y2 }
-      ]
+      dots
     }
   })
 })
