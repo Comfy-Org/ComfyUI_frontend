@@ -70,4 +70,53 @@ test.describe('Customer story detail @smoke', () => {
       '/customers/series-entertainment'
     )
   })
+
+  test('renders a Creative Campus story with its content blocks', async ({
+    page
+  }) => {
+    await page.goto('/customers/xindi-zhang')
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: /The tool that expands my art/i
+      })
+    ).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: 'Category filter' })
+    await expect(nav.getByRole('button', { name: 'INTRO' })).toBeVisible()
+    await expect(nav.getByRole('button', { name: 'AT A GLANCE' })).toBeVisible()
+
+    // At a glance block (AtAGlance component) with its spec rows.
+    await expect(
+      page.getByRole('heading', { name: 'At a glance' })
+    ).toBeVisible()
+    await expect(page.getByText('Program', { exact: true })).toBeVisible()
+
+    // Workflow download button (Download component).
+    await expect(
+      page.getByRole('link', {
+        name: /Download Xindi's style transfer workflow/i
+      })
+    ).toBeVisible()
+  })
+
+  test('emits an Article JSON-LD graph for the story', async ({ page }) => {
+    await page.goto('/customers/series-entertainment')
+
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    const types = graph.map((node) => node['@type'])
+    expect(types.filter((type) => type === 'Organization')).toHaveLength(1)
+    expect(types).toContain('WebPage')
+    expect(types).toContain('BreadcrumbList')
+
+    // The Article headline tracks the visible story title, not a fixed string.
+    const article = graph.find((node) => node['@type'] === 'Article')
+    expect(article?.headline).toMatch(/Series Entertainment/i)
+  })
 })

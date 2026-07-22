@@ -4233,6 +4233,14 @@ const translations = {
     en: 'VIEW ARTICLE',
     'zh-CN': '查看文章'
   },
+  'carousel.previous': {
+    en: 'Previous',
+    'zh-CN': '上一条'
+  },
+  'carousel.next': {
+    en: 'Next',
+    'zh-CN': '下一条'
+  },
   'customers.feedback.quote1': {
     en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it. The community is what makes it so special.',
     'zh-CN':
