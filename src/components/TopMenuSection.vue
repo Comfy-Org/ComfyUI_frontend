@@ -7,12 +7,12 @@
   >
     <div class="flex gap-x-0.5">
       <div
-        :inert="isNodeSelectionModeActive"
-        :aria-hidden="isNodeSelectionModeActive"
+        :inert="isActionBarsHidden"
+        :aria-hidden="isActionBarsHidden"
         :class="
           cn(
             'max-h-16 min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-in-out',
-            isNodeSelectionModeActive && 'max-h-0 -translate-x-8 opacity-0'
+            isActionBarsHidden && 'max-h-0 -translate-x-8 opacity-0'
           )
         "
       >
@@ -21,12 +21,12 @@
 
       <div class="mx-1 flex flex-col items-end gap-1">
         <div
-          :inert="isNodeSelectionModeActive"
-          :aria-hidden="isNodeSelectionModeActive"
+          :inert="isActionBarsHidden"
+          :aria-hidden="isActionBarsHidden"
           :class="
             cn(
               'flex max-h-12 items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out',
-              isNodeSelectionModeActive && 'max-h-0 translate-x-8 opacity-0'
+              isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
             )
           "
         >
@@ -189,8 +189,8 @@ const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const isNodeSelectionModeActive = computed(
-  () => agentNodeSelectionStore.isActive
+const isActionBarsHidden = computed(
+  () => agentNodeSelectionStore.isActionBarsHidden
 )
 const managerState = useManagerState()
 const { flags } = useFeatureFlags()

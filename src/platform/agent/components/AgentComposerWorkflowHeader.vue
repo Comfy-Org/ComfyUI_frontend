@@ -77,7 +77,9 @@ function switchWorkflow(workflow: ComfyWorkflow) {
           :aria-expanded="isOpen"
           @click="isOpen = !isOpen"
         >
-          <i class="icon-[comfy--workflow] size-3.5 shrink-0" />
+          <i
+            class="icon-[comfy--workflow] size-3 shrink-0 text-muted-foreground"
+          />
           <span class="min-w-0 truncate text-left">
             {{ triggerLabel }}
           </span>
@@ -96,7 +98,7 @@ function switchWorkflow(workflow: ComfyWorkflow) {
           :aria-label="t('agent.workflowHeader.dismiss')"
           @click="isDismissed = true"
         >
-          <i class="icon-[lucide--x] size-3" />
+          <i class="icon-[lucide--x] size-4" />
         </Button>
       </div>
     </ComboboxAnchor>

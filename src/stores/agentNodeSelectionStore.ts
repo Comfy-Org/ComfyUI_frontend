@@ -6,6 +6,15 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
+/**
+ * Matches the topbar action bars' `duration-300` transition (TopMenuSection.vue).
+ */
+const ACTION_BARS_TRANSITION_MS = 300
+/**
+ * Matches NodeSelectionModeBanner.vue's `slide-down` transition.
+ */
+const BANNER_TRANSITION_MS = 150
+
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
@@ -27,6 +36,29 @@ export const useAgentNodeSelectionStore = defineStore(
         referencedNodes.value = items.filter(isLGraphNode)
       }
     )
+
+    // Sequence the topbar action bars and the notification banner so they
+    // never animate at the same time: on entry the action bars retract
+    // before the banner drops down; on exit the banner retracts before the
+    // action bars slide back in.
+    const isActionBarsHidden = ref(false)
+    const isBannerVisible = ref(false)
+    let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
+
+    watch(isActive, (active) => {
+      clearTimeout(transitionTimeoutId)
+      if (active) {
+        isActionBarsHidden.value = true
+        transitionTimeoutId = setTimeout(() => {
+          isBannerVisible.value = true
+        }, ACTION_BARS_TRANSITION_MS)
+      } else {
+        isBannerVisible.value = false
+        transitionTimeoutId = setTimeout(() => {
+          isActionBarsHidden.value = false
+        }, BANNER_TRANSITION_MS)
+      }
+    })
 
     function enter() {
       isActive.value = true
@@ -80,6 +112,8 @@ export const useAgentNodeSelectionStore = defineStore(
       isActive,
       referencedNodes,
       graphNodes,
+      isActionBarsHidden,
+      isBannerVisible,
       enter,
       exit,
       addNode,

@@ -12,7 +12,7 @@ const { t } = useI18n()
   <div
     class="pointer-events-none absolute inset-0 flex items-start px-4 pt-2 pb-3 text-sm text-muted-foreground"
   >
-    <p class="line-clamp-2 leading-5">
+    <p class="mt-1 line-clamp-2 leading-5">
       {{ t('agent.placeholderPrefix') }}
       <button
         type="button"

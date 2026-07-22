@@ -16,7 +16,7 @@ const canvasInteractions = useCanvasInteractions()
   >
     <Transition name="slide-down">
       <div
-        v-if="agentNodeSelectionStore.isActive"
+        v-if="agentNodeSelectionStore.isBannerVisible"
         data-testid="node-selection-mode-banner"
         class="pointer-events-auto flex items-center gap-4 rounded-lg border border-l-4 border-interface-stroke border-l-node-component-executing bg-interface-panel-surface px-4 py-2 shadow-interface"
         @wheel="canvasInteractions.forwardEventToCanvas"
