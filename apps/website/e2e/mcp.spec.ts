@@ -124,14 +124,12 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
-  test('FAQ lists nine questions and autolinks the server URL', async ({
-    page
-  }) => {
-    const triggers = page.locator('[id^="faq-trigger-"]')
-    await triggers.first().scrollIntoViewIfNeeded()
-    await expect(triggers).toHaveCount(9)
-
-    await page.getByRole('button', { name: "What's the server URL?" }).click()
+  test('FAQ links the server URL from the answer body', async ({ page }) => {
+    const serverUrl = page
+      .locator('#faq details')
+      .filter({ hasText: "What's the server URL?" })
+    await serverUrl.scrollIntoViewIfNeeded()
+    await serverUrl.locator('summary').click()
     await expect(
       page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
     ).toHaveAttribute('href', MCP_ENDPOINT)

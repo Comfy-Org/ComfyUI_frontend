@@ -6,7 +6,7 @@ import SetupSection from '../../templates/mcp/SetupSection.vue'
 import WhySection from '../../templates/mcp/WhySection.vue'
 import ToolsSection from '../../templates/mcp/ToolsSection.vue'
 import HowItWorksSection from '../../templates/mcp/HowItWorksSection.vue'
-import FAQSection from '../../templates/mcp/FAQSection.vue'
+import FaqCollection from '../../components/faq/FaqCollection.astro'
 import { t } from '../../i18n/translations'
 ---
 
@@ -20,5 +20,5 @@ import { t } from '../../i18n/translations'
   <ToolsSection locale="zh-CN" />
   <HowItWorksSection locale="zh-CN" />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
-  <FAQSection client:visible locale="zh-CN" />
+  <FaqCollection prefix="mcp" headingKey="mcp.faq.heading" locale="zh-CN" />
 </BaseLayout>
