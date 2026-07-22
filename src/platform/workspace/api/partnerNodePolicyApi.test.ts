@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getPartnerNodePolicy,
   getPartnerProviders,
-  PartnerNodePolicyApiError
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 
 const mockFetchApi = vi.fn()
@@ -71,6 +72,33 @@ describe('partnerNodePolicyApi', () => {
     )
 
     await expect(getPartnerNodePolicy()).resolves.toBeNull()
+  })
+
+  it('serializes and normalizes a replacement policy', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({
+        enforcement_enabled: false,
+        providers: [{ provider_id: 'openai', enabled: true }]
+      })
+    )
+
+    await expect(
+      updatePartnerNodePolicy({
+        enforcementEnabled: false,
+        providers: [{ providerId: 'openai', enabled: true }]
+      })
+    ).resolves.toEqual({
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: true }]
+    })
+    expect(mockFetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enforcement_enabled: false,
+        providers: [{ provider_id: 'openai', enabled: true }]
+      })
+    })
   })
 
   it('preserves response status codes for policy decisions', async () => {

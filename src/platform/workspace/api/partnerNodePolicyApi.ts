@@ -89,3 +89,24 @@ export async function getPartnerNodePolicy(): Promise<PartnerNodePolicy | null> 
     partnerNodePolicyResponseSchema.parse(await response.json())
   )
 }
+
+export async function updatePartnerNodePolicy(
+  policy: PartnerNodePolicy
+): Promise<PartnerNodePolicy> {
+  const response = await api.fetchApi('/workspace/provider-policy', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      enforcement_enabled: policy.enforcementEnabled,
+      providers: policy.providers.map(({ providerId, enabled }) => ({
+        provider_id: providerId,
+        enabled
+      }))
+    })
+  })
+  if (!response.ok) throwResponseError(response)
+
+  return normalizePolicy(
+    partnerNodePolicyResponseSchema.parse(await response.json())
+  )
+}
