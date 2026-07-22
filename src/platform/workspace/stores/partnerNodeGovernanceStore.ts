@@ -1,5 +1,12 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch,
+  watchEffect
+} from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -100,6 +107,17 @@ export const usePartnerNodeGovernanceStore = defineStore(
 
         if (legacyHiddenNodeTypes.delete(nodeDef.name)) {
           nodeType.skip_list = nodeDef.dev_only && !showDevOnly
+        }
+      }
+    })
+
+    onScopeDispose(() => {
+      nodeDefStore.unregisterNodeDefFilter(DISCOVERY_FILTER_ID)
+      for (const nodeName of legacyHiddenNodeTypes) {
+        const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
+        const nodeType = LiteGraph.registered_node_types[nodeName]
+        if (nodeDef && nodeType) {
+          nodeType.skip_list = nodeDef.dev_only && !nodeDefStore.showDevOnly
         }
       }
     })

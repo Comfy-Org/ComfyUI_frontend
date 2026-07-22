@@ -203,6 +203,35 @@ describe('partnerNodeGovernanceStore', () => {
     expect(LegacyGovernedNode.skip_list).toBe(false)
   })
 
+  it('removes discovery restrictions when disposed', async () => {
+    class LegacyGovernedNode extends LGraphNode {}
+    LiteGraph.registered_node_types.LegacyGovernedNode = LegacyGovernedNode
+    useNodeDefStore().addNodeDef(nodeDef('LegacyGovernedNode'))
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      nodes: { LegacyGovernedNode: false }
+    } satisfies PartnerNodePolicy)
+    store = await createLoadedStore()
+    const nodeDefStore = useNodeDefStore()
+
+    expect(LegacyGovernedNode.skip_list).toBe(true)
+    expect(
+      nodeDefStore.nodeDefFilters.some(
+        ({ id }) => id === 'workspace.partner-node-governance'
+      )
+    ).toBe(true)
+
+    store.$dispose()
+    store = undefined
+
+    expect(LegacyGovernedNode.skip_list).toBe(false)
+    expect(
+      nodeDefStore.nodeDefFilters.some(
+        ({ id }) => id === 'workspace.partner-node-governance'
+      )
+    ).toBe(false)
+  })
+
   it('fails closed for a 503 from an enforcing workspace', async () => {
     mockGetPartnerNodePolicy.mockRejectedValue(
       new PartnerNodePolicyApiError(503, 'Service Unavailable')
