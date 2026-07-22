@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -158,6 +158,82 @@ describe('PartnerNodeAccessPanel', () => {
     expect(screen.getByText('Create video')).toBeTruthy()
   })
 
+  it('sorts providers from the Provider column header', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'acme', enabled: true }
+      ]
+    }
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    renderComponent()
+
+    const table = screen.getByRole('table', {
+      name: 'Partner node providers'
+    })
+    const providerHeader = within(table).getByRole('columnheader', {
+      name: 'Provider'
+    })
+    expect(providerHeader).toHaveAttribute('aria-sort', 'ascending')
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent('Acme')
+
+    await user.click(within(providerHeader).getByRole('button'))
+
+    expect(providerHeader).toHaveAttribute('aria-sort', 'descending')
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent(
+      'OpenAI (inc. Sora)'
+    )
+  })
+
+  it('sorts providers by enabled node count', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'acme', enabled: true }
+      ]
+    }
+    mockProviders.value = [
+      ...mockProviders.value,
+      {
+        id: 'acme',
+        displayName: 'Acme',
+        nodeCategories: ['Acme']
+      }
+    ]
+    mockNodeDefsByName.value.AcmeNode = nodeDef(
+      'AcmeNode',
+      'Enhance image',
+      'partner/image/Acme'
+    )
+    renderComponent()
+
+    const table = screen.getByRole('table', {
+      name: 'Partner node providers'
+    })
+    const nodesHeader = within(table).getByRole('columnheader', {
+      name: 'Nodes'
+    })
+    expect(nodesHeader).toHaveAttribute('aria-sort', 'none')
+
+    await user.click(within(nodesHeader).getByRole('button'))
+
+    expect(nodesHeader).toHaveAttribute('aria-sort', 'descending')
+    expect(within(table).getAllByRole('row')[1]).toHaveTextContent(
+      'OpenAI (inc. Sora)'
+    )
+  })
+
   it('searches both provider and node names', async () => {
     const user = userEvent.setup()
     mockProviders.value = [
@@ -229,6 +305,16 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBe('false')
   })
 
+  it('uses checkbox-backed switches for provider access', () => {
+    renderComponent()
+
+    expect(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    ).toHaveAttribute('type', 'checkbox')
+  })
+
   it('explains stored provider settings while access is unrestricted', () => {
     mockPolicy.value = {
       enforcementEnabled: false,
@@ -249,21 +335,14 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBe('false')
   })
 
-  it('confirms restriction before disabling a provider from unrestricted mode', async () => {
-    const user = userEvent.setup()
+  it('disables provider controls while access is unrestricted', () => {
     renderComponent()
 
-    await user.click(
+    expect(
       screen.getByRole('switch', {
         name: 'Set access for OpenAI (inc. Sora)'
       })
-    )
-
-    expect(mockSetProviderEnabled).not.toHaveBeenCalled()
-    const options = mockShowConfirmDialog.mock.calls[0][0]
-    expect(options.headerProps.title).toBe('Restrict access to partner nodes?')
-    await options.footerProps.onConfirm()
-    expect(mockSetProviderEnabled).toHaveBeenCalledWith('openai', false)
+    ).toBeDisabled()
   })
 
   it('saves enable-all changes immediately', async () => {
@@ -278,6 +357,10 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('surfaces save failures', async () => {
     const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
     mockSetProviderEnabled.mockRejectedValueOnce(new Error('Save failed'))
     renderComponent()
 
@@ -286,8 +369,6 @@ describe('PartnerNodeAccessPanel', () => {
         name: 'Set access for OpenAI (inc. Sora)'
       })
     )
-    const options = mockShowConfirmDialog.mock.calls[0][0]
-    await options.footerProps.onConfirm()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Partner node access couldn't be updated. Try again."

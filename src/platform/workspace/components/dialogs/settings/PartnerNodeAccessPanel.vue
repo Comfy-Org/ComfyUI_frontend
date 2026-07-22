@@ -5,16 +5,13 @@
     aria-labelledby="partner-node-access-title"
   >
     <div
-      class="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-lg border border-interface-stroke bg-secondary-background px-4 py-3"
+      class="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl bg-secondary-background px-4 py-3"
     >
       <div class="max-w-2xl">
-        <h2
-          id="partner-node-access-title"
-          class="text-sm font-semibold text-base-foreground"
-        >
+        <h2 id="partner-node-access-title" class="text-sm text-base-foreground">
           {{ $t('workspacePanel.partnerNodes.title') }}
         </h2>
-        <p v-if="isPolicyLoaded" class="mt-1 text-sm text-muted-foreground">
+        <p v-if="isPolicyLoaded" class="mt-2 text-sm text-muted-foreground">
           {{
             $t(
               isRestricted
@@ -30,7 +27,7 @@
         orientation="horizontal"
         :disabled="isSaving || !canEditPolicy"
         :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
-        class="flex rounded-lg bg-secondary-background p-1"
+        class="flex w-48 gap-1 rounded-lg bg-secondary-background-hover p-1"
         @update:model-value="requestEnforcementMode($event === 'restricted')"
       >
         <RadioGroupItem
@@ -38,8 +35,9 @@
           :class="
             cn(
               buttonVariants({ variant: 'textonly' }),
-              'px-3',
-              !isRestricted && 'bg-base-background hover:bg-base-background'
+              'flex-1 px-2',
+              !isRestricted &&
+                'bg-base-foreground text-base-background hover:bg-base-foreground'
             )
           "
         >
@@ -50,8 +48,9 @@
           :class="
             cn(
               buttonVariants({ variant: 'textonly' }),
-              'px-3',
-              isRestricted && 'bg-base-background hover:bg-base-background'
+              'flex-1 px-2',
+              isRestricted &&
+                'bg-base-foreground text-base-background hover:bg-base-foreground'
             )
           "
         >
@@ -102,7 +101,8 @@
         <div class="flex items-center gap-2">
           <Button
             v-if="!allProvidersEnabled"
-            variant="secondary"
+            variant="textonly"
+            size="lg"
             :loading="pendingBulkAction === 'enable'"
             :disabled="isSaving || !canEditPolicy"
             @click="handleEnableAll"
@@ -111,7 +111,8 @@
           </Button>
           <Button
             v-else
-            variant="secondary"
+            variant="textonly"
+            size="lg"
             :disabled="isSaving || !canEditPolicy"
             @click="confirmDisableAll"
           >
@@ -131,34 +132,98 @@
       <div
         role="table"
         :aria-label="$t('workspacePanel.partnerNodes.tableLabel')"
-        class="min-h-0 overflow-auto rounded-2xl border border-interface-stroke"
+        :aria-disabled="!isRestricted"
+        :inert="!isRestricted"
+        :class="
+          cn(
+            'min-h-0 overflow-auto rounded-2xl border border-interface-stroke px-4 py-3',
+            !isRestricted && 'pointer-events-none opacity-50'
+          )
+        "
       >
         <div
           role="row"
-          class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke px-4 py-3 text-xs font-medium text-muted-foreground lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
+          class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 px-2 text-sm text-muted-foreground lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
         >
-          <span role="columnheader">
-            {{ $t('workspacePanel.partnerNodes.columns.provider') }}
+          <span
+            role="columnheader"
+            :aria-sort="sortField === 'provider' ? sortDirection : 'none'"
+          >
+            <Button
+              variant="textonly"
+              size="unset"
+              class="gap-2 p-0 text-sm font-normal text-muted-foreground"
+              @click="sortBy('provider')"
+            >
+              {{ $t('workspacePanel.partnerNodes.columns.provider') }}
+              <i
+                :class="
+                  cn(
+                    'size-4 transition-transform',
+                    sortField === 'provider'
+                      ? 'icon-[lucide--arrow-down]'
+                      : 'icon-[lucide--arrow-up-down]',
+                    sortField === 'provider' &&
+                      sortDirection === 'descending' &&
+                      'rotate-180'
+                  )
+                "
+                aria-hidden="true"
+              />
+            </Button>
           </span>
-          <span role="columnheader" class="hidden lg:block">
-            {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
+          <span
+            role="columnheader"
+            :aria-sort="sortField === 'nodes' ? sortDirection : 'none'"
+            class="hidden lg:block"
+          >
+            <Button
+              variant="textonly"
+              size="unset"
+              class="gap-2 p-0 text-sm font-normal text-muted-foreground"
+              @click="sortBy('nodes')"
+            >
+              {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
+              <i
+                :class="
+                  cn(
+                    'size-4 transition-transform',
+                    sortField === 'nodes'
+                      ? 'icon-[lucide--arrow-down]'
+                      : 'icon-[lucide--arrow-up-down]',
+                    sortField === 'nodes' &&
+                      sortDirection === 'descending' &&
+                      'rotate-180'
+                  )
+                "
+                aria-hidden="true"
+              />
+            </Button>
           </span>
-          <span role="columnheader" class="hidden lg:block">
-            {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
+          <span role="columnheader" aria-sort="none" class="hidden lg:block">
+            <span class="flex items-center gap-2">
+              {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
+              <i
+                class="icon-[lucide--arrow-up-down] size-4"
+                aria-hidden="true"
+              />
+            </span>
           </span>
           <span role="columnheader" />
         </div>
 
-        <template v-for="provider in filteredProviders" :key="provider.id">
+        <div aria-hidden="true" class="my-2 border-t border-border-default" />
+
+        <template v-for="provider in sortedProviders" :key="provider.id">
           <div
             role="row"
-            class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke px-4 py-2 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
+            class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
           >
             <div role="cell" class="min-w-0">
               <Button
                 variant="textonly"
                 size="unset"
-                class="w-full justify-start p-2 text-left"
+                class="h-10 w-full justify-start gap-2 p-0 text-left font-normal hover:bg-transparent"
                 :aria-expanded="isProviderExpanded(provider.id)"
                 @click="toggleExpanded(provider.id)"
               >
@@ -166,11 +231,27 @@
                   :class="
                     cn(
                       'size-4 shrink-0 transition-transform',
-                      isProviderExpanded(provider.id) && 'rotate-90',
-                      'icon-[lucide--chevron-right]'
+                      'icon-[lucide--chevron-down]',
+                      !isProviderExpanded(provider.id) && '-rotate-90'
                     )
                   "
+                  aria-hidden="true"
                 />
+                <span
+                  class="flex size-5 shrink-0 items-center justify-center rounded-full bg-interface-panel-hover-surface"
+                  aria-hidden="true"
+                >
+                  <i
+                    :class="
+                      cn(
+                        getProviderIcon(
+                          provider.nodeCategories[0] ?? provider.displayName
+                        ),
+                        'size-3'
+                      )
+                    "
+                  />
+                </span>
                 <span class="truncate">{{ provider.displayName }}</span>
               </Button>
             </div>
@@ -191,22 +272,21 @@
             >
               --
             </span>
-            <div role="cell" class="flex items-center justify-end">
-              <SwitchRoot
+            <div
+              role="cell"
+              class="flex size-8 items-center justify-end justify-self-end"
+            >
+              <ToggleSwitch
                 :model-value="provider.enabled"
-                :disabled="isSaving || !canEditPolicy"
+                :disabled="!isRestricted || isSaving || !canEditPolicy"
                 :aria-label="
                   $t('workspacePanel.partnerNodes.toggleProvider', {
                     provider: provider.displayName
                   })
                 "
-                class="focus-visible:ring-ring relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full bg-secondary-background outline-hidden transition-colors focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary-background"
+                class="transition-transform active:scale-90"
                 @update:model-value="handleProviderChange(provider.id, $event)"
-              >
-                <SwitchThumb
-                  class="block size-4 translate-x-0.5 rounded-full bg-base-foreground transition-transform data-[state=checked]:translate-x-4"
-                />
-              </SwitchRoot>
+              />
             </div>
           </div>
 
@@ -216,9 +296,9 @@
               : []"
             :key="node.id"
             role="row"
-            class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke bg-secondary-background/40 px-4 py-3 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
+            class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 border-b border-secondary-background bg-secondary-background/40 px-2 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
           >
-            <span role="cell" class="truncate pl-10 text-muted-foreground">
+            <span role="cell" class="truncate pl-17 text-muted-foreground">
               {{ node.name }}
             </span>
             <span role="cell" class="hidden lg:block" />
@@ -230,7 +310,7 @@
         </template>
 
         <div
-          v-if="filteredProviders.length === 0"
+          v-if="sortedProviders.length === 0"
           class="flex min-h-40 items-center justify-center p-6 text-sm text-muted-foreground"
         >
           {{ $t('workspacePanel.partnerNodes.noResults') }}
@@ -245,12 +325,8 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  RadioGroupItem,
-  RadioGroupRoot,
-  SwitchRoot,
-  SwitchThumb
-} from 'reka-ui'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
@@ -261,7 +337,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getProviderName } from '@/utils/categoryUtil'
+import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const governanceStore = usePartnerNodeGovernanceStore()
@@ -284,6 +360,11 @@ const searchQuery = ref('')
 const expandedProviderIds = ref(new Set<string>())
 const pendingBulkAction = ref<'enable' | null>(null)
 const saveError = ref(false)
+type SortDirection = 'ascending' | 'descending'
+type SortField = 'provider' | 'nodes'
+
+const sortField = ref<SortField>('provider')
+const sortDirection = ref<SortDirection>('ascending')
 
 const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
@@ -340,6 +421,30 @@ const filteredProviders = computed(() => {
         displayName.toLocaleLowerCase().includes(query) || nodes.length > 0
     )
 })
+
+const sortedProviders = computed(() =>
+  [...filteredProviders.value].sort((a, b) => {
+    const result =
+      sortField.value === 'provider'
+        ? a.displayName.localeCompare(b.displayName)
+        : Number(a.enabled) * a.nodes.length -
+          Number(b.enabled) * b.nodes.length
+    const directedResult =
+      sortDirection.value === 'ascending' ? result : -result
+    return directedResult || a.displayName.localeCompare(b.displayName)
+  })
+)
+
+function sortBy(field: SortField) {
+  if (sortField.value === field) {
+    sortDirection.value =
+      sortDirection.value === 'ascending' ? 'descending' : 'ascending'
+    return
+  }
+
+  sortField.value = field
+  sortDirection.value = field === 'provider' ? 'ascending' : 'descending'
+}
 
 function toggleExpanded(providerId: string) {
   const nextIds = new Set(expandedProviderIds.value)
