@@ -36,7 +36,7 @@ const clients: McpClient[] = [
     step: t('mcp.setup.clients.claudeDesktop.step', locale),
     manualTitle: t('mcp.setup.clients.claudeDesktop.manualTitle', locale),
     showAgentCard: false,
-    video: '/videos/mcp/setup-claude-desktop-v2.mp4'
+    video: 'https://media.comfy.org/website/mcp/setup-claude-desktop-v2.mp4'
   },
   {
     id: 'claude-code',
@@ -51,7 +51,7 @@ const clients: McpClient[] = [
     step: t('mcp.setup.clients.codex.step', locale),
     command: `codex mcp add comfy-cloud --url ${externalLinks.mcpEndpoint}`,
     showAgentCard: false,
-    video: '/videos/mcp/setup-codex-oauth-v2.mp4'
+    video: 'https://media.comfy.org/website/mcp/setup-codex-oauth-v2.mp4'
   },
   {
     id: 'cursor',
