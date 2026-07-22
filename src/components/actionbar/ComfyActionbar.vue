@@ -320,11 +320,9 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto z-1300',
     isDragging.value && 'pointer-events-none select-none',
-    // Floating, the controls carry their own surfaces; a wrapper around them
-    // just boxes the group. It only positions and stacks.
     isDocked.value
       ? 'static border-none bg-transparent p-0'
-      : 'fixed border-none bg-transparent shadow-none'
+      : ['fixed shadow-interface', 'border-interface-stroke']
   )
 )
 </script>
