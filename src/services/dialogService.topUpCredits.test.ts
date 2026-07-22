@@ -5,6 +5,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
@@ -105,6 +107,7 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('top-up-credits')
+    expect(args.component).toBe(TopUpCreditsDialogContentLegacy)
   })
 
   it('routes a member of an inactive team to the subscription-required flow, not the credits notice', async () => {
