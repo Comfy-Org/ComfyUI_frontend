@@ -148,14 +148,22 @@ export function useSecretForm(options: UseSecretFormOptions) {
     return providerInfoById.value.get(form.provider)?.credential_options ?? []
   })
 
-  // How the selected provider's credential is entered: the selected credential
-  // class wins; otherwise the provider's first advertised option; otherwise a
-  // single-line secret.
+  // How the credential is entered.
   //
-  // Edit mode intentionally follows the same path here. Deriving the input from
-  // the *stored* credential class (which the server treats as immutable on
-  // update) is tracked separately.
+  // Editing: the stored secret's `credential_type` wins. The server validates an
+  // updated value against the stored class (immutable on update), so the
+  // rendered input and its client-side validation must match what is stored.
+  //
+  // Creating: the selected credential class wins, else the provider's first
+  // advertised option, else a single-line secret.
   const selectedInputType = computed<SecretInputType>(() => {
+    const storedCredentialType =
+      mode === 'edit' ? toValue(secretRef)?.credential_type : undefined
+    if (storedCredentialType) {
+      return storedCredentialType === 'gcp_service_account'
+        ? 'json_file'
+        : 'text'
+    }
     const options = credentialOptions.value
     if (!options.length) return 'text'
     const selected = options.find(
