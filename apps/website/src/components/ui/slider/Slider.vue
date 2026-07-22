@@ -36,8 +36,6 @@ const forwarded = useForwardPropsEmits(
   emits
 )
 
-// Single source of truth for tick geometry, shared by the on-track dots and the
-// optional #tick label slot so the two can never drift apart.
 function tickLeft(i: number): string {
   return `calc(8px + ${(i - 1) / (ticks! - 1)} * (100% - 16px))`
 }
@@ -49,9 +47,7 @@ function tickValue(i: number): number {
 function isTickActive(i: number): boolean {
   const value = modelValue?.[0]
   if (value == null || ticks == null || ticks <= 1) return false
-  // Map the current value to its nearest tick index and compare as integers,
-  // avoiding floating-point equality on the divide-then-multiply tick value
-  // (e.g. for 7 ticks, tickValue(2) === 0.9999999999999999, not 1).
+  // Compare nearest tick indices, not raw values, to dodge float error (0.9999… vs 1).
   const activeIndex =
     max === min ? 0 : Math.round(((value - min) / (max - min)) * (ticks - 1))
   return i - 1 === activeIndex

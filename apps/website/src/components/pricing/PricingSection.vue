@@ -4,7 +4,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
-import { planFeatures, pricingPlans } from '../../data/pricingPlans'
+import { pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
@@ -26,14 +26,10 @@ const { locale = 'en', headingLevel = 'h1' } = defineProps<{
 
 const selectedBillingPeriod = ref<BillingCycle>('yearly')
 
-// reka-ui's single toggle group emits undefined when the active item is
-// clicked again; exactly one billing cycle must stay selected, so ignore it.
 const billingPeriod = computed({
   get: () => selectedBillingPeriod.value,
   set: (value: BillingCycle | undefined) => {
-    if (value) {
-      selectedBillingPeriod.value = value
-    }
+    if (value) selectedBillingPeriod.value = value
   }
 })
 
@@ -44,7 +40,6 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   return plan.priceKey
 }
 
-// Only the yearly view strikes the (monthly) list price.
 function originalPriceFor(plan: PricingPlan): string | undefined {
   return billingPeriod.value === 'yearly' &&
     plan.yearlyPriceKey &&
@@ -53,26 +48,21 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
     : undefined
 }
 
-function yearlyTotalFor(plan: PricingPlan): string | undefined {
-  return plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
-}
-
-// Derive each plan's display values once so the template doesn't call the
-// helpers twice (and avoids the non-null assertion on the price key).
 const planCards = computed(() =>
   pricingPlans.map((plan) => ({
     plan,
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
-    yearlyTotal: yearlyTotalFor(plan),
-    features: planFeatures(plan, false, billingPeriod.value)
+    yearlyTotal: plan.yearlyTotalKey
+      ? t(plan.yearlyTotalKey, locale)
+      : undefined,
+    features: plan.features
   }))
 )
 </script>
 
 <template>
   <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
-    <!-- Header -->
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <component
         :is="headingLevel"
@@ -108,7 +98,6 @@ const planCards = computed(() =>
       </ToggleGroup>
     </div>
 
-    <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: stacked cards -->
     <div
       :class="
         cn(
@@ -128,7 +117,6 @@ const planCards = computed(() =>
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
       >
-        <!-- Label + badge -->
         <div class="flex items-center gap-4">
           <PricingPlanLabel
             :label="t(plan.labelKey, locale)"
@@ -139,7 +127,6 @@ const planCards = computed(() =>
           >
         </div>
 
-        <!-- Price -->
         <PricingPrice
           v-if="priceKey"
           :price="t(priceKey, locale)"
@@ -150,12 +137,10 @@ const planCards = computed(() =>
           :locale
         />
 
-        <!-- Features -->
         <div v-if="features.length" class="mt-8">
           <PricingPlanFeatureList :features="[{ features }]" :locale />
         </div>
 
-        <!-- Credits -->
         <PricingCredits
           v-if="plan.creditsKey"
           :credits="t(plan.creditsKey, locale)"
@@ -164,7 +149,6 @@ const planCards = computed(() =>
           :locale
         />
 
-        <!-- CTA -->
         <div class="mt-8 flex self-end">
           <Button
             :href="plan.ctaHref(billingPeriod)"
@@ -185,7 +169,6 @@ const planCards = computed(() =>
       />
     </div>
 
-    <!-- Footnote -->
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">
       {{ t('pricing.footnote', locale) }}
     </p>

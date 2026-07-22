@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import Accordion from '../ui/accordion/Accordion.vue'
@@ -52,7 +53,6 @@ const parsedFaqs = computed(() =>
 <template>
   <section :id class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
-      <!-- Left heading -->
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
@@ -61,7 +61,6 @@ const parsedFaqs = computed(() =>
         </h2>
       </div>
 
-      <!-- Right FAQ list -->
       <Accordion type="multiple" class="flex-1">
         <AccordionItem
           v-for="(faq, index) in parsedFaqs"
@@ -70,7 +69,7 @@ const parsedFaqs = computed(() =>
         >
           <AccordionTrigger
             :id="`faq-trigger-${faq.id}`"
-            :class="index === 0 ? 'pt-0' : ''"
+            :class="cn(index === 0 && 'pt-0')"
           >
             {{ faq.question }}
           </AccordionTrigger>

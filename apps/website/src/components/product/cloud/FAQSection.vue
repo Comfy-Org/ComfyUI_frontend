@@ -8,7 +8,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <FAQSection
-    :locale="locale"
+    :locale
     heading-key="cloud.faq.heading"
     faq-prefix="cloud.faq"
     :faq-count="12"

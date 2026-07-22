@@ -45,7 +45,6 @@ function toggle(index: number) {
 <template>
   <section class="max-w-9xl mx-auto px-4 py-24 md:px-20 md:py-40">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
-      <!-- Left heading -->
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
@@ -54,7 +53,6 @@ function toggle(index: number) {
         </h2>
       </div>
 
-      <!-- Right FAQ list -->
       <div class="flex-1">
         <div
           v-for="(faq, index) in faqs"

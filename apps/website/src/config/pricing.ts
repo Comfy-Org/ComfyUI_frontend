@@ -36,17 +36,16 @@ export interface PricingOffer {
   url: string
 }
 
-// Shared offer builder: the pricing page marks up list prices, the education
-// page marks up the discounted student/educator prices. Only plain USD amounts
-// become offers so the JSON-LD Offer always carries a concrete numeric price.
-function offersFrom(locale: Locale, education: boolean): PricingOffer[] {
+function offersFrom(
+  locale: Locale,
+  priceKeyOf: (tier: PricingTier) => TranslationKey
+): PricingOffer[] {
   return tiers.flatMap((tier) => {
-    const priceKey = education ? tier.eduPriceKey : tier.priceKey
-    const display = t(priceKey, locale).trim()
+    const display = t(priceKeyOf(tier), locale).trim()
     const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
     if (!match) {
       console.warn(
-        `${education ? 'educationOffers' : 'pricingOffers'}: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
+        `pricingOffers: skipping tier "${tier.slug}" (${locale}) — price "${display}" is not a plain USD amount`
       )
       return []
     }
@@ -61,9 +60,9 @@ function offersFrom(locale: Locale, education: boolean): PricingOffer[] {
 }
 
 export function pricingOffers(locale: Locale): PricingOffer[] {
-  return offersFrom(locale, false)
+  return offersFrom(locale, (tier) => tier.priceKey)
 }
 
 export function educationOffers(locale: Locale): PricingOffer[] {
-  return offersFrom(locale, true)
+  return offersFrom(locale, (tier) => tier.eduPriceKey)
 }
