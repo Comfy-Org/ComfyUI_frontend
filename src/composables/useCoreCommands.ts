@@ -36,9 +36,6 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -706,30 +703,6 @@ export function useCoreCommands(): ComfyCommand[] {
           node.setSize([optimalSize[0], optimalSize[1]])
         })
         app.canvas.setDirty(true, true)
-      }
-    },
-    {
-      id: 'Comfy.Node.Resize',
-      icon: 'pi pi-arrows-alt',
-      label: 'Resize Node',
-      versionAdded: '1.46.0',
-      function: (metadata?: Record<string, unknown>) => {
-        const nodeId = metadata?.nodeId
-        const width = metadata?.width
-        const height = metadata?.height
-        if (
-          (typeof nodeId !== 'string' && typeof nodeId !== 'number') ||
-          typeof width !== 'number' ||
-          typeof height !== 'number' ||
-          !Number.isFinite(width) ||
-          !Number.isFinite(height)
-        ) {
-          return
-        }
-
-        const mutations = useLayoutMutations()
-        mutations.setSource(LayoutSource.External)
-        mutations.resizeNode(toNodeId(nodeId), { width, height })
       }
     },
     {

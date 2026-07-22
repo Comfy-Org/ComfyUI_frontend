@@ -7,10 +7,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as DistributionModule from '@/platform/distribution/types'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { toNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
@@ -432,67 +429,6 @@ describe('useCoreCommands', () => {
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
-    })
-  })
-
-  describe('Comfy.Node.Resize command', () => {
-    function findCommand(id: string) {
-      return useCoreCommands().find((cmd) => cmd.id === id)!
-    }
-
-    const NODE = toNodeId('7')
-
-    beforeEach(() => {
-      layoutStore.initializeFromLiteGraph([
-        { id: NODE, pos: [0, 0], size: [100, 50] }
-      ])
-    })
-
-    it('is registered', () => {
-      expect(findCommand('Comfy.Node.Resize')).toBeDefined()
-    })
-
-    it('resizes the node in layoutStore with the External source', async () => {
-      await findCommand('Comfy.Node.Resize').function({
-        nodeId: '7',
-        width: 250,
-        height: 180
-      })
-
-      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual({
-        width: 250,
-        height: 180
-      })
-      expect(layoutStore.getCurrentSource()).toBe(LayoutSource.External)
-    })
-
-    it.for([
-      { name: 'missing width', metadata: { nodeId: '7', height: 180 } },
-      { name: 'missing height', metadata: { nodeId: '7', width: 250 } },
-      {
-        name: 'invalid nodeId type',
-        metadata: { nodeId: {}, width: 250, height: 180 }
-      },
-      {
-        name: 'non-number width',
-        metadata: { nodeId: '7', width: '250', height: 180 }
-      },
-      {
-        name: 'NaN width',
-        metadata: { nodeId: '7', width: Number.NaN, height: 180 }
-      },
-      {
-        name: 'infinite height',
-        metadata: { nodeId: '7', width: 250, height: Number.POSITIVE_INFINITY }
-      }
-    ])('is a no-op for invalid metadata: $name', async ({ metadata }) => {
-      const sizeBefore = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
-      const sourceBefore = layoutStore.getCurrentSource()
-
-      await findCommand('Comfy.Node.Resize').function(metadata)
-
-      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(sizeBefore)
-      expect(layoutStore.getCurrentSource()).toBe(sourceBefore)
     })
   })
 

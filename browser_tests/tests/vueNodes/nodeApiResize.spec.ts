@@ -3,15 +3,20 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
+import type { ComfyExtensionApi } from '@/extension-api'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 /**
- * Exercises the first slice of the stable node API: an extension resizes a node
- * by id through `window.comfyNodeApi.getNode(id).setSize(w, h)`, which dispatches
- * the `Comfy.Node.Resize` command → `layoutStore`. Asserts the Vue node reflows
- * to the new height, proving the API drives the real layout path (not just the
- * canvas). Sanctioned replacement for the legacy `node.size[1] = h` mutation.
+ * Exercises the first slice of the v2 stable node API: an extension registers
+ * with `defineNodeExtension` and, in `nodeCreated`, resizes the delivered
+ * `NodeHandle` via `node.setSize([w, h])`. The handle routes the mutation
+ * through the layout store (the single source of truth), so the Vue node reflows
+ * to the new height. Proves the sanctioned replacement for `node.size[1] = h`
+ * drives the real layout path — with the handle delivered by the extension
+ * lifecycle, not fetched by id from a global.
  */
 test.describe(
-  'Node API — setSize resize',
+  'Node API — defineNodeExtension setSize',
   { tag: ['@vue-nodes', '@node'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
@@ -21,32 +26,39 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('setSize grows the Vue node through layoutStore', async ({
+    test('setSize grows the Vue node through the nodeCreated handle', async ({
       comfyPage
     }) => {
-      const nodeId = await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-
       const initial = await node.boundingBox()
       if (!initial) throw new Error('KSampler node bounding box not found')
 
-      await comfyPage.page.evaluate(async (id) => {
-        const nodeApi = (
-          window as typeof window & {
-            comfyNodeApi?: {
-              getNode(nodeId: string): {
-                setSize(width: number, height: number): Promise<void>
-              }
-            }
+      await comfyPage.page.evaluate(() => {
+        const api = (
+          window as typeof window & { comfyExtensionApi?: ComfyExtensionApi }
+        ).comfyExtensionApi
+        if (!api) throw new Error('window.comfyExtensionApi is not installed')
+        api.defineNodeExtension({
+          name: 'e2e.node-api-resize',
+          nodeTypes: ['KSampler'],
+          nodeCreated(handle) {
+            // Grow well above any default content-minimum so the delta is
+            // unambiguous at any canvas scale.
+            handle.setSize([400, 1000])
           }
-        ).comfyNodeApi
-        if (!nodeApi) throw new Error('window.comfyNodeApi is not installed')
-        // Target a height well above any default node's content-minimum so the
-        // grow is unambiguous at any canvas scale.
-        await nodeApi.getNode(id).setSize(400, 1000)
-      }, nodeId)
+        })
+      })
 
-      await expect.poll(node.pollHeight).toBeGreaterThan(initial.height)
+      // Re-create the graph's nodes so `nodeCreated` fires for the existing
+      // KSampler now that the extension is registered.
+      const workflow = await comfyPage.page.evaluate(
+        () => window.app!.graph.serialize() as ComfyWorkflowJSON
+      )
+      await comfyPage.workflow.loadGraphData(workflow)
+      await comfyPage.canvasOps.resetView()
+
+      const resized = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await expect.poll(resized.pollHeight).toBeGreaterThan(initial.height)
     })
   }
 )
