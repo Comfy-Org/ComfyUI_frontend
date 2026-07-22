@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count}개 모델",
     "noResults": "템플릿을 찾을 수 없습니다",
     "noResultsHint": "검색 또는 필터를 조정해 보세요",
-    "resetFilters": "필터 초기화",
     "resultsCount": "{total}개 중 {count}개 템플릿 표시",
     "runsOnFilter": "실행 환경",
     "runsOnSelected": "{count}회 실행됨",

@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count} Model",
     "noResults": "Şablon bulunamadı",
     "noResultsHint": "Aramanızı veya filtrelerinizi ayarlamayı deneyin",
-    "resetFilters": "Filtreleri Temizle",
     "resultsCount": "{total} şablondan {count} tanesi gösteriliyor",
     "runsOnFilter": "Üzerinde çalışır",
     "runsOnSelected": "{count} Üzerinde Çalışır",
