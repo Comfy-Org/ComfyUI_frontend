@@ -45,43 +45,49 @@
       </div>
       <div
         v-else-if="needsEduVerification"
-        class="flex flex-col items-center gap-2"
+        class="flex w-full max-w-xl items-center gap-3 rounded-xl border border-border-default bg-base-background p-3 pl-4 text-left max-sm:flex-col max-sm:items-stretch"
       >
-        <div
-          class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
-        >
-          {{
-            $t('subscription.eduVerifyHeader', {
-              percent: EDU_MAX_DISCOUNT_PERCENT
-            })
-          }}
+        <i
+          class="pi pi-graduation-cap shrink-0 text-xl text-base-foreground max-sm:hidden"
+        />
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span class="text-sm font-semibold text-base-foreground">
+            {{ $t('subscription.eduVerifyTitle') }}
+          </span>
+          <span class="text-xs text-muted-foreground">
+            {{
+              $t('subscription.eduVerifyHeader', {
+                percent: EDU_MAX_DISCOUNT_PERCENT
+              })
+            }}
+          </span>
+          <span v-if="verifyStatusKey" class="text-xs text-error">
+            {{ $t(verifyStatusKey) }}
+          </span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2">
           <Button
             v-if="!isSent"
             size="sm"
-            variant="secondary"
+            variant="primary"
             :disabled="isSending"
             @click="handleSendVerification"
           >
             {{ $t('subscription.eduVerifySend') }}
           </Button>
           <template v-else>
-            <span class="text-sm text-muted-foreground">
+            <span class="text-xs text-muted-foreground">
               {{ $t('subscription.eduVerifySentHint') }}
             </span>
             <Button
               size="sm"
-              variant="secondary"
+              variant="primary"
               :disabled="isConfirmingVerification"
               @click="handleVerificationConfirmed"
             >
               {{ $t('subscription.eduVerifyConfirm') }}
             </Button>
           </template>
-          <span v-if="verifyStatusKey" class="text-sm text-error">
-            {{ $t(verifyStatusKey) }}
-          </span>
         </div>
       </div>
     </div>

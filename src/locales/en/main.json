@@ -2562,6 +2562,7 @@
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "eduPromoHeader": "Education discount: up to {percent}% off for verified students and educators",
+    "eduVerifyTitle": "Student or educator?",
     "eduVerifyHeader": "Verify your email to unlock up to {percent}% education pricing",
     "eduVerifySend": "Send verification email",
     "eduVerifySentHint": "Check your inbox, then come back",
