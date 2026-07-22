@@ -120,4 +120,17 @@ describe('useEduPricing', () => {
     mockUserEmail.value = 'dev@acme-corp.com'
     expect(useEduPricing().needsEduVerification.value).toBe(false)
   })
+
+  it('does not nudge off-cloud or with the flag off', () => {
+    mockUserEmail.value = 'student@harvard.edu'
+    mockIsEmailVerified.value = false
+
+    mockEduFlag.value = true
+    mockIsCloud.value = false
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
+
+    mockIsCloud.value = true
+    mockEduFlag.value = false
+    expect(useEduPricing().needsEduVerification.value).toBe(false)
+  })
 })

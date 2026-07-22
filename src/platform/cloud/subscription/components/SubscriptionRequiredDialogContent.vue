@@ -60,7 +60,7 @@
             size="sm"
             variant="secondary"
             :disabled="isSending"
-            @click="sendVerification"
+            @click="handleSendVerification"
           >
             {{ $t('subscription.eduVerifySend') }}
           </Button>
@@ -77,6 +77,9 @@
               {{ $t('subscription.eduVerifyConfirm') }}
             </Button>
           </template>
+          <span v-if="verifyStatusKey" class="text-sm text-error">
+            {{ $t(verifyStatusKey) }}
+          </span>
         </div>
       </div>
     </div>
@@ -234,16 +237,30 @@ const { fetchStatus } = useSubscription()
 const authStore = useAuthStore()
 
 const isConfirmingVerification = ref(false)
+const verifyStatusKey = ref<string | null>(null)
+
+const handleSendVerification = async () => {
+  verifyStatusKey.value = null
+  if (!(await sendVerification())) {
+    verifyStatusKey.value = 'subscription.eduVerifySendFailed'
+  }
+}
 
 // Post-verification loop: refreshed token -> re-provision (ratchets is_edu) -> refetch status.
 const handleVerificationConfirmed = async () => {
   if (isConfirmingVerification.value) return
   isConfirmingVerification.value = true
+  verifyStatusKey.value = null
   try {
     const verified = await refreshVerification()
-    if (!verified) return
+    if (!verified) {
+      verifyStatusKey.value = 'subscription.eduVerifyStillUnverified'
+      return
+    }
     await authStore.createCustomer()
     await fetchStatus()
+  } catch {
+    verifyStatusKey.value = 'subscription.eduVerifyFailed'
   } finally {
     isConfirmingVerification.value = false
   }

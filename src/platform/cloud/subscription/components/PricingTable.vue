@@ -48,6 +48,7 @@
             tier.isPopular ? 'border-muted-foreground' : ''
           )
         "
+        :data-testid="`pricing-tier-${tier.key}`"
       >
         <div class="flex flex-col gap-4 p-6 pb-0">
           <div class="flex flex-row items-center justify-between gap-2">

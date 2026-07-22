@@ -18,13 +18,17 @@ export function useEmailVerification() {
     () => authStore.currentUser?.emailVerified ?? null
   )
 
-  const sendVerification = async () => {
+  /** Sends the verification email; false when the send failed. */
+  const sendVerification = async (): Promise<boolean> => {
     const user = authStore.currentUser
-    if (!user || isSending.value) return
+    if (!user || isSending.value) return false
     isSending.value = true
     try {
       await sendEmailVerification(user)
       isSent.value = true
+      return true
+    } catch {
+      return false
     } finally {
       isSending.value = false
     }

@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { applyEduDiscount } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -482,16 +483,31 @@ describe('PricingTable', () => {
   })
 
   describe('EDU pricing', () => {
-    it('shows discounted prices with the list price struck through when active', async () => {
+    // Display must match the coupon charge: monthly 10% off list, yearly 6.25%
+    // off the yearly price (= 25% off the monthly list).
+    it.for([
+      ['standard', 'monthly', '$18', '$20', null],
+      ['creator', 'monthly', '$31.5', '$35', null],
+      ['pro', 'monthly', '$90', '$100', null],
+      // Yearly strikes the monthly list price: EDU yearly = 25% off list.
+      ['standard', 'yearly', '$15', '$20', 'Billed yearly ($180)'],
+      ['creator', 'yearly', '$26.25', '$35', 'Billed yearly ($315)'],
+      ['pro', 'yearly', '$75', '$100', 'Billed yearly ($900)']
+    ] as const)('discounts %s %s in its own card', async (testCase) => {
+      const [tierKey, cycle, price, struck, billed] = testCase
       mockIsEduPricingActive.value = true
-      const { container } = renderComponent()
+      renderComponent()
       await flushPromises()
 
-      // Yearly EDU: 6.25% on the yearly price, $16/mo -> $15/mo, $192 -> $180
-      // (25% off the $20 monthly list, which renders struck through).
-      expect(screen.getByText('Billed yearly ($180)')).toBeInTheDocument()
-      expect(container.textContent).toContain('$15')
-      expect(container.textContent).toContain('$20')
+      if (cycle === 'monthly') {
+        await userEvent.click(screen.getByText('Monthly'))
+        await flushPromises()
+      }
+
+      const card = screen.getByTestId(`pricing-tier-${tierKey}`)
+      expect(card.textContent).toContain(price)
+      expect(card.textContent).toContain(struck)
+      if (billed) expect(card.textContent).toContain(billed)
     })
 
     it('keeps list prices when inactive', async () => {
@@ -502,17 +518,12 @@ describe('PricingTable', () => {
       expect(screen.queryByText('Billed yearly ($180)')).toBeNull()
     })
 
-    it('discounts fractional monthly prices exactly', async () => {
-      mockIsEduPricingActive.value = true
-      const { container } = renderComponent()
-      await flushPromises()
-
-      await userEvent.click(screen.getByText('Monthly'))
-      await flushPromises()
-
-      // Creator monthly 10% off, $35 -> $31.5; display must match the coupon charge.
-      expect(container.textContent).toContain('$31.5')
-      expect(container.textContent).toContain('$35')
+    it('rounds discounted prices to cents deterministically', () => {
+      expect(applyEduDiscount(16, 'standard', 'yearly')).toBe(15)
+      expect(applyEduDiscount(35, 'creator', 'monthly')).toBe(31.5)
+      expect(applyEduDiscount(19.99, 'standard', 'monthly')).toBe(17.99)
+      // Half-cent rounds up: 0.15 * 0.9 = 0.135 -> 0.14.
+      expect(applyEduDiscount(0.15, 'standard', 'monthly')).toBe(0.14)
     })
   })
 })
