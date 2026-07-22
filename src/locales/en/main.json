@@ -3067,6 +3067,7 @@
     "subscribe": "Subscribe",
     "personal": "Personal",
     "roleOwner": "Owner",
+    "roleAdmin": "Admin",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
