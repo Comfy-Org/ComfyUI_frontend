@@ -269,7 +269,9 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  async function handleSubscription() {
+  async function handleSubscription(
+    paymentMethodType: 'card' | 'alipay' = 'card'
+  ) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -289,7 +291,8 @@ export function useSubscriptionCheckout(
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+        paymentMethodType
       })
 
       if (response) {
@@ -331,6 +334,15 @@ export function useSubscriptionCheckout(
         telemetry?.trackMonthlySubscriptionSucceeded()
       }
       checkoutStep.value = 'success'
+      return
+    }
+
+    if (response.status === 'requires_action' && response.action_url) {
+      void billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+      window.location.assign(response.action_url)
       return
     }
 
@@ -456,8 +468,9 @@ export function useSubscriptionCheckout(
     handleSubscribeTeamClick,
     handleBackToPricing,
     handleSuccessClose,
-    handleAddCreditCard: handleSubscription,
-    handleConfirmTransition: handleSubscription,
+    handleAddCreditCard: () => handleSubscription('card'),
+    handleAuthorizeAlipay: () => handleSubscription('alipay'),
+    handleConfirmTransition: () => handleSubscription('card'),
     handleTeamSubscribe: handleTeamSubscription,
     handleResubscribe
   }

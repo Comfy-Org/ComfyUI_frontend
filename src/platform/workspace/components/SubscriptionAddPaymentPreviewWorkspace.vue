@@ -133,6 +133,47 @@
     </div>
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
+      <div v-if="!teamPlan" class="mb-4 grid grid-cols-2 gap-3">
+        <button
+          :class="
+            cn(
+              'flex cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left',
+              paymentMethod === 'card'
+                ? 'border-base-foreground bg-secondary-background'
+                : 'border-border-subtle bg-transparent'
+            )
+          "
+          type="button"
+          @click="paymentMethod = 'card'"
+        >
+          <span class="font-semibold text-base-foreground">
+            {{ $t('subscription.preview.card') }}
+          </span>
+          <span class="text-xs text-muted-foreground">
+            {{ $t('subscription.preview.cardDescription') }}
+          </span>
+        </button>
+        <button
+          :class="
+            cn(
+              'flex cursor-pointer flex-col gap-2 rounded-lg border p-4 text-left',
+              paymentMethod === 'alipay'
+                ? 'border-base-foreground bg-secondary-background'
+                : 'border-border-subtle bg-transparent'
+            )
+          "
+          type="button"
+          @click="paymentMethod = 'alipay'"
+        >
+          <span class="font-semibold text-base-foreground">
+            {{ $t('subscription.preview.alipay') }}
+          </span>
+          <span class="text-xs text-muted-foreground">
+            {{ $t('subscription.preview.alipayDescription') }}
+          </span>
+        </button>
+      </div>
+
       <!-- Terms Agreement -->
       <SubscriptionTermsNote />
 
@@ -142,9 +183,17 @@
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
-        @click="$emit('addCreditCard')"
+        @click="
+          paymentMethod === 'card'
+            ? $emit('addCreditCard')
+            : $emit('authorizeAlipay')
+        "
       >
-        {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
+        {{
+          paymentMethod === 'card'
+            ? $t('subscription.preview.subscribeToPlan', { plan: tierName })
+            : $t('subscription.preview.authorizeWithAlipay')
+        }}
       </Button>
 
       <!-- Back Link -->
@@ -198,12 +247,14 @@ const {
 
 defineEmits<{
   addCreditCard: []
+  authorizeAlipay: []
   back: []
 }>()
 
 const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
+const paymentMethod = ref<'card' | 'alipay'>('card')
 
 const tierName = computed(() =>
   teamPlan
