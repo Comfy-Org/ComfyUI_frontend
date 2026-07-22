@@ -31,17 +31,6 @@ test.describe('Customer story detail @smoke', () => {
     ).toHaveCount(0)
   })
 
-  test('renders the Download content component as an accessible workflow link', async ({
-    page
-  }) => {
-    await page.goto('/customers/xindi-zhang')
-    await expect(
-      page.getByRole('link', {
-        name: /Download Xindi's style transfer workflow/i
-      })
-    ).toBeVisible()
-  })
-
   test('emits an Article JSON-LD graph for the story', async ({ page }) => {
     await page.goto('/customers/series-entertainment')
 

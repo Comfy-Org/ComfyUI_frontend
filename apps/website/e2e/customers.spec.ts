@@ -15,7 +15,6 @@ test.describe('Customers @smoke', () => {
     await expect(heroImage).toHaveAttribute('width', /^\d+$/)
     await expect(heroImage).toHaveAttribute('height', /^\d+$/)
 
-    // Dropping src must not collapse the box: width/height reserve space (CLS).
     const heightWhileUnloaded = await page.evaluate(() => {
       const img = document.querySelector<HTMLImageElement>(
         'img[alt="Comfy 3D logo"]'
