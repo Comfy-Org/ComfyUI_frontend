@@ -22,7 +22,7 @@
           class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground opacity-90 transition-opacity hover:opacity-100"
           :aria-label="t('processToast.stop')"
           data-testid="queue-status-stop"
-          @click="interruptAll"
+          @click="stopRunning"
         >
           <i class="icon-[comfy--stop] size-4" />
         </button>
@@ -39,11 +39,11 @@
           {{ t('queueStatus.activeGenerations') }}
         </span>
         <button
-          v-if="hasRunningJob"
+          v-if="activeJobs.length > 0"
           type="button"
           class="cursor-pointer border-none bg-transparent text-[11px] font-medium text-base-foreground"
           data-testid="queue-status-cancel-all"
-          @click="interruptAll"
+          @click="cancelAll"
         >
           {{ t('queueStatus.cancelAll') }}
         </button>
@@ -213,10 +213,15 @@ type ToastView = {
 
 const toastView = computed<ToastView | null>(() => {
   if (runningCount.value > 0 || isExecuting.value) {
+    // A single aggregate percent is meaningless across parallel runs, so the
+    // count replaces it once more than one job is executing.
+    const isParallel = runningCount.value > 1
     return {
       status: 'progress',
-      verb: t('g.running'),
-      percent: totalPercent.value,
+      verb: isParallel
+        ? t('queueStatus.runningCount', { count: runningCount.value })
+        : t('g.running'),
+      percent: isParallel ? null : totalPercent.value,
       showStop: true
     }
   }
@@ -275,8 +280,6 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const hasRunningJob = computed(() => activeJobs.value.some(isRunning))
-
 const isRunning = (job: JobListItem) =>
   job.state === 'running' || job.state === 'initialization'
 const jobPercent = (job: JobListItem) =>
@@ -313,11 +316,12 @@ const cancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
   await queueStore.update()
 })
 
-const interruptAll = wrapWithErrorHandlingAsync(async () => {
-  const jobIds = queueStore.runningTasks
+const toJobIds = (tasks: TaskItemImpl[]) =>
+  tasks
     .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)
 
+const cancelJobIds = wrapWithErrorHandlingAsync(async (jobIds: string[]) => {
   if (!jobIds.length) return
 
   // State-agnostic batch cancel (see api.ts cancelJobs for the runtime-parity caveat).
@@ -325,4 +329,14 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
   executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })
+
+/**
+ * The pill's stop interrupts what is executing and leaves the queue alone, so
+ * whatever is next still starts. Clearing the queue is the panel's "Cancel all".
+ */
+const stopRunning = () => cancelJobIds(toJobIds(queueStore.runningTasks))
+const cancelAll = () =>
+  cancelJobIds(
+    toJobIds([...queueStore.runningTasks, ...queueStore.pendingTasks])
+  )
 </script>
