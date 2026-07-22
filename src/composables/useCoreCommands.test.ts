@@ -7,7 +7,10 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as DistributionModule from '@/platform/distribution/types'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { toNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
@@ -429,6 +432,46 @@ describe('useCoreCommands', () => {
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+  })
+
+  describe('Comfy.Node.Resize command', () => {
+    function findCommand(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
+
+    const NODE = toNodeId('7')
+
+    beforeEach(() => {
+      layoutStore.initializeFromLiteGraph([
+        { id: NODE, pos: [0, 0], size: [100, 50] }
+      ])
+    })
+
+    it('is registered', () => {
+      expect(findCommand('Comfy.Node.Resize')).toBeDefined()
+    })
+
+    it('resizes the node in layoutStore with the External source', () => {
+      findCommand('Comfy.Node.Resize').function({
+        nodeId: '7',
+        width: 250,
+        height: 180
+      })
+
+      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual({
+        width: 250,
+        height: 180
+      })
+      expect(layoutStore.getCurrentSource()).toBe(LayoutSource.External)
+    })
+
+    it('is a no-op when required metadata is missing', () => {
+      const before = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
+
+      findCommand('Comfy.Node.Resize').function({ nodeId: '7' })
+
+      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
     })
   })
 
