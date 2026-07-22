@@ -38,15 +38,26 @@ export const useSessionCookie = () => {
     return typeof message === 'string' ? message : response.statusText
   }
 
-  const getFirebaseSessionHeaderOrThrow = async (): Promise<
-    Record<string, string>
-  > => {
-    const firebaseToken = await useAuthStore().getIdToken()
-    if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+  const getSessionHeaderOrThrow = async (
+    useFirebaseToken: boolean
+  ): Promise<Record<string, string>> => {
+    const { flags } = useFeatureFlags()
+    const authStore = useAuthStore()
+
+    if (useFirebaseToken || flags.teamWorkspacesEnabled) {
+      const firebaseToken = await authStore.getIdToken()
+      if (!firebaseToken) {
+        throw new Error('No Firebase token available for session creation')
+      }
+
+      return { Authorization: `Bearer ${firebaseToken}` }
     }
 
-    return { Authorization: `Bearer ${firebaseToken}` }
+    const authHeader = await authStore.getAuthHeader()
+    if (!authHeader) {
+      throw new Error('No auth header available for session creation')
+    }
+    return authHeader
   }
 
   /**
@@ -61,20 +72,8 @@ export const useSessionCookie = () => {
     expectedOwnerUid: string,
     useFirebaseToken: boolean
   ): Promise<void> => {
-    const { flags } = useFeatureFlags()
     const authStore = useAuthStore()
-
-    let authHeader: Record<string, string>
-
-    if (useFirebaseToken || flags.teamWorkspacesEnabled) {
-      authHeader = await getFirebaseSessionHeaderOrThrow()
-    } else {
-      const header = await authStore.getAuthHeader()
-      if (!header) {
-        throw new Error('No auth header available for session creation')
-      }
-      authHeader = header
-    }
+    const authHeader = await getSessionHeaderOrThrow(useFirebaseToken)
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
       throw new Error('Session identity changed during creation')

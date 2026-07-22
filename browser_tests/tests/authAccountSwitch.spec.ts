@@ -288,72 +288,80 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       })
     })
 
-    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
-    await expect
-      .poll(() => workspaceMintOwners, { timeout: 15_000 })
-      .toContain(ACCOUNT_A.id)
-    await expect
-      .poll(() => sessionOwners, { timeout: 15_000 })
-      .toContain(ACCOUNT_A.id)
+    await test.step('Establish account A credentials', async () => {
+      await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
+      await expect
+        .poll(() => workspaceMintOwners, { timeout: 15_000 })
+        .toContain(ACCOUNT_A.id)
+      await expect
+        .poll(() => sessionOwners, { timeout: 15_000 })
+        .toContain(ACCOUNT_A.id)
+    })
 
-    await page.evaluate(() => {
-      sessionStorage.setItem(
-        'e2e-account-switch-route',
-        '/cloud/login?switchAccount=true'
+    await test.step('Switch to account B', async () => {
+      await page.evaluate(() => {
+        sessionStorage.setItem(
+          'e2e-account-switch-route',
+          '/cloud/login?switchAccount=true'
+        )
+      })
+      await page.addInitScript(() => {
+        function applyTargetRoute() {
+          const targetRoute = sessionStorage.getItem('e2e-account-switch-route')
+          if (!targetRoute) return
+          sessionStorage.removeItem('e2e-account-switch-route')
+          window.history.replaceState(null, '', targetRoute)
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('readystatechange', applyTargetRoute, {
+            once: true
+          })
+          return
+        }
+        applyTargetRoute()
+      })
+      await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
+      await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
+      await page.getByRole('button', { name: 'Use email instead' }).click()
+      await page.getByLabel('Email').fill(ACCOUNT_B.email)
+      await page.getByLabel('Password').fill('password')
+      await page.getByRole('button', { name: 'Sign in' }).click()
+
+      await expect(
+        page.getByRole('button', { name: 'Current user' })
+      ).toBeVisible()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await expect(
+        page.getByText(ACCOUNT_B.email, { exact: true })
+      ).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect
+        .poll(() => workspaceMintOwners, { timeout: 15_000 })
+        .toContain(ACCOUNT_B.id)
+      await expect
+        .poll(() => sessionOwners, { timeout: 15_000 })
+        .toContain(ACCOUNT_B.id)
+      expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
+        credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
       )
     })
-    await page.addInitScript(() => {
-      function applyTargetRoute() {
-        const targetRoute = sessionStorage.getItem('e2e-account-switch-route')
-        if (!targetRoute) return
-        sessionStorage.removeItem('e2e-account-switch-route')
-        window.history.replaceState(null, '', targetRoute)
-      }
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('readystatechange', applyTargetRoute, {
-          once: true
-        })
-        return
-      }
-      applyTargetRoute()
+    await test.step('Load an asset with account B credentials', async () => {
+      await new AssetsSidebarTab(page).open()
+      const card = page.locator('[data-asset-id="account-switch-job"]')
+      const image = card.getByRole('img', { name: 'account-switch.webp' })
+
+      await expect(card).toBeVisible()
+      await expect(image).toBeVisible()
+      await expect
+        .poll(() =>
+          image.evaluate((element: HTMLImageElement) => element.naturalWidth)
+        )
+        .toBeGreaterThan(0)
+      expect(jobsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
+      expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
+      expect(viewStatus).toBe(200)
     })
-    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' })
-    await expect(page).toHaveURL(/\/cloud\/login\?switchAccount=true$/)
-    await page.getByRole('button', { name: 'Use email instead' }).click()
-    await page.getByLabel('Email').fill(ACCOUNT_B.email)
-    await page.getByLabel('Password').fill('password')
-    await page.getByRole('button', { name: 'Sign in' }).click()
-
-    await expect(
-      page.getByRole('button', { name: 'Current user' })
-    ).toBeVisible()
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await expect(page.getByText(ACCOUNT_B.email, { exact: true })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await expect
-      .poll(() => workspaceMintOwners, { timeout: 15_000 })
-      .toContain(ACCOUNT_B.id)
-    await expect
-      .poll(() => sessionOwners, { timeout: 15_000 })
-      .toContain(ACCOUNT_B.id)
-    expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
-      credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
-    )
-
-    await new AssetsSidebarTab(page).open()
-    const card = page.locator('[data-asset-id="account-switch-job"]')
-    const image = card.getByRole('img', { name: 'account-switch.webp' })
-
-    await expect(card).toBeVisible()
-    await expect(image).toBeVisible()
-    await expect
-      .poll(() =>
-        image.evaluate((element: HTMLImageElement) => element.naturalWidth)
-      )
-      .toBeGreaterThan(0)
-    expect(jobsAuthorization).toBe(`Bearer workspace-jwt-${ACCOUNT_B.id}`)
-    expect(viewCookie).toContain(`mock-cloud-session=${ACCOUNT_B.id}`)
-    expect(viewStatus).toBe(200)
   })
 })
