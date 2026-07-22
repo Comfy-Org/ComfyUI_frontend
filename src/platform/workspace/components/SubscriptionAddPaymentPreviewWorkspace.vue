@@ -148,19 +148,26 @@
       </Button>
 
       <button
-        v-if="!showAlipay"
+        v-if="alipayPrototypeStep === 'collapsed'"
         class="text-primary-foreground cursor-pointer border-none bg-transparent py-2 text-sm font-medium underline hover:text-base-foreground"
-        @click="showAlipay = true"
+        @click="alipayPrototypeStep = 'details'"
       >
         {{ $t('subscription.preview.preferAlipay') }}
       </button>
       <div
-        v-else
+        v-else-if="alipayPrototypeStep === 'details'"
         class="flex flex-col gap-3 rounded-lg border border-border-subtle bg-secondary-background p-4"
       >
         <div class="flex items-center justify-between gap-4">
-          <span class="font-semibold text-base-foreground">
-            {{ $t('subscription.preview.alipayTitle') }}
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="font-semibold text-base-foreground">
+              {{ $t('subscription.preview.alipayTitle') }}
+            </span>
+            <span
+              class="rounded-full border border-border-subtle px-2 py-0.5 text-xs text-muted-foreground"
+            >
+              {{ $t('subscription.preview.prototype') }}
+            </span>
           </span>
           <span class="font-bold text-base-foreground">
             ${{ totalDueToday }}
@@ -173,10 +180,95 @@
           variant="secondary"
           size="lg"
           class="w-full rounded-lg"
-          :loading="isLoading"
-          @click="$emit('authorizeAlipay')"
+          @click="alipayPrototypeStep = 'handoff'"
         >
           {{ $t('subscription.preview.continueWithAlipay') }}
+        </Button>
+      </div>
+
+      <div
+        v-else-if="alipayPrototypeStep === 'handoff'"
+        class="flex flex-col gap-4 rounded-lg border border-border-subtle bg-secondary-background p-4"
+      >
+        <div class="flex items-center gap-2">
+          <i class="pi pi-external-link text-base-foreground" />
+          <span class="font-semibold text-base-foreground">
+            {{ $t('subscription.preview.alipayHandoffTitle') }}
+          </span>
+          <span
+            class="ml-auto rounded-full border border-border-subtle px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ $t('subscription.preview.prototype') }}
+          </span>
+        </div>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{
+            $t('subscription.preview.alipayHandoffDescription', {
+              plan: tierName,
+              price: `$${totalDueToday}`
+            })
+          }}
+        </p>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('subscription.preview.prototypeNoPayment') }}
+        </p>
+        <Button
+          variant="tertiary"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="alipayPrototypeStep = 'pending'"
+        >
+          {{ $t('subscription.preview.simulateAlipayReturn') }}
+        </Button>
+        <Button
+          variant="textonly"
+          class="cursor-pointer text-center text-xs text-muted-foreground"
+          @click="alipayPrototypeStep = 'details'"
+        >
+          {{ $t('subscription.preview.backToAlipayDetails') }}
+        </Button>
+      </div>
+
+      <div
+        v-else
+        class="flex flex-col gap-4 rounded-lg border border-border-subtle bg-secondary-background p-4"
+      >
+        <div class="flex items-center gap-3">
+          <i class="pi pi-clock text-base-foreground" />
+          <div class="flex flex-1 flex-col gap-1">
+            <span class="font-semibold text-base-foreground">
+              {{ $t('subscription.preview.paymentPending') }}
+            </span>
+            <span class="text-xs text-muted-foreground">
+              {{ $t('subscription.preview.returnedFromAlipay') }}
+            </span>
+          </div>
+          <span
+            class="rounded-full border border-border-subtle px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ $t('subscription.preview.pending') }}
+          </span>
+        </div>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.alipayPendingDescription') }}
+        </p>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('subscription.preview.prototypeNoPayment') }}
+        </p>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="alipayPrototypeStep = 'handoff'"
+        >
+          {{ $t('subscription.preview.replayPrototype') }}
+        </Button>
+        <Button
+          variant="textonly"
+          class="cursor-pointer text-center text-xs text-muted-foreground"
+          @click="alipayPrototypeStep = 'details'"
+        >
+          {{ $t('subscription.preview.resetPrototype') }}
         </Button>
       </div>
 
@@ -231,14 +323,15 @@ const {
 
 defineEmits<{
   addCreditCard: []
-  authorizeAlipay: []
   back: []
 }>()
 
 const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
-const showAlipay = ref(false)
+const alipayPrototypeStep = ref<
+  'collapsed' | 'details' | 'handoff' | 'pending'
+>('collapsed')
 
 const tierName = computed(() =>
   teamPlan
