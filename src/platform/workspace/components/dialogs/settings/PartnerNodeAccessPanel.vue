@@ -5,13 +5,19 @@
     aria-labelledby="partner-node-access-title"
   >
     <div
-      class="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-2xl bg-secondary-background px-4 py-3"
+      class="flex min-h-20 items-center justify-between gap-2 rounded-2xl bg-secondary-background px-4 py-3 font-inter"
     >
-      <div class="max-w-2xl">
-        <h2 id="partner-node-access-title" class="text-sm text-base-foreground">
+      <div class="min-w-0 flex-1">
+        <h2
+          id="partner-node-access-title"
+          class="m-0 truncate text-sm leading-[normal] font-normal text-base-foreground"
+        >
           {{ $t('workspacePanel.partnerNodes.title') }}
         </h2>
-        <p v-if="isPolicyLoaded" class="mt-2 text-sm text-muted-foreground">
+        <p
+          v-if="isPolicyLoaded"
+          class="m-0 mt-2 truncate text-sm leading-[normal] font-normal text-muted-foreground"
+        >
           {{
             $t(
               isRestricted
@@ -35,7 +41,7 @@
           :class="
             cn(
               buttonVariants({ variant: 'textonly' }),
-              'flex-1 px-2',
+              'flex-1 px-2 leading-[normal] font-normal',
               !isRestricted &&
                 'bg-base-foreground text-base-background hover:bg-base-foreground'
             )
@@ -48,7 +54,7 @@
           :class="
             cn(
               buttonVariants({ variant: 'textonly' }),
-              'flex-1 px-2',
+              'flex-1 px-2 leading-[normal] font-normal',
               isRestricted &&
                 'bg-base-foreground text-base-background hover:bg-base-foreground'
             )
@@ -113,7 +119,7 @@
             v-else
             variant="textonly"
             size="lg"
-            :disabled="isSaving || !canEditPolicy"
+            :disabled="!isRestricted || isSaving || !canEditPolicy"
             @click="confirmDisableAll"
           >
             {{ $t('workspacePanel.partnerNodes.disableAll') }}

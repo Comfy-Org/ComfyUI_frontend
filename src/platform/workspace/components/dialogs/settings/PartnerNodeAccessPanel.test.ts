@@ -338,6 +338,7 @@ describe('PartnerNodeAccessPanel', () => {
   it('disables provider controls while access is unrestricted', () => {
     renderComponent()
 
+    expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
     expect(
       screen.getByRole('switch', {
         name: 'Set access for OpenAI (inc. Sora)'
@@ -404,6 +405,10 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('confirms before disabling every provider', async () => {
     const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Disable all' }))
