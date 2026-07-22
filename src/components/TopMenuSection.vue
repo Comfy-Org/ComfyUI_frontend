@@ -14,7 +14,7 @@
         <div class="flex items-center gap-2">
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-(--workflow-tabs-height) shrink-0 items-center rounded-lg bg-comfy-menu-bg px-2 shadow-interface"
+            class="pointer-events-auto flex shrink-0 items-center rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
@@ -209,7 +209,7 @@ const isActionbarContainerEmpty = computed(
 )
 const actionbarContainerClass = computed(() => {
   const base =
-    'actionbar-container pointer-events-auto relative flex h-[var(--workflow-tabs-height)] items-center gap-2 rounded-lg bg-comfy-menu-bg shadow-interface'
+    'actionbar-container pointer-events-auto relative flex items-center gap-2 rounded-lg bg-comfy-menu-bg py-1 shadow-interface'
 
   if (isActionbarContainerEmpty.value) {
     return cn(
