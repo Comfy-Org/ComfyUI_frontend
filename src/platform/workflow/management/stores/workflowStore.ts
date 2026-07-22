@@ -257,7 +257,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflowData?: ComfyWorkflowJSON
   ): ComfyWorkflowJSON => {
     const base = workflowData
-      ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
+      ? structuredClone(workflowData)
       : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
 
     if (!base.id) {

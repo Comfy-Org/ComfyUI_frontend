@@ -51,7 +51,8 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
 
 const gizmoEnabled = defineModel<boolean>('gizmoEnabled')

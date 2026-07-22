@@ -28,12 +28,6 @@ export const PANEL_EXCLUDED_PROPS = [
   'overlayClass'
 ] as const
 
-// export const IMAGE_EXCLUDED_PROPS = [
-//   ...STANDARD_EXCLUDED_PROPS,
-//   'imageClass',
-//   'imageStyle'
-// ] as const
-
 export const GALLERIA_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
   'thumbnailsPosition',
