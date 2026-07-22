@@ -24,7 +24,6 @@ const reducedMotion = computed(prefersReducedMotion)
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
-// Drop the blinking caret when the user prefers reduced motion.
 const caretClass = computed(() =>
   cn(
     'bg-primary-comfy-yellow ml-0.5 inline-block h-5 w-2.25 translate-y-0.5',
@@ -106,12 +105,16 @@ function restBeforeNextPrompt() {
   schedule(typeNextPrompt, BETWEEN_PROMPTS_MS)
 }
 
-// Run the demo only while on-screen and when motion is allowed. Under reduced
-// motion it holds its initial fully-typed frame — no looping, no abrupt card
-// swaps (which read as flashing once transitions are disabled).
+// Under reduced motion, settle on a static fully-typed frame and never loop.
 watch([visible, reducedMotion], ([onScreen, reduce]) => {
   clearTimeout(timer)
-  if (onScreen && !reduce) schedule(typeNextPrompt, START_DELAY_MS)
+  if (reduce) {
+    typed.value = t(nextPrompt.value.promptKey, locale)
+    submitting.value = false
+    status.value = idleStatus
+    return
+  }
+  if (onScreen) schedule(typeNextPrompt, START_DELAY_MS)
 })
 
 onUnmounted(() => clearTimeout(timer))
