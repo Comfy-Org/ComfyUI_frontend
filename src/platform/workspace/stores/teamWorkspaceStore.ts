@@ -778,37 +778,33 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const resendingInviteIds = new Set<string>()
 
-  /**
-   * Resend a pending invite by issuing a fresh one before revoking the old.
-   * Create-first so a failed resend never destroys the original invite. If the
-   * revoke fails, the store is resynced (so the leftover original surfaces) and
-   * the error is rethrown so the caller can report the partial failure rather
-   * than show success over two live invites for the same email.
-   */
   async function resendInvite(inviteId: string): Promise<PendingInvite> {
     const generation = identityGeneration
     const resendKey = `${generation}:${inviteId}`
     if (resendingInviteIds.has(resendKey)) {
       throw new Error('Invite resend already in progress')
     }
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
+    const workspace = activeWorkspace.value
+    if (!workspace?.pendingInvites.some((invite) => invite.id === inviteId)) {
       throw new Error('Invite not found')
     }
     resendingInviteIds.add(resendKey)
     try {
-      const newInvite = await createInvite(invite.email)
-      if (isStaleIdentity(generation)) return newInvite
-      try {
-        await revokeInvite(inviteId)
-      } catch (error) {
-        if (isStaleIdentity(generation)) throw error
-        await fetchPendingInvites()
-        throw error
+      const refreshed = mapApiInviteToPendingInvite(
+        await workspaceApi.resendInvite(inviteId)
+      )
+      if (isStaleIdentity(generation)) return refreshed
+      const currentWorkspace = workspaces.value.find(
+        (candidate) => candidate.id === workspace.id
+      )
+      if (currentWorkspace) {
+        updateWorkspace(workspace.id, {
+          pendingInvites: currentWorkspace.pendingInvites.map((invite) =>
+            invite.id === inviteId ? refreshed : invite
+          )
+        })
       }
-      return newInvite
+      return refreshed
     } finally {
       resendingInviteIds.delete(resendKey)
     }
