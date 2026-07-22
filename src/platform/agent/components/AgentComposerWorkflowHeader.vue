@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxViewport
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { selectContentClass } from '@/components/ui/select/select.variants'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const emit = defineEmits<{
   dismiss: []
@@ -21,64 +27,125 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 
-const activeWorkflow = computed(() => workflowStore.activeWorkflow)
-const otherWorkflows = computed(() =>
-  workflowStore.openWorkflows.filter(
-    (workflow) => workflow.key !== activeWorkflow.value?.key
-  )
-)
+const isOpen = ref(false)
+const searchQuery = ref('')
 
-function switchWorkflow(workflow: (typeof otherWorkflows.value)[number]) {
+const activeWorkflow = computed(() => workflowStore.activeWorkflow)
+const filteredWorkflows = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  const workflows = workflowStore.openWorkflows
+  return query
+    ? workflows.filter((workflow) =>
+        workflow.filename.toLowerCase().includes(query)
+      )
+    : workflows
+})
+
+function switchWorkflow(workflow: ComfyWorkflow) {
   void workflowService.openWorkflow(workflow)
+  isOpen.value = false
+  searchQuery.value = ''
 }
 </script>
 
 <template>
-  <div
-    v-if="activeWorkflow"
-    class="-mb-2 flex h-7 w-full items-center gap-1 rounded-2xl border border-border-default bg-secondary-background px-3 text-xs"
-  >
-    <DropdownMenuRoot :modal="false">
-      <DropdownMenuTrigger as-child>
-        <button
+  <ComboboxRoot v-if="activeWorkflow" v-model:open="isOpen" ignore-filter>
+    <ComboboxAnchor as-child>
+      <div
+        class="-mb-5 flex w-full items-center gap-1 rounded-t-2xl border border-border-default bg-secondary-background px-3 pt-3 pb-7 text-xs"
+      >
+        <Button
           type="button"
-          class="flex min-w-0 cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-muted-foreground hover:text-base-foreground"
+          variant="muted-textonly"
+          size="unset"
+          class="min-w-0 flex-1 justify-start gap-1.5 rounded-md px-1.5 py-1 text-xs font-normal text-muted-foreground hover:text-base-foreground"
           :aria-label="t('agent.workflowHeader.switchWorkflow')"
+          aria-haspopup="listbox"
+          :aria-expanded="isOpen"
+          @click="isOpen = !isOpen"
         >
-          <i class="icon-[lucide--folder] size-3.5 shrink-0" />
-          <span class="max-w-56 truncate">{{ activeWorkflow.filename }}</span>
+          <i class="icon-[comfy--workflow] size-3.5 shrink-0" />
+          <span class="min-w-0 truncate text-left">
+            {{ activeWorkflow.filename }}
+          </span>
           <span
             class="size-1.5 shrink-0 rounded-full bg-base-foreground"
             aria-hidden="true"
           />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          align="start"
-          :side-offset="5"
-          class="z-1000 min-w-48 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+        </Button>
+
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="muted-textonly"
+          class="size-4 shrink-0"
+          :aria-label="t('agent.workflowHeader.dismiss')"
+          @click="emit('dismiss')"
         >
-          <DropdownMenuItem
-            v-for="workflow in otherWorkflows"
+          <i class="icon-[lucide--x] size-3" />
+        </Button>
+      </div>
+    </ComboboxAnchor>
+
+    <ComboboxPortal>
+      <ComboboxContent
+        position="popper"
+        side="top"
+        :side-offset="4"
+        align="start"
+        :class="
+          cn(
+            selectContentClass,
+            'w-(--reka-combobox-trigger-width) p-0 data-[side=top]:slide-in-from-bottom-2'
+          )
+        "
+      >
+        <div
+          class="flex items-center gap-2 border-b border-border-default px-3 py-2"
+        >
+          <i
+            class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+          />
+          <ComboboxInput
+            v-model="searchQuery"
+            :placeholder="
+              t('g.searchPlaceholder', { subject: t('g.workflows') })
+            "
+            class="w-full border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+        <ComboboxViewport
+          class="flex scrollbar-custom max-h-64 flex-col gap-0.5 overflow-y-auto p-1"
+        >
+          <ComboboxItem
+            v-for="workflow in filteredWorkflows"
             :key="workflow.key"
-            class="cursor-pointer truncate rounded-md px-2 py-1.5 text-xs outline-none hover:bg-secondary-background-hover"
+            :value="workflow"
+            class="flex cursor-pointer items-center gap-2 rounded-md p-2 text-sm text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
             @select="switchWorkflow(workflow)"
           >
-            {{ workflow.filename }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
-
-    <Button
-      size="icon-sm"
-      variant="muted-textonly"
-      class="size-4 shrink-0"
-      :aria-label="t('agent.workflowHeader.dismiss')"
-      @click="emit('dismiss')"
-    >
-      <i class="icon-[lucide--x] size-3" />
-    </Button>
-  </div>
+            <i
+              class="icon-[comfy--workflow] size-3.5 shrink-0 text-muted-foreground"
+            />
+            <span class="min-w-0 flex-1 truncate">{{ workflow.filename }}</span>
+            <span
+              v-if="workflow.isModified"
+              class="size-1.5 shrink-0 rounded-full bg-base-foreground"
+              aria-hidden="true"
+            />
+            <i
+              v-if="workflow.key === activeWorkflow.key"
+              class="icon-[lucide--check] size-3.5 shrink-0"
+              aria-hidden="true"
+            />
+          </ComboboxItem>
+          <ComboboxEmpty
+            class="px-3 py-6 text-center text-sm text-muted-foreground"
+          >
+            {{ t('g.noResultsFound') }}
+          </ComboboxEmpty>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
 </template>

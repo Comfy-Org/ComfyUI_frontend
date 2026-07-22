@@ -1,24 +1,21 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
-import { inject } from 'vue'
-
-import type { PromptInputFocusedContext } from './promptInputContext'
-import { PROMPT_INPUT_FOCUSED_KEY } from './promptInputContext'
+import { ref } from 'vue'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const isFocused = inject<PromptInputFocusedContext>(PROMPT_INPUT_FOCUSED_KEY)
+const isFocused = ref(false)
 
 function onFocusIn() {
-  if (isFocused) isFocused.value = true
+  isFocused.value = true
 }
 
-function onFocusOut(e: FocusEvent) {
-  const current = e.currentTarget as HTMLElement | null
-  if (isFocused && !current?.contains(e.relatedTarget as Node)) {
+function onFocusOut(event: FocusEvent) {
+  const current = event.currentTarget as HTMLElement | null
+  if (!current?.contains(event.relatedTarget as Node)) {
     isFocused.value = false
   }
 }
@@ -28,7 +25,7 @@ function onFocusOut(e: FocusEvent) {
   <div
     :class="
       cn(
-        'flex flex-col rounded-2xl border bg-secondary-background transition-colors',
+        'flex flex-col rounded-2xl border bg-base-background transition-colors',
         isFocused ? 'border-muted-foreground' : 'border-border-default',
         className
       )

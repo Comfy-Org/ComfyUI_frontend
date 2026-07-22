@@ -7,10 +7,12 @@
   >
     <div class="flex gap-x-0.5">
       <div
+        :inert="isNodeSelectionModeActive"
+        :aria-hidden="isNodeSelectionModeActive"
         :class="
           cn(
-            'min-w-0 flex-1 transition-all duration-300 ease-in-out',
-            isNodeSelectionModeActive && '-translate-x-8 opacity-0'
+            'max-h-16 min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-in-out',
+            isNodeSelectionModeActive && 'max-h-0 -translate-x-8 opacity-0'
           )
         "
       >
@@ -19,10 +21,12 @@
 
       <div class="mx-1 flex flex-col items-end gap-1">
         <div
+          :inert="isNodeSelectionModeActive"
+          :aria-hidden="isNodeSelectionModeActive"
           :class="
             cn(
-              'flex items-center gap-2 transition-all duration-300 ease-in-out',
-              isNodeSelectionModeActive && 'translate-x-8 opacity-0'
+              'flex max-h-12 items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out',
+              isNodeSelectionModeActive && 'max-h-0 translate-x-8 opacity-0'
             )
           "
         >

@@ -49,6 +49,7 @@
         "
         class="pointer-events-auto"
       />
+      <NodeSelectionModeBanner />
     </template>
     <template #agent-panel>
       <div class="size-full p-2">
@@ -110,7 +111,6 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeSelectionModeBanner />
     <NodeContextMenu />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />

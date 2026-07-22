@@ -11,12 +11,14 @@ const canvasInteractions = useCanvasInteractions()
 </script>
 
 <template>
-  <div class="pointer-events-none fixed top-4 left-1/2 z-40 -translate-x-1/2">
+  <div
+    class="pointer-events-none absolute top-1 left-1/2 z-40 -translate-x-1/2"
+  >
     <Transition name="slide-down">
       <div
         v-if="agentNodeSelectionStore.isActive"
         data-testid="node-selection-mode-banner"
-        class="pointer-events-auto flex items-center gap-4 rounded-lg border border-interface-stroke bg-interface-panel-surface px-4 py-2 shadow-interface"
+        class="pointer-events-auto flex items-center gap-4 rounded-lg border border-l-4 border-interface-stroke border-l-node-component-executing bg-interface-panel-surface px-4 py-2 shadow-interface"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <div class="flex flex-col">
