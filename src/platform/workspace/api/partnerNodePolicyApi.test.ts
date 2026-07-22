@@ -52,18 +52,17 @@ describe('partnerNodePolicyApi', () => {
     mockFetchApi.mockResolvedValue(
       jsonResponse({
         enforcement_enabled: true,
-        nodes: { AllowedNode: true, DisabledNode: false }
+        providers: [{ provider_id: 'openai', enabled: false }]
       })
     )
 
     await expect(getPartnerNodePolicy()).resolves.toEqual({
       enforcementEnabled: true,
-      nodes: { AllowedNode: true, DisabledNode: false }
+      providers: [{ providerId: 'openai', enabled: false }]
     })
-    expect(mockFetchApi).toHaveBeenCalledWith(
-      '/workspace/partner-node-policy',
-      { cache: 'no-store' }
-    )
+    expect(mockFetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+      cache: 'no-store'
+    })
   })
 
   it('maps 404 to an unconfigured policy', async () => {
@@ -74,19 +73,19 @@ describe('partnerNodePolicyApi', () => {
     await expect(getPartnerNodePolicy()).resolves.toBeNull()
   })
 
-  it('preserves non-404 status codes for policy decisions', async () => {
+  it('preserves response status codes for policy decisions', async () => {
     mockFetchApi.mockResolvedValue(
-      jsonResponse({}, { status: 503, statusText: 'Service Unavailable' })
+      jsonResponse({}, { status: 403, statusText: 'Forbidden' })
     )
 
-    await expect(getPartnerNodePolicy()).rejects.toEqual(
-      new PartnerNodePolicyApiError(503, 'Service Unavailable')
+    await expect(getPartnerProviders()).rejects.toEqual(
+      new PartnerNodePolicyApiError(403, 'Forbidden')
     )
   })
 
   it('rejects malformed policy responses', async () => {
     mockFetchApi.mockResolvedValue(
-      jsonResponse({ enforcement_enabled: 'yes', nodes: [] })
+      jsonResponse({ enforcement_enabled: 'yes', providers: [] })
     )
 
     await expect(getPartnerNodePolicy()).rejects.toMatchObject({
