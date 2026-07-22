@@ -5,13 +5,59 @@
         {{ $t('subscription.preview.paymentMethod') }}
       </h3>
       <p class="m-0 mt-1 text-sm text-muted-foreground">
-        {{ $t('subscription.preview.stripeMethodChoice') }}
+        {{
+          $t(
+            hasStripeConfiguration
+              ? 'subscription.preview.stripeMethodChoice'
+              : 'subscription.preview.prototypeMethodChoice'
+          )
+        }}
       </p>
     </div>
     <div v-if="configurationError" class="text-sm text-error">
       {{ configurationError }}
     </div>
-    <div ref="paymentElementTarget" />
+    <div v-if="!hasStripeConfiguration" class="flex flex-col gap-3">
+      <div
+        class="rounded-lg border border-border-subtle bg-secondary-background p-3"
+      >
+        <p class="m-0 font-semibold text-base-foreground">
+          {{ $t('subscription.preview.interactivePrototype') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.prototypeNoProvider') }}
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          v-for="method in prototypeMethods"
+          :key="method"
+          type="button"
+          :aria-pressed="selectedPrototypeMethod === method"
+          :class="
+            cn(
+              'cursor-pointer rounded-lg border bg-transparent p-3 text-left text-sm text-base-foreground',
+              selectedPrototypeMethod === method
+                ? 'border-primary-background bg-secondary-background'
+                : 'border-border-subtle'
+            )
+          "
+          @click="selectPrototypeMethod(method)"
+        >
+          {{ $t(`subscription.preview.${method}`) }}
+        </button>
+      </div>
+      <p class="m-0 text-sm text-muted-foreground">
+        {{ $t(`subscription.preview.${selectedPrototypeMethod}PrototypeNote`) }}
+      </p>
+      <Button variant="secondary" class="w-full" @click="previewHandoff">
+        {{ $t('subscription.preview.previewHandoff') }}
+      </Button>
+      <p v-if="prototypeStatus" class="m-0 text-sm text-base-foreground">
+        {{ prototypeStatus }}
+      </p>
+    </div>
+    <div v-else ref="paymentElementTarget" />
     <p class="m-0 text-xs text-muted-foreground">
       {{ $t('subscription.preview.alipayRenewalNote') }}
     </p>
@@ -22,12 +68,19 @@
       :loading="isLoading || isSubmitting"
       @click="submit"
     >
-      {{ $t('subscription.preview.payAndSubscribe') }}
+      {{
+        $t(
+          hasStripeConfiguration
+            ? 'subscription.preview.payAndSubscribe'
+            : 'subscription.preview.livePaymentUnavailable'
+        )
+      }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { loadStripe } from '@stripe/stripe-js'
 import type { StripeElements, StripePaymentElement } from '@stripe/stripe-js'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
@@ -45,16 +98,22 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const hasStripeConfiguration = Boolean(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+)
+const prototypeMethods = ['card', 'alipay'] as const
+type PrototypeMethod = (typeof prototypeMethods)[number]
 const paymentElementTarget = ref<HTMLDivElement>()
 const elements = ref<StripeElements>()
 const configurationError = ref('')
 const isSubmitting = ref(false)
+const selectedPrototypeMethod = ref<PrototypeMethod>('card')
+const prototypeStatus = ref('')
 let paymentElement: StripePaymentElement | undefined
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   if (!publishableKey) {
-    configurationError.value = t('subscription.preview.stripeUnavailable')
     return
   }
 
@@ -78,6 +137,17 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => paymentElement?.destroy())
+
+function selectPrototypeMethod(method: PrototypeMethod) {
+  selectedPrototypeMethod.value = method
+  prototypeStatus.value = ''
+}
+
+function previewHandoff() {
+  prototypeStatus.value = t(
+    `subscription.preview.${selectedPrototypeMethod.value}PrototypeStatus`
+  )
+}
 
 async function submit() {
   if (!elements.value) return
