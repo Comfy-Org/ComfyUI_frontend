@@ -188,6 +188,20 @@ describe('slotLinks', () => {
     expect(graph.getLink(removedLink.id)).toBeUndefined()
     expect(target.inputs).toHaveLength(1)
   })
+
+  it('removes a discarded link with a missing origin output', () => {
+    const { graph, source, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    const link = target.getInputLink(0)!
+    const previous = captureInputLayout(target)
+    source.outputs.splice(0, 1)
+
+    replaceNodeInputs(target, previous, [])
+
+    expect(target.inputs).toHaveLength(0)
+    expect(graph.getLink(link.id)).toBeUndefined()
+    expect(inputLink(graph, target.id, 0)).toBeUndefined()
+  })
   it('rejects a stale layout snapshot before changing topology', () => {
     const { graph, targets } = createConnectedGraph(1)
     const target = targets[0]

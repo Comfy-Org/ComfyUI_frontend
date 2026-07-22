@@ -142,6 +142,32 @@ function duplicateDriftedNodesAndLinks(sourceId: number, targetId: number) {
   return base
 }
 
+function repeatedReferenceWorkflow(
+  targetSlot: number,
+  referenceSlots: readonly number[]
+): SerialisableGraph {
+  const workflow = savedWorkflow()
+  const source = workflow.nodes![0]
+  const target = workflow.nodes![1]
+  source.outputs = [{ name: 'out', type: 'number', links: [1] }]
+  target.inputs = DEFINITION_ORDER.map((name, slot) => ({
+    name,
+    type: 'number',
+    link: referenceSlots.includes(slot) ? 1 : null
+  }))
+  workflow.links = [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: targetSlot,
+      type: 'number'
+    }
+  ]
+  return workflow
+}
+
 function emptySubgraphDefinition(): ExportedSubgraph {
   return {
     id: SUBGRAPH_ID,
@@ -273,5 +299,25 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
 
     expect(graph.links.has(toLinkId(4))).toBe(false)
     assertLinksRealigned(graph, toNodeId(2))
+  })
+
+  it('uses the first slot when one link is referenced by multiple inputs', () => {
+    const graph = new LGraph()
+    graph.configure(repeatedReferenceWorkflow(2, [0, 1]))
+
+    expect(graph.getLink(toLinkId(1))?.target_slot).toBe(0)
+    expect(graph.getNodeById(toNodeId(2))?.getInputLink(0)?.id).toBe(
+      toLinkId(1)
+    )
+  })
+
+  it('preserves the current slot when it is one of multiple references', () => {
+    const graph = new LGraph()
+    graph.configure(repeatedReferenceWorkflow(2, [0, 2]))
+
+    expect(graph.getLink(toLinkId(1))?.target_slot).toBe(2)
+    expect(graph.getNodeById(toNodeId(2))?.getInputLink(2)?.id).toBe(
+      toLinkId(1)
+    )
   })
 })

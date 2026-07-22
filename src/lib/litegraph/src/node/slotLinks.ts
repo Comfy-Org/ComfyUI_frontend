@@ -145,7 +145,7 @@ export function replaceNodeInputs(
       updates,
       removals.map(({ link }) => link._state)
     )
-    for (const { slot } of removals.toReversed()) node.disconnectInput(slot)
+    for (const { link } of removals.toReversed()) node.graph.removeLink(link.id)
     store.updateEndpoints(node.graph.rootGraph.id, updates)
   } else if (finalAssignments.length) {
     throw new Error('Cannot assign input links to a node without a graph')
