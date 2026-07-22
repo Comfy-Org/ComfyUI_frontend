@@ -58,6 +58,19 @@ function getPermissions(
     canTopUp: canManageBilling
   }
 
+  if (role === 'admin' && type === 'team') {
+    return {
+      canViewOtherMembers: true,
+      canViewPendingInvites: true,
+      canInviteMembers: true,
+      canManageInvites: true,
+      canManageMembers: true,
+      canLeaveWorkspace,
+      canAccessWorkspaceMenu: true,
+      ...billingPermissions
+    }
+  }
+
   if (role === 'member') {
     return {
       canViewOtherMembers: true,
@@ -100,6 +113,21 @@ function getUIConfig(
   type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspaceUIConfig {
+  if (role === 'admin' && type === 'team') {
+    return {
+      showMembersList: true,
+      showPendingTab: true,
+      showSearch: true,
+      showRoleColumn: true,
+      membersGridCols: 'grid-cols-[50%_40%_10%]',
+      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+      headerGridCols: 'grid-cols-[50%_40%_10%]',
+      showEditWorkspaceMenuItem: false,
+      workspaceMenuAction: null,
+      workspaceMenuDisabledTooltip: null
+    }
+  }
+
   if (role === 'member') {
     return {
       showMembersList: true,

@@ -10,15 +10,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+
 const { role } = defineProps<{
-  role: 'owner' | 'member'
+  role: WorkspaceRole
 }>()
 
 const { t } = useI18n()
 
-const roleBadgeLabel = computed(() =>
-  role === 'owner'
-    ? t('workspaceSwitcher.roleOwner')
-    : t('workspaceSwitcher.roleMember')
-)
+const roleBadgeLabel = computed(() => {
+  if (role === 'owner') return t('workspaceSwitcher.roleOwner')
+  if (role === 'admin') return t('workspaceSwitcher.roleAdmin')
+  return t('workspaceSwitcher.roleMember')
+})
 </script>
