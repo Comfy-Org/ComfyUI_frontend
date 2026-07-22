@@ -396,10 +396,26 @@ describe('usePricingTableUrlLoader', () => {
     })
   })
 
+  it('falls back to the Team table for a stop absent from the catalog', async () => {
+    mockRouteQuery.value = {
+      pricing: 'team',
+      stop: 'unknown',
+      cycle: 'monthly'
+    }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team'
+    })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
   it.for([
     { pricing: 'team', stop: 'team_700' },
     { pricing: 'team', cycle: 'yearly' },
-    { pricing: 'team', stop: 'unknown', cycle: 'monthly' },
     { pricing: 'team', stop: '', cycle: 'monthly' },
     { pricing: 'team', stop: 'team_700', cycle: 'weekly' },
     { pricing: 'personal', stop: 'team_700', cycle: 'yearly' }

@@ -29,6 +29,28 @@ function isBillingCycle(
   return value === 'monthly' || value === 'yearly'
 }
 
+function getTeamCheckoutRequest(
+  pricing: string,
+  stop: unknown,
+  cycle: unknown
+):
+  | {
+      stop: string
+      billingCycle: SubscriptionCheckoutSelection['billingCycle']
+    }
+  | undefined {
+  if (
+    pricing !== 'team' ||
+    typeof stop !== 'string' ||
+    !stop ||
+    !isBillingCycle(cycle)
+  ) {
+    return
+  }
+
+  return { stop, billingCycle: cycle }
+}
+
 function getCheckoutSelection(
   pricing: string,
   stop: unknown,
@@ -45,17 +67,11 @@ function getCheckoutSelection(
     }
   }
 
-  if (
-    pricing !== 'team' ||
-    typeof stop !== 'string' ||
-    !stop ||
-    !isBillingCycle(cycle)
-  ) {
-    return
-  }
+  const teamCheckoutRequest = getTeamCheckoutRequest(pricing, stop, cycle)
+  if (!teamCheckoutRequest) return
 
   const catalogStop = teamCreditStops?.stops.find(
-    (candidate) => candidate.id === stop
+    (candidate) => candidate.id === teamCheckoutRequest.stop
   )
   if (!catalogStop) return
 
@@ -64,10 +80,11 @@ function getCheckoutSelection(
     stop: {
       id: catalogStop.id,
       credits: catalogStop.credits,
-      usd: catalogStop[cycle].list_price_cents / 100,
-      discountedUsd: catalogStop[cycle].price_cents / 100
+      usd: catalogStop[teamCheckoutRequest.billingCycle].list_price_cents / 100,
+      discountedUsd:
+        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100
     },
-    billingCycle: cycle
+    billingCycle: teamCheckoutRequest.billingCycle
   }
 }
 
@@ -123,10 +140,12 @@ export function usePricingTableUrlLoader() {
 
     if (!permissions.value.canManageSubscription) return
 
-    const isPlainTeamLink =
-      param === 'team' && query.stop === undefined && query.cycle === undefined
-    const needsTeamCatalog = param === 'team' && !isPlainTeamLink
-    if (needsTeamCatalog && !teamCreditStops.value) {
+    const teamCheckoutRequest = getTeamCheckoutRequest(
+      param,
+      query.stop,
+      query.cycle
+    )
+    if (teamCheckoutRequest && !teamCreditStops.value) {
       try {
         await fetchPlans()
       } catch (error) {
@@ -151,7 +170,14 @@ export function usePricingTableUrlLoader() {
       query.cycle,
       teamCreditStops.value
     )
-    if ((isCheckoutTier(param) || needsTeamCatalog) && !initialCheckout) return
+    if (isCheckoutTier(param) && !initialCheckout) return
+    if (teamCheckoutRequest && !initialCheckout) {
+      subscriptionDialog.showPricingTable({
+        reason: 'deep_link',
+        planMode: 'team'
+      })
+      return
+    }
     if (
       !initialCheckout &&
       (query.stop !== undefined || query.cycle !== undefined)
