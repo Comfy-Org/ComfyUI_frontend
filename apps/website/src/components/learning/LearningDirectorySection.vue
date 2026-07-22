@@ -76,6 +76,13 @@ function selectCategory(value: LearningCategory | undefined, href: string) {
   // refresh, share, and deep links resolve to the matching static page.
   history.replaceState(history.state, '', href)
   syncHeadMeta(value)
+  // The list swaps in place, so scroll back to the top to reveal the new
+  // featured item and first rows (honoring reduced-motion preferences).
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  window.scrollTo({
+    top: 0,
+    behavior: reduceMotion.matches ? 'auto' : 'smooth'
+  })
 }
 </script>
 
