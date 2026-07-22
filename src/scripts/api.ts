@@ -318,6 +318,28 @@ export class PromptExecutionError extends Error {
   }
 }
 
+/**
+ * Reads the deploy-time WebSocket host override. Requires an own string
+ * property so a DOM-clobbering element (`id="__COMFY_API_WS_HOST__"`) or a
+ * prototype-pollution gadget cannot redirect the authenticated socket, and
+ * treats blank values as unset so the socket falls back to `api_host`.
+ */
+function getApiWebSocketHostOverride(): string {
+  if (!Object.hasOwn(window, '__COMFY_API_WS_HOST__')) {
+    return ''
+  }
+  const override = window.__COMFY_API_WS_HOST__
+  if (typeof override !== 'string') {
+    return ''
+  }
+  const trimmed = override.trim()
+  if (!trimmed) {
+    return ''
+  }
+  console.debug('[ComfyUI] WebSocket host override active:', trimmed)
+  return trimmed
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -675,11 +697,20 @@ export class ComfyApi extends EventTarget {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const wsHost = getApiWebSocketHostOverride() || this.api_host
+    const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    this.socket = new WebSocket(wsUrl)
+    try {
+      this.socket = new WebSocket(wsUrl)
+    } catch (error) {
+      console.error('Failed to open WebSocket connection:', error)
+      if (!isReconnect) {
+        this._pollQueue()
+      }
+      return
+    }
     this.socket.binaryType = 'arraybuffer'
 
     this.socket.addEventListener('open', () => {
