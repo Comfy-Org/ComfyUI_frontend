@@ -2920,7 +2920,8 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "partnerNodes": "Partner nodes"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -2953,6 +2954,27 @@
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "searchPlaceholder": "Search..."
+    },
+    "partnerNodes": {
+      "title": "Partner node access",
+      "unrestricted": "Unrestricted",
+      "restricted": "Restricted",
+      "unrestrictedDescription": "Partner nodes from every provider are available.",
+      "restrictedDescription": "Only partner nodes from enabled providers are available.",
+      "searchPlaceholder": "Search providers and partner nodes...",
+      "tableLabel": "Partner node providers",
+      "columns": {
+        "provider": "Provider / partner node",
+        "nodes": "Nodes",
+        "enabled": "Enabled"
+      },
+      "nodeCount": "{count} node | {count} nodes",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "loading": "Loading partner node access",
+      "loadError": "Partner node access couldn't be loaded.",
+      "retry": "Try again",
+      "noResults": "No providers or partner nodes found"
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
