@@ -2266,6 +2266,49 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('evicts an expired unified-token context past the grace window on the next mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const base = Date.now()
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              token: 'unified-token-1',
+              expires_at: new Date(base + 3600 * 1000).toISOString()
+            })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              token: 'unified-token-2',
+              expires_at: new Date(base + 10 * 3600 * 1000).toISOString()
+            })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+
+      // Jump well past token-1's expiry plus the retention grace window without
+      // firing the scheduled refresh timer.
+      vi.setSystemTime(base + 2 * 3600 * 1000)
+
+      // Re-minting the current token writes token-2 and prunes the stale entry.
+      expect(await store.remintUnifiedOnce('unified-token-1')).toBe(
+        'unified-token-2'
+      )
+
+      // token-1's context is gone: a late 401 replay for it now fails closed
+      // instead of resolving to the fresh token off a never-evicted entry.
+      expect(await store.remintUnifiedOnce('unified-token-1')).toBeNull()
+    })
+
     it('ignores a stale unified mint failure after account state is cleared', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-a')

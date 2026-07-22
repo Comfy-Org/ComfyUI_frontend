@@ -43,6 +43,11 @@ const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
 const RECOVERY_COOLDOWN_MS = 5000
 
+// Retain expired unified-token contexts briefly so a concurrent reactive-401
+// replay for the just-rotated token still resolves, then evict them so a
+// long-lived session cannot grow the context Map unbounded.
+const ISSUED_TOKEN_CONTEXT_GRACE_MS = 5 * 60 * 1000
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -115,7 +120,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const unifiedTokenOwnerUid = ref<string | null>(null)
   const issuedUnifiedTokenContexts = new Map<
     string,
-    { ownerUid: string; targetKey: string }
+    { ownerUid: string; targetKey: string; expiresAt: number }
   >()
 
   // Timer state
@@ -732,6 +737,14 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }, delay)
   }
 
+  function pruneExpiredUnifiedTokenContexts(now: number): void {
+    for (const [token, context] of issuedUnifiedTokenContexts) {
+      if (context.expiresAt + ISSUED_TOKEN_CONTEXT_GRACE_MS < now) {
+        issuedUnifiedTokenContexts.delete(token)
+      }
+    }
+  }
+
   function clearUnifiedContext(): void {
     unifiedRefreshRequestId++
     stopUnifiedRefreshTimer()
@@ -775,8 +788,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = mintedToken.ownerUid
     issuedUnifiedTokenContexts.set(mintedToken.token, {
       ownerUid: mintedToken.ownerUid,
-      targetKey: unifiedTargetKey(target)
+      targetKey: unifiedTargetKey(target),
+      expiresAt: mintedToken.expiresAt
     })
+    pruneExpiredUnifiedTokenContexts(Date.now())
     unifiedTarget = target
     scheduleUnifiedRefresh(mintedToken.expiresAt)
     return true
