@@ -17,9 +17,7 @@ test.describe('Pricing page @smoke', () => {
     const section = pricingSection(page)
 
     for (const label of ['STANDARD', 'CREATOR', 'PRO', 'ENTERPRISE']) {
-      await expect(
-        section.locator('span', { hasText: new RegExp(`^${label}$`) })
-      ).toBeVisible()
+      await expect(section.getByText(label, { exact: true })).toBeVisible()
     }
   })
 
@@ -41,6 +39,32 @@ test.describe('Pricing page @smoke', () => {
     await expect(page.getByText(/Educational savings/i)).toHaveCount(0)
     await expect(page.getByText(/Creative Campus/i)).toHaveCount(0)
     await expect(page.getByText(/Student Ambassador/i)).toHaveCount(0)
+  })
+})
+
+test.describe('Pricing page - Team plan', () => {
+  test('slider defaults to team_700 and drives price and subscribe link', async ({
+    page
+  }) => {
+    await page.goto('/cloud/pricing')
+
+    const teamLink = page.getByRole('link', { name: /subscribe to team/i })
+    await expect(teamLink).toHaveAttribute('href', /stop=team_700/)
+
+    const slider = page.getByRole('slider')
+    const priceBefore = await slider
+      .locator('xpath=ancestor::section')
+      .getByText(/^\$/)
+      .first()
+      .textContent()
+
+    await slider.focus()
+    await page.keyboard.press('ArrowRight')
+
+    await expect(teamLink).toHaveAttribute('href', /stop=team_1400/)
+    await expect(
+      slider.locator('xpath=ancestor::section').getByText(/^\$/).first()
+    ).not.toHaveText(priceBefore ?? '')
   })
 })
 

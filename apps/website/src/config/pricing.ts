@@ -1,6 +1,6 @@
 import { t } from '../i18n/translations'
+import { subscribeUrl } from '../data/pricingPlans'
 import type { Locale, TranslationKey } from '../i18n/translations'
-import { externalLinks } from './routes'
 
 interface PricingTier {
   slug: string
@@ -54,7 +54,7 @@ function offersFrom(locale: Locale, education: boolean): PricingOffer[] {
       {
         name: t(tier.labelKey, locale),
         price: match[1],
-        url: `${externalLinks.cloud}/?pricing=${tier.slug}&cycle=monthly`
+        url: subscribeUrl(tier.slug, 'monthly')
       }
     ]
   })

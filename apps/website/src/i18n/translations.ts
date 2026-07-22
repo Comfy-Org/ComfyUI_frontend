@@ -1167,9 +1167,9 @@ const translations = {
     'zh-CN': '我可以使用自己的模型或检查点吗？'
   },
   'cloud.faq.8.a': {
-    en: 'You can always check Cloud to see the list of extensions and models that we support, for free.\nCurrently, we support a wide variety of preinstalled models.\nFor those on the Creator or Pro plans, you can bring in your own fine-tuned LoRAs from CivitAI or HuggingFace to perfect your own style.\nDirect file upload for larger models is on our roadmap.',
+    en: 'You can always check Cloud to see the list of extensions and models that we support, for free.\nCurrently, we support a wide variety of preinstalled models.\nFor those on the Creator, Pro, or Team plans, you can bring in your own fine-tuned LoRAs from CivitAI or HuggingFace to perfect your own style.\nDirect file upload for larger models is on our roadmap.',
     'zh-CN':
-      '您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n目前我们支持大量预装模型。\n对于 Creator 或 Pro 计划用户，您可以导入自己从 CivitAI 或 HuggingFace 微调的 LoRA 来打造专属风格。\n大型模型的直接文件上传功能已在我们的路线图中。'
+      '您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n目前我们支持大量预装模型。\n对于 Creator、Pro 或 Team 计划用户，您可以导入自己从 CivitAI 或 HuggingFace 微调的 LoRA 来打造专属风格。\n大型模型的直接文件上传功能已在我们的路线图中。'
   },
   'cloud.faq.9.q': {
     en: 'Can I run long or multiple workflows?',

@@ -35,11 +35,11 @@ export interface PricingPlan {
   isPopular?: boolean
 }
 
-export const subscribeUrl = (
+export function subscribeUrl(
   tier: string,
   cycle: BillingCycle,
   stop?: string
-): string => {
+): string {
   const params = new URLSearchParams()
   params.set('pricing', tier)
   if (stop) params.set('stop', stop)
