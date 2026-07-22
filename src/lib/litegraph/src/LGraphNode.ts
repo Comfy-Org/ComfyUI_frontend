@@ -539,9 +539,7 @@ export class LGraphNode
    * `autosize()`/`on('resize')` (v2 extension handles). Once that API lands, emit
    * a one-time `warnDeprecated` from this trap naming the sanctioned call, turning
    * direct element writes into a migrate-me signal instead of a silent shim (the
-   * deliberate fast-follow — no runtime warn today). See
-   * research/architecture/toward-new-api-plan.md §2 and follow-ups A2/A3/A4;
-   * ecosystem gap rows S2.N19 / S10.D3 / S11.G4.
+   * deliberate fast-follow — no runtime warn today).
    */
   public get size(): Size {
     return (this._sizeProxy ??= new Proxy(this._size, {
