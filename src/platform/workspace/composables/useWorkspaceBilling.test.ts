@@ -252,6 +252,21 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it('maps a reactivated subscription as active', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        cancel_at: null
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value).toMatchObject({
+        endDate: null,
+        isCancelled: false
+      })
+    })
+
     it("keeps a 'scheduled' subscription on the active treatment", async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,

@@ -106,7 +106,8 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
         renewalDate: RENEWAL_DATE_ISO,
-        endDate: END_DATE_ISO,
+        endDate:
+          mockSubscriptionStatus.value === 'canceled' ? END_DATE_ISO : null,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
         hasFunds: true
       }
@@ -460,6 +461,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
         : `creator-${duration.toLowerCase()}`
       mockSubscriptionDuration.value = duration
       mockCanLeaveWorkspace.value = false
+      mockResubscribe.mockImplementationOnce(async () => {
+        mockSubscriptionStatus.value = 'active'
+      })
       renderComponent()
 
       expect(
@@ -480,6 +484,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
       expect(mockResubscribe).toHaveBeenCalledOnce()
+      expect(
+        await screen.findByText(
+          `Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
+      ).not.toBeInTheDocument()
     }
   )
 
