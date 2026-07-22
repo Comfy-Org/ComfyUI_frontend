@@ -2,25 +2,20 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import WorkspacePanelContent from './WorkspacePanelContent.vue'
 
 const mockFetchMembers = vi.fn()
 const mockFetchPendingInvites = vi.fn()
 
-const { mockHasTeamPlan, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
+const { mockHasTeamPlan, mockIsPlanLoading } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
 
-    return {
-      mockHasTeamPlan: ref(true),
-      mockIsPlanLoading: ref(false),
-      mockMembers: ref<WorkspaceMember[]>([]),
-      mockWorkspaceType: ref<'personal' | 'team'>('team')
-    }
-  })
+  return {
+    mockHasTeamPlan: ref(true),
+    mockIsPlanLoading: ref(false)
+  }
+})
 
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
@@ -43,20 +38,8 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
   return {
     useTeamWorkspaceStore: () => ({
       workspaceName: ref('Acme Team'),
-      members: mockMembers,
       fetchMembers: mockFetchMembers,
       fetchPendingInvites: mockFetchPendingInvites
-    })
-  }
-})
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      workspaceType: mockWorkspaceType,
-      workspaceRole: ref('owner')
     })
   }
 })
@@ -64,14 +47,30 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
 vi.mock(
   '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
   () => ({
-    default: { name: 'SubscriptionPanelContentWorkspace', template: '<div />' }
+    default: {
+      name: 'SubscriptionPanelContentWorkspace',
+      template: '<div data-testid="plan-panel" />'
+    }
   })
 )
 
 vi.mock(
   '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue',
   () => ({
-    default: { name: 'MembersPanelContent', template: '<div />' }
+    default: {
+      name: 'MembersPanelContent',
+      template: '<div data-testid="members-panel" />'
+    }
+  })
+)
+
+vi.mock(
+  '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue',
+  () => ({
+    default: {
+      name: 'PartnerNodeAccessPanel',
+      template: '<div data-testid="allowlist-panel" />'
+    }
   })
 )
 
@@ -93,19 +92,9 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function createMember(id: string): WorkspaceMember {
-  return {
-    id,
-    name: `Member ${id}`,
-    email: `member${id}@example.com`,
-    joinDate: new Date('2025-01-15'),
-    role: 'member',
-    isOriginalOwner: false
-  }
-}
-
-function renderComponent() {
+function renderComponent(section: 'plan' | 'members' | 'allowlist' = 'plan') {
   return render(WorkspacePanelContent, {
+    props: { section },
     global: {
       plugins: [i18n],
       stubs: { WorkspaceProfilePic: true }
@@ -116,62 +105,34 @@ function renderComponent() {
 describe('WorkspacePanelContent billing banner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockMembers.value = []
-    mockWorkspaceType.value = 'team'
   })
 
-  it('hosts a single banner slot above the tab content, so it shows on every tab', () => {
+  it('hosts a single banner slot above the selected workspace section', () => {
     renderComponent()
 
     const banner = screen.getByTestId('billing-banner')
-    const planPanel = screen.getByText('workspacePanel.tabs.planCredits')
+    const planPanel = screen.getByTestId('plan-panel')
     expect(
-      planPanel.compareDocumentPosition(banner) &
+      banner.compareDocumentPosition(planPanel) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 })
 
-describe('WorkspacePanelContent members tab label', () => {
+describe('WorkspacePanelContent member loading', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockHasTeamPlan.value = true
     mockIsPlanLoading.value = false
-    mockMembers.value = []
-    mockWorkspaceType.value = 'team'
-  })
-
-  it('shows the counted label for Team plans with multiple members', () => {
-    mockMembers.value = [createMember('1'), createMember('2')]
-    renderComponent()
-    expect(screen.getByText(/workspacePanel\.tabs\.membersCount/)).toBeTruthy()
-  })
-
-  it('drops the count when the owner is the only member', () => {
-    mockMembers.value = [createMember('1')]
-    renderComponent()
-    expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
-    expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
-  })
-
-  it('shows the plain Members label for a personal plan', () => {
-    mockWorkspaceType.value = 'personal'
-    mockHasTeamPlan.value = false
-    mockMembers.value = [createMember('1'), createMember('2')]
-    renderComponent()
-    expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
-    expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
   })
 
   it('fetches members and pending invites for a Team plan', () => {
-    mockWorkspaceType.value = 'personal'
     renderComponent()
     expect(mockFetchMembers).toHaveBeenCalled()
     expect(mockFetchPendingInvites).toHaveBeenCalled()
   })
 
   it('does not fetch member data for a personal plan', () => {
-    mockWorkspaceType.value = 'team'
     mockHasTeamPlan.value = false
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
@@ -183,5 +144,28 @@ describe('WorkspacePanelContent members tab label', () => {
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
     expect(mockFetchPendingInvites).not.toHaveBeenCalled()
+  })
+})
+
+describe('WorkspacePanelContent sections', () => {
+  it('renders Plan & Credits without internal workspace tabs', () => {
+    renderComponent()
+
+    expect(screen.getByTestId('plan-panel')).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
+  })
+
+  it('renders Members as a separate panel', () => {
+    renderComponent('members')
+
+    expect(screen.getByTestId('members-panel')).toBeTruthy()
+    expect(screen.queryByTestId('plan-panel')).toBeNull()
+  })
+
+  it('renders Allowlist as a separate panel', () => {
+    renderComponent('allowlist')
+
+    expect(screen.getByTestId('allowlist-panel')).toBeTruthy()
+    expect(screen.queryByTestId('plan-panel')).toBeNull()
   })
 })
