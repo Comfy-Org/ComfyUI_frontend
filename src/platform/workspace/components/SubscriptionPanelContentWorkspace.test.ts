@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -53,6 +53,26 @@ const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
+const mockBillingControlEnabled = ref(false)
+const mockBillingStatus = ref<
+  'paid' | 'paused' | 'payment_failed' | 'inactive'
+>('paid')
+const mockBillingSubscriptionStatus = ref<'active' | 'canceled' | 'ended'>(
+  'active'
+)
+const mockMembers = ref([
+  {
+    id: 'member-1',
+    email: 'creator@example.com',
+    joinDate: new Date('2026-01-01T00:00:00Z')
+  },
+  {
+    id: 'member-2',
+    email: 'me@example.com',
+    joinDate: new Date('2026-02-01T00:00:00Z')
+  }
+])
+const mockUserEmail = ref<string | null>('me@example.com')
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
@@ -124,6 +144,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
+    billingStatus: mockBillingStatus,
+    subscriptionStatus: mockBillingSubscriptionStatus,
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     teamCreditStops: mockTeamCreditStops,
@@ -134,6 +156,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     manageSubscription: mockManageSubscription,
     resubscribe: mockResubscribe,
     initialize: mockInitialize
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get billingControlEnabled() {
+        return mockBillingControlEnabled.value
+      }
+    }
   })
 }))
 
@@ -227,6 +259,12 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
+const AutoReloadSectionStub = {
+  props: ['frozen'],
+  template:
+    '<div data-testid="auto-reload-section" :data-frozen="String(frozen)" />'
+}
+
 const DropdownMenuStub = {
   props: ['entries'],
   template:
@@ -240,6 +278,7 @@ function renderComponent() {
       directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
+        AutoReloadSection: AutoReloadSectionStub,
         Button: ButtonStub,
         SubscriptionFooterLinks: SubscriptionFooterLinksStub,
         StatusBadge: true,
@@ -262,6 +301,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
+    mockBillingControlEnabled.value = false
+    mockBillingStatus.value = 'paid'
+    mockBillingSubscriptionStatus.value = 'active'
+    mockMembers.value = [
+      {
+        id: 'member-1',
+        email: 'creator@example.com',
+        joinDate: new Date('2026-01-01T00:00:00Z')
+      },
+      {
+        id: 'member-2',
+        email: 'me@example.com',
+        joinDate: new Date('2026-02-01T00:00:00Z')
+      }
+    ]
+    mockUserEmail.value = 'me@example.com'
     mockCanManageSubscriptionLifecycle.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
@@ -277,6 +332,110 @@ describe('SubscriptionPanelContentWorkspace', () => {
     }
     mockIsLoading.value = false
     mockError.value = null
+  })
+
+  it('preserves the existing billing UI while billing control is disabled', () => {
+    renderComponent()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('shows auto-reload to subscription managers when billing control is enabled', () => {
+    mockBillingControlEnabled.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'false'
+    )
+  })
+
+  it('removes auto-reload when the billing control kill switch turns off', async () => {
+    mockBillingControlEnabled.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    mockBillingControlEnabled.value = false
+    await nextTick()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('removes auto-reload when subscription management permission is revoked', async () => {
+    mockBillingControlEnabled.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toBeInTheDocument()
+
+    mockCanManageSubscription.value = false
+    await nextTick()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('keeps auto-reload hidden from members', () => {
+    mockBillingControlEnabled.value = true
+    mockCanManageSubscription.value = false
+    renderComponent()
+
+    expect(screen.queryByTestId('auto-reload-section')).not.toBeInTheDocument()
+  })
+
+  it('freezes auto-reload while billing is paused', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingStatus.value = 'paused'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
+  })
+
+  it('keeps auto-reload interactive while an active cancellation runs to term', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = true
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'false'
+    )
+  })
+
+  it('freezes auto-reload after the subscription has ended', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingSubscriptionStatus.value = 'ended'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
+  })
+
+  it('freezes auto-reload while billing is inactive', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingStatus.value = 'inactive'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'true'
+    )
+  })
+
+  it('leaves auto-reload interactive when payment is at risk', () => {
+    mockBillingControlEnabled.value = true
+    mockBillingStatus.value = 'payment_failed'
+    renderComponent()
+
+    expect(screen.getByTestId('auto-reload-section')).toHaveAttribute(
+      'data-frozen',
+      'false'
+    )
   })
 
   it('renders the subscribed credit stop price and renewal subtitle', () => {

@@ -2914,6 +2914,50 @@
       },
       "updatePayment": "Update payment"
     },
+    "autoReload": {
+      "badge": {
+        "off": "Off",
+        "paused": "Paused"
+      },
+      "dialog": {
+        "allowsReloads": "Allows {count} reload /mo | Allows {count} reloads /mo",
+        "amountLabel": "Add this amount of credits:",
+        "budgetBelowReload": "Budget is less than the reload amount — auto-reload won’t activate",
+        "budgetRequired": "Enter a monthly budget",
+        "budgetPlaceholderCredits": "Enter an amount of credits",
+        "budgetPlaceholderUsd": "Enter an amount of dollars",
+        "budgetToggleHint": "Limit how much is auto-reloaded per month",
+        "budgetToggleLabel": "Monthly budget",
+        "cancel": "Cancel",
+        "credits": "Credits",
+        "minReload": "Minimum amount is {amount}",
+        "thresholdLabel": "When credits drop below:",
+        "thresholdRequired": "Enter a credit threshold",
+        "title": "Auto-reload credits",
+        "unitLabel": "Display unit",
+        "update": "Update",
+        "usd": "USD",
+        "wholeNumberRequired": "Enter a valid whole number"
+      },
+      "disabled": "Disabled",
+      "edit": "Edit",
+      "empty": {
+        "body": "Keep your workflows running with auto-reloaded credits. Set a monthly budget so charges don't surprise you.",
+        "cta": "Set up auto-reload"
+      },
+      "enabled": "Enabled",
+      "subtitle": "Automatically add credits when your balance runs low, within an optional monthly budget.",
+      "tile": {
+        "label": "Auto-reload",
+        "monthlyBudget": "Monthly budget",
+        "nearLimitStatus": "Monthly budget is near its limit",
+        "percentSpent": "{percent}% spent",
+        "spentOfBudget": "{spent} of {budget}",
+        "whenBelow": "when credits drop below"
+      },
+      "title": "Credit auto-reload",
+      "toggleLabel": "Enable credit auto-reload"
+    },
     "invite": "Invite",
     "inviteMember": "Invite member",
     "inviteLimitReached": "You've reached the maximum of {count} members",
