@@ -32,11 +32,9 @@ const sameAs = [
   externalLinks.instagram,
   externalLinks.reddit,
   externalLinks.linkedin,
-  // Wikidata entity for the organization, so the Knowledge Graph can resolve it.
   externalLinks.wikidataComfyOrg
 ]
 
-// Authoritative encyclopedic and review-platform references for the ComfyUI software entity.
 const comfyUiSameAs = [
   externalLinks.wikidataComfyUi,
   externalLinks.wikipediaComfyUi,

@@ -7,10 +7,6 @@ import { computed, ref } from 'vue'
 import { t } from '../../../i18n/translations'
 import type { Locale } from '../../../i18n/translations'
 
-// Generic horizontal snap-scroll carousel: a scrollable track (default slot) with
-// a progress bar and prev/next controls. Deliberately named ScrollCarousel rather
-// than Carousel to avoid colliding with a future shadcn `Carousel`. Slotted items
-// own their own width and `shrink-0 snap-start` classes.
 const {
   locale = 'en',
   gapClass = 'gap-12 lg:gap-20',
@@ -44,7 +40,6 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
   <section
     :class="cn('max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24', className)"
   >
-    <!-- Scrollable track -->
     <div
       ref="trackRef"
       :class="
@@ -57,9 +52,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <slot />
     </div>
 
-    <!-- Controls -->
     <div class="mt-10 flex items-center gap-4">
-      <!-- Progress bar (decorative; navigation is via the buttons + scrollable track) -->
       <div class="h-1 flex-1 rounded-full bg-white/20" aria-hidden="true">
         <div
           class="bg-primary-comfy-yellow h-full rounded-full"
@@ -67,7 +60,6 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
         />
       </div>
 
-      <!-- Prev -->
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
@@ -81,7 +73,6 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
         />
       </button>
 
-      <!-- Next -->
       <button
         type="button"
         class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"

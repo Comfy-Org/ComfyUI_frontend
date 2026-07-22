@@ -15,9 +15,7 @@ test.describe('Customers @smoke', () => {
     await expect(heroImage).toHaveAttribute('width', /^\d+$/)
     await expect(heroImage).toHaveAttribute('height', /^\d+$/)
 
-    // Regression guard: an unloaded <img> without intrinsic dimensions
-    // collapses to ~0px, then jumps to its natural size on load and pushes
-    // the video below it. Reserved space must persist before bytes arrive.
+    // Dropping src must not collapse the box: width/height reserve space (CLS).
     const heightWhileUnloaded = await page.evaluate(() => {
       const img = document.querySelector<HTMLImageElement>(
         'img[alt="Comfy 3D logo"]'
@@ -45,8 +43,6 @@ test.describe('Customers @smoke', () => {
     expect(types).toContain('CollectionPage')
     expect(types).toContain('BreadcrumbList')
 
-    // Tie the list length to the story cards actually rendered, so the test
-    // tracks real content rather than a hardcoded count.
     const cardSlugs = await page
       .locator('a[href^="/customers/"]')
       .evaluateAll((links) => [
@@ -78,7 +74,6 @@ test.describe('Customers @smoke', () => {
 
     const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
     expect(graph.map((node) => node['@type'])).toContain('CollectionPage')
-    // Breadcrumb/item URLs must derive from the localized route, not /customers.
     expect(blocks[0]).toContain('/zh-CN/customers')
   })
 })
