@@ -12,7 +12,6 @@ import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const VISIBLE_CARDS = 5
-const REDUCED_MOTION_DWELL_MS = 2600
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
@@ -38,18 +37,19 @@ const reducedMotion = computed(prefersReducedMotion)
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 
-function cssMs(name: string) {
-  const raw = useCssVar(name, root)
+function cssMs(name: string, initial: string) {
+  const raw = useCssVar(name, root, { initialValue: initial, observe: true })
   return computed(() => Number.parseFloat(raw.value ?? '0'))
 }
 
-const startDelayMs = cssMs('--mcp-start-delay')
-const typeMinMs = cssMs('--mcp-type-min')
-const typeMaxMs = cssMs('--mcp-type-max')
-const afterTypingMs = cssMs('--mcp-after-typing')
-const runToolMs = cssMs('--mcp-run-tool')
-const afterCardMs = cssMs('--mcp-after-card')
-const betweenPromptsMs = cssMs('--mcp-between-prompts')
+const startDelayMs = cssMs('--mcp-start-delay', '2600ms')
+const typeMinMs = cssMs('--mcp-type-min', '18ms')
+const typeMaxMs = cssMs('--mcp-type-max', '55ms')
+const afterTypingMs = cssMs('--mcp-after-typing', '520ms')
+const runToolMs = cssMs('--mcp-run-tool', '360ms')
+const afterCardMs = cssMs('--mcp-after-card', '900ms')
+const betweenPromptsMs = cssMs('--mcp-between-prompts', '650ms')
+const reducedMotionDwellMs = cssMs('--mcp-reduced-motion-dwell', '2600ms')
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -114,7 +114,7 @@ function restBeforeNextPrompt() {
 
   schedule(
     typeNextPrompt,
-    reducedMotion.value ? REDUCED_MOTION_DWELL_MS : betweenPromptsMs.value
+    reducedMotion.value ? reducedMotionDwellMs.value : betweenPromptsMs.value
   )
 }
 
@@ -131,7 +131,7 @@ onUnmounted(() => clearTimeout(timer))
 </script>
 
 <template>
-  <div ref="root" class="mcp-demo flex flex-col gap-6">
+  <div ref="root" class="flex flex-col gap-6">
     <div
       data-testid="mcp-demo-panel"
       class="rounded-5xl flex flex-col gap-6 bg-white/4 p-6 lg:p-8"
@@ -270,16 +270,3 @@ onUnmounted(() => clearTimeout(timer))
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Demo animation timings, read from <script> via useCssVar. */
-.mcp-demo {
-  --mcp-start-delay: 2600ms;
-  --mcp-type-min: 18ms;
-  --mcp-type-max: 55ms;
-  --mcp-after-typing: 520ms;
-  --mcp-run-tool: 360ms;
-  --mcp-after-card: 900ms;
-  --mcp-between-prompts: 650ms;
-}
-</style>
