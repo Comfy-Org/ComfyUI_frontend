@@ -4716,12 +4716,28 @@ const translations = {
     'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
   },
   'brand.voice.dont.0': {
-    en: 'Simply connect your AI blocks and watch the magic happen!',
-    'zh-CN': '只需连接你的 AI 模块，见证奇迹的发生！'
+    en: 'Outline the logo.',
+    'zh-CN': '为 logo 描边。'
   },
   'brand.voice.dont.1': {
-    en: 'Oops! Something went wrong. Please try again later.',
-    'zh-CN': '哎呀！出了点问题，请稍后再试。'
+    en: 'Use the logo as a pattern.',
+    'zh-CN': '将 logo 用作重复图案。'
+  },
+  'brand.voice.dont.2': {
+    en: 'Stretch the logo.',
+    'zh-CN': '拉伸 logo。'
+  },
+  'brand.voice.dont.3': {
+    en: 'Straighten oblique logo.',
+    'zh-CN': '将倾斜的 logo 摆正。'
+  },
+  'brand.voice.dont.4': {
+    en: 'Edit logo corner radii.',
+    'zh-CN': '修改 logo 的圆角半径。'
+  },
+  'brand.voice.dont.5': {
+    en: 'Overlay the logomark on wordmark.',
+    'zh-CN': '将图形标叠加在文字标之上。'
   },
   'brand.trademark.heading': {
     en: 'Trademark guidelines.',
