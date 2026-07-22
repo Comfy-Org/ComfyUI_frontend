@@ -148,12 +148,13 @@ describe('AutoReloadDialogContent', () => {
     await user.type(budget, '1000')
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Monthly budget is lower than the reload amount. Increase the budget to allow auto-reload.'
+      'Budget is less than the reload amount — auto-reload won’t activate'
     )
     expect(budget).toHaveAttribute(
       'aria-describedby',
       'auto-reload-budget-warning'
     )
+    expect(budget).not.toHaveAttribute('aria-invalid')
     expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
   })
 

@@ -124,7 +124,8 @@
           cn(
             fieldClass,
             !budgetEnabled && 'opacity-50',
-            budgetError && 'ring-1 ring-red-500'
+            budgetError && 'ring-1 ring-red-500',
+            budgetWarning && 'ring-1 ring-warning-background'
           )
         "
       >
@@ -140,7 +141,7 @@
           :disabled="!budgetEnabled"
           aria-labelledby="auto-reload-budget-label"
           inputmode="numeric"
-          :aria-invalid="!!budgetError"
+          :aria-invalid="budgetError ? 'true' : undefined"
           :aria-describedby="
             budgetError
               ? 'auto-reload-budget-error'
@@ -171,12 +172,8 @@
         v-if="budgetWarning"
         id="auto-reload-budget-warning"
         role="status"
-        class="m-0 flex items-center gap-1.5 text-xs text-warning-background"
+        class="m-0 text-xs text-warning-background"
       >
-        <i
-          class="icon-[lucide--triangle-alert] size-3.5 shrink-0"
-          aria-hidden="true"
-        />
         {{ budgetWarning }}
       </p>
       <p
