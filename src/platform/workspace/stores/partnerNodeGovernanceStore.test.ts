@@ -286,6 +286,64 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.policy).toEqual(savedPolicy)
   })
 
+  it('creates the initial document when the first provider is changed', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProviderEnabled('openai', false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
+  it('preserves existing policy entries when one provider is changed', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: false }
+      ]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setProviderEnabled('openai', false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
+  it('applies bulk changes to every catalog provider', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setAllProvidersEnabled(false)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: false }
+      ]
+    })
+  })
+
   it('reloads the catalog after an unknown-provider response', async () => {
     mockUpdatePartnerNodePolicy.mockRejectedValue(
       new PartnerNodePolicyApiError(422, 'Unprocessable Entity')

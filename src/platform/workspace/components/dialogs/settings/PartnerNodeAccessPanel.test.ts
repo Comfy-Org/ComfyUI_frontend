@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
 import type {
   PartnerNodePolicy,
   PartnerProvider
@@ -11,20 +12,35 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 
-const mockLoadPolicy = vi.fn()
-const mockIsProviderEnabled = vi.fn()
-
-const { mockNodeDefsByName, mockPolicy, mockProviders, mockStatus } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
-    return {
-      mockNodeDefsByName: ref<Record<string, ComfyNodeDefImpl>>({}),
-      mockPolicy: ref<PartnerNodePolicy | null>(null),
-      mockProviders: ref<PartnerProvider[]>([]),
-      mockStatus: ref('configured')
-    }
-  })
+const {
+  mockCloseDialog,
+  mockIsProviderEnabled,
+  mockIsSaving,
+  mockLoadPolicy,
+  mockNodeDefsByName,
+  mockPolicy,
+  mockProviders,
+  mockSetAllProvidersEnabled,
+  mockSetProviderEnabled,
+  mockShowConfirmDialog,
+  mockStatus
+} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
+  return {
+    mockCloseDialog: vi.fn(),
+    mockIsProviderEnabled: vi.fn(),
+    mockIsSaving: ref(false),
+    mockLoadPolicy: vi.fn(),
+    mockNodeDefsByName: ref<Record<string, ComfyNodeDefImpl>>({}),
+    mockPolicy: ref<PartnerNodePolicy | null>(null),
+    mockProviders: ref<PartnerProvider[]>([]),
+    mockSetAllProvidersEnabled: vi.fn(),
+    mockSetProviderEnabled: vi.fn(),
+    mockShowConfirmDialog: vi.fn(),
+    mockStatus: ref('configured')
+  }
+})
 
 vi.mock('pinia', async (importOriginal) => {
   const actual = await importOriginal()
@@ -39,9 +55,20 @@ vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
     policy: mockPolicy,
     providers: mockProviders,
     status: mockStatus,
+    isSaving: mockIsSaving,
     isProviderEnabled: mockIsProviderEnabled,
-    loadPolicy: mockLoadPolicy
+    loadPolicy: mockLoadPolicy,
+    setAllProvidersEnabled: mockSetAllProvidersEnabled,
+    setProviderEnabled: mockSetProviderEnabled
   })
+}))
+
+vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+  showConfirmDialog: mockShowConfirmDialog
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -51,36 +78,7 @@ vi.mock('@/stores/nodeDefStore', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      workspacePanel: {
-        partnerNodes: {
-          title: 'Partner node access',
-          unrestricted: 'Unrestricted',
-          restricted: 'Restricted',
-          unrestrictedDescription:
-            'Partner nodes from every provider are available.',
-          restrictedDescription:
-            'Only partner nodes from enabled providers are available.',
-          searchPlaceholder: 'Search providers and partner nodes...',
-          tableLabel: 'Partner node providers',
-          columns: {
-            provider: 'Provider / partner node',
-            nodes: 'Nodes',
-            enabled: 'Enabled'
-          },
-          nodeCount: '{count} node | {count} nodes',
-          enabled: 'Enabled',
-          disabled: 'Disabled',
-          loading: 'Loading partner node access',
-          loadError: "Partner node access couldn't be loaded.",
-          retry: 'Try again',
-          noResults: 'No providers or partner nodes found'
-        }
-      },
-      g: { clear: 'Clear' }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 function nodeDef(
@@ -106,6 +104,7 @@ describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockStatus.value = 'configured'
+    mockIsSaving.value = false
     mockPolicy.value = null
     mockProviders.value = [
       {
@@ -124,6 +123,9 @@ describe('PartnerNodeAccessPanel', () => {
       VideoNode: nodeDef('VideoNode', 'Create video', 'partner/video/Sora')
     }
     mockIsProviderEnabled.mockReturnValue(true)
+    mockSetAllProvidersEnabled.mockResolvedValue(undefined)
+    mockSetProviderEnabled.mockResolvedValue(undefined)
+    mockShowConfirmDialog.mockReturnValue({ key: 'disable-all-dialog' })
   })
 
   it('groups object-info nodes under visible catalog providers', async () => {
@@ -196,7 +198,7 @@ describe('PartnerNodeAccessPanel', () => {
     expect(screen.getByText('No providers or partner nodes found')).toBeTruthy()
   })
 
-  it('shows effective disabled state only while restricted', () => {
+  it('shows stored disabled state while restricted', () => {
     mockPolicy.value = {
       enforcementEnabled: true,
       providers: [{ providerId: 'openai', enabled: false }]
@@ -205,7 +207,89 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     expect(screen.getByText('Restricted')).toBeTruthy()
-    expect(screen.getByText('Disabled')).toBeTruthy()
+    expect(
+      screen
+        .getByRole('switch', { name: 'Set access for OpenAI (inc. Sora)' })
+        .getAttribute('aria-checked')
+    ).toBe('false')
+  })
+
+  it('explains stored provider settings while access is unrestricted', () => {
+    mockPolicy.value = {
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    mockIsProviderEnabled.mockReturnValue(false)
+    renderComponent()
+
+    expect(
+      screen.getByText(
+        'Partner nodes from every provider are available. Provider settings below apply when access is restricted.'
+      )
+    ).toBeTruthy()
+    expect(
+      screen
+        .getByRole('switch', { name: 'Set access for OpenAI (inc. Sora)' })
+        .getAttribute('aria-checked')
+    ).toBe('false')
+  })
+
+  it('saves provider and enable-all changes immediately', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    )
+    await user.click(screen.getByRole('button', { name: 'Enable all' }))
+
+    expect(mockSetProviderEnabled).toHaveBeenCalledWith('openai', false)
+    expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(true)
+  })
+
+  it('surfaces save failures', async () => {
+    const user = userEvent.setup()
+    mockSetProviderEnabled.mockRejectedValueOnce(new Error('Save failed'))
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Partner node access couldn't be updated. Try again."
+    )
+  })
+
+  it('locks provider controls while saving', () => {
+    mockIsSaving.value = true
+    renderComponent()
+
+    expect(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Enable all' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
+  })
+
+  it('confirms before disabling every provider', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Disable all' }))
+
+    expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe('Disable all providers?')
+    await options.footerProps.onConfirm()
+    expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(false)
+    expect(mockCloseDialog).toHaveBeenCalled()
   })
 
   it('retries a failed load', async () => {
