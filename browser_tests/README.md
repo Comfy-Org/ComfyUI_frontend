@@ -127,8 +127,10 @@ browser_tests/
 
 ### Architectural Separation
 
-- **`fixtures/data/`** — Static test data only. Mock API responses, workflow
-  JSONs, node definitions. No code, no imports from Playwright.
+- **`fixtures/data/`** — Test data: mock API responses, workflow JSONs, node
+  definitions, and the typed factory builders that produce them (e.g.
+  `createMockNodeDefinitions`). No Playwright imports and no test logic — data
+  and the functions that assemble it, nothing else.
 - **`fixtures/components/`** — Page object components. Classes that own locators
   for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `SettingDialog`,
   `Templates`).
@@ -145,7 +147,9 @@ flowchart TD
     A[New file in browser_tests/fixtures/] --> B{Has any code?}
     B -- No, JSON/data only --> D[fixtures/data/]
     B -- Yes --> C{Is it a class?}
-    C -- No, exported functions --> U[fixtures/utils/]
+    C -- No, exported functions --> V{Pure data or a typed<br/>data factory?}
+    V -- Yes --> D
+    V -- No, test utility --> U[fixtures/utils/]
     C -- Yes --> E{Owns locators for a<br/>specific UI region?}
     E -- Yes --> P[fixtures/components/]
     E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
@@ -494,6 +498,12 @@ const mockRelease: ReleaseNote = { id: 1, project: 'comfyui', version: 'v0.3.44'
 // ❌ Untyped inline JSON — schema drift goes unnoticed
 body: JSON.stringify([{ id: 1, project: 'comfyui', version: 'v0.3.44' }])
 ```
+
+The example annotates with the app-facing `ReleaseNote` (which the release
+service derives from the registry response) to show the pattern. When you mock
+the **raw** endpoint response body, annotate with the generated type from the
+table above — for releases that is `@comfyorg/registry-types` — so the mock
+tracks the API shape directly.
 
 Keep fixture values realistic but stable — avoid dates, random IDs, or anything
 that would cause flakiness. When adding a fixture, locate the generated type or
