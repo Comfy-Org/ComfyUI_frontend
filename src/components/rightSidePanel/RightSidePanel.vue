@@ -172,8 +172,9 @@ const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
 
   if (
-    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
-    hasRelevantErrors.value
+    hasRelevantErrors.value &&
+    (rightSidePanelStore.activeTab === 'errors' ||
+      settingStore.get('Comfy.RightSidePanel.ShowErrorsTab'))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
