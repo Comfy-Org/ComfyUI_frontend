@@ -1560,6 +1560,8 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Members": "Members",
+    "Allowlist": "Allowlist",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -2920,7 +2922,8 @@
     "tabs": {
       "dashboard": "Dashboard",
       "planCredits": "Plan & Credits",
-      "membersCount": "Members ({count})"
+      "membersCount": "Members ({count})",
+      "partnerNodes": "Partner nodes"
     },
     "dashboard": {
       "placeholder": "Dashboard workspace settings"
@@ -2953,6 +2956,42 @@
       "noInvites": "No pending invites",
       "noMembers": "No members",
       "searchPlaceholder": "Search..."
+    },
+    "partnerNodes": {
+      "title": "Partner node access",
+      "unrestricted": "Unrestricted",
+      "restricted": "Restricted",
+      "accessMode": "Partner node access mode",
+      "unrestrictedDescription": "Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.",
+      "restrictedDescription": "Only partner nodes from enabled providers are available. Changes can take up to 10 minutes to apply.",
+      "searchPlaceholder": "Search providers and partner nodes...",
+      "tableLabel": "Partner node providers",
+      "columns": {
+        "provider": "Provider",
+        "nodes": "Nodes",
+        "lastModified": "Last modified",
+        "enabled": "Enabled"
+      },
+      "nodeCount": "{count} enabled",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "enableAll": "Enable all",
+      "disableAll": "Disable all",
+      "toggleProvider": "Set access for {provider}",
+      "disableAllTitle": "Disable all providers?",
+      "disableAllMessage": "All providers will be turned off. Partner nodes will be unavailable while access is restricted.",
+      "restrictAccessTitle": "Restrict access to partner nodes?",
+      "restrictAccessMessage": "Workspace members will only be able to use partner nodes from providers that you enable.",
+      "restrictAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "allowAllAccessTitle": "Allow access to all partner nodes?",
+      "allowAllAccessMessage": "Partner nodes from every provider will become available to every workspace member.",
+      "allowAllAccessHint": "This can take up to 10 minutes to apply across your workspace.",
+      "saveError": "Partner node access couldn't be updated. Try again.",
+      "loading": "Loading partner node access",
+      "loadError": "Partner node access couldn't be loaded.",
+      "retry": "Try again",
+      "ownerOnly": "Only workspace owners can update partner node access.",
+      "noResults": "No providers or partner nodes found"
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
