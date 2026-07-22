@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 import { useCssVar, useElementVisibility } from '@vueuse/core'
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
@@ -32,7 +32,6 @@ const nextPrompt = computed(
 const typed = ref(t(nextPrompt.value.promptKey, locale))
 const submitting = ref(false)
 const status = ref(idleStatus)
-const reducedMotion = computed(prefersReducedMotion)
 
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
@@ -58,7 +57,6 @@ const afterTypingMs = cssMs('--mcp-after-typing', '520ms')
 const runToolMs = cssMs('--mcp-run-tool', '360ms')
 const afterCardMs = cssMs('--mcp-after-card', '900ms')
 const betweenPromptsMs = cssMs('--mcp-between-prompts', '650ms')
-const reducedMotionDwellMs = cssMs('--mcp-reduced-motion-dwell', '2600ms')
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -69,13 +67,6 @@ function schedule(step: () => void, ms: number) {
 
 function typeNextPrompt() {
   const text = t(nextPrompt.value.promptKey, locale)
-
-  if (reducedMotion.value) {
-    typed.value = text
-    schedule(runTool, afterTypingMs.value)
-    return
-  }
-
   typed.value = ''
 
   let typedLength = 0
@@ -119,21 +110,19 @@ function commitCard() {
 }
 
 function restBeforeNextPrompt() {
-  if (!reducedMotion.value) typed.value = ''
-
-  schedule(
-    typeNextPrompt,
-    reducedMotion.value ? reducedMotionDwellMs.value : betweenPromptsMs.value
-  )
+  typed.value = ''
+  schedule(typeNextPrompt, betweenPromptsMs.value)
 }
 
-watch(visible, (onScreen) => {
-  if (onScreen) {
-    schedule(typeNextPrompt, startDelayMs.value)
+watchEffect(() => {
+  clearTimeout(timer)
+  if (prefersReducedMotion()) {
+    typed.value = t(nextPrompt.value.promptKey, locale)
+    submitting.value = false
+    status.value = idleStatus
     return
   }
-
-  clearTimeout(timer)
+  if (visible.value) schedule(typeNextPrompt, startDelayMs.value)
 })
 
 onUnmounted(() => clearTimeout(timer))
@@ -198,7 +187,6 @@ onUnmounted(() => clearTimeout(timer))
       <TransitionGroup
         name="card-slide"
         tag="div"
-        :css="!reducedMotion"
         class="flex flex-col gap-2.5"
       >
         <div
