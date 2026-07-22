@@ -34,6 +34,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerQueuePromptGuard } from '@/services/queuePromptGuardService'
 
 const {
   mockApiKeyAuthStore,
@@ -212,6 +213,58 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
 
+    it('blocks before adding a disallowed prompt to the client queue', async () => {
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.before-queue',
+        () => false
+      )
+      const dispatchEvent = vi
+        .spyOn(api, 'dispatchCustomEvent')
+        .mockImplementation(() => true)
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+
+      try {
+        await expect(app.queuePrompt(0)).resolves.toBe(false)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(mockAuthStore.getAuthToken).not.toHaveBeenCalled()
+      expect(dispatchEvent).not.toHaveBeenCalled()
+      expect(queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('checks policy again after deferred authentication resolves', async () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let resolveAuth: (token: string | undefined) => void = () => {}
+      mockAuthStore.getAuthToken.mockReturnValue(
+        new Promise((resolve) => {
+          resolveAuth = resolve
+        })
+      )
+      let guardCalls = 0
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.after-auth',
+        () => ++guardCalls === 1
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+
+      try {
+        const result = app.queuePrompt(0)
+        await vi.waitFor(() => {
+          expect(mockAuthStore.getAuthToken).toHaveBeenCalledOnce()
+        })
+        resolveAuth(undefined)
+
+        await expect(result).resolves.toBe(false)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(guardCalls).toBe(2)
+      expect(queuePrompt).not.toHaveBeenCalled()
+    })
+
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
       const workflow = new ComfyWorkflow({
@@ -285,6 +338,48 @@ describe('ComfyApp', () => {
       expect(errorStore.lastNodeErrors).toBeNull()
       expect(errorStore.lastPromptError).toMatchObject({
         type: 'prompt_no_outputs'
+      })
+    })
+
+    it('surfaces authoritative partner policy denials in the Errors panel and toast', async () => {
+      prepareEmptyPromptQueue()
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'KlingImage2VideoNode',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'workspace_partner_node_disabled',
+              message: 'This node has been disabled by your team admin.',
+              details: '',
+              extra_info: {}
+            }
+          ]
+        }
+      }
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            node_errors: nodeErrors,
+            error: {
+              type: 'PARTNER_NODE_DISABLED',
+              message: 'Workspace policy denied KlingImage2VideoNode',
+              details: ''
+            }
+          },
+          403
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(useExecutionErrorStore().lastNodeErrors).toEqual(nodeErrors)
+      expect(mockToastStore.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Partner nodes',
+        detail: 'This node has been disabled by your team admin.',
+        group: 'partner-node-policy',
+        life: 8000
       })
     })
 

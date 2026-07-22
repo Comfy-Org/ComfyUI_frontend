@@ -39,6 +39,7 @@ import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
 } from '@/platform/errorCatalog/errorMessageResolver'
+import { WORKSPACE_PARTNER_NODE_DISABLED_TYPE } from '@/platform/errorCatalog/validationErrorResolver'
 import {
   compareExecutionId,
   tryNormalizeNodeExecutionId
@@ -151,12 +152,25 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
     .map(([rawGroupKey, groupData]) => {
       const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
+      const count = countExecutionCards(cards)
+      const isPluralPartnerNodePolicyError =
+        rawGroupKey === WORKSPACE_PARTNER_NODE_DISABLED_TYPE && count > 1
       return {
         type: 'execution' as const,
         groupKey: `execution:${rawGroupKey}`,
-        displayTitle: groupData.displayTitle,
-        displayMessage: groupData.displayMessage,
-        count: countExecutionCards(cards),
+        displayTitle: isPluralPartnerNodePolicyError
+          ? st(
+              'errorCatalog.validationErrors.workspace_partner_node_disabled.titlePlural',
+              'Disabled nodes'
+            )
+          : groupData.displayTitle,
+        displayMessage: isPluralPartnerNodePolicyError
+          ? st(
+              'errorCatalog.validationErrors.workspace_partner_node_disabled.messagePlural',
+              'These nodes have been disabled by your team admin. Use different nodes.'
+            )
+          : groupData.displayMessage,
+        count,
         cards,
         priority: groupData.priority
       }
