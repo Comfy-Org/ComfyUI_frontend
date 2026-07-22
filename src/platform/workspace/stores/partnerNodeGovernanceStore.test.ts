@@ -344,6 +344,47 @@ describe('partnerNodeGovernanceStore', () => {
     })
   })
 
+  it('changes enforcement without changing provider review state', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: false,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    } satisfies PartnerNodePolicy)
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setEnforcementEnabled(true)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: false },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
+  it('creates the initial policy when enforcement changes', async () => {
+    mockUpdatePartnerNodePolicy.mockImplementation(
+      async (nextPolicy: PartnerNodePolicy) => nextPolicy
+    )
+    store = await createLoadedStore()
+
+    await store.setEnforcementEnabled(true)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
+      enforcementEnabled: true,
+      providers: [
+        { providerId: 'openai', enabled: true },
+        { providerId: 'route-only', enabled: true }
+      ]
+    })
+  })
+
   it('reloads the catalog after an unknown-provider response', async () => {
     mockUpdatePartnerNodePolicy.mockRejectedValue(
       new PartnerNodePolicyApiError(422, 'Unprocessable Entity')

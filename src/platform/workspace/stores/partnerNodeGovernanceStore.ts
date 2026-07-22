@@ -200,6 +200,14 @@ export const usePartnerNodeGovernanceStore = defineStore(
       })
     }
 
+    async function setEnforcementEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: enabled
+      })
+    }
+
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
 
     return {
@@ -214,7 +222,8 @@ export const usePartnerNodeGovernanceStore = defineStore(
       loadPolicy,
       savePolicy,
       setProviderEnabled,
-      setAllProvidersEnabled
+      setAllProvidersEnabled,
+      setEnforcementEnabled
     }
   }
 )
