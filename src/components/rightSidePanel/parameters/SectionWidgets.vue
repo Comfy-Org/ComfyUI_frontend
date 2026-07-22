@@ -393,14 +393,6 @@ defineExpose({
         data-testid="section-widgets-list"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <!--
-          Render key maps widget identity to a stable key via a WeakMap, but
-          promotedInputWidget() returns a fresh object each recompute so promoted
-          rows still re-key on reorder. End-state is a stable WidgetEntityId key
-          (ADR-0008) that removes the churn. No TransitionGroup here: DraggableList
-          animates reorders, and a Vue enter transition replayed on the re-keyed
-          rows caused the promoted-inputs reorder jump.
-        -->
         <WidgetItem
           v-for="{ widget, node } in widgets"
           :key="getStableWidgetRenderKey(widget)"
