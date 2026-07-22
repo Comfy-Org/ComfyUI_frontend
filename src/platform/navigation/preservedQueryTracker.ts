@@ -2,26 +2,32 @@ import type { Router } from 'vue-router'
 
 import {
   capturePreservedQuery,
+  clearPreservedQuery,
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
+interface PreservedQueryDefinition {
+  namespace: string
+  keys: string[]
+  requiredKey?: string
+}
+
 export const installPreservedQueryTracker = (
   router: Router,
-  definitions: Array<{ namespace: string; keys: string[] }>
+  definitions: PreservedQueryDefinition[]
 ) => {
-  const trackedDefinitions = definitions.map((definition) => ({
-    ...definition
-  }))
-
   router.beforeEach((to, _from, next) => {
     const queryKeys = new Set(Object.keys(to.query))
 
-    trackedDefinitions.forEach(({ namespace, keys }) => {
+    definitions.forEach(({ namespace, keys, requiredKey }) => {
       hydratePreservedQuery(namespace)
-      const shouldCapture = keys.some((key) => queryKeys.has(key))
-      if (shouldCapture) {
-        capturePreservedQuery(namespace, to.query, keys)
+      const presentKeys = keys.filter((key) => queryKeys.has(key))
+      if (presentKeys.length === 0) return
+      if (requiredKey && !queryKeys.has(requiredKey)) {
+        clearPreservedQuery(namespace)
+        return
       }
+      capturePreservedQuery(namespace, to.query, keys)
     })
 
     next()

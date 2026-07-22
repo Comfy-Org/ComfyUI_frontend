@@ -6,6 +6,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -21,6 +22,8 @@ export interface SubscriptionDialogOptions {
    * always lands on the team tab even from a personal workspace).
    */
   planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
 }
 
 function getInitialPlanMode(
@@ -125,6 +128,10 @@ export const useSubscriptionDialog = () => {
       const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
         useBillingContext()
       if (isLegacyTeamPlan.value) {
+        const personalInitialCheckout =
+          options?.initialCheckout?.planMode === 'personal'
+            ? options.initialCheckout
+            : undefined
         dialogService.showLayoutDialog({
           key: DIALOG_KEY,
           component: defineAsyncComponent(
@@ -133,7 +140,13 @@ export const useSubscriptionDialog = () => {
           ),
           props: {
             onClose: hide,
-            reason: options?.reason
+            reason: options?.reason,
+            ...(personalInitialCheckout
+              ? {
+                  initialCheckout: personalInitialCheckout,
+                  isPersonal: true
+                }
+              : {})
           },
           // The legacy table hosts a PrimeVue Popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
@@ -152,6 +165,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
             isTeamPlan.value,
