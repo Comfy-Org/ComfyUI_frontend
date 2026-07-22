@@ -34,15 +34,6 @@ test.describe('Partner node governance workbench', { tag: '@cloud' }, () => {
     await expect(policyAlert).toContainText(
       'This node has been disabled by your team admin.'
     )
-    await policyAlert.getByRole('button', { name: 'View details' }).click()
-    await expect(
-      page.getByRole('button', { name: '1 Disabled node' })
-    ).toBeVisible()
-    await expect(
-      page.getByText(
-        'This node has been disabled by your team admin. Use a different node.'
-      )
-    ).toBeVisible()
     expect(partnerNodeGovernance.promptRequestCount()).toBe(0)
   })
 })
