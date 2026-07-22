@@ -133,9 +133,19 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }))
   })
 
-  // How the selected provider's credential is entered. Providers omitting
-  // `input_type` (and any unlisted selection) default to a single-line secret.
+  // How the credential is entered. When editing, the stored secret's
+  // `credential_type` wins: the server validates an updated value against the
+  // stored type (immutable on update), so the rendered input and client-side
+  // validation must match it. Otherwise the selected provider's `input_type`
+  // applies; providers omitting it default to a single-line secret.
   const selectedInputType = computed<SecretInputType>(() => {
+    const storedCredentialType =
+      mode === 'edit' ? toValue(secretRef)?.credential_type : undefined
+    if (storedCredentialType) {
+      return storedCredentialType === 'gcp_service_account'
+        ? 'json_file'
+        : 'text'
+    }
     if (!form.provider) return 'text'
     return providerInfoById.value.get(form.provider)?.input_type ?? 'text'
   })
