@@ -95,4 +95,61 @@ describe('LGraphNode size reflow', () => {
     expect([...node.size]).toEqual([210, 175])
     expect(Array.from(node.size)).toEqual([210, 175])
   })
+
+  it('preserves the Float64Array identity and buffer contract', () => {
+    const { node } = setup()
+    const size = node.size
+
+    expect(size instanceof Float64Array).toBe(true)
+    if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
+
+    expect(size.BYTES_PER_ELEMENT).toBe(8)
+    expect(size.buffer).toBeInstanceOf(ArrayBuffer)
+    // size is the subarray(2, 4) view of the node's [x, y, w, h] Rectangle.
+    expect(size.byteOffset).toBe(2 * Float64Array.BYTES_PER_ELEMENT)
+
+    const view = size.subarray(1, 2)
+    expect(ArrayBuffer.isView(view)).toBe(true)
+    node.size[1] = 321
+    expect(view[0]).toBe(321)
+  })
+
+  it('returns a cached Proxy that stays bound to the live backing store', () => {
+    const { node } = setup()
+    const cached = node.size
+
+    expect(node.size).toBe(cached)
+
+    node.size = [260, 140]
+    expect(cached[0]).toBe(260)
+    expect(cached[1]).toBe(140)
+
+    node.size[1] = 999
+    expect(cached[1]).toBe(999)
+  })
+
+  it('does not disturb the sibling pos subarray when size is mutated', () => {
+    const { node } = setup()
+    node.pos[0] = 33
+    node.pos[1] = 44
+
+    node.size[0] = 500
+    node.size[1] = 600
+
+    expect(node.pos[0]).toBe(33)
+    expect(node.pos[1]).toBe(44)
+    expect(node.size[0]).toBe(500)
+    expect(node.size[1]).toBe(600)
+  })
+
+  it('serializes size as a plain array, never leaking the Proxy', () => {
+    const { node } = setup()
+    node.size[1] = 175
+
+    const serialized = node.serialize()
+    expect(Array.isArray(serialized.size)).toBe(true)
+    expect(serialized.size).toEqual([210, 175])
+    expect(serialized.size instanceof Float64Array).toBe(false)
+    expect(() => structuredClone(serialized)).not.toThrow()
+  })
 })
