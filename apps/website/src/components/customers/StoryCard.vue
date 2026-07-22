@@ -16,7 +16,6 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
     :href="`${prefix}/customers/${story.slug}`"
     class="bg-transparency-white-t4 group flex flex-col overflow-hidden rounded-3xl transition-colors hover:bg-white/8"
   >
-    <!-- Image -->
     <div class="m-2 aspect-video overflow-hidden rounded-2xl">
       <div
         class="size-full rounded-2xl bg-white/5 bg-cover bg-center"
@@ -24,7 +23,6 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
       />
     </div>
 
-    <!-- Content -->
     <div class="flex flex-1 flex-col justify-between px-6 pt-4 pb-6">
       <div>
         <span

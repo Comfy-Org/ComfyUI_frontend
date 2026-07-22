@@ -92,6 +92,30 @@ test.describe('Contact', { tag: '@visual' }, () => {
   }
 })
 
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS) {
+    test(`stories-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+      await assertNoOverflow(page)
+      await expect(page).toHaveScreenshot(`customers-${vp.name}.png`, {
+        fullPage: true
+      })
+    })
+  }
+})
+
+test.describe('Customer story', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS) {
+    test(`detail-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers/xindi-zhang')
+      await assertNoOverflow(page)
+      await expect(page).toHaveScreenshot(`customer-detail-${vp.name}.png`)
+    })
+  }
+})
+
 test.describe('Gallery', { tag: '@visual' }, () => {
   for (const vp of SMALL_VIEWPORTS) {
     test(`gallery-grid-${vp.name}`, async ({ page }) => {

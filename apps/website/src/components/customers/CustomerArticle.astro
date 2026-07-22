@@ -31,15 +31,11 @@ interface Props {
 const { entry, locale = 'en' } = Astro.props
 const { Content } = await render(entry)
 
-// The sidebar nav mirrors the section outline declared in frontmatter so it is
-// server-rendered, exactly like the previous ContentSection sidebar.
 const categories = entry.data.sections.map((section) => ({
   label: section.label,
   value: section.id
 }))
 
-// Markdown elements are mapped to the ported block styles; the named
-// components (Section, Figure, ...) are used directly inside the MDX body.
 const contentComponents = {
   p: Paragraph,
   a: Link,
