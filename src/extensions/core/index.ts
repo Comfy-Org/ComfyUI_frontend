@@ -37,6 +37,7 @@ import './widgetInputs'
 if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
+  await import('./cloudPartnerNodeGovernance')
   await import('./cloudSessionCookie')
 }
 
