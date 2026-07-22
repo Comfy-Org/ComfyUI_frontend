@@ -600,9 +600,8 @@ test.describe('GLSL Shader Preview', { tag: ['@vue-nodes', '@node'] }, () => {
       await comfyPage.vueNodes.waitForNodes(1)
     })
 
-    // Regression guard for #13875: a promoted proxy widget's live value lives at
-    // the host widget key, but the uniform source is discovered from the interior
-    // node. Editing the promoted widget on the host node must reach the renderer.
+    // Regression guard for #13875: editing a promoted host widget must reach the
+    // GLSL preview renderer.
     test('reflects promoted host widget edits in the preview', async ({
       comfyPage,
       getWebSocket

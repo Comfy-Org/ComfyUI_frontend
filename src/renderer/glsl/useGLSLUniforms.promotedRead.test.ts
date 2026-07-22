@@ -28,7 +28,7 @@ import type { UUID } from '@/utils/uuid'
  * fix the composable returns the stale interior value.
  */
 
-const GRAPH_ID = 'root' as UUID
+const GRAPH_ID: UUID = '3f8e2a1c-0b47-4d96-8a5e-1c2d3e4f5a6b'
 const INTERIOR_NODE_ID = toNodeId('10')
 const HOST_NODE_ID = toNodeId('99')
 

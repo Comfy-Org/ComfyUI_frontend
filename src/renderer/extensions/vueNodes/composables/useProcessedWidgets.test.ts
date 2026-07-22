@@ -498,15 +498,18 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('resolves a promoted widget locator from its source execution id', () => {
-    executionIdToNodeLocatorId.mockReturnValueOnce('source:inner-node')
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId('host-node'),
+      toNodeId('inner-node')
+    ])
+    executionIdToNodeLocatorId.mockImplementationOnce((_graph, executionId) =>
+      executionId === sourceExecutionId ? 'source:inner-node' : undefined
+    )
     const widget = createMockWidget({
       name: 'curve',
       type: 'curve',
       nodeId: toNodeId('host-node'),
-      sourceExecutionId: createNodeExecutionId([
-        toNodeId('host-node'),
-        toNodeId('inner-node')
-      ])
+      sourceExecutionId
     })
 
     const result = computeProcessedWidgets({
@@ -530,6 +533,10 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
 
     expect(result[0].simplified.nodeLocatorId).toBe('source:inner-node')
+    expect(executionIdToNodeLocatorId).toHaveBeenCalledWith(
+      expect.anything(),
+      sourceExecutionId
+    )
   })
 
   it('deduplication keeps visible widget over hidden duplicate', () => {
