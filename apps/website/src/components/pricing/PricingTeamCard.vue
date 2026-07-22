@@ -83,7 +83,7 @@ const ctaHref = computed(() =>
     <div class="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-20">
       <div class="lg:col-span-2 lg:max-w-xl">
         <div
-          class="ppformula-text-center flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
+          class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
           <PricingPlanLabel :label="t('pricing.plan.team.label', locale)" />
           <p class="text-primary-warm-gray text-sm">
@@ -114,7 +114,7 @@ const ctaHref = computed(() =>
             :step="1"
             :ticks="teamCreditTiers.length"
             :thumb-label="t('pricing.team.sliderLabel', locale)"
-            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString(locale)} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
+            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
               <ComponentIcon

@@ -19,3 +19,13 @@ describe('educationOffers', () => {
     })
   })
 })
+
+describe('pricingOffers', () => {
+  it('points every JSON-LD offer at the cloud pricing-table deep link', () => {
+    for (const offer of pricingOffers('en')) {
+      expect(offer.url).toMatch(
+        /^https:\/\/cloud\.comfy\.org\/\?pricing=[a-z]+&cycle=monthly$/
+      )
+    }
+  })
+})

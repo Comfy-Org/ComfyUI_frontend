@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { PricingPlan } from './pricingPlans'
-import { planFeatures, pricingPlans } from './pricingPlans'
+import { planFeatures, pricingPlans, subscribeUrl } from './pricingPlans'
 
 const eduPlan = pricingPlans.find((plan) => plan.eduPriceKey)!
 
@@ -41,6 +41,23 @@ describe('planFeatures', () => {
   it('does not add the savings row to plans without education pricing', () => {
     expect(planFeatures(planWithoutEduPricing, true, 'monthly')).toBe(
       planWithoutEduPricing.features
+    )
+  })
+})
+
+// The cloud pricing-table deep link (FE-1104): personal tiers open checkout via
+// ?pricing=<tier>&cycle=, team adds &stop=team_<n>. Consumed by
+// usePricingTableUrlLoader in the cloud app — keep these in lockstep.
+describe('subscribeUrl', () => {
+  it('builds a personal-tier deep link with no stop', () => {
+    expect(subscribeUrl('standard', 'monthly')).toBe(
+      'https://cloud.comfy.org/?pricing=standard&cycle=monthly'
+    )
+  })
+
+  it('adds the credit stop for the team tier', () => {
+    expect(subscribeUrl('team', 'yearly', 'team_700')).toBe(
+      'https://cloud.comfy.org/?pricing=team&stop=team_700&cycle=yearly'
     )
   })
 })

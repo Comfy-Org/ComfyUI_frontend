@@ -67,7 +67,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
-        has: page.getByRole('heading', { name: /Pricing/i })
+        has: page.getByRole('heading', { name: /Choose a plan/i })
       })
       await expect(section).toBeVisible()
       await section.scrollIntoViewIfNeeded()

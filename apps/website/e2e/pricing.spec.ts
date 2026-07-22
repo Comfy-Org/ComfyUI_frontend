@@ -49,14 +49,22 @@ test.describe('Pricing page - Team plan', () => {
     await page.goto('/cloud/pricing')
 
     const teamLink = page.getByRole('link', { name: /subscribe to team/i })
-    await expect(teamLink).toHaveAttribute('href', /stop=team_700/)
+    // Full deep link, not just a stop= substring: path, param names, and order
+    // must match what the cloud pricing-table loader (FE-1104) parses.
+    await expect(teamLink).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?pricing=team&stop=team_700&cycle=yearly'
+    )
     // team_700 yearly: 10% volume discount off $700.
     await expect(page.getByText('$630', { exact: true })).toBeVisible()
 
     await page.getByRole('slider').focus()
     await page.keyboard.press('ArrowRight')
 
-    await expect(teamLink).toHaveAttribute('href', /stop=team_1400/)
+    await expect(teamLink).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?pricing=team&stop=team_1400&cycle=yearly'
+    )
     // team_1400 yearly: 15% off $1,400.
     await expect(page.getByText('$1,190', { exact: true })).toBeVisible()
   })
