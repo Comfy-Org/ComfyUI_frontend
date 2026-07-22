@@ -1,5 +1,23 @@
 <template>
   <Toast />
+  <Toast group="partner-node-policy">
+    <template #message="slotProps">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold">{{ slotProps.message.summary }}</span>
+          <span class="text-sm">{{ slotProps.message.detail }}</span>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          class="w-fit"
+          @click="viewPartnerNodePolicyErrors(slotProps.message)"
+        >
+          {{ $t('rightSidePanel.viewDetails') }}
+        </Button>
+      </div>
+    </template>
+  </Toast>
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
@@ -12,15 +30,24 @@
 
 <script setup lang="ts">
 import Toast from 'primevue/toast'
+import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { nextTick, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
 const settingStore = useSettingStore()
+const { viewErrorsInGraph } = useViewErrorsInGraph()
+
+function viewPartnerNodePolicyErrors(message: ToastMessageOptions) {
+  toast.remove(message)
+  viewErrorsInGraph()
+}
 
 watch(
   () => toastStore.messagesToAdd,

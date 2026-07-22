@@ -2991,7 +2991,12 @@
       "loadError": "Partner node access couldn't be loaded.",
       "retry": "Try again",
       "ownerOnly": "Only workspace owners can update partner node access.",
-      "noResults": "No providers or partner nodes found"
+      "noResults": "No providers or partner nodes found",
+      "runBlocked": {
+        "summary": "Partner nodes",
+        "detail": "This node has been disabled by your team admin.",
+        "nodeError": "This node has been disabled by your team admin."
+      }
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -3997,6 +4002,7 @@
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "hideAdvancedShort": "Hide advanced",
     "errors": "Errors",
+    "viewDetails": "View details",
     "noErrors": "No errors",
     "errorsDetected": "Error detected | Errors detected",
     "selectedNodeErrors": "{node} — {count} error | {node} — {count} errors",
@@ -4189,6 +4195,15 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "workspace_partner_node_disabled": {
+        "title": "Disabled node",
+        "titlePlural": "Disabled nodes",
+        "message": "This node has been disabled by your team admin. Use a different node.",
+        "messagePlural": "These nodes have been disabled by your team admin. Use different nodes.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner nodes",
+        "toastMessage": "This node has been disabled by your team admin."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",
@@ -4504,7 +4519,8 @@
     "hideDevOnly": "Hide Dev-Only Nodes",
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
-    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
+    "workspacePartnerNodeGovernance": "Hide partner nodes disabled by workspace policy"
   },
   "secrets": {
     "title": "API Keys & Secrets",

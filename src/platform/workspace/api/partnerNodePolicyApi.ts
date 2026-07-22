@@ -11,6 +11,9 @@ const partnerProviderSchema = z.object({
 const partnerProviderCatalogResponseSchema = z.object({
   providers: z.array(partnerProviderSchema)
 })
+export type PartnerProviderCatalogResponse = z.infer<
+  typeof partnerProviderCatalogResponseSchema
+>
 
 const partnerProviderPolicyEntrySchema = z.object({
   provider_id: z.string(),
@@ -21,6 +24,9 @@ const partnerNodePolicyResponseSchema = z.object({
   enforcement_enabled: z.boolean(),
   providers: z.array(partnerProviderPolicyEntrySchema)
 })
+export type PartnerNodePolicyResponse = z.infer<
+  typeof partnerNodePolicyResponseSchema
+>
 
 export interface PartnerProvider {
   id: string
