@@ -203,10 +203,7 @@ const rows = computed(() =>
                 loading="lazy"
                 class="size-full object-cover"
               />
-              <PlayOverlay
-                size="sm"
-                class="text-white transition-opacity md:opacity-0 md:group-hover/thumb:opacity-100 md:group-has-[h3>a:hover]/row:opacity-100"
-              />
+              <PlayOverlay size="sm" class="text-white" />
             </a>
 
             <div class="w-full min-w-0 md:w-auto md:flex-1">
