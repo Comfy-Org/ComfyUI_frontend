@@ -2364,6 +2364,7 @@
       "orContinueWith": "Or continue with",
       "loginWithGoogle": "Log in with Google",
       "loginWithGithub": "Log in with Github",
+      "googleSsoInAppBrowserNotice": "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
       "termsText": "By clicking \"Next\" or \"Sign Up\", you agree to our",
       "termsLink": "Terms of Use",
       "andText": "and",
