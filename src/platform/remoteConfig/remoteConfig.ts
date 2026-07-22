@@ -60,6 +60,11 @@ export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
   undefined
 )
 
+export const cachedConsolidatedBillingEnabled = useStorage<boolean | undefined>(
+  'consolidated_billing_enabled' satisfies `${ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED}`,
+  undefined
+)
+
 export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
   undefined

@@ -12,6 +12,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -33,8 +34,8 @@ export interface Member {
   joined_at: string
   role: WorkspaceRole
   // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
 }
@@ -263,6 +264,7 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration

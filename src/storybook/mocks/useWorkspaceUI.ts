@@ -11,7 +11,9 @@ export interface WorkspaceUIMockState {
   workspaceRole: WorkspaceRole
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
+  canDowngradeToPersonal: boolean
   canTopUp: boolean
+  isSubscriptionCancelled: boolean
 }
 
 const defaultState: WorkspaceUIMockState = {
@@ -19,7 +21,9 @@ const defaultState: WorkspaceUIMockState = {
   workspaceRole: 'owner',
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canTopUp: true
+  canDowngradeToPersonal: true,
+  canTopUp: true,
+  isSubscriptionCancelled: false
 }
 
 const state = ref<WorkspaceUIMockState>({ ...defaultState })
@@ -29,16 +33,7 @@ export function setWorkspaceUIMock(next: Partial<WorkspaceUIMockState>) {
   state.value = { ...defaultState, ...next }
 }
 
-/**
- * Storybook mock for `useWorkspaceUI`.
- *
- * The real composable derives permissions from `useCurrentUser` (Firebase auth)
- * and the team workspace store, neither of which is available in Storybook. This
- * stub exposes only the role surface stories read — a billing manager (owner) by
- * default, so role-gated surfaces like the Activity ledger's team-wide scope and
- * per-user footer render fully populated. Add keys here as other stories need
- * them.
- */
+/** Storybook mock for `useWorkspaceUI`. */
 export function useWorkspaceUI() {
   return {
     workspaceType: computed(() => state.value.workspaceType),
@@ -47,7 +42,9 @@ export function useWorkspaceUI() {
       canManageSubscription: state.value.canManageSubscription,
       canManageSubscriptionLifecycle:
         state.value.canManageSubscriptionLifecycle,
+      canDowngradeToPersonal: state.value.canDowngradeToPersonal,
       canTopUp: state.value.canTopUp
-    }))
+    })),
+    isSubscriptionCancelled: computed(() => state.value.isSubscriptionCancelled)
   }
 }

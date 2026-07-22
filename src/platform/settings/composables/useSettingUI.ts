@@ -343,9 +343,6 @@ export function useSettingUI(
       label: 'General',
       children: [
         translateCategory(userPanel.node),
-        ...(shouldShowLegacyPlanCreditsPanel.value && subscriptionPanel
-          ? [translateCategory(subscriptionPanel.node)]
-          : []),
         ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
