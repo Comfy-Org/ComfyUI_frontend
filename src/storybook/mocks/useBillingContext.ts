@@ -39,6 +39,7 @@ export function useBillingContext(): BillingContext {
     initialize: async () => {},
     fetchStatus: async () => {},
     fetchBalance: async () => {},
+    reconcileSubscriptionSuccess: async () => {},
     subscribe: async () => {},
     previewSubscribe: async () => null,
     manageSubscription: async () => {},
