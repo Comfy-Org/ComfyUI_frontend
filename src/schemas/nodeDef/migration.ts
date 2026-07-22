@@ -121,6 +121,17 @@ export function transformInputSpecV1ToV2(
         ? inputSpecV1[0]
         : getComboSpecComboOptions(inputSpecV1)
     }
+  } else if (inputSpecV1[0] === 'CHART') {
+    // CHART uses `chartType` in V2 because `type` is the discriminator key
+    const { type, ...chartOptions } = options
+    const chartType = type === 'bar' || type === 'line' ? type : undefined
+    return {
+      type: 'CHART',
+      name,
+      isOptional,
+      ...chartOptions,
+      chartType
+    }
   } else if (typeof inputSpecV1[0] === 'string') {
     // Handle standard types (INT, FLOAT, BOOLEAN, STRING) and custom types
     return {
