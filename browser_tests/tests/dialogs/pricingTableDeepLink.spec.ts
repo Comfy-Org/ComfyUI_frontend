@@ -8,13 +8,13 @@ import type {
   ErrorResponse,
   Plan,
   PreviewSubscribeResponse,
-  SubscribeResponse,
-  TeamCreditStops
+  SubscribeResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   Member,
+  TeamCreditStops,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
@@ -174,7 +174,7 @@ const TEAM_CREDIT_STOPS = {
 const TEAM_CATALOG_PLANS = {
   plans: [],
   team_credit_stops: TEAM_CREDIT_STOPS
-} satisfies BillingPlansResponse
+} satisfies BillingPlansResponse & { team_credit_stops: TeamCreditStops }
 
 const TEAM_SUBSCRIBED_RESPONSE = {
   billing_op_id: 'team-deep-link',
@@ -516,9 +516,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
 
-    await cloudAppExpect(
+    await expect(
       page.getByRole('heading', { name: 'Confirm your payment' })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 45_000 })
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
   })
@@ -530,7 +530,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?keep=1&stop=team_700&cycle=yearly`)
 
-    await waitForCloudApp(page)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
     await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
     await expect(pricingHeading(page)).toBeHidden()
@@ -548,7 +550,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?keep=1&pricing=creator&cycle=yearly`)
 
-    await waitForCloudApp(page)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
     await expect(
@@ -575,9 +579,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       `${APP_URL}/?keep=1&pricing=team&stop=team_700&cycle=yearly`
     )
 
-    await cloudAppExpect(
+    await expect(
       page.getByRole('heading', { name: 'Confirm your payment' })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 45_000 })
     const confirmationDialog = page.getByRole('dialog')
     await expect(
       confirmationDialog.getByText('$630', { exact: true }).last()
@@ -616,9 +620,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)
 
-    await cloudAppExpect(
+    await expect(
       page.getByRole('heading', { name: 'Confirm your payment' })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 45_000 })
     await expect(page.getByText('$390', { exact: true })).toBeVisible()
   })
 
@@ -638,7 +642,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       `${APP_URL}/?keep=1&pricing=team&stop=team_700&cycle=yearly`
     )
 
-    await waitForCloudApp(page)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
     await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
     await expect(
