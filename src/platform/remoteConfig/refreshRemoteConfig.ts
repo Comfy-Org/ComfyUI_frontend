@@ -1,5 +1,6 @@
 import {
   cachedBillingControlEnabled,
+  cachedConsolidatedBillingEnabled,
   cachedTeamWorkspacesEnabled,
   remoteConfig,
   remoteConfigState
@@ -59,6 +60,9 @@ export async function refreshRemoteConfig(
       if (useAuth) {
         cachedTeamWorkspacesEnabled.value = Boolean(
           config.team_workspaces_enabled
+        )
+        cachedConsolidatedBillingEnabled.value = Boolean(
+          config.consolidated_billing_enabled
         )
         cachedBillingControlEnabled.value = Boolean(
           config.billing_control_enabled

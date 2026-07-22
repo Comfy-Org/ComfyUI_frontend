@@ -1147,9 +1147,10 @@
       "Generation Type": "Generation Type"
     },
     "categories": "Categories",
-    "resetFilters": "Clear Filters",
+    "clearAllFilters": "Clear all filters",
+    "filtersApplied": "{count} filter applied | {count} filters applied",
+    "filtersButton": "Filters",
     "sorting": "Sort by",
-    "activeFilters": "Filters:",
     "loading": "Loading templates...",
     "noResults": "No templates found",
     "noResultsHint": "Try adjusting your search or filters",
@@ -3031,7 +3032,7 @@
       "promoteIntro": "They'll be able to:",
       "promotePermissionCredits": "Add additional credits",
       "promotePermissionManage": "Manage members, payment methods, and workspace settings",
-      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
+      "promotePermissionRoles": "Promote members and demote eligible owners.",
       "promoteConfirm": "Make owner",
       "demoteTitle": "Demote {name} to member?",
       "demoteMessage": "They'll lose admin access.",
@@ -3226,12 +3227,17 @@
     "description": "You've been using this feature. Would you take a moment to share your feedback?",
     "accept": "Sure, I'll help!",
     "notNow": "Not Now",
-    "dontAskAgain": "Don't Ask Again",
-    "loadError": "Failed to load survey. Please try again later."
+    "dontAskAgain": "Don't Ask Again"
   },
   "errorPanelSurvey": {
     "ctaText": "How's the new error panel?",
     "ctaButton": "Give feedback"
+  },
+  "feedback": {
+    "title": "Share Feedback"
+  },
+  "typeform": {
+    "loadError": "Failed to load the form. Please try again later."
   },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
