@@ -165,6 +165,54 @@ export const usePartnerNodeGovernanceStore = defineStore(
       }
     }
 
+    async function setProviderEnabled(
+      providerId: string,
+      enabled: boolean
+    ): Promise<void> {
+      if (!providers.value.some(({ id }) => id === providerId)) return
+
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      const currentEntry = currentPolicy.providers.find(
+        (provider) => provider.providerId === providerId
+      )
+      const nextProviders = currentEntry
+        ? currentPolicy.providers.map((provider) =>
+            provider.providerId === providerId
+              ? { ...provider, enabled }
+              : provider
+          )
+        : [...currentPolicy.providers, { providerId, enabled }]
+
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: nextProviders
+      })
+    }
+
+    async function setAllProvidersEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: providers.value.map(({ id }) => ({
+          providerId: id,
+          enabled
+        }))
+      })
+    }
+
+    async function setEnforcementEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: enabled,
+        providers: enabled
+          ? currentPolicy.providers
+          : providers.value.map(({ id }) => ({ providerId: id, enabled: true }))
+      })
+    }
+
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
 
     return {
@@ -177,7 +225,10 @@ export const usePartnerNodeGovernanceStore = defineStore(
       createInitialPolicy,
       isProviderEnabled,
       loadPolicy,
-      savePolicy
+      savePolicy,
+      setProviderEnabled,
+      setAllProvidersEnabled,
+      setEnforcementEnabled
     }
   }
 )
