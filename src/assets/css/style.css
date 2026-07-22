@@ -120,13 +120,21 @@
 }
 
 @keyframes sf-grow-top {
-  from { --sf-top: 0; }
-  to { --sf-top: 40px; }
+  from {
+    --sf-top: 0;
+  }
+  to {
+    --sf-top: 40px;
+  }
 }
 
 @keyframes sf-shrink-bottom {
-  from { --sf-bottom: 40px; }
-  to { --sf-bottom: 0; }
+  from {
+    --sf-bottom: 40px;
+  }
+  to {
+    --sf-bottom: 0;
+  }
 }
 
 .scroll-fade {
@@ -137,9 +145,13 @@
     black calc(100% - var(--sf-bottom)),
     transparent 100%
   );
-  animation: sf-grow-top linear both, sf-shrink-bottom linear both;
+  animation:
+    sf-grow-top linear both,
+    sf-shrink-bottom linear both;
   animation-timeline: scroll(self y), scroll(self y);
-  animation-range: 0 80px, calc(100% - 80px) 100%;
+  animation-range:
+    0 80px,
+    calc(100% - 80px) 100%;
 }
 
 .agent-code-block {
@@ -184,7 +196,9 @@
   font-family: inherit;
   padding: 0.125rem 0.5rem;
   line-height: 1.5;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .agent-code-block-copy:hover {
@@ -206,7 +220,6 @@
   white-space: pre;
 }
 
-
 .agent-inline-code {
   background-color: var(--color-secondary-background-hover);
   border: 1px solid var(--color-border-default);
@@ -217,8 +230,12 @@
 }
 
 @keyframes shimmer-sweep {
-  from { background-position: 100% center; }
-  to { background-position: 0% center; }
+  from {
+    background-position: 100% center;
+  }
+  to {
+    background-position: 0% center;
+  }
 }
 
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire

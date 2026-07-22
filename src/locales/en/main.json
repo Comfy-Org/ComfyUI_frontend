@@ -12,12 +12,27 @@
     "greeting": "Hello,",
     "greetingNamed": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Ask Comfy Agent…",
+    "placeholderPrefix": "Describe ideas, @ to reference, ",
+    "placeholderAddNodes": "add nodes from graph",
+    "placeholderSuffix": ", or drag in assets",
+    "placeholderAria": "Describe ideas, @ to reference, add nodes from graph, or drag in assets",
     "attach": "Attach files or photos",
-    "mention": "Mention",
     "send": "Send",
     "scrollToBottom": "Scroll to latest",
     "disclaimer": "Agent generation does not impact the graph.",
+    "workflowHeader": {
+      "dismiss": "Dismiss",
+      "switchWorkflow": "Switch workflow"
+    },
+    "nodeSelection": {
+      "bannerTitle": "Add nodes from graph",
+      "bannerSubtitle": "Select one or many nodes to add as reference",
+      "exit": "Exit mode",
+      "chipRemove": "Remove node reference"
+    },
+    "mentionPicker": {
+      "empty": "No nodes found"
+    },
     "suggestions": {
       "duck": "Generate a yellow duck with a hockey mask",
       "savedWorkflows": "List my saved workflows",

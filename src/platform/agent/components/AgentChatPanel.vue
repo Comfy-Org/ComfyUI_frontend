@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import Conversation from '@/components/ai-elements/conversation/Conversation.vue'
 import ConversationContent from '@/components/ai-elements/conversation/ConversationContent.vue'
@@ -22,8 +22,12 @@ import PromptInputSubmit from '@/components/ai-elements/prompt-input/PromptInput
 import PromptInputTextarea from '@/components/ai-elements/prompt-input/PromptInputTextarea.vue'
 import PromptInputToolbar from '@/components/ai-elements/prompt-input/PromptInputToolbar.vue'
 import PromptInputTools from '@/components/ai-elements/prompt-input/PromptInputTools.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAgentChatPrototype } from '@/platform/agent/composables/useAgentChatPrototype'
+import { useMentionTrigger } from '@/platform/agent/composables/useMentionTrigger'
 import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
@@ -33,6 +37,10 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import AgentChatEmptyState from './AgentChatEmptyState.vue'
 import AgentChatHeader from './AgentChatHeader.vue'
 import AgentChatHistory from './AgentChatHistory.vue'
+import AgentComposerNodeChips from './AgentComposerNodeChips.vue'
+import AgentComposerPlaceholderOverlay from './AgentComposerPlaceholderOverlay.vue'
+import AgentComposerWorkflowHeader from './AgentComposerWorkflowHeader.vue'
+import AgentNodeMentionPicker from './AgentNodeMentionPicker.vue'
 import AgentPromptSuggestions from './AgentPromptSuggestions.vue'
 
 const {
@@ -53,13 +61,35 @@ const {
 
 const authStore = useAuthStore()
 const agentPanelStore = useAgentPanelStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const workflowStore = useWorkflowStore()
 
 const model = ref('Auto')
 const showHistory = ref(false)
-const promptTextarea = ref<{ focus: () => void } | null>(null)
+const promptTextarea = ref<{
+  focus: () => void
+  getSelectionStart: () => number
+} | null>(null)
+const mentionPicker = ref<{
+  moveHighlight: (delta: number) => void
+  confirmHighlighted: () => void
+} | null>(null)
 const reactions = ref<Record<string, 'liked' | 'disliked' | null>>({})
 const fileInput = ref<HTMLInputElement | null>(null)
 const attachments = ref<File[]>([])
+const isWorkflowHeaderDismissed = ref(false)
+
+const mentionTrigger = useMentionTrigger(
+  input,
+  () => promptTextarea.value?.getSelectionStart() ?? 0
+)
+
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => {
+    isWorkflowHeaderDismissed.value = false
+  }
+)
 
 const userName = computed(
   () => authStore.currentUser?.displayName?.split(' ')[0] ?? ''
@@ -84,6 +114,42 @@ function onSubmit() {
 
 function removeAttachment(index: number) {
   attachments.value = attachments.value.filter((_, i) => i !== index)
+}
+
+function onAddNodesFromGraph() {
+  agentNodeSelectionStore.enter()
+}
+
+function onRemoveNodeChip(node: LGraphNode) {
+  agentNodeSelectionStore.removeNode(node)
+}
+
+function onMentionSelect(node: LGraphNode) {
+  const range = mentionTrigger.triggerRange.value
+  if (range) {
+    input.value =
+      input.value.slice(0, range.start) + input.value.slice(range.end)
+  }
+  agentNodeSelectionStore.addNode(node)
+  mentionTrigger.close()
+  nextTick(() => promptTextarea.value?.focus())
+}
+
+function onTextareaKeydown(event: KeyboardEvent) {
+  if (!mentionTrigger.isMentionActive.value) return
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    mentionPicker.value?.moveHighlight(1)
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    mentionPicker.value?.moveHighlight(-1)
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    mentionPicker.value?.confirmHighlighted()
+  } else if (event.key === 'Escape') {
+    mentionTrigger.close()
+  }
 }
 
 function close() {
@@ -255,16 +321,38 @@ function onNewChatFromHistory() {
           <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
+              <AgentComposerWorkflowHeader
+                v-if="!isWorkflowHeaderDismissed"
+                @dismiss="isWorkflowHeaderDismissed = true"
+              />
               <PromptInputBody>
+                <AgentComposerNodeChips
+                  :nodes="agentNodeSelectionStore.referencedNodes"
+                  @remove="onRemoveNodeChip"
+                />
                 <PromptInputAttachments
                   :attachments="attachments"
                   @remove="removeAttachment"
                 />
-                <PromptInputTextarea
-                  ref="promptTextarea"
-                  v-model="input"
-                  :placeholder="$t('agent.placeholder')"
-                />
+                <div class="relative">
+                  <AgentComposerPlaceholderOverlay
+                    v-if="!input"
+                    @add-nodes-from-graph="onAddNodesFromGraph"
+                  />
+                  <PromptInputTextarea
+                    ref="promptTextarea"
+                    v-model="input"
+                    :aria-label="$t('agent.placeholderAria')"
+                    @keydown="onTextareaKeydown"
+                  />
+                  <AgentNodeMentionPicker
+                    v-if="mentionTrigger.isMentionActive.value"
+                    ref="mentionPicker"
+                    :nodes="agentNodeSelectionStore.graphNodes"
+                    :query="mentionTrigger.mentionQuery.value"
+                    @select="onMentionSelect"
+                  />
+                </div>
                 <PromptInputToolbar>
                   <PromptInputTools>
                     <input
@@ -287,9 +375,6 @@ function onNewChatFromHistory() {
                         {{ $t('agent.attach') }}
                       </TooltipContent>
                     </Tooltip>
-                    <PromptInputButton :aria-label="$t('agent.mention')">
-                      <i class="icon-[lucide--at-sign] size-4" />
-                    </PromptInputButton>
                   </PromptInputTools>
                   <PromptInputTools>
                     <PromptInputModelSelect v-model="model" />

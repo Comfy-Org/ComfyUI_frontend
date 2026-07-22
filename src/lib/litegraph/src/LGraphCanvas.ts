@@ -202,6 +202,8 @@ interface LGraphCanvasState {
   draggingCanvas: boolean
   /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
   readOnly: boolean
+  /** When `true`, clicking/box-selecting items still works, but dragging, resizing, connecting links, and widget interaction are disabled. Unlike {@link readOnly}, this does not disable selection. */
+  selectOnly: boolean
 
   /** Bit flags indicating what is currently below the pointer. */
   hoveringOver: CanvasItem
@@ -324,6 +326,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     draggingItems: false,
     draggingCanvas: false,
     readOnly: false,
+    selectOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
     selectionChanged: false,
@@ -415,6 +418,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   set read_only(value: boolean) {
     this.state.readOnly = value
     this._updateCursorStyle()
+  }
+
+  /** @inheritdoc {@link LGraphCanvasState.selectOnly} */
+  get selectOnly(): boolean {
+    return this.state.selectOnly
+  }
+
+  set selectOnly(value: boolean) {
+    this.state.selectOnly = value
   }
 
   get isDragging(): boolean {
@@ -2323,7 +2335,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (
       (e.button === 2 || pointer.isDouble) &&
       this.allow_interaction &&
-      !this.read_only
+      !this.read_only &&
+      !this.selectOnly
     ) {
       // Right / aux button
       const { linkConnector, subgraph } = this
@@ -2625,7 +2638,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only) return
+            if (this.read_only || this.selectOnly) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2765,6 +2778,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node.flags.pinned) {
       this.bringToFront(node)
     }
+
+    // selectOnly mode only allows selecting via the default onClick set above
+    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3137,6 +3153,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node &&
       this.allow_interaction &&
       !this.read_only &&
+      !this.selectOnly &&
       !this.connecting_links &&
       !node.flags.collapsed
     ) {
@@ -3634,6 +3651,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
+    if (this.selectOnly) return
+
     this.isDragging = true
 
     this._startNodeAutoPan()

@@ -3,9 +3,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
-const { class: className, placeholder } = defineProps<{
+const {
+  class: className,
+  placeholder,
+  ariaLabel
+} = defineProps<{
   class?: HTMLAttributes['class']
   placeholder?: string
+  ariaLabel?: string
 }>()
 
 const model = defineModel<string>({ default: '' })
@@ -27,7 +32,11 @@ function focus() {
   el.setSelectionRange(el.value.length, el.value.length)
 }
 
-defineExpose({ focus })
+function getSelectionStart(): number {
+  return textareaEl.value?.selectionStart ?? 0
+}
+
+defineExpose({ focus, getSelectionStart })
 </script>
 
 <template>
@@ -36,9 +45,10 @@ defineExpose({ focus })
     v-model="model"
     rows="1"
     :placeholder="placeholder"
+    :aria-label="ariaLabel"
     :class="
       cn(
-        'field-sizing-content max-h-48 min-h-20 w-full resize-none border-none bg-transparent px-4 py-3 font-[inherit] text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none',
+        'field-sizing-content max-h-48 min-h-20 w-full resize-none border-none bg-transparent px-4 pt-2 pb-3 font-[inherit] text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none',
         className
       )
     "

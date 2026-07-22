@@ -6,12 +6,26 @@
     @mouseleave="isTopMenuHovered = false"
   >
     <div class="flex gap-x-0.5">
-      <div class="min-w-0 flex-1">
+      <div
+        :class="
+          cn(
+            'min-w-0 flex-1 transition-all duration-300 ease-in-out',
+            isNodeSelectionModeActive && '-translate-x-8 opacity-0'
+          )
+        "
+      >
         <SubgraphBreadcrumb />
       </div>
 
       <div class="mx-1 flex flex-col items-end gap-1">
-        <div class="flex items-center gap-2">
+        <div
+          :class="
+            cn(
+              'flex items-center gap-2 transition-all duration-300 ease-in-out',
+              isNodeSelectionModeActive && 'translate-x-8 opacity-0'
+            )
+          "
+        >
           <div
             v-if="managerState.shouldShowManagerButtons.value"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
@@ -147,6 +161,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
@@ -169,6 +184,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const isNodeSelectionModeActive = computed(
+  () => agentNodeSelectionStore.isActive
+)
 const managerState = useManagerState()
 const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
