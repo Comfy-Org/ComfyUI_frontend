@@ -131,7 +131,7 @@ test.describe('MCP page @smoke', () => {
     await serverUrl.scrollIntoViewIfNeeded()
     await serverUrl.locator('summary').click()
     await expect(
-      page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
+      serverUrl.getByRole('link', { name: MCP_ENDPOINT, exact: true })
     ).toHaveAttribute('href', MCP_ENDPOINT)
   })
 })
