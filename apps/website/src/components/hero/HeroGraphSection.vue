@@ -12,22 +12,23 @@ const defaultAsset = resolveAsset(DEFAULT_POSE)
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-10 pb-16 lg:px-10"
+    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-6 pb-16 lg:px-10"
   >
-    <HeroHeadline :locale class="mb-12" />
-
     <div class="hidden w-full md:block">
-      <HeroGraph />
+      <HeroGraph :locale />
     </div>
 
-    <figure class="w-full max-w-md md:hidden">
-      <img
-        :src="defaultAsset.src"
-        alt="Generated image rendered from the selected camera angle"
-        :width="defaultAsset.width"
-        :height="defaultAsset.height"
-        class="w-full rounded-3xl border border-white/10"
-      />
-    </figure>
+    <div class="flex flex-col items-center gap-8 md:hidden">
+      <HeroHeadline :locale class="text-3xl" />
+      <figure class="w-full max-w-md">
+        <img
+          :src="defaultAsset.src"
+          alt="Generated image rendered from the selected camera angle"
+          :width="defaultAsset.width"
+          :height="defaultAsset.height"
+          class="w-full rounded-3xl border border-white/10"
+        />
+      </figure>
+    </div>
   </section>
 </template>

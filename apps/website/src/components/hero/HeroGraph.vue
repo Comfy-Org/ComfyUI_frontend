@@ -3,13 +3,17 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { computed, reactive, ref } from 'vue'
 
+import type { Locale } from '../../i18n/translations'
 import { DEFAULT_POSE } from './cameraVocabulary'
 import { resolveAsset } from './assetResolver'
 import AngleNode from './AngleNode.vue'
 import GraphLinks from './GraphLinks.vue'
+import HeroHeadline from './HeroHeadline.vue'
 import HeroImageCard from './HeroImageCard.vue'
 import type { ElementKey } from './graphLayout'
-import { ELEMENT_KEYS, FLOW } from './graphLayout'
+import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasEl = ref<HTMLElement>()
 
@@ -69,11 +73,11 @@ function onPointerMove(event: PointerEvent) {
   const x = state.originX + (event.clientX - state.startX) / state.emPx
   const y = state.originY + (event.clientY - state.startY) / state.emPx
   positions[state.key].x = Math.min(
-    FLOW.canvas.width - el.width + 2,
-    Math.max(-2, x)
+    FLOW.canvas.width - DRAG_MARGIN,
+    Math.max(DRAG_MARGIN - el.width, x)
   )
   positions[state.key].y = Math.min(
-    FLOW.canvas.height - el.height,
+    FLOW.canvas.height - Math.min(el.height, 6),
     Math.max(0, y)
   )
 }
@@ -105,6 +109,13 @@ function wrapperStyle(key: ElementKey) {
       }"
     >
       <GraphLinks :positions />
+
+      <div
+        class="pointer-events-none absolute top-[1.5em] left-1/2 z-20 -translate-x-1/2 text-[3em]"
+      >
+        <HeroHeadline :locale />
+      </div>
+
       <div
         v-for="key in ELEMENT_KEYS"
         :key="key"

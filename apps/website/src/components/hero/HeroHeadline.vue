@@ -8,14 +8,16 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const lines = t('hero.title', locale).split('\n')
 
+// All internal sizing is em-relative to the inherited font size, so the
+// lockup scales with whatever context renders it (canvas overlay or flow).
 const pill =
-  'font-formula-narrow inline-block rounded-2xl px-5 py-2 text-3xl leading-none font-semibold uppercase sm:text-4xl lg:text-5xl'
+  'font-formula-narrow inline-block rounded-[0.35em] px-[0.42em] py-[0.16em] leading-none font-semibold uppercase'
 
 // PP Formula Narrow sits high in its em box; nudge the glyphs down so they
 // read optically centered inside the highlighter block.
 const inner = 'relative top-[0.06em] inline-block'
 
-const lineGap = 'mt-1 sm:mt-4'
+const lineGap = 'mt-[0.33em]'
 </script>
 
 <template>
@@ -52,7 +54,7 @@ const lineGap = 'mt-1 sm:mt-4'
           {{ lines[1] }}
         </span>
         <span
-          class="bg-primary-comfy-yellow pointer-events-none absolute top-1/2 left-1/2 hidden h-9 w-5 -translate-1/2 scale-y-[1.03] rounded-full sm:block"
+          class="bg-primary-comfy-yellow pointer-events-none absolute top-1/2 left-1/2 h-[0.75em] w-[0.42em] -translate-1/2 scale-y-[1.03] rounded-full"
         />
       </div>
 
