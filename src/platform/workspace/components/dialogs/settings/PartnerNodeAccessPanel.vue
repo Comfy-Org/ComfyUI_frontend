@@ -22,18 +22,40 @@
           }}
         </p>
       </div>
-      <span
+      <RadioGroupRoot
         v-if="isPolicyLoaded"
-        class="rounded-lg bg-secondary-background px-3 py-2 text-sm font-medium text-base-foreground"
+        :model-value="isRestricted ? 'restricted' : 'unrestricted'"
+        orientation="horizontal"
+        :disabled="isSaving || !isPolicyLoaded"
+        :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
+        class="flex rounded-lg bg-secondary-background p-1"
+        @update:model-value="requestEnforcementMode($event === 'restricted')"
       >
-        {{
-          $t(
-            isRestricted
-              ? 'workspacePanel.partnerNodes.restricted'
-              : 'workspacePanel.partnerNodes.unrestricted'
-          )
-        }}
-      </span>
+        <RadioGroupItem
+          value="unrestricted"
+          :class="
+            cn(
+              buttonVariants({ variant: 'textonly' }),
+              'px-3',
+              !isRestricted && 'bg-base-background hover:bg-base-background'
+            )
+          "
+        >
+          {{ $t('workspacePanel.partnerNodes.unrestricted') }}
+        </RadioGroupItem>
+        <RadioGroupItem
+          value="restricted"
+          :class="
+            cn(
+              buttonVariants({ variant: 'textonly' }),
+              'px-3',
+              isRestricted && 'bg-base-background hover:bg-base-background'
+            )
+          "
+        >
+          {{ $t('workspacePanel.partnerNodes.restricted') }}
+        </RadioGroupItem>
+      </RadioGroupRoot>
     </div>
 
     <div
@@ -210,10 +232,16 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import {
+  RadioGroupItem,
+  RadioGroupRoot,
+  SwitchRoot,
+  SwitchThumb
+} from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { buttonVariants } from '@/components/ui/button/button.variants'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
@@ -223,11 +251,13 @@ import { getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const governanceStore = usePartnerNodeGovernanceStore()
-const { isSaving, policy, providers, status } = storeToRefs(governanceStore)
+const { governedWorkspaceId, isSaving, policy, providers, status } =
+  storeToRefs(governanceStore)
 const {
   isProviderEnabled,
   loadPolicy,
   setAllProvidersEnabled,
+  setEnforcementEnabled,
   setProviderEnabled
 } = governanceStore
 const nodeDefStore = useNodeDefStore()
@@ -243,6 +273,9 @@ const saveError = ref(false)
 const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
   () => status.value === 'configured' || status.value === 'unconfigured'
+)
+const allProvidersEnabled = computed(() =>
+  providers.value.every(({ id }) => isProviderEnabled(id))
 )
 
 const providerRows = computed(() =>
@@ -335,6 +368,54 @@ function confirmDisableAll() {
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
         await performSave(() => setAllProvidersEnabled(false))
+        dialogStore.closeDialog(dialog)
+      }
+    }
+  })
+}
+
+function requestEnforcementMode(enabled: boolean) {
+  if (enabled === isRestricted.value) return
+  if (!enabled && allProvidersEnabled.value) {
+    void performSave(() => setEnforcementEnabled(false))
+    return
+  }
+
+  const sourceWorkspaceId = governedWorkspaceId.value
+  const sourcePolicy = policy.value
+  if (!sourceWorkspaceId) return
+
+  const copy = enabled
+    ? {
+        title: t('workspacePanel.partnerNodes.restrictAccessTitle'),
+        message: t('workspacePanel.partnerNodes.restrictAccessMessage'),
+        hint: t('workspacePanel.partnerNodes.restrictAccessHint')
+      }
+    : {
+        title: t('workspacePanel.partnerNodes.allowAllAccessTitle'),
+        message: t('workspacePanel.partnerNodes.allowAllAccessMessage'),
+        hint: t('workspacePanel.partnerNodes.allowAllAccessHint')
+      }
+  const dialog = showConfirmDialog({
+    headerProps: { title: copy.title },
+    props: {
+      promptText: `${copy.message}\n\n${copy.hint}`,
+      preserveNewlines: true
+    },
+    footerProps: {
+      confirmText: t('g.confirm'),
+      confirmVariant: 'primary',
+      optionsDisabled: isSaving,
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: async () => {
+        if (
+          governedWorkspaceId.value !== sourceWorkspaceId ||
+          policy.value !== sourcePolicy
+        ) {
+          dialogStore.closeDialog(dialog)
+          return
+        }
+        await performSave(() => setEnforcementEnabled(enabled))
         dialogStore.closeDialog(dialog)
       }
     }

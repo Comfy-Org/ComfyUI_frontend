@@ -14,6 +14,7 @@ import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 
 const {
   mockCloseDialog,
+  mockGovernedWorkspaceId,
   mockIsProviderEnabled,
   mockIsSaving,
   mockLoadPolicy,
@@ -21,6 +22,7 @@ const {
   mockPolicy,
   mockProviders,
   mockSetAllProvidersEnabled,
+  mockSetEnforcementEnabled,
   mockSetProviderEnabled,
   mockShowConfirmDialog,
   mockStatus
@@ -29,6 +31,7 @@ const {
   const { ref } = require('vue') as typeof import('vue')
   return {
     mockCloseDialog: vi.fn(),
+    mockGovernedWorkspaceId: ref('workspace-one'),
     mockIsProviderEnabled: vi.fn(),
     mockIsSaving: ref(false),
     mockLoadPolicy: vi.fn(),
@@ -36,6 +39,7 @@ const {
     mockPolicy: ref<PartnerNodePolicy | null>(null),
     mockProviders: ref<PartnerProvider[]>([]),
     mockSetAllProvidersEnabled: vi.fn(),
+    mockSetEnforcementEnabled: vi.fn(),
     mockSetProviderEnabled: vi.fn(),
     mockShowConfirmDialog: vi.fn(),
     mockStatus: ref('configured')
@@ -52,6 +56,7 @@ vi.mock('pinia', async (importOriginal) => {
 
 vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
   usePartnerNodeGovernanceStore: () => ({
+    governedWorkspaceId: mockGovernedWorkspaceId,
     policy: mockPolicy,
     providers: mockProviders,
     status: mockStatus,
@@ -59,6 +64,7 @@ vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
     isProviderEnabled: mockIsProviderEnabled,
     loadPolicy: mockLoadPolicy,
     setAllProvidersEnabled: mockSetAllProvidersEnabled,
+    setEnforcementEnabled: mockSetEnforcementEnabled,
     setProviderEnabled: mockSetProviderEnabled
   })
 }))
@@ -103,6 +109,7 @@ function renderComponent() {
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
     mockIsSaving.value = false
     mockPolicy.value = null
@@ -124,6 +131,7 @@ describe('PartnerNodeAccessPanel', () => {
     }
     mockIsProviderEnabled.mockReturnValue(true)
     mockSetAllProvidersEnabled.mockResolvedValue(undefined)
+    mockSetEnforcementEnabled.mockResolvedValue(undefined)
     mockSetProviderEnabled.mockResolvedValue(undefined)
     mockShowConfirmDialog.mockReturnValue({ key: 'disable-all-dialog' })
   })
@@ -290,6 +298,112 @@ describe('PartnerNodeAccessPanel', () => {
     await options.footerProps.onConfirm()
     expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(false)
     expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('confirms before turning on restrictions', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe('Restrict access to partner nodes?')
+    await options.footerProps.onConfirm()
+    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(true)
+  })
+
+  it('ignores a restriction confirmation after the workspace changes', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    mockGovernedWorkspaceId.value = 'workspace-two'
+    await options.footerProps.onConfirm()
+
+    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('ignores a restriction confirmation after a workspace round trip', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Restricted' }))
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    mockGovernedWorkspaceId.value = 'workspace-two'
+    mockPolicy.value = {
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    mockGovernedWorkspaceId.value = 'workspace-one'
+    await options.footerProps.onConfirm()
+
+    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('supports roving focus and keyboard selection', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+    const unrestricted = screen.getByRole('radio', { name: 'Unrestricted' })
+    const restricted = screen.getByRole('radio', { name: 'Restricted' })
+
+    unrestricted.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(restricted).toHaveFocus()
+    await user.keyboard(' ')
+    await vi.waitFor(() => expect(mockShowConfirmDialog).toHaveBeenCalledOnce())
+  })
+
+  it.for(['loading', 'error'] as const)(
+    'does not expose access mode while policy status is %s',
+    (status) => {
+      mockStatus.value = status
+      renderComponent()
+
+      expect(
+        screen.queryByRole('radio', { name: 'Restricted' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('confirms expanded access when a restricted provider is disabled', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    mockIsProviderEnabled.mockImplementation(
+      (providerId: string) => providerId !== 'openai'
+    )
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Unrestricted' }))
+
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    await options.footerProps.onConfirm()
+    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
+  })
+
+  it('returns to unrestricted immediately when every provider is enabled', async () => {
+    const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    await user.click(screen.getByRole('radio', { name: 'Unrestricted' }))
+
+    expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
   })
 
   it('retries a failed load', async () => {
