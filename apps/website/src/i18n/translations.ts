@@ -10,6 +10,62 @@ const translations = {
     en: 'Image To Video',
     'zh-CN': '图像生成视频'
   },
+  'tags.imageGeneration': {
+    en: 'Image Generation',
+    'zh-CN': '图像生成'
+  },
+  'tags.styleTransfer': {
+    en: 'Style Transfer',
+    'zh-CN': '风格迁移'
+  },
+  'tags.moodboards': {
+    en: 'Moodboards',
+    'zh-CN': '情绪板'
+  },
+  'tags.storyboarding': {
+    en: 'Storyboarding',
+    'zh-CN': '故事板'
+  },
+  'tags.productPhotography': {
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
+  },
+  'tags.previsualization': {
+    en: 'Previsualization',
+    'zh-CN': '预演'
+  },
+  'tags.bRoll': {
+    en: 'B-Roll',
+    'zh-CN': 'B-Roll 素材'
+  },
+  'tags.outOfHome': {
+    en: 'Out-of-Home',
+    'zh-CN': '户外广告'
+  },
+  'tags.characterDesign': {
+    en: 'Character Design',
+    'zh-CN': '角色设计'
+  },
+  'tags.keyframing': {
+    en: 'Keyframing',
+    'zh-CN': '关键帧'
+  },
+  'tags.backgrounds': {
+    en: 'Backgrounds',
+    'zh-CN': '背景'
+  },
+  'tags.threeD': {
+    en: '3D',
+    'zh-CN': '3D'
+  },
+  'tags.inBetweening': {
+    en: 'In-Betweening',
+    'zh-CN': '中间帧'
+  },
+  'tags.compositing': {
+    en: 'Compositing',
+    'zh-CN': '合成'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
