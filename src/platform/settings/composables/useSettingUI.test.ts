@@ -19,7 +19,10 @@ const env = vi.hoisted(() => {
     teamWorkspacesEnabled: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
-    billingType: 'legacy' as 'legacy' | 'workspace'
+    billingType: 'legacy' as 'legacy' | 'workspace',
+    workspaceRole: 'owner' as 'owner' | 'admin' | 'member',
+    governedWorkspaceId: 'team-workspace' as string | null,
+    governanceStatus: 'configured'
   }
   const fakeRef = <K extends keyof typeof state>(key: K) => ({
     get value() {
@@ -75,6 +78,23 @@ vi.mock('@/platform/settings/settingStore', () => ({
   getSettingInfo: vi.fn()
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    workspaceRole: env.fakeRef('workspaceRole')
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
+  usePartnerNodeGovernanceStore: () => ({
+    get governedWorkspaceId() {
+      return env.state.governedWorkspaceId
+    },
+    get status() {
+      return env.state.governanceStatus
+    }
+  })
+}))
+
 interface MockSettingParams {
   id: string
   name: string
@@ -116,7 +136,10 @@ describe('useSettingUI', () => {
       teamWorkspacesEnabled: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
-      billingType: 'legacy'
+      billingType: 'legacy',
+      workspaceRole: 'owner',
+      governedWorkspaceId: 'team-workspace',
+      governanceStatus: 'configured'
     })
 
     vi.mocked(useSettingStore).mockReturnValue({
@@ -206,6 +229,27 @@ describe('useSettingUI', () => {
         expect(navKeys(navGroups.value)).toContain('workspace')
       }
     )
+
+    it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
+      const { navGroups } = useSettingUI()
+      const workspaceGroup = navGroups.value.find(
+        ({ title }) => title === 'Workspace'
+      )
+
+      expect(workspaceGroup?.items).toMatchObject([
+        { id: 'workspace', label: 'PlanCredits' },
+        { id: 'workspace-members', label: 'Members' },
+        { id: 'workspace-allowlist', label: 'Allowlist' }
+      ])
+    })
+
+    it('hides Allowlist from workspace members', () => {
+      env.state.workspaceRole = 'member'
+
+      const { navGroups } = useSettingUI()
+
+      expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
+    })
 
     it('keeps the legacy plan panel in the legacy layout', () => {
       env.state.teamWorkspacesEnabled = false

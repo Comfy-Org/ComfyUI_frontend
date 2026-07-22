@@ -144,6 +144,27 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceToken.value).toBe('valid-token')
     })
 
+    it('restores an admin workspace role from session storage', () => {
+      const adminWorkspace = {
+        ...mockWorkspaceWithRole,
+        role: 'admin' as const
+      }
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(adminWorkspace)
+      )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'valid-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        String(Date.now() + 3600 * 1000)
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      expect(store.initializeFromSession()).toBe(true)
+      expect(store.currentWorkspace).toEqual(adminWorkspace)
+    })
+
     it('returns false when sessionStorage is empty', () => {
       const store = useWorkspaceAuthStore()
 

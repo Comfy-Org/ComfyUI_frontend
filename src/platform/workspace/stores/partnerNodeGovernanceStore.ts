@@ -4,24 +4,22 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getPartnerNodePolicy,
-  PartnerNodePolicyApiError
+  getPartnerProviders,
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
-import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
+import type {
+  PartnerNodePolicy,
+  PartnerProvider
+} from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-
-export interface PartnerNodeCatalogItem {
-  id: string
-  name: string
-  provider: string
-}
 
 export type PartnerNodePolicyStatus =
   | 'inactive'
   | 'loading'
   | 'unconfigured'
   | 'configured'
-  | 'unavailable'
+  | 'ineligible'
   | 'error'
 
 export const usePartnerNodeGovernanceStore = defineStore(
@@ -29,13 +27,15 @@ export const usePartnerNodeGovernanceStore = defineStore(
   () => {
     const { flags } = useFeatureFlags()
     const workspaceStore = useTeamWorkspaceStore()
-    const nodeDefStore = useNodeDefStore()
 
+    const providers = shallowRef<PartnerProvider[]>([])
     const policy = shallowRef<PartnerNodePolicy | null>(null)
-    const policyWorkspaceId = ref<string | null>(null)
     const status = ref<PartnerNodePolicyStatus>('inactive')
     const error = shallowRef<Error | null>(null)
-    let loadVersion = 0
+    const isSaving = ref(false)
+    let requestVersion = 0
+    let nextSaveId = 0
+    let activeSave: { id: number; workspaceId: string } | null = null
 
     const governedWorkspaceId = computed(() => {
       const workspace = workspaceStore.activeWorkspace
@@ -46,94 +46,189 @@ export const usePartnerNodeGovernanceStore = defineStore(
         : null
     })
 
-    const partnerNodes = computed<PartnerNodeCatalogItem[]>(() =>
-      Object.values(nodeDefStore.nodeDefsByName)
-        .filter((nodeDef) => nodeDef.api_node)
-        .map((nodeDef) => ({
-          id: nodeDef.name,
-          name: nodeDef.display_name || nodeDef.name,
-          provider:
-            nodeDef.category.split('/')[2] ||
-            nodeDef.category ||
-            nodeDef.python_module
+    function createInitialPolicy(): PartnerNodePolicy {
+      return {
+        enforcementEnabled: false,
+        providers: providers.value.map(({ id }) => ({
+          providerId: id,
+          enabled: true
         }))
-    )
+      }
+    }
 
-    function isNodeDisabled(nodeType: string): boolean {
-      if (!nodeDefStore.nodeDefsByName[nodeType]?.api_node) return false
-      const workspaceId = governedWorkspaceId.value
-      if (!workspaceId || policyWorkspaceId.value !== workspaceId) return false
-      if (status.value === 'unavailable') return true
+    function isProviderEnabled(providerId: string): boolean {
+      if (!policy.value) return true
       return (
-        policy.value?.enforcementEnabled === true &&
-        policy.value.nodes[nodeType] !== true
+        policy.value.providers.find(
+          (provider) => provider.providerId === providerId
+        )?.enabled === true
       )
     }
 
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
-      const version = ++loadVersion
+      const version = ++requestVersion
+      if (activeSave?.workspaceId !== workspaceId) {
+        activeSave = null
+        isSaving.value = false
+      }
       if (!workspaceId) {
+        providers.value = []
         policy.value = null
-        policyWorkspaceId.value = null
         status.value = 'inactive'
         error.value = null
         return
       }
 
-      const workspaceChanged = policyWorkspaceId.value !== workspaceId
-      if (workspaceChanged) {
-        policy.value = null
-        policyWorkspaceId.value = workspaceId
-        status.value = 'loading'
-      } else if (status.value !== 'unavailable') {
-        status.value = 'loading'
-      }
+      providers.value = []
+      policy.value = null
+      status.value = 'loading'
       error.value = null
 
       try {
-        const nextPolicy = await getPartnerNodePolicy()
+        const [nextProviders, nextPolicy] = await Promise.all([
+          getPartnerProviders(),
+          getPartnerNodePolicy()
+        ])
         if (
-          version !== loadVersion ||
+          version !== requestVersion ||
           governedWorkspaceId.value !== workspaceId
         ) {
           return
         }
+        providers.value = nextProviders
         policy.value = nextPolicy
         status.value = nextPolicy ? 'configured' : 'unconfigured'
       } catch (loadError) {
         if (
-          version !== loadVersion ||
+          version !== requestVersion ||
           governedWorkspaceId.value !== workspaceId
         ) {
           return
         }
+        providers.value = []
+        policy.value = null
         error.value =
           loadError instanceof Error
             ? loadError
-            : new Error('Failed to load partner node policy')
-        if (
+            : new Error('Failed to load partner provider policy')
+        status.value =
           loadError instanceof PartnerNodePolicyApiError &&
-          loadError.status === 503
+          loadError.status === 403
+            ? 'ineligible'
+            : 'error'
+      }
+    }
+
+    async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<void> {
+      const workspaceId = governedWorkspaceId.value
+      if (!workspaceId) return
+      if (isSaving.value) {
+        throw new Error('Provider policy save already in progress')
+      }
+
+      const version = ++requestVersion
+      const saveId = ++nextSaveId
+      activeSave = { id: saveId, workspaceId }
+      isSaving.value = true
+      try {
+        const savedPolicy = await updatePartnerNodePolicy(nextPolicy)
+        if (
+          version !== requestVersion ||
+          governedWorkspaceId.value !== workspaceId
         ) {
-          policy.value = null
-          status.value = 'unavailable'
           return
         }
-        if (status.value !== 'unavailable') status.value = 'error'
+
+        policy.value = savedPolicy
+        status.value = 'configured'
+        error.value = null
+      } catch (saveError) {
+        if (
+          version !== requestVersion ||
+          governedWorkspaceId.value !== workspaceId
+        ) {
+          return
+        }
+        if (
+          saveError instanceof PartnerNodePolicyApiError &&
+          saveError.status === 422
+        ) {
+          await loadPolicy()
+        }
+        throw saveError
+      } finally {
+        if (activeSave?.id === saveId) {
+          activeSave = null
+          isSaving.value = false
+        }
       }
+    }
+
+    async function setProviderEnabled(
+      providerId: string,
+      enabled: boolean
+    ): Promise<void> {
+      if (!providers.value.some(({ id }) => id === providerId)) return
+
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      const currentEntry = currentPolicy.providers.find(
+        (provider) => provider.providerId === providerId
+      )
+      const nextProviders = currentEntry
+        ? currentPolicy.providers.map((provider) =>
+            provider.providerId === providerId
+              ? { ...provider, enabled }
+              : provider
+          )
+        : [...currentPolicy.providers, { providerId, enabled }]
+
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: nextProviders
+      })
+    }
+
+    async function setAllProvidersEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
+        providers: providers.value.map(({ id }) => ({
+          providerId: id,
+          enabled
+        }))
+      })
+    }
+
+    async function setEnforcementEnabled(enabled: boolean): Promise<void> {
+      const currentPolicy = policy.value ?? createInitialPolicy()
+      await savePolicy({
+        ...currentPolicy,
+        enforcementEnabled: enabled,
+        providers: enabled
+          ? currentPolicy.providers
+          : providers.value.map(({ id }) => ({ providerId: id, enabled: true }))
+      })
     }
 
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
 
     return {
+      providers,
       policy,
       status,
       error,
+      isSaving,
       governedWorkspaceId,
-      partnerNodes,
-      isNodeDisabled,
-      loadPolicy
+      createInitialPolicy,
+      isProviderEnabled,
+      loadPolicy,
+      savePolicy,
+      setProviderEnabled,
+      setAllProvidersEnabled,
+      setEnforcementEnabled
     }
   }
 )
