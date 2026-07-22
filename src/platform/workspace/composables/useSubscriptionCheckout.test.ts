@@ -280,9 +280,16 @@ describe('useSubscriptionCheckout', () => {
     it('waits for plans before opening a deep-linked confirmation', async () => {
       const checkout = await setup()
       mockPlans.value = []
-      mockFetchPlans.mockImplementationOnce(async () => {
-        mockPlans.value = [makeCreatorMonthly()]
-      })
+      let resolvePlans = () => {}
+      mockFetchPlans.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolvePlans = () => {
+              mockPlans.value = [makeCreatorMonthly()]
+              resolve()
+            }
+          })
+      )
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'new_subscription',
@@ -295,10 +302,15 @@ describe('useSubscriptionCheckout', () => {
         new_plan: makeCreatorMonthly().seat_summary
       })
 
-      await checkout.handleSubscribeClick({
+      const checkoutPromise = checkout.handleSubscribeClick({
         tierKey: 'creator',
         billingCycle: 'monthly'
       })
+
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      resolvePlans()
+      await checkoutPromise
 
       expect(mockFetchPlans).toHaveBeenCalledOnce()
       expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly')

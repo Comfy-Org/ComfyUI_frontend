@@ -118,7 +118,8 @@ installPreservedQueryTracker(router, [
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing', 'stop', 'cycle']
+    keys: ['pricing', 'stop', 'cycle'],
+    requiredKey: 'pricing'
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,

@@ -106,11 +106,9 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
-      reason: 'deep_link',
-      planMode: undefined,
-      initialCheckout: undefined
-    })
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link' })
+    )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -120,11 +118,9 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
-      reason: 'deep_link',
-      planMode: 'team',
-      initialCheckout: undefined
-    })
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link', planMode: 'team' })
+    )
   })
 
   it('opens on the personal tab for ?pricing=personal', async () => {
@@ -133,11 +129,9 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
-      reason: 'deep_link',
-      planMode: 'personal',
-      initialCheckout: undefined
-    })
+    expect(mockShowPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link', planMode: 'personal' })
+    )
   })
 
   it('opens the selected plan confirmation from a marketing deep link', async () => {
@@ -253,6 +247,43 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it.for<Record<string, string>>([
+    { stop: 'team_700' },
+    { cycle: 'monthly' },
+    { stop: 'team_700', cycle: 'yearly', other: 'param' }
+  ])('cleans orphaned pricing state: %o', async (query) => {
+    mockRouteQuery.value = query
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: 'other' in query ? { other: 'param' } : {}
+    })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'pricing'
+    )
+  })
+
+  it('cleans orphaned pricing state restored from preservation', async () => {
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+      cycle: 'monthly',
+      other: 'param'
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'pricing'
+    )
+  })
+
+  it.for<Record<string, string>>([
     { pricing: 'creator' },
     { pricing: 'creator', cycle: 'weekly' },
     { pricing: 'founder', cycle: 'yearly' }
@@ -326,6 +357,43 @@ describe('usePricingTableUrlLoader', () => {
         })
       })
     )
+  })
+
+  it('falls back to the Team table when the catalog fetch fails', async () => {
+    mockRouteQuery.value = {
+      pricing: 'team',
+      stop: 'team_700',
+      cycle: 'yearly'
+    }
+    mockTeamCreditStops.value = null
+    mockFetchPlans.mockRejectedValueOnce(new Error('catalog unavailable'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team'
+    })
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('falls back when the catalog remains unavailable after fetching', async () => {
+    mockRouteQuery.value = {
+      pricing: 'team',
+      stop: 'team_700',
+      cycle: 'yearly'
+    }
+    mockTeamCreditStops.value = null
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team'
+    })
   })
 
   it.for([

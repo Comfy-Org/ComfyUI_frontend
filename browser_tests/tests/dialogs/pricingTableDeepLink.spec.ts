@@ -496,7 +496,11 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     const subscribeRequests: Request[] = []
     await setupCloudApp(page, workspace('personal', 'owner'), [])
     await page.route('**/api/billing/plans', (route) =>
-      route.fulfill(jsonRoute({ plans: [CREATOR_ANNUAL_PLAN] }))
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
     )
     await page.route('**/api/billing/preview-subscribe', (route) =>
       route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
@@ -513,6 +517,19 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+  })
+
+  test('cleans orphaned pricing params without opening the table', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+
+    await page.goto(`${APP_URL}/?keep=1&stop=team_700&cycle=yearly`)
+
+    await waitForCloudApp(page)
+    await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
+    await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
+    await expect(pricingHeading(page)).toBeHidden()
   })
 
   test('denies a selected personal plan for a member', async ({ page }) => {

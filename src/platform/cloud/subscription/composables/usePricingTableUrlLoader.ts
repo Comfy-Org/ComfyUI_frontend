@@ -94,7 +94,13 @@ export function usePricingTableUrlLoader() {
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
     const param = query.pricing
-    if (param === undefined) return
+    if (
+      param === undefined &&
+      query.stop === undefined &&
+      query.cycle === undefined
+    ) {
+      return
+    }
 
     // Strip any present pricing param (even ineligible or malformed values) and
     // write the clean URL in a single replace before any await, so a clean URL
@@ -120,7 +126,24 @@ export function usePricingTableUrlLoader() {
     const isPlainTeamLink =
       param === 'team' && query.stop === undefined && query.cycle === undefined
     const needsTeamCatalog = param === 'team' && !isPlainTeamLink
-    if (needsTeamCatalog && !teamCreditStops.value) await fetchPlans()
+    if (needsTeamCatalog && !teamCreditStops.value) {
+      try {
+        await fetchPlans()
+      } catch (error) {
+        console.error(
+          '[usePricingTableUrlLoader] Failed to load Team pricing plans:',
+          error
+        )
+      }
+      if (!permissions.value.canManageSubscription) return
+      if (!teamCreditStops.value) {
+        subscriptionDialog.showPricingTable({
+          reason: 'deep_link',
+          planMode: 'team'
+        })
+        return
+      }
+    }
 
     const initialCheckout = getCheckoutSelection(
       param,
@@ -143,6 +166,7 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
+    if (!permissions.value.canManageSubscription) return
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',
