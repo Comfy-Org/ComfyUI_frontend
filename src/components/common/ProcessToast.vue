@@ -1,56 +1,74 @@
 <template>
   <div class="flex select-none flex-col items-end">
-    <!-- Collapsed pill -->
+    <!-- Collapsed pill: a light chip riding on a darker slab that peeks out
+         on the right to hold the chevron. Terminal states drop the slab. -->
     <div
       data-testid="process-toast-pill"
-      :class="
-        cn(
-          'relative flex h-[30px] items-center gap-1.5 overflow-clip rounded-lg border border-solid border-[#2d2e32] bg-secondary-background px-2 shadow-interface',
-          pillClass
-        )
-      "
+      :class="cn('relative isolate flex items-center rounded-lg', pillClass)"
     >
-      <!-- Status icon -->
-      <Loader
-        v-if="status === 'progress'"
-        size="sm"
-        variant="loader-circle"
-        class="shrink-0 text-text-secondary"
-      />
-      <i
-        v-else-if="status === 'done'"
-        class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
-      />
-      <i
-        v-else
-        class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
-      />
-
-      <span
-        class="text-[13.8px] font-semibold whitespace-nowrap text-base-foreground"
+      <div
+        :class="
+          cn(
+            'z-2 flex h-9 items-center gap-2 overflow-clip rounded-lg bg-[#232426] py-1',
+            hasSlab ? '-mr-2 pr-3 pl-2' : 'px-3'
+          )
+        "
       >
-        {{ verb }}
-      </span>
-      <span
-        v-if="showPercent"
-        class="text-[13.8px] font-bold tabular-nums text-base-foreground"
-      >
-        {{ displayPercent }}%
-      </span>
+        <div class="flex items-center gap-1.5">
+          <!-- Status icon -->
+          <Loader
+            v-if="status === 'progress'"
+            size="sm"
+            variant="loader-circle"
+            class="shrink-0 text-base-foreground"
+          />
+          <i
+            v-else-if="status === 'done'"
+            class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
+          />
+          <i
+            v-else
+            class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
+          />
 
-      <StatusBadge
-        v-if="failedCount && failedCount > 0"
-        severity="danger"
-        :label="t('processToast.failedCount', { count: failedCount })"
-        class="ml-0.5 shrink-0"
-      />
+          <!-- Verb and percent read as one sentence, so they share a run -->
+          <span
+            class="text-sm leading-5 font-medium tabular-nums whitespace-nowrap text-base-foreground"
+          >
+            {{ label }}
+          </span>
 
-      <!-- Expand / collapse (hidden when the consumer renders its own) -->
-      <Button
-        v-if="!hideChevron"
+          <StatusBadge
+            v-if="failedCount && failedCount > 0"
+            severity="danger"
+            :label="t('processToast.failedCount', { count: failedCount })"
+            class="h-3.5 shrink-0 px-1 text-[9px] font-semibold"
+          />
+        </div>
+
+        <template v-if="hasAction">
+          <div class="h-4 w-px shrink-0 bg-base-foreground/20" aria-hidden="true" />
+          <!-- Trailing action: default close (x); override via #action. -->
+          <slot name="action">
+            <Button
+              variant="textonly"
+              size="icon-sm"
+              :aria-label="t('g.close')"
+              data-testid="process-toast-close"
+              @click="$emit('close')"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </Button>
+          </slot>
+        </template>
+      </div>
+
+      <!-- Chevron slab -->
+      <button
+        v-if="hasSlab"
         v-tooltip.bottom="expandTooltip"
-        variant="textonly"
-        size="icon-sm"
+        type="button"
+        class="z-1 flex h-9 w-[41px] cursor-pointer items-center justify-center rounded-r-lg border-none bg-comfy-menu-bg pr-3 pl-4"
         :aria-label="
           expanded ? t('processToast.collapse') : t('processToast.expand')
         "
@@ -60,37 +78,22 @@
         <i
           :class="
             cn(
-              'size-3',
+              'size-4 opacity-50',
               expanded
                 ? 'icon-[lucide--chevron-up]'
                 : 'icon-[lucide--chevron-down]'
             )
           "
         />
-      </Button>
+      </button>
 
-      <!-- Trailing action: default close (x); override via #action.
-           Completed dismisses itself, so it carries no close affordance. -->
-      <slot name="action">
-        <Button
-          v-if="status !== 'done'"
-          variant="textonly"
-          size="icon-sm"
-          :aria-label="t('g.close')"
-          data-testid="process-toast-close"
-          @click="$emit('close')"
-        >
-          <i class="icon-[lucide--x] size-3.5" />
-        </Button>
-      </slot>
-
-      <!-- Progress bar hugging the bottom edge -->
+      <!-- Progress hugs the bottom edge of the whole pill -->
       <div
         v-if="showPercent"
         data-testid="process-toast-progress"
         :class="
           cn(
-            'absolute -bottom-px -left-px h-0.5 rounded-r-full transition-[width] duration-200 ease-out',
+            'absolute bottom-0 left-0 z-3 h-px rounded-[1px] transition-[width] duration-200 ease-out',
             progressClass
           )
         "
@@ -107,8 +110,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/loader/Loader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import Loader from '@/components/loader/Loader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { clampPercentInt } from '@/utils/numberUtil'
@@ -123,7 +126,8 @@ const {
   failedCount = 0,
   expanded = false,
   hideChevron = false,
-  progressClass = 'bg-primary-background',
+  hideAction = false,
+  progressClass = 'bg-base-foreground',
   pillClass
 } = defineProps<{
   /** Status verb, e.g. "Running", "Downloading", "Completed", "Failed". */
@@ -135,8 +139,10 @@ const {
   /** Count of failed jobs alongside active work; shows a danger badge when > 0. */
   failedCount?: number
   expanded?: boolean
-  /** Hide the built-in expand chevron (e.g. when the consumer renders its own in #action). */
+  /** Hide the chevron slab (e.g. nothing to expand into). */
   hideChevron?: boolean
+  /** Hide the divider and trailing action. */
+  hideAction?: boolean
   /** Tailwind bg class for the progress bar. */
   progressClass?: string
   pillClass?: string
@@ -149,10 +155,17 @@ defineEmits<{
 
 const { t } = useI18n()
 
-const showPercent = computed(
-  () => status === 'progress' && percent != null
-)
+const showPercent = computed(() => status === 'progress' && percent != null)
 const displayPercent = computed(() => clampPercentInt(Math.round(percent ?? 0)))
+/** Verb and percent read as one sentence, so they share a single text run. */
+const label = computed(() =>
+  showPercent.value ? `${verb} ${displayPercent.value}%` : verb
+)
+
+/** Terminal states are a bare chip: no actions, no slab, no progress. */
+const isTerminal = computed(() => status !== 'progress')
+const hasAction = computed(() => !isTerminal.value && !hideAction)
+const hasSlab = computed(() => !isTerminal.value && !hideChevron)
 
 const expandTooltip = computed(() =>
   buildTooltipConfig(
