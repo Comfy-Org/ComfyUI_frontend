@@ -17,9 +17,17 @@ const {
   min = 0,
   max = 100,
   modelValue,
+  thumbLabel,
+  thumbValueText,
   ...restProps
 } = defineProps<
-  SliderRootProps & { class?: HTMLAttributes['class']; ticks?: number }
+  SliderRootProps & {
+    class?: HTMLAttributes['class']
+    ticks?: number
+    /** Accessible name/value for the thumb; reka only exposes the numeric index. */
+    thumbLabel?: string
+    thumbValueText?: string
+  }
 >()
 const emits = defineEmits<SliderRootEmits>()
 
@@ -102,6 +110,8 @@ function isTickFilled(
       v-for="(_, key) in modelValue"
       :key="key"
       data-slot="slider-thumb"
+      :aria-label="thumbLabel"
+      :aria-valuetext="thumbValueText"
       class="bg-primary-warm-white border-primary-comfy-yellow ring-primary-comfy-yellow/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderRoot>

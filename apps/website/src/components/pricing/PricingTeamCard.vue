@@ -113,6 +113,8 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
+            :thumb-label="t('pricing.team.sliderLabel', locale)"
+            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} credits, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
               <ComponentIcon

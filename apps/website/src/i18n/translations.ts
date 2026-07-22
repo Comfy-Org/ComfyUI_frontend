@@ -1335,6 +1335,10 @@ const translations = {
     en: 'Everything in Pro, plus:',
     'zh-CN': '包含专业版的全部功能，另加：'
   },
+  'pricing.team.sliderLabel': {
+    en: 'Team monthly credit commitment',
+    'zh-CN': '团队每月积分承诺'
+  },
   'pricing.team.description': {
     en: 'Built for teams collaborating on workflows together.',
     'zh-CN': '为协作开发工作流的团队打造。'
