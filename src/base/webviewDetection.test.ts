@@ -115,5 +115,53 @@ describe('isEmbeddedWebView', () => {
       vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() })
       expect(isEmbeddedWebView('')).toBe(true)
     })
+
+    it.for([
+      [
+        'Chrome',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/145.0.7000.0 Mobile/15E148 Safari/604.1'
+      ],
+      [
+        'Safari',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+      ],
+      [
+        'Firefox',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/604.1'
+      ],
+      [
+        'Edge',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/120.0.0.0 Mobile/15E148 Safari/604.1'
+      ],
+      [
+        'Opera',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 OPiOS/16.0.14 Mobile/15E148 Safari/9537.53'
+      ],
+      [
+        'iPadOS Safari in desktop mode',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+      ]
+    ] as const)(
+      ([browser]: readonly [string, string]) =>
+        `ignores webkit.messageHandlers in ${browser}`,
+      ([, ua]: readonly [string, string]) => {
+        vi.stubGlobal('webkit', { messageHandlers: {} })
+        expect(isEmbeddedWebView(ua)).toBe(false)
+      }
+    )
+
+    it('detects webkit.messageHandlers in a macOS Safari-shaped host', () => {
+      vi.stubGlobal('webkit', { messageHandlers: {} })
+      const ua =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+      expect(isEmbeddedWebView(ua)).toBe(true)
+    })
+
+    it('detects ReactNativeWebView when the UA looks like Chrome on iOS', () => {
+      vi.stubGlobal('ReactNativeWebView', { postMessage: vi.fn() })
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1'
+      expect(isEmbeddedWebView(ua)).toBe(true)
+    })
   })
 })
