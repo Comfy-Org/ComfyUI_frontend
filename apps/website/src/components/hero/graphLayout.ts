@@ -33,10 +33,10 @@ export const PORTS: Record<
   'inputOut' | 'angleIn' | 'angleOut' | 'outputIn',
   Port
 > = {
-  inputOut: { el: 'input', dx: 30, dy: 8.2 },
+  inputOut: { el: 'input', dx: 28.4, dy: 6.6 },
   angleIn: { el: 'angle', dx: 1.3, dy: 1.125 },
   angleOut: { el: 'angle', dx: 18.7, dy: 1.125 },
-  outputIn: { el: 'output', dx: 0.9, dy: 2.9 }
+  outputIn: { el: 'output', dx: 2.2, dy: 1.95 }
 }
 
 export function portPoint(

@@ -12,8 +12,10 @@ const defaultAsset = resolveAsset(DEFAULT_POSE)
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-8 pb-16 lg:px-10"
+    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-10 pb-16 lg:px-10"
   >
+    <HeroHeadline :locale class="mb-12" />
+
     <div class="hidden w-full md:block">
       <HeroGraph />
     </div>
@@ -27,7 +29,5 @@ const defaultAsset = resolveAsset(DEFAULT_POSE)
         class="w-full rounded-3xl border border-white/10"
       />
     </figure>
-
-    <HeroHeadline :locale class="mt-10" />
   </section>
 </template>

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-const { src, alt, label, port } = defineProps<{
+const { src, alt, label } = defineProps<{
   src: string
   alt: string
   label?: string
-  port?: 'left' | 'right'
 }>()
 </script>
 
@@ -38,14 +37,5 @@ const { src, alt, label, port } = defineProps<{
         {{ label }}
       </span>
     </span>
-
-    <span
-      v-if="port === 'right'"
-      class="bg-primary-comfy-yellow absolute top-1/2 right-0 size-[0.55em] translate-x-1/2 -translate-y-1/2 rounded-full"
-    />
-    <span
-      v-if="port === 'left'"
-      class="bg-primary-comfy-yellow absolute top-1/2 left-0 size-[0.55em] -translate-1/2 rounded-full"
-    />
   </div>
 </template>
