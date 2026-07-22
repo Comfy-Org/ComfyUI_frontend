@@ -393,6 +393,16 @@ defineExpose({
         data-testid="section-widgets-list"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
+        <!--
+          TODO(stable-widget-render-key): `:css="!isDraggable"` disables the FLIP
+          for draggable sections (DraggableList already animates them) to kill the
+          double animation. Root cause: promotedInputWidget() returns fresh object
+          literals, so getStableWidgetRenderKey mints new keys every recompute and
+          TransitionGroup replays `enter` on each row. End-state is a stable
+          WidgetEntityId render key (ADR-0008 Widget entities) which removes the
+          root cause and makes this workaround revertible.
+          See research/architecture/toward-new-api-plan.md §3b (follow-up A6).
+        -->
         <TransitionGroup name="list-scale" :css="!isDraggable">
           <WidgetItem
             v-for="{ widget, node } in widgets"
