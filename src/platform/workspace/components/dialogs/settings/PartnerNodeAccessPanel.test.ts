@@ -25,7 +25,8 @@ const {
   mockSetEnforcementEnabled,
   mockSetProviderEnabled,
   mockShowConfirmDialog,
-  mockStatus
+  mockStatus,
+  mockWorkspaceRole
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
@@ -42,7 +43,8 @@ const {
     mockSetEnforcementEnabled: vi.fn(),
     mockSetProviderEnabled: vi.fn(),
     mockShowConfirmDialog: vi.fn(),
-    mockStatus: ref('configured')
+    mockStatus: ref('configured'),
+    mockWorkspaceRole: ref<'owner' | 'admin'>('owner')
   }
 })
 
@@ -81,6 +83,10 @@ vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({ nodeDefsByName: mockNodeDefsByName })
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -111,6 +117,7 @@ describe('PartnerNodeAccessPanel', () => {
     vi.clearAllMocks()
     mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
+    mockWorkspaceRole.value = 'owner'
     mockIsSaving.value = false
     mockPolicy.value = null
     mockProviders.value = [
@@ -141,7 +148,7 @@ describe('PartnerNodeAccessPanel', () => {
     renderComponent()
 
     expect(screen.getByText('OpenAI (inc. Sora)')).toBeTruthy()
-    expect(screen.getByText('2 nodes')).toBeTruthy()
+    expect(screen.getByText('2 enabled')).toBeTruthy()
     expect(screen.queryByText('Route only')).toBeNull()
     expect(screen.queryByText('Create image')).toBeNull()
 
@@ -198,7 +205,7 @@ describe('PartnerNodeAccessPanel', () => {
     await user.type(search, 'Acme')
 
     expect(screen.getByText('Acme')).toBeTruthy()
-    expect(screen.getByText('0 nodes')).toBeTruthy()
+    expect(screen.getByText('0 enabled')).toBeTruthy()
 
     await user.clear(search)
     await user.type(search, 'Missing')
@@ -232,7 +239,7 @@ describe('PartnerNodeAccessPanel', () => {
 
     expect(
       screen.getByText(
-        'Partner nodes from every provider are available. Provider settings below apply when access is restricted.'
+        'Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.'
       )
     ).toBeTruthy()
     expect(
@@ -242,7 +249,7 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBe('false')
   })
 
-  it('saves provider and enable-all changes immediately', async () => {
+  it('confirms restriction before disabling a provider from unrestricted mode', async () => {
     const user = userEvent.setup()
     renderComponent()
 
@@ -251,9 +258,21 @@ describe('PartnerNodeAccessPanel', () => {
         name: 'Set access for OpenAI (inc. Sora)'
       })
     )
+
+    expect(mockSetProviderEnabled).not.toHaveBeenCalled()
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe('Restrict access to partner nodes?')
+    await options.footerProps.onConfirm()
+    expect(mockSetProviderEnabled).toHaveBeenCalledWith('openai', false)
+  })
+
+  it('saves enable-all changes immediately', async () => {
+    const user = userEvent.setup()
+    mockIsProviderEnabled.mockReturnValue(false)
+    renderComponent()
+
     await user.click(screen.getByRole('button', { name: 'Enable all' }))
 
-    expect(mockSetProviderEnabled).toHaveBeenCalledWith('openai', false)
     expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(true)
   })
 
@@ -267,6 +286,8 @@ describe('PartnerNodeAccessPanel', () => {
         name: 'Set access for OpenAI (inc. Sora)'
       })
     )
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    await options.footerProps.onConfirm()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Partner node access couldn't be updated. Try again."
@@ -282,8 +303,22 @@ describe('PartnerNodeAccessPanel', () => {
         name: 'Set access for OpenAI (inc. Sora)'
       })
     ).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Enable all' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
+  })
+
+  it('keeps the Allowlist visible but read-only for workspace admins', () => {
+    mockWorkspaceRole.value = 'admin'
+    renderComponent()
+
+    expect(
+      screen.getByText('Only workspace owners can update partner node access.')
+    ).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Unrestricted' })).toBeDisabled()
+    expect(
+      screen.getByRole('switch', {
+        name: 'Set access for OpenAI (inc. Sora)'
+      })
+    ).toBeDisabled()
   })
 
   it('confirms before disabling every provider', async () => {

@@ -295,7 +295,7 @@ describe('partnerNodeGovernanceStore', () => {
     await store.setProviderEnabled('openai', false)
 
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
-      enforcementEnabled: false,
+      enforcementEnabled: true,
       providers: [
         { providerId: 'openai', enabled: false },
         { providerId: 'route-only', enabled: true }
@@ -336,7 +336,7 @@ describe('partnerNodeGovernanceStore', () => {
     await store.setAllProvidersEnabled(false)
 
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith({
-      enforcementEnabled: false,
+      enforcementEnabled: true,
       providers: [
         { providerId: 'openai', enabled: false },
         { providerId: 'route-only', enabled: false }

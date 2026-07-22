@@ -1,35 +1,19 @@
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspacePanelContent from './WorkspacePanelContent.vue'
 
 const mockFetchMembers = vi.fn()
 const mockFetchPendingInvites = vi.fn()
 
-const {
-  mockGovernanceStatus,
-  mockGovernedWorkspaceId,
-  mockHasTeamPlan,
-  mockIsPlanLoading,
-  mockMembers,
-  mockWorkspaceRole,
-  mockWorkspaceType
-} = vi.hoisted(() => {
+const { mockHasTeamPlan, mockIsPlanLoading } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
     mockHasTeamPlan: ref(true),
-    mockIsPlanLoading: ref(false),
-    mockMembers: ref<WorkspaceMember[]>([]),
-    mockGovernanceStatus: ref('configured'),
-    mockGovernedWorkspaceId: ref<string | null>('team-workspace'),
-    mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockWorkspaceType: ref<'personal' | 'team'>('team')
+    mockIsPlanLoading: ref(false)
   }
 })
 
@@ -54,47 +38,39 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
   return {
     useTeamWorkspaceStore: () => ({
       workspaceName: ref('Acme Team'),
-      members: mockMembers,
       fetchMembers: mockFetchMembers,
       fetchPendingInvites: mockFetchPendingInvites
     })
   }
 })
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  return {
-    useWorkspaceUI: () => ({
-      workspaceType: mockWorkspaceType,
-      workspaceRole: mockWorkspaceRole
-    })
-  }
-})
-
-vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
-  usePartnerNodeGovernanceStore: () => ({
-    governedWorkspaceId: mockGovernedWorkspaceId,
-    status: mockGovernanceStatus
-  })
-}))
-
 vi.mock(
   '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
   () => ({
-    default: { name: 'SubscriptionPanelContentWorkspace', template: '<div />' }
+    default: {
+      name: 'SubscriptionPanelContentWorkspace',
+      template: '<div data-testid="plan-panel" />'
+    }
   })
 )
 
 vi.mock(
   '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue',
   () => ({
-    default: { name: 'MembersPanelContent', template: '<div />' }
+    default: {
+      name: 'MembersPanelContent',
+      template: '<div data-testid="members-panel" />'
+    }
   })
 )
 
 vi.mock(
   '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue',
   () => ({
-    default: { name: 'PartnerNodeAccessPanel', template: '<div />' }
+    default: {
+      name: 'PartnerNodeAccessPanel',
+      template: '<div data-testid="allowlist-panel" />'
+    }
   })
 )
 
@@ -116,19 +92,9 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function createMember(id: string): WorkspaceMember {
-  return {
-    id,
-    name: `Member ${id}`,
-    email: `member${id}@example.com`,
-    joinDate: new Date('2025-01-15'),
-    role: 'member',
-    isOriginalOwner: false
-  }
-}
-
-function renderComponent() {
+function renderComponent(section: 'plan' | 'members' | 'allowlist' = 'plan') {
   return render(WorkspacePanelContent, {
+    props: { section },
     global: {
       plugins: [i18n],
       stubs: { WorkspaceProfilePic: true }
@@ -139,68 +105,34 @@ function renderComponent() {
 describe('WorkspacePanelContent billing banner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockMembers.value = []
-    mockGovernanceStatus.value = 'configured'
-    mockGovernedWorkspaceId.value = 'team-workspace'
-    mockWorkspaceRole.value = 'owner'
-    mockWorkspaceType.value = 'team'
   })
 
-  it('hosts a single banner slot above the tab content, so it shows on every tab', () => {
+  it('hosts a single banner slot above the selected workspace section', () => {
     renderComponent()
 
     const banner = screen.getByTestId('billing-banner')
-    const planPanel = screen.getByText('workspacePanel.tabs.planCredits')
+    const planPanel = screen.getByTestId('plan-panel')
     expect(
-      planPanel.compareDocumentPosition(banner) &
+      banner.compareDocumentPosition(planPanel) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 })
 
-describe('WorkspacePanelContent members tab label', () => {
+describe('WorkspacePanelContent member loading', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockHasTeamPlan.value = true
     mockIsPlanLoading.value = false
-    mockMembers.value = []
-    mockGovernanceStatus.value = 'configured'
-    mockGovernedWorkspaceId.value = 'team-workspace'
-    mockWorkspaceRole.value = 'owner'
-    mockWorkspaceType.value = 'team'
-  })
-
-  it('shows the counted label for Team plans with multiple members', () => {
-    mockMembers.value = [createMember('1'), createMember('2')]
-    renderComponent()
-    expect(screen.getByText(/workspacePanel\.tabs\.membersCount/)).toBeTruthy()
-  })
-
-  it('drops the count when the owner is the only member', () => {
-    mockMembers.value = [createMember('1')]
-    renderComponent()
-    expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
-    expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
-  })
-
-  it('shows the plain Members label for a personal plan', () => {
-    mockWorkspaceType.value = 'personal'
-    mockHasTeamPlan.value = false
-    mockMembers.value = [createMember('1'), createMember('2')]
-    renderComponent()
-    expect(screen.getByText('workspacePanel.members.header')).toBeTruthy()
-    expect(screen.queryByText(/workspacePanel\.tabs\.membersCount/)).toBeNull()
   })
 
   it('fetches members and pending invites for a Team plan', () => {
-    mockWorkspaceType.value = 'personal'
     renderComponent()
     expect(mockFetchMembers).toHaveBeenCalled()
     expect(mockFetchPendingInvites).toHaveBeenCalled()
   })
 
   it('does not fetch member data for a personal plan', () => {
-    mockWorkspaceType.value = 'team'
     mockHasTeamPlan.value = false
     renderComponent()
     expect(mockFetchMembers).not.toHaveBeenCalled()
@@ -215,51 +147,25 @@ describe('WorkspacePanelContent members tab label', () => {
   })
 })
 
-describe('WorkspacePanelContent partner nodes tab', () => {
-  beforeEach(() => {
-    mockGovernanceStatus.value = 'configured'
-    mockGovernedWorkspaceId.value = 'team-workspace'
-    mockWorkspaceRole.value = 'owner'
-  })
-
-  it('shows partner node access to team workspace owners', () => {
+describe('WorkspacePanelContent sections', () => {
+  it('renders Plan & Credits without internal workspace tabs', () => {
     renderComponent()
 
-    expect(screen.getByText('workspacePanel.tabs.partnerNodes')).toBeTruthy()
+    expect(screen.getByTestId('plan-panel')).toBeTruthy()
+    expect(screen.queryByRole('tab')).toBeNull()
   })
 
-  it('hides partner node access from members', () => {
-    mockWorkspaceRole.value = 'member'
-    renderComponent()
+  it('renders Members as a separate panel', () => {
+    renderComponent('members')
 
-    expect(screen.queryByText('workspacePanel.tabs.partnerNodes')).toBeNull()
+    expect(screen.getByTestId('members-panel')).toBeTruthy()
+    expect(screen.queryByTestId('plan-panel')).toBeNull()
   })
 
-  it('hides partner node access when the backend reports ineligible', () => {
-    mockGovernanceStatus.value = 'ineligible'
-    renderComponent()
+  it('renders Allowlist as a separate panel', () => {
+    renderComponent('allowlist')
 
-    expect(screen.queryByText('workspacePanel.tabs.partnerNodes')).toBeNull()
-  })
-
-  it('returns to the plan tab when partner node access becomes unavailable', async () => {
-    const user = userEvent.setup()
-    renderComponent()
-    const partnerNodesTab = screen.getByRole('tab', {
-      name: 'workspacePanel.tabs.partnerNodes'
-    })
-
-    await user.click(partnerNodesTab)
-    expect(partnerNodesTab.getAttribute('aria-selected')).toBe('true')
-
-    mockGovernanceStatus.value = 'ineligible'
-
-    await vi.waitFor(() =>
-      expect(
-        screen
-          .getByRole('tab', { name: 'workspacePanel.tabs.planCredits' })
-          .getAttribute('aria-selected')
-      ).toBe('true')
-    )
+    expect(screen.getByTestId('allowlist-panel')).toBeTruthy()
+    expect(screen.queryByTestId('plan-panel')).toBeNull()
   })
 })

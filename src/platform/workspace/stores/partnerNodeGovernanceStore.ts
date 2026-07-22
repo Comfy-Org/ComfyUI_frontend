@@ -185,6 +185,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
 
       await savePolicy({
         ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
         providers: nextProviders
       })
     }
@@ -193,6 +194,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       const currentPolicy = policy.value ?? createInitialPolicy()
       await savePolicy({
         ...currentPolicy,
+        enforcementEnabled: currentPolicy.enforcementEnabled || !enabled,
         providers: providers.value.map(({ id }) => ({
           providerId: id,
           enabled
