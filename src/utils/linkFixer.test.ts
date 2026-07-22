@@ -326,7 +326,7 @@ describe('fixBadLinks', () => {
 describe('fixBadLinks ↔ linkStore integration', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it('removes deleted zombie links from the link store', () => {
+  it('completes the input mirror for a registered link missing it', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
     const b = new LGraphNode('B')
@@ -335,17 +335,20 @@ describe('fixBadLinks ↔ linkStore integration', () => {
     graph.add(a)
     graph.add(b)
 
-    const zombie = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
-    graph._addLink(zombie)
+    // Registered via the chokepoint, but the input mirror was never written.
+    const orphan = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
+    graph._addLink(orphan)
 
     const store = useLinkStore()
     const graphId = graph.rootGraph.id
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+    expect(b.inputs[0].link).toBeNull()
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
-    expect(result).toMatchObject({ fixed: true, deleted: 1 })
-    expect(graph._links.has(zombie.id)).toBe(false)
-    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(false)
+    expect(result).toMatchObject({ fixed: true, patched: 1, deleted: 0 })
+    expect(graph._links.has(orphan.id)).toBe(true)
+    expect(b.inputs[0].link).toBe(orphan.id)
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 })

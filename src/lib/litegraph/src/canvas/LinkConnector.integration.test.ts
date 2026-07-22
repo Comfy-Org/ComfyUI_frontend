@@ -449,7 +449,7 @@ describe('LinkConnector Integration', () => {
       expect(connector.outputLinks.length).toBe(0)
 
       expect(disconnectedNode.outputs[0].links).toEqual(nextLinkIds)
-      expect(hasOutputNode.outputs[0].links).toEqual([])
+      expect(hasOutputNode.outputs[0].links).toBeNull()
 
       const reroutesAfter = disconnectedNode.outputs[0].links
         ?.map((linkId) => graph.links.get(linkId)!)
@@ -593,7 +593,7 @@ describe('LinkConnector Integration', () => {
       connector.dropLinks(graph, floatingRerouteEvent)
       connector.reset()
 
-      expect(manyOutputsNode.outputs[0].links).toEqual([])
+      expect(manyOutputsNode.outputs[0].links).toBeNull()
       expect(floatingReroute.linkIds.size).toBe(4)
 
       validateIntegrityFloatingRemoved()
@@ -614,7 +614,7 @@ describe('LinkConnector Integration', () => {
       const canvasY = reroute7.pos[1]
       const reroute7Event = createMockCanvasPointerEvent(canvasX, canvasY)
 
-      const toSortedRerouteChain = (linkIds: number[]) =>
+      const toSortedRerouteChain = (linkIds: readonly number[]) =>
         linkIds
           .map((x) => graph.links.get(toLinkId(x))!)
           .map((x) => LLink.getReroutes(graph, x))

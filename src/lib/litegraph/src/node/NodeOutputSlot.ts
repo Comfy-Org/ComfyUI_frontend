@@ -10,12 +10,18 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
+import {
+  outputHasLinks,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
-  links: LinkId[] | null
+  /** @deprecated Derived from the link store via a warning prototype getter; never written. */
+  declare readonly links: readonly LinkId[] | null
   _data?: unknown
   slot_index?: number
 
@@ -34,8 +40,11 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    super(slot, node)
-    this.links = slot.links
+    // Serialized outputs carry a legacy links mirror; strip it so the base
+    // ctor's Object.assign cannot collide with the deprecated prototype
+    // getter (assigning a getter-only property throws in strict mode).
+    const { links: _legacyLinks, ...rest } = slot
+    super(rest, node)
     this._data = slot._data
     this.slot_index = slot.slot_index
   }
@@ -55,7 +64,13 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override get isConnected(): boolean {
-    return this.links != null && this.links.length > 0
+    const { graph } = this._node
+    if (!graph) return false
+    return outputHasLinks(
+      graph,
+      this._node.id,
+      this._node.outputs.indexOf(this)
+    )
   }
 
   override draw(
@@ -77,10 +92,37 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   override toJSON(): INodeOutputSlot {
+    const { graph } = this._node
+    const ids = graph
+      ? outputLinkIds(graph, this._node.id, this._node.outputs.indexOf(this))
+      : []
     return {
       ...super.toJSON(),
-      links: this.links,
+      links: ids.length ? ids : null,
       slot_index: this.slot_index
     }
   }
 }
+
+/**
+ * Deprecation telemetry for extensions that still read `output.links`.
+ * Returns a fresh store-derived array; there is deliberately no setter, so
+ * writes throw in strict mode. First-party code uses the slotLinks helpers.
+ */
+Object.defineProperty(NodeOutputSlot.prototype, 'links', {
+  get(this: NodeOutputSlot): readonly LinkId[] | null {
+    warnDeprecated(
+      'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
+    )
+    const { graph } = this._node
+    if (!graph) return null
+    const ids = outputLinkIds(
+      graph,
+      this._node.id,
+      this._node.outputs.indexOf(this)
+    )
+    return ids.length ? Object.freeze(ids) : null
+  },
+  configurable: true,
+  enumerable: false
+})

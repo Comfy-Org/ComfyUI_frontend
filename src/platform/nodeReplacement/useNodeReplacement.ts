@@ -1,5 +1,6 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
@@ -61,18 +62,14 @@ function transferOutputConnections(
   newOutputIdx: number,
   graph: LGraph
 ): void {
-  const oldLinks = oldNode.outputs?.[oldOutputIdx]?.links
-  if (!oldLinks?.length) return
+  const links = outputLinks(graph, oldNode.id, oldOutputIdx)
+  if (!links.length) return
   if (!newNode.outputs?.[newOutputIdx]) return
 
-  for (const linkId of oldLinks) {
-    const link = graph.links.get(linkId)
-    if (!link) continue
+  for (const link of links) {
     link.origin_id = newNode.id
     link.origin_slot = newOutputIdx
   }
-  newNode.outputs[newOutputIdx].links = [...oldLinks]
-  oldNode.outputs[oldOutputIdx].links = []
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */

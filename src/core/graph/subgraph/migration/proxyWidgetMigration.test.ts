@@ -20,8 +20,10 @@ import {
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -372,10 +374,14 @@ describe('flushProxyWidgetMigration', () => {
 
       const danglingLinkId = toLinkId(999_999)
       expect(host.subgraph.links.has(danglingLinkId)).toBe(false)
-      primitive.outputs[0].links = [
-        ...(primitive.outputs[0].links ?? []),
-        danglingLinkId
-      ]
+      useLinkStore().registerLink(host.subgraph.rootGraph.id, {
+        id: danglingLinkId,
+        originNodeId: primitive.id,
+        originSlot: 0,
+        targetNodeId: toNodeId(999_999),
+        targetSlot: 0,
+        type: '*'
+      })
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
       flushProxyWidgetMigration({ hostNode: host })

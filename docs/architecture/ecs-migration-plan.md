@@ -277,9 +277,14 @@ data is complete and consistent with the class-based graph.
 > `rerouteStore` (PRs 13436, 13449): "what links pass through this reroute" is
 > derived per root graph by a cached reverse index over the links' `parentId`
 > chains, and input-side connectivity is one lookup via
-> `linkStore.isInputSlotConnected()` / `getInputSlotLink()`. Remaining:
-> slot mirrors (`input.link` / `output.links`), output-side queries, and
-> execution order.
+> `linkStore.isInputSlotConnected()` / `getInputSlotLink()`.
+>
+> **Status (2026-07-17):** Output-side queries shipped and the `output.links`
+> mirror is deleted (PR 13479): `linkStore.isOutputSlotConnected()` /
+> `getOutputSlotLinks()`, litegraph internals reading through
+> `node/slotLinks.ts` (see
+> [output slot connectivity](output-slot-connectivity.md)). Remaining: the
+> `input.link` slot mirror and execution order.
 
 **Risk:** Low. Read-only system with equivalence tests.
 
@@ -336,7 +341,8 @@ the system knowing about the callback API.
 > through canonical `LGraph` mutation chokepoints: `_addLink`/`_removeLink` and
 > `_addReroute`/`_removeReroute` pair every map mutation with store
 > (un)registration, and `clear()` / subgraph-definition GC unregister whole
-> graphs. The callback contract above and slot-mirror extraction remain.
+> graphs. The callback contract above and `input.link` slot-mirror extraction
+> remain (`output.links` was deleted in PR 13479).
 
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.

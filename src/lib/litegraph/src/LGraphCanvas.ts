@@ -27,6 +27,7 @@ import type { NodeProperty } from './LGraphNode'
 import { parseNodeId, serializeNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
+import { outputLinkIds, outputLinks } from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -62,7 +63,6 @@ import type {
   INodeSlot,
   INodeSlotContextItem,
   ISlotType,
-  LinkNetwork,
   LinkSegment,
   NewNodePosition,
   NullableProperties,
@@ -2780,22 +2780,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (!node.flags.collapsed) {
       const { inputs, outputs } = node
 
-      function hasRelevantOutputLinks(
-        output: INodeOutputSlot,
-        network: LinkNetwork
-      ): boolean {
-        return (output.links ?? []).some(
-          (linkId) => network.getLink(linkId) !== undefined
-        )
-      }
-
       // Outputs
       if (outputs) {
         for (const [i, output] of outputs.entries()) {
           const link_pos = node.getOutputPos(i)
           if (isInRectangle(x, y, link_pos[0] - 15, link_pos[1] - 10, 30, 20)) {
             // Drag multiple output links
-            if (e.shiftKey && hasRelevantOutputLinks(output, graph)) {
+            if (e.shiftKey && outputLinks(graph, node.id, i).length > 0) {
               linkConnector.moveOutputLink(graph, node, output)
               this._linkConnectorDrop()
               return
@@ -4612,9 +4603,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.highlighted_links[input.link] = true
       }
     }
-    if (item.outputs) {
-      for (const id of item.outputs.flatMap((x) => x.links)) {
-        if (id == null) continue
+    const { graph } = item
+    if (graph && item.outputs) {
+      for (const id of item.outputs.flatMap((_, i) =>
+        outputLinkIds(graph, item.id, i)
+      )) {
         this.highlighted_links[id] = true
       }
     }
@@ -4672,9 +4665,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
     if (item.outputs) {
-      for (const id of item.outputs.flatMap((x) => x.links)) {
-        if (id == null) continue
-
+      for (const id of item.outputs.flatMap((_, i) =>
+        outputLinkIds(graph, item.id, i)
+      )) {
         const node = LLink.getTargetNode(graph, id)
         if (node && this.selectedItems.has(node)) continue
 
@@ -4806,9 +4799,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.highlighted_links[input.link] = true
         }
       }
-      if (keepSelected.outputs) {
-        for (const id of keepSelected.outputs.flatMap((x) => x.links)) {
-          if (id == null) continue
+      const { graph } = keepSelected
+      if (graph && keepSelected.outputs) {
+        for (const id of keepSelected.outputs.flatMap((_, i) =>
+          outputLinkIds(graph, keepSelected.id, i)
+        )) {
           this.highlighted_links[id] = true
         }
       }
@@ -8689,7 +8684,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node.getSlotMenuOptions) {
           menu_info = node.getSlotMenuOptions(slot)
         } else {
-          if (slot.output?.links?.length || slot.input?.link != null) {
+          if (
+            (slot.output &&
+              node.isOutputConnected(node.outputs.indexOf(slot.output))) ||
+            slot.input?.link != null
+          ) {
             menu_info.push({ content: 'Disconnect Links', slot })
           }
 

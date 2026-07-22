@@ -2,6 +2,7 @@ import { remove } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
@@ -323,11 +324,12 @@ export class LinkConnector {
     }
 
     // Normal links
-    if (output.links?.length) {
-      for (const linkId of output.links) {
-        const link = network.links.get(linkId)
-        if (!link) continue
-
+    if (node.graph) {
+      for (const link of outputLinks(
+        node.graph,
+        node.id,
+        node.outputs.indexOf(output)
+      )) {
         const firstReroute = LLink.getFirstReroute(network, link)
         if (firstReroute) {
           firstReroute._dragging = true

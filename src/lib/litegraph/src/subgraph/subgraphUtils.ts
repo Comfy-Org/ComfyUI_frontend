@@ -4,6 +4,7 @@ import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { toLinkId } from '@/types/linkId'
@@ -144,14 +145,15 @@ export function getBoundaryLinks(
 
       // Outputs
       if (node.outputs) {
-        for (const [outputIndex, output] of node.outputs.entries()) {
+        for (const [outputIndex] of node.outputs.entries()) {
           addFloatingLinks(
             slotFloatingLinks(graph, 'output', node.id, outputIndex)
           )
 
-          if (!output.links) continue
+          const linkIds = outputLinkIds(graph, node.id, outputIndex)
+          if (!linkIds.length) continue
 
-          const many = LLink.resolveMany(output.links.map(toLinkId), graph)
+          const many = LLink.resolveMany(linkIds, graph)
           for (const { link, inputNode } of many) {
             if (
               // Subgraph output node

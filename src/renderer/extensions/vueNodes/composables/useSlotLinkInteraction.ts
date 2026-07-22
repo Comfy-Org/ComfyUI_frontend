@@ -32,6 +32,7 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -635,11 +636,14 @@ export function useSlotLinkInteraction({
       : 0
     const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
 
-    const outputLinkCount = outputSlot?.links?.length ?? 0
-    const outputFloatingCount = isOutputSlot
-      ? slotFloatingLinks(graph, 'output', localNodeId, index).length
-      : 0
-    const hasExistingOutputLink = outputLinkCount > 0 || outputFloatingCount > 0
+    const hasExistingOutputLink =
+      isOutputSlot &&
+      (useLinkStore().isOutputSlotConnected(
+        graph.rootGraph.id,
+        localNodeId,
+        index
+      ) ||
+        slotFloatingLinks(graph, 'output', localNodeId, index).length > 0)
 
     const shouldBreakExistingInputLink =
       isInputSlot &&

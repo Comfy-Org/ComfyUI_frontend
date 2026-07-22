@@ -63,7 +63,7 @@ type FreeSlotResult<T extends { type: ISlotType }> =
 export function findFreeSlotOfType<T extends { type: ISlotType }>(
   slots: T[],
   type: ISlotType,
-  hasNoLinks: (slot: T) => boolean
+  hasNoLinks: (slot: T, index: number) => boolean
 ) {
   if (!slots?.length) return
 
@@ -79,7 +79,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
     for (const validType of validTypes) {
       for (const slotType of slotTypes) {
         if (slotType === validType) {
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             // Exact match - short circuit
             return { index, slot }
           }
@@ -87,7 +87,7 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
           occupiedSlot ??= { index, slot }
         } else if (!wildSlot && (validType === '*' || slotType === '*')) {
           // Save the first free wildcard slot as a fallback
-          if (hasNoLinks(slot)) {
+          if (hasNoLinks(slot, index)) {
             wildSlot = { index, slot }
           } else {
             occupiedWildSlot ??= { index, slot }

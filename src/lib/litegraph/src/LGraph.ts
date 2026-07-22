@@ -15,6 +15,7 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { outputHasLinks, outputLinks } from './node/slotLinks'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -794,16 +795,9 @@ export class LGraph
       if (!node.outputs) continue
 
       // for every output
-      for (const output of node.outputs) {
-        // not connected
-        // TODO: Confirm functionality, clean condition
-        if (output?.links == null || output.links.length == 0) continue
-
+      for (const [slot] of node.outputs.entries()) {
         // for every connection
-        for (const link_id of output.links) {
-          const link = this._links.get(link_id)
-          if (!link) continue
-
+        for (const link of outputLinks(this, node.id, slot)) {
           // already visited link (ignore it)
           if (visited_links[link.id]) continue
 
@@ -1183,8 +1177,8 @@ export class LGraph
 
     // disconnect outputs
     if (outputs) {
-      for (const [i, slot] of outputs.entries()) {
-        if (slot.links?.length) node.disconnectOutput(i)
+      for (const i of outputs.keys()) {
+        if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
       }
     }
 
@@ -2173,9 +2167,11 @@ export class LGraph
         link.origin_id = origin_id
       }
       if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-        for (const linkId of subgraphNode.outputs[link.target_slot].links ??
-          []) {
-          const sublink = this.links[linkId]
+        for (const sublink of outputLinks(
+          this,
+          subgraphNode.id,
+          link.target_slot
+        )) {
           newLinks.push({
             oid: link.origin_id,
             oslot: link.origin_slot,
