@@ -13,8 +13,21 @@ import {
 } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
+
+/**
+ * Reconstructs the legacy `subgraphId` (null at the root graph) from a
+ * `NodeState`'s owning `graphId`. Locator/execution-id helpers key root nodes
+ * by bare id, so a root-owned node must map to `null`, not the root graph id.
+ */
+export function subgraphIdFromGraphId(
+  graphId: UUID | undefined,
+  rootGraphId: UUID | undefined
+): string | null {
+  return graphId && graphId !== rootGraphId ? graphId : null
+}
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {
   const nodeIds = path.map(parseNodeId)

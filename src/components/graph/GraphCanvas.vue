@@ -149,7 +149,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -167,6 +167,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -281,9 +282,13 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
+const nodeDataStore = useNodeDataStore()
+const allNodes = computed((): NodeState[] => {
+  const rootGraphId = canvasStore.rootGraphId
+  const graphId = canvasStore.currentGraph?.id
+  if (!rootGraphId || graphId === undefined) return []
+  return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {

@@ -13,7 +13,7 @@ import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -23,14 +23,18 @@ vi.mock('@/scripts/app', () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn(),
-  getLocatorIdFromNodeData: vi.fn((nodeData) =>
-    nodeData.subgraphId
-      ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-      : String(nodeData.id)
-  )
-}))
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getNodeByLocatorId: vi.fn(),
+    getLocatorIdFromNodeData: vi.fn((nodeData) =>
+      nodeData.subgraphId
+        ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+        : String(nodeData.id)
+    )
+  }
+})
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
@@ -74,24 +78,16 @@ describe('Vue Node - Subgraph Functionality', () => {
     vi.clearAllMocks()
   })
 
-  const createMockNodeData = (
-    id: string,
-    subgraphId?: string
-  ): VueNodeData => ({
+  const createMockNodeData = (id: string, subgraphId?: string): NodeState => ({
     id: toNodeId(id),
+    graphId: subgraphId ?? 'root-graph',
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,
-    selected: false,
-    executing: false,
-    subgraphId,
-    inputs: [],
-    outputs: [],
-    hasErrors: false,
     flags: {}
   })
 
-  const renderComponent = (props: { nodeData: VueNodeData }) => {
+  const renderComponent = (props: { nodeData: NodeState }) => {
     return render(LGraphNode, {
       props,
       global: {
