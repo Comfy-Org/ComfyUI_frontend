@@ -107,9 +107,11 @@ vi.mock('firebase/auth', async (importOriginal) => {
 
 // Mock telemetry
 const mockTrackAuth = vi.fn()
+const mockTrackAuthCleared = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackAuth: mockTrackAuth
+    trackAuth: mockTrackAuth,
+    trackAuthCleared: mockTrackAuthCleared
   })
 }))
 
@@ -504,6 +506,95 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+    })
+  })
+
+  describe('auth-state cleared telemetry', () => {
+    const OAUTH_REQUEST_ID_KEY = 'Comfy.OAuthRequestId'
+    const VALID_OAUTH_REQUEST_ID = '123e4567-e89b-42d3-a456-426614174000'
+
+    it('emits user_initiated=true for a normal user logout', async () => {
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+      await store.logout()
+      // Firebase clears the auth state after signOut resolves.
+      authStateCallback(null)
+
+      expect(mockTrackAuthCleared).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_initiated: true,
+          previous_user_id: 'test-user-id'
+        })
+      )
+    })
+
+    it('emits user_initiated=false with context for a spontaneous clear', () => {
+      sessionStorage.setItem(OAUTH_REQUEST_ID_KEY, VALID_OAUTH_REQUEST_ID)
+
+      authStateCallback(null)
+
+      expect(mockTrackAuthCleared).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_initiated: false,
+          previous_user_id: 'test-user-id',
+          oauth_request_in_flight: true
+        })
+      )
+    })
+
+    it('reports user_initiated=false when a failed logout is followed by a clear', async () => {
+      vi.mocked(firebaseAuth.signOut).mockRejectedValue(new Error('offline'))
+
+      await expect(store.logout()).rejects.toThrow('offline')
+      authStateCallback(null)
+
+      expect(mockTrackAuthCleared).toHaveBeenCalledWith(
+        expect.objectContaining({ user_initiated: false })
+      )
+    })
+
+    it('does not carry a resolved logout over to a later spontaneous clear', async () => {
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+      // signOut resolves without an intervening null event (already signed out
+      // or Firebase coalesced the event), then a fresh sign-in arrives.
+      await store.logout()
+      authStateCallback(mockUser)
+
+      authStateCallback(null)
+
+      expect(mockTrackAuthCleared).toHaveBeenLastCalledWith(
+        expect.objectContaining({ user_initiated: false })
+      )
+    })
+
+    it('still clears workspace context when telemetry reporting throws', () => {
+      const clearWorkspaceContext = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      mockTrackAuthCleared.mockImplementation(() => {
+        throw new Error('telemetry boom')
+      })
+
+      expect(() => authStateCallback(null)).not.toThrow()
+      expect(clearWorkspaceContext).toHaveBeenCalled()
+    })
+
+    it('does not emit on the initial unauthenticated boot (no prior user)', () => {
+      let bootCallback: (user: User | null) => void = () => {}
+      vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+        (_auth, callback) => {
+          bootCallback = callback as (user: User | null) => void
+          return vi.fn()
+        }
+      )
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      useAuthStore()
+
+      bootCallback(null)
+
+      expect(mockTrackAuthCleared).not.toHaveBeenCalled()
     })
   })
 
