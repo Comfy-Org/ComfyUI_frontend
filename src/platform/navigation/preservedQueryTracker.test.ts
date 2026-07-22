@@ -23,6 +23,12 @@ const plainDefinition = {
   keys: ['plain_code', 'plain_source']
 }
 
+const dependentDefinition = {
+  namespace: PLAIN_NAMESPACE,
+  keys: ['primary', 'dependent'],
+  requiredKey: 'primary'
+}
+
 function createTestRouter(
   history: RouterHistory = createMemoryHistory()
 ): Router {
@@ -76,6 +82,27 @@ describe('installPreservedQueryTracker', () => {
     expect(
       getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_source')
     ).toBeUndefined()
+  })
+
+  it('captures dependent keys only when their required key is present', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [dependentDefinition])
+
+    await router.push('/?primary=one&dependent=two')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'primary')).toBe('one')
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'dependent')).toBe('two')
+  })
+
+  it('clears preserved state for an orphaned dependent key', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [dependentDefinition])
+    await router.push('/?primary=one&dependent=two')
+
+    await router.push('/?dependent=orphan')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'primary')).toBeUndefined()
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'dependent')).toBeUndefined()
   })
 
   it('navigates exactly once when no strip-marked keys are present', async () => {
