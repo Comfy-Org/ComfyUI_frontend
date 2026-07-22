@@ -18,7 +18,7 @@
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
+              variant="textonly"
               :aria-label="t('menu.manageExtensions')"
               class="relative"
               @click="openCustomNodeManager"
