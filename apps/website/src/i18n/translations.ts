@@ -4744,15 +4744,15 @@ const translations = {
     'zh-CN': '拉伸 logo。'
   },
   'brand.voice.dont.3': {
-    en: 'Straighten oblique logo.',
+    en: 'Straighten the oblique logo.',
     'zh-CN': '将倾斜的 logo 摆正。'
   },
   'brand.voice.dont.4': {
-    en: 'Edit logo corner radii.',
+    en: "Edit the logo's corner radii.",
     'zh-CN': '修改 logo 的圆角半径。'
   },
   'brand.voice.dont.5': {
-    en: 'Overlay the logomark on wordmark.',
+    en: 'Overlay the logomark on the wordmark.',
     'zh-CN': '将图形标叠加在文字标之上。'
   },
   'brand.trademark.heading': {
