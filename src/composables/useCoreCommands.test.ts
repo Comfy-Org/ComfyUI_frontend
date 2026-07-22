@@ -452,8 +452,8 @@ describe('useCoreCommands', () => {
       expect(findCommand('Comfy.Node.Resize')).toBeDefined()
     })
 
-    it('resizes the node in layoutStore with the External source', () => {
-      findCommand('Comfy.Node.Resize').function({
+    it('resizes the node in layoutStore with the External source', async () => {
+      await findCommand('Comfy.Node.Resize').function({
         nodeId: '7',
         width: 250,
         height: 180
@@ -466,10 +466,10 @@ describe('useCoreCommands', () => {
       expect(layoutStore.getCurrentSource()).toBe(LayoutSource.External)
     })
 
-    it('is a no-op when required metadata is missing', () => {
+    it('is a no-op when required metadata is missing', async () => {
       const before = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
 
-      findCommand('Comfy.Node.Resize').function({ nodeId: '7' })
+      await findCommand('Comfy.Node.Resize').function({ nodeId: '7' })
 
       expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
     })
