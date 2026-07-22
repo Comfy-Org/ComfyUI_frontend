@@ -5,16 +5,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Default properties to track
+ * Default properties to track.
+ *
+ * All entries are {@link LGraphNode} accessors backed by the node's `_state`
+ * (the node-data store proxy); instrumentation wraps each accessor to emit
+ * `node:property:changed` without shadowing the `_state` write. `shape` is
+ * omitted because its own accessor already emits; `flags.*` are omitted because
+ * the reactive `_state.flags` covers renderer reactivity and nothing consumes
+ * their change event.
  */
 const DEFAULT_TRACKED_PROPERTIES: string[] = [
   'title',
-  'flags.collapsed',
-  'flags.pinned',
   'mode',
   'color',
   'bgcolor',
-  'shape',
   'showAdvanced'
 ]
 /**
@@ -82,6 +86,19 @@ export class LGraphNodeProperties {
 
     const { targetObject, propertyName } = this._resolveTargetObject(parts)
 
+    const accessor = this._findAccessorDescriptor(targetObject, propertyName)
+    if (accessor?.get && accessor.set) {
+      this._instrumentAccessor(
+        path,
+        targetObject,
+        propertyName,
+        accessor.get,
+        accessor.set
+      )
+      this._instrumentedPaths.add(path)
+      return
+    }
+
     const hasProperty = Object.prototype.hasOwnProperty.call(
       targetObject,
       propertyName
@@ -126,6 +143,44 @@ export class LGraphNodeProperties {
     }
 
     this._instrumentedPaths.add(path)
+  }
+
+  /** Finds a property's descriptor, walking the prototype chain. */
+  private _findAccessorDescriptor(
+    obj: object,
+    propertyName: string
+  ): PropertyDescriptor | undefined {
+    let current: object | null = obj
+    while (current) {
+      const descriptor = Object.getOwnPropertyDescriptor(current, propertyName)
+      if (descriptor) return descriptor
+      current = Object.getPrototypeOf(current)
+    }
+    return undefined
+  }
+
+  /**
+   * Wraps an existing accessor with an own property that delegates get/set to
+   * it and emits on change, so the value keeps living behind the accessor (the
+   * node's `_state`) instead of a shadowing closure.
+   */
+  private _instrumentAccessor(
+    path: string,
+    targetObject: Record<string, unknown>,
+    propertyName: string,
+    get: () => unknown,
+    set: (value: unknown) => void
+  ): void {
+    Object.defineProperty(targetObject, propertyName, {
+      get: () => get.call(targetObject),
+      set: (newValue: unknown) => {
+        const oldValue = get.call(targetObject)
+        set.call(targetObject, newValue)
+        this._emitPropertyChange(path, oldValue, newValue)
+      },
+      enumerable: true,
+      configurable: true
+    })
   }
 
   /**

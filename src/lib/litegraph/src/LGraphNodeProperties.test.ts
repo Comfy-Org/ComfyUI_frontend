@@ -36,19 +36,6 @@ describe('LGraphNodeProperties', () => {
       })
     })
 
-    it('should track changes to nested properties', () => {
-      new LGraphNodeProperties(mockNode)
-
-      mockNode.flags.collapsed = true
-
-      expect(mockGraph.trigger).toHaveBeenCalledWith('node:property:changed', {
-        nodeId: mockNode.id,
-        property: 'flags.collapsed',
-        oldValue: undefined,
-        newValue: true
-      })
-    })
-
     it('should emit event when value is set to the same value', () => {
       new LGraphNodeProperties(mockNode)
 
@@ -73,50 +60,16 @@ describe('LGraphNodeProperties', () => {
       const propManager = new LGraphNodeProperties(mockNode)
 
       expect(propManager.isTracked('title')).toBe(true)
-      expect(propManager.isTracked('flags.collapsed')).toBe(true)
+      expect(propManager.isTracked('mode')).toBe(true)
+      // shape emits from its own accessor; flags are covered by store reactivity
+      expect(propManager.isTracked('shape')).toBe(false)
+      expect(propManager.isTracked('flags.collapsed')).toBe(false)
       expect(propManager.isTracked('untracked')).toBe(false)
     })
   })
 
   describe('serialization behavior', () => {
-    it('should not make non-existent properties enumerable', () => {
-      new LGraphNodeProperties(mockNode)
-
-      // flags.collapsed doesn't exist initially
-      const descriptor = Object.getOwnPropertyDescriptor(
-        mockNode.flags,
-        'collapsed'
-      )
-      expect(descriptor?.enumerable).toBe(false)
-    })
-
-    it('should make properties enumerable when set to non-default values', () => {
-      new LGraphNodeProperties(mockNode)
-
-      mockNode.flags.collapsed = true
-
-      const descriptor = Object.getOwnPropertyDescriptor(
-        mockNode.flags,
-        'collapsed'
-      )
-      expect(descriptor?.enumerable).toBe(true)
-    })
-
-    it('should make properties non-enumerable when set back to undefined', () => {
-      new LGraphNodeProperties(mockNode)
-
-      mockNode.flags.collapsed = true
-      mockNode.flags.collapsed = undefined
-
-      const descriptor = Object.getOwnPropertyDescriptor(
-        mockNode.flags,
-        'collapsed'
-      )
-      expect(descriptor?.enumerable).toBe(false)
-    })
-
-    it('should keep existing properties enumerable', () => {
-      // title exists initially
+    it('should keep tracked properties enumerable', () => {
       const initialDescriptor = Object.getOwnPropertyDescriptor(
         mockNode,
         'title'
@@ -127,29 +80,6 @@ describe('LGraphNodeProperties', () => {
 
       const afterDescriptor = Object.getOwnPropertyDescriptor(mockNode, 'title')
       expect(afterDescriptor?.enumerable).toBe(true)
-    })
-
-    it('should only include non-undefined values in JSON.stringify', () => {
-      new LGraphNodeProperties(mockNode)
-
-      // Initially, flags.collapsed shouldn't appear
-      let json = JSON.parse(JSON.stringify(mockNode))
-      expect(json.flags.collapsed).toBeUndefined()
-
-      // After setting to true, it should appear
-      mockNode.flags.collapsed = true
-      json = JSON.parse(JSON.stringify(mockNode))
-      expect(json.flags.collapsed).toBe(true)
-
-      // After setting to false, it should still appear (false is not undefined)
-      mockNode.flags.collapsed = false
-      json = JSON.parse(JSON.stringify(mockNode))
-      expect(json.flags.collapsed).toBe(false)
-
-      // After setting back to undefined, it should disappear
-      mockNode.flags.collapsed = undefined
-      json = JSON.parse(JSON.stringify(mockNode))
-      expect(json.flags.collapsed).toBeUndefined()
     })
   })
 })

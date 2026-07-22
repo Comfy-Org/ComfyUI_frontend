@@ -14,6 +14,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
@@ -38,7 +39,12 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
+import {
+  LGraphNode,
+  registerNodeState,
+  unregisterAllNodeStates,
+  unregisterNodeState
+} from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -487,11 +493,13 @@ export class LGraph
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(graphId)
       useRerouteStore().clearGraph(graphId)
+      useNodeDataStore().clearGraph(graphId)
     } else {
       // Subgraphs and unconfigured (zero-uuid) graphs share their store
-      // bucket with other graphs, so unregister each link individually.
+      // bucket with other graphs, so unregister each entity individually.
       unregisterAllLinkTopologies(this)
       unregisterAllRerouteChains(this)
+      unregisterAllNodeStates(this)
     }
     this.id = zeroUuid
     this.revision = 0
@@ -1084,12 +1092,15 @@ export class LGraph
       syncLastNodeId(state, node.id)
     }
 
-    // Set ghost flag before registration so VueNodeData picks it up
+    // Set ghost flag before registration so the node state carries it
     if (opts.ghost) {
       node.flags.ghost = true
     }
 
     node.graph = this
+
+    // Adopt the node-data store proxy now that the node has a valid id and graph.
+    registerNodeState(this, node)
 
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
@@ -1204,12 +1215,15 @@ export class LGraph
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
+        unregisterAllNodeStates(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
     }
 
     // callback
     node.onRemoved?.()
+
+    unregisterNodeState(node)
 
     node.graph = null
     this.incrementVersion()
