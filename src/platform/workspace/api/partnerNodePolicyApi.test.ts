@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getPartnerNodePolicy,
+  getPartnerProviders,
   PartnerNodePolicyApiError
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 
@@ -20,6 +21,31 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 describe('partnerNodePolicyApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('normalizes the provider catalog', async () => {
+    mockFetchApi.mockResolvedValue(
+      jsonResponse({
+        providers: [
+          {
+            provider_id: 'openai',
+            display_name: 'OpenAI (inc. Sora)',
+            node_categories: ['OpenAI', 'Sora']
+          }
+        ]
+      })
+    )
+
+    await expect(getPartnerProviders()).resolves.toEqual([
+      {
+        id: 'openai',
+        displayName: 'OpenAI (inc. Sora)',
+        nodeCategories: ['OpenAI', 'Sora']
+      }
+    ])
+    expect(mockFetchApi).toHaveBeenCalledWith('/providers', {
+      cache: 'no-store'
+    })
   })
 
   it('normalizes the configured policy response', async () => {
