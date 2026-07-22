@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ChurnkeyAuthResponse } from '@/platform/workspace/api/workspaceApi'
+import type { ChurnkeySessionResponse } from './churnkeySessionSchema'
 
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
   appId: 'app_test',
-  getChurnkeyAuth: vi.fn(),
+  getChurnkeySession: vi.fn(),
   init: vi.fn(),
   hide: vi.fn(),
   clearState: vi.fn()
@@ -24,13 +24,13 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getChurnkeyAuth: mocks.getChurnkeyAuth
+    getChurnkeySession: mocks.getChurnkeySession
   }
 }))
 
 import { prepareChurnkey } from './churnkeyClient'
 
-function authResponse(): ChurnkeyAuthResponse {
+function sessionResponse(): ChurnkeySessionResponse {
   return {
     customer_id: 'workspace-1',
     auth_hash: 'signed-hash',
@@ -64,7 +64,7 @@ describe('churnkeyClient', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.appId = 'app_test'
-    mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
+    mocks.getChurnkeySession.mockResolvedValue(sessionResponse())
     window.churnkey = {
       init: mocks.init,
       hide: mocks.hide,
@@ -128,6 +128,15 @@ describe('churnkeyClient', () => {
 
     config.onClose({ aborted: true })
     await expect(showPromise).resolves.toEqual({ aborted: true })
+    expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
+  it('does not request a session when the app ID is empty', async () => {
+    mocks.appId = ''
+
+    await expect(prepareChurnkey()).resolves.toBeNull()
+    expect(mocks.getChurnkeySession).not.toHaveBeenCalled()
+    expect(mocks.init).not.toHaveBeenCalled()
   })
 
   it('rejects once when embed cleanup fails during an error', async () => {
@@ -153,16 +162,16 @@ describe('churnkeyClient', () => {
   })
 
   it('does not load the embed when backend credentials are unavailable', async () => {
-    mocks.getChurnkeyAuth.mockResolvedValue(null)
+    mocks.getChurnkeySession.mockResolvedValue(null)
 
     await expect(prepareChurnkey()).resolves.toBeNull()
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
   it('rejects malformed subscription dates before showing the embed', async () => {
-    const auth = authResponse()
-    auth.subscription.current_period_end = 'not-a-date'
-    mocks.getChurnkeyAuth.mockResolvedValue(auth)
+    const response = sessionResponse()
+    response.subscription.current_period_end = 'not-a-date'
+    mocks.getChurnkeySession.mockResolvedValue(response)
 
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')
@@ -171,5 +180,19 @@ describe('churnkeyClient', () => {
       'Invalid Churnkey subscription date: not-a-date'
     )
     expect(mocks.init).not.toHaveBeenCalled()
+  })
+
+  it('cleans up when ChurnKey initialization throws synchronously', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+    mocks.init.mockImplementation(() => {
+      throw new Error('init failed')
+    })
+
+    await expect(session.show({ handleCancel: vi.fn() })).rejects.toThrow(
+      'init failed'
+    )
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 })

@@ -336,7 +336,7 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns the direct-mode subscription snapshot', async () => {
+    it('getChurnkeySession() returns a validated Direct-mode session', async () => {
       const data = {
         customer_id: 'workspace-1',
         auth_hash: 'hash-1',
@@ -360,27 +360,43 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
+      await expect(workspaceApi.getChurnkeySession()).resolves.toEqual(data)
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
+        '/api/billing/churnkey/session',
         { headers: AUTH_HEADER }
       )
     })
 
-    it('getChurnkeyAuth() falls back when the subscription snapshot is absent', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
-          customer_id: 'workspace-1',
-          auth_hash: 'hash-1',
-          mode: 'test'
+    it.for([
+      {
+        customer_id: 'workspace-1',
+        auth_hash: 'hash-1',
+        mode: 'test'
+      },
+      {
+        customer_id: 'workspace-1',
+        auth_hash: 'hash-1',
+        mode: 'test',
+        subscription: { status: 'canceled' }
+      },
+      {
+        customer_id: 'workspace-1',
+        auth_hash: 'hash-1',
+        mode: 'test',
+        subscription: {
+          id: 'subscription-1',
+          started_at: 'not-a-date',
+          status: 'active'
         }
-      })
+      }
+    ])('getChurnkeySession() falls back on malformed data', async (data) => {
+      mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+      await expect(workspaceApi.getChurnkeySession()).resolves.toBeNull()
     })
 
     it.for([404, 503])(
-      'getChurnkeyAuth() falls back on HTTP %s',
+      'getChurnkeySession() falls back on HTTP %s',
       async (status) => {
         mockAxiosInstance.get.mockRejectedValue({
           isAxiosError: true,
@@ -388,18 +404,18 @@ describe('workspaceApi', () => {
           message: 'Request failed'
         })
 
-        await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
+        await expect(workspaceApi.getChurnkeySession()).resolves.toBeNull()
       }
     )
 
-    it('getChurnkeyAuth() preserves unexpected API failures', async () => {
+    it('getChurnkeySession() preserves unexpected API failures', async () => {
       mockAxiosInstance.get.mockRejectedValue({
         isAxiosError: true,
         response: { status: 500, data: { message: 'Server Error' } },
         message: 'Request failed'
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(workspaceApi.getChurnkeySession()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 500
       })

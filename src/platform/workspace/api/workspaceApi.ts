@@ -1,10 +1,8 @@
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import type {
-  ChurnkeyBillingInterval,
-  ChurnkeyMode
-} from '@/platform/cloud/churnkey/types'
+import { churnkeySessionResponseSchema } from '@/platform/cloud/churnkey/churnkeySessionSchema'
+import type { ChurnkeySessionResponse } from '@/platform/cloud/churnkey/churnkeySessionSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -217,28 +215,6 @@ interface PaymentPortalRequest {
 
 interface PaymentPortalResponse {
   url: string
-}
-
-export interface ChurnkeyAuthResponse {
-  customer_id: string
-  auth_hash: string
-  mode: ChurnkeyMode
-  subscription: {
-    id: string
-    started_at: string
-    status: 'active'
-    current_period_start: string
-    current_period_end: string
-    plan: {
-      id: string
-      name?: string
-      amount_cents: number
-      currency: string
-      interval: ChurnkeyBillingInterval
-      interval_count: number
-    }
-    quantity: number
-  }
 }
 
 interface PreviewPlanInfo {
@@ -725,20 +701,15 @@ export const workspaceApi = {
     }
   },
 
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
+  async getChurnkeySession(): Promise<ChurnkeySessionResponse | null> {
     const headers = await getAuthHeaderOrThrow()
     try {
-      const response = await workspaceApiClient.get<ChurnkeyAuthResponse>(
-        api.apiURL('/billing/churnkey/auth'),
+      const response = await workspaceApiClient.get<unknown>(
+        api.apiURL('/billing/churnkey/session'),
         { headers }
       )
-      if (
-        !response.data.subscription ||
-        response.data.subscription.status !== 'active'
-      ) {
-        return null
-      }
-      return response.data
+      const result = churnkeySessionResponseSchema.safeParse(response.data)
+      return result.success ? result.data : null
     } catch (err) {
       if (
         axios.isAxiosError(err) &&

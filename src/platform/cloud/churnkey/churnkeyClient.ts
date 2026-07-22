@@ -1,5 +1,5 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ChurnkeyAuthResponse } from '@/platform/workspace/api/workspaceApi'
+import type { ChurnkeySessionResponse } from '@/platform/cloud/churnkey/churnkeySessionSchema'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
@@ -57,9 +57,9 @@ function dateFromApi(value: string): Date {
 }
 
 function directSubscription(
-  auth: ChurnkeyAuthResponse
+  session: ChurnkeySessionResponse
 ): ChurnkeyDirectSubscription {
-  const { subscription } = auth
+  const { subscription } = session
   return {
     id: subscription.id,
     start: dateFromApi(subscription.started_at),
@@ -102,7 +102,7 @@ export interface ChurnkeySession {
 
 function createSession(
   init: ChurnkeyInit,
-  auth: ChurnkeyAuthResponse,
+  session: ChurnkeySessionResponse,
   configuredAppId: string
 ): ChurnkeySession {
   return {
@@ -121,11 +121,11 @@ function createSession(
 
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
-          authHash: auth.auth_hash,
+          authHash: session.auth_hash,
           provider: 'direct',
-          mode: auth.mode,
-          customer: { id: auth.customer_id },
-          subscriptions: [directSubscription(auth)],
+          mode: session.mode,
+          customer: { id: session.customer_id },
+          subscriptions: [directSubscription(session)],
           customerAttributes: options.customerAttributes,
           handleCancel: (_customer, surveyResponse, freeformFeedback) =>
             options.handleCancel(surveyResponse, freeformFeedback),
@@ -157,9 +157,9 @@ export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
   const configuredAppId = appId()
   if (!configuredAppId) return null
 
-  const auth = await workspaceApi.getChurnkeyAuth()
-  if (!auth) return null
+  const session = await workspaceApi.getChurnkeySession()
+  if (!session) return null
 
   const init = await loadChurnkey(configuredAppId)
-  return createSession(init, auth, configuredAppId)
+  return createSession(init, session, configuredAppId)
 }

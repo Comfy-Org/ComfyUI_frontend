@@ -1,4 +1,6 @@
-export type ChurnkeyMode = 'live' | 'test' | 'sandbox'
+import type { ChurnkeySessionResponse } from './churnkeySessionSchema'
+
+export type ChurnkeyMode = ChurnkeySessionResponse['mode']
 
 export interface ChurnkeyHandlerResult {
   message?: string
@@ -11,7 +13,8 @@ export interface ChurnkeySessionResults {
   [key: string]: unknown
 }
 
-export type ChurnkeyBillingInterval = 'day' | 'week' | 'month' | 'year'
+export type ChurnkeyBillingInterval =
+  ChurnkeySessionResponse['subscription']['plan']['interval']
 
 interface ChurnkeyDirectCustomer {
   id: string

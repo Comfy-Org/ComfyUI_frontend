@@ -84,6 +84,16 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
+  it('uses the native dialog without telemetry when no session is available', async () => {
+    mocks.prepare.mockResolvedValue(null)
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).toHaveBeenCalledOnce()
+    expect(mocks.trackCancellation).not.toHaveBeenCalled()
+  })
+
   it('cancels workspace billing through the existing API callback', async () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
@@ -205,11 +215,13 @@ describe('launchCancellationFlow', () => {
     )
 
     const first = launchCancellationFlow({ showFallback: vi.fn() })
-    await vi.waitFor(() => expect(mocks.prepare).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(closeFlow).toBeTypeOf('function'))
     await launchCancellationFlow({ showFallback: vi.fn() })
 
     expect(mocks.prepare).toHaveBeenCalledOnce()
-    closeFlow?.({ aborted: true })
+    const resolveFlow = closeFlow
+    if (!resolveFlow) throw new Error('Expected the flow to be open')
+    resolveFlow({ aborted: true })
     await first
   })
 })
