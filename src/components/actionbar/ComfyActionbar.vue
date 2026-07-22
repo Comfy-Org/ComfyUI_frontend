@@ -61,6 +61,7 @@ import { useI18n } from 'vue-i18n'
 
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import { useActionbarDocked } from '@/composables/useActionbarDock'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -90,7 +91,7 @@ const panelElement = computed<HTMLElement | null>(() => {
   return element instanceof HTMLElement ? element : null
 })
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isDocked = useActionbarDocked()
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0

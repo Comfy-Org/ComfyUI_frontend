@@ -4568,6 +4568,7 @@
     "cancel": "Cancel",
     "completed": "Completed",
     "queuedCount": "Queued ({count})",
+    "runningCount": "Running ({count})",
     "goToHistory": "Go to history"
   }
 }

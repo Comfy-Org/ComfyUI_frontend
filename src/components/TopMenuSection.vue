@@ -99,7 +99,18 @@
     </div>
 
     <div class="flex flex-col items-end gap-1 pr-1">
-      <QueueStatusToast v-if="isActionbarEnabled" />
+      <!-- Undocked, the toast follows the run bar onto the canvas: the stop
+           control has to travel with the Run button, not stay up here. -->
+      <Teleport
+        v-if="isActionbarEnabled"
+        :to="queueStatusToastTarget ?? 'body'"
+        :disabled="!queueStatusToastTarget"
+      >
+        <!-- QueueStatusToast has several roots, so spacing lives on a wrapper -->
+        <div :class="cn('flex justify-end', queueStatusToastTarget && 'p-1')">
+          <QueueStatusToast />
+        </div>
+      </Teleport>
       <template v-if="showLegacyQueueUi">
         <Teleport
           v-if="inlineProgressSummaryTarget"
@@ -128,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -147,6 +158,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import { useActionbarDocked } from '@/composables/useActionbarDock'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -186,7 +198,7 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarContainerRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isActionbarDocked = useActionbarDocked()
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'
@@ -250,6 +262,10 @@ const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
 }
+/** Floating run bar hosts the toast; docked, it stays in the top menu column. */
+const queueStatusToastTarget = computed(() =>
+  isActionbarFloating.value ? progressTarget.value : null
+)
 const inlineProgressSummaryTarget = computed(() => {
   if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
     return null
