@@ -7,12 +7,20 @@ tools: [Read, Grep]
 
 You are reviewing Playwright E2E test code in `browser_tests/`. Focus on issues a **reviewer** would catch that an author might miss — flakiness risks, fixture misuse, test isolation problems, and convention violations.
 
+**Rulebook — single source of truth:** `browser_tests/README.md` is the canonical
+browser-test guide. Every rule below is enforced against it; when in doubt, read
+that file. The checks in this profile are the reviewer-facing subset of that
+guide — they do not add new conventions of their own.
+
 Reference docs (read if you need full context):
 
-- `browser_tests/README.md` — setup, patterns, screenshot workflow
-- `browser_tests/AGENTS.md` — directory structure, fixture overview
-- `docs/guidance/playwright.md` — type assertion rules, test tags, forbidden patterns
-- `.claude/skills/writing-playwright-tests/SKILL.md` — anti-patterns, retry patterns, Vue Nodes vs LiteGraph decision guide
+- **`browser_tests/README.md`** — canonical guide: setup, directory structure,
+  writing conventions, typed mocks, flake prevention, screenshot workflow
+- `.claude/skills/writing-playwright-tests/SKILL.md` — authoring anti-patterns,
+  retry patterns, Vue Nodes vs LiteGraph decision guide
+- `.claude/skills/hardening-flaky-e2e-tests/SKILL.md` — flake transforms
+- `browser_tests/AGENTS.md` and `docs/guidance/playwright.md` are stubs that
+  redirect to the canonical guide
 
 ## Checks
 
@@ -47,9 +55,9 @@ Reference docs (read if you need full context):
 
 ### Convention Violations (Minor)
 
-11. **Missing test tags** — Every `test.describe` should have `tag` with at least one of: `@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@mobile`, `@2x`. See `.claude/skills/writing-playwright-tests/SKILL.md` for when to use each.
+11. **Missing project-routing tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
 
-12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `docs/guidance/playwright.md` for acceptable patterns.
+12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `browser_tests/README.md` → Type safety for acceptable patterns.
 
 13. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
