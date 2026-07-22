@@ -57,7 +57,7 @@
     },
     {
       "source": "/trust",
-      "destination": "https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz",
+      "destination": "https://trust.comfy.org",
       "permanent": false
     },
     {
