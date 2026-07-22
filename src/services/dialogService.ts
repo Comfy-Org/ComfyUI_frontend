@@ -651,9 +651,10 @@ export const useDialogService = () => {
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
-    const cancellationFlow = await import(
-      '@/platform/cloud/subscription/launchCancellationFlow'
-    ).catch(() => null)
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow').catch(
+        () => null
+      )
     if (!cancellationFlow) {
       return showCancelSubscriptionDialog(cancelAt)
     }
