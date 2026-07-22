@@ -4,7 +4,6 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
-import { externalLinks } from '../../config/routes'
 import { planFeatures, pricingPlans } from '../../data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
@@ -18,16 +17,10 @@ import PricingCredits from './PricingCredits.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 import PricingPrice from './PricingPrice.vue'
-import PricingStudentAmbassadorBand from './PricingStudentAmbassadorBand.vue'
 import PricingTeamCard from './PricingTeamCard.vue'
 
-const {
-  locale = 'en',
-  education = false,
-  headingLevel = 'h1'
-} = defineProps<{
+const { locale = 'en', headingLevel = 'h1' } = defineProps<{
   locale?: Locale
-  education?: boolean
   headingLevel?: 'h1' | 'h2'
 }>()
 
@@ -45,27 +38,14 @@ const billingPeriod = computed({
 })
 
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
-  if (education) {
-    // Plans without education pricing (e.g. free) fall back to the list price.
-    if (billingPeriod.value === 'yearly') {
-      return plan.eduYearlyPriceKey ?? plan.eduPriceKey ?? plan.priceKey
-    }
-    return plan.eduPriceKey ?? plan.priceKey
-  }
   if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
     return plan.yearlyPriceKey
   }
   return plan.priceKey
 }
 
-// In education mode the monthly list price is struck through in both cycles;
-// otherwise only the yearly view strikes the (monthly) list price.
+// Only the yearly view strikes the (monthly) list price.
 function originalPriceFor(plan: PricingPlan): string | undefined {
-  if (education) {
-    return plan.eduPriceKey && plan.priceKey
-      ? t(plan.priceKey, locale)
-      : undefined
-  }
   return billingPeriod.value === 'yearly' &&
     plan.yearlyPriceKey &&
     plan.priceKey
@@ -74,11 +54,6 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
 }
 
 function yearlyTotalFor(plan: PricingPlan): string | undefined {
-  if (education) {
-    return plan.eduYearlyTotalKey
-      ? t(plan.eduYearlyTotalKey, locale)
-      : undefined
-  }
   return plan.yearlyTotalKey ? t(plan.yearlyTotalKey, locale) : undefined
 }
 
@@ -90,7 +65,7 @@ const planCards = computed(() =>
     priceKey: displayPriceKey(plan),
     originalPrice: originalPriceFor(plan),
     yearlyTotal: yearlyTotalFor(plan),
-    features: planFeatures(plan, education, billingPeriod.value)
+    features: planFeatures(plan, false, billingPeriod.value)
   }))
 )
 </script>
@@ -108,7 +83,7 @@ const planCards = computed(() =>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t(education ? 'pricing.subtitle.edu' : 'pricing.subtitle', locale) }}
+        {{ t('pricing.subtitle', locale) }}
       </p>
     </div>
 
@@ -119,12 +94,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="ppformula-text-center">{{
-            t(
-              education
-                ? 'pricing.period.monthly.edu'
-                : 'pricing.period.monthly',
-              locale
-            )
+            t('pricing.period.monthly', locale)
           }}</span>
         </ToggleGroupItem>
         <ToggleGroupItem
@@ -132,10 +102,7 @@ const planCards = computed(() =>
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
           <span class="ppformula-text-center">{{
-            t(
-              education ? 'pricing.period.yearly.edu' : 'pricing.period.yearly',
-              locale
-            )
+            t('pricing.period.yearly', locale)
           }}</span>
         </ToggleGroupItem>
       </ToggleGroup>
@@ -209,26 +176,14 @@ const planCards = computed(() =>
         </div>
       </PricingCard>
 
-      <PricingTeamCard :billing-period="billingPeriod" :education :locale />
+      <PricingTeamCard :billing-period="billingPeriod" :locale />
 
       <PricingContactBand
-        :label-key="
-          education
-            ? 'pricing.creativeCampus.label'
-            : 'pricing.enterprise.label'
-        "
-        :description-key="
-          education
-            ? 'pricing.creativeCampus.description'
-            : 'pricing.enterprise.description'
-        "
-        :href="
-          education ? externalLinks.creativeCampusApplicationForm : undefined
-        "
+        label-key="pricing.enterprise.label"
+        description-key="pricing.enterprise.description"
         :locale
       />
     </div>
-    <PricingStudentAmbassadorBand v-if="education" :locale />
 
     <!-- Footnote -->
     <p class="mt-12 text-xs text-primary-comfy-canvas/70">
