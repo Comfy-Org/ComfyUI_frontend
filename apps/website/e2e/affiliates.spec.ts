@@ -115,8 +115,14 @@ test.describe('Affiliates landing — desktop interactions', () => {
     await firstQuestion.scrollIntoViewIfNeeded()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
-    await firstQuestion.click()
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    // The FAQ accordion is a Reka (client:visible) island whose trigger already
+    // renders aria-expanded="false" server-side, so that attribute is not a
+    // reliable hydration gate. Re-click until the island has hydrated and the
+    // trigger actually toggles open.
+    await expect(async () => {
+      await firstQuestion.click()
+      await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    }).toPass()
     await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
 
     await firstQuestion.click()

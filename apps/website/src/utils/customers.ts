@@ -28,6 +28,21 @@ export function nextStory<T extends { id: string }>(
   return ordered[(index + 1) % ordered.length]
 }
 
+// Slugs of the Creative Campus stories featured on the /education carousel. Selecting by
+// slug (rather than the localized `category` label, which differs per locale) keeps
+// the education set stable across locales.
+const EDUCATION_STORY_SLUGS = new Set([
+  'ina-conradi',
+  'xindi-zhang',
+  'golan-levin',
+  'kathy-smith',
+  'ual-cci'
+])
+
+export function isEducationStory(slug: string): boolean {
+  return EDUCATION_STORY_SLUGS.has(slug)
+}
+
 export interface StoryCard {
   slug: string
   title: string

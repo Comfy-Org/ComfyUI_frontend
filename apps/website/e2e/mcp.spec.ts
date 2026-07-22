@@ -131,7 +131,16 @@ test.describe('MCP page @smoke', () => {
     await triggers.first().scrollIntoViewIfNeeded()
     await expect(triggers).toHaveCount(9)
 
-    await page.getByRole('button', { name: "What's the server URL?" }).click()
+    // The FAQ accordion is a Reka (client:visible) island whose trigger already
+    // renders aria-expanded="false" server-side, so a click can land before the
+    // island hydrates. Re-click until it actually toggles.
+    const question = page.getByRole('button', {
+      name: "What's the server URL?"
+    })
+    await expect(async () => {
+      await question.click()
+      await expect(question).toHaveAttribute('aria-expanded', 'true')
+    }).toPass()
     await expect(
       page.getByRole('link', { name: MCP_ENDPOINT, exact: true })
     ).toHaveAttribute('href', MCP_ENDPOINT)

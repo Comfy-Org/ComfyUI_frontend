@@ -5,11 +5,13 @@ import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
   absoluteUrl,
+  articleNode,
   buildPageGraph,
   collectGraphIds,
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -54,6 +56,42 @@ describe('itemListNode', () => {
     const items = node.itemListElement as Record<string, unknown>[]
     expect('name' in items[0]).toBe(false)
     expect(items[1].name).toBe('Designer')
+  })
+})
+
+describe('articleNode', () => {
+  const pageUrl = 'https://comfy.org/customers/acme/'
+
+  it('attributes the article to its page and to Comfy Org', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme ships faster',
+      description: 'How Acme used Comfy',
+      imageUrl: 'https://media.comfy.org/acme.webp',
+      locale: 'en'
+    })
+    const webPageRef = { '@id': jsonLdId(pageUrl, 'webpage') }
+    const orgRef = { '@id': organizationId(siteUrl) }
+    expect(node['@id']).toBe(jsonLdId(pageUrl, 'article'))
+    expect(node.headline).toBe('Acme ships faster')
+    expect(node.isPartOf).toEqual(webPageRef)
+    expect(node.mainEntityOfPage).toEqual(webPageRef)
+    expect(node.author).toEqual(orgRef)
+    expect(node.publisher).toEqual(orgRef)
+  })
+
+  it('drops image and description from the markup when not supplied', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme',
+      locale: 'zh-CN'
+    })
+    const emitted = JSON.parse(JSON.stringify(node))
+    expect('image' in emitted).toBe(false)
+    expect('description' in emitted).toBe(false)
+    expect(emitted.inLanguage).toBe('zh-CN')
   })
 })
 
@@ -161,6 +199,25 @@ describe('productNode', () => {
     expect(offers[0].price).toBe('20')
     expect(offers[0].priceCurrency).toBe('USD')
     expect(offers[0].seller).toEqual({ '@id': organizationId(siteUrl) })
+  })
+})
+
+describe('faqPageNode', () => {
+  const pageUrl = 'https://comfy.org/education/'
+
+  it('maps each FAQ to a Question with an accepted answer', () => {
+    const node = faqPageNode(pageUrl, [
+      { question: 'What discount do I get?', answer: 'Up to 25% off.' }
+    ])
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe(jsonLdId(pageUrl, 'faq'))
+    const questions = node.mainEntity as Record<string, unknown>[]
+    expect(questions).toHaveLength(1)
+    expect(questions[0]).toMatchObject({
+      '@type': 'Question',
+      name: 'What discount do I get?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Up to 25% off.' }
+    })
   })
 })
 
