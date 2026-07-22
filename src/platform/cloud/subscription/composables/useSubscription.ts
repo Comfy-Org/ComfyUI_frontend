@@ -26,8 +26,9 @@ import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
+  createPendingSubscriptionCheckoutAttempt,
   hasPendingSubscriptionCheckoutAttempt,
-  recordPendingSubscriptionCheckoutAttempt
+  persistPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
@@ -207,7 +208,27 @@ function useSubscriptionInternal() {
   )
 
   const subscribe = wrapWithErrorHandlingAsync(async () => {
-    const response = await initiateSubscriptionCheckout()
+    // Created before the request so the attempt id rides the checkout API
+    // call into Stripe subscription metadata; the backend echoes it on the
+    // server-side billing success events. Only persisted once the checkout
+    // window actually opens, matching the previous behavior.
+    const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
+      tier: 'standard',
+      cycle: 'monthly',
+      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      ...(subscriptionTier.value
+        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
+        : {}),
+      ...(subscriptionDuration.value === 'ANNUAL'
+        ? { previous_cycle: 'yearly' as const }
+        : subscriptionDuration.value === 'MONTHLY'
+          ? { previous_cycle: 'monthly' as const }
+          : {})
+    })
+
+    const response = await initiateSubscriptionCheckout(
+      pendingAttempt.attempt_id
+    )
 
     if (!response.checkout_url) {
       throw new Error(
@@ -222,19 +243,7 @@ function useSubscriptionInternal() {
       return
     }
 
-    recordPendingSubscriptionCheckoutAttempt({
-      tier: 'standard',
-      cycle: 'monthly',
-      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
-      ...(subscriptionTier.value
-        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
-        : {}),
-      ...(subscriptionDuration.value === 'ANNUAL'
-        ? { previous_cycle: 'yearly' as const }
-        : subscriptionDuration.value === 'MONTHLY'
-          ? { previous_cycle: 'monthly' as const }
-          : {})
-    })
+    persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
   }, reportError)
 
   const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
@@ -414,32 +423,36 @@ function useSubscriptionInternal() {
     { immediate: true }
   )
 
-  const initiateSubscriptionCheckout =
-    async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const headers = await buildAuthHeaders()
-      const checkoutAttribution = await getCheckoutAttributionForCloud()
+  const initiateSubscriptionCheckout = async (
+    checkoutAttemptId: string
+  ): Promise<CloudSubscriptionCheckoutResponse> => {
+    const headers = await buildAuthHeaders()
+    const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetchWithUnifiedRemint(
-        buildApiUrl('/customers/cloud-subscription-checkout'),
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(checkoutAttribution)
-        },
-        isCloud && flags.unifiedCloudAuthEnabled
+    const response = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers/cloud-subscription-checkout'),
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...checkoutAttribution,
+          checkout_attempt_id: checkoutAttemptId
+        })
+      },
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new AuthStoreError(
+        t('toastMessages.failedToInitiateSubscription', {
+          error: errorData.message
+        })
       )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new AuthStoreError(
-          t('toastMessages.failedToInitiateSubscription', {
-            error: errorData.message
-          })
-        )
-      }
-
-      return response.json()
     }
+
+    return response.json()
+  }
 
   return {
     // State

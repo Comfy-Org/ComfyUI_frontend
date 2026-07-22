@@ -84,7 +84,20 @@ export async function performSubscriptionCheckout(
       error
     )
   }
-  const checkoutPayload = { ...checkoutAttribution }
+  // Created before the request so the attempt id rides the checkout API call
+  // into Stripe subscription metadata; the backend echoes it on the
+  // server-side billing success events, joining them to begin_checkout /
+  // app:monthly_subscription_succeeded (which carry the same id below).
+  const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
+    tier: tierKey,
+    cycle: currentBillingCycle,
+    checkout_type: 'new',
+    payment_intent_source: paymentIntentSource
+  })
+  const checkoutPayload = {
+    ...checkoutAttribution,
+    checkout_attempt_id: pendingAttempt.attempt_id
+  }
 
   const response = await fetchWithUnifiedRemint(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
@@ -122,13 +135,6 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
-    const pendingAttempt = createPendingSubscriptionCheckoutAttempt({
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new',
-      payment_intent_source: paymentIntentSource
-    })
-
     if (userId.value) {
       telemetry?.trackBeginCheckout(
         withPendingCheckoutAttemptId(
