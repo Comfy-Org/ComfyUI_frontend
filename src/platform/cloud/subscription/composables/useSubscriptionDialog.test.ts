@@ -10,6 +10,9 @@ const mockIsInPersonalWorkspace = vi.hoisted(() => ({ value: true }))
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
+const mockShouldUseUnifiedPricing = vi.hoisted(() => ({
+  value: null as boolean | null
+}))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -41,6 +44,13 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   useBillingRouting: () => ({
     get shouldUseWorkspaceBilling() {
       return mockShouldUseWorkspaceBilling
+    },
+    get shouldUseUnifiedPricing() {
+      return {
+        value:
+          mockShouldUseUnifiedPricing.value ??
+          mockShouldUseWorkspaceBilling.value
+      }
     }
   })
 }))
@@ -102,6 +112,7 @@ describe('useSubscriptionDialog', () => {
     mockIsFreeTier.value = false
     mockTier.value = 'FREE'
     mockShouldUseWorkspaceBilling.value = false
+    mockShouldUseUnifiedPricing.value = null
     mockIsLegacyTeamPlan.value = false
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
@@ -283,6 +294,19 @@ describe('useSubscriptionDialog', () => {
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
       )
+    })
+
+    it('uses the unified table when pricing is unified but billing remains legacy', () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockShouldUseUnifiedPricing.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('personal')
+      expect(props).not.toHaveProperty('onChooseTeam')
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {
