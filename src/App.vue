@@ -15,7 +15,10 @@ import { isDesktop } from '@/platform/distribution/types'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import {
+  isExtensionOriginPreloadError,
+  parsePreloadError
+} from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -70,6 +73,21 @@ onMounted(() => {
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     const info = parsePreloadError(event.payload)
+
+    // Failures of custom node extension files (served under /extensions/)
+    // are third-party compatibility issues, not first-party chunk failures.
+    // Log them as warnings so they stay debuggable without polluting
+    // first-party error tracking, and skip the Sentry capture.
+    if (isExtensionOriginPreloadError(event.payload, info)) {
+      console.warn('[vite:preloadError]', {
+        url: info.url,
+        fileType: info.fileType,
+        chunkName: info.chunkName,
+        message: info.message
+      })
+      return
+    }
+
     console.error('[vite:preloadError]', {
       url: info.url,
       fileType: info.fileType,
@@ -96,7 +114,7 @@ onMounted(() => {
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing
     // core dependencies). These are plugin bugs, not ComfyUI core failures, but
     // the generic error message alarms users and offers no actionable guidance.
-    // The console.error above still logs the details for developers to debug.
+    // The console output above still logs the details for developers to debug.
     // useToastStore().add({
     //   severity: 'error',
     //   summary: t('g.preloadErrorTitle'),
