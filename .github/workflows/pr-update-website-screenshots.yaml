@@ -14,7 +14,7 @@ jobs:
   update-screenshots:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-noble
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
     timeout-minutes: 15
     permissions:
       contents: write
@@ -128,6 +128,9 @@ jobs:
 
       - name: Remove label
         if: always() && github.event_name == 'pull_request'
+        # Label cleanup is best-effort; the restricted pull_request token may
+        # lack permission to remove labels and must not fail the run.
+        continue-on-error: true
         uses: actions/github-script@v8
         env:
           PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
