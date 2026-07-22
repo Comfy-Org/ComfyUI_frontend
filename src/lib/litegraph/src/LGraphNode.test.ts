@@ -337,34 +337,39 @@ describe('LGraphNode', () => {
       return { graph, sourceNode, targetNode }
     }
 
-    function observeInputDisconnects(targetNode: LGraphNode) {
-      const observed: { connected: boolean; link: unknown }[] = []
-      targetNode.onConnectionsChange = function (type, slot, isConnected) {
-        if (type !== NodeSlotType.INPUT || isConnected) return
-        observed.push({
-          connected: this.isInputConnected(slot),
-          link: this.getInputLink(slot)
-        })
-      }
-      return observed
+    function expectDisconnectedStateOnConnectionChange(targetNode: LGraphNode) {
+      expect(targetNode.onConnectionsChange).toBeUndefined()
+
+      const onConnectionsChange = vi.fn<
+        NonNullable<LGraphNode['onConnectionsChange']>
+      >(function (type, slot, isConnected) {
+        expect(type).toBe(NodeSlotType.INPUT)
+        expect(isConnected).toBe(false)
+        expect(this.isInputConnected(slot)).toBe(false)
+        expect(this.getInputLink(slot)).toBeNull()
+      })
+      targetNode.onConnectionsChange = onConnectionsChange
+      return onConnectionsChange
     }
 
     test('target sees disconnected state inside onConnectionsChange when all output links are removed', () => {
       const { sourceNode, targetNode } = createConnectedPair()
-      const observed = observeInputDisconnects(targetNode)
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
 
       expect(sourceNode.disconnectOutput(0)).toBe(true)
 
-      expect(observed).toEqual([{ connected: false, link: null }])
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
     })
 
     test('target sees disconnected state inside onConnectionsChange when the source node is removed', () => {
       const { graph, sourceNode, targetNode } = createConnectedPair()
-      const observed = observeInputDisconnects(targetNode)
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
 
       graph.remove(sourceNode)
 
-      expect(observed).toEqual([{ connected: false, link: null }])
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
     })
   })
 

@@ -55,7 +55,7 @@ describe('slotLinks', () => {
     expect(outputLinks(graph, source.id, 0)).toEqual([])
   })
 
-  it('never includes floating links', () => {
+  it('never reports a floating link on the output side', () => {
     const { graph, source, targets } = createConnectedGraph(1)
     const link = inputLink(graph, targets[0].id, 0)!
     const reroute = graph.createReroute([0, 0], link)!

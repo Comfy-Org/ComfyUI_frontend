@@ -23,6 +23,9 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+type TestNode = Omit<LGraphNode, 'constructor'> & {
+  _testExecutionId?: string
+}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -117,8 +120,8 @@ function makeNode(
   executionId?: string
 ): LGraphNode {
   return stampInputConnectivity(
-    fromAny<LGraphNode, unknown>({
-      id,
+    fromAny<LGraphNode, Partial<TestNode>>({
+      id: toNodeId(id),
       type,
       widgets,
       _testExecutionId: executionId

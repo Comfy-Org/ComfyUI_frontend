@@ -38,7 +38,7 @@ describe('ecosystem slot patterns', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  describe('duck-typed slots wrapped by _setConcreteSlots (M2)', () => {
+  describe('duck-typed slots wrapped by _setConcreteSlots', () => {
     it('renders a connected duck-typed input in collapsed mode', () => {
       const { source, target } = createSourceAndTarget()
       target.inputs.push(duckInputSlot())
@@ -63,7 +63,7 @@ describe('ecosystem slot patterns', () => {
     })
   })
 
-  describe("input literals without a 'link' key (M3)", () => {
+  describe("input literals without a 'link' key", () => {
     it('does not report a free input as occupied because the same-index output is connected', () => {
       const { source, target } = createSourceAndTarget()
       target.addInput('in', 'INT')
@@ -94,7 +94,7 @@ describe('ecosystem slot patterns', () => {
     })
   })
 
-  describe('addInput / addOutput with legacy mirror keys (M5a)', () => {
+  describe('addInput / addOutput with legacy mirror keys', () => {
     it('accepts extra_info that still carries a link value', () => {
       const node = new LGraphNode('n')
 

@@ -19,13 +19,6 @@ import type { NodeId } from '@/types/nodeId'
 
 const DEFINITION_ORDER = ['in_a', 'in_b', 'in_c']
 
-/**
- * Mimics ComfyNode.configure (src/services/litegraphService.ts): reorders the
- * serialized inputs array in place on `data` to match the current node
- * definition order before delegating to LGraphNode.configure. This is the
- * issue #3348 scenario: a workflow saved before the node definition's input
- * order changed (e.g. a forceInput migration in a node pack update).
- */
 class ReorderTargetNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'ReorderTarget')
@@ -50,11 +43,6 @@ class SourceNode extends LGraphNode {
 
 const SUBGRAPH_ID = 'ab111111-1111-4111-8111-111111111111'
 
-/**
- * Source and reorder-target nodes connected by three links whose saved
- * `target_slot` matches the saved input order [in_b, in_c, in_a], which is
- * stale relative to the current definition order [in_a, in_b, in_c].
- */
 function shiftedNodesAndLinks(sourceId: number, targetId: number) {
   return {
     nodes: [
@@ -264,7 +252,7 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
   }
 }
 
-describe('LGraph.configure input slot realignment (#3348)', () => {
+describe('LGraph.configure realigns links after input definition order changes (#3348)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/RealignSource', SourceNode)
