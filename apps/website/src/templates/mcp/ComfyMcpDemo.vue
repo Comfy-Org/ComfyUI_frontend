@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
-import { useElementVisibility } from '@vueuse/core'
+import { useCssVar, useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
@@ -12,13 +12,6 @@ import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const VISIBLE_CARDS = 5
-const START_DELAY_MS = 2600
-const TYPE_MIN_MS = 18
-const TYPE_MAX_MS = 55
-const AFTER_TYPING_MS = 520
-const RUN_TOOL_MS = 360
-const AFTER_CARD_MS = 900
-const BETWEEN_PROMPTS_MS = 650
 const REDUCED_MOTION_DWELL_MS = 2600
 
 const promptTextClass =
@@ -45,6 +38,19 @@ const reducedMotion = computed(prefersReducedMotion)
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 
+function cssMs(name: string) {
+  const raw = useCssVar(name, root)
+  return computed(() => Number.parseFloat(raw.value ?? '0'))
+}
+
+const startDelayMs = cssMs('--mcp-start-delay')
+const typeMinMs = cssMs('--mcp-type-min')
+const typeMaxMs = cssMs('--mcp-type-max')
+const afterTypingMs = cssMs('--mcp-after-typing')
+const runToolMs = cssMs('--mcp-run-tool')
+const afterCardMs = cssMs('--mcp-after-card')
+const betweenPromptsMs = cssMs('--mcp-between-prompts')
+
 let timer: ReturnType<typeof setTimeout> | undefined
 
 function schedule(step: () => void, ms: number) {
@@ -57,7 +63,7 @@ function typeNextPrompt() {
 
   if (reducedMotion.value) {
     typed.value = text
-    schedule(runTool, AFTER_TYPING_MS)
+    schedule(runTool, afterTypingMs.value)
     return
   }
 
@@ -71,12 +77,12 @@ function typeNextPrompt() {
     if (typedLength < text.length) {
       schedule(
         typeCharacter,
-        TYPE_MIN_MS + Math.random() * (TYPE_MAX_MS - TYPE_MIN_MS)
+        typeMinMs.value + Math.random() * (typeMaxMs.value - typeMinMs.value)
       )
       return
     }
 
-    schedule(runTool, AFTER_TYPING_MS)
+    schedule(runTool, afterTypingMs.value)
   }
 
   typeCharacter()
@@ -93,14 +99,14 @@ function runTool() {
         .replace('{tool}', tool)
     : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
 
-  schedule(commitCard, RUN_TOOL_MS)
+  schedule(commitCard, runToolMs.value)
 }
 
 function commitCard() {
   submitting.value = false
   index.value = (index.value + 1) % mcpDemoPrompts.length
   status.value = idleStatus
-  schedule(restBeforeNextPrompt, AFTER_CARD_MS)
+  schedule(restBeforeNextPrompt, afterCardMs.value)
 }
 
 function restBeforeNextPrompt() {
@@ -108,13 +114,13 @@ function restBeforeNextPrompt() {
 
   schedule(
     typeNextPrompt,
-    reducedMotion.value ? REDUCED_MOTION_DWELL_MS : BETWEEN_PROMPTS_MS
+    reducedMotion.value ? REDUCED_MOTION_DWELL_MS : betweenPromptsMs.value
   )
 }
 
 watch(visible, (onScreen) => {
   if (onScreen) {
-    schedule(typeNextPrompt, START_DELAY_MS)
+    schedule(typeNextPrompt, startDelayMs.value)
     return
   }
 
@@ -125,7 +131,7 @@ onUnmounted(() => clearTimeout(timer))
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col gap-6">
+  <div ref="root" class="mcp-demo flex flex-col gap-6">
     <div
       data-testid="mcp-demo-panel"
       class="rounded-5xl flex flex-col gap-6 bg-white/4 p-6 lg:p-8"
@@ -264,3 +270,16 @@ onUnmounted(() => clearTimeout(timer))
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Demo animation timings, read from <script> via useCssVar. */
+.mcp-demo {
+  --mcp-start-delay: 2600ms;
+  --mcp-type-min: 18ms;
+  --mcp-type-max: 55ms;
+  --mcp-after-typing: 520ms;
+  --mcp-run-tool: 360ms;
+  --mcp-after-card: 900ms;
+  --mcp-between-prompts: 650ms;
+}
+</style>
