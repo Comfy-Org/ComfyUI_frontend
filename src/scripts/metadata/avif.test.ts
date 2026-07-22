@@ -412,16 +412,23 @@ function escapeXmlAttribute(value: string): string {
   return escapeXmlText(value).replaceAll('"', '&quot;')
 }
 
-function buildXmpPacket(workflow: string, prompt?: string): string {
+function buildXmpPacket(
+  workflow: string,
+  prompt?: string,
+  namespace = 'https://github.com/Comfy-Org/ComfyUI',
+  prefix = 'comfy'
+): string {
   const promptAttribute =
-    prompt === undefined ? '' : ` comfy:prompt="${escapeXmlAttribute(prompt)}"`
+    prompt === undefined
+      ? ''
+      : ` ${prefix}:prompt="${escapeXmlAttribute(prompt)}"`
 
   return [
     '<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
     '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
     '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
-    `    <rdf:Description xmlns:comfy="https://github.com/Comfy-Org/ComfyUI" rdf:about=""${promptAttribute}>`,
-    `      <comfy:workflow>${escapeXmlText(workflow)}</comfy:workflow>`,
+    `    <rdf:Description xmlns:${prefix}="${namespace}" rdf:about=""${promptAttribute}>`,
+    `      <${prefix}:workflow>${escapeXmlText(workflow)}</${prefix}:workflow>`,
     '    </rdf:Description>',
     '  </rdf:RDF>',
     '</x:xmpmeta>',
@@ -592,6 +599,47 @@ describe('getFromAvifFile', () => {
     const result = await getWorkflowDataFromFile(file)
 
     expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('imports ComfyUI XMP metadata with a different namespace prefix', async () => {
+    const workflow = '{"nodes":[],"version":1}'
+    const prompt = '{"1":{"class_type":"KSampler"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        includeExif: false,
+        xmp: buildXmpPacket(
+          workflow,
+          prompt,
+          'https://github.com/Comfy-Org/ComfyUI',
+          'alternate'
+        )
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow, prompt })
+  })
+
+  it('ignores prompt and workflow from a different XMP namespace', async () => {
+    const exifWorkflow = '{"source":"exif"}'
+    const exifPrompt = '{"1":{"class_type":"EXIF"}}'
+    const xmpWorkflow = '{"source":"unrelated-xmp"}'
+    const xmpPrompt = '{"1":{"class_type":"Unrelated"}}'
+    const file = fileFromBuffer(
+      buildAvifFile({
+        exifEntries: [`workflow:${exifWorkflow}`, `prompt:${exifPrompt}`],
+        xmp: buildXmpPacket(
+          xmpWorkflow,
+          xmpPrompt,
+          'https://example.com/unrelated-xmp'
+        )
+      })
+    )
+
+    const result = await getFromAvifFile(file)
+
+    expect(result).toEqual({ workflow: exifWorkflow, prompt: exifPrompt })
   })
 
   it.each(ilocWidthCases)('imports XMP with $name', async ({ fieldSizes }) => {

@@ -12,6 +12,8 @@ import {
 } from '@/types/metadataTypes'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+const COMFYUI_XMP_NAMESPACE = 'https://github.com/Comfy-Org/ComfyUI'
+
 const readNullTerminatedString = (
   dataView: DataView,
   start: number,
@@ -286,9 +288,12 @@ function getIlocItemData(
 
 function setXmpMetadataValue(
   metadata: ComfyMetadata,
+  namespaceUri: string | null,
   localName: string,
   value: string
 ) {
+  if (namespaceUri !== COMFYUI_XMP_NAMESPACE) return
+
   const metadataKey = localName
     .slice(localName.lastIndexOf(':') + 1)
     .toLowerCase()
@@ -302,6 +307,25 @@ function setXmpMetadataValue(
   } catch (error) {
     console.error(`Failed to parse XMP ${metadataKey} metadata`, error)
   }
+}
+
+function getAttributeNamespaceUri(
+  element: Element,
+  attribute: Attr
+): string | null {
+  if (attribute.namespaceURI) return attribute.namespaceURI
+
+  const prefixSeparator = attribute.name.indexOf(':')
+  if (prefixSeparator <= 0) return null
+
+  const namespaceAttribute = `xmlns:${attribute.name.slice(0, prefixSeparator)}`
+  let namespaceOwner: Element | null = element
+  while (namespaceOwner) {
+    const namespaceUri = namespaceOwner.getAttribute(namespaceAttribute)
+    if (namespaceUri) return namespaceUri
+    namespaceOwner = namespaceOwner.parentElement
+  }
+  return null
 }
 
 function parseXmpMetadata(itemData: Uint8Array): ComfyMetadata {
@@ -324,10 +348,20 @@ function parseXmpMetadata(itemData: Uint8Array): ComfyMetadata {
       attributeIndex++
     ) {
       const attribute = element.attributes[attributeIndex]
-      setXmpMetadataValue(metadata, attribute.localName, attribute.value)
+      setXmpMetadataValue(
+        metadata,
+        getAttributeNamespaceUri(element, attribute),
+        attribute.localName,
+        attribute.value
+      )
     }
 
-    setXmpMetadataValue(metadata, element.localName, element.textContent ?? '')
+    setXmpMetadataValue(
+      metadata,
+      element.namespaceURI,
+      element.localName,
+      element.textContent ?? ''
+    )
   }
 
   return metadata
