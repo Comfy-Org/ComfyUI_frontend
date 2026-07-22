@@ -33,6 +33,57 @@
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
+      <div
+        v-if="isEduPricingActive"
+        class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
+      >
+        {{
+          $t('subscription.eduPromoHeader', {
+            percent: EDU_MAX_DISCOUNT_PERCENT
+          })
+        }}
+      </div>
+      <div
+        v-else-if="needsEduVerification"
+        class="flex flex-col items-center gap-2"
+      >
+        <div
+          class="flex items-center rounded-full bg-primary-background px-3 py-1 text-sm font-medium text-white"
+        >
+          {{
+            $t('subscription.eduVerifyHeader', {
+              percent: EDU_MAX_DISCOUNT_PERCENT
+            })
+          }}
+        </div>
+        <div class="flex items-center gap-2">
+          <Button
+            v-if="!isSent"
+            size="sm"
+            variant="secondary"
+            :disabled="isSending"
+            @click="handleSendVerification"
+          >
+            {{ $t('subscription.eduVerifySend') }}
+          </Button>
+          <template v-else>
+            <span class="text-sm text-muted-foreground">
+              {{ $t('subscription.eduVerifySentHint') }}
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              :disabled="isConfirmingVerification"
+              @click="handleVerificationConfirmed"
+            >
+              {{ $t('subscription.eduVerifyConfirm') }}
+            </Button>
+          </template>
+          <span v-if="verifyStatusKey" class="text-sm text-error">
+            {{ $t(verifyStatusKey) }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <div v-if="reason === 'out_of_credits'" class="text-center">
@@ -111,10 +162,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
+import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useEmailVerification } from '@/composables/auth/useEmailVerification'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { EDU_MAX_DISCOUNT_PERCENT } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { useAuthStore } from '@/stores/authStore'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
@@ -153,6 +210,42 @@ const {
   handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
+
+const { isEduPricingActive, needsEduVerification } = useEduPricing()
+const { isSending, isSent, sendVerification, refreshVerification } =
+  useEmailVerification()
+const { fetchStatus } = useSubscription()
+const authStore = useAuthStore()
+
+const isConfirmingVerification = ref(false)
+const verifyStatusKey = ref<string | null>(null)
+
+const handleSendVerification = async () => {
+  verifyStatusKey.value = null
+  if (!(await sendVerification())) {
+    verifyStatusKey.value = 'subscription.eduVerifySendFailed'
+  }
+}
+
+// Post-verification loop: refreshed token -> re-provision (ratchets is_edu) -> refetch status.
+const handleVerificationConfirmed = async () => {
+  if (isConfirmingVerification.value) return
+  isConfirmingVerification.value = true
+  verifyStatusKey.value = null
+  try {
+    const verified = await refreshVerification()
+    if (!verified) {
+      verifyStatusKey.value = 'subscription.eduVerifyStillUnverified'
+      return
+    }
+    await authStore.createCustomer()
+    await fetchStatus()
+  } catch {
+    verifyStatusKey.value = 'subscription.eduVerifyFailed'
+  } finally {
+    isConfirmingVerification.value = false
+  }
+}
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).

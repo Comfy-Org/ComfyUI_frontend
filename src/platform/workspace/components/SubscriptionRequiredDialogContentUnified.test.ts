@@ -42,13 +42,63 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+const mockIsEduPricingActive = ref(false)
+const mockNeedsEduVerification = ref(false)
+const mockIsSending = ref(false)
+const mockIsSent = ref(false)
+const mockSendVerification = vi.fn()
+const mockRefreshVerification = vi.fn()
+const mockFetchStatus = vi.fn()
+const mockCreateCustomer = vi.fn()
+
+vi.mock('@/platform/cloud/subscription/composables/useEduPricing', () => ({
+  useEduPricing: () => ({
+    isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+    needsEduVerification: computed(() => mockNeedsEduVerification.value)
+  })
+}))
+
+vi.mock('@/composables/auth/useEmailVerification', () => ({
+  useEmailVerification: () => ({
+    isSending: computed(() => mockIsSending.value),
+    isSent: computed(() => mockIsSent.value),
+    sendVerification: mockSendVerification,
+    refreshVerification: mockRefreshVerification
+  })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    fetchStatus: mockFetchStatus
+  })
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    createCustomer: mockCreateCustomer
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
       g: { back: 'Back', close: 'Close' },
-      subscription: { descriptionWorkspace: 'Choose your plan' }
+      subscription: {
+        descriptionWorkspace: 'Choose your plan',
+        eduPromoHeader:
+          'Education discount: up to {percent}% off for verified students and educators',
+        eduVerifyHeader:
+          'Verify your email to unlock up to {percent}% education pricing',
+        eduVerifySend: 'Send verification email',
+        eduVerifySentHint: 'Check your inbox, then come back',
+        eduVerifyConfirm: "I've verified",
+        eduVerifySendFailed: "Couldn't send the email. Try again.",
+        eduVerifyStillUnverified:
+          'Not verified yet. Click the link in your inbox first.',
+        eduVerifyFailed: 'Something went wrong. Try again.'
+      }
     }
   }
 })
@@ -112,5 +162,77 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     await vi.waitFor(() => {
       expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
     })
+  })
+})
+
+describe('SubscriptionRequiredDialogContentUnified EDU verify nudge', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsInPersonalWorkspace.value = false
+    mockIsEduPricingActive.value = false
+    mockNeedsEduVerification.value = false
+    mockIsSending.value = false
+    mockIsSent.value = false
+    mockSendVerification.mockResolvedValue(true)
+    mockRefreshVerification.mockResolvedValue(false)
+    mockCreateCustomer.mockResolvedValue(undefined)
+    mockFetchStatus.mockResolvedValue(undefined)
+  })
+
+  it('renders the verify-email nudge when the email needs verification', () => {
+    mockNeedsEduVerification.value = true
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Send verification email' })
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces a send failure', async () => {
+    const user = userEvent.setup()
+    mockNeedsEduVerification.value = true
+    mockSendVerification.mockResolvedValue(false)
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Send verification email' })
+    )
+
+    expect(
+      screen.getByText("Couldn't send the email. Try again.")
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces a still-unverified status without re-provisioning', async () => {
+    const user = userEvent.setup()
+    mockNeedsEduVerification.value = true
+    mockIsSent.value = true
+    mockRefreshVerification.mockResolvedValue(false)
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: "I've verified" }))
+
+    expect(
+      screen.getByText('Not verified yet. Click the link in your inbox first.')
+    ).toBeInTheDocument()
+    expect(mockCreateCustomer).not.toHaveBeenCalled()
+  })
+
+  it('re-provisions then refetches status once verified', async () => {
+    const user = userEvent.setup()
+    mockNeedsEduVerification.value = true
+    mockIsSent.value = true
+    mockRefreshVerification.mockResolvedValue(true)
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: "I've verified" }))
+
+    await vi.waitFor(() => {
+      expect(mockCreateCustomer).toHaveBeenCalledOnce()
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+    })
+    expect(mockCreateCustomer.mock.invocationCallOrder[0]).toBeLessThan(
+      mockFetchStatus.mock.invocationCallOrder[0]
+    )
   })
 })
