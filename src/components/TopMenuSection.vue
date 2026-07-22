@@ -100,14 +100,23 @@
 
     <div class="flex flex-col items-end gap-1 pr-1">
       <!-- Undocked, the toast follows the run bar onto the canvas: the stop
-           control has to travel with the Run button, not stay up here. -->
+           control has to travel with the Run button, not stay up here. It
+           hangs below the panel rather than inside it, so the run controls
+           keep their surface and the pill keeps its own. -->
       <Teleport
         v-if="isActionbarEnabled"
         :to="queueStatusToastTarget ?? 'body'"
         :disabled="!queueStatusToastTarget"
       >
         <!-- QueueStatusToast has several roots, so spacing lives on a wrapper -->
-        <div :class="cn('flex justify-end', queueStatusToastTarget && 'p-1')">
+        <div
+          :class="
+            cn(
+              'flex justify-end',
+              queueStatusToastTarget && 'absolute top-full right-0 pt-1'
+            )
+          "
+        >
           <QueueStatusToast />
         </div>
       </Teleport>
