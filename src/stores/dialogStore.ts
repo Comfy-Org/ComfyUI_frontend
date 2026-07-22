@@ -32,6 +32,14 @@ interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
+  /**
+   * Guaranteed cleanup: fires exactly once when the dialog leaves the stack
+   * for any reason — `closeDialog` (user or programmatic) or the
+   * 10-dialog-cap eviction in `createDialog`. Wire promise settlement here.
+   * Keep user-intent side effects (telemetry, "don't show again") in
+   * `onClose`, which never fires on eviction.
+   */
+  onRemoved?: () => void
   closable?: boolean
   modal?: boolean
   position?: DialogPosition
@@ -169,7 +177,11 @@ export const useDialogStore = defineStore('dialog', () => {
 
     targetDialog.dialogComponentProps?.onClose?.()
     const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
-    if (index !== -1) dialogStack.value.splice(index, 1)
+    // A reentrant onClose can remove targetDialog itself (e.g. by opening a
+    // dialog that triggers the cap eviction). Whoever actually removes the
+    // dialog from the stack fires onRemoved, so it fires exactly once.
+    const removed = index !== -1
+    if (removed) dialogStack.value.splice(index, 1)
 
     activeKey.value =
       dialogStack.value.length > 0
@@ -177,6 +189,7 @@ export const useDialogStore = defineStore('dialog', () => {
         : null
 
     updateCloseOnEscapeStates()
+    if (removed) targetDialog.dialogComponentProps?.onRemoved?.()
   }
 
   function createDialog<
@@ -184,9 +197,8 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
-    if (dialogStack.value.length >= 10) {
-      dialogStack.value.shift()
-    }
+    const evicted =
+      dialogStack.value.length >= 10 ? dialogStack.value.shift() : undefined
 
     const dialog = {
       key: options.key,
@@ -234,6 +246,10 @@ export const useDialogStore = defineStore('dialog', () => {
     insertDialogByPriority(dialog)
     activeKey.value = options.key
     updateCloseOnEscapeStates()
+    // Eviction is not a user close: fire only the cleanup hook, never
+    // onClose (which callers treat as user intent — telemetry, "don't show
+    // again" persistence).
+    evicted?.dialogComponentProps?.onRemoved?.()
 
     return dialog
   }

@@ -99,6 +99,24 @@ export interface ExecutionErrorDialogInput {
   traceback: string[]
 }
 
+// prompt() and confirm() share the 'global-prompt' key, and
+// dialogStore.showDialog merely raises an existing dialog with the same key —
+// a concurrent second caller's onConfirm/onRemoved would never be wired and
+// its promise would never settle. Serialize them FIFO so every promise
+// settles.
+let globalPromptTail: Promise<unknown> = Promise.resolve()
+
+function enqueueGlobalPrompt<T>(
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const result = globalPromptTail.then(() => new Promise<T>(show))
+  globalPromptTail = result.then(
+    () => undefined,
+    () => undefined
+  )
+  return result
+}
+
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
@@ -222,7 +240,7 @@ export const useDialogService = () => {
           renderer: 'reka',
           contentClass: HUG_CONTENT_CLASS,
           closable: false,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -249,7 +267,7 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -269,7 +287,7 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueueGlobalPrompt<string | null>((resolve) => {
       dialogStore.showDialog({
         key: 'global-prompt',
         title,
@@ -285,7 +303,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -306,7 +324,7 @@ export const useDialogService = () => {
     hint,
     denyLabel
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    return enqueueGlobalPrompt<boolean | null>((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',
         title,
@@ -322,7 +340,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          onRemoved: () => resolve(null)
         }
       }
 
@@ -728,7 +746,7 @@ export const useDialogService = () => {
           closable: false,
           contentClass:
             'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+          onRemoved: () => resolve()
         }
       })
     })

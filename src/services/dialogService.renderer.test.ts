@@ -38,18 +38,41 @@ describe('dialogService Reka renderer opt-in', () => {
     showDialog.mockReset()
   })
 
-  it("prompt() sets renderer 'reka' and size 'md'", () => {
-    void useDialogService().prompt({ title: 'T', message: 'M' })
+  it("prompt() sets renderer 'reka' and size 'md'", async () => {
+    const result = useDialogService().prompt({ title: 'T', message: 'M' })
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalled())
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    args.dialogComponentProps.onRemoved()
+    await expect(result).resolves.toBeNull()
   })
 
-  it("confirm() sets renderer 'reka' and size 'md'", () => {
-    void useDialogService().confirm({ title: 'T', message: 'M' })
+  it("confirm() sets renderer 'reka' and size 'md'", async () => {
+    const result = useDialogService().confirm({ title: 'T', message: 'M' })
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalled())
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    args.dialogComponentProps.onRemoved()
+    await expect(result).resolves.toBeNull()
+  })
+
+  it('releases the FIFO queue when showDialog throws for the head prompt', async () => {
+    showDialog.mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+    const service = useDialogService()
+
+    await expect(service.prompt({ title: 'T', message: 'M' })).rejects.toThrow(
+      'boom'
+    )
+
+    const result = service.confirm({ title: 'T2', message: 'M2' })
+    await vi.waitFor(() => expect(showDialog).toHaveBeenCalledTimes(2))
+    const [args] = showDialog.mock.calls[1]
+    args.dialogComponentProps.onRemoved()
+    await expect(result).resolves.toBeNull()
   })
 
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
