@@ -33,7 +33,7 @@
 
           <!-- Verb and percent read as one sentence, so they share a run -->
           <span
-            class="text-sm leading-5 font-medium tabular-nums whitespace-nowrap text-base-foreground"
+            class="text-sm leading-5 font-normal tabular-nums whitespace-nowrap text-base-foreground"
           >
             {{ label }}
           </span>
