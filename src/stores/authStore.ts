@@ -320,6 +320,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
+    const requestOwnerUid = currentUser.value?.uid ?? null
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
@@ -351,6 +352,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
+      // A direct A->B account switch nulls balance in onAuthStateChanged; a
+      // late-resolving request from the previous identity must not repaint it.
+      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+        return null
+      }
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData

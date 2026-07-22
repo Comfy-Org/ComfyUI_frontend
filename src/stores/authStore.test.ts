@@ -313,6 +313,37 @@ describe('useAuthStore', () => {
     await store.login('test@example.com', 'correct-password')
   })
 
+  describe('fetchBalance identity isolation', () => {
+    it('discards a late balance response from the previous account after an A->B switch', async () => {
+      let signalBalanceRequested: () => void = () => {}
+      const balanceRequested = new Promise<void>((resolve) => {
+        signalBalanceRequested = resolve
+      })
+      let resolveBalanceJson: (value: unknown) => void = () => {}
+      const balanceJson = new Promise((resolve) => {
+        resolveBalanceJson = resolve
+      })
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers/balance')) {
+          signalBalanceRequested()
+          return Promise.resolve({ ok: true, json: () => balanceJson })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      // Request starts while account A is current.
+      const pending = store.fetchBalance()
+      await balanceRequested
+
+      // Firebase transitions directly to account B before the response lands.
+      authStateCallback({ ...mockUser, uid: 'account-b' } as User)
+      resolveBalanceJson({ balance: 4242 })
+
+      expect(await pending).toBeNull()
+      expect(store.balance).toBeNull()
+    })
+  })
+
   describe('login', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
