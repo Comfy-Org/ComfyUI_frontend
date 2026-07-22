@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
-import { useElementVisibility } from '@vueuse/core'
+import { useCssVar, useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
@@ -12,13 +12,6 @@ import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const VISIBLE_CARDS = 5
-const START_DELAY_MS = 2600
-const TYPE_MIN_MS = 18
-const TYPE_MAX_MS = 55
-const AFTER_TYPING_MS = 520
-const RUN_TOOL_MS = 360
-const AFTER_CARD_MS = 900
-const BETWEEN_PROMPTS_MS = 650
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
@@ -43,6 +36,28 @@ const status = ref(idleStatus)
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
 
+// Parse a CSS <time> (ms or s); malformed overrides fall back to the initial.
+function parseCssMs(value: string | undefined, fallbackMs: number) {
+  const match = /^([+-]?(?:\d+|\d*\.\d+))(ms|s)$/i.exec(value?.trim() ?? '')
+  if (!match) return fallbackMs
+  const amount = Number.parseFloat(match[1])
+  return match[2].toLowerCase() === 's' ? amount * 1000 : amount
+}
+
+function cssMs(name: string, initial: string) {
+  const raw = useCssVar(name, root, { initialValue: initial, observe: true })
+  const fallbackMs = parseCssMs(initial, 0)
+  return computed(() => parseCssMs(raw.value, fallbackMs))
+}
+
+const startDelayMs = cssMs('--mcp-start-delay', '2600ms')
+const typeMinMs = cssMs('--mcp-type-min', '18ms')
+const typeMaxMs = cssMs('--mcp-type-max', '55ms')
+const afterTypingMs = cssMs('--mcp-after-typing', '520ms')
+const runToolMs = cssMs('--mcp-run-tool', '360ms')
+const afterCardMs = cssMs('--mcp-after-card', '900ms')
+const betweenPromptsMs = cssMs('--mcp-between-prompts', '650ms')
+
 let timer: ReturnType<typeof setTimeout> | undefined
 
 function schedule(step: () => void, ms: number) {
@@ -62,12 +77,12 @@ function typeNextPrompt() {
     if (typedLength < text.length) {
       schedule(
         typeCharacter,
-        TYPE_MIN_MS + Math.random() * (TYPE_MAX_MS - TYPE_MIN_MS)
+        typeMinMs.value + Math.random() * (typeMaxMs.value - typeMinMs.value)
       )
       return
     }
 
-    schedule(runTool, AFTER_TYPING_MS)
+    schedule(runTool, afterTypingMs.value)
   }
 
   typeCharacter()
@@ -84,19 +99,19 @@ function runTool() {
         .replace('{tool}', tool)
     : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
 
-  schedule(commitCard, RUN_TOOL_MS)
+  schedule(commitCard, runToolMs.value)
 }
 
 function commitCard() {
   submitting.value = false
   index.value = (index.value + 1) % mcpDemoPrompts.length
   status.value = idleStatus
-  schedule(restBeforeNextPrompt, AFTER_CARD_MS)
+  schedule(restBeforeNextPrompt, afterCardMs.value)
 }
 
 function restBeforeNextPrompt() {
   typed.value = ''
-  schedule(typeNextPrompt, BETWEEN_PROMPTS_MS)
+  schedule(typeNextPrompt, betweenPromptsMs.value)
 }
 
 watchEffect(() => {
@@ -107,7 +122,7 @@ watchEffect(() => {
     status.value = idleStatus
     return
   }
-  if (visible.value) schedule(typeNextPrompt, START_DELAY_MS)
+  if (visible.value) schedule(typeNextPrompt, startDelayMs.value)
 })
 
 onUnmounted(() => clearTimeout(timer))
