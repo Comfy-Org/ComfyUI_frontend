@@ -7,16 +7,16 @@ to a section below.
 
 **Where guidance lives**
 
-| Concern                                     | Location                                                     |
-| ------------------------------------------- | ----------------------------------------------------------- |
-| Everything about writing/running E2E tests  | **This file** (canonical)                                   |
-| Agent auto-load in `browser_tests/`         | `browser_tests/AGENTS.md` (stub → this file)                |
-| Agent auto-load on `*.spec.ts` edit         | `docs/guidance/playwright.md` (stub → this file)            |
-| Flake triage checklist                      | [Flake Prevention](#flake-prevention) (was `FLAKE_PREVENTION_RULES.md`) |
-| Mock data fixtures                          | [Test Data & Typed Mocks](#test-data--typed-api-mocks) (was `fixtures/data/README.md`) |
-| Authoring skill (agents)                    | `.claude/skills/writing-playwright-tests/SKILL.md`          |
-| Flake-hardening skill (agents)              | `.claude/skills/hardening-flaky-e2e-tests/SKILL.md`         |
-| Review rulebook (subagent)                  | `.agents/checks/playwright-e2e.md` (references this file)   |
+| Concern                                    | Location                                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Everything about writing/running E2E tests | **This file** (canonical)                                                              |
+| Agent auto-load in `browser_tests/`        | `browser_tests/AGENTS.md` (stub → this file)                                           |
+| Agent auto-load on `*.spec.ts` edit        | `docs/guidance/playwright.md` (stub → this file)                                       |
+| Flake triage checklist                     | [Flake Prevention](#flake-prevention) (was `FLAKE_PREVENTION_RULES.md`)                |
+| Mock data fixtures                         | [Test Data & Typed Mocks](#test-data--typed-api-mocks) (was `fixtures/data/README.md`) |
+| Authoring skill (agents)                   | `.claude/skills/writing-playwright-tests/SKILL.md`                                     |
+| Flake-hardening skill (agents)             | `.claude/skills/hardening-flaky-e2e-tests/SKILL.md`                                    |
+| Review rulebook (subagent)                 | `.agents/checks/playwright-e2e.md` (references this file)                              |
 
 ---
 
@@ -290,11 +290,11 @@ or guard with `toHaveLength(1)` first.
 
 Choose based on **what you're testing**:
 
-| Testing…                                        | Use                    | Why                                    |
-| ----------------------------------------------- | ---------------------- | -------------------------------------- |
-| Vue-rendered node UI, DOM widgets, CSS states   | `comfyPage.vueNodes.*` | Nodes are DOM elements; use locators   |
-| Canvas interactions, connections, legacy nodes  | `comfyPage.nodeOps.*`  | Canvas-based; use coordinates/refs     |
-| Both in one test                                | Pick primary, minimize switching | Mixing both is a smell       |
+| Testing…                                       | Use                              | Why                                  |
+| ---------------------------------------------- | -------------------------------- | ------------------------------------ |
+| Vue-rendered node UI, DOM widgets, CSS states  | `comfyPage.vueNodes.*`           | Nodes are DOM elements; use locators |
+| Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based; use coordinates/refs   |
+| Both in one test                               | Pick primary, minimize switching | Mixing both is a smell               |
 
 Vue Nodes requires explicit opt-in:
 
@@ -404,7 +404,9 @@ assumption, and use `expect.soft()` to verify several invariants without
 aborting on the first failure:
 
 ```typescript
-expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(4)
+expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(
+  4
+)
 
 expect.soft(menuItem1).toBeVisible()
 expect.soft(menuItem2).toBeVisible()
@@ -475,7 +477,9 @@ shape drift at compile time instead of through flaky runtime failures.
 import { createMockNodeDefinitions } from '@e2e/fixtures/data/nodeDefinitions'
 
 const nodeDefs = createMockNodeDefinitions({ MyCustomNode: {/* ... */} })
-await page.route('**/api/object_info', (route) => route.fulfill({ json: nodeDefs }))
+await page.route('**/api/object_info', (route) =>
+  route.fulfill({ json: nodeDefs })
+)
 ```
 
 ### Sources of truth for mock types
@@ -483,22 +487,26 @@ await page.route('**/api/object_info', (route) => route.fulfill({ json: nodeDefs
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                   | Type source                                                                                         |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`)                                                  |
-| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`)                                              |
-| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)                              |
-| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                                     |
-| Node definitions                                    | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`                            |
-| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                                 |
-| Jobs API                                            | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`)                  |
-| Workflow validation                                 | `src/platform/workflow/validation/schemas/workflowSchema.ts`                                        |
-| Asset metadata                                      | `src/types/metadataTypes.ts`                                                                         |
+| Endpoint category                                   | Type source                                                                        |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
+| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`)                             |
+| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
+| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                   |
+| Node definitions                                    | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
+| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                |
+| Jobs API                                            | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
+| Workflow validation                                 | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
+| Asset metadata                                      | `src/types/metadataTypes.ts`                                                       |
 
 ```typescript
 // ✅ Import the type and annotate mock data
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
-const mockRelease: ReleaseNote = { id: 1, project: 'comfyui', version: 'v0.3.44', /* ... */ }
+const mockRelease: ReleaseNote = {
+  id: 1,
+  project: 'comfyui',
+  version: 'v0.3.44' /* ... */
+}
 
 // ❌ Untyped inline JSON — schema drift goes unnoticed
 body: JSON.stringify([{ id: 1, project: 'comfyui', version: 'v0.3.44' }])
@@ -556,7 +564,7 @@ Before merging a flaky-test fix, confirm all of these:
   `toHaveText`, `toHaveCount`, `toHaveClass`).
 - **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`.
 - **Multiple assertions that must settle together** → `expect(async () => {
-  ... }).toPass()`.
+... }).toPass()`.
 - Never make immediate assertions right after async UI mutations, settings
   writes, clipboard writes, or graph updates.
 - Never use `waitForTimeout()` to hide a race — it is always wrong.
@@ -594,18 +602,18 @@ node state.
 
 ### Common flake patterns
 
-| Pattern                               | Bad                                                              | Fix                                                                      |
-| ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Snapshot-then-assert**              | `expect(await evaluate()).toBe(x)`                               | `await expect.poll(() => evaluate()).toBe(x)`                            |
-| **Immediate boundingBox/layout read** | `const box = await loc.boundingBox(); expect(box!.width).toBe(w)`| `await expect.poll(() => loc.boundingBox().then(b => b?.width)).toBe(w)` |
-| **Immediate graph state after drop**  | `expect(await getLinkCount()).toBe(1)`                           | `await expect.poll(() => getLinkCount()).toBe(1)`                        |
-| **Fake readiness helper**             | Helper that clicks but doesn't assert state                      | Remove; poll the actual value                                           |
-| **nextFrame after menu click**        | `clickMenuItem(x); nextFrame()`                                  | `clickMenuItem(x); contextMenu.waitForHidden()`                         |
-| **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                             | ≥2000 ms; prefer default (5000 ms)                                     |
-| **Immediate count()**                 | `const n = await loc.count(); expect(n).toBe(3)`                 | `await expect(loc).toHaveCount(3)`                                       |
-| **Immediate evaluate after mutation** | `setSetting(); expect(await evaluate()).toBe(x)`                 | `await expect.poll(() => evaluate()).toBe(x)`                           |
-| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                | `waitForNodes()` or poll state first                                   |
-| **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                        | `getNodeRefById(id)` or guard `toHaveLength(1)`                         |
+| Pattern                               | Bad                                                               | Fix                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Snapshot-then-assert**              | `expect(await evaluate()).toBe(x)`                                | `await expect.poll(() => evaluate()).toBe(x)`                            |
+| **Immediate boundingBox/layout read** | `const box = await loc.boundingBox(); expect(box!.width).toBe(w)` | `await expect.poll(() => loc.boundingBox().then(b => b?.width)).toBe(w)` |
+| **Immediate graph state after drop**  | `expect(await getLinkCount()).toBe(1)`                            | `await expect.poll(() => getLinkCount()).toBe(1)`                        |
+| **Fake readiness helper**             | Helper that clicks but doesn't assert state                       | Remove; poll the actual value                                            |
+| **nextFrame after menu click**        | `clickMenuItem(x); nextFrame()`                                   | `clickMenuItem(x); contextMenu.waitForHidden()`                          |
+| **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                              | ≥2000 ms; prefer default (5000 ms)                                       |
+| **Immediate count()**                 | `const n = await loc.count(); expect(n).toBe(3)`                  | `await expect(loc).toHaveCount(3)`                                       |
+| **Immediate evaluate after mutation** | `setSetting(); expect(await evaluate()).toBe(x)`                  | `await expect.poll(() => evaluate()).toBe(x)`                            |
+| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                 | `waitForNodes()` or poll state first                                     |
+| **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                         | `getNodeRefById(id)` or guard `toHaveLength(1)`                          |
 
 ### Local noise (not automatic CI root causes)
 
@@ -616,13 +624,13 @@ Never commit temporary local assets or local screenshot baselines.
 
 ## Gotchas
 
-| Symptom                                            | Cause                                       | Fix                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `subtree intercepts pointer events` on DOM widgets | Canvas `z-999` overlay intercepts `click()` | Use `locator.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })`             |
-| Context menu empty or wrong items                  | Node not selected                           | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                                  |
-| `navigateIntoSubgraph` timeout                     | Node too small in test asset JSON           | Use node size `[400, 200]` minimum                                                                      |
-| Keyboard shortcuts don't work                      | Missing focus                               | `await comfyPage.canvas.click()` first                                                                  |
-| Widget value wrong after drag-drop                 | Upload incomplete                           | Add `{ waitForUpload: true }`                                                                           |
+| Symptom                                            | Cause                                       | Fix                                                                                        |
+| -------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `subtree intercepts pointer events` on DOM widgets | Canvas `z-999` overlay intercepts `click()` | Use `locator.dispatchEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })` |
+| Context menu empty or wrong items                  | Node not selected                           | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                     |
+| `navigateIntoSubgraph` timeout                     | Node too small in test asset JSON           | Use node size `[400, 200]` minimum                                                         |
+| Keyboard shortcuts don't work                      | Missing focus                               | `await comfyPage.canvas.click()` first                                                     |
+| Widget value wrong after drag-drop                 | Upload incomplete                           | Add `{ waitForUpload: true }`                                                              |
 
 ## Screenshot / Visual Regression Testing
 
