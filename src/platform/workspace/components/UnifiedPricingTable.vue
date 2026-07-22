@@ -88,6 +88,8 @@
         </SelectButton>
       </div>
 
+      <EduVerifyCallout />
+
       <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
          falling back to TIER_PRICING). -->
       <div
@@ -239,6 +241,7 @@
                 :stops="teamStops"
                 :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
+                :extra-discount-percent="teamEduExtraPercent"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -413,6 +416,7 @@ import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
+import EduVerifyCallout from '@/platform/cloud/subscription/components/EduVerifyCallout.vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
@@ -421,7 +425,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   TIER_PRICING,
   TIER_TO_KEY,
-  applyEduDiscount
+  applyEduDiscount,
+  TEAM_EDU_EXTRA_PERCENT
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -853,6 +858,9 @@ const getButtonTextClass = (tier: PricingTierConfig): string =>
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
 const { isEduPricingActive } = useEduPricing()
+const teamEduExtraPercent = computed(() =>
+  isEduPricingActive.value ? TEAM_EDU_EXTRA_PERCENT : 0
+)
 
 // Personal tiers only: the coupon cut applies to the API-derived price (or the
 // static fallback); team pricing is out of scope for the EDU promo.
@@ -916,7 +924,8 @@ function handleSubscribeTeam() {
       credits: stop.credits,
       discountedUsd: getStopDiscountedMonthlyUsd(
         stop,
-        currentBillingCycle.value
+        currentBillingCycle.value,
+        teamEduExtraPercent.value
       )
     },
     billingCycle: currentBillingCycle.value,

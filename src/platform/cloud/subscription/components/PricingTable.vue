@@ -38,6 +38,7 @@
         </template>
       </SelectButton>
     </div>
+    <EduVerifyCallout />
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
@@ -264,6 +265,7 @@ import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EduVerifyCallout from '@/platform/cloud/subscription/components/EduVerifyCallout.vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'

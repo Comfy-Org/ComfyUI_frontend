@@ -205,4 +205,13 @@ describe('CreditSlider', () => {
       expect(stop.credits).toBe(usdToCredits(stop.usd))
     }
   })
+
+  it('stacks an extra discount percent into the price and save badge', () => {
+    // team_700 yearly: 10% volume + 5% EDU = $595 shown.
+    renderSlider({ modelValue: 700, extraDiscountPercent: 5 })
+
+    expect(screen.getByTestId('credit-slider-price').textContent).toContain(
+      '595'
+    )
+  })
 })

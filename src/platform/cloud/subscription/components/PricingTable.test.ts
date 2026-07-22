@@ -66,10 +66,12 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 const mockIsEduPricingActive = ref(false)
+const mockNeedsEduVerification = ref(false)
 
 vi.mock('@/platform/cloud/subscription/composables/useEduPricing', () => ({
   useEduPricing: () => ({
-    isEduPricingActive: computed(() => mockIsEduPricingActive.value)
+    isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+    needsEduVerification: computed(() => mockNeedsEduVerification.value)
   })
 }))
 
@@ -516,6 +518,15 @@ describe('PricingTable', () => {
 
       expect(screen.getByText('Billed yearly ($192)')).toBeInTheDocument()
       expect(screen.queryByText('Billed yearly ($180)')).toBeNull()
+    })
+
+    it('shows the verify callout under the cycle toggle', async () => {
+      mockNeedsEduVerification.value = true
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('edu-verify-callout')).toBeInTheDocument()
+      mockNeedsEduVerification.value = false
     })
 
     it('rounds discounted prices to cents deterministically', () => {

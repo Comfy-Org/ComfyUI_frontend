@@ -48,9 +48,31 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/composables/auth/useEmailVerification', () => ({
+  useEmailVerification: () => ({
+    isSending: computed(() => false),
+    isSent: computed(() => false),
+    sendVerification: vi.fn(),
+    refreshVerification: vi.fn()
+  })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    fetchStatus: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    createCustomer: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/cloud/subscription/composables/useEduPricing', () => ({
   useEduPricing: () => ({
-    isEduPricingActive: computed(() => mockIsEduPricingActive.value)
+    isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+    needsEduVerification: computed(() => false)
   })
 }))
 

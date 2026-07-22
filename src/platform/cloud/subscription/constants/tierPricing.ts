@@ -70,6 +70,9 @@ export const EDU_DISCOUNT_PERCENTS: Record<
   pro: { monthly: 10, yearly: 6.25 }
 }
 
+/** Team EDU adds 5% of list on the volume discount (backend e = 5/(100-v)). */
+export const TEAM_EDU_EXTRA_PERCENT = 5
+
 /** Marketing max: total off the monthly list (yearly EDU = 25%), not a coupon percent. */
 export const EDU_MAX_DISCOUNT_PERCENT = 25
 
