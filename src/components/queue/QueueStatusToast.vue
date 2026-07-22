@@ -57,52 +57,48 @@
           v-for="job in activeJobs"
           :key="job.id"
           data-testid="queue-status-row"
-          class="flex flex-col gap-1.5 rounded-[10px] bg-secondary-background p-2.5"
+          class="relative flex flex-col gap-1 overflow-clip rounded-lg bg-secondary-background px-3 py-2"
         >
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span
-                class="truncate text-[12.5px] leading-none font-medium text-base-foreground"
-              >
-                {{ job.title }}
-              </span>
-              <span class="truncate text-[11px] leading-none text-[#8a8a8a]">
-                {{ jobSubtitle(job) }}
-              </span>
-            </div>
-            <div class="flex shrink-0 items-center gap-4">
+          <div class="flex items-center justify-between gap-2">
+            <span
+              class="min-w-0 flex-1 truncate text-sm font-normal text-base-foreground"
+            >
+              {{ job.title }}
+            </span>
+            <div class="flex shrink-0 items-center gap-2">
               <button
                 v-tooltip.bottom="locateTooltip"
                 type="button"
-                class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
+                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
                 :aria-label="t('queueStatus.locate')"
                 data-testid="queue-status-row-view"
                 @click="viewJob(job)"
               >
-                <i class="icon-[lucide--locate] size-3.5" />
+                <i class="icon-[lucide--locate] size-4" />
               </button>
               <button
                 v-tooltip.bottom="cancelTooltip"
                 type="button"
-                class="flex size-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
+                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
                 :aria-label="t('queueStatus.cancel')"
                 data-testid="queue-status-row-cancel"
                 @click="cancelJob(job)"
               >
-                <i class="icon-[lucide--x] size-3.5" />
+                <i class="icon-[comfy--stop] size-4" />
               </button>
             </div>
           </div>
 
+          <span class="truncate text-xs text-muted-foreground">
+            {{ jobSubtitle(job) }}
+          </span>
+
+          <!-- Progress hugs the row's bottom edge, as it does on the pill -->
           <div
             v-if="isRunning(job)"
-            class="mt-1 h-1 w-full overflow-hidden rounded-[2px] bg-base-foreground/10"
-          >
-            <div
-              class="h-full rounded-[2px] bg-base-foreground/90 transition-[width] duration-200 ease-out"
-              :style="{ width: `${jobPercent(job)}%` }"
-            />
-          </div>
+            class="absolute bottom-0 left-0 h-px rounded-[1px] bg-base-foreground transition-[width] duration-200 ease-out"
+            :style="{ width: `${jobPercent(job)}%` }"
+          />
         </div>
 
         <p
