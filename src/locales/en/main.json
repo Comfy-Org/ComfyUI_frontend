@@ -286,6 +286,7 @@
     "details": "Details",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
+    "randomize": "Randomize",
     "relativeTime": {
       "now": "now",
       "yearsAgo": "{count}y ago",
