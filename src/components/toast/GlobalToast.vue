@@ -8,9 +8,9 @@
           <span class="text-sm">{{ slotProps.message.detail }}</span>
         </div>
         <Button
-          variant="muted-textonly"
+          variant="secondary"
           size="sm"
-          class="w-fit px-0 underline hover:bg-transparent"
+          class="w-fit"
           @click="viewPartnerNodePolicyErrors(slotProps.message)"
         >
           {{ $t('rightSidePanel.viewDetails') }}
