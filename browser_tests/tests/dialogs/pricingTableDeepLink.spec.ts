@@ -8,7 +8,8 @@ import type {
   ErrorResponse,
   Plan,
   PreviewSubscribeResponse,
-  SubscribeResponse
+  SubscribeResponse,
+  TeamCreditStops
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -17,7 +18,11 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudAppExpect,
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -29,13 +34,11 @@ import {
 
 /**
  * The `?pricing=` deep link opens the pricing table on app load, gated to the
- * original owner (canManageSubscriptionLifecycle). Drives a raw `page` so the
+ * billing-management capability. Drives a raw `page` so the
  * cloud app boots against fully mocked endpoints, like the survey-gate spec.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-// CloudAuthHelper.mockAuth() signs in as this email; the original-owner gate
-// matches it against the members self-row.
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
 // consolidated_billing_enabled routes personal workspaces to the unified
@@ -117,6 +120,11 @@ const ACTIVE_CREATOR_STATUS = {
   plan_slug: 'creator-annual'
 } satisfies BillingStatusResponse
 
+const LEGACY_ACTIVE_STANDARD_STATUS = {
+  ...ACTIVE_STANDARD_STATUS,
+  billing_rail: 'legacy_stripe'
+} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+
 const BILLING_BALANCE = {
   amount_micros: 0,
   currency: 'USD'
@@ -136,6 +144,65 @@ const CREATOR_WITH_CREATOR_PLANS = {
   ...STANDARD_WITH_CREATOR_PLANS,
   current_plan_slug: 'creator-annual'
 } satisfies BillingPlansResponse
+
+const TEAM_CREDIT_STOPS = {
+  default_stop_index: 2,
+  stops: [
+    {
+      id: 'team_200',
+      credits: 42_200,
+      monthly: { list_price_cents: 20_000, price_cents: 20_000 },
+      yearly: { list_price_cents: 20_000, price_cents: 20_000 }
+    },
+    {
+      id: 'team_400',
+      credits: 84_400,
+      monthly: { list_price_cents: 40_000, price_cents: 39_000 },
+      yearly: { list_price_cents: 40_000, price_cents: 38_000 }
+    },
+    {
+      id: 'team_700',
+      credits: 147_700,
+      monthly: { list_price_cents: 70_000, price_cents: 66_500 },
+      yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+    },
+    {
+      id: 'team_1400',
+      credits: 295_400,
+      monthly: { list_price_cents: 140_000, price_cents: 129_500 },
+      yearly: { list_price_cents: 140_000, price_cents: 119_000 }
+    },
+    {
+      id: 'team_2500',
+      credits: 527_500,
+      monthly: { list_price_cents: 250_000, price_cents: 225_000 },
+      yearly: { list_price_cents: 250_000, price_cents: 200_000 }
+    }
+  ]
+} satisfies TeamCreditStops
+
+const TEAM_CATALOG_PLANS = {
+  plans: [],
+  team_credit_stops: TEAM_CREDIT_STOPS
+} satisfies BillingPlansResponse
+
+const TEAM_SUBSCRIBED_RESPONSE = {
+  billing_op_id: 'team-deep-link',
+  status: 'subscribed',
+  effective_at: '2026-07-21T00:00:00Z'
+} satisfies SubscribeResponse
+
+const NEW_CREATOR_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 33_600,
+  cost_next_period_cents: 33_600,
+  credits_today_cents: 7_400,
+  credits_next_period_cents: 7_400,
+  new_plan: CREATOR_ANNUAL_PLAN
+} satisfies PreviewSubscribeResponse
 
 const SCHEDULED_CREATOR_DOWNGRADE = {
   allowed: true,
@@ -382,40 +449,36 @@ const pricingHeading = (page: Page) =>
 
 test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   test('opens the pricing table for a personal owner', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
   })
 
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
     await page.goto(`${APP_URL}/?pricing=team`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'For Teams' })
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('opens for a team original owner', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('team', 'owner'), [
       member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
     ])
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await expect(pricingHeading(page)).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
   })
 
   test('is a silent no-op for a team member', async ({ page }) => {
-    test.slow()
     await setupCloudApp(page, workspace('team', 'member'), [
       member({
         email: 'creator@test.comfy.org',
@@ -427,11 +490,164 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?pricing=1`)
 
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
+    await waitForCloudApp(page)
     await expect(page).not.toHaveURL(/[?&]pricing=/)
     await expect(pricingHeading(page)).toBeHidden()
+  })
+
+  test('opens a selected personal plan for an owner without subscribing', async ({
+    page
+  }) => {
+    const subscribeRequests: Request[] = []
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+    )
+    await page.route('**/api/billing/subscribe', (route) => {
+      subscribeRequests.push(route.request())
+      return route.fulfill(jsonRoute(IMMEDIATE_SUBSCRIBED_RESPONSE))
+    })
+
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Confirm your payment' })
+    ).toBeVisible()
+    expect(subscribeRequests).toHaveLength(0)
+    await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+  })
+
+  test('cleans orphaned pricing params without opening the table', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+
+    await page.goto(`${APP_URL}/?keep=1&stop=team_700&cycle=yearly`)
+
+    await waitForCloudApp(page)
+    await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
+    await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
+    await expect(pricingHeading(page)).toBeHidden()
+  })
+
+  test('denies a selected personal plan for a member', async ({ page }) => {
+    await setupCloudApp(page, workspace('team', 'member'), [
+      member({
+        email: 'creator@test.comfy.org',
+        role: 'owner',
+        is_original_owner: true
+      }),
+      member({ email: SELF_EMAIL, role: 'member' })
+    ])
+
+    await page.goto(`${APP_URL}/?keep=1&pricing=creator&cycle=yearly`)
+
+    await waitForCloudApp(page)
+    await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
+    await expect(page).not.toHaveURL(/[?&](pricing|cycle)=/)
+    await expect(
+      page.getByRole('heading', { name: 'Confirm your payment' })
+    ).toBeHidden()
+  })
+
+  test('opens a catalog-resolved Team stop and only subscribes after confirm', async ({
+    page
+  }) => {
+    const subscribeRequests: Request[] = []
+    await setupCloudApp(page, workspace('team', 'owner'), [
+      member({ email: SELF_EMAIL, role: 'owner', is_original_owner: true })
+    ])
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+    await page.route('**/api/billing/subscribe', (route) => {
+      subscribeRequests.push(route.request())
+      return route.fulfill(jsonRoute(TEAM_SUBSCRIBED_RESPONSE))
+    })
+
+    await page.goto(
+      `${APP_URL}/?keep=1&pricing=team&stop=team_700&cycle=yearly`
+    )
+
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Confirm your payment' })
+    ).toBeVisible()
+    const confirmationDialog = page.getByRole('dialog')
+    await expect(
+      confirmationDialog.getByText('$630', { exact: true }).last()
+    ).toBeVisible()
+    await expect(
+      confirmationDialog.getByText('1,772,400', { exact: true })
+    ).toBeVisible()
+    expect(subscribeRequests).toHaveLength(0)
+    await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
+    await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
+
+    await page.getByRole('button', { name: 'Subscribe to Team Plan' }).click()
+
+    await expect.poll(() => subscribeRequests.length).toBe(1)
+    expect(subscribeRequests[0].postDataJSON()).toMatchObject({
+      plan_slug: 'team_per_credit_annual',
+      team_credit_stop_id: 'team_700',
+      billing_cycle: 'yearly'
+    })
+  })
+
+  test('allows a promoted owner to open selected Team confirmation', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('team', 'owner'), [
+      member({
+        email: 'creator@test.comfy.org',
+        role: 'owner',
+        is_original_owner: true
+      }),
+      member({ email: SELF_EMAIL, role: 'owner', is_original_owner: false })
+    ])
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+
+    await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)
+
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Confirm your payment' })
+    ).toBeVisible()
+    await expect(page.getByText('$390', { exact: true })).toBeVisible()
+  })
+
+  test('denies selected Team confirmation for a member and cleans the URL', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('team', 'member'), [
+      member({
+        email: 'creator@test.comfy.org',
+        role: 'owner',
+        is_original_owner: true
+      }),
+      member({ email: SELF_EMAIL, role: 'member' })
+    ])
+
+    await page.goto(
+      `${APP_URL}/?keep=1&pricing=team&stop=team_700&cycle=yearly`
+    )
+
+    await waitForCloudApp(page)
+    await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
+    await expect(page).not.toHaveURL(/[?&](pricing|stop|cycle)=/)
+    await expect(
+      page.getByRole('heading', { name: 'Confirm your payment' })
+    ).toBeHidden()
   })
 })
 
@@ -455,13 +671,12 @@ test.describe('Scheduled Team downgrade', { tag: '@cloud' }, () => {
   test('shows the existing success view when subscribe replays 200', async ({
     page
   }) => {
-    test.slow()
     await page.goto(`${APP_URL}/?pricing=personal`)
 
     const changePlan = page.getByRole('button', {
       name: 'Change to Creator Yearly'
     })
-    await expect(changePlan).toBeVisible({ timeout: 45_000 })
+    await cloudAppExpect(changePlan).toBeVisible()
 
     const subscribeResponse = page.waitForResponse(
       (response) =>
@@ -525,13 +740,12 @@ test.describe(
       test('keeps the success view while status retries, then reopens with the reconciled plan', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const changePlan = page.getByRole('button', {
           name: 'Change to Creator Yearly'
         })
-        await expect(changePlan).toBeVisible({ timeout: 45_000 })
+        await cloudAppExpect(changePlan).toBeVisible()
         await changePlan.click()
 
         await expect(
@@ -601,7 +815,6 @@ test.describe(
       test('reconciles status and balance without polling', async ({
         page
       }) => {
-        test.slow()
         await page.goto(`${APP_URL}/?pricing=personal`)
 
         const subscribeResponse = page.waitForResponse(
