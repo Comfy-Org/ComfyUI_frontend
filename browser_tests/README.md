@@ -46,9 +46,11 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 
 ### Node.js & Playwright
 
-Install the Node version in `.nvmrc`, then the Chromium and WebKit drivers:
+Install the Node version in `.nvmrc`, then the workspace dependencies and the
+Chromium and WebKit drivers (run from the repository root):
 
 ```bash
+pnpm install
 pnpm exec playwright install chromium webkit --with-deps
 ```
 
@@ -462,9 +464,12 @@ Mock data in `fixtures/data/` exports **typed** objects that conform to
 generated types or Zod schemas — never ad-hoc inline JSON. Typing mocks catches
 shape drift at compile time instead of through flaky runtime failures.
 
-> `comfyPageFixture` navigates during `setup()`, before the test body. Register
-> routes **before** navigation (in a custom fixture or a `beforeEach` that runs
-> before `comfyPage.setup()`) to intercept initial page-load requests.
+> `comfyPageFixture` navigates during `setup()`, before the test body. Destructuring
+> `{ comfyPage }` in a hook triggers that setup **before the hook body runs**, so a
+> `page.route()` placed there misses the first navigation. Register routes **before**
+> navigation — from a custom fixture, or a `beforeEach` that takes only `{ page }`
+> and registers routes before `comfyPage` is ever set up — to intercept initial
+> page-load requests.
 
 ```typescript
 import { createMockNodeDefinitions } from '@e2e/fixtures/data/nodeDefinitions'
@@ -646,6 +651,10 @@ export default defineConfig({
   grep: process.env.CI ? undefined : /^(?!.*screenshot).*$/
 })
 ```
+
+`grep` matches the test title and its tags, not the test body — a call to
+`toHaveScreenshot()` alone won't be detected. Tag every screenshot test
+`@screenshot` (or put "screenshot" in its title) for this filter to exclude it.
 
 Or generate local baselines for comparison (do not commit them). If you added
 the screenshot-skipping `grep` above, remove it (or override `--grep` for this
