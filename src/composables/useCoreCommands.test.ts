@@ -466,24 +466,33 @@ describe('useCoreCommands', () => {
       expect(layoutStore.getCurrentSource()).toBe(LayoutSource.External)
     })
 
-    it('is a no-op when required metadata is missing', async () => {
-      const before = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
+    it.for([
+      { name: 'missing width', metadata: { nodeId: '7', height: 180 } },
+      { name: 'missing height', metadata: { nodeId: '7', width: 250 } },
+      {
+        name: 'invalid nodeId type',
+        metadata: { nodeId: {}, width: 250, height: 180 }
+      },
+      {
+        name: 'non-number width',
+        metadata: { nodeId: '7', width: '250', height: 180 }
+      },
+      {
+        name: 'NaN width',
+        metadata: { nodeId: '7', width: Number.NaN, height: 180 }
+      },
+      {
+        name: 'infinite height',
+        metadata: { nodeId: '7', width: 250, height: Number.POSITIVE_INFINITY }
+      }
+    ])('is a no-op for invalid metadata: $name', async ({ metadata }) => {
+      const sizeBefore = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
+      const sourceBefore = layoutStore.getCurrentSource()
 
-      await findCommand('Comfy.Node.Resize').function({ nodeId: '7' })
+      await findCommand('Comfy.Node.Resize').function(metadata)
 
-      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
-    })
-
-    it('is a no-op for non-finite dimensions', async () => {
-      const before = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
-
-      await findCommand('Comfy.Node.Resize').function({
-        nodeId: '7',
-        width: Number.NaN,
-        height: Number.POSITIVE_INFINITY
-      })
-
-      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
+      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(sizeBefore)
+      expect(layoutStore.getCurrentSource()).toBe(sourceBefore)
     })
   })
 
