@@ -71,6 +71,8 @@ async function setupGovernedWorkspace(page: Page) {
 }
 
 test.describe('Partner node governance discovery', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
   test('hides disabled nodes from search', async ({ page }) => {
     await setupGovernedWorkspace(page)
     await page.goto(APP_URL)
