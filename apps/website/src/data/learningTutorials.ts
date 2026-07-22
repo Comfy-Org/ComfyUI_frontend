@@ -47,6 +47,40 @@ export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
   ads: 'learning.categories.ads.blurb'
 }
 
+/** Per-vertical h1 (the "All" view falls back to the generic learning title). */
+const categoryHeadingKeys: Record<LearningCategory, TranslationKey> = {
+  vfx: 'learning.categories.vfx.heading',
+  animations: 'learning.categories.animations.heading',
+  ads: 'learning.categories.ads.heading'
+}
+
+/** Per-vertical lead-in, reused as the page description / meta description. */
+const categoryDescriptionKeys: Record<LearningCategory, TranslationKey> = {
+  vfx: 'learning.categories.vfx.description',
+  animations: 'learning.categories.animations.description',
+  ads: 'learning.categories.ads.description'
+}
+
+/** Visible h1 for a directory page: per-vertical when filtered, else generic. */
+export const learningHeading = (
+  locale: Locale,
+  category?: LearningCategory
+): string =>
+  t(category ? categoryHeadingKeys[category] : 'learning.title', locale)
+
+/** Lead-in and meta description for a directory page. */
+export const learningDescription = (
+  locale: Locale,
+  category?: LearningCategory
+): string =>
+  t(category ? categoryDescriptionKeys[category] : 'learning.tagline', locale)
+
+/** Document / social title for a directory page. */
+export const learningMetaTitle = (
+  locale: Locale,
+  category?: LearningCategory
+): string => `${learningHeading(locale, category)} - Comfy`
+
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 const imageGenerationTag: TranslationKey = 'tags.imageGeneration'

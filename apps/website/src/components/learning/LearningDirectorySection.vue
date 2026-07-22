@@ -12,8 +12,13 @@ import { computed, ref } from 'vue'
 import type { LearningCategory } from '../../data/learningTutorials'
 import type { Locale } from '../../i18n/translations'
 
-import { featuredFor, filterByCategory } from '../../data/learningTutorials'
-import { t } from '../../i18n/translations'
+import {
+  featuredFor,
+  filterByCategory,
+  learningDescription,
+  learningHeading,
+  learningMetaTitle
+} from '../../data/learningTutorials'
 import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
 import LearningCategoryNav from './LearningCategoryNav.vue'
 import TutorialRow from './TutorialRow.vue'
@@ -36,6 +41,11 @@ const filterInPlace = headingTag === 'h1'
 
 const activeCategory = ref(category)
 
+const heading = computed(() => learningHeading(locale, activeCategory.value))
+const description = computed(() =>
+  learningDescription(locale, activeCategory.value)
+)
+
 const featured = computed(() => featuredFor(activeCategory.value))
 const rows = computed(() =>
   filterByCategory(activeCategory.value).filter(
@@ -43,11 +53,29 @@ const rows = computed(() =>
   )
 )
 
+function setMeta(selector: string, content: string) {
+  document.head.querySelector(selector)?.setAttribute('content', content)
+}
+
+// Keep the document title and social/description meta in step with the filter,
+// so an in-place category switch reads correctly on refresh, share, and in the
+// tab title even though no real navigation happened.
+function syncHeadMeta(value: LearningCategory | undefined) {
+  const title = learningMetaTitle(locale, value)
+  document.title = title
+  setMeta('meta[name="description"]', description.value)
+  setMeta('meta[property="og:title"]', title)
+  setMeta('meta[property="og:description"]', description.value)
+  setMeta('meta[name="twitter:title"]', title)
+  setMeta('meta[name="twitter:description"]', description.value)
+}
+
 function selectCategory(value: LearningCategory | undefined, href: string) {
   activeCategory.value = value
   // Reflect the filter in the URL (preserving ClientRouter's history state) so
   // refresh, share, and deep links resolve to the matching static page.
   history.replaceState(history.state, '', href)
+  syncHeadMeta(value)
 }
 </script>
 
@@ -61,10 +89,10 @@ function selectCategory(value: LearningCategory | undefined, href: string) {
             :is="headingTag"
             class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-4xl"
           >
-            {{ t('learning.title', locale) }}
+            {{ heading }}
           </component>
           <p class="text-primary-warm-gray mt-3 text-sm/relaxed">
-            {{ t('learning.tagline', locale) }}
+            {{ description }}
           </p>
 
           <LearningCategoryNav

@@ -11,6 +11,8 @@ import {
   categoryLabelKeys,
   filterByCategory,
   learningCrumbs,
+  learningDescription,
+  learningMetaTitle,
   tutorialPath
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
@@ -35,7 +37,8 @@ const { locale, url } = pageContext(
 
 const learningTitle = t('learning.title', locale)
 const label = category ? t(categoryLabelKeys[category], locale) : undefined
-const title = `${label ? `${label} ` : ''}${learningTitle} - Comfy`
+const title = learningMetaTitle(locale, category)
+const description = learningDescription(locale, category)
 
 const tutorialList = itemListNode(
   url,
@@ -57,7 +60,7 @@ const routes = getRoutes(locale)
 
 <BaseLayout
   title={title}
-  description={t('learning.tagline', locale)}
+  description={description}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={breadcrumbs}

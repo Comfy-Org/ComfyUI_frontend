@@ -6,6 +6,9 @@ import {
   featuredFor,
   filterByCategory,
   learningCategories,
+  learningDescription,
+  learningHeading,
+  learningMetaTitle,
   learningTutorials,
   populatedCategories,
   tutorialPath
@@ -146,14 +149,31 @@ test.describe('Learning category pages @smoke', () => {
     ).toHaveAttribute('aria-current', 'page')
   })
 
+  test('filtering in place swaps the heading, description, and title', async ({
+    page
+  }) => {
+    await page.goto('/learning')
+    await categoryNav(page).locator('a[href="/learning/vfx"]').click()
+
+    await expect(page).toHaveURL('/learning/vfx')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      learningHeading('en', 'vfx')
+    )
+    await expect(page.getByText(learningDescription('en', 'vfx'))).toBeVisible()
+    await expect(page).toHaveTitle(learningMetaTitle('en', 'vfx'))
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      learningDescription('en', 'vfx')
+    )
+  })
+
   for (const category of populatedCategories) {
     test(`/learning/${category} lists only its own tutorials`, async ({
       page
     }) => {
       await page.goto(`/learning/${category}`)
 
-      const label = t(`learning.categories.${category}`, 'en')
-      await expect(page).toHaveTitle(`${label} Learning - Comfy`)
+      await expect(page).toHaveTitle(learningMetaTitle('en', category))
 
       for (const tutorial of learningTutorials) {
         const link = page.getByRole('link', {

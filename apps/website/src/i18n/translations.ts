@@ -1575,6 +1575,35 @@ const translations = {
     en: 'Product shots and campaign assets',
     'zh-CN': '产品展示与广告素材'
   },
+  // Per-vertical h1 + description/meta copy, swapped when a category filter is
+  // active (see learningHeading / learningDescription).
+  'learning.categories.vfx.heading': {
+    en: 'VFX Tutorials',
+    'zh-CN': 'VFX 教程'
+  },
+  'learning.categories.vfx.description': {
+    en: 'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    'zh-CN':
+      '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
+  },
+  'learning.categories.animations.heading': {
+    en: 'Animation Tutorials',
+    'zh-CN': '动画教程'
+  },
+  'learning.categories.animations.description': {
+    en: 'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+  },
+  'learning.categories.ads.heading': {
+    en: 'Ad Creative Tutorials',
+    'zh-CN': '广告创意教程'
+  },
+  'learning.categories.ads.description': {
+    en: 'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+  },
   'learning.tutorials.titlePrefix': {
     en: 'Learn how to:',
     'zh-CN': '学习如何：'
