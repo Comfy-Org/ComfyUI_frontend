@@ -1753,9 +1753,7 @@ export class LGraph
    * place, so a later realign can follow a serialized input reference through
    * to the surviving link.
    */
-  _removeDuplicateLinks(
-    nodeDataMap?: ReadonlyMap<SerializedNodeId, ISerialisedNode>
-  ): Map<LinkId, LinkId> {
+  _removeDuplicateLinks(): Map<LinkId, LinkId> {
     const groups = groupLinksByTuple(this._links)
     const survivorByPurged = new Map<LinkId, LinkId>()
 
@@ -1764,11 +1762,7 @@ export class LGraph
 
       const sampleLink = this._links.get(ids[0])!
       const node = this.getNodeById(sampleLink.target_id)
-      const keepId = selectSurvivorLink(
-        ids,
-        node,
-        nodeDataMap?.get(sampleLink.target_id)
-      )
+      const keepId = selectSurvivorLink(ids, node)
 
       purgeOrphanedLinks(ids, keepId, this)
       for (const id of ids) {
@@ -2726,7 +2720,7 @@ export class LGraph
       // (origin_id, origin_slot, target_id, target_slot) tuple.
       // This repairs corrupted data where extra link objects were created
       // without proper cleanup of the previous connection.
-      const survivorByPurged = this._removeDuplicateLinks(nodeDataMap)
+      const survivorByPurged = this._removeDuplicateLinks()
 
       // Node configure() overrides may have reordered serialized inputs in
       // place to match current node definitions; re-key links to the slots

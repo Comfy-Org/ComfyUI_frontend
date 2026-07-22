@@ -253,95 +253,6 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
   }
 }
 
-const SURVIVOR_LINK_BY_INPUT_NAME: Record<string, number> = {
-  in_a: 3,
-  in_b: 1,
-  in_c: 4
-}
-
-/**
- * Source and target connected by three inputs, where in_c carries a stale
- * duplicate: links 2 and 4 share the tuple (source:0 → in_c's saved slot) and
- * the saved input references the later id 4. Link 2 loads first, so it wins
- * the store's first-wins registration despite being the orphan (issue #10291
- * corruption shape).
- */
-function duplicateLinkWorkflow(
-  savedInputOrder: readonly string[]
-): SerialisableGraph {
-  const slotOf = (name: string) => savedInputOrder.indexOf(name)
-  const linkOf = (id: number, name: string) => ({
-    id,
-    origin_id: 1,
-    origin_slot: 0,
-    target_id: 2,
-    target_slot: slotOf(name),
-    type: 'number'
-  })
-  return {
-    id: 'ab000000-0000-4000-8000-000000000003',
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 2, lastLinkId: 4, lastGroupId: 0, lastRerouteId: 0 },
-    nodes: [
-      {
-        id: 1,
-        type: 'test/RealignSource',
-        pos: [0, 0],
-        size: [140, 60],
-        flags: {},
-        order: 0,
-        mode: 0,
-        inputs: [],
-        outputs: [{ name: 'out', type: 'number', links: [1, 2, 3, 4] }],
-        properties: {}
-      },
-      {
-        id: 2,
-        type: 'test/RealignTarget',
-        pos: [300, 0],
-        size: [140, 80],
-        flags: {},
-        order: 1,
-        mode: 0,
-        inputs: savedInputOrder.map((name) => ({
-          name,
-          type: 'number',
-          link: SURVIVOR_LINK_BY_INPUT_NAME[name]
-        })),
-        outputs: [],
-        properties: {}
-      }
-    ],
-    links: [
-      linkOf(1, 'in_b'),
-      linkOf(2, 'in_c'),
-      linkOf(3, 'in_a'),
-      linkOf(4, 'in_c')
-    ]
-  }
-}
-
-function assertDuplicatePurged(graph: LGraph) {
-  expect([...graph.links.keys()].sort()).toEqual([1, 3, 4])
-
-  const target = graph.getNodeById(toNodeId(2))!
-  const linkStore = useLinkStore()
-
-  for (const [slot, input] of target.inputs.entries()) {
-    const expectedLinkId = toLinkId(SURVIVOR_LINK_BY_INPUT_NAME[input.name])
-    const link = graph.links.get(expectedLinkId)!
-
-    expect(link.target_slot, `link.target_slot for input ${input.name}`).toBe(
-      slot
-    )
-    expect(
-      linkStore.getInputSlotLink(graph.rootGraph.id, target.id, slot)?.id,
-      `store registration for input ${input.name} at slot ${slot}`
-    ).toBe(expectedLinkId)
-  }
-}
-
 describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -439,27 +350,5 @@ describe('realignInputLinkSlots', () => {
     expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 1)?.id).toBe(
       link.id
     )
-  })
-})
-
-describe('LGraph.configure duplicate link dedup (#10291)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    LiteGraph.registerNodeType('test/RealignSource', SourceNode)
-    LiteGraph.registerNodeType('test/RealignTarget', ReorderTargetNode)
-  })
-
-  it('keeps the duplicate referenced by the serialized input, not the first-loaded one', () => {
-    const graph = new LGraph()
-    graph.configure(duplicateLinkWorkflow(DEFINITION_ORDER))
-
-    assertDuplicatePurged(graph)
-  })
-
-  it('keeps the referenced duplicate connected across input slot drift', () => {
-    const graph = new LGraph()
-    graph.configure(duplicateLinkWorkflow(['in_b', 'in_c', 'in_a']))
-
-    assertDuplicatePurged(graph)
   })
 })
