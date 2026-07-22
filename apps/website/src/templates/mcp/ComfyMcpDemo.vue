@@ -22,8 +22,7 @@ const BETWEEN_PROMPTS_MS = 650
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
-// Caret blink and card-slide are pure CSS; the global prefers-reduced-motion
-// reset in global.css freezes them for free. Only the JS loop below needs a gate.
+// Caret and card-slide are CSS; the global reduced-motion reset freezes them.
 const caretClass =
   'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-5 w-2.25 translate-y-0.5'
 
@@ -101,11 +100,11 @@ function restBeforeNextPrompt() {
   schedule(typeNextPrompt, BETWEEN_PROMPTS_MS)
 }
 
-// The only motion CSS can't stop is this JS typing/advance loop, so gate it here
-// (one place). Under reduced motion, settle on a static fully-typed frame.
+// Gate the JS typing loop — the one bit of motion CSS can't freeze.
 watch([visible, () => prefersReducedMotion()], ([onScreen, reduce]) => {
   clearTimeout(timer)
   if (reduce) {
+    // Hold a clean, fully-typed frame even if the pref flips mid-run.
     typed.value = t(nextPrompt.value.promptKey, locale)
     submitting.value = false
     status.value = idleStatus
