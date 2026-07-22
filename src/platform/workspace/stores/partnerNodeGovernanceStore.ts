@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch,
+  watchEffect
+} from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   getPartnerNodePolicy,
   getPartnerProviders,
@@ -13,6 +22,8 @@ import type {
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getProviderName } from '@/utils/categoryUtil'
 
 export type PartnerNodePolicyStatus =
   | 'inactive'
@@ -22,11 +33,14 @@ export type PartnerNodePolicyStatus =
   | 'ineligible'
   | 'error'
 
+const DISCOVERY_FILTER_ID = 'workspace.partner-node-governance'
+
 export const usePartnerNodeGovernanceStore = defineStore(
   'partnerNodeGovernance',
   () => {
     const { flags } = useFeatureFlags()
     const workspaceStore = useTeamWorkspaceStore()
+    const nodeDefStore = useNodeDefStore()
 
     const providers = shallowRef<PartnerProvider[]>([])
     const policy = shallowRef<PartnerNodePolicy | null>(null)
@@ -64,6 +78,65 @@ export const usePartnerNodeGovernanceStore = defineStore(
         )?.enabled === true
       )
     }
+
+    function getNodeProviderId(nodeType: string): string | null {
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+      if (!nodeDef?.api_node) return null
+
+      const nodeCategory = getProviderName(nodeDef.category)
+      return (
+        providers.value.find(({ nodeCategories }) =>
+          nodeCategories.includes(nodeCategory)
+        )?.id ?? null
+      )
+    }
+
+    function isNodeDisabled(nodeType: string): boolean {
+      if (policy.value?.enforcementEnabled !== true) return false
+
+      const providerId = getNodeProviderId(nodeType)
+      return providerId !== null && !isProviderEnabled(providerId)
+    }
+
+    nodeDefStore.registerNodeDefFilter({
+      id: DISCOVERY_FILTER_ID,
+      name: t('nodeFilters.workspacePartnerNodeGovernance'),
+      predicate: (nodeDef) => !isNodeDisabled(nodeDef.name)
+    })
+
+    const legacyHiddenNodeTypes = new Set<string>()
+    watchEffect(() => {
+      const showDevOnly = nodeDefStore.showDevOnly
+      for (const nodeDef of Object.values(nodeDefStore.nodeDefsByName)) {
+        if (!nodeDef.api_node) continue
+
+        const nodeType = LiteGraph.registered_node_types[nodeDef.name]
+        if (!nodeType) continue
+
+        if (isNodeDisabled(nodeDef.name)) {
+          if (!nodeType.skip_list) {
+            nodeType.skip_list = true
+            legacyHiddenNodeTypes.add(nodeDef.name)
+          }
+          continue
+        }
+
+        if (legacyHiddenNodeTypes.delete(nodeDef.name)) {
+          nodeType.skip_list = nodeDef.dev_only && !showDevOnly
+        }
+      }
+    })
+
+    onScopeDispose(() => {
+      nodeDefStore.unregisterNodeDefFilter(DISCOVERY_FILTER_ID)
+      for (const nodeName of legacyHiddenNodeTypes) {
+        const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
+        const nodeType = LiteGraph.registered_node_types[nodeName]
+        if (nodeDef && nodeType) {
+          nodeType.skip_list = nodeDef.dev_only && !nodeDefStore.showDevOnly
+        }
+      }
+    })
 
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
@@ -219,6 +292,8 @@ export const usePartnerNodeGovernanceStore = defineStore(
       governedWorkspaceId,
       createInitialPolicy,
       isProviderEnabled,
+      getNodeProviderId,
+      isNodeDisabled,
       loadPolicy,
       savePolicy,
       setProviderEnabled,
