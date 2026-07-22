@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { t } from '../../../i18n/translations'
@@ -63,42 +64,38 @@ const software = softwareApplicationNode({
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
 })
+const faqs = [
+  {
+    id: 'what-is',
+    question: `What is ${displayName}?`,
+    answer: whatIsDescription,
+  },
+  {
+    id: 'how-to-use',
+    question: `How do I use ${displayName} in ComfyUI?`,
+    answer: model.docsUrl
+      ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
+      : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`,
+  },
+  {
+    id: 'workflow-count',
+    question: `How many ComfyUI workflows use ${displayName}?`,
+    answer: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
+  },
+  {
+    id: 'is-free',
+    question: `Is ${displayName} free to use in ComfyUI?`,
+    answer: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+  },
+]
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
   '@id': jsonLdId(url, 'faq'),
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: `What is ${displayName}?`,
-      acceptedAnswer: { '@type': 'Answer', text: whatIsDescription },
-    },
-    {
-      '@type': 'Question',
-      name: `How do I use ${displayName} in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: model.docsUrl
-          ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
-          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `How many ComfyUI workflows use ${displayName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `Is ${displayName} free to use in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
-      },
-    },
-  ],
+  mainEntity: faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+  })),
 }
 ---
 
@@ -154,4 +151,6 @@ const faqPage: JsonLdNode = {
   <section>
     {/* TODO: shared HowComfyWorks component */}
   </section>
+
+  <FAQSplit01 heading={t('models.faq.heading')} faqs={faqs} client:visible />
 </BaseLayout>

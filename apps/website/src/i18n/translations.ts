@@ -4257,6 +4257,10 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.faq.heading': {
+    en: 'Frequently Asked Questions',
+    'zh-CN': '常见问题'
+  },
   'models.index.title': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
