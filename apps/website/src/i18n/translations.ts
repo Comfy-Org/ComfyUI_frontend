@@ -4708,12 +4708,32 @@ const translations = {
     'zh-CN': '避免'
   },
   'brand.voice.do.0': {
-    en: 'Route your prompt through a ControlNet. Wire the output to the VAE decode.',
-    'zh-CN': '让你的 prompt 经过 ControlNet，再将输出连接到 VAE decode。'
+    en: 'Maintain the 14° slant angle.',
+    'zh-CN': '保持 14° 的倾斜角度。'
   },
   'brand.voice.do.1': {
-    en: 'Comfy runs on your hardware. Nothing leaves your machine.',
-    'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
+    en: 'Keep minimum clear space at 50%.',
+    'zh-CN': '保留至少 50% 的净空间距。'
+  },
+  'brand.voice.do.2': {
+    en: 'Use only approved color pairings.',
+    'zh-CN': '仅使用经批准的配色组合。'
+  },
+  'brand.voice.do.3': {
+    en: 'Respect minimum size thresholds.',
+    'zh-CN': '遵守最小尺寸限制。'
+  },
+  'brand.voice.do.4': {
+    en: 'Hang the logo slightly over margins for optical balance.',
+    'zh-CN': '让 logo 略微超出边距，以获得视觉平衡。'
+  },
+  'brand.voice.do.5': {
+    en: 'Pair amplified expressions with core logos.',
+    'zh-CN': '将放大的表现形式与核心 logo 搭配使用。'
+  },
+  'brand.voice.do.6': {
+    en: 'Place the logomark only in center or corners.',
+    'zh-CN': '仅将图形标置于中心或四角。'
   },
   'brand.voice.dont.0': {
     en: 'Outline the logo.',

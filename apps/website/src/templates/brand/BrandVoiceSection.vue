@@ -27,7 +27,12 @@ const principles = [
 
 const doExamples = [
   t('brand.voice.do.0', locale),
-  t('brand.voice.do.1', locale)
+  t('brand.voice.do.1', locale),
+  t('brand.voice.do.2', locale),
+  t('brand.voice.do.3', locale),
+  t('brand.voice.do.4', locale),
+  t('brand.voice.do.5', locale),
+  t('brand.voice.do.6', locale)
 ]
 
 const dontExamples = [
