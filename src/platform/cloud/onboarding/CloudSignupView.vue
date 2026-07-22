@@ -30,7 +30,6 @@
       <div class="flex w-full flex-col gap-4 pt-5 pb-2">
         <template v-if="!showEmailForm">
           <Button
-            v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
             class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
@@ -49,6 +48,14 @@
             <i class="pi pi-github text-base" />
             {{ t('auth.signup.signUpWithGithub') }}
           </Button>
+
+          <p
+            v-if="showGoogleSsoInAppBrowserNotice"
+            class="my-0 text-xs/5 text-primary-comfy-canvas/60"
+            data-testid="google-sso-in-app-browser-notice"
+          >
+            {{ t('auth.login.googleSsoInAppBrowserNotice') }}
+          </p>
 
           <Button
             variant="link"
@@ -79,11 +86,7 @@
             class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-primary-comfy-canvas/55 hover:bg-sand-300/10"
             @click="switchToSocialLogin"
           >
-            {{
-              googleSsoBlockedReason
-                ? t('auth.login.backToGithubLogin')
-                : t('auth.login.backToSocialLogin')
-            }}
+            {{ t('auth.login.backToSocialLogin') }}
           </Button>
         </template>
       </div>
@@ -131,6 +134,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -139,7 +143,6 @@ import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/use
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
-import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -155,7 +158,7 @@ const {
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
-const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const { onAuthSuccess } = usePostAuthRedirect({
   authError,
   successSummary: 'Sign up Completed',
