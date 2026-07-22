@@ -72,28 +72,30 @@ export const useAuthActions = () => {
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
-    const workflowStore = useWorkflowStore()
-    const modifiedWorkflows = workflowStore.modifiedWorkflows
-    if (modifiedWorkflows.length > 0) {
-      const dialogService = useDialogService()
-      const confirmed = await dialogService.confirm({
-        title: t('auth.signOut.unsavedChangesTitle'),
-        message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose',
-        denyLabel: t('auth.signOut.signOutAnyway')
-      })
-      if (confirmed === null) return
+    if (isCloud) {
+      const workflowStore = useWorkflowStore()
+      const modifiedWorkflows = workflowStore.modifiedWorkflows
+      if (modifiedWorkflows.length > 0) {
+        const dialogService = useDialogService()
+        const confirmed = await dialogService.confirm({
+          title: t('auth.signOut.unsavedChangesTitle'),
+          message: t('auth.signOut.unsavedChangesMessage'),
+          type: 'dirtyClose',
+          denyLabel: t('auth.signOut.signOutAnyway')
+        })
+        if (confirmed === null) return
 
-      if (confirmed === true) {
-        const workflowService = useWorkflowService()
-        for (const workflow of modifiedWorkflows) {
-          try {
-            const saved = await workflowService.saveWorkflow(workflow)
-            if (!saved) return
-          } catch {
-            throw new Error(
-              t('auth.signOut.saveFailed', { workflow: workflow.path })
-            )
+        if (confirmed === true) {
+          const workflowService = useWorkflowService()
+          for (const workflow of modifiedWorkflows) {
+            try {
+              const saved = await workflowService.saveWorkflow(workflow)
+              if (!saved) return
+            } catch {
+              throw new Error(
+                t('auth.signOut.saveFailed', { workflow: workflow.path })
+              )
+            }
           }
         }
       }

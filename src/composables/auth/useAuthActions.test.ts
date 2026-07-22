@@ -28,6 +28,7 @@ const mockDialogService = vi.hoisted(() => ({
 }))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
@@ -44,7 +45,9 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -92,11 +95,28 @@ function makeWorkflow(path: string): ModifiedWorkflow {
   return { path, isModified: true } satisfies ModifiedWorkflow
 }
 
+beforeEach(() => {
+  mockDistributionState.isCloud = false
+})
+
 describe('useAuthActions.logout', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockDistributionState.isCloud = true
     mockWorkflowStore.modifiedWorkflows = []
+  })
+
+  it('logs out on non-cloud distributions without prompting when workflows are modified', async () => {
+    mockDistributionState.isCloud = false
+    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
+    const { logout } = useAuthActions()
+
+    await logout()
+
+    expect(mockDialogService.confirm).not.toHaveBeenCalled()
+    expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
