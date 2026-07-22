@@ -516,7 +516,7 @@ describe('useSecretForm', () => {
       })
 
       visible.value = true
-      await Promise.resolve()
+      await nextTick()
 
       expect(selectedInputType.value).toBe('json_file')
     })
@@ -539,7 +539,7 @@ describe('useSecretForm', () => {
       })
 
       visible.value = true
-      await Promise.resolve()
+      await nextTick()
 
       form.secretValue = 'not json'
       await handleSubmit()
@@ -575,7 +575,7 @@ describe('useSecretForm', () => {
       })
 
       visible.value = true
-      await Promise.resolve()
+      await nextTick()
 
       expect(selectedInputType.value).toBe('text')
 
@@ -602,7 +602,7 @@ describe('useSecretForm', () => {
       })
 
       visible.value = true
-      await Promise.resolve()
+      await nextTick()
 
       expect(selectedInputType.value).toBe('json_file')
     })
