@@ -11,29 +11,21 @@
       :failed-count="failedCount"
       :expanded="expanded"
       :hide-chevron="activeJobs.length === 0"
-      progress-class="bg-base-foreground/90"
+      :hide-action="!toastView.showStop"
+      progress-class="bg-base-foreground"
       @toggle-expand="expanded = !expanded"
     >
       <template #action>
-        <template v-if="toastView.showStop">
-          <div
-            class="mx-0.5 h-7 w-px shrink-0 self-center bg-base-foreground/10"
-            aria-hidden="true"
-          />
-          <button
-            v-tooltip.bottom="stopTooltip"
-            type="button"
-            class="flex cursor-pointer items-center justify-center border-none bg-transparent px-1 text-base-foreground opacity-90 transition-opacity hover:opacity-100"
-            :aria-label="t('processToast.stop')"
-            data-testid="queue-status-stop"
-            @click="interruptAll"
-          >
-            <span
-              class="size-[11px] shrink-0 rounded-[2px] bg-base-foreground"
-              aria-hidden="true"
-            />
-          </button>
-        </template>
+        <button
+          v-tooltip.bottom="stopTooltip"
+          type="button"
+          class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground opacity-90 transition-opacity hover:opacity-100"
+          :aria-label="t('processToast.stop')"
+          data-testid="queue-status-stop"
+          @click="interruptAll"
+        >
+          <i class="icon-[comfy--stop] size-4" />
+        </button>
       </template>
     </ProcessToast>
 
