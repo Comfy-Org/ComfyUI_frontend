@@ -338,11 +338,15 @@ export function useSubscriptionCheckout(
     }
 
     if (response.status === 'requires_action' && response.action_url) {
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
-      window.location.assign(response.action_url)
+      const paymentWindow = window.open(response.action_url, '_blank')
+      if (!paymentWindow) {
+        toast.add({
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('subscription.preview.paymentPopupBlocked')
+        })
+      }
+      await advanceToSuccessOnOperation(response.billing_op_id)
       return
     }
 
