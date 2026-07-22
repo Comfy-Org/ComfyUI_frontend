@@ -11,6 +11,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AddCreditsClickMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -143,6 +144,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
+            // Before flushEventQueue so pre-init events also carry the
+            // platform super properties.
+            this.registerPlatformProps()
             this.flushEventQueue()
             this.registerDesktopEntryProps()
 
@@ -285,6 +289,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  private registerPlatformProps(): void {
+    if (!this.posthog) return
+    try {
+      this.posthog.register({
+        client: window.__comfyDesktop2 ? 'desktop' : 'web',
+        deployment: 'cloud'
+      })
+    } catch (error) {
+      console.error('Failed to register platform props:', error)
+    }
+  }
+
   private registerDesktopEntryProps(): void {
     if (!this.posthog) return
     const props = readDesktopEntryProps()
@@ -336,6 +352,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       this.setFirstAuthAt(metadata.user_id)
     }
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {

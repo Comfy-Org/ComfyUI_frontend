@@ -75,7 +75,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled)
+      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
       .map((widget) => ({ node: interiorNode, widget }))
   })
 

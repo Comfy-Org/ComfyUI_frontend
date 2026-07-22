@@ -6,6 +6,7 @@ import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -21,10 +22,25 @@ export interface SubscriptionDialogOptions {
    * always lands on the team tab even from a personal workspace).
    */
   planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
+}
+
+function getInitialPlanMode(
+  explicitMode: SubscriptionDialogOptions['planMode'],
+  isTeamPlan: boolean,
+  hasCurrentPlan: boolean,
+  isPersonalWorkspace: boolean
+): NonNullable<SubscriptionDialogOptions['planMode']> {
+  if (explicitMode) return explicitMode
+  if (isTeamPlan) return 'team'
+  if (hasCurrentPlan) return 'personal'
+  return isPersonalWorkspace ? 'personal' : 'team'
 }
 
 export const useSubscriptionDialog = () => {
-  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+    useBillingRouting()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -45,68 +61,58 @@ export const useSubscriptionDialog = () => {
     })
   }
 
+  function showInactiveMemberDialog(): boolean {
+    if (!shouldUseWorkspaceBilling.value) return false
+
+    const { permissions } = useWorkspaceUI()
+    if (permissions.value.canManageSubscription) return false
+
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: defineAsyncComponent(
+        () =>
+          import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+      ),
+      props: { onClose: hide },
+      dialogComponentProps: {
+        renderer: 'reka',
+        contentClass:
+          'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+      }
+    })
+    return true
+  }
+
   function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
-
-    // Resolved lazily (not at setup): useWorkspaceUI reads useBillingContext, so
-    // a setup-time read re-enters the half-built context during the
-    // useBillingContext -> useWorkspaceBilling -> useSubscriptionDialog cycle.
-    const { permissions } = useWorkspaceUI()
-
-    // Members can't manage the workspace subscription, so a blocked run shows a
-    // small read-only "ask your owner to reactivate" modal instead of the
-    // pricing table. Out-of-credits still routes everyone to the credits flow.
-    if (
-      shouldUseWorkspaceBilling.value &&
-      !workspaceStore.isInPersonalWorkspace &&
-      !permissions.value.canManageSubscription &&
-      options?.reason !== 'out_of_credits'
-    ) {
-      dialogService.showLayoutDialog({
-        key: DIALOG_KEY,
-        component: defineAsyncComponent(
-          () =>
-            import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
-        ),
-        props: { onClose: hide },
-        dialogComponentProps: {
-          renderer: 'reka',
-          contentClass:
-            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
-        }
-      })
-      return
-    }
+    if (showInactiveMemberDialog()) return
 
     trackModalOpened(options?.reason)
 
-    // Shared dialog shell styling for both variants.
-    const dialogComponentProps = {
-      style: 'width: min(1328px, 95vw); max-height: 958px;',
-      pt: {
-        root: {
-          class: 'rounded-2xl bg-transparent h-full'
-        },
-        content: {
-          class:
-            '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-        }
-      }
-    }
+    const legacyPricingDialogProps = {
+      renderer: 'reka',
+      size: 'full',
+      contentClass:
+        'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+    } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
-    // one workspace) for workspaces on the consolidated billing flow. Replaces
-    // the old personal-vs-team workspace fork. Personal workspaces still on the
-    // legacy flow (consolidated billing disabled) get the legacy table.
-    if (shouldUseWorkspaceBilling.value) {
+    // one workspace). The billing rail still selects the checkout and top-up
+    // backend, but does not select the pricing table.
+    if (shouldUseUnifiedPricing.value) {
       // Existing per-member (legacy) team subscribers keep the old tier-based
       // team table; the unified credit-slider table is for everyone else.
       // Resolved lazily (not at composable setup): these three composables form
       // an import cycle (useBillingContext -> useWorkspaceBilling ->
       // useSubscriptionDialog), so a setup-time read would deref the shared
       // context before its state is constructed.
-      const { isLegacyTeamPlan } = useBillingContext()
+      const { currentPlanSlug, isLegacyTeamPlan, isTeamPlan } =
+        useBillingContext()
       if (isLegacyTeamPlan.value) {
+        const personalInitialCheckout =
+          options?.initialCheckout?.planMode === 'personal'
+            ? options.initialCheckout
+            : undefined
         dialogService.showLayoutDialog({
           key: DIALOG_KEY,
           component: defineAsyncComponent(
@@ -115,12 +121,21 @@ export const useSubscriptionDialog = () => {
           ),
           props: {
             onClose: hide,
-            reason: options?.reason
+            reason: options?.reason,
+            ...(personalInitialCheckout
+              ? {
+                  initialCheckout: personalInitialCheckout,
+                  isPersonal: true
+                }
+              : {})
           },
           // The legacy table hosts a PrimeVue Popover teleported to body; Reka
           // modal mode traps focus and disables body pointer-events, making it
           // unclickable. The unified table has no such overlay.
-          dialogComponentProps: { ...dialogComponentProps, modal: false }
+          dialogComponentProps: {
+            ...legacyPricingDialogProps,
+            modal: false
+          }
         })
         return
       }
@@ -134,17 +149,18 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
-          // A team workspace lands on the For Teams tab; personal on For
-          // Personal. An explicit caller (e.g. an "Upgrade to Team" CTA) can
-          // override via options.planMode.
-          initialPlanMode:
-            options?.planMode ??
-            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
+          initialCheckout: options?.initialCheckout,
+          initialPlanMode: getInitialPlanMode(
+            options?.planMode,
+            isTeamPlan.value,
+            currentPlanSlug.value !== null,
+            workspaceStore.isInPersonalWorkspace
+          )
         },
         dialogComponentProps: {
           // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
           // `style` width is ignored here and collapses the table to the default
-          // `md` frame. `w-fit` lets each step hug its content — the pricing
+          // `md` frame. `w-fit` lets each step hug its content -- the pricing
           // table fills its 1280px content while the compact confirm/success
           // steps shrink (the content root sets its own width per checkoutStep).
           renderer: 'reka',
@@ -167,11 +183,13 @@ export const useSubscriptionDialog = () => {
         reason: options?.reason,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
-      dialogComponentProps
+      dialogComponentProps: legacyPricingDialogProps
     })
   }
 
   function show(options?: SubscriptionDialogOptions) {
+    if (isCloud && showInactiveMemberDialog()) return
+
     // Free-tier state comes from the unified facade so it works on both the
     // legacy (/customers) and workspace (/api/billing) paths. Resolved lazily
     // (not at composable setup) to avoid the useBillingContext import cycle.
@@ -248,7 +266,10 @@ export const useSubscriptionDialog = () => {
       sessionStorage.removeItem(RESUME_PRICING_KEY)
 
       if (!workspaceStore.isInPersonalWorkspace) {
-        showPricingTable({ reason: 'team_upgrade_resume' })
+        showPricingTable({
+          reason: 'team_upgrade_resume',
+          planMode: 'team'
+        })
       }
     } catch {
       // sessionStorage may be unavailable
