@@ -106,6 +106,10 @@ const test = comfyPageFixture.extend({
       })
     )
 
+    await page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 204 })
+    )
+
     await page.route('**/customers/cloud-subscription-status', (route) =>
       route.fulfill({
         status: 200,
