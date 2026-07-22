@@ -31,19 +31,6 @@ test.describe('Customer story detail @smoke', () => {
     ).toHaveCount(0)
   })
 
-  test('links to another story in the what-is-next section', async ({
-    page
-  }) => {
-    await page.goto('/customers/series-entertainment')
-    const nextLink = page.getByRole('link', { name: /view article/i })
-    await expect(nextLink).toBeVisible()
-    await expect(nextLink).toHaveAttribute('href', /^\/customers\/[a-z0-9-]+$/)
-    await expect(nextLink).not.toHaveAttribute(
-      'href',
-      '/customers/series-entertainment'
-    )
-  })
-
   test('renders the Download content component as an accessible workflow link', async ({
     page
   }) => {
@@ -86,5 +73,20 @@ test.describe('Customer story detail @smoke', () => {
     const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
     expect(graph.map((node) => node['@type'])).toContain('Article')
     expect(blocks[0]).toContain('/zh-CN/customers/golan-levin')
+  })
+})
+
+test.describe('Customer story detail navigation', () => {
+  test('links to another story in the what-is-next section', async ({
+    page
+  }) => {
+    await page.goto('/customers/series-entertainment')
+    const nextLink = page.getByRole('link', { name: /view article/i })
+    await expect(nextLink).toBeVisible()
+    await expect(nextLink).toHaveAttribute('href', /^\/customers\/[a-z0-9-]+$/)
+    await expect(nextLink).not.toHaveAttribute(
+      'href',
+      '/customers/series-entertainment'
+    )
   })
 })
