@@ -55,7 +55,6 @@ export function renameWidget(
   // identity, label = display per ADR-0009) written via WidgetHandle.setLabel — the
   // widget entity owns its label, so the socketless/DOM-widget case (no input slot
   // to carry input.label, e.g. CLIPTextEncode `text`) is fixed by construction.
-  // See research/architecture/toward-new-api-plan.md §3a (follow-up A5).
   const input =
     (widget.widgetId &&
       node.inputs?.find((inp) => inp.widgetId === widget.widgetId)) ||
