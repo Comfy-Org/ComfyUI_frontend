@@ -15,14 +15,12 @@ import {
   categoryPath,
   featuredFor,
   filterByCategory,
-  populatedCategories,
-  tutorialPath
+  populatedCategories
 } from '../../data/learningTutorials'
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
-import Badge from '../ui/badge/Badge.vue'
-import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import PlayOverlay from './PlayOverlay.vue'
+import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
+import TutorialRow from './TutorialRow.vue'
 
 const {
   locale = 'en',
@@ -129,119 +127,20 @@ const rows = computed(() =>
 
       <!-- Content column -->
       <div class="min-w-0 flex-1">
-        <!-- Featured banner -->
-        <article
+        <FeaturedTutorialCard
           v-if="featured"
-          class="bg-transparency-white-t4 rounded-4.5xl grid items-center gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:p-8"
-        >
-          <div class="flex flex-col gap-4">
-            <div class="flex items-center gap-3">
-              <Badge variant="accent">
-                {{ t('learning.featuredBadge', locale) }}
-              </Badge>
-              <Badge variant="category">
-                {{ t(categoryLabelKeys[featured.category], locale) }}
-              </Badge>
-            </div>
-            <h2
-              class="text-2xl font-light tracking-tight text-primary-comfy-canvas lg:text-3xl"
-            >
-              <a
-                :href="localizeHref(tutorialPath(featured), locale)"
-                class="text-left hover:underline"
-              >
-                {{ t('learning.tutorials.titlePrefix', locale) }}
-                {{ featured.title[locale] }}
-              </a>
-            </h2>
-            <ul class="flex flex-wrap gap-2">
-              <li v-for="tag in featured.tags" :key="tag">
-                <Badge variant="subtle">{{ t(tag, locale) }}</Badge>
-              </li>
-            </ul>
-            <div v-if="featured.href">
-              <ButtonPill
-                as="a"
-                :href="featured.href"
-                :target="featured.newTab ? '_blank' : undefined"
-                :rel="featured.newTab ? 'noopener noreferrer' : undefined"
-                icon-position="right"
-                variant="ghost"
-                size="default"
-              >
-                {{ t('cta.tryWorkflow', locale) }}
-              </ButtonPill>
-            </div>
-          </div>
-
-          <a
-            :href="localizeHref(tutorialPath(featured), locale)"
-            class="group relative block aspect-video overflow-hidden rounded-3xl"
-            :aria-label="`${t('player.play', locale)} ${featured.title[locale]}`"
-          >
-            <img :src="featured.poster" alt="" class="size-full object-cover" />
-            <PlayOverlay class="text-white" />
-          </a>
-        </article>
+          :tutorial="featured"
+          :locale="locale"
+        />
 
         <!-- Row list -->
         <ul class="mt-6 divide-y divide-white/10">
-          <li
+          <TutorialRow
             v-for="tutorial in rows"
             :key="tutorial.id"
-            class="group/row flex flex-wrap items-center gap-4 py-5 md:flex-nowrap md:gap-6"
-          >
-            <a
-              :href="localizeHref(tutorialPath(tutorial), locale)"
-              class="group/thumb relative block aspect-video w-full shrink-0 overflow-hidden rounded-2xl md:w-36 lg:w-44"
-              :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
-            >
-              <img
-                :src="tutorial.poster"
-                alt=""
-                loading="lazy"
-                class="size-full object-cover"
-              />
-              <PlayOverlay size="sm" class="text-white" />
-            </a>
-
-            <div class="w-full min-w-0 md:w-auto md:flex-1">
-              <Badge variant="category" size="xs">
-                {{ t(categoryLabelKeys[tutorial.category], locale) }}
-              </Badge>
-              <h3
-                class="mt-1 text-sm/snug text-primary-comfy-canvas lg:text-base/snug"
-              >
-                <a
-                  :href="localizeHref(tutorialPath(tutorial), locale)"
-                  class="text-left hover:underline"
-                >
-                  {{ t('learning.tutorials.titlePrefix', locale) }}
-                  {{ tutorial.title[locale] }}
-                </a>
-              </h3>
-              <ul class="mt-2 flex flex-wrap gap-2">
-                <li v-for="tag in tutorial.tags" :key="tag">
-                  <Badge variant="subtle" size="xs">{{ t(tag, locale) }}</Badge>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Plain labelled button on mobile; hover-mask animation from md up. -->
-            <ButtonPill
-              v-if="tutorial.href"
-              as="a"
-              :href="tutorial.href"
-              :target="tutorial.newTab ? '_blank' : undefined"
-              :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
-              icon-position="right"
-              variant="ghost"
-              size="default"
-              class="ps-0"
-            >
-              {{ t('cta.tryWorkflow', locale) }}
-            </ButtonPill>
-          </li>
+            :tutorial="tutorial"
+            :locale="locale"
+          />
         </ul>
       </div>
     </div>
