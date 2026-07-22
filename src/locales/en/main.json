@@ -2957,8 +2957,9 @@
         "unrestrictedConfirmMessage": "All partner node providers will become available to workspace members."
       },
       "runBlocked": {
-        "summary": "Workflow blocked by workspace policy",
-        "detail": "Remove disabled partner nodes from this workflow or ask a workspace owner to update the policy."
+        "summary": "{count} partner node is unavailable | {count} partner nodes are unavailable",
+        "detail": "{nodes} is disabled by your workspace policy. | These nodes are disabled by your workspace policy: {nodes}.",
+        "nodeError": "This partner node is disabled by your workspace policy."
       }
     },
     "dashboard": {
@@ -3996,6 +3997,7 @@
     "hideAdvancedInputsButton": "Hide advanced inputs",
     "hideAdvancedShort": "Hide advanced",
     "errors": "Errors",
+    "viewDetails": "View details",
     "noErrors": "No errors",
     "errorsDetected": "Error detected | Errors detected",
     "selectedNodeErrors": "{node} — {count} error | {node} — {count} errors",
@@ -4188,6 +4190,14 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
         "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
+      "workspace_partner_node_disabled": {
+        "title": "Partner node unavailable",
+        "message": "One or more partner nodes are disabled by this workspace's policy.",
+        "details": "{nodeName} is disabled by your workspace policy.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Partner node unavailable",
+        "toastMessage": "{nodeName} is disabled by your workspace policy."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",

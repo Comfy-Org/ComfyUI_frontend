@@ -61,6 +61,18 @@ vi.mock('@/i18n', () => {
       'Validation failed',
     'errorCatalog.validationErrors.unknown_validation_error.toastMessage':
       '{nodeName} returned an unrecognized validation error.',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.title':
+      'Partner node unavailable',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.message':
+      "One or more partner nodes are disabled by this workspace's policy.",
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.details':
+      '{nodeName} is disabled by your workspace policy.',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.itemLabel':
+      '{nodeName}',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.toastTitle':
+      'Partner node unavailable',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.toastMessage':
+      '{nodeName} is disabled by your workspace policy.',
     'errorCatalog.promptErrors.prompt_no_outputs.title':
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
@@ -495,6 +507,50 @@ describe('useErrorGroups', () => {
       expect(error.toastMessage).toBe(
         'KSampler is missing a required input: model'
       )
+    })
+
+    it('groups workspace-disabled partner nodes with names and count', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        '1': {
+          class_type: 'FluxFill',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'workspace_partner_node_disabled',
+              message: 'Disabled by workspace policy',
+              details: ''
+            }
+          ]
+        },
+        '2': {
+          class_type: 'VeoVideo',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'workspace_partner_node_disabled',
+              message: 'Disabled by workspace policy',
+              details: ''
+            }
+          ]
+        }
+      })
+      await nextTick()
+
+      const group = groups.allErrorGroups.value.find(
+        (entry) =>
+          entry.groupKey === 'execution:workspace_partner_node_disabled'
+      )
+      expect(group?.type).toBe('execution')
+      if (group?.type !== 'execution') return
+
+      expect(group.displayTitle).toBe('Partner node unavailable')
+      expect(group.count).toBe(2)
+      expect(
+        group.cards.flatMap((card) =>
+          card.errors.map((error) => error.displayItemLabel)
+        )
+      ).toEqual(['FluxFill', 'VeoVideo'])
     })
 
     it('groups lifted boundary errors under the host node card', async () => {

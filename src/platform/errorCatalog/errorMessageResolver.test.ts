@@ -131,6 +131,25 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves workspace-disabled partner nodes to actionable panel copy', () => {
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('workspace_partner_node_disabled'),
+      nodeDisplayName: 'Flux Fill'
+    })
+
+    expect(result).toEqual({
+      catalogId: 'workspace_partner_node_disabled',
+      displayTitle: 'Partner node unavailable',
+      displayMessage:
+        "One or more partner nodes are disabled by this workspace's policy.",
+      displayDetails: 'Flux Fill is disabled by your workspace policy.',
+      displayItemLabel: 'Flux Fill',
+      toastTitle: 'Partner node unavailable',
+      toastMessage: 'Flux Fill is disabled by your workspace policy.'
+    })
+  })
+
   it('preserves special characters in catalog copy for node names', () => {
     const nodeDisplayName = 'A & B <C>'
     const result = resolveRunErrorMessage({

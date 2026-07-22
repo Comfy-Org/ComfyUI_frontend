@@ -10,8 +10,10 @@ test.describe('Partner node governance workbench', { tag: '@cloud' }, () => {
   }) => {
     await page.getByTestId(TestIds.topbar.queueButton).click()
 
-    await expect(page.getByRole('alert')).toContainText(
-      'Workflow blocked by workspace policy'
+    const policyAlert = page.getByRole('alert')
+    await expect(policyAlert).toContainText('1 partner node is unavailable')
+    await expect(policyAlert).toContainText(
+      'Disabled Partner Node is disabled by your workspace policy.'
     )
     expect(partnerNodeGovernance.promptRequestCount()).toBe(0)
   })

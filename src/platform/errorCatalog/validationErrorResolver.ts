@@ -19,6 +19,8 @@ import {
 } from '@/utils/executionErrorUtil'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
+export const WORKSPACE_PARTNER_NODE_DISABLED_TYPE =
+  'workspace_partner_node_disabled'
 
 // Resolves node validation errors. Most validation types map 1:1 to their
 // catalog/locale keys; FE-specific recategorization uses a separate catalogId,
@@ -91,6 +93,10 @@ const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
   [REQUIRED_INPUT_MISSING_TYPE]: {
     catalogId: MISSING_CONNECTION_CATALOG_ID,
     itemLabel: 'nodeInput'
+  },
+  [WORKSPACE_PARTNER_NODE_DISABLED_TYPE]: {
+    catalogId: WORKSPACE_PARTNER_NODE_DISABLED_TYPE,
+    itemLabel: 'node'
   },
   ...NODE_LEVEL_VALIDATION_ERROR_RULES
 }

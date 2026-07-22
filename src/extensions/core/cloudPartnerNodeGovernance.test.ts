@@ -10,15 +10,18 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { ComfyApp } from '@/scripts/app'
+import type { NodeError } from '@/schemas/apiSchema'
 import type { QueuePromptGuard } from '@/services/queuePromptGuardService'
 import type { ComfyExtension } from '@/types/comfy'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const {
   addToast,
+  executionErrorStore,
   governanceStore,
   isNodeDisabled,
   loadPolicy,
+  recordNodeErrors,
   registerQueuePromptGuard,
   registerExtension,
   usePartnerNodeGovernanceStore
@@ -30,11 +33,19 @@ const {
     isNodeDisabled,
     loadPolicy
   }
+  const executionErrorStore = {
+    lastNodeErrors: null as Record<string, NodeError> | null,
+    recordNodeErrors: vi.fn((nodeErrors: Record<string, NodeError> | null) => {
+      executionErrorStore.lastNodeErrors = nodeErrors
+    })
+  }
   return {
     addToast: vi.fn(),
+    executionErrorStore,
     governanceStore,
     isNodeDisabled,
     loadPolicy,
+    recordNodeErrors: executionErrorStore.recordNodeErrors,
     registerQueuePromptGuard: vi.fn<
       (id: string, guard: QueuePromptGuard) => () => void
     >(() => () => {}),
@@ -49,6 +60,10 @@ vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: addToast })
+}))
+
+vi.mock('@/stores/executionErrorStore', () => ({
+  useExecutionErrorStore: () => executionErrorStore
 }))
 
 vi.mock('@/services/queuePromptGuardService', () => ({
@@ -66,6 +81,7 @@ describe('cloudPartnerNodeGovernance', () => {
     vi.clearAllMocks()
     governanceStore.status = 'configured'
     loadPolicy.mockResolvedValue()
+    executionErrorStore.lastNodeErrors = null
   })
 
   async function loadExtension(): Promise<ComfyExtension> {
@@ -84,8 +100,8 @@ describe('cloudPartnerNodeGovernance', () => {
     return guard
   }
 
-  function disabledPartnerNode(): LGraphNode {
-    return new LGraphNode('DisabledPartnerNode', 'DisabledPartnerNode')
+  function disabledPartnerNode(title = 'DisabledPartnerNode'): LGraphNode {
+    return new LGraphNode(title, 'DisabledPartnerNode')
   }
 
   function outputNode(title: string): LGraphNode {
@@ -147,12 +163,26 @@ describe('cloudPartnerNodeGovernance', () => {
 
     expect(result).toBe(false)
     expect(isNodeDisabled).toHaveBeenCalledWith('DisabledPartnerNode')
+    expect(recordNodeErrors).toHaveBeenCalledWith({
+      [createNodeExecutionId([graph.nodes[0].id])]: {
+        class_type: 'DisabledPartnerNode',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'workspace_partner_node_disabled',
+            message: 'This partner node is disabled by your workspace policy.',
+            details: '',
+            extra_info: {}
+          }
+        ]
+      }
+    })
     expect(addToast).toHaveBeenCalledWith({
       severity: 'error',
-      summary: 'Workflow blocked by workspace policy',
-      detail:
-        'Remove disabled partner nodes from this workflow or ask a workspace owner to update the policy.',
-      life: 6000
+      summary: '1 partner node is unavailable',
+      detail: 'DisabledPartnerNode is disabled by your workspace policy.',
+      group: 'partner-node-policy',
+      life: 8000
     })
   })
 
@@ -173,6 +203,7 @@ describe('cloudPartnerNodeGovernance', () => {
 
       expect(await guard({ rootGraph: graph })).toBe(true)
       expect(addToast).not.toHaveBeenCalled()
+      expect(recordNodeErrors).not.toHaveBeenCalled()
     }
   )
 
@@ -226,6 +257,7 @@ describe('cloudPartnerNodeGovernance', () => {
 
     expect(result).toBe(true)
     expect(addToast).not.toHaveBeenCalled()
+    expect(recordNodeErrors).not.toHaveBeenCalled()
   })
 
   it('blocks partial execution when a disabled node is an upstream dependency', async () => {
@@ -245,5 +277,125 @@ describe('cloudPartnerNodeGovernance', () => {
 
     expect(result).toBe(false)
     expect(isNodeDisabled).toHaveBeenCalledWith('DisabledPartnerNode')
+  })
+
+  it('clears policy node errors after an allowed retry', async () => {
+    const graph = new LGraph()
+    graph.add(disabledPartnerNode())
+    isNodeDisabled.mockReturnValue(true)
+    const guard = await loadGuard()
+
+    expect(await guard({ rootGraph: graph })).toBe(false)
+
+    isNodeDisabled.mockReturnValue(false)
+
+    expect(await guard({ rootGraph: graph })).toBe(true)
+    expect(recordNodeErrors).toHaveBeenLastCalledWith(null)
+  })
+
+  it('preserves unrelated node errors after a blocked attempt', async () => {
+    const graph = new LGraph()
+    graph.add(disabledPartnerNode())
+    isNodeDisabled.mockReturnValue(true)
+    const guard = await loadGuard()
+    await guard({ rootGraph: graph })
+    const unrelatedNodeErrors = {
+      'other-node': {
+        class_type: 'OtherNode',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing',
+            details: '',
+            extra_info: {}
+          }
+        ]
+      }
+    } satisfies Record<string, NodeError>
+    executionErrorStore.lastNodeErrors = unrelatedNodeErrors
+    recordNodeErrors.mockClear()
+    isNodeDisabled.mockReturnValue(false)
+
+    expect(await guard({ rootGraph: graph })).toBe(true)
+    expect(recordNodeErrors).not.toHaveBeenCalled()
+    expect(executionErrorStore.lastNodeErrors).toBe(unrelatedNodeErrors)
+  })
+
+  it('merges policy errors with existing node errors', async () => {
+    const graph = new LGraph()
+    const disabledNode = disabledPartnerNode()
+    graph.add(disabledNode)
+    const executionId = createNodeExecutionId([disabledNode.id])
+    executionErrorStore.lastNodeErrors = {
+      [executionId]: {
+        class_type: 'DisabledPartnerNode',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing',
+            details: '',
+            extra_info: {}
+          }
+        ]
+      }
+    }
+    isNodeDisabled.mockReturnValue(true)
+    const guard = await loadGuard()
+
+    expect(await guard({ rootGraph: graph })).toBe(false)
+    expect(executionErrorStore.lastNodeErrors?.[executionId]?.errors).toEqual([
+      expect.objectContaining({ type: 'required_input_missing' }),
+      expect.objectContaining({
+        type: 'workspace_partner_node_disabled'
+      })
+    ])
+  })
+
+  it('lists every disabled node in a plural policy toast', async () => {
+    const graph = new LGraph()
+    graph.add(disabledPartnerNode('Flux Fill'))
+    graph.add(disabledPartnerNode('Veo Video'))
+    isNodeDisabled.mockImplementation(
+      (nodeType) => nodeType === 'DisabledPartnerNode'
+    )
+    const guard = await loadGuard()
+
+    expect(await guard({ rootGraph: graph })).toBe(false)
+    expect(recordNodeErrors).toHaveBeenCalledWith({
+      [createNodeExecutionId([graph.nodes[0].id])]: {
+        class_type: 'DisabledPartnerNode',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'workspace_partner_node_disabled',
+            message: 'This partner node is disabled by your workspace policy.',
+            details: '',
+            extra_info: {}
+          }
+        ]
+      },
+      [createNodeExecutionId([graph.nodes[1].id])]: {
+        class_type: 'DisabledPartnerNode',
+        dependent_outputs: [],
+        errors: [
+          {
+            type: 'workspace_partner_node_disabled',
+            message: 'This partner node is disabled by your workspace policy.',
+            details: '',
+            extra_info: {}
+          }
+        ]
+      }
+    })
+    expect(addToast).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: '2 partner nodes are unavailable',
+      detail:
+        'These nodes are disabled by your workspace policy: Flux Fill, Veo Video.',
+      group: 'partner-node-policy',
+      life: 8000
+    })
   })
 })
