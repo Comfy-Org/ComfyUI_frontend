@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  extractApiPrompt,
+  extractWorkflow
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { convertApiGraphToWorkflow } from '@/platform/workflow/utils/apiGraphConversionUtil'
 import { api } from '@/scripts/api'
 import type {
   JobDetail,
@@ -17,7 +21,16 @@ import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
   fetchJobDetail: vi.fn(),
-  extractWorkflow: vi.fn()
+  extractWorkflow: vi.fn(),
+  extractApiPrompt: vi.fn()
+}))
+
+vi.mock('@/platform/workflow/utils/apiGraphConversionUtil', () => ({
+  convertApiGraphToWorkflow: vi.fn()
+}))
+
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: vi.fn(() => ({ nodeDefsByName: {} }))
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -388,6 +401,77 @@ describe('jobOutputCache', () => {
 
       vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
       vi.mocked(extractWorkflow).mockResolvedValue(undefined)
+      vi.mocked(extractApiPrompt).mockReturnValue(undefined)
+
+      const result = await getJobWorkflow(jobId)
+
+      expect(result).toBeUndefined()
+      expect(convertApiGraphToWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('does not convert when an embedded workflow exists', async () => {
+      const jobId = uniqueId('embedded')
+      const mockDetail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now()
+      }
+      const mockWorkflow = { version: 0.4 } as Partial<ComfyWorkflowJSON>
+
+      vi.mocked(api.getJobDetail).mockResolvedValue(mockDetail)
+      vi.mocked(extractWorkflow).mockResolvedValue(
+        mockWorkflow as ComfyWorkflowJSON
+      )
+
+      const result = await getJobWorkflow(jobId)
+
+      expect(result).toEqual(mockWorkflow)
+      expect(convertApiGraphToWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('falls back to converting the stored API graph', async () => {
+      const jobId = uniqueId('api-job')
+      const mockDetail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now()
+      }
+      const apiPrompt = {
+        '1': { class_type: 'LoadImage', inputs: { image: 'a.png' } }
+      }
+      const synthesized = { version: 0.4 } as Partial<ComfyWorkflowJSON>
+
+      vi.mocked(api.getJobDetail).mockResolvedValue(mockDetail)
+      vi.mocked(extractWorkflow).mockResolvedValue(undefined)
+      vi.mocked(extractApiPrompt).mockReturnValue(apiPrompt)
+      vi.mocked(convertApiGraphToWorkflow).mockResolvedValue(
+        synthesized as ComfyWorkflowJSON
+      )
+
+      const result = await getJobWorkflow(jobId)
+
+      expect(result).toEqual(synthesized)
+      expect(extractApiPrompt).toHaveBeenCalledWith(mockDetail)
+      expect(convertApiGraphToWorkflow).toHaveBeenCalledWith(
+        apiPrompt,
+        expect.any(Object)
+      )
+    })
+
+    it('returns undefined when conversion fails', async () => {
+      const jobId = uniqueId('bad-api-job')
+      const mockDetail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: Date.now()
+      }
+
+      vi.mocked(api.getJobDetail).mockResolvedValue(mockDetail)
+      vi.mocked(extractWorkflow).mockResolvedValue(undefined)
+      vi.mocked(extractApiPrompt).mockReturnValue({
+        '1': { class_type: 'LoadImage', inputs: {} }
+      })
+      vi.mocked(convertApiGraphToWorkflow).mockResolvedValue(null)
 
       const result = await getJobWorkflow(jobId)
 

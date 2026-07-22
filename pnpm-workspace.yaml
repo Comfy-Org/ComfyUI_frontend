@@ -15,6 +15,7 @@ catalog:
   '@astrojs/mdx': ^6.0.3
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^6.0.1
+  '@comfyorg/api-to-workflow': ^0.1.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@eslint/js': ^10.0.1

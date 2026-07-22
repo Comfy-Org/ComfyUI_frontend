@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  extractApiPrompt,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
@@ -381,6 +382,67 @@ describe('fetchJobs', () => {
         expect.any(String)
       )
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('extractApiPrompt', () => {
+    const apiPrompt = {
+      '1': {
+        class_type: 'EmptyLatentImage',
+        inputs: { width: 512, height: 512, batch_size: 1 }
+      },
+      '2': {
+        class_type: 'VAEDecode',
+        inputs: { samples: ['1', 0], vae: ['1', 1] }
+      }
+    }
+
+    it('extracts the stored API graph when no UI workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { prompt: apiPrompt, extra_data: {} }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+    })
+
+    it('returns undefined when a UI workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: {
+            extra_pnginfo: { workflow: { version: 0.4, nodes: [] } }
+          }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined when the prompt is not API format', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { prompt: { '1': { no_class_type: true } } }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined for an empty prompt', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { prompt: {} }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined when the job has no workflow container', () => {
+      expect(
+        extractApiPrompt(createMockJob('job1', 'completed'))
+      ).toBeUndefined()
+      expect(extractApiPrompt(undefined)).toBeUndefined()
     })
   })
 })
