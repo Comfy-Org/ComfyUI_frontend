@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PricingSection from '../../components/pricing/PricingSection.vue'
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
-import FAQSection from '../../components/pricing/FAQSection.vue'
+import PricingFaq from '../../components/pricing/PricingFaq.astro'
 import { pricingOffers } from '../../config/pricing'
 import { t } from '../../i18n/translations'
 import {
@@ -40,5 +40,5 @@ const productId = jsonLdId(url, 'product')
 >
   <PricingSection client:load />
   <WhatsIncludedSection />
-  <FAQSection client:visible />
+  <PricingFaq locale={locale} />
 </BaseLayout>
