@@ -10,12 +10,12 @@ import {
   toNumber
 } from '@/renderer/glsl/useGLSLUniforms'
 
-const { findHostInputForPromotion } = vi.hoisted(() => ({
-  findHostInputForPromotion: vi.fn()
+const { createPromotedHostWidgetIdLookup } = vi.hoisted(() => ({
+  createPromotedHostWidgetIdLookup: vi.fn()
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  findHostInputForPromotion
+  createPromotedHostWidgetIdLookup
 }))
 
 function createMockSubgraph(
@@ -122,10 +122,10 @@ describe('extractUniformSources', () => {
   })
 
   it('resolves hostWidgetId from the promoted host input when subgraphNode is given', () => {
-    findHostInputForPromotion.mockImplementationOnce(
-      (_node, sourceNodeId, widgetName) =>
+    createPromotedHostWidgetIdLookup.mockReturnValueOnce(
+      (sourceNodeId: number, widgetName: string) =>
         sourceNodeId === 10 && widgetName === 'curve'
-          ? { widgetId: 'graph:99:curve0' }
+          ? 'graph:99:curve0'
           : undefined
     )
 

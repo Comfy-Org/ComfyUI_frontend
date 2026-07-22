@@ -9,7 +9,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
-import { findHostInputForPromotion } from '@/core/graph/subgraph/promotionUtils'
+import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
@@ -81,6 +81,10 @@ export function extractUniformSources(
 
   if (!glslNode.inputs) return { floats, ints, bools, curves }
 
+  const hostWidgetIdForSource = subgraphNode
+    ? createPromotedHostWidgetIdLookup(subgraphNode)
+    : undefined
+
   for (const input of glslNode.inputs) {
     if (input.link == null) continue
 
@@ -100,10 +104,7 @@ export function extractUniformSources(
     const source: UniformSource = {
       nodeId: sourceNode.id,
       widgetName: widget.name,
-      hostWidgetId: subgraphNode
-        ? findHostInputForPromotion(subgraphNode, sourceNode.id, widget.name)
-            ?.widgetId
-        : undefined,
+      hostWidgetId: hostWidgetIdForSource?.(sourceNode.id, widget.name),
       directValue: () => widget.value
     }
 
