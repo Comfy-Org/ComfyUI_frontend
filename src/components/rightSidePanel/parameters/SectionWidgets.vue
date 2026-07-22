@@ -394,30 +394,26 @@ defineExpose({
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
         <!--
-          TODO(stable-widget-render-key): `:css="!isDraggable"` disables the FLIP
-          for draggable sections (DraggableList already animates them) to kill the
-          double animation. Root cause: promotedInputWidget() returns fresh object
-          literals, so getStableWidgetRenderKey mints new keys every recompute and
-          TransitionGroup replays `enter` on each row. End-state is a stable
-          WidgetEntityId render key (ADR-0008 Widget entities) which removes the
-          root cause and makes this workaround revertible.
-          See research/architecture/toward-new-api-plan.md §3b (follow-up A6).
+          Render key maps widget identity to a stable key via a WeakMap, but
+          promotedInputWidget() returns a fresh object each recompute so promoted
+          rows still re-key on reorder. End-state is a stable WidgetEntityId key
+          (ADR-0008) that removes the churn. No TransitionGroup here: DraggableList
+          animates reorders, and a Vue enter transition replayed on the re-keyed
+          rows caused the promoted-inputs reorder jump.
         -->
-        <TransitionGroup name="list-scale" :css="!isDraggable">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="getStableWidgetRenderKey(widget)"
-            :widget="widget"
-            :node="node"
-            :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
-            @reset-to-default="handleWidgetReset(node, widget, $event)"
-          />
-        </TransitionGroup>
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget="widget"
+          :node="node"
+          :is-draggable="isDraggable"
+          :hidden-favorite-indicator="hiddenFavoriteIndicator"
+          :show-node-name="showNodeName"
+          :parents="parents"
+          :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
       </div>
     </PropertiesAccordionItem>
   </div>
