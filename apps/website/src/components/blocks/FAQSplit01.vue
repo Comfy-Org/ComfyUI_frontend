@@ -17,10 +17,6 @@ const { faqs } = defineProps<{
 
 type AnswerPart = { type: 'text' | 'link'; value: string }
 
-// Answers with authored HTML (e.g. styled anchors) render verbatim via
-// v-html; plain-text answers get bare URLs autolinked instead.
-const htmlTagPattern = /<[a-z][^>]*>/i
-
 function parseAnswer(answer: string): AnswerPart[] {
   const urlPattern = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
   const parts: AnswerPart[] = []
@@ -41,12 +37,7 @@ function parseAnswer(answer: string): AnswerPart[] {
 }
 
 const parsedFaqs = computed(() =>
-  faqs.map((faq) => ({
-    ...faq,
-    answerParts: htmlTagPattern.test(faq.answer)
-      ? null
-      : parseAnswer(faq.answer)
-  }))
+  faqs.map((faq) => ({ ...faq, answerParts: parseAnswer(faq.answer) }))
 )
 </script>
 
@@ -75,12 +66,6 @@ const parsedFaqs = computed(() =>
           </AccordionTrigger>
           <AccordionContent>
             <p
-              v-if="faq.answerParts === null"
-              class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
-              v-html="faq.answer"
-            />
-            <p
-              v-else
               class="text-sm wrap-break-word whitespace-pre-line text-primary-comfy-canvas/70"
             >
               <template

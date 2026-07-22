@@ -76,6 +76,23 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   }
 })
 
+test.describe('Pricing FAQ', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS) {
+    test(`pricing-faq-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/cloud/pricing')
+
+      const faq = page.locator('#faq')
+      await faq.scrollIntoViewIfNeeded()
+      const summaries = faq.locator('details > summary')
+      await summaries.nth(0).click()
+      await summaries.nth(1).click()
+
+      await expect(faq).toHaveScreenshot(`pricing-faq-${vp.name}.png`)
+    })
+  }
+})
+
 test.describe('Contact', { tag: '@visual' }, () => {
   for (const vp of SMALL_VIEWPORTS) {
     test(`form-${vp.name}`, async ({ page }) => {
