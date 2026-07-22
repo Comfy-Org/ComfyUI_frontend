@@ -40,30 +40,6 @@ const translations = {
   },
 
   // Education CTA (customer story block)
-  'educationCta.heading': {
-    en: 'Teaching with ComfyUI?',
-    'zh-CN': '正在使用 ComfyUI 教学？'
-  },
-  'educationCta.body': {
-    en: 'The Comfy Education Program is live: educational pricing, classroom cloud accounts on one invoice,',
-    'zh-CN': 'Comfy 教育计划现已上线：教育定价、一张发票管理课堂云账户，'
-  },
-  'educationCta.exploreLink': {
-    en: 'Explore the Education Program',
-    'zh-CN': '了解教育计划'
-  },
-  'educationCta.or': {
-    en: 'or',
-    'zh-CN': '或'
-  },
-  'educationCta.applyLink': {
-    en: 'apply to be a part of the Creative Campus program',
-    'zh-CN': '申请加入 Creative Campus 计划'
-  },
-  'educationCta.tail': {
-    en: "if you're interested in exploring a deeper partnership with Comfy.",
-    'zh-CN': '如果你有兴趣与 Comfy 建立更深入的合作。'
-  },
 
   // HeroSection
   'hero.title': {

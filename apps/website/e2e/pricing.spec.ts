@@ -50,21 +50,15 @@ test.describe('Pricing page - Team plan', () => {
 
     const teamLink = page.getByRole('link', { name: /subscribe to team/i })
     await expect(teamLink).toHaveAttribute('href', /stop=team_700/)
+    // team_700 yearly: 10% volume discount off $700.
+    await expect(page.getByText('$630', { exact: true })).toBeVisible()
 
-    const slider = page.getByRole('slider')
-    const priceBefore = await slider
-      .locator('xpath=ancestor::section')
-      .getByText(/^\$/)
-      .first()
-      .textContent()
-
-    await slider.focus()
+    await page.getByRole('slider').focus()
     await page.keyboard.press('ArrowRight')
 
     await expect(teamLink).toHaveAttribute('href', /stop=team_1400/)
-    await expect(
-      slider.locator('xpath=ancestor::section').getByText(/^\$/).first()
-    ).not.toHaveText(priceBefore ?? '')
+    // team_1400 yearly: 15% off $1,400.
+    await expect(page.getByText('$1,190', { exact: true })).toBeVisible()
   })
 })
 
