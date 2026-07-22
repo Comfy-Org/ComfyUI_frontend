@@ -1,0 +1,103 @@
+---
+title: "拓展我艺术的工具：Xindi Zhang 入围奥斯卡的毕业作品，用 ComfyUI 打造"
+category: "创意校园展示"
+description: "一部 USC 拓展动画毕业作品如何成为学生奥斯卡奖得主、奥斯卡短名单入围作，并帮助拿下亚马逊的工作——而风格指南正是艺术家自己的插画。"
+cover: "https://media.comfy.org/website/customers/xindi-zhang/cover.webp"
+order: 5
+sections:
+  - id: topic-1
+    label: "简介"
+  - id: topic-2
+    label: "为何选择 ComfyUI"
+  - id: topic-3
+    label: "制作管线"
+  - id: topic-4
+    label: "概览"
+  - id: topic-5
+    label: "未来展望"
+---
+
+<Section id="topic-1">
+
+<Embed src="https://player.vimeo.com/video/1131160045" title="The Song of Drifters，作者 Xindi Zhang" />
+
+*选自 The Song of Drifters。影片图像：Xindi Zhang。*
+
+### 说说 The Song of Drifters 吧。它讲的是什么，又是从哪里开始的？
+
+The Song of Drifters 是一部纪录动画，讲述那些困在"离开"与"归来"之间的人——漂泊于陌生城市的游子，守着一个遥不可及的故乡的记忆，寻找归属感。片名直接译自一首关于母亲对离乡孩子之爱的中国古诗。我的版本采取了相反的视角，从孩子的角度出发。
+
+我用 ComfyUI 完成了这部影片。刚开始时，我并不是想展示 AI 能做什么。我想证明的几乎是相反的东西。
+
+<Quote>它始于对一种刻板印象的挑战：认为 AI 生成的作品千篇一律、廉价。我想证明，AI 可以是个人视野的放大器，而不是它的替代品。</Quote>
+
+</Section>
+
+<Section id="topic-2">
+
+### 你是从插画而非工程走到这一步的。你是怎么进入 ComfyUI 的？
+
+我一开始是插画师。我在罗德岛设计学院取得插画 BFA 学位，之后做游戏概念艺术家，在那里学会了着色器、Unity 和 Unreal。那段技术经历让我上手新工具很快。后来我去 USC 电影艺术学院攻读拓展动画 MFA，师从 Kathy Smith 教授。
+
+到毕业创作那一年，我已经从 Stable Diffusion 的标准界面转向了 ComfyUI，因为我的思维是节点式结构的，我想掌控每一步。大多数 AI 工具只需一键：你写提示词，一点，就得到一个结果。那不是我想要的。
+
+<Quote>我想掌控这个过程，而过程甚至比结果本身更重要。对我这样的艺术家而言，我不想让任何东西自动化。我想参与设计工作流的每一个环节。那才是其中的乐趣所在。</Quote>
+
+</Section>
+
+<Section id="topic-3">
+
+### 带我们走一遍管线。你实际上在给模型喂什么？
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/balloon-workflow.png" alt="Xindi 用于气球段落的 ComfyUI 工作流">Xindi 用于气球段落的 ComfyUI 工作流。来源：[xindizhangart.com](https://xindizhangart.com)。</Figure>
+
+我的核心技术是在 Stable Diffusion 1.5 中做风格迁移，由 IP-Adapter 和 ControlNet 驱动。最要紧的是我喂给它的东西：我自己的作品。基础素材是我用 iPhone 15 Pro 拍摄的实拍素材，以及我在 Blender 中构建的 3D 动画。AI 重新风格化的是我早已做好的影像，而不是凭空发明它。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/film-still.jpg" alt="The Song of Drifters 的风格指南定帧">The Song of Drifters 的风格指南定帧。来源：[xindizhangart.com](https://xindizhangart.com)。</Figure>
+
+<Quote>与大多数使用模型里其他艺术家作品的 AI 生成视频不同，我用自己的插画作为风格指南。</Quote>
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/style-transfer-workflow.json" label="在 ComfyUI 上下载 Xindi 的风格迁移工作流（json）" />
+
+我还在自己的视频上训练了自定义 LoRA，素材是我住过的那些城市的影像。拍摄这些素材成了纪录过程中至关重要的一环。漫步在我曾经生活过的街道，让我重新与那些城市建立起联系。它们大多没有出现在最终剪辑里，但作为训练数据活在画面之中。这条混合管线让渲染最终质感更高效，也为构思省下了更多时间。
+
+在梦境段落里，我把 3D 动画与 AI 变形结合起来，从抽象过渡到具体，去模拟半梦半醒的感觉。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/bts-clip.gif" alt="Xindi Zhang 的 AI 变形工作流幕后片段" caption="幕后花絮片段，AI 变形。来源：Xindi Zhang。" />
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/morphing-workflow.json" label="在 ComfyUI 上下载 Xindi 的 AI 变形工作流（json）" />
+
+</Section>
+
+<Section id="topic-4" title="概览">
+
+<AtAGlance rows={[
+  { label: "项目", value: "USC 电影艺术学院 — MFA 拓展动画（毕业创作）" },
+  { label: "基础素材", value: "iPhone 15 Pro 实拍；她本人的 Blender 3D 动画" },
+  { label: "核心技术", value: "在 ComfyUI 中，通过 IP-Adapter + ControlNet 在 SD 1.5 里做风格迁移" },
+  { label: "风格来源", value: "她本人的插画 + 在她本人城市影像上训练的自定义 LoRA" },
+  { label: "后期收尾", value: "在 After Effects 中做深度、遮罩和淡入淡出处理；大量合成" },
+  { label: "成果", value: "2025 学生奥斯卡奖金奖；第 98 届奥斯卡短名单；亚马逊 AI Studio 的 AI Creative 职位" }
+]} />
+
+</Section>
+
+<Section id="topic-5">
+
+### 这部影片赢得了学生奥斯卡奖金奖，并入围了奥斯卡短名单。接下来呢？
+
+我拍这部影片出于创作而非职业的理由。老实说，我根本没指望它会与一份工作产生任何联系。后来它赢得了 2025 学生奥斯卡奖金奖并入围奥斯卡短名单，然后电话就开始打进来了。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/awards.png" alt="Xindi Zhang 在 2025 学生奥斯卡奖颁奖现场" caption="Xindi Zhang 在 2025 学生奥斯卡奖颁奖现场。来源：Oscars Press Office。" />
+
+人们想要的是这种结合：一个既懂传统手艺、又懂 AI 工具的人。我现在是亚马逊 AI Studio 的 AI Creative，负责构建定制的生产管线。我在整个行业里看到同样的需求，ComfyUI 经验开始作为一项要求出现在各大工作室和设计机构的招聘启事中。
+
+<Quote>它不是偷走我艺术的工具。它是拓展我艺术的工具。</Quote>
+
+我给其他学生的建议其实与软件无关。AI 只是又一个用来传达想法的工具，但没有什么比故事本身更重要。如果你用 AI，就有意识地去用。你越是理解它，就越有自由去创作真正属于你自己的作品。
+
+</Section>
+
+<AuthorBio people={[{ name: "Xindi Zhang", photo: "https://media.comfy.org/website/customers/xindi-zhang/profile.jpg", bio: `Xindi Zhang 是一位中国动画导演与视觉艺术家（RISD 插画 BFA，2020；USC 拓展动画 MFA，2025）。The Song of Drifters 荣获 2025 学生奥斯卡奖金奖，并入围第 98 届奥斯卡短名单。她现任亚马逊 AI Studio 的 AI Creative，曾与索尼音乐的沉浸式工作室合作，目前在南佛罗里达大学任教。` }]} />
+
+<EducationCta />

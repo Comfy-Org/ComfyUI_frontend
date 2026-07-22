@@ -1,0 +1,103 @@
+---
+title: "The tool that expands my art: Xindi Zhang's Oscar-shortlisted thesis, built in ComfyUI"
+category: "CREATIVE CAMPUS SHOWCASE"
+description: "How a USC Expanded Animation thesis became a Student Academy Award winner, an Oscar shortlist entry, and helped land a job at Amazon — with the artist's own illustrations as the style guide."
+cover: "https://media.comfy.org/website/customers/xindi-zhang/cover.webp"
+order: 5
+sections:
+  - id: topic-1
+    label: "INTRO"
+  - id: topic-2
+    label: "WHY COMFYUI"
+  - id: topic-3
+    label: "THE PIPELINE"
+  - id: topic-4
+    label: "AT A GLANCE"
+  - id: topic-5
+    label: "WHAT'S NEXT"
+---
+
+<Section id="topic-1">
+
+<Embed src="https://player.vimeo.com/video/1131160045" title="The Song of Drifters by Xindi Zhang" />
+
+*From The Song of Drifters. Film images: Xindi Zhang.*
+
+### Tell us about The Song of Drifters. What is it about, and where did it start?
+
+The Song of Drifters is a documentary animation about people caught between leaving and returning, wanderers who drift through unfamiliar cities, holding onto memories of a homeland out of reach and searching for a sense of belonging. The title is a direct translation from an ancient Chinese poem about a mother's love for a child who leaves her hometown. My version takes the opposite point of view, from the child's perspective.
+
+I built the film in ComfyUI. When I started, I was not trying to show what AI could do. I was trying to prove something almost opposite.
+
+<Quote>It started as a challenge to the stereotype that AI-generated work is generic and cheap. I wanted to prove that AI could be an amplifier for personal vision, not a replacement for it.</Quote>
+
+</Section>
+
+<Section id="topic-2">
+
+### You came to this from illustration, not engineering. How did you end up in ComfyUI?
+
+I started as an illustrator. I earned my BFA in illustration at the Rhode Island School of Design, then worked as a game concept artist, where I picked up shaders, Unity, and Unreal. That technical side made me a fast learner with new tools. Later I went to USC's School of Cinematic Arts for an MFA in Expanded Animation, where I studied with Professor Kathy Smith.
+
+By my thesis year I had moved from Stable Diffusion's standard interfaces to ComfyUI, because I think in node-based structures and I wanted to control every step. Most AI tools are one click: you prompt, you click, you get a result. That is not what I wanted.
+
+<Quote>I want to control the process, and the process is even more important than the result itself. For artists like me, I don't want to automate anything. I want to participate in every single stage of designing the workflow. That's the fun part of it.</Quote>
+
+</Section>
+
+<Section id="topic-3">
+
+### Walk us through the pipeline. What were you actually feeding the model?
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/balloon-workflow.png" alt="Xindi's ComfyUI workflow for the balloon sequence">Xindi's ComfyUI workflow for the balloon sequence. Source: [xindizhangart.com](https://xindizhangart.com).</Figure>
+
+My core technique was style transfer in Stable Diffusion 1.5, driven by IP-Adapter and ControlNet. What mattered most was what I fed it: my own work. The base materials were live-action footage I shot on an iPhone 15 Pro and 3D animation I built in Blender. The AI restyled imagery I had already made. It did not invent it.
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/film-still.jpg" alt="Style-guide still from The Song of Drifters">Style-guide still from The Song of Drifters. Source: [xindizhangart.com](https://xindizhangart.com).</Figure>
+
+<Quote>Unlike most AI-generated videos, which use other artists' works from the model, I use my own illustrations as the style guide.</Quote>
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/style-transfer-workflow.json" label="Download Xindi's style transfer workflow (json) on ComfyUI" />
+
+I also trained custom LoRAs on my own video, footage of the cities I had lived in. Capturing that footage became a vital part of the documentary process. Wandering through the streets where I once lived let me reconnect with those cities. Most of it never appears in the final cut, but it lives in the visuals as training data. The hybrid pipeline made rendering the final look more efficient and saved more time for ideation.
+
+For the dream sequences I combined animated 3D with AI morphing, moving from abstract to concrete to mimic the feeling of being half awake.
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/bts-clip.gif" alt="Behind-the-scenes clip of Xindi Zhang's AI morphing workflow" caption="BTS clip, AI morphing. Source: Xindi Zhang." />
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/morphing-workflow.json" label="Download Xindi's AI morphing workflow (json) on ComfyUI" />
+
+</Section>
+
+<Section id="topic-4" title="At a glance">
+
+<AtAGlance rows={[
+  { label: "Program", value: "USC School of Cinematic Arts — MFA Expanded Animation (thesis)" },
+  { label: "Base materials", value: "iPhone 15 Pro live-action; her own Blender 3D animation" },
+  { label: "Core technique", value: "Style transfer in SD 1.5 via IP-Adapter + ControlNet, in ComfyUI" },
+  { label: "Style source", value: "Her own illustrations + custom LoRAs trained on her own city footage" },
+  { label: "Finishing", value: "Depth, mask, and fade passes in After Effects; heavy compositing" },
+  { label: "Outcome", value: "Student Academy Awards Golden Award (2025); 98th Academy Awards shortlist; AI Creative role at Amazon AI Studio" }
+]} />
+
+</Section>
+
+<Section id="topic-5">
+
+### The film won gold at the Student Academy Awards and was shortlisted for the Oscars. What's next?
+
+I made the film for creative reasons, not career ones. I honestly did not expect it to connect to a job at all. Then it won the Golden Award at the 2025 Student Academy Awards and was shortlisted for the Oscars, and the calls started.
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/awards.png" alt="Xindi Zhang at the 2025 Student Academy Awards" caption="Xindi Zhang at the 2025 Student Academy Awards. Source: Oscars Press Office." />
+
+What people wanted was the combination: someone who understands both traditional craft and AI tools. I now work as an AI Creative at Amazon AI Studio building custom production pipelines. I see that same demand across the industry, with ComfyUI experience starting to show up as a requirement in job postings at major studios and design agencies.
+
+<Quote>It's not the tool that steals my art. It's the tool that expands my art.</Quote>
+
+My advice to other students is not really about software. AI is just another tool to convey ideas, but nothing is more important than the story itself. If you use AI, use it on purpose. The more you understand it, the more freedom you have to make work that is genuinely yours.
+
+</Section>
+
+<AuthorBio people={[{ name: "Xindi Zhang", photo: "https://media.comfy.org/website/customers/xindi-zhang/profile.jpg", bio: `Xindi Zhang is a Chinese animation director and visual artist (RISD BFA in illustration, 2020; USC MFA in Expanded Animation, 2025). The Song of Drifters won the Golden Award at the 2025 Student Academy Awards and was shortlisted for the 98th Academy Awards. She works as an AI Creative at Amazon AI Studio, has collaborated with Sony Music's immersive studio, and is now on the faculty at the University of South Florida.` }]} />
+
+<EducationCta />

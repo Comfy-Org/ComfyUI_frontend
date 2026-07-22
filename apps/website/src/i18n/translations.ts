@@ -1218,11 +1218,25 @@ const translations = {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
+  'pricing.subtitle.edu': {
+    en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
+    'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
+  },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
   'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
+  // Education-only monthly toggle label; zh-CN drafted, pending native review.
+  'pricing.period.monthly.edu': {
+    en: 'Monthly (Up to 15% off)',
+    'zh-CN': '按月（最高 15% 优惠）'
+  },
   'pricing.period.yearly': {
     en: 'Yearly (Up to 20% off)',
     'zh-CN': '按年（最高 20% 优惠）'
+  },
+  // Education-only yearly toggle label; zh-CN drafted, pending native review.
+  'pricing.period.yearly.edu': {
+    en: 'Yearly (Up to 25% off)',
+    'zh-CN': '按年（最高 25% 优惠）'
   },
   'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
   'pricing.period.billedYearly': {
@@ -1232,6 +1246,11 @@ const translations = {
   'pricing.savePercent': {
     en: 'Save {pct}% ({amount})',
     'zh-CN': '节省 {pct}%（{amount}）'
+  },
+  // Team-card education saving label; zh-CN drafted, pending native review.
+  'pricing.team.educationalSaving': {
+    en: 'Educational saving ~{pct}% ({amount})',
+    'zh-CN': '教育优惠 ~{pct}%（{amount}）'
   },
   'pricing.team.videosEstimate': {
     en: 'Generates ~{count} 5s videos*',
@@ -1394,6 +1413,33 @@ const translations = {
     'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
   'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  // Education re-skin of the enterprise band; zh-CN drafted, pending native review.
+  'pricing.creativeCampus.label': {
+    en: 'Creative Campus',
+    'zh-CN': '创意校园'
+  },
+  'pricing.creativeCampus.description': {
+    en: 'Partner with us on custom features, dedicated support, course accreditation, and a deeper campus partnership.',
+    'zh-CN':
+      '与我们合作，共同打造定制功能、专属支持、课程认证以及更深入的校园合作。'
+  },
+  // Student Ambassador interest band (education only); zh-CN drafted, pending review.
+  'pricing.studentAmbassador.comingSoon': {
+    en: 'Coming Soon',
+    'zh-CN': '即将推出'
+  },
+  'pricing.studentAmbassador.label': {
+    en: 'Student Ambassador',
+    'zh-CN': '学生大使'
+  },
+  'pricing.studentAmbassador.description': {
+    en: 'For students who want to bring Comfy to their campus.',
+    'zh-CN': '面向希望将 Comfy 带到校园的学生。'
+  },
+  'pricing.studentAmbassador.cta': {
+    en: 'Register Interest',
+    'zh-CN': '登记意向'
+  },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
@@ -2418,6 +2464,7 @@ const translations = {
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
+  'nav.education': { en: 'Education', 'zh-CN': '教育' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
@@ -4591,6 +4638,84 @@ const translations = {
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
     'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Education page (/education) — head metadata
+  'education.page.title': {
+    en: 'Comfy for Education - Student & Educator Discounts',
+    'zh-CN': 'Comfy 教育版 - 学生与教育工作者优惠'
+  },
+  'education.page.description': {
+    en: 'Up to 25% off Comfy Cloud for every student and educator. Sign up with your academic email for discounted access to cloud-powered ComfyUI workflows.',
+    'zh-CN':
+      '所有学生和教育工作者均可享受 Comfy Cloud 最高 25% 的折扣。使用您的学术邮箱注册，即可以优惠价格使用云端 ComfyUI 工作流。'
+  },
+
+  // EducationHeroSection
+  'education.hero.badge': {
+    en: 'EDUCATION',
+    'zh-CN': '教育'
+  },
+  'education.hero.title': {
+    en: 'Up to 25% off*\nfor every student\nand educator',
+    'zh-CN': '所有学生和教育工作者\n均可享受最高 25% 折扣*'
+  },
+  'education.hero.subtitle': {
+    en: 'Bring ComfyUI into your classroom — sign up with your academic email for discounted access. Scroll down to see how others use it.',
+    'zh-CN':
+      '将 ComfyUI 带入您的课堂 — 使用您的学术邮箱注册即可享受优惠。向下滚动，了解其他人如何使用它。'
+  },
+  'education.hero.footnote': {
+    en: '*Up to 25% off on annual team plans',
+    'zh-CN': '*年付团队方案最高可享 25% 折扣'
+  },
+  'education.hero.backdropAlt': {
+    en: 'Floating 3D lab and measuring instruments',
+    'zh-CN': '漂浮的 3D 实验与测量仪器'
+  },
+
+  // EducationHowItWorksSection
+  'education.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '使用方法'
+  },
+  'education.howItWorks.mediaAlt': {
+    en: 'Comfy-generated artwork of a luminous tree',
+    'zh-CN': 'Comfy 生成的发光树木艺术作品'
+  },
+
+  // EducationCustomerStoriesSection
+  'education.customerStories.heading': {
+    en: 'Educators and students using ComfyUI',
+    'zh-CN': '使用 ComfyUI 的教育者与学生'
+  },
+  'education.customerStories.subheading': {
+    en: 'See how USC, CMU, and UAL bring ComfyUI into the classroom',
+    'zh-CN': '看看 USC、CMU 和 UAL 如何将 ComfyUI 带入课堂'
+  },
+
+  // EducationFAQSection
+  'education.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+
+  // EducationCtaSection
+  'education.cta.heading': {
+    en: 'Start creating with ComfyUI',
+    'zh-CN': '开始使用 ComfyUI 创作'
+  },
+  'education.cta.choosePlan': {
+    en: 'Choose your plan',
+    'zh-CN': '选择方案'
+  },
+  'education.cta.startLearning': {
+    en: 'Start learning',
+    'zh-CN': '开始学习'
+  },
+  'education.cta.termsLabel': {
+    en: 'For pricing, plans, credits and billing details, see the Pricing FAQs.',
+    'zh-CN': '有关定价、方案、额度和账单的详细信息，请参阅定价常见问题。'
   },
 
   // Launches page (/launches) — head metadata
