@@ -19,7 +19,7 @@
           })
         }}
       </span>
-      <span v-if="verifyStatusKey" class="text-xs text-error">
+      <span v-if="verifyStatusKey" role="alert" class="text-xs text-error">
         {{ $t(verifyStatusKey) }}
       </span>
     </div>
@@ -66,8 +66,13 @@ const { isSending, isSent, sendVerification, refreshVerification } =
 const { fetchStatus } = useSubscription()
 const authStore = useAuthStore()
 
+type VerifyStatusKey =
+  | 'subscription.eduVerifySendFailed'
+  | 'subscription.eduVerifyStillUnverified'
+  | 'subscription.eduVerifyFailed'
+
 const isConfirmingVerification = ref(false)
-const verifyStatusKey = ref<string | null>(null)
+const verifyStatusKey = ref<VerifyStatusKey | null>(null)
 
 const handleSendVerification = async () => {
   verifyStatusKey.value = null

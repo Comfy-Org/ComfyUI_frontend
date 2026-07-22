@@ -127,6 +127,29 @@ describe('EduVerifyCallout', () => {
     expect(mockCreateCustomer).not.toHaveBeenCalled()
   })
 
+  it('ignores a second confirm click while one is in flight', async () => {
+    const user = userEvent.setup()
+    mockNeedsEduVerification.value = true
+    mockIsSent.value = true
+    let release!: (v: boolean) => void
+    mockRefreshVerification.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        release = resolve
+      })
+    )
+    renderComponent()
+
+    const confirm = screen.getByRole('button', { name: "I've verified" })
+    await user.click(confirm)
+    await user.click(confirm)
+    release(true)
+
+    await vi.waitFor(() => {
+      expect(mockCreateCustomer).toHaveBeenCalledOnce()
+    })
+    expect(mockRefreshVerification).toHaveBeenCalledOnce()
+  })
+
   it('re-provisions then refetches status once verified', async () => {
     const user = userEvent.setup()
     mockNeedsEduVerification.value = true

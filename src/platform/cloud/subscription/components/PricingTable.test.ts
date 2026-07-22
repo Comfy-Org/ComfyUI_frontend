@@ -489,7 +489,7 @@ describe('PricingTable', () => {
     // off the yearly price (= 25% off the monthly list).
     it.for([
       ['standard', 'monthly', '$18', '$20', null],
-      ['creator', 'monthly', '$31.5', '$35', null],
+      ['creator', 'monthly', '$31.50', '$35', null],
       ['pro', 'monthly', '$90', '$100', null],
       // Yearly strikes the monthly list price: EDU yearly = 25% off list.
       ['standard', 'yearly', '$15', '$20', 'Billed yearly ($180)'],

@@ -344,7 +344,7 @@ describe('UnifiedPricingTable EDU pricing', () => {
   // the yearly price (= 25% off the monthly list). Yearly strikes the monthly list.
   it.for([
     ['standard', 'monthly', '$18', '$20'],
-    ['creator', 'monthly', '$31.5', '$35'],
+    ['creator', 'monthly', '$31.50', '$35'],
     ['pro', 'monthly', '$90', '$100'],
     ['standard', 'yearly', '$15', '$20'],
     ['creator', 'yearly', '$26.25', '$35'],

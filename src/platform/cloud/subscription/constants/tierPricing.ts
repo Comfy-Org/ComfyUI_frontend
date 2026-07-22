@@ -76,6 +76,11 @@ export const TEAM_EDU_EXTRA_PERCENT = 5
 /** Marketing max: total off the monthly list (yearly EDU = 25%), not a coupon percent. */
 export const EDU_MAX_DISCOUNT_PERCENT = 25
 
+/** Whole dollars render bare ($18); fractional prices always show cents ($31.50). */
+export function formatTierPriceValue(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2)
+}
+
 /** Display-only EDU price; the backend coupon applies the same cut at checkout. */
 export function applyEduDiscount(
   price: number,

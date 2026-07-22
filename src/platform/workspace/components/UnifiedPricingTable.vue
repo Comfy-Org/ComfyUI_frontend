@@ -121,12 +121,12 @@
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
-                  ${{ getPrice(tier) }}
+                  ${{ formatTierPriceValue(getPrice(tier)) }}
                   <span
                     v-if="getStruckPrice(tier) !== null"
                     class="text-2xl text-muted-foreground line-through"
                   >
-                    ${{ getStruckPrice(tier) }}
+                    ${{ formatTierPriceValue(getStruckPrice(tier)!) }}
                   </span>
                 </span>
                 <span class="font-inter text-sm/normal text-base-foreground">
@@ -416,9 +416,9 @@ import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
-import EduVerifyCallout from '@/platform/cloud/subscription/components/EduVerifyCallout.vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import EduVerifyCallout from '@/platform/cloud/subscription/components/EduVerifyCallout.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -426,6 +426,7 @@ import {
   TIER_PRICING,
   TIER_TO_KEY,
   applyEduDiscount,
+  formatTierPriceValue,
   TEAM_EDU_EXTRA_PERCENT
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
