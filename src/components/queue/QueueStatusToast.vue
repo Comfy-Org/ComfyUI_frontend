@@ -40,7 +40,7 @@
     <div
       v-if="expanded"
       data-testid="queue-status-panel"
-      class="flex w-80 flex-col overflow-clip rounded-lg bg-comfy-menu-bg drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+      class="flex w-80 flex-col overflow-clip rounded-lg border border-solid border-charcoal-700 bg-comfy-menu-bg drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
       <div class="flex shrink-0 items-center justify-between py-3.5 pr-3 pl-4">
         <span class="text-[13px] font-semibold text-base-foreground">
@@ -137,7 +137,7 @@
       align="end"
       :side-offset="6"
       data-testid="queue-status-idle-panel"
-      class="flex w-56 flex-col gap-3 border-none bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+      class="flex w-56 flex-col gap-3 border border-solid border-charcoal-700 bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
       <p class="text-center text-xs text-muted-foreground">
         {{ t('queueStatus.nothingRunning') }}
