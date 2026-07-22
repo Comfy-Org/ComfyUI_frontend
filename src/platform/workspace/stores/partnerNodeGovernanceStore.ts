@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import {
   getPartnerNodePolicy,
   getPartnerProviders,
@@ -13,6 +14,8 @@ import type {
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getProviderName } from '@/utils/categoryUtil'
 
 export type PartnerNodePolicyStatus =
   | 'inactive'
@@ -22,11 +25,14 @@ export type PartnerNodePolicyStatus =
   | 'ineligible'
   | 'error'
 
+const DISCOVERY_FILTER_ID = 'workspace.partner-node-governance'
+
 export const usePartnerNodeGovernanceStore = defineStore(
   'partnerNodeGovernance',
   () => {
     const { flags } = useFeatureFlags()
     const workspaceStore = useTeamWorkspaceStore()
+    const nodeDefStore = useNodeDefStore()
 
     const providers = shallowRef<PartnerProvider[]>([])
     const policy = shallowRef<PartnerNodePolicy | null>(null)
@@ -64,6 +70,29 @@ export const usePartnerNodeGovernanceStore = defineStore(
         )?.enabled === true
       )
     }
+
+    function isNodeDisabled(nodeType: string): boolean {
+      if (policy.value?.enforcementEnabled !== true) return false
+
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+      if (!nodeDef?.api_node) return false
+
+      const nodeCategory = getProviderName(nodeDef.category)
+      const provider = providers.value.find(({ nodeCategories }) =>
+        nodeCategories.includes(nodeCategory)
+      )
+      return provider !== undefined && !isProviderEnabled(provider.id)
+    }
+
+    nodeDefStore.registerNodeDefFilter({
+      id: DISCOVERY_FILTER_ID,
+      name: t('nodeFilters.workspacePartnerNodeGovernance'),
+      predicate: (nodeDef) => !isNodeDisabled(nodeDef.name)
+    })
+
+    onScopeDispose(() => {
+      nodeDefStore.unregisterNodeDefFilter(DISCOVERY_FILTER_ID)
+    })
 
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
@@ -176,6 +205,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       governedWorkspaceId,
       createInitialPolicy,
       isProviderEnabled,
+      isNodeDisabled,
       loadPolicy,
       savePolicy
     }

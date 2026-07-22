@@ -11,6 +11,8 @@ import type {
 import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
@@ -50,6 +52,26 @@ const providers: PartnerProvider[] = [
   }
 ]
 
+function nodeDef(
+  name: string,
+  overrides: Partial<ComfyNodeDef> = {}
+): ComfyNodeDef {
+  return {
+    name,
+    display_name: `Display ${name}`,
+    category: 'api/image/OpenAI',
+    python_module: 'comfy_api_nodes.openai',
+    description: '',
+    input: {},
+    output: [],
+    output_is_list: [],
+    output_name: [],
+    output_node: false,
+    api_node: true,
+    ...overrides
+  }
+}
+
 function activateWorkspace(id: string, type: 'personal' | 'team' = 'team') {
   const store = useTeamWorkspaceStore()
   store.workspaces = [
@@ -88,6 +110,15 @@ describe('partnerNodeGovernanceStore', () => {
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
     activateWorkspace('workspace-one')
+    useNodeDefStore().updateNodeDefs([
+      nodeDef('OpenAINode'),
+      nodeDef('UnknownPartnerNode', { category: 'api/image/Unknown' }),
+      nodeDef('CoreNode', {
+        api_node: false,
+        category: 'sampling',
+        python_module: 'nodes'
+      })
+    ])
   })
 
   afterEach(() => {
@@ -121,6 +152,41 @@ describe('partnerNodeGovernanceStore', () => {
         { providerId: 'route-only', enabled: true }
       ]
     })
+  })
+
+  it('denies nodes from disabled providers only while enforcement is active', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    } satisfies PartnerNodePolicy)
+    store = await createLoadedStore()
+
+    expect(store.isNodeDisabled('OpenAINode')).toBe(true)
+    expect(store.isNodeDisabled('UnknownPartnerNode')).toBe(false)
+    expect(store.isNodeDisabled('CoreNode')).toBe(false)
+
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: false }]
+    } satisfies PartnerNodePolicy)
+    await store.loadPolicy()
+
+    expect(store.isNodeDisabled('OpenAINode')).toBe(false)
+  })
+
+  it('filters disabled providers out of node discovery', async () => {
+    mockGetPartnerNodePolicy.mockResolvedValue({
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    } satisfies PartnerNodePolicy)
+    store = await createLoadedStore()
+    const nodeDefStore = useNodeDefStore()
+
+    expect(nodeDefStore.visibleNodeDefs.map(({ name }) => name)).toEqual([
+      'UnknownPartnerNode',
+      'CoreNode'
+    ])
+    expect(nodeDefStore.nodeSearchService.searchNode('OpenAINode')).toEqual([])
   })
 
   it('hides governance when the backend reports an ineligible workspace', async () => {
