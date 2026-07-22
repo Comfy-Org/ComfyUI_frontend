@@ -137,7 +137,7 @@
       align="end"
       :side-offset="6"
       data-testid="queue-status-idle-panel"
-      class="flex w-56 flex-col gap-3 p-3"
+      class="flex w-56 flex-col gap-3 border-none bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
       <p class="text-center text-xs text-muted-foreground">
         {{ t('queueStatus.nothingRunning') }}
