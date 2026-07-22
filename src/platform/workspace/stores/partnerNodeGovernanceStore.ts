@@ -49,6 +49,8 @@ export const usePartnerNodeGovernanceStore = defineStore(
     const error = shallowRef<Error | null>(null)
     let loadVersion = 0
     let workspaceVersion = 0
+    let loadPromise: Promise<void> | null = null
+    let loadPromiseWorkspaceId: string | null = null
 
     const governedWorkspaceId = computed(() => {
       const workspace = workspaceStore.activeWorkspace
@@ -122,7 +124,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
       }
     })
 
-    async function loadPolicy(): Promise<void> {
+    async function performLoadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
       const version = ++loadVersion
       if (!workspaceId) {
@@ -174,6 +176,24 @@ export const usePartnerNodeGovernanceStore = defineStore(
         }
         if (status.value !== 'unavailable') status.value = 'error'
       }
+    }
+
+    function loadPolicy(): Promise<void> {
+      const workspaceId = governedWorkspaceId.value
+      if (loadPromise && loadPromiseWorkspaceId === workspaceId) {
+        return loadPromise
+      }
+
+      const currentLoad = performLoadPolicy()
+      loadPromise = currentLoad
+      loadPromiseWorkspaceId = workspaceId
+      void currentLoad.finally(() => {
+        if (loadPromise === currentLoad) {
+          loadPromise = null
+          loadPromiseWorkspaceId = null
+        }
+      })
+      return currentLoad
     }
 
     async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<boolean> {

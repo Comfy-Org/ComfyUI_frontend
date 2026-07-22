@@ -263,6 +263,23 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isNodeDisabled('DisabledNode')).toBe(false)
   })
 
+  it('reuses the in-flight policy load', async () => {
+    let resolveLoad!: (policy: PartnerNodePolicy | null) => void
+    mockGetPartnerNodePolicy.mockReturnValue(
+      new Promise((resolve) => {
+        resolveLoad = resolve
+      })
+    )
+
+    store = usePartnerNodeGovernanceStore()
+    const pendingLoad = store.loadPolicy()
+
+    expect(mockGetPartnerNodePolicy).toHaveBeenCalledOnce()
+    resolveLoad(null)
+    await pendingLoad
+    expect(store.status).toBe('unconfigured')
+  })
+
   it('stays fail-closed while retrying an unavailable policy', async () => {
     mockGetPartnerNodePolicy.mockRejectedValueOnce(
       new PartnerNodePolicyApiError(503, 'Service Unavailable')

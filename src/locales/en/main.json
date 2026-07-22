@@ -2955,6 +2955,10 @@
         "restrictedConfirmMessage": "Only enabled partner node providers will remain available to workspace members.",
         "unrestrictedConfirmTitle": "Switch to unrestricted access?",
         "unrestrictedConfirmMessage": "All partner node providers will become available to workspace members."
+      },
+      "runBlocked": {
+        "summary": "Workflow blocked by workspace policy",
+        "detail": "Remove disabled partner nodes from this workflow or ask a workspace owner to update the policy."
       }
     },
     "dashboard": {

@@ -34,6 +34,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerQueuePromptGuard } from '@/services/queuePromptGuardService'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const {
   mockApiKeyAuthStore,
@@ -211,6 +213,167 @@ describe('ComfyApp', () => {
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('blocks before adding a disallowed prompt to the client queue', async () => {
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.before-queue',
+        () => false
+      )
+      const dispatchEvent = vi
+        .spyOn(api, 'dispatchCustomEvent')
+        .mockImplementation(() => true)
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+
+      try {
+        await expect(app.queuePrompt(0)).resolves.toBe(false)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(mockAuthStore.getAuthToken).not.toHaveBeenCalled()
+      expect(dispatchEvent).not.toHaveBeenCalled()
+      expect(queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('passes partial execution targets to queue guards', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: {},
+        error: ''
+      })
+      const queueNodeIds = [createNodeExecutionId([1])]
+      const guard = vi.fn(() => true)
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.partial-targets',
+        guard
+      )
+
+      try {
+        await app.queuePrompt(0, 1, queueNodeIds)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(guard).toHaveBeenCalledTimes(2)
+      expect(guard).toHaveBeenNthCalledWith(1, {
+        rootGraph: app.rootGraph,
+        queueNodeIds
+      })
+      expect(guard).toHaveBeenNthCalledWith(2, {
+        rootGraph: app.rootGraph,
+        queueNodeIds
+      })
+    })
+
+    it('checks again after deferred authentication resolves', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      let resolveAuth: (token: string | undefined) => void = () => {}
+      mockAuthStore.getAuthToken.mockReturnValue(
+        new Promise((resolve) => {
+          resolveAuth = resolve
+        })
+      )
+      let guardCalls = 0
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.after-auth',
+        () => ++guardCalls === 1
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+
+      try {
+        const result = app.queuePrompt(0)
+        await vi.waitFor(() => {
+          expect(mockAuthStore.getAuthToken).toHaveBeenCalledOnce()
+        })
+        resolveAuth(undefined)
+
+        await expect(result).resolves.toBe(false)
+      } finally {
+        unregisterGuard()
+      }
+      expect(guardCalls).toBe(2)
+      expect(queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('dispatches queued progress when a later batch item is blocked', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {},
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: {},
+        error: ''
+      })
+      const dispatchEvent = vi
+        .spyOn(api, 'dispatchCustomEvent')
+        .mockImplementation(() => true)
+      let guardCalls = 0
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.partial-batch',
+        () => ++guardCalls < 3
+      )
+
+      try {
+        await expect(app.queuePrompt(0, 2)).resolves.toBe(false)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(api.queuePrompt).toHaveBeenCalledOnce()
+      expect(dispatchEvent).toHaveBeenCalledWith('promptQueued', {
+        number: 0,
+        batchCount: 1,
+        requestId: 1
+      })
+    })
+
+    it('continues processing queued requests after one is blocked', async () => {
+      prepareEmptyPromptQueue()
+      let resolveAuth: (token: string | undefined) => void = () => {}
+      mockAuthStore.getAuthToken.mockReturnValue(
+        new Promise((resolve) => {
+          resolveAuth = resolve
+        })
+      )
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'allowed-job',
+        node_errors: {},
+        error: ''
+      })
+      const allowedTargets = [createNodeExecutionId([1])]
+      const blockedTargets = [createNodeExecutionId([2])]
+      let blockedChecks = 0
+      const unregisterGuard = registerQueuePromptGuard(
+        'app.test.queued-requests',
+        ({ queueNodeIds }) =>
+          queueNodeIds !== blockedTargets || ++blockedChecks === 1
+      )
+
+      try {
+        const firstQueue = app.queuePrompt(0, 1, allowedTargets)
+        await vi.waitFor(() => {
+          expect(mockAuthStore.getAuthToken).toHaveBeenCalledOnce()
+        })
+        await expect(app.queuePrompt(1, 1, blockedTargets)).resolves.toBe(false)
+        resolveAuth(undefined)
+
+        await expect(firstQueue).resolves.toBe(true)
+      } finally {
+        unregisterGuard()
+      }
+
+      expect(api.queuePrompt).toHaveBeenCalledOnce()
+      expect(api.queuePrompt).toHaveBeenCalledWith(
+        0,
+        expect.any(Object),
+        expect.objectContaining({ partialExecutionTargets: allowedTargets })
+      )
+    })
 
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
