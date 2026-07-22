@@ -4559,16 +4559,11 @@
   "queueStatus": {
     "activeGenerations": "Active generations",
     "cancelAll": "Cancel all",
-    "pending": "Pending",
-    "failed": "FAILED",
     "nothingRunning": "Nothing running right now",
-    "queued": "Queued",
-    "jobFailed": "Failed",
     "locate": "Locate",
     "cancel": "Cancel",
-    "completed": "Completed",
     "queuedCount": "Queued ({count})",
-    "runningCount": "Running ({count})",
+    "runningPosition": "Running {position}/{total}",
     "goToHistory": "Go to history"
   }
 }

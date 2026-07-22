@@ -127,6 +127,7 @@ const {
   expanded = false,
   hideChevron = false,
   hideAction = false,
+  showPercentText = true,
   progressClass = 'bg-base-foreground',
   pillClass
 } = defineProps<{
@@ -143,6 +144,8 @@ const {
   hideChevron?: boolean
   /** Hide the divider and trailing action. */
   hideAction?: boolean
+  /** Keep the progress bar but drop the numeric percent from the label. */
+  showPercentText?: boolean
   /** Tailwind bg class for the progress bar. */
   progressClass?: string
   pillClass?: string
@@ -159,7 +162,7 @@ const showPercent = computed(() => status === 'progress' && percent != null)
 const displayPercent = computed(() => clampPercentInt(Math.round(percent ?? 0)))
 /** Verb and percent read as one sentence, so they share a single text run. */
 const label = computed(() =>
-  showPercent.value ? `${verb} ${displayPercent.value}%` : verb
+  showPercent.value && showPercentText ? `${verb} ${displayPercent.value}%` : verb
 )
 
 /** Terminal states are a bare chip: no actions, no slab, no progress. */
