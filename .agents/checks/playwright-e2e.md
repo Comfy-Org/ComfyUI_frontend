@@ -73,10 +73,22 @@ Reference docs (read if you need full context):
 
 18. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
 
+### Structure, Types & Regressions (Medium)
+
+19. **Non-test code inline in the spec** — Everything outside `test.describe` belongs in a helper, fixture, or page object, never inline in the spec. Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. A spec should contain only `test.describe`/`test` blocks and imports. See `browser_tests/README.md` → Test structure.
+
+20. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. See `browser_tests/README.md` → Type safety and Test Data & Typed Mocks.
+
+21. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `browser_tests/README.md` → Spec File Placement.
+
+22. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `browser_tests/README.md` → Spec File Placement.
+
+23. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `browser_tests/README.md` → Before changing an existing test.
+
 ## Rules
 
 - Only review `.spec.ts` files and supporting code in `browser_tests/`
 - Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules
-- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18)
+- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18), "medium" for structure/type/regression rules (19-23)
 - When flagging missing fixture usage (item 8), confirm the helper exists by checking the fixture code — don't assume
 - Existing tests that predate conventions are acceptable to modify but not required to fix

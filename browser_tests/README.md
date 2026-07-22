@@ -127,6 +127,17 @@ browser_tests/
 └── tests/            - Test files (*.spec.ts), nested by feature
 ```
 
+### Spec File Placement
+
+- **Nest specs in a folder that mirrors the feature under test.** Do not dump
+  new specs at the top level of `tests/` — create/extend the matching feature
+  subfolder (e.g. `tests/templates/`, `tests/nodes/`) so the layout mirrors the
+  product surface. A flat `tests/*.spec.ts` pile is not acceptable for new work.
+- **Keep spec filenames current.** A spec's name must describe the coverage it
+  actually holds. When a test's scope changes, rename the file — never leave a
+  stale name that misdescribes what runs. Stale names send reviewers and future
+  authors to the wrong file.
+
 ### Architectural Separation
 
 - **`fixtures/data/`** — Test data: mock API responses, workflow JSONs, node
@@ -168,12 +179,31 @@ flowchart TD
    programmatically. Assets live in `assets/`; create new ones by copying
    `assets/default.json` and editing the JSON.
 
+### Before changing an existing test
+
+Run a **regression-detection pass** before you edit a test you did not write.
+`git blame` (or `git log -p`) the lines you are about to change and read the
+commit that introduced them — an assertion, wait, or timeout that looks
+redundant is often a deliberate fix for a past flake or bug. Confirm you are not
+silently undoing that fix. If the history shows the line guards a specific
+race/regression, preserve the guarantee (keep it, or replace it with an
+equivalent) rather than deleting it.
+
 ### Test structure — Arrange / Act / Assert
 
 - All mock setup, state resets, and fixture arrangement belong in
   `test.beforeEach()` or Playwright fixtures.
 - Inside `test()`, only **act** (user actions) and **assert**.
 - Never call `clearAllMocks` or reset mock state mid-test.
+- **Everything outside `test.describe` lives in a helper, fixture, or page
+  object — never inline in the spec.** A spec file should contain
+  `test.describe`/`test` blocks and their imports, nothing else. Reusable dialog
+  interactions (closing the templates dialog, dismissing a modal), setup
+  routines, and locator wiring belong in `fixtures/components/` (page objects),
+  `fixtures/helpers/`, or a Playwright fixture — not as free-standing functions
+  or constants at the top of the spec. Example: a "close the templates dialog"
+  step becomes a method on a `Templates` page object, not an inline helper in the
+  spec.
 
 ```typescript
 import {
@@ -396,6 +426,15 @@ type TestSettingId = keyof Settings
 Forbidden: `settings: testData as any`, `data as unknown as SomeType`. Read
 internal state via `page.evaluate` and stores directly — don't widen public API
 types to expose internals.
+
+**Never inline-declare types in tests.** Do not hand-write `interface`/`type`
+shapes for API payloads, node definitions, or store data inside a spec or mock
+file. Import the real type instead — the generated packages
+(`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`)
+or the `src/` Zod schemas (see
+[Test Data & Typed Mocks](#test-data--typed-api-mocks) for the full source-of-truth
+table). An inline type is a copy that silently drifts from the real shape; a
+generated type or schema fails to compile the moment the contract changes.
 
 ### Assertion messages & soft assertions
 
