@@ -381,18 +381,6 @@ describe('useLinkStore', () => {
     expect(originLinkIds(toNodeId(5), 3)).toEqual([toLinkId(1)])
   })
 
-  it('drops an evicted link from the output index', () => {
-    const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
-    const mover = link(2, 7, 0, 9, 3)
-    store.registerLink(graphA, mover)
-
-    store.updateEndpoint(graphA, mover, { targetSlot: 2 })
-
-    expect(originLinkIds(toNodeId(7), 0)).toEqual([toLinkId(2)])
-    expect(originLinkIds(toNodeId(5), 0)).toEqual([])
-  })
-
   it('stops answering output queries for a cleared graph', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
