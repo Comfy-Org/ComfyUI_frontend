@@ -59,7 +59,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token?: string
   invited_at: string
   expires_at: string
 }
