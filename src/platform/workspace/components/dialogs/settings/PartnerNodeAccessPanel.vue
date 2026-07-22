@@ -59,17 +59,44 @@
     </div>
 
     <template v-else>
-      <label class="w-full max-w-80">
-        <span class="sr-only">
-          {{ $t('workspacePanel.partnerNodes.searchPlaceholder') }}
-        </span>
-        <SearchInput
-          v-model="searchQuery"
-          :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
-          size="lg"
-          class="w-full"
-        />
-      </label>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="w-full max-w-80">
+          <span class="sr-only">
+            {{ $t('workspacePanel.partnerNodes.searchPlaceholder') }}
+          </span>
+          <SearchInput
+            v-model="searchQuery"
+            :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
+            size="lg"
+            class="w-full"
+          />
+        </label>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            :loading="pendingBulkAction === 'enable'"
+            :disabled="isSaving"
+            @click="handleEnableAll"
+          >
+            {{ $t('workspacePanel.partnerNodes.enableAll') }}
+          </Button>
+          <Button
+            variant="secondary"
+            :disabled="isSaving"
+            @click="confirmDisableAll"
+          >
+            {{ $t('workspacePanel.partnerNodes.disableAll') }}
+          </Button>
+        </div>
+      </div>
+
+      <p
+        v-if="saveError"
+        role="alert"
+        class="rounded-lg bg-destructive-background/10 px-4 py-3 text-sm text-destructive-background"
+      >
+        {{ $t('workspacePanel.partnerNodes.saveError') }}
+      </p>
 
       <div
         role="table"
@@ -124,35 +151,23 @@
                 )
               }}
             </span>
-            <span
-              role="cell"
-              :class="
-                cn(
-                  'flex items-center gap-2 text-sm',
-                  provider.enabled
-                    ? 'text-base-foreground'
-                    : 'text-muted-foreground'
-                )
-              "
-            >
-              <i
-                :class="
-                  cn(
-                    'size-4',
-                    provider.enabled
-                      ? 'icon-[lucide--circle-check]'
-                      : 'icon-[lucide--circle-x]'
-                  )
+            <div role="cell" class="flex items-center">
+              <SwitchRoot
+                :model-value="provider.enabled"
+                :disabled="isSaving"
+                :aria-label="
+                  $t('workspacePanel.partnerNodes.toggleProvider', {
+                    provider: provider.displayName
+                  })
                 "
-              />
-              {{
-                $t(
-                  provider.enabled
-                    ? 'workspacePanel.partnerNodes.enabled'
-                    : 'workspacePanel.partnerNodes.disabled'
-                )
-              }}
-            </span>
+                class="focus-visible:ring-ring relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full bg-secondary-background outline-hidden transition-colors focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary-background"
+                @update:model-value="handleProviderChange(provider.id, $event)"
+              >
+                <SwitchThumb
+                  class="block size-4 translate-x-0.5 rounded-full bg-base-foreground transition-transform data-[state=checked]:translate-x-4"
+                />
+              </SwitchRoot>
+            </div>
           </div>
 
           <div
@@ -193,23 +208,37 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { SwitchRoot, SwitchThumb } from 'reka-ui'
+
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { getProviderName } from '@/utils/categoryUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const governanceStore = usePartnerNodeGovernanceStore()
-const { policy, providers, status } = storeToRefs(governanceStore)
-const { isProviderEnabled, loadPolicy } = governanceStore
+const { isSaving, policy, providers, status } = storeToRefs(governanceStore)
+const {
+  isProviderEnabled,
+  loadPolicy,
+  setAllProvidersEnabled,
+  setProviderEnabled
+} = governanceStore
 const nodeDefStore = useNodeDefStore()
 const { nodeDefsByName } = storeToRefs(nodeDefStore)
+const dialogStore = useDialogStore()
+const { t } = useI18n()
 
 const searchQuery = ref('')
 const expandedProviderIds = ref(new Set<string>())
+const pendingBulkAction = ref<'enable' | null>(null)
+const saveError = ref(false)
 
 const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
@@ -234,7 +263,7 @@ const providerRows = computed(() =>
 
       return {
         ...provider,
-        enabled: !isRestricted.value || isProviderEnabled(provider.id),
+        enabled: isProviderEnabled(provider.id),
         nodes
       }
     })
@@ -274,5 +303,41 @@ function isProviderExpanded(providerId: string) {
     searchQuery.value.trim().length > 0 ||
     expandedProviderIds.value.has(providerId)
   )
+}
+
+async function performSave(action: () => Promise<void>) {
+  saveError.value = false
+  try {
+    await action()
+  } catch {
+    saveError.value = true
+  }
+}
+
+function handleProviderChange(providerId: string, enabled: boolean) {
+  void performSave(() => setProviderEnabled(providerId, enabled))
+}
+
+async function handleEnableAll() {
+  pendingBulkAction.value = 'enable'
+  await performSave(() => setAllProvidersEnabled(true))
+  pendingBulkAction.value = null
+}
+
+function confirmDisableAll() {
+  const dialog = showConfirmDialog({
+    headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
+    props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
+    footerProps: {
+      confirmText: t('workspacePanel.partnerNodes.disableAll'),
+      confirmVariant: 'destructive',
+      optionsDisabled: isSaving,
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: async () => {
+        await performSave(() => setAllProvidersEnabled(false))
+        dialogStore.closeDialog(dialog)
+      }
+    }
+  })
 }
 </script>
