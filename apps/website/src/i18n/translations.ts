@@ -4731,10 +4731,6 @@ const translations = {
     en: 'Pair amplified expressions with core logos.',
     'zh-CN': '将放大的表现形式与核心 logo 搭配使用。'
   },
-  'brand.voice.do.6': {
-    en: 'Place the logomark only in center or corners.',
-    'zh-CN': '仅将图形标置于中心或四角。'
-  },
   'brand.voice.dont.0': {
     en: 'Outline the logo.',
     'zh-CN': '为 logo 描边。'

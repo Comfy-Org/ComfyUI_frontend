@@ -31,8 +31,7 @@ const doExamples = [
   t('brand.voice.do.2', locale),
   t('brand.voice.do.3', locale),
   t('brand.voice.do.4', locale),
-  t('brand.voice.do.5', locale),
-  t('brand.voice.do.6', locale)
+  t('brand.voice.do.5', locale)
 ]
 
 const dontExamples = [
