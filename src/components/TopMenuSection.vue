@@ -10,7 +10,9 @@
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
+      <!-- pt-1 matches the net offset the subgraph breadcrumb applies to the
+           graph mode pill (-mt-3 + pt-4), keeping both columns on one line -->
+      <div class="mx-1 flex flex-col items-end gap-1 pt-1">
         <div class="flex items-center gap-2">
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
