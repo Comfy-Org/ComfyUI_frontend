@@ -75,6 +75,8 @@ describe('articleNode', () => {
     const orgRef = { '@id': organizationId(siteUrl) }
     expect(node['@id']).toBe(jsonLdId(pageUrl, 'article'))
     expect(node.headline).toBe('Acme ships faster')
+    expect(node.description).toBe('How Acme used Comfy')
+    expect(node.image).toBe('https://media.comfy.org/acme.webp')
     expect(node.isPartOf).toEqual(webPageRef)
     expect(node.mainEntityOfPage).toEqual(webPageRef)
     expect(node.author).toEqual(orgRef)

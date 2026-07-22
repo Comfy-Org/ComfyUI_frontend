@@ -124,4 +124,20 @@ test.describe('Customer story detail @smoke', () => {
     const article = graph.find((node) => node['@type'] === 'Article')
     expect(article?.headline).toMatch(/Series Entertainment/i)
   })
+
+  test('emits a locale-derived Article graph on the Chinese route', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/customers/golan-levin')
+
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    expect(graph.map((node) => node['@type'])).toContain('Article')
+    // Page/breadcrumb ids must carry the localized route.
+    expect(blocks[0]).toContain('/zh-CN/customers/golan-levin')
+  })
 })

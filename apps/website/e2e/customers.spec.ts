@@ -63,4 +63,22 @@ test.describe('Customers @smoke', () => {
     const list = graph.find((node) => node['@type'] === 'ItemList')
     expect(list?.itemListElement as unknown[]).toHaveLength(cardSlugs.length)
   })
+
+  test('emits locale-derived JSON-LD URLs on the Chinese route', async ({
+    page
+  }) => {
+    await page.goto('/zh-CN/customers')
+
+    await expect(page.locator('a[href*="/customers/"]').first()).toBeVisible()
+
+    const blocks = await page
+      .locator('script[type="application/ld+json"]')
+      .allTextContents()
+    expect(blocks).toHaveLength(1)
+
+    const graph = JSON.parse(blocks[0])['@graph'] as Record<string, unknown>[]
+    expect(graph.map((node) => node['@type'])).toContain('CollectionPage')
+    // Breadcrumb/item URLs must derive from the localized route, not /customers.
+    expect(blocks[0]).toContain('/zh-CN/customers')
+  })
 })
