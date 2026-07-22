@@ -34,7 +34,9 @@
       {{
         member.role === 'owner'
           ? $t('workspaceSwitcher.roleOwner')
-          : $t('workspaceSwitcher.roleMember')
+          : member.role === 'admin'
+            ? $t('workspaceSwitcher.roleAdmin')
+            : $t('workspaceSwitcher.roleMember')
       }}
     </span>
     <div

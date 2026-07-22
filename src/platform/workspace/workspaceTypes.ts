@@ -14,10 +14,11 @@ export type WorkspaceId = string
  * primitive at use sites without changing structural typing.
  */
 export type WorkspaceInviteId = string
+export type WorkspaceRole = 'owner' | 'admin' | 'member'
 
 export interface WorkspaceWithRole {
   id: WorkspaceId
   name: string
   type: 'personal' | 'team'
-  role: 'owner' | 'member'
+  role: WorkspaceRole
 }

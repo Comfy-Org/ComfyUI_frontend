@@ -11,13 +11,14 @@ const i18n = createI18n({
     en: {
       workspaceSwitcher: {
         roleOwner: 'Owner',
+        roleAdmin: 'Admin',
         roleMember: 'Member'
       }
     }
   }
 })
 
-function renderRoleBadge(role: 'owner' | 'member') {
+function renderRoleBadge(role: 'owner' | 'admin' | 'member') {
   return render(RoleBadge, {
     props: { role },
     global: { plugins: [i18n] }
@@ -33,5 +34,10 @@ describe('RoleBadge', () => {
   it('renders the member label', () => {
     renderRoleBadge('member')
     expect(screen.getByText('Member')).toBeInTheDocument()
+  })
+
+  it('renders the admin label', () => {
+    renderRoleBadge('admin')
+    expect(screen.getByText('Admin')).toBeInTheDocument()
   })
 })

@@ -172,6 +172,7 @@ function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
 
 function getRoleLabel(role: AvailableWorkspace['role']): string {
   if (role === 'owner') return t('workspaceSwitcher.roleOwner')
+  if (role === 'admin') return t('workspaceSwitcher.roleAdmin')
   if (role === 'member') return t('workspaceSwitcher.roleMember')
   return ''
 }

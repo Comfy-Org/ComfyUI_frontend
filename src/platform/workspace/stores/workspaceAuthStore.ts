@@ -20,7 +20,7 @@ const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member'])
+  role: z.enum(['owner', 'admin', 'member'])
 })
 
 const WorkspaceTokenResponseSchema = z.object({
@@ -31,7 +31,7 @@ const WorkspaceTokenResponseSchema = z.object({
     name: z.string(),
     type: z.enum(['personal', 'team'])
   }),
-  role: z.enum(['owner', 'member']),
+  role: z.enum(['owner', 'admin', 'member']),
   permissions: z.array(z.string())
 })
 
