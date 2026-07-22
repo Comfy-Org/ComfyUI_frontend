@@ -12,6 +12,7 @@
       :expanded="expanded"
       :hide-chevron="activeJobs.length === 0"
       :hide-action="!toastView.showStop"
+      :show-percent-text="toastView.showPercentText"
       progress-class="bg-base-foreground"
       @toggle-expand="expanded = !expanded"
     >
@@ -129,14 +130,14 @@
       align="end"
       :side-offset="6"
       data-testid="queue-status-idle-panel"
-      class="flex w-56 flex-col gap-3 border border-solid border-charcoal-700 bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
+      class="flex w-48 flex-col gap-3 rounded-xl border border-solid border-charcoal-700 bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
     >
       <p class="text-center text-xs text-muted-foreground">
         {{ t('queueStatus.nothingRunning') }}
       </p>
       <Button
         variant="secondary"
-        size="sm"
+        size="md"
         class="w-full gap-2"
         data-testid="queue-status-go-history"
         @click="goToHistory"
@@ -154,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { PopoverTrigger } from 'reka-ui'
@@ -208,21 +209,54 @@ type ToastView = {
   status: 'progress' | 'done' | 'failed'
   verb: string
   percent: number | null
+  showPercentText: boolean
   showStop: boolean
 }
 
+/**
+ * Size of the burst the user submitted, held until the queue drains so the
+ * pill can count "3/7" through it. Batches and parallel runs both land here.
+ */
+const batchTotal = ref(0)
+const outstandingCount = computed(() => runningCount.value + pendingCount.value)
+watch(outstandingCount, (outstanding) => {
+  batchTotal.value =
+    outstanding === 0 ? 0 : Math.max(batchTotal.value, outstanding)
+})
+const batchPosition = computed(() =>
+  Math.min(batchTotal.value - outstandingCount.value + 1, batchTotal.value)
+)
+
+const initializingCount = computed(
+  () => activeJobs.value.filter((job) => job.state === 'initialization').length
+)
+
+// Mirrors JobState: initialization and pending are distinct waits, and each
+// state reuses the shared label the rest of the queue UI already shows.
 const toastView = computed<ToastView | null>(() => {
   if (runningCount.value > 0 || isExecuting.value) {
-    // A single aggregate percent is meaningless across parallel runs, so the
-    // count replaces it once more than one job is executing.
-    const isParallel = runningCount.value > 1
+    const isBatch = batchTotal.value > 1
     return {
       status: 'progress',
-      verb: isParallel
-        ? t('queueStatus.runningCount', { count: runningCount.value })
+      verb: isBatch
+        ? t('queueStatus.runningPosition', {
+            position: batchPosition.value,
+            total: batchTotal.value
+          })
         : t('g.running'),
-      percent: isParallel ? null : totalPercent.value,
+      percent: totalPercent.value,
+      // The counter carries the batch story; a second number just competes.
+      showPercentText: !isBatch,
       showStop: true
+    }
+  }
+  if (initializingCount.value > 0) {
+    return {
+      status: 'progress',
+      verb: t('queue.initializingAlmostReady'),
+      percent: null,
+      showPercentText: false,
+      showStop: false
     }
   }
   if (pendingCount.value > 0) {
@@ -231,8 +265,9 @@ const toastView = computed<ToastView | null>(() => {
       verb:
         pendingCount.value > 1
           ? t('queueStatus.queuedCount', { count: pendingCount.value })
-          : t('queueStatus.queued'),
+          : t('g.queued'),
       percent: null,
+      showPercentText: false,
       // Only a job that is actually executing can be stopped.
       showStop: false
     }
@@ -241,16 +276,18 @@ const toastView = computed<ToastView | null>(() => {
   if (notification?.type === 'completed') {
     return {
       status: 'done',
-      verb: t('queueStatus.completed'),
+      verb: t('g.completed'),
       percent: null,
+      showPercentText: false,
       showStop: false
     }
   }
   if (notification?.type === 'failed') {
     return {
       status: 'failed',
-      verb: t('queueStatus.jobFailed'),
+      verb: t('g.failed'),
       percent: null,
+      showPercentText: false,
       showStop: false
     }
   }
@@ -263,8 +300,12 @@ const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
   'pending',
   'failed'
 ])
+/**
+ * jobItems is newest-first; the panel reads as a timeline, so the most recent
+ * run belongs at the bottom, next to the pill it came from.
+ */
 const activeJobs = computed(() =>
-  jobItems.value.filter((job) => ACTIVE_STATES.has(job.state))
+  jobItems.value.filter((job) => ACTIVE_STATES.has(job.state)).reverse()
 )
 
 const failedCount = computed(
@@ -284,11 +325,8 @@ const isRunning = (job: JobListItem) =>
   job.state === 'running' || job.state === 'initialization'
 const jobPercent = (job: JobListItem) =>
   Math.round(job.progressTotalPercent ?? 0)
-const jobSubtitle = (job: JobListItem) => {
-  if (isRunning(job)) return `${t('g.running')} · ${jobPercent(job)}%`
-  if (job.state === 'failed') return t('queueStatus.jobFailed')
-  return t('queueStatus.queued')
-}
+/** buildJobDisplay already derives per-state copy; don't re-invent it here. */
+const jobSubtitle = (job: JobListItem) => job.meta
 
 const stopTooltip = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
