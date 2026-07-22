@@ -58,7 +58,7 @@ export function createNodeHandle(id: SerializedNodeId): NodeHandle {
         metadata: { nodeId, width, height }
       })
     },
-    autosize(): Promise<void> {
+    async autosize(): Promise<void> {
       throw new Error(
         'NodeHandle.autosize() is not implemented yet (follow-up A2). ' +
           'See research/architecture/reflow-design-incodebase.md §3(a).'

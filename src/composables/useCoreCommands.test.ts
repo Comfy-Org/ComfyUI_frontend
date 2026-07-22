@@ -473,6 +473,18 @@ describe('useCoreCommands', () => {
 
       expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
     })
+
+    it('is a no-op for non-finite dimensions', async () => {
+      const before = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
+
+      await findCommand('Comfy.Node.Resize').function({
+        nodeId: '7',
+        width: Number.NaN,
+        height: Number.POSITIVE_INFINITY
+      })
+
+      expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual(before)
+    })
   })
 
   describe('Subgraph metadata commands', () => {

@@ -35,8 +35,8 @@ describe('createNodeHandle', () => {
   })
 
   describe('not-yet-implemented stubs', () => {
-    it('autosize throws referencing the follow-up', () => {
-      expect(() => createNodeHandle('1').autosize()).toThrow(
+    it('autosize rejects referencing the follow-up', async () => {
+      await expect(createNodeHandle('1').autosize()).rejects.toThrow(
         /not implemented yet/i
       )
     })

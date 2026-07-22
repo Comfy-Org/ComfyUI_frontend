@@ -720,7 +720,9 @@ export function useCoreCommands(): ComfyCommand[] {
         if (
           (typeof nodeId !== 'string' && typeof nodeId !== 'number') ||
           typeof width !== 'number' ||
-          typeof height !== 'number'
+          typeof height !== 'number' ||
+          !Number.isFinite(width) ||
+          !Number.isFinite(height)
         ) {
           return
         }
