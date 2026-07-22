@@ -75,6 +75,12 @@ const teamMemberWorkspace: WorkspaceWithRole = {
   joined_at: '2026-03-01T00:00:00Z'
 }
 
+const teamAdminWorkspace: WorkspaceWithRole = {
+  ...teamMemberWorkspace,
+  id: 'ws-team-admin',
+  role: 'admin'
+}
+
 async function loadComposable() {
   const module = await import('@/platform/workspace/composables/useWorkspaceUI')
   return module.useWorkspaceUI()
@@ -316,6 +322,29 @@ describe('useWorkspaceUI', () => {
 
       expect(ui.permissions.value.canLeaveWorkspace).toBe(true)
       expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(true)
+    })
+  })
+
+  describe('team workspace as admin', () => {
+    beforeEach(() => {
+      mockStore.activeWorkspace = teamAdminWorkspace
+    })
+
+    it('can manage members without receiving owner billing permissions', async () => {
+      const ui = await loadComposable()
+
+      expect(ui.permissions.value).toMatchObject({
+        canViewPendingInvites: true,
+        canInviteMembers: true,
+        canManageInvites: true,
+        canManageMembers: true,
+        canManageSubscription: false,
+        canManageSubscriptionLifecycle: false,
+        canTopUp: false
+      })
+      expect(ui.uiConfig.value.showPendingTab).toBe(true)
+      expect(ui.uiConfig.value.showEditWorkspaceMenuItem).toBe(false)
+      expect(ui.uiConfig.value.workspaceMenuAction).toBeNull()
     })
   })
 

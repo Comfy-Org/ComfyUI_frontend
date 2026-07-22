@@ -94,6 +94,7 @@ const tabTriggerActive =
   'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
+const partnerNodeManagerRoles: readonly string[] = ['owner', 'admin']
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string
@@ -115,7 +116,7 @@ const showMembersTabCount = computed(
 )
 const showPartnerNodeAccess = computed(
   () =>
-    workspaceRole.value === 'owner' &&
+    partnerNodeManagerRoles.includes(workspaceRole.value) &&
     governedWorkspaceId.value !== null &&
     governanceStatus.value !== 'ineligible'
 )

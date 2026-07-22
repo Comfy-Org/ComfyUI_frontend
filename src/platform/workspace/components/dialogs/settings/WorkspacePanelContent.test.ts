@@ -28,7 +28,7 @@ const {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockGovernanceStatus: ref('configured'),
     mockGovernedWorkspaceId: ref<string | null>('team-workspace'),
-    mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
+    mockWorkspaceRole: ref<'owner' | 'admin' | 'member'>('owner'),
     mockWorkspaceType: ref<'personal' | 'team'>('team')
   }
 })
@@ -223,6 +223,13 @@ describe('WorkspacePanelContent partner nodes tab', () => {
   })
 
   it('shows partner node access to team workspace owners', () => {
+    renderComponent()
+
+    expect(screen.getByText('workspacePanel.tabs.partnerNodes')).toBeTruthy()
+  })
+
+  it('shows partner node access to team workspace admins', () => {
+    mockWorkspaceRole.value = 'admin'
     renderComponent()
 
     expect(screen.getByText('workspacePanel.tabs.partnerNodes')).toBeTruthy()
