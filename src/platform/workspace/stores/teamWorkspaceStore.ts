@@ -13,6 +13,7 @@ import type {
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
+  WorkspaceRole,
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { workspaceApi } from '../api/workspaceApi'
@@ -22,7 +23,7 @@ export interface WorkspaceMember {
   name: string
   email: string
   joinDate: Date
-  role: 'owner' | 'member'
+  role: WorkspaceRole
   isOriginalOwner: boolean
 }
 
