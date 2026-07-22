@@ -60,7 +60,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       planSlug: status.plan_slug ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
-      isCancelled: status.subscription_status === 'canceled',
+      isCancelled:
+        status.subscription_status === 'canceled' || status.cancel_at != null,
       hasFunds: status.has_funds
     }
   })
