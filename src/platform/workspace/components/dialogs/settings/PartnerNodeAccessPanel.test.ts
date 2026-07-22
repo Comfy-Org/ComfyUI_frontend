@@ -513,7 +513,7 @@ describe('PartnerNodeAccessPanel', () => {
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
   })
 
-  it('returns to unrestricted immediately when every provider is enabled', async () => {
+  it('confirms before returning to unrestricted when every provider is enabled', async () => {
     const user = userEvent.setup()
     mockPolicy.value = {
       enforcementEnabled: true,
@@ -523,7 +523,14 @@ describe('PartnerNodeAccessPanel', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Unrestricted' }))
 
-    expect(mockShowConfirmDialog).not.toHaveBeenCalled()
+    expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
+    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+    const options = mockShowConfirmDialog.mock.calls[0][0]
+    expect(options.headerProps.title).toBe('Allow access to all partner nodes?')
+    expect(options.props.promptText).toBe(
+      'Partner nodes from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
+    )
+    await options.footerProps.onConfirm()
     expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
   })
 

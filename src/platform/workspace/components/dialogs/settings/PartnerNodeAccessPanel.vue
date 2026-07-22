@@ -509,10 +509,6 @@ function confirmDisableAll() {
 
 function requestEnforcementMode(enabled: boolean) {
   if (enabled === isRestricted.value) return
-  if (!enabled && allProvidersEnabled.value) {
-    void performSave(() => setEnforcementEnabled(false))
-    return
-  }
 
   confirmAccessModeChange(enabled, () => setEnforcementEnabled(enabled))
 }
@@ -539,8 +535,7 @@ function confirmAccessModeChange(
   const dialog = showConfirmDialog({
     headerProps: { title: copy.title },
     props: {
-      promptText: `${copy.message}\n\n${copy.hint}`,
-      preserveNewlines: true
+      promptText: `${copy.message} ${copy.hint}`
     },
     footerProps: {
       confirmText: t('g.confirm'),
