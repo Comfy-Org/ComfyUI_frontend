@@ -147,6 +147,39 @@
         {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
+      <button
+        v-if="!showAlipay"
+        class="text-primary-foreground cursor-pointer border-none bg-transparent py-2 text-sm font-medium underline hover:text-base-foreground"
+        @click="showAlipay = true"
+      >
+        {{ $t('subscription.preview.preferAlipay') }}
+      </button>
+      <div
+        v-else
+        class="flex flex-col gap-3 rounded-lg border border-border-subtle bg-secondary-background p-4"
+      >
+        <div class="flex items-center justify-between gap-4">
+          <span class="font-semibold text-base-foreground">
+            {{ $t('subscription.preview.alipayTitle') }}
+          </span>
+          <span class="font-bold text-base-foreground">
+            ${{ totalDueToday }}
+          </span>
+        </div>
+        <p class="m-0 text-sm/relaxed text-muted-foreground">
+          {{ $t('subscription.preview.alipayAuthorization') }}
+        </p>
+        <Button
+          variant="secondary"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          @click="$emit('authorizeAlipay')"
+        >
+          {{ $t('subscription.preview.continueWithAlipay') }}
+        </Button>
+      </div>
+
       <!-- Back Link -->
       <Button
         variant="textonly"
@@ -198,12 +231,14 @@ const {
 
 defineEmits<{
   addCreditCard: []
+  authorizeAlipay: []
   back: []
 }>()
 
 const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
+const showAlipay = ref(false)
 
 const tierName = computed(() =>
   teamPlan

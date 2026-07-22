@@ -398,6 +398,21 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('subscribe() sends Alipay as an explicit secondary payment method', async () => {
+      const data = { billing_op_id: 'op-alipay', status: 'pending_payment' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await workspaceApi.subscribe('pro-monthly', {
+        paymentMethodType: 'alipay'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({ payment_method_type: 'alipay' }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
     it('cancelSubscription() sends POST with idempotency_key', async () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
       mockAxiosInstance.post.mockResolvedValue({ data })

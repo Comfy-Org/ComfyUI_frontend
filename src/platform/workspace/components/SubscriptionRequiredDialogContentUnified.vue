@@ -74,6 +74,7 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         @add-credit-card="handleTeamSubscribe"
+        @authorize-alipay="handleTeamAlipaySubscribe"
         @back="handleBackToPricing"
       />
 
@@ -84,6 +85,7 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         @add-credit-card="handleAddCreditCard"
+        @authorize-alipay="handleAuthorizeAlipay"
         @back="handleBackToPricing"
       />
 
@@ -152,8 +154,10 @@ const {
   handleBackToPricing,
   handleSuccessClose,
   handleAddCreditCard,
+  handleAuthorizeAlipay,
   handleConfirmTransition,
   handleTeamSubscribe,
+  handleTeamAlipaySubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
 

@@ -162,14 +162,18 @@ interface SubscribeRequest {
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  payment_method_type?: SubscribePaymentMethodType
   /** Required for the per-credit Team plan; selects the slider stop. */
   team_credit_stop_id?: string
   billing_cycle?: SubscribeBillingCycle
 }
 
+type SubscribePaymentMethodType = 'card' | 'alipay'
+
 export interface SubscribeOptions {
   returnUrl?: string
   cancelUrl?: string
+  paymentMethodType?: SubscribePaymentMethodType
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
 }
@@ -665,6 +669,9 @@ export const workspaceApi = {
           plan_slug: planSlug,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
+          ...(options.paymentMethodType
+            ? { payment_method_type: options.paymentMethodType }
+            : {}),
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
