@@ -19,7 +19,6 @@ const mocks = vi.hoisted(() => ({
   tier: { value: 'PRO' },
   cancelSubscription: vi.fn(),
   fetchStatus: vi.fn(),
-  isConfigured: vi.fn(),
   prepare: vi.fn(),
   trackCancellation: vi.fn()
 }))
@@ -37,7 +36,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/i18n', () => ({ t: (key: string) => key }))
 
 vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
-  isChurnkeyConfigured: mocks.isConfigured,
   prepareChurnkey: mocks.prepare
 }))
 
@@ -59,19 +57,8 @@ describe('launchCancellationFlow', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.billingType.value = 'workspace'
-    mocks.isConfigured.mockReturnValue(true)
     mocks.cancelSubscription.mockResolvedValue(undefined)
     mocks.fetchStatus.mockResolvedValue(undefined)
-  })
-
-  it('uses the native dialog when Churnkey is not configured', async () => {
-    mocks.isConfigured.mockReturnValue(false)
-    const showFallback = vi.fn()
-
-    await launchCancellationFlow({ showFallback })
-
-    expect(showFallback).toHaveBeenCalledOnce()
-    expect(mocks.prepare).not.toHaveBeenCalled()
   })
 
   it('uses the native dialog for legacy billing', async () => {

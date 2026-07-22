@@ -16,14 +16,6 @@ const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
 
 const scriptLoaders = new Map<string, () => Promise<ChurnkeyInit>>()
 
-function appId(): string {
-  return useFeatureFlags().flags.churnkeyAppId
-}
-
-export function isChurnkeyConfigured(): boolean {
-  return appId().length > 0
-}
-
 function loadChurnkey(appId: string): Promise<ChurnkeyInit> {
   window.churnkey ??= { created: true }
   const src = `${EMBED_SCRIPT_URL}?appId=${encodeURIComponent(appId)}`
@@ -154,7 +146,7 @@ function createSession(
 }
 
 export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
-  const configuredAppId = appId()
+  const configuredAppId = useFeatureFlags().flags.churnkeyAppId
   if (!configuredAppId) return null
 
   const session = await workspaceApi.getChurnkeySession()

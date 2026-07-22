@@ -1,9 +1,6 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
-import {
-  isChurnkeyConfigured,
-  prepareChurnkey
-} from '@/platform/cloud/churnkey/churnkeyClient'
+import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -68,18 +65,12 @@ async function runCancellationFlow(
   showFallback: () => unknown | Promise<unknown>
 ): Promise<void> {
   const billing = useBillingContext()
-  if (billing.type.value !== 'workspace' || !isChurnkeyConfigured()) {
+  if (billing.type.value !== 'workspace') {
     await showFallback()
     return
   }
 
-  let session
-  try {
-    session = await prepareChurnkey()
-  } catch {
-    await showFallback()
-    return
-  }
+  const session = await prepareChurnkey().catch(() => null)
   if (!session) {
     await showFallback()
     return
