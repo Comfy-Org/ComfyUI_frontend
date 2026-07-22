@@ -21,7 +21,6 @@ import {
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
-import { ButtonMask } from '../ui/button-mask'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import PlayOverlay from './PlayOverlay.vue'
 
@@ -238,36 +237,10 @@ const rows = computed(() =>
               icon-position="right"
               variant="ghost"
               size="default"
-              class="ps-0 md:hidden"
+              class="ps-0"
             >
               {{ t('cta.tryWorkflow', locale) }}
             </ButtonPill>
-            <ButtonMask
-              v-if="tutorial.href"
-              as="a"
-              :href="tutorial.href"
-              :target="tutorial.newTab ? '_blank' : undefined"
-              :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
-              icon-position="right"
-              class="hidden shrink-0 md:inline-flex"
-              variant="ghost"
-              size="default"
-            >
-              {{ t('cta.tryWorkflow', locale) }}
-              <template #icon>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="size-4"
-                >
-                  <polyline points="9 6 15 12 9 18" />
-                </svg>
-              </template>
-            </ButtonMask>
           </li>
         </ul>
       </div>
