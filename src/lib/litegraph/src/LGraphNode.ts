@@ -531,8 +531,17 @@ export class LGraphNode
    * the backing `Float64Array`, and function/length access is forwarded to the
    * real typed array so spread, iteration and `.length` keep working.
    *
-   * TODO(litegraph-stable-resize-api): remove once litegraph exposes a public
-   * resize/commit API that custom nodes call instead of mutating `size[1]`.
+   * TODO(litegraph-stable-resize-api): this Proxy is the deprecation on-ramp for
+   * a stable resize API that does not exist yet. Its set trap already commits the
+   * legacy `node.size[1] =` idiom through `resizeNode` — the SAME layout-store
+   * primitive the sanctioned future API will call. Direction / migration: target
+   * end-state is a `Comfy.Node.Resize` command + `NodeHandle.setSize()`/
+   * `autosize()`/`on('resize')` (v2 extension handles). Once that API lands, emit
+   * a one-time `warnDeprecated` from this trap naming the sanctioned call, turning
+   * direct element writes into a migrate-me signal instead of a silent shim (the
+   * deliberate fast-follow — no runtime warn today). See
+   * research/architecture/toward-new-api-plan.md §2 and follow-ups A2/A3/A4;
+   * ecosystem gap rows S2.N19 / S10.D3 / S11.G4.
    */
   public get size(): Size {
     return (this._sizeProxy ??= new Proxy(this._size, {
