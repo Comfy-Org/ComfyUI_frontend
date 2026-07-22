@@ -84,7 +84,6 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         @add-credit-card="handleAddCreditCard"
-        @authorize-alipay="handleAuthorizeAlipay"
         @back="handleBackToPricing"
       />
 
@@ -153,7 +152,6 @@ const {
   handleBackToPricing,
   handleSuccessClose,
   handleAddCreditCard,
-  handleAuthorizeAlipay,
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe

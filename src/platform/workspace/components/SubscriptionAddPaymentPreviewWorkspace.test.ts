@@ -148,4 +148,51 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
     expect(emitted().addCreditCard).toBeTruthy()
   })
+
+  it('keeps the card checkout event unchanged for a personal plan', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: globalOptions
+    })
+
+    await userEvent.click(
+      screen.getByText('subscription.preview.subscribeToPlan')
+    )
+
+    expect(emitted().addCreditCard).toBeTruthy()
+  })
+
+  it('runs the Alipay prototype locally without starting checkout', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator' },
+      global: globalOptions
+    })
+
+    await userEvent.click(screen.getByText('subscription.preview.alipay'))
+    await userEvent.click(
+      screen.getByText('subscription.preview.continueWithAlipay')
+    )
+
+    expect(
+      screen.getByText('subscription.preview.alipayHandoffTitle')
+    ).toBeTruthy()
+    expect(emitted().addCreditCard).toBeUndefined()
+
+    await userEvent.click(
+      screen.getByText('subscription.preview.simulateAlipayReturn')
+    )
+
+    expect(screen.getByText('subscription.preview.paymentPending')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.returnedFromAlipay')
+    ).toBeTruthy()
+    expect(emitted().addCreditCard).toBeUndefined()
+
+    await userEvent.click(
+      screen.getByText('subscription.preview.replayPrototype')
+    )
+
+    expect(screen.getByText('subscription.preview.card')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.alipay')).toBeTruthy()
+  })
 })

@@ -133,7 +133,10 @@
     </div>
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
-      <div v-if="!teamPlan" class="mb-4 grid grid-cols-2 gap-3">
+      <div
+        v-if="!teamPlan && alipayPrototypeStep === 'choice'"
+        class="mb-4 grid grid-cols-2 gap-3"
+      >
         <button
           :class="
             cn(
@@ -165,8 +168,15 @@
           type="button"
           @click="paymentMethod = 'alipay'"
         >
-          <span class="font-semibold text-base-foreground">
-            {{ $t('subscription.preview.alipay') }}
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="font-semibold text-base-foreground">
+              {{ $t('subscription.preview.alipay') }}
+            </span>
+            <span
+              class="rounded-full bg-secondary-background px-2 py-0.5 text-xs text-muted-foreground"
+            >
+              {{ $t('subscription.preview.prototype') }}
+            </span>
           </span>
           <span class="text-xs text-muted-foreground">
             {{ $t('subscription.preview.alipayDescription') }}
@@ -174,27 +184,101 @@
         </button>
       </div>
 
-      <!-- Terms Agreement -->
-      <SubscriptionTermsNote />
+      <template v-if="alipayPrototypeStep === 'choice'">
+        <SubscriptionTermsNote />
 
-      <!-- Add Credit Card Button -->
-      <Button
-        variant="tertiary"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isLoading"
-        @click="
-          paymentMethod === 'card'
-            ? $emit('addCreditCard')
-            : $emit('authorizeAlipay')
-        "
+        <Button
+          variant="tertiary"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          @click="
+            paymentMethod === 'card'
+              ? $emit('addCreditCard')
+              : (alipayPrototypeStep = 'handoff')
+          "
+        >
+          {{
+            paymentMethod === 'card'
+              ? $t('subscription.preview.subscribeToPlan', { plan: tierName })
+              : $t('subscription.preview.continueWithAlipay')
+          }}
+        </Button>
+      </template>
+
+      <div
+        v-else-if="alipayPrototypeStep === 'handoff'"
+        class="flex flex-col gap-4 rounded-lg border border-border-subtle bg-secondary-background p-4"
       >
-        {{
-          paymentMethod === 'card'
-            ? $t('subscription.preview.subscribeToPlan', { plan: tierName })
-            : $t('subscription.preview.authorizeWithAlipay')
-        }}
-      </Button>
+        <div class="flex items-center gap-2">
+          <i class="pi pi-external-link text-base-foreground" />
+          <span class="font-semibold text-base-foreground">
+            {{ $t('subscription.preview.alipayHandoffTitle') }}
+          </span>
+          <span
+            class="ml-auto rounded-full border border-border-subtle px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ $t('subscription.preview.prototype') }}
+          </span>
+        </div>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.alipayHandoffDescription') }}
+        </p>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('subscription.preview.prototypeNoPayment') }}
+        </p>
+        <Button
+          variant="tertiary"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="alipayPrototypeStep = 'pending'"
+        >
+          {{ $t('subscription.preview.simulateAlipayReturn') }}
+        </Button>
+        <Button
+          variant="textonly"
+          class="cursor-pointer text-center text-xs text-muted-foreground"
+          @click="alipayPrototypeStep = 'choice'"
+        >
+          {{ $t('subscription.preview.backToPaymentMethods') }}
+        </Button>
+      </div>
+
+      <div
+        v-else
+        class="flex flex-col gap-4 rounded-lg border border-border-subtle bg-secondary-background p-4"
+      >
+        <div class="flex items-center gap-3">
+          <i class="pi pi-clock text-base-foreground" />
+          <div class="flex flex-1 flex-col gap-1">
+            <span class="font-semibold text-base-foreground">
+              {{ $t('subscription.preview.paymentPending') }}
+            </span>
+            <span class="text-xs text-muted-foreground">
+              {{ $t('subscription.preview.returnedFromAlipay') }}
+            </span>
+          </div>
+          <span
+            class="rounded-full border border-border-subtle px-2 py-0.5 text-xs text-muted-foreground"
+          >
+            {{ $t('subscription.preview.pending') }}
+          </span>
+        </div>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.preview.alipayPendingDescription') }}
+        </p>
+        <p class="m-0 text-xs text-muted-foreground">
+          {{ $t('subscription.preview.prototypeNoPayment') }}
+        </p>
+        <Button
+          variant="tertiary"
+          size="lg"
+          class="w-full rounded-lg"
+          @click="alipayPrototypeStep = 'choice'"
+        >
+          {{ $t('subscription.preview.replayPrototype') }}
+        </Button>
+      </div>
 
       <!-- Back Link -->
       <Button
@@ -247,7 +331,6 @@ const {
 
 defineEmits<{
   addCreditCard: []
-  authorizeAlipay: []
   back: []
 }>()
 
@@ -255,6 +338,7 @@ const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
 const paymentMethod = ref<'card' | 'alipay'>('card')
+const alipayPrototypeStep = ref<'choice' | 'handoff' | 'pending'>('choice')
 
 const tierName = computed(() =>
   teamPlan
