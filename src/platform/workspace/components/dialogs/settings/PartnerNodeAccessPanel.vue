@@ -143,7 +143,7 @@
       >
         <div
           role="row"
-          class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 px-2 text-sm text-muted-foreground lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
+          class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 px-2 text-sm text-muted-foreground lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2.5rem]"
         >
           <span
             role="columnheader"
@@ -217,7 +217,7 @@
         <template v-for="provider in sortedProviders" :key="provider.id">
           <div
             role="row"
-            class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
+            class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 border-b border-secondary-background px-2 last:border-b-0 hover:bg-secondary-background/40 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2.5rem]"
           >
             <div role="cell" class="min-w-0">
               <Button
@@ -274,7 +274,7 @@
             </span>
             <div
               role="cell"
-              class="flex size-8 items-center justify-end justify-self-end"
+              class="flex h-8 w-10 items-center justify-end justify-self-end"
             >
               <ToggleSwitch
                 :model-value="provider.enabled"
@@ -296,7 +296,7 @@
               : []"
             :key="node.id"
             role="row"
-            class="grid h-10 grid-cols-[minmax(0,1fr)_2rem] items-center gap-2 border-b border-secondary-background bg-secondary-background/40 px-2 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2rem]"
+            class="grid h-10 grid-cols-[minmax(0,1fr)_2.5rem] items-center gap-2 border-b border-secondary-background bg-secondary-background/40 px-2 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_12rem_10rem_2.5rem]"
           >
             <span role="cell" class="truncate pl-17 text-muted-foreground">
               {{ node.name }}
