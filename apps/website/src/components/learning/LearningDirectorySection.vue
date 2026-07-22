@@ -7,19 +7,12 @@
 import { computed } from 'vue'
 
 import type { LearningCategory } from '../../data/learningTutorials'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 
-import {
-  categoryBlurbKeys,
-  categoryLabelKeys,
-  categoryPath,
-  featuredFor,
-  filterByCategory,
-  populatedCategories
-} from '../../data/learningTutorials'
-import { localizeHref } from '../../config/routes'
+import { featuredFor, filterByCategory } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
+import LearningCategoryNav from './LearningCategoryNav.vue'
 import TutorialRow from './TutorialRow.vue'
 
 const {
@@ -33,27 +26,6 @@ const {
    * (the tutorial dialog). */
   headingTag?: 'h1' | 'p'
 }>()
-
-interface NavOption {
-  value?: LearningCategory
-  labelKey: TranslationKey
-  blurbKey: TranslationKey
-  href: string
-}
-
-const navOptions: readonly NavOption[] = [
-  {
-    labelKey: 'learning.categories.all',
-    blurbKey: 'learning.categories.all.blurb',
-    href: '/learning'
-  },
-  ...populatedCategories.map((value) => ({
-    value,
-    labelKey: categoryLabelKeys[value],
-    blurbKey: categoryBlurbKeys[value],
-    href: categoryPath(value)
-  }))
-]
 
 const featured = computed(() => featuredFor(category))
 const rows = computed(() =>
@@ -79,49 +51,7 @@ const rows = computed(() =>
             {{ t('learning.tagline', locale) }}
           </p>
 
-          <nav
-            class="mt-8 flex scrollbar-none gap-3 overflow-x-auto lg:flex-col lg:overflow-visible"
-            :aria-label="t('learning.categoryNav', locale)"
-          >
-            <a
-              v-for="option in navOptions"
-              :key="option.value ?? 'all'"
-              :href="localizeHref(option.href, locale)"
-              :aria-current="category === option.value ? 'page' : undefined"
-              class="shrink-0 rounded-xl px-4 py-3 text-left transition-colors lg:w-full"
-              :class="
-                category === option.value
-                  ? 'lg:bg-primary-comfy-yellow bg-white/20 text-primary-comfy-canvas lg:text-primary-comfy-ink'
-                  : 'bg-transparency-white-t4 text-primary-comfy-canvas hover:bg-white/10'
-              "
-            >
-              <span class="flex items-baseline justify-between gap-6">
-                <span class="text-xs font-semibold tracking-wide uppercase">
-                  {{ t(option.labelKey, locale) }}
-                </span>
-                <span
-                  class="text-xs tabular-nums"
-                  :class="
-                    category === option.value
-                      ? 'text-primary-comfy-canvas/70 lg:text-primary-comfy-ink/70'
-                      : 'text-primary-warm-gray'
-                  "
-                >
-                  {{ filterByCategory(option.value).length }}
-                </span>
-              </span>
-              <span
-                class="mt-1 hidden text-[11px]/snug lg:block"
-                :class="
-                  category === option.value
-                    ? 'text-primary-comfy-ink/70'
-                    : 'text-primary-warm-gray'
-                "
-              >
-                {{ t(option.blurbKey, locale) }}
-              </span>
-            </a>
-          </nav>
+          <LearningCategoryNav :category="category" :locale="locale" />
         </div>
       </aside>
 
