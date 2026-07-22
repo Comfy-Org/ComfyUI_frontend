@@ -1312,7 +1312,6 @@ const translations = {
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
   'pricing.plan.pro.yearlyPrice': { en: '$80', 'zh-CN': '$80' },
   'pricing.plan.pro.yearlyTotal': { en: '$960', 'zh-CN': '$960' },
-  // Education prices (10% off monthly, 25% off yearly, off the $100 list price).
   'pricing.plan.pro.eduPrice': { en: '$90', 'zh-CN': '$90' },
   'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
   'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
