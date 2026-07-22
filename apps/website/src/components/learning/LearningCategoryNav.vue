@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // Category nav for the learning directory sidebar: an "All" entry followed by
 // each populated category, with per-category tutorial counts and (on lg+)
-// blurbs. Entries are plain links to statically generated pages; the active
-// one is derived from `category` (undefined on /learning).
+// blurbs. Entries are always real links to the statically generated category
+// pages; when `interactive`, a plain left-click is intercepted so the parent
+// filters in place instead of navigating (modified/new-tab clicks still open
+// the link normally). The active entry is derived from `category`.
 import type { LearningCategory } from '../../data/learningTutorials'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -16,9 +18,18 @@ import {
 import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', category } = defineProps<{
+const {
+  locale = 'en',
+  category,
+  interactive = false
+} = defineProps<{
   locale?: Locale
   category?: LearningCategory
+  interactive?: boolean
+}>()
+
+const emit = defineEmits<{
+  select: [value: LearningCategory | undefined, href: string]
 }>()
 
 interface NavOption {
@@ -41,6 +52,22 @@ const navOptions: readonly NavOption[] = [
     href: categoryPath(value)
   }))
 ]
+
+function onClick(event: MouseEvent, option: NavOption) {
+  // Let the browser handle new-tab/modified clicks and non-primary buttons.
+  if (
+    !interactive ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return
+  }
+  event.preventDefault()
+  emit('select', option.value, localizeHref(option.href, locale))
+}
 </script>
 
 <template>
@@ -59,6 +86,7 @@ const navOptions: readonly NavOption[] = [
           ? 'lg:bg-primary-comfy-yellow bg-white/20 text-primary-comfy-canvas lg:text-primary-comfy-ink'
           : 'bg-transparency-white-t4 text-primary-comfy-canvas hover:bg-white/10'
       "
+      @click="onClick($event, option)"
     >
       <span class="flex items-baseline justify-between gap-6">
         <span class="text-xs font-semibold tracking-wide uppercase">

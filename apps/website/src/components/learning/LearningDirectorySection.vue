@@ -2,9 +2,12 @@
 // Sidebar directory for /learning: a persistent left sidebar carries the page
 // title and the category nav (with counts and blurbs), while the content
 // column shows a compact featured banner followed by a dense, scannable row
-// list. Each category is its own statically generated page, so the nav
-// entries are plain links; `category` is undefined on /learning (all).
-import { computed } from 'vue'
+// list. Each category is still its own statically generated page (for direct
+// loads and crawlers), but on the directory pages the nav filters in place:
+// once hydrated it swaps the featured banner and rows client-side and syncs
+// the URL, so switching filters never reloads or jumps the page. `category` is
+// undefined on /learning (all).
+import { computed, ref } from 'vue'
 
 import type { LearningCategory } from '../../data/learningTutorials'
 import type { Locale } from '../../i18n/translations'
@@ -27,12 +30,25 @@ const {
   headingTag?: 'h1' | 'p'
 }>()
 
-const featured = computed(() => featuredFor(category))
+// Only the primary directory pages filter in place; on the tutorial-dialog
+// backdrop (headingTag 'p') the nav stays plain links that navigate away.
+const filterInPlace = headingTag === 'h1'
+
+const activeCategory = ref(category)
+
+const featured = computed(() => featuredFor(activeCategory.value))
 const rows = computed(() =>
-  filterByCategory(category).filter(
+  filterByCategory(activeCategory.value).filter(
     (tutorial) => tutorial.id !== featured.value?.id
   )
 )
+
+function selectCategory(value: LearningCategory | undefined, href: string) {
+  activeCategory.value = value
+  // Reflect the filter in the URL (preserving ClientRouter's history state) so
+  // refresh, share, and deep links resolve to the matching static page.
+  history.replaceState(history.state, '', href)
+}
 </script>
 
 <template>
@@ -51,7 +67,12 @@ const rows = computed(() =>
             {{ t('learning.tagline', locale) }}
           </p>
 
-          <LearningCategoryNav :category="category" :locale="locale" />
+          <LearningCategoryNav
+            :category="activeCategory"
+            :locale="locale"
+            :interactive="filterInPlace"
+            @select="selectCategory"
+          />
         </div>
       </aside>
 

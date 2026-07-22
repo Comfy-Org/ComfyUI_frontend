@@ -55,6 +55,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           icon-position="right"
           variant="ghost"
           size="default"
+          class="ps-0"
         >
           {{ t('cta.tryWorkflow', locale) }}
         </ButtonPill>
