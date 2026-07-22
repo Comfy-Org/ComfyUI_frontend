@@ -8,6 +8,7 @@
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
     "download": "Download",
+    "downloaded": "Downloaded",
     "downloadImage": "Download image",
     "downloadVideo": "Download video",
     "downloadAudio": "Download audio",
@@ -1995,6 +1996,17 @@
     "customModelsWarning": "Some of these are custom models that we don't recognize.",
     "customModelsInstruction": "You'll need to find and download them manually. Search for them online (try Civitai or HuggingFace) or contact the original workflow provider.",
     "acceptTerms": "Accept terms"
+  },
+  "hfAuthSettings": {
+    "title": "HuggingFace",
+    "description": "Sign in with HuggingFace to let ComfyUI download gated model files (license-protected weights) on your behalf.",
+    "loggedIn": "Logged in",
+    "notLoggedIn": "Not logged in",
+    "logIn": "Log in with HuggingFace",
+    "logOut": "Log out",
+    "loginFailed": "Login failed.",
+    "logoutFailed": "Logout failed.",
+    "tokenStorageNote": "Tokens are stored locally and never leave this machine. Logging out removes the cached token from disk."
   },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
@@ -4003,9 +4015,18 @@
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
       "downloadAll": "Download all",
+      "downloadAllAvailable": "Download All Available",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "hfLoginRequired": "HuggingFace login required",
+      "hfLoginPrompt": "Some required models are gated. Sign in to let ComfyUI download them on your behalf.",
+      "logInWithHf": "Log in with HuggingFace",
+      "repositoryPage": "repository page",
+      "gatedManual": "This model is gated. Open the {repositoryPage} to accept the license, then place the file in {modelPath} manually.",
+      "gatedNeedLogin": "Gated — log in with HuggingFace above to enable the download.",
+      "gatedAccept": "Gated — visit the {repositoryPage} to accept the license, then come back to download.",
+      "cancelFailed": "Failed to cancel the download. Please try again."
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

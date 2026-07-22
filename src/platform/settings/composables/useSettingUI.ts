@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 import {
   getSettingInfo,
   useSettingStore
@@ -240,6 +241,28 @@ export function useSettingUI(
     )
   }
 
+  const hfAuthPanel: SettingPanelItem = {
+    node: {
+      key: 'hf-auth',
+      label: 'HuggingFace',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import(
+          '@/platform/missingModel/serverDownloads/HfAuthSettingsPanel.vue'
+        )
+    )
+  }
+
+  // The HF auth panel is opt-in based on a server feature flag the
+  // backend computes from ``is_loopback(--listen) AND not --multi-user``.
+  // Anywhere else the surface is hidden so users don't see an option
+  // that wouldn't work for them.
+  const shouldShowHfAuthPanel = computed(
+    () => api.serverFeatureFlags.value['hf_auth_eligible'] === true
+  )
+
   const panels = computed<SettingPanelItem[]>(() =>
     [
       aboutPanel,
@@ -249,6 +272,7 @@ export function useSettingUI(
       keybindingPanel,
       extensionPanel,
       ...(isDesktop ? [serverConfigPanel] : []),
+      ...(shouldShowHfAuthPanel.value ? [hfAuthPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
         : []),
@@ -316,7 +340,10 @@ export function useSettingUI(
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
         translateCategory(aboutPanel.node),
-        ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : [])
+        ...(isDesktop ? [translateCategory(serverConfigPanel.node)] : []),
+        ...(shouldShowHfAuthPanel.value
+          ? [translateCategory(hfAuthPanel.node)]
+          : [])
       ]
     }),
     // Custom node settings (only shown if custom nodes have registered settings)
@@ -363,7 +390,8 @@ export function useSettingUI(
         keybindingPanel.node,
         extensionPanel.node,
         aboutPanel.node,
-        ...(isDesktop ? [serverConfigPanel.node] : [])
+        ...(isDesktop ? [serverConfigPanel.node] : []),
+        ...(shouldShowHfAuthPanel.value ? [hfAuthPanel.node] : [])
       ].map(translateCategory)
     }
   ])
