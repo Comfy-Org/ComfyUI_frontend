@@ -185,10 +185,18 @@
   --interface-stroke: var(--color-smoke-300);
   --region-stroke: color-mix(in srgb, var(--border-color) 25%, transparent);
   --workflow-tab-divider: color-mix(in srgb, var(--border-color) 25%, transparent);
-  /* Sidebar and selected tab share the canvas base level so they match the
-     rest of the canvas surfaces in every theme */
-  --sidebar-surface: var(--bg-color);
-  --workflow-tab-selected-surface: var(--bg-color);
+  /* Custom palettes rebuild the dark palette's depth from their own menu
+     colour. Dark stacks three levels — canvas (charcoal-950) below sidebar
+     and selected tab (charcoal-900) below the menu and tab bar
+     (charcoal-800) — so each level is a lightness offset from the menu
+     anchor, replayed in OKLCH to keep the palette's hue and chroma. Aliasing
+     these to --bg-color instead would collapse the sidebar onto the canvas.
+     Dark and light override all three with their exact design-system values. */
+  --sidebar-surface: oklch(from var(--comfy-menu-bg) calc(l - 0.0274) c h);
+  --workflow-tab-selected-surface: oklch(
+    from var(--comfy-menu-bg) calc(l - 0.0274) c h
+  );
+  --base-background-sunken: oklch(from var(--comfy-menu-bg) calc(l - 0.0648) c h);
   --workflow-tab-hover-surface: var(--content-hover-bg);
 
   --interface-builder-mode-background: var(--color-ocean-300);
