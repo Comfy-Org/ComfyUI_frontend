@@ -178,14 +178,17 @@ async function openPlanAndCredits(page: Page) {
     timeout: 45_000
   })
 
-  // Open Settings ▸ Workspace.
+  // Open Settings ▸ Workspace ▸ Plan & Credits.
   await page
     .getByRole('button', { name: /^Settings/ })
     .first()
     .click()
   const dialog = page.getByTestId('settings-dialog')
   await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+  await dialog
+    .locator('nav')
+    .getByRole('button', { name: 'Plan & Credits' })
+    .click()
 
   return dialog.getByRole('main')
 }

@@ -1,14 +1,16 @@
 <template>
   <section
     v-if="status !== 'ineligible' && status !== 'inactive'"
-    class="flex min-h-0 grow flex-col gap-6 overflow-auto pt-6"
+    class="flex min-h-0 grow flex-col gap-6 overflow-auto"
     aria-labelledby="partner-node-access-title"
   >
-    <div class="flex flex-wrap items-start justify-between gap-4">
+    <div
+      class="flex min-h-20 flex-wrap items-center justify-between gap-4 rounded-lg border border-interface-stroke bg-secondary-background px-4 py-3"
+    >
       <div class="max-w-2xl">
         <h2
           id="partner-node-access-title"
-          class="text-xl font-semibold text-base-foreground"
+          class="text-sm font-semibold text-base-foreground"
         >
           {{ $t('workspacePanel.partnerNodes.title') }}
         </h2>
@@ -26,7 +28,7 @@
         v-if="isPolicyLoaded"
         :model-value="isRestricted ? 'restricted' : 'unrestricted'"
         orientation="horizontal"
-        :disabled="isSaving || !isPolicyLoaded"
+        :disabled="isSaving || !canEditPolicy"
         :aria-label="$t('workspacePanel.partnerNodes.accessMode')"
         class="flex rounded-lg bg-secondary-background p-1"
         @update:model-value="requestEnforcementMode($event === 'restricted')"
@@ -58,6 +60,10 @@
       </RadioGroupRoot>
     </div>
 
+    <p v-if="isReadOnly" class="text-sm text-muted-foreground">
+      {{ $t('workspacePanel.partnerNodes.ownerOnly') }}
+    </p>
+
     <div
       v-if="status === 'loading'"
       :aria-label="$t('workspacePanel.partnerNodes.loading')"
@@ -82,7 +88,7 @@
 
     <template v-else>
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <label class="w-full max-w-80">
+        <label class="w-full max-w-64">
           <span class="sr-only">
             {{ $t('workspacePanel.partnerNodes.searchPlaceholder') }}
           </span>
@@ -95,16 +101,18 @@
         </label>
         <div class="flex items-center gap-2">
           <Button
+            v-if="!allProvidersEnabled"
             variant="secondary"
             :loading="pendingBulkAction === 'enable'"
-            :disabled="isSaving"
+            :disabled="isSaving || !canEditPolicy"
             @click="handleEnableAll"
           >
             {{ $t('workspacePanel.partnerNodes.enableAll') }}
           </Button>
           <Button
+            v-else
             variant="secondary"
-            :disabled="isSaving"
+            :disabled="isSaving || !canEditPolicy"
             @click="confirmDisableAll"
           >
             {{ $t('workspacePanel.partnerNodes.disableAll') }}
@@ -127,23 +135,24 @@
       >
         <div
           role="row"
-          class="grid grid-cols-[minmax(0,1fr)_8rem_7rem] items-center border-b border-interface-stroke px-4 py-3 text-xs font-medium text-muted-foreground"
+          class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke px-4 py-3 text-xs font-medium text-muted-foreground lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
         >
           <span role="columnheader">
             {{ $t('workspacePanel.partnerNodes.columns.provider') }}
           </span>
-          <span role="columnheader">
+          <span role="columnheader" class="hidden lg:block">
             {{ $t('workspacePanel.partnerNodes.columns.nodes') }}
           </span>
-          <span role="columnheader">
-            {{ $t('workspacePanel.partnerNodes.columns.enabled') }}
+          <span role="columnheader" class="hidden lg:block">
+            {{ $t('workspacePanel.partnerNodes.columns.lastModified') }}
           </span>
+          <span role="columnheader" />
         </div>
 
         <template v-for="provider in filteredProviders" :key="provider.id">
           <div
             role="row"
-            class="grid grid-cols-[minmax(0,1fr)_8rem_7rem] items-center border-b border-interface-stroke px-4 py-2 last:border-b-0"
+            class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke px-4 py-2 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
           >
             <div role="cell" class="min-w-0">
               <Button
@@ -165,18 +174,27 @@
                 <span class="truncate">{{ provider.displayName }}</span>
               </Button>
             </div>
-            <span role="cell" class="text-sm text-muted-foreground">
+            <span
+              role="cell"
+              class="hidden text-sm text-muted-foreground lg:block"
+            >
               {{
                 $t(
                   'workspacePanel.partnerNodes.nodeCount',
-                  provider.nodes.length
+                  provider.enabled ? provider.nodes.length : 0
                 )
               }}
             </span>
-            <div role="cell" class="flex items-center">
+            <span
+              role="cell"
+              class="hidden text-sm text-muted-foreground lg:block"
+            >
+              --
+            </span>
+            <div role="cell" class="flex items-center justify-end">
               <SwitchRoot
                 :model-value="provider.enabled"
-                :disabled="isSaving"
+                :disabled="isSaving || !canEditPolicy"
                 :aria-label="
                   $t('workspacePanel.partnerNodes.toggleProvider', {
                     provider: provider.displayName
@@ -198,21 +216,16 @@
               : []"
             :key="node.id"
             role="row"
-            class="grid grid-cols-[minmax(0,1fr)_8rem_7rem] items-center border-b border-interface-stroke bg-secondary-background/40 px-4 py-3 text-sm last:border-b-0"
+            class="grid grid-cols-[minmax(0,1fr)_3rem] items-center border-b border-interface-stroke bg-secondary-background/40 px-4 py-3 text-sm last:border-b-0 lg:grid-cols-[minmax(0,1fr)_8rem_10rem_3rem]"
           >
             <span role="cell" class="truncate pl-10 text-muted-foreground">
               {{ node.name }}
             </span>
-            <span role="cell" />
-            <span role="cell" class="text-muted-foreground">
-              {{
-                $t(
-                  provider.enabled
-                    ? 'workspacePanel.partnerNodes.enabled'
-                    : 'workspacePanel.partnerNodes.disabled'
-                )
-              }}
+            <span role="cell" class="hidden lg:block" />
+            <span role="cell" class="hidden text-muted-foreground lg:block">
+              --
             </span>
+            <span role="cell" />
           </div>
         </template>
 
@@ -244,6 +257,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { buttonVariants } from '@/components/ui/button/button.variants'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -263,6 +277,7 @@ const {
 const nodeDefStore = useNodeDefStore()
 const { nodeDefsByName } = storeToRefs(nodeDefStore)
 const dialogStore = useDialogStore()
+const { workspaceRole } = useWorkspaceUI()
 const { t } = useI18n()
 
 const searchQuery = ref('')
@@ -274,6 +289,8 @@ const isRestricted = computed(() => policy.value?.enforcementEnabled === true)
 const isPolicyLoaded = computed(
   () => status.value === 'configured' || status.value === 'unconfigured'
 )
+const isReadOnly = computed(() => workspaceRole.value !== 'owner')
+const canEditPolicy = computed(() => !isReadOnly.value && isPolicyLoaded.value)
 const allProvidersEnabled = computed(() =>
   providers.value.every(({ id }) => isProviderEnabled(id))
 )
@@ -348,7 +365,12 @@ async function performSave(action: () => Promise<void>) {
 }
 
 function handleProviderChange(providerId: string, enabled: boolean) {
-  void performSave(() => setProviderEnabled(providerId, enabled))
+  const saveProviderChange = () => setProviderEnabled(providerId, enabled)
+  if (enabled || isRestricted.value) {
+    void performSave(saveProviderChange)
+    return
+  }
+  confirmAccessModeChange(true, saveProviderChange)
 }
 
 async function handleEnableAll() {
@@ -381,6 +403,13 @@ function requestEnforcementMode(enabled: boolean) {
     return
   }
 
+  confirmAccessModeChange(enabled, () => setEnforcementEnabled(enabled))
+}
+
+function confirmAccessModeChange(
+  enabled: boolean,
+  action: () => Promise<void>
+) {
   const sourceWorkspaceId = governedWorkspaceId.value
   const sourcePolicy = policy.value
   if (!sourceWorkspaceId) return
@@ -415,7 +444,7 @@ function requestEnforcementMode(enabled: boolean) {
           dialogStore.closeDialog(dialog)
           return
         }
-        await performSave(() => setEnforcementEnabled(enabled))
+        await performSave(action)
         dialogStore.closeDialog(dialog)
       }
     }
