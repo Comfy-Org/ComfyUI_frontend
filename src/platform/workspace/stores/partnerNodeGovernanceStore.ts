@@ -5,7 +5,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getPartnerNodePolicy,
   getPartnerProviders,
-  PartnerNodePolicyApiError
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
 import type {
   PartnerNodePolicy,
@@ -31,7 +32,10 @@ export const usePartnerNodeGovernanceStore = defineStore(
     const policy = shallowRef<PartnerNodePolicy | null>(null)
     const status = ref<PartnerNodePolicyStatus>('inactive')
     const error = shallowRef<Error | null>(null)
+    const isSaving = ref(false)
     let requestVersion = 0
+    let nextSaveId = 0
+    let activeSave: { id: number; workspaceId: string } | null = null
 
     const governedWorkspaceId = computed(() => {
       const workspace = workspaceStore.activeWorkspace
@@ -64,6 +68,10 @@ export const usePartnerNodeGovernanceStore = defineStore(
     async function loadPolicy(): Promise<void> {
       const workspaceId = governedWorkspaceId.value
       const version = ++requestVersion
+      if (activeSave?.workspaceId !== workspaceId) {
+        activeSave = null
+        isSaving.value = false
+      }
       if (!workspaceId) {
         providers.value = []
         policy.value = null
@@ -112,6 +120,51 @@ export const usePartnerNodeGovernanceStore = defineStore(
       }
     }
 
+    async function savePolicy(nextPolicy: PartnerNodePolicy): Promise<void> {
+      const workspaceId = governedWorkspaceId.value
+      if (!workspaceId) return
+      if (isSaving.value) {
+        throw new Error('Provider policy save already in progress')
+      }
+
+      const version = ++requestVersion
+      const saveId = ++nextSaveId
+      activeSave = { id: saveId, workspaceId }
+      isSaving.value = true
+      try {
+        const savedPolicy = await updatePartnerNodePolicy(nextPolicy)
+        if (
+          version !== requestVersion ||
+          governedWorkspaceId.value !== workspaceId
+        ) {
+          return
+        }
+
+        policy.value = savedPolicy
+        status.value = 'configured'
+        error.value = null
+      } catch (saveError) {
+        if (
+          version !== requestVersion ||
+          governedWorkspaceId.value !== workspaceId
+        ) {
+          return
+        }
+        if (
+          saveError instanceof PartnerNodePolicyApiError &&
+          saveError.status === 422
+        ) {
+          await loadPolicy()
+        }
+        throw saveError
+      } finally {
+        if (activeSave?.id === saveId) {
+          activeSave = null
+          isSaving.value = false
+        }
+      }
+    }
+
     watch(governedWorkspaceId, () => void loadPolicy(), { immediate: true })
 
     return {
@@ -119,10 +172,12 @@ export const usePartnerNodeGovernanceStore = defineStore(
       policy,
       status,
       error,
+      isSaving,
       governedWorkspaceId,
       createInitialPolicy,
       isProviderEnabled,
-      loadPolicy
+      loadPolicy,
+      savePolicy
     }
   }
 )

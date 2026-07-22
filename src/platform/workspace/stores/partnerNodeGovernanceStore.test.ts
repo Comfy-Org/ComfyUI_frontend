@@ -14,6 +14,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
+const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockFlags = vi.hoisted(() => ({
   teamWorkspacesEnabled: true,
   partnerNodeGovernanceEnabled: true
@@ -30,7 +31,8 @@ vi.mock(
     return {
       ...actual,
       getPartnerNodePolicy: mockGetPartnerNodePolicy,
-      getPartnerProviders: mockGetPartnerProviders
+      getPartnerProviders: mockGetPartnerProviders,
+      updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
     }
   }
 )
@@ -80,6 +82,7 @@ describe('partnerNodeGovernanceStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    mockUpdatePartnerNodePolicy.mockReset()
     mockFlags.teamWorkspacesEnabled = true
     mockFlags.partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
@@ -129,6 +132,175 @@ describe('partnerNodeGovernanceStore', () => {
 
     expect(store.status).toBe('ineligible')
     expect(store.providers).toEqual([])
+  })
+
+  it('saves the server-normalized policy', async () => {
+    const requestedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: false,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    const savedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    mockUpdatePartnerNodePolicy.mockResolvedValue(savedPolicy)
+    store = await createLoadedStore()
+
+    await store.savePolicy(requestedPolicy)
+
+    expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledWith(requestedPolicy)
+    expect(store.policy).toEqual(savedPolicy)
+    expect(store.status).toBe('configured')
+    expect(store.isSaving).toBe(false)
+  })
+
+  it.for([
+    {
+      id: 'workspace-two',
+      type: 'team',
+      expectedStatus: 'unconfigured',
+      expectedWorkspaceId: 'workspace-two'
+    },
+    {
+      id: 'personal-workspace',
+      type: 'personal',
+      expectedStatus: 'inactive',
+      expectedWorkspaceId: null
+    }
+  ] as const)(
+    'clears saving state after switching to a $type workspace',
+    async ({ id, type, expectedStatus, expectedWorkspaceId }) => {
+      let resolveSave!: (policy: PartnerNodePolicy) => void
+      const savedPolicy: PartnerNodePolicy = {
+        enforcementEnabled: true,
+        providers: [{ providerId: 'openai', enabled: true }]
+      }
+      mockUpdatePartnerNodePolicy.mockReturnValue(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      store = await createLoadedStore()
+
+      const savePromise = store.savePolicy(store.createInitialPolicy())
+      expect(store.isSaving).toBe(true)
+
+      activateWorkspace(id, type)
+      await vi.waitFor(() => expect(store?.status).toBe(expectedStatus))
+
+      expect(store.isSaving).toBe(false)
+
+      resolveSave(savedPolicy)
+      await savePromise
+
+      expect(store.governedWorkspaceId).toBe(expectedWorkspaceId)
+      expect(store.policy).toBeNull()
+    }
+  )
+
+  it('ignores a save response after switching away and back', async () => {
+    let resolveSave!: (policy: PartnerNodePolicy) => void
+    const savedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
+    mockUpdatePartnerNodePolicy.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSave = resolve
+      })
+    )
+    store = await createLoadedStore()
+
+    const savePromise = store.savePolicy(store.createInitialPolicy())
+    activateWorkspace('workspace-two')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+    activateWorkspace('workspace-one')
+    await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
+
+    resolveSave(savedPolicy)
+    await savePromise
+
+    expect(store.policy).toBeNull()
+  })
+
+  it('rejects an overlapping save after a same-workspace reload', async () => {
+    let resolveSave!: (policy: PartnerNodePolicy) => void
+    mockUpdatePartnerNodePolicy
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      .mockResolvedValueOnce({
+        enforcementEnabled: true,
+        providers: [{ providerId: 'openai', enabled: false }]
+      } satisfies PartnerNodePolicy)
+    store = await createLoadedStore()
+    const acceptedPolicy = store.createInitialPolicy()
+
+    const savePromise = store.savePolicy(acceptedPolicy)
+    mockGetPartnerNodePolicy.mockResolvedValueOnce(acceptedPolicy)
+    await store.loadPolicy()
+
+    expect(store.isSaving).toBe(true)
+    await expect(
+      store.savePolicy({
+        enforcementEnabled: true,
+        providers: [{ providerId: 'openai', enabled: false }]
+      })
+    ).rejects.toThrow('Provider policy save already in progress')
+    const saveCallCount = mockUpdatePartnerNodePolicy.mock.calls.length
+
+    resolveSave(acceptedPolicy)
+    await savePromise
+
+    expect(saveCallCount).toBe(1)
+    expect(store.policy).toEqual(acceptedPolicy)
+    expect(store.isSaving).toBe(false)
+  })
+
+  it('ignores a load response after a save completes', async () => {
+    let resolveLoad!: (policy: PartnerNodePolicy | null) => void
+    const savedPolicy: PartnerNodePolicy = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    store = await createLoadedStore()
+    mockGetPartnerNodePolicy.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveLoad = resolve
+      })
+    )
+    mockUpdatePartnerNodePolicy.mockResolvedValue(savedPolicy)
+
+    const loadPromise = store.loadPolicy()
+    await vi.waitFor(() => expect(store?.status).toBe('loading'))
+    await store.savePolicy(store.createInitialPolicy())
+    expect(store.policy).toEqual(savedPolicy)
+    resolveLoad({
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    })
+    await loadPromise
+
+    expect(store.policy).toEqual(savedPolicy)
+  })
+
+  it('reloads the catalog after an unknown-provider response', async () => {
+    mockUpdatePartnerNodePolicy.mockRejectedValue(
+      new PartnerNodePolicyApiError(422, 'Unprocessable Entity')
+    )
+    store = await createLoadedStore()
+    mockGetPartnerProviders.mockClear()
+    mockGetPartnerNodePolicy.mockClear()
+
+    await expect(store.savePolicy(store.createInitialPolicy())).rejects.toEqual(
+      new PartnerNodePolicyApiError(422, 'Unprocessable Entity')
+    )
+
+    expect(mockGetPartnerProviders).toHaveBeenCalledOnce()
+    expect(mockGetPartnerNodePolicy).toHaveBeenCalledOnce()
+    expect(store.isSaving).toBe(false)
   })
 
   it('stays inactive when partner-provider governance is disabled', async () => {
