@@ -20,7 +20,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-three-promoted-widgets'
       )
-      await comfyPage.templates.closeIfOpen()
 
       const [subgraphNode] =
         await comfyPage.nodeOps.getNodeRefsByTitle(SUBGRAPH_TITLE)

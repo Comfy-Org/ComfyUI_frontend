@@ -295,6 +295,23 @@ async function expectNoErrorsTab(comfyPage: ComfyPage) {
   ).toBeHidden()
 }
 
+async function closeTemplatesDialogIfOpen(comfyPage: ComfyPage) {
+  const templatesDialog = comfyPage.page.getByRole('dialog').filter({
+    has: comfyPage.templates.content
+  })
+  const closeButton = templatesDialog.getByRole('button', {
+    name: 'Close dialog'
+  })
+  await closeButton
+    .waitFor({ state: 'visible', timeout: 1_000 })
+    .catch(() => undefined)
+
+  if (await closeButton.isVisible()) {
+    await closeButton.click()
+    await expect(templatesDialog).toBeHidden()
+  }
+}
+
 async function getMediaLoaderWidgetValues(comfyPage: ComfyPage) {
   return await comfyPage.page.evaluate((nodes) => {
     return nodes.map(({ nodeType, widgetName }) => {
@@ -488,7 +505,7 @@ cloudEmptyMediaInputsTest.describe(
   () => {
     cloudEmptyMediaInputsTest.beforeEach(async ({ comfyPage }) => {
       await enableErrorsTab(comfyPage)
-      await comfyPage.templates.closeIfOpen()
+      await closeTemplatesDialogIfOpen(comfyPage)
     })
 
     cloudEmptyMediaInputsTest(
@@ -526,7 +543,7 @@ cloudOutputTest.describe(
   () => {
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
       await enableErrorsTab(comfyPage)
-      await comfyPage.templates.closeIfOpen()
+      await closeTemplatesDialogIfOpen(comfyPage)
     })
 
     cloudOutputTest(
@@ -567,7 +584,7 @@ cloudUploadRaceTest.describe(
   () => {
     cloudUploadRaceTest.beforeEach(async ({ comfyPage }) => {
       await enableErrorsTab(comfyPage)
-      await comfyPage.templates.closeIfOpen()
+      await closeTemplatesDialogIfOpen(comfyPage)
     })
 
     cloudUploadRaceTest(
