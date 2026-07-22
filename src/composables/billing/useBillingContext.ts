@@ -79,7 +79,7 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  */
 function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
-  const { type } = useBillingRouting()
+  const { type, shouldUseUnifiedPricing } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
     null
@@ -110,6 +110,10 @@ function useBillingContextInternal(): BillingContext {
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
   )
 
+  const subscriptionContext = computed(() =>
+    shouldUseUnifiedPricing.value ? getWorkspaceBilling() : activeContext.value
+  )
+
   // Proxy state from active context
   const subscription = computed<SubscriptionInfo | null>(() =>
     toValue(activeContext.value.subscription)
@@ -119,14 +123,14 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.balance)
   )
 
-  const plans = computed(() => toValue(activeContext.value.plans))
+  const plans = computed(() => toValue(subscriptionContext.value.plans))
 
   const currentPlanSlug = computed(() =>
-    toValue(activeContext.value.currentPlanSlug)
+    toValue(subscriptionContext.value.currentPlanSlug)
   )
 
   const teamCreditStops = computed(() =>
-    toValue(activeContext.value.teamCreditStops)
+    toValue(subscriptionContext.value.teamCreditStops)
   )
 
   const currentTeamCreditStop = computed(() =>
@@ -270,14 +274,14 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
-    return activeContext.value.subscribe(planSlug, options)
+    return subscriptionContext.value.subscribe(planSlug, options)
   }
 
   async function previewSubscribe(
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) {
-    return activeContext.value.previewSubscribe(planSlug, options)
+    return subscriptionContext.value.previewSubscribe(planSlug, options)
   }
 
   async function manageSubscription() {
@@ -289,7 +293,7 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function resubscribe() {
-    return activeContext.value.resubscribe()
+    return subscriptionContext.value.resubscribe()
   }
 
   async function topup(amountCents: number) {
@@ -306,7 +310,7 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function fetchPlans() {
-    return activeContext.value.fetchPlans()
+    return subscriptionContext.value.fetchPlans()
   }
 
   async function requireActiveSubscription() {
