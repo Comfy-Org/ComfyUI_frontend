@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   getPartnerNodePolicy,
@@ -77,7 +78,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
 
     nodeDefStore.registerNodeDefFilter({
       id: DISCOVERY_FILTER_ID,
-      name: 'Workspace partner-node governance',
+      name: t('nodeFilters.workspacePartnerNodeGovernance'),
       predicate: (nodeDef) => !isNodeDisabled(nodeDef.name)
     })
 

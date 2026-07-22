@@ -4499,7 +4499,8 @@
     "hideDevOnly": "Hide Dev-Only Nodes",
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
-    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search",
+    "workspacePartnerNodeGovernance": "Workspace partner-node governance"
   },
   "secrets": {
     "title": "API Keys & Secrets",

@@ -45,7 +45,7 @@ async function setupGovernedWorkspace(page: Page) {
       jsonRoute({
         AllowedPartnerNode: partnerNode('AllowedPartnerNode'),
         DisabledPartnerNode: partnerNode('DisabledPartnerNode')
-      })
+      } satisfies Record<string, ComfyNodeDef>)
     )
   )
   await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
