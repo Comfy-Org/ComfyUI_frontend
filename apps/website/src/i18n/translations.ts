@@ -1216,7 +1216,6 @@ const translations = {
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
 
-  // Education-only highlighted feature rows; zh-CN drafted, pending native review.
   'pricing.feature.educationalSavings': {
     en: 'Educational savings – 10% off',
     'zh-CN': '教育优惠 – 立减 10%'
@@ -1279,7 +1278,6 @@ const translations = {
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
   'pricing.plan.standard.yearlyPrice': { en: '$16', 'zh-CN': '$16' },
   'pricing.plan.standard.yearlyTotal': { en: '$192', 'zh-CN': '$192' },
-  // Education prices (10% off monthly, 25% off yearly, off the $20 list price).
   'pricing.plan.standard.eduPrice': { en: '$18', 'zh-CN': '$18' },
   'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
   'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
@@ -1297,7 +1295,6 @@ const translations = {
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
   'pricing.plan.creator.yearlyPrice': { en: '$28', 'zh-CN': '$28' },
   'pricing.plan.creator.yearlyTotal': { en: '$336', 'zh-CN': '$336' },
-  // Education prices (10% off monthly, 25% off yearly, off the $35 list price).
   'pricing.plan.creator.eduPrice': { en: '$31.50', 'zh-CN': '$31.50' },
   'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
   'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },

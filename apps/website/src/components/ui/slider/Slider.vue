@@ -24,7 +24,6 @@ const {
   SliderRootProps & {
     class?: HTMLAttributes['class']
     ticks?: number
-    /** Accessible name/value for the thumb; reka only exposes the numeric index. */
     thumbLabel?: string
     thumbValueText?: string
   }
@@ -47,7 +46,6 @@ function tickValue(i: number): number {
 function isTickActive(i: number): boolean {
   const value = modelValue?.[0]
   if (value == null || ticks == null || ticks <= 1) return false
-  // Compare nearest tick indices, not raw values, to dodge float error (0.9999… vs 1).
   const activeIndex =
     max === min ? 0 : Math.round(((value - min) / (max - min)) * (ticks - 1))
   return i - 1 === activeIndex

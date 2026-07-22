@@ -3,8 +3,6 @@ export interface TeamCreditTier {
   basePrice: number
   monthlyPrice: number
   yearlyPrice: number
-  // Education prices off basePrice: monthly 5/7.5/10/12.5/15%,
-  // yearly 5/10/15/20/25% per tier.
   eduMonthlyPrice: number
   eduYearlyPrice: number
   videos: number
