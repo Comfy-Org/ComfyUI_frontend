@@ -73,8 +73,16 @@
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :show-submit="false"
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
+      />
+
+      <UnifiedStripePaymentSelector
+        v-if="previewVariant === 'team-new'"
+        :amount-cents="selectedTeamStop!.discountedUsd * 100"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleTeamSubscribe"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -83,8 +91,16 @@
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
+        :show-submit="false"
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
+      />
+
+      <UnifiedStripePaymentSelector
+        v-if="previewVariant === 'personal-new'"
+        :amount-cents="previewData!.cost_today_cents"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleAddCreditCard"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -122,6 +138,7 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
+import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
 const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
   onClose: () => void

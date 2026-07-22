@@ -85,6 +85,7 @@
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",
+    "@stripe/stripe-js": "catalog:",
     "@tanstack/vue-virtual": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-link": "catalog:",

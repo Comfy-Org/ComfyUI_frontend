@@ -269,7 +269,7 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  async function handleSubscription() {
+  async function handleSubscription(confirmationToken?: string) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -288,6 +288,7 @@ export function useSubscriptionCheckout(
       if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
+        confirmationToken,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
@@ -367,7 +368,7 @@ export function useSubscriptionCheckout(
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
 
-  async function handleTeamSubscription() {
+  async function handleTeamSubscription(confirmationToken?: string) {
     if (!permissions.value.canManageSubscription) return
 
     const teamCheckout = selectedTeamCheckout.value
@@ -387,6 +388,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getTeamPlanSlug(billingCycle)
       const response = await subscribe(planSlug, {
+        confirmationToken,
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,

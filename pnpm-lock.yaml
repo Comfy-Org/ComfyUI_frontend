@@ -105,6 +105,9 @@ catalogs:
     '@storybook/vue3-vite':
       specifier: ^10.5.0
       version: 10.5.0
+    '@stripe/stripe-js':
+      specifier: ^9.12.0
+      version: 9.12.0
     '@tailwindcss/vite':
       specifier: ^4.3.2
       version: 4.3.2
@@ -504,6 +507,9 @@ importers:
       '@sparkjsdev/spark':
         specifier: 'catalog:'
         version: 2.1.0(three@0.184.0)
+      '@stripe/stripe-js':
+        specifier: 'catalog:'
+        version: 9.12.0
       '@tanstack/vue-virtual':
         specifier: 'catalog:'
         version: 3.13.32(vue@3.5.39(typescript@5.9.3))
@@ -3844,6 +3850,10 @@ packages:
     peerDependencies:
       storybook: ^10.5.0
       vue: ^3.0.0
+
+  '@stripe/stripe-js@9.12.0':
+    resolution: {integrity: sha512-wCUYZNYo7E/6B3Rv2i/g/Rmj2mTiOX6HEwWYUWUuNUKwEhzTo/SXuQ1IoNo3mknWIHUQyqdakv1Nl2SiYPrCrw==}
+    engines: {node: '>=12.16'}
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -12124,6 +12134,8 @@ snapshots:
       type-fest: 5.8.0
       vue: 3.5.39(typescript@5.9.3)
       vue-component-type-helpers: 3.3.7
+
+  '@stripe/stripe-js@9.12.0': {}
 
   '@swc/helpers@0.5.23':
     dependencies:
