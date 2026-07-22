@@ -53,6 +53,32 @@ const translations = {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
   },
+  'hero.cta.cloud': {
+    en: 'Try it in ComfyUI Cloud',
+    'zh-CN': '在 ComfyUI Cloud 体验'
+  },
+  'hero.node.model': { en: 'Load Diffusion Model', 'zh-CN': '加载扩散模型' },
+  'hero.node.clip': { en: 'Load CLIP', 'zh-CN': '加载 CLIP' },
+  'hero.node.vae': { en: 'Load VAE', 'zh-CN': '加载 VAE' },
+  'hero.node.lora': { en: 'Load LoRA', 'zh-CN': '加载 LoRA' },
+  'hero.node.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'hero.node.output': { en: 'Save Image', 'zh-CN': '保存图像' },
+  'hero.run': { en: 'Run', 'zh-CN': '运行' },
+  'hero.runAgain': { en: 'Run again', 'zh-CN': '再次运行' },
+  'hero.totalProgress': { en: 'Total', 'zh-CN': '总进度' },
+  'hero.output.hint': {
+    en: 'Press Run to generate an image with a fresh seed',
+    'zh-CN': '按下运行，用全新种子生成一张图像'
+  },
+  'hero.output.seed': { en: 'seed', 'zh-CN': '种子' },
+  'hero.output.alt': {
+    en: 'Generated image: a hand holding a martini glass surrounded by playful ink-sketch cartoon characters',
+    'zh-CN': '生成的图像：手持马提尼酒杯，周围环绕着俏皮的手绘卡通角色'
+  },
+  'hero.output.openCloud': {
+    en: 'Open in ComfyUI Cloud',
+    'zh-CN': '在 ComfyUI Cloud 中打开'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {

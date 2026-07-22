@@ -75,6 +75,9 @@
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
+  --color-hero-node: #1f2026;
+  --color-hero-node-inset: #16171c;
+  --color-hero-exec: #3d7eff;
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-3\.5xl: 2rem;
@@ -219,6 +222,62 @@
 
 .crossfade-enter-from,
 .crossfade-leave-to {
+  opacity: 0;
+}
+
+/* ComfyUI-style canvas dot grid behind the hero workflow. */
+.hero-dot-grid {
+  background-image: radial-gradient(
+    rgb(255 255 255 / 0.07) 1px,
+    transparent 1.5px
+  );
+  background-size: 26px 26px;
+}
+
+/* Workflow connectors: a short bright dash flows along each wire while the
+   workflow runs. path-length is normalized to 1 so the dash travels at a
+   consistent rate regardless of wire length. */
+.hero-wire-pulse {
+  stroke-dashoffset: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hero-wire-active .hero-wire-pulse {
+  opacity: 0.9;
+  animation: hero-wire-flow 1.2s linear infinite;
+}
+
+@keyframes hero-wire-flow {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Freshly generated renders sharpen into place; the previous render fades
+   beneath. Reduced-motion users get a near-instant swap via the global
+   override below. */
+.hero-render-enter-active {
+  transition:
+    opacity 0.5s ease,
+    filter 0.5s ease;
+}
+
+.hero-render-enter-from {
+  opacity: 0;
+  filter: blur(12px);
+}
+
+.hero-render-leave-active {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.35s ease;
+}
+
+.hero-render-leave-to {
   opacity: 0;
 }
 
