@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { subscribeUrl } from './pricingPlans'
 
-// Locks the cloud pricing-table deep-link contract (FE-1104):
-// ?pricing=<tier>[&stop=team_n]&cycle=.
 describe('subscribeUrl', () => {
   it('builds a personal-tier deep link with no stop', () => {
     expect(subscribeUrl('standard', 'monthly')).toBe(
