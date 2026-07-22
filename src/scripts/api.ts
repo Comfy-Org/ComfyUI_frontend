@@ -17,6 +17,7 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { normalizePartnerNodePolicyPromptError } from '@/platform/workspace/utils/partnerNodePolicyPromptError'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import { zShareableAssetsResponse } from '@/schemas/apiSchema'
 import type {
@@ -1000,7 +1001,11 @@ export class ComfyApi extends EventTarget {
           }
         }
       }
-      throw new PromptExecutionError(errorResponse, res.status)
+      throw new PromptExecutionError(
+        normalizePartnerNodePolicyPromptError(errorResponse, prompt) ??
+          errorResponse,
+        res.status
+      )
     }
 
     return await res.json()

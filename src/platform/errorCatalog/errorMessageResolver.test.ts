@@ -131,6 +131,25 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves workspace-disabled partner nodes to actionable panel copy', () => {
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('workspace_partner_node_disabled'),
+      nodeDisplayName: 'Flux Fill'
+    })
+
+    expect(result).toEqual({
+      catalogId: 'workspace_partner_node_disabled',
+      displayTitle: 'Disabled node',
+      displayMessage:
+        'This node has been disabled by your team admin. Use a different node.',
+      displayDetails: undefined,
+      displayItemLabel: 'Flux Fill',
+      toastTitle: 'Partner nodes',
+      toastMessage: 'This node has been disabled by your team admin.'
+    })
+  })
+
   it('preserves special characters in catalog copy for node names', () => {
     const nodeDisplayName = 'A & B <C>'
     const result = resolveRunErrorMessage({
