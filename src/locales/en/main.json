@@ -22,7 +22,8 @@
     "disclaimer": "Agent generation does not impact the graph.",
     "workflowHeader": {
       "dismiss": "Dismiss",
-      "switchWorkflow": "Switch workflow"
+      "switchWorkflow": "Switch workflow",
+      "chooseWorkflow": "Choose a workflow"
     },
     "nodeSelection": {
       "bannerTitle": "Add nodes from graph",

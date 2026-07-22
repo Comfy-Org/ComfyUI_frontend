@@ -9,7 +9,7 @@ import {
   ComboboxRoot,
   ComboboxViewport
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -19,18 +19,31 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const emit = defineEmits<{
-  dismiss: []
-}>()
-
 const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 
 const isOpen = ref(false)
 const searchQuery = ref('')
+const isDismissed = ref(false)
 
 const activeWorkflow = computed(() => workflowStore.activeWorkflow)
+// A dismissal only hides the workflow's name for the workflow that was
+// active when dismissed - switching workflows brings the label back.
+watch(
+  () => activeWorkflow.value?.key,
+  () => {
+    isDismissed.value = false
+  }
+)
+
+const triggerWorkflow = computed(() =>
+  isDismissed.value ? null : activeWorkflow.value
+)
+const triggerLabel = computed(
+  () =>
+    triggerWorkflow.value?.filename ?? t('agent.workflowHeader.chooseWorkflow')
+)
 const filteredWorkflows = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   const workflows = workflowStore.openWorkflows
@@ -49,16 +62,16 @@ function switchWorkflow(workflow: ComfyWorkflow) {
 </script>
 
 <template>
-  <ComboboxRoot v-if="activeWorkflow" v-model:open="isOpen" ignore-filter>
+  <ComboboxRoot v-model:open="isOpen" ignore-filter>
     <ComboboxAnchor as-child>
       <div
-        class="-mb-5 flex w-full items-center gap-1 rounded-t-2xl border border-border-default bg-secondary-background px-3 pt-3 pb-7 text-xs"
+        class="-mb-5 flex w-full items-center justify-between gap-1 rounded-t-2xl border border-border-default bg-secondary-background px-3 pt-3 pb-7 text-xs"
       >
         <Button
           type="button"
           variant="muted-textonly"
           size="unset"
-          class="min-w-0 flex-1 justify-start gap-1.5 rounded-md px-1.5 py-1 text-xs font-normal text-muted-foreground hover:text-base-foreground"
+          class="min-w-0 gap-1.5 rounded-md px-1.5 py-1 text-xs font-normal text-base-foreground"
           :aria-label="t('agent.workflowHeader.switchWorkflow')"
           aria-haspopup="listbox"
           :aria-expanded="isOpen"
@@ -66,9 +79,10 @@ function switchWorkflow(workflow: ComfyWorkflow) {
         >
           <i class="icon-[comfy--workflow] size-3.5 shrink-0" />
           <span class="min-w-0 truncate text-left">
-            {{ activeWorkflow.filename }}
+            {{ triggerLabel }}
           </span>
           <span
+            v-if="triggerWorkflow"
             class="size-1.5 shrink-0 rounded-full bg-base-foreground"
             aria-hidden="true"
           />
@@ -80,7 +94,7 @@ function switchWorkflow(workflow: ComfyWorkflow) {
           variant="muted-textonly"
           class="size-4 shrink-0"
           :aria-label="t('agent.workflowHeader.dismiss')"
-          @click="emit('dismiss')"
+          @click="isDismissed = true"
         >
           <i class="icon-[lucide--x] size-3" />
         </Button>
@@ -134,7 +148,7 @@ function switchWorkflow(workflow: ComfyWorkflow) {
               aria-hidden="true"
             />
             <i
-              v-if="workflow.key === activeWorkflow.key"
+              v-if="workflow.key === activeWorkflow?.key"
               class="icon-[lucide--check] size-3.5 shrink-0"
               aria-hidden="true"
             />

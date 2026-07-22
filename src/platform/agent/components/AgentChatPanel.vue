@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import Conversation from '@/components/ai-elements/conversation/Conversation.vue'
 import ConversationContent from '@/components/ai-elements/conversation/ConversationContent.vue'
@@ -26,7 +26,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAgentChatPrototype } from '@/platform/agent/composables/useAgentChatPrototype'
 import { useMentionTrigger } from '@/platform/agent/composables/useMentionTrigger'
 import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -62,7 +61,6 @@ const {
 const authStore = useAuthStore()
 const agentPanelStore = useAgentPanelStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const workflowStore = useWorkflowStore()
 
 const model = ref('Auto')
 const showHistory = ref(false)
@@ -77,18 +75,10 @@ const mentionPicker = ref<{
 const reactions = ref<Record<string, 'liked' | 'disliked' | null>>({})
 const fileInput = ref<HTMLInputElement | null>(null)
 const attachments = ref<File[]>([])
-const isWorkflowHeaderDismissed = ref(false)
 
 const mentionTrigger = useMentionTrigger(
   input,
   () => promptTextarea.value?.getSelectionStart() ?? 0
-)
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    isWorkflowHeaderDismissed.value = false
-  }
 )
 
 const userName = computed(
@@ -321,10 +311,7 @@ function onNewChatFromHistory() {
           <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
-              <AgentComposerWorkflowHeader
-                v-if="!isWorkflowHeaderDismissed"
-                @dismiss="isWorkflowHeaderDismissed = true"
-              />
+              <AgentComposerWorkflowHeader />
               <PromptInputBody>
                 <AgentComposerNodeChips
                   :nodes="agentNodeSelectionStore.referencedNodes"
