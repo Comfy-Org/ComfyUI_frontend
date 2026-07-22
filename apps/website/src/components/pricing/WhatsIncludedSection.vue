@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
+import { Clock } from '@lucide/vue'
+
 import { t } from '../../i18n/translations'
 import CheckIcon from '../icons/CheckIcon.vue'
 
@@ -55,11 +57,6 @@ const features: IncludedFeature[] = [
   {
     titleKey: 'pricing.included.feature11.title',
     descriptionKey: 'pricing.included.feature11.description'
-  },
-  {
-    titleKey: 'pricing.included.feature12.title',
-    descriptionKey: 'pricing.included.feature12.description',
-    isComingSoon: true
   }
 ]
 </script>
@@ -92,11 +89,9 @@ const features: IncludedFeature[] = [
         >
           <!-- Title -->
           <div class="flex items-start gap-3">
-            <img
+            <Clock
               v-if="feature.isComingSoon"
-              src="/icons/clock.svg"
-              alt=""
-              class="mt-0.5 size-4 shrink-0"
+              class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/55"
               aria-hidden="true"
             />
             <CheckIcon
@@ -105,6 +100,12 @@ const features: IncludedFeature[] = [
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
               {{ t(feature.titleKey, locale) }}
+              <span
+                v-if="feature.isComingSoon"
+                class="block text-primary-comfy-canvas/55"
+              >
+                {{ t('pricing.included.comingSoon', locale) }}
+              </span>
             </p>
           </div>
 

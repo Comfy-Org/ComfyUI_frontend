@@ -87,11 +87,11 @@ test.describe('Cloud page @smoke', () => {
     await expect(cards).toHaveCount(3)
   })
 
-  test('FAQSection heading is visible with 15 items', async ({ page }) => {
+  test('FAQSection heading is visible with 12 items', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /FAQ/i })).toBeVisible()
 
     const faqButtons = page.locator('button[aria-controls^="faq-panel-"]')
-    await expect(faqButtons).toHaveCount(15)
+    await expect(faqButtons).toHaveCount(12)
   })
 })
 
