@@ -61,6 +61,20 @@ vi.mock('@/i18n', () => {
       'Validation failed',
     'errorCatalog.validationErrors.unknown_validation_error.toastMessage':
       '{nodeName} returned an unrecognized validation error.',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.title':
+      'Disabled node',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.titlePlural':
+      'Disabled nodes',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.message':
+      'This node has been disabled by your team admin. Use a different node.',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.messagePlural':
+      'These nodes have been disabled by your team admin. Use different nodes.',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.itemLabel':
+      '{nodeName}',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.toastTitle':
+      'Partner nodes',
+    'errorCatalog.validationErrors.workspace_partner_node_disabled.toastMessage':
+      'This node has been disabled by your team admin.',
     'errorCatalog.promptErrors.prompt_no_outputs.title':
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
@@ -495,6 +509,58 @@ describe('useErrorGroups', () => {
       expect(error.toastMessage).toBe(
         'KSampler is missing a required input: model'
       )
+    })
+
+    it('groups workspace-disabled partner nodes with names and count', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordNodeErrors({
+        '1': {
+          class_type: 'FluxFill',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'workspace_partner_node_disabled',
+              message: 'Disabled by workspace policy',
+              details: ''
+            }
+          ]
+        },
+        '2': {
+          class_type: 'VeoVideo',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'workspace_partner_node_disabled',
+              message: 'Disabled by workspace policy',
+              details: ''
+            }
+          ]
+        }
+      })
+      await nextTick()
+
+      const group = groups.allErrorGroups.value.find(
+        (entry) =>
+          entry.groupKey === 'execution:workspace_partner_node_disabled'
+      )
+      expect(group?.type).toBe('execution')
+      if (group?.type !== 'execution') return
+
+      expect(group.displayTitle).toBe('Disabled nodes')
+      expect(group.displayMessage).toBe(
+        'These nodes have been disabled by your team admin. Use different nodes.'
+      )
+      expect(group.count).toBe(2)
+      expect(
+        group.cards.flatMap((card) =>
+          card.errors.map((error) => error.displayItemLabel)
+        )
+      ).toEqual(['FluxFill', 'VeoVideo'])
+      expect(
+        group.cards.flatMap((card) =>
+          card.errors.map((error) => error.displayDetails)
+        )
+      ).toEqual([undefined, undefined])
     })
 
     it('groups lifted boundary errors under the host node card', async () => {

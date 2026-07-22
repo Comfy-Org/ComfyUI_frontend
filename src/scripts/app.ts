@@ -68,6 +68,7 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { runQueuePromptGuards } from '@/services/queuePromptGuardService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -109,6 +110,7 @@ import type { MissingModelPipelineResult } from '@/platform/missingModel/missing
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { isPartnerNodePolicyPromptResponse } from '@/platform/workspace/utils/partnerNodePolicyPromptError'
 import {
   scanAllMediaCandidates,
   verifyMediaCandidates
@@ -1624,11 +1626,22 @@ export class ComfyApp {
     })
   }
 
+  private async isQueuePromptAllowed(
+    queueNodeIds?: readonly NodeExecutionId[]
+  ): Promise<boolean> {
+    return await runQueuePromptGuards({
+      rootGraph: this.rootGraph,
+      queueNodeIds
+    })
+  }
+
   async queuePrompt(
     number: number,
     batchCount: number = 1,
     queueNodeIds?: NodeExecutionId[]
   ): Promise<boolean> {
+    if (!(await this.isQueuePromptAllowed(queueNodeIds))) return false
+
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({ number, batchCount, queueNodeIds, requestId })
     api.dispatchCustomEvent('promptQueueing', {
@@ -1662,6 +1675,11 @@ export class ComfyApp {
 
         const isPartialExecution = !!queueNodeIds?.length
         for (let i = 0; i < batchCount; i++) {
+          if (!(await this.isQueuePromptAllowed(queueNodeIds))) {
+            queueResultOverride = false
+            break
+          }
+
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
@@ -1730,7 +1748,18 @@ export class ComfyApp {
               console.error(error)
               break
             }
-            if (
+            const isPartnerNodePolicyDenial =
+              error instanceof PromptExecutionError &&
+              isPartnerNodePolicyPromptResponse(error.response)
+            if (isPartnerNodePolicyDenial) {
+              useToastStore().add({
+                severity: 'error',
+                summary: t('workspacePanel.partnerNodes.runBlocked.summary'),
+                detail: t('workspacePanel.partnerNodes.runBlocked.detail'),
+                group: 'partner-node-policy',
+                life: 8000
+              })
+            } else if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
               error.response.error?.type === 'missing_node_type'
