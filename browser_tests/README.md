@@ -36,9 +36,11 @@ Without this flag, parallel tests conflict and fail randomly.
 
 ComfyUI_devtools ships in this repo under `tools/devtools/` and is copied into
 `custom_nodes` automatically during CI. It adds API endpoints and nodes used by
-browser tests. For local development, copy it into your ComfyUI install:
+browser tests. For local development, copy it into your ComfyUI install (create the target
+directory first — it won't exist on a fresh install):
 
 ```bash
+mkdir -p /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
@@ -265,13 +267,18 @@ Node references from `fixtures/utils/litegraphUtils.ts` are stable; raw
 coordinates are fragile.
 
 ```typescript
-// ✅ Prefer
-const node = (await comfyPage.nodeOps.getNodeRefsByType('LoadImage'))[0]
+// ✅ Prefer — target by id, or by type when exactly one match is expected
+const node = await comfyPage.nodeOps.getNodeRefById('12')
 await node.click('title')
 
 // ❌ Avoid
 await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
 ```
+
+When selecting by type and more than one node can match, don't index `[0]` on
+the returned array — the order is non-deterministic (see the
+[Flake Prevention](#flake-prevention) patterns table). Use `getNodeRefById()`,
+or guard with `toHaveLength(1)` first.
 
 ### Vue Nodes vs LiteGraph — decision guide
 
@@ -630,7 +637,9 @@ export default defineConfig({
 })
 ```
 
-Or generate local baselines for comparison (do not commit them):
+Or generate local baselines for comparison (do not commit them). If you added
+the screenshot-skipping `grep` above, remove it (or override `--grep` for this
+run) — otherwise `--update-snapshots` won't regenerate the excluded baselines:
 
 ```bash
 pnpm test:browser:local --update-snapshots
