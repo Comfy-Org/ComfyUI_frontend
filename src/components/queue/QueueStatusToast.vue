@@ -139,9 +139,39 @@
         data-testid="queue-status-idle-panel"
         class="flex w-48 flex-col gap-3 rounded-xl border border-solid border-charcoal-700 bg-comfy-menu-bg p-3 shadow-none drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]"
       >
-        <p class="text-center text-xs text-muted-foreground">
+        <!-- Idle is exactly when someone goes looking for what they just
+             made, so the results are here rather than a tab away. -->
+        <template v-if="recentOutputs.length">
+          <p class="text-xs text-muted-foreground">
+            {{ t('queueStatus.recentResults') }}
+          </p>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button
+              v-for="(output, index) in recentOutputs"
+              :key="output.url"
+              type="button"
+              class="relative aspect-square cursor-pointer overflow-clip rounded-md border-none bg-secondary-background p-0 outline-1 outline-base-foreground/10 transition-transform duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none"
+              :aria-label="t('queueStatus.viewResult')"
+              data-testid="queue-status-recent-output"
+              @click="openOutput(index)"
+            >
+              <img
+                :src="output.previewUrl"
+                alt=""
+                loading="lazy"
+                class="size-full object-cover"
+              />
+              <i
+                v-if="output.isVideo"
+                class="icon-[lucide--play] absolute right-1 bottom-1 size-3 text-base-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+              />
+            </button>
+          </div>
+        </template>
+        <p v-else class="text-center text-xs text-muted-foreground">
           {{ t('queueStatus.nothingRunning') }}
         </p>
+
         <Button
           variant="secondary"
           size="md"
@@ -182,7 +212,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -352,6 +382,25 @@ const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
 
 const viewJob = (job: JobListItem) => {
   void onViewItem(job)
+}
+
+/**
+ * Latest finished results, newest first. Surfaced on the idle popover because
+ * that is the moment people go looking for what a run produced — user tests
+ * showed they don't know the outputs land in the assets panel.
+ */
+const RECENT_OUTPUT_LIMIT = 6
+const recentOutputs = computed(() =>
+  jobItems.value
+    .filter((job) => job.state === 'completed')
+    .map((job) => job.taskRef?.previewOutput)
+    .filter((output): output is ResultItemImpl => !!output)
+    .slice(0, RECENT_OUTPUT_LIMIT)
+)
+
+const openOutput = (index: number) => {
+  galleryItems.value = [...recentOutputs.value]
+  galleryActiveIndex.value = index
 }
 
 const cancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
