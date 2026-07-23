@@ -223,7 +223,11 @@ describe('PrimitiveNode', () => {
     it('warns and skips when target node is not found', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const node = createPrimitiveNode()
-      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(999), target_slot: 0 })
+      const link = createMockLLink({
+        id: toLinkId(1),
+        target_id: toNodeId(999),
+        target_slot: 0
+      })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => undefined)
@@ -531,7 +535,11 @@ describe('PrimitiveNode', () => {
 
     it('returns early when link target node is not found', () => {
       const node = createPrimitiveNode()
-      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(999), target_slot: 0 })
+      const link = createMockLLink({
+        id: toLinkId(1),
+        target_id: toNodeId(999),
+        target_slot: 0
+      })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => undefined)
@@ -611,7 +619,11 @@ describe('PrimitiveNode', () => {
       } as any
 
       const targetNode = createTargetNode('seed', 42)
-      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(2), target_slot: 0 })
+      const link = createMockLLink({
+        id: toLinkId(1),
+        target_id: toNodeId(2),
+        target_slot: 0
+      })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => targetNode)
@@ -965,10 +977,7 @@ describe('mergeIfValid', () => {
     mergeIfValid(output, config2, false, undefined, config1)
 
     // Verify config1 (not GET_CONFIG's result) was passed as the first argument
-    expect(vi.mocked(mergeInputSpec)).toHaveBeenCalledWith(
-      config1,
-      config2
-    )
+    expect(vi.mocked(mergeInputSpec)).toHaveBeenCalledWith(config1, config2)
   })
 
   it('clamps widget value to min when below range', () => {
