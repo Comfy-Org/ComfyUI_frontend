@@ -24,6 +24,161 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+const nonExecutionGraphProperties = new Set([
+  'id',
+  'revision',
+  'last_node_id',
+  'last_link_id',
+  'state',
+  'groups',
+  'config',
+  'extra',
+  'version',
+  'models',
+  'reroutes',
+  'floatingLinks',
+  'subgraphs',
+  'definitions',
+  'name',
+  'description',
+  'category',
+  'essentials_category'
+])
+
+const nonExecutionNodeProperties = new Set([
+  'pos',
+  'size',
+  'flags',
+  'order',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape',
+  'showAdvanced',
+  'title'
+])
+
+const nonExecutionSlotProperties = new Set([
+  'localized_name',
+  'label',
+  'shape',
+  'color_off',
+  'color_on',
+  'pos',
+  'link',
+  'links',
+  'linkIds'
+])
+
+const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
+const nonExecutionLinkProperties = new Set(['id', 'type', 'parentId'])
+const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return isRecord(value) ? value : null
+}
+
+function omitProperties(
+  record: Record<string, unknown>,
+  properties: ReadonlySet<string>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => !properties.has(key))
+  )
+}
+
+function getExecutionSlotState(value: unknown): unknown {
+  const slot = asRecord(value)
+  return slot ? omitProperties(slot, nonExecutionSlotProperties) : value
+}
+
+function getExecutionNodeState(value: unknown): unknown {
+  const node = asRecord(value)
+  if (!node) return value
+
+  const executionNode = omitProperties(node, nonExecutionNodeProperties)
+  if (Array.isArray(node.inputs)) {
+    executionNode.inputs = node.inputs.map(getExecutionSlotState)
+  }
+  if (Array.isArray(node.outputs)) {
+    executionNode.outputs = node.outputs.map(getExecutionSlotState)
+  }
+  return executionNode
+}
+
+function getExecutionBoundaryNodeState(value: unknown): unknown {
+  const node = asRecord(value)
+  return node ? omitProperties(node, nonExecutionBoundaryNodeProperties) : value
+}
+
+function getExecutionLinkState(value: unknown): unknown {
+  if (Array.isArray(value)) return value.slice(1, 5)
+
+  const link = asRecord(value)
+  return link ? omitProperties(link, nonExecutionLinkProperties) : value
+}
+
+function isExecutableNodeState(value: unknown): boolean {
+  const node = asRecord(value)
+  return (
+    !node ||
+    typeof node.type !== 'string' ||
+    !nonExecutableNodeTypes.has(node.type)
+  )
+}
+
+function getExecutionDefinitionsState(value: unknown): unknown {
+  const definitions = asRecord(value)
+  if (!definitions || !Array.isArray(definitions.subgraphs)) return value
+
+  return {
+    ...definitions,
+    subgraphs: _.sortBy(
+      definitions.subgraphs,
+      (subgraph) => asRecord(subgraph)?.id
+    ).map(getExecutionGraphState)
+  }
+}
+
+function getExecutionGraphState(value: unknown): unknown {
+  const graph = asRecord(value)
+  if (!graph) return value
+
+  const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
+  if (Array.isArray(graph.nodes)) {
+    executionGraph.nodes = _.sortBy(
+      graph.nodes.filter(isExecutableNodeState).map(getExecutionNodeState),
+      (node) => asRecord(node)?.id
+    )
+  }
+  if (Array.isArray(graph.links)) {
+    executionGraph.links = _.sortBy(
+      graph.links.map(getExecutionLinkState),
+      (link) => JSON.stringify(link)
+    )
+  }
+  if (Array.isArray(graph.inputs)) {
+    executionGraph.inputs = graph.inputs.map(getExecutionSlotState)
+  }
+  if (Array.isArray(graph.outputs)) {
+    executionGraph.outputs = graph.outputs.map(getExecutionSlotState)
+  }
+  if ('inputNode' in graph) {
+    executionGraph.inputNode = getExecutionBoundaryNodeState(graph.inputNode)
+  }
+  if ('outputNode' in graph) {
+    executionGraph.outputNode = getExecutionBoundaryNodeState(graph.outputNode)
+  }
+  if ('definitions' in graph) {
+    executionGraph.definitions = getExecutionDefinitionsState(graph.definitions)
+  }
+  return executionGraph
+}
+
 const reportedInactiveCalls = new Set<string>()
 
 /**
@@ -166,8 +321,19 @@ export class ChangeTracker {
     }
   }
 
-  updateModified() {
+  updateModified(previousState?: ComfyWorkflowJSON) {
     api.dispatchCustomEvent('graphChanged', this.activeState)
+    if (previousState) {
+      const previousExecutionState = clone(
+        getExecutionGraphState(previousState)
+      )
+      const currentExecutionState = clone(
+        getExecutionGraphState(this.activeState)
+      )
+      if (!_.isEqual(previousExecutionState, currentExecutionState)) {
+        api.dispatchCustomEvent('executionGraphChanged', this.activeState)
+      }
+    }
 
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
@@ -207,14 +373,15 @@ export class ChangeTracker {
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
-      this.undoQueue.push(this.activeState)
+      const previousState = this.activeState
+      this.undoQueue.push(previousState)
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this.updateModified()
+      this.updateModified(previousState)
       this.squashState()
     }
   }
@@ -244,7 +411,8 @@ export class ChangeTracker {
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {
-      target.push(this.activeState)
+      const previousState = this.activeState
+      target.push(previousState)
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {
@@ -252,7 +420,7 @@ export class ChangeTracker {
           silentAssetErrors: true
         })
         this.activeState = prevState
-        this.updateModified()
+        this.updateModified(previousState)
       } finally {
         this._restoringState = false
       }

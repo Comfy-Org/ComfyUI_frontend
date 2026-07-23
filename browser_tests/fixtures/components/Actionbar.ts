@@ -1,8 +1,16 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
+import { errors } from '@playwright/test'
 
 import type { AutoQueueMode } from '@/stores/queueStore'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
+
+function isPromptRequest(request: Request): boolean {
+  return (
+    request.method() === 'POST' &&
+    new URL(request.url()).pathname === '/api/prompt'
+  )
+}
 
 export class ComfyActionbar {
   public readonly root: Locator
@@ -22,6 +30,31 @@ export class ComfyActionbar {
       .locator('.actionbar')
       .getAttribute('class')
     return className?.includes('static') ?? false
+  }
+
+  async collectPromptRequestsDuring(
+    action: () => Promise<void>,
+    timeout = 3000
+  ): Promise<Request[]> {
+    const requests: Request[] = []
+    function onRequest(request: Request) {
+      if (isPromptRequest(request)) requests.push(request)
+    }
+
+    this.page.on('request', onRequest)
+    try {
+      await action()
+      if (requests.length === 0) {
+        await this.page
+          .waitForRequest(isPromptRequest, { timeout })
+          .catch((error: unknown) => {
+            if (!(error instanceof errors.TimeoutError)) throw error
+          })
+      }
+      return requests
+    } finally {
+      this.page.off('request', onRequest)
+    }
   }
 }
 

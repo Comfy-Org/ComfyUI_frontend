@@ -1,5 +1,5 @@
-import type { Page, Request, Response } from '@playwright/test'
-import { errors, expect, mergeTests } from '@playwright/test'
+import type { Response } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { PromptResponse } from '@/schemas/apiSchema'
 
@@ -10,34 +10,7 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-function isPromptRequest(request: Request): boolean {
-  return (
-    request.method() === 'POST' &&
-    new URL(request.url()).pathname === '/api/prompt'
-  )
-}
-
-function collectPromptRequests(
-  page: Page
-): Disposable & { readonly requests: Request[] } {
-  const requests: Request[] = []
-  function onRequest(request: Request) {
-    if (isPromptRequest(request)) requests.push(request)
-  }
-  page.on('request', onRequest)
-  return {
-    requests,
-    [Symbol.dispose]() {
-      page.off('request', onRequest)
-    }
-  }
-}
-
 test.describe('Actionbar', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('default')
-  })
-
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */
@@ -45,6 +18,8 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
     const ws = await getWebSocket()
 
     // Enable change auto-queue mode
@@ -145,6 +120,8 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
   })
 
   test('Does not auto-queue when resizing a node', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
     const promptResponse: PromptResponse = {
       prompt_id: 'layout-change',
       node_errors: {},
@@ -171,30 +148,25 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     ).toHaveLength(1)
     const latentNode = latentNodes[0]
     const originalSize = await latentNode.getSize()
-    using promptRequests = collectPromptRequests(comfyPage.page)
 
-    await comfyPage.nodeOps.resizeNode(
-      DefaultGraphPositions.emptyLatent.pos,
-      DefaultGraphPositions.emptyLatent.size,
-      1.2,
-      1.2
-    )
+    async function resizeLatentNode() {
+      await comfyPage.nodeOps.resizeNode(
+        DefaultGraphPositions.emptyLatent.pos,
+        DefaultGraphPositions.emptyLatent.size,
+        1.2,
+        1.2
+      )
+    }
+    const promptRequests =
+      await comfyPage.actionbar.collectPromptRequestsDuring(resizeLatentNode)
 
     expect(
       await latentNode.getSize(),
       'the resize gesture should change the serialized node size'
     ).not.toEqual(originalSize)
 
-    if (promptRequests.requests.length === 0) {
-      await comfyPage.page
-        .waitForRequest(isPromptRequest, { timeout: 3000 })
-        .catch((error: unknown) => {
-          if (!(error instanceof errors.TimeoutError)) throw error
-        })
-    }
-
     expect(
-      promptRequests.requests,
+      promptRequests,
       'resizing a node should not submit a prompt in change mode'
     ).toHaveLength(0)
   })

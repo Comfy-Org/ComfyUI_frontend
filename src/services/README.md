@@ -449,7 +449,7 @@ describe('autoQueueService', () => {
     setupAutoQueueHandler()
 
     expect(mockApi.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
+      'executionGraphChanged',
       expect.any(Function)
     )
   })
@@ -457,7 +457,7 @@ describe('autoQueueService', () => {
   test('should handle graph changes when auto-queue enabled', () => {
     setupAutoQueueHandler()
 
-    // Simulate graph change event
+    // Simulate execution graph change event
     const graphChangeHandler = mockApi.addEventListener.mock.calls[0][1]
     graphChangeHandler()
 
