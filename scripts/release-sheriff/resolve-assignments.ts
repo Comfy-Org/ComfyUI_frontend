@@ -6,12 +6,10 @@ import type {
   ReleaseSheriffConfig
 } from './release-sheriff'
 import {
-  parseOnCallEmails,
+  fetchOnCallEmails,
   planSheriffActions,
   resolveSheriff
 } from './release-sheriff'
-
-const ONCALL_TIMEOUT_MS = 15_000
 
 function warn(message: string) {
   process.stderr.write(`::warning::${message}\n`)
@@ -30,52 +28,6 @@ function setOutput(name: string, value: string) {
   appendFileSync(file, `${name}=${value}\n`)
 }
 
-async function fetchOnCallEmails(
-  config: ReleaseSheriffConfig
-): Promise<string[]> {
-  const { site, scheduleId } = config.datadog
-  const apiKey = process.env.DATADOG_API_KEY
-  const appKey = process.env.DATADOG_APP_KEY
-
-  if (!scheduleId) {
-    warn(
-      'No Datadog On-Call schedule configured in .github/release-sheriff.json — using the fallback sheriff.'
-    )
-    return []
-  }
-
-  if (!apiKey || !appKey) {
-    warn(
-      'DATADOG_API_KEY / DATADOG_APP_KEY are not available — using the fallback sheriff.'
-    )
-    return []
-  }
-
-  const url = new URL(
-    `https://api.${site}/api/v2/on-call/schedules/${scheduleId}/responders`
-  )
-  url.searchParams.set('include', 'responders.shifts.user')
-  url.searchParams.set('filter[position]', 'current')
-
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'DD-API-KEY': apiKey,
-      'DD-APPLICATION-KEY': appKey
-    },
-    signal: AbortSignal.timeout(ONCALL_TIMEOUT_MS)
-  })
-
-  if (!response.ok) {
-    warn(
-      `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback sheriff.`
-    )
-    return []
-  }
-
-  return parseOnCallEmails(await response.json())
-}
-
 async function main() {
   const { values } = parseArgs({
     options: {
@@ -91,14 +43,15 @@ async function main() {
     ? (JSON.parse(readFileSync(values.prs, 'utf8')) as PullRequestSummary[])
     : []
 
-  const emails = await fetchOnCallEmails(config).catch((error: unknown) => {
-    warn(
-      `Datadog On-Call lookup failed (${String(error)}) — using the fallback sheriff.`
-    )
-    return []
+  const lookup = await fetchOnCallEmails(config, {
+    apiKey: process.env.DATADOG_API_KEY,
+    appKey: process.env.DATADOG_APP_KEY
   })
+  if (lookup.warning) {
+    warn(`${lookup.warning} — using the fallback sheriff.`)
+  }
 
-  const resolution = resolveSheriff(emails, config)
+  const resolution = resolveSheriff(lookup.emails, config)
   for (const email of resolution.unmappedEmails) {
     warn(
       `Datadog on-call user ${email} has no githubLoginByEmail entry in .github/release-sheriff.json`

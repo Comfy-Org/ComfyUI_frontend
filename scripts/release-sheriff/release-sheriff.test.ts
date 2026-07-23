@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   PullRequestSummary,
   ReleaseSheriffConfig
 } from './release-sheriff'
 import {
+  fetchOnCallEmails,
   parseOnCallEmails,
   planSheriffActions,
   resolveSheriff,
@@ -70,6 +71,89 @@ describe('parseOnCallEmails', () => {
         included: [{ type: 'users', attributes: { email: ' ' } }]
       })
     ).toEqual([])
+  })
+})
+
+describe('fetchOnCallEmails', () => {
+  const credentials = { apiKey: 'api', appKey: 'app' }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('requests the current responders and returns their emails', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          included: [{ type: 'users', attributes: { email: 'a@comfy.org' } }]
+        }),
+        { status: 200 }
+      )
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const lookup = await fetchOnCallEmails(config, credentials)
+
+    expect(lookup).toEqual({ emails: ['a@comfy.org'], warning: null })
+
+    const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit]
+    expect(url.toString()).toBe(
+      'https://api.datadoghq.com/api/v2/on-call/schedules/schedule-1/responders?include=responders.shifts.user&filter%5Bposition%5D=current'
+    )
+    expect(init.headers).toMatchObject({
+      'DD-API-KEY': 'api',
+      'DD-APPLICATION-KEY': 'app'
+    })
+  })
+
+  it('skips the call when the schedule is unconfigured', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const unconfigured = {
+      ...config,
+      datadog: { ...config.datadog, scheduleId: '' }
+    }
+    const lookup = await fetchOnCallEmails(unconfigured, credentials)
+
+    expect(lookup.emails).toEqual([])
+    expect(lookup.warning).toContain('No Datadog On-Call schedule configured')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('skips the call when credentials are missing', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const lookup = await fetchOnCallEmails(config, {
+      apiKey: 'api',
+      appKey: undefined
+    })
+
+    expect(lookup.emails).toEqual([])
+    expect(lookup.warning).toContain('DATADOG_API_KEY / DATADOG_APP_KEY')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('degrades to a warning on an error response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('nope', { status: 403 }))
+    )
+
+    const lookup = await fetchOnCallEmails(config, credentials)
+
+    expect(lookup.emails).toEqual([])
+    expect(lookup.warning).toContain('403')
+  })
+
+  it('degrades to a warning when the request throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('TimeoutError')))
+
+    const lookup = await fetchOnCallEmails(config, credentials)
+
+    expect(lookup.emails).toEqual([])
+    expect(lookup.warning).toContain('TimeoutError')
   })
 })
 
