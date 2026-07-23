@@ -1,5 +1,6 @@
+import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -78,7 +79,31 @@ async function openSelect(triggerEl: HTMLElement) {
   await nextTick()
 }
 
+let openModal: HTMLElement | undefined
+
+afterEach(() => {
+  if (openModal) {
+    ZIndex.clear(openModal)
+    openModal = undefined
+  }
+})
+
 describe('SingleSelect', () => {
+  it('opens above a dialog registered with the modal z-index counter', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 1700)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const { unmount } = renderInParent()
+
+    await openSelect(screen.getByRole('combobox'))
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
   it('lets a consumer class override the trigger variant it conflicts with', () => {
     const { unmount } = render(SingleSelect, {
       props: { modelValue: undefined, options, label: 'Pick' },
