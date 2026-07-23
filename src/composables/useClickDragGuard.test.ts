@@ -23,6 +23,12 @@ describe('exceedsClickThreshold', () => {
       true
     )
   })
+
+  it('handles matching negative positions within threshold', () => {
+    expect(
+      exceedsClickThreshold({ x: -10, y: -10 }, { x: -13, y: -14 }, 5)
+    ).toBe(false)
+  })
 })
 
 describe('useClickDragGuard', () => {
