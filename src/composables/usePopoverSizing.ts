@@ -39,7 +39,7 @@ export function usePopoverSizing(
  *
  * PrimeVue dialogs are found by mask lookup. Reka dialogs render no mask, so
  * they are read from the shared @primeuix 'modal' counter they join via
- * `v-reka-z-index` — that counter can climb past the popover's static z-3000
+ * `v-reka-z-index`, a counter that can climb past the popover's static z-3000
  * when overlays open in quick succession.
  *
  * This is a temporary bridge while PrimeVue dialogs and controls are
