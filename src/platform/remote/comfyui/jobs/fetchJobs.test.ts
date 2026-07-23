@@ -430,5 +430,23 @@ describe('fetchJobs', () => {
     it('returns undefined for undefined input', () => {
       expect(extractApiPrompt(undefined)).toBeUndefined()
     })
+
+    it('extracts the API graph when the job nulls out its workflow keys', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: null }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+      expect(
+        extractApiPrompt({
+          ...createMockJob('job2', 'completed'),
+          workflow: { prompt: apiPrompt, extra_data: null }
+        })
+      ).toEqual(apiPrompt)
+    })
   })
 })

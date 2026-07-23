@@ -104,9 +104,9 @@ export const zWorkflowContainer = z.object({
         .object({
           workflow: z.unknown()
         })
-        .optional()
+        .nullish()
     })
-    .optional()
+    .nullish()
 })
 
 export type JobStatus = z.infer<typeof zJobStatus>
