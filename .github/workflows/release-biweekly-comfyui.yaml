@@ -1,9 +1,13 @@
 # Release workflow for ComfyUI frontend: version bump → PyPI publish → ComfyUI PR.
-# Runs on a bi-weekly schedule for minor releases, or manually for patch/hotfix releases.
+# Runs weekly (every Monday) for minor releases, or manually for patch/hotfix releases.
 name: 'Release: ComfyUI'
 
 on:
-  # Bi-weekly schedule: Monday at 20:00 UTC
+  # Weekly release freeze: every Monday at 20:00 UTC (noon PT).
+  # Noon-PT freeze lets the release sheriff draft/socialize the QA test plan
+  # during business hours and hand off to QA right after the branch is frozen
+  # (weekly cadence: Monday freeze/QA → Thursday cloud deploy). Decided in
+  # #frontend-releases (Christian Byrne + Miles Ryan).
   schedule:
     - cron: '0 20 * * 1'
 
@@ -11,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       release_type:
-        description: 'minor = next minor version (bi-weekly cadence), patch = hotfix for current production version'
+        description: 'minor = next minor version (weekly cadence), patch = hotfix for current production version'
         required: true
         default: 'minor'
         type: choice
@@ -37,20 +41,11 @@ jobs:
       - name: Check if release week
         id: check
         run: |
-          # Anchor date: first bi-weekly release Monday
-          ANCHOR="2025-12-22"
-
-          ANCHOR_EPOCH=$(date -d "$ANCHOR" +%s)
-          NOW_EPOCH=$(date +%s)
-          WEEKS_SINCE=$(( (NOW_EPOCH - ANCHOR_EPOCH) / 604800 ))
-
-          if [ $((WEEKS_SINCE % 2)) -eq 0 ]; then
-            echo "Release week (week $WEEKS_SINCE since anchor $ANCHOR)"
-            echo "is_release_week=true" >> $GITHUB_OUTPUT
-          else
-            echo "Not a release week (week $WEEKS_SINCE since anchor $ANCHOR)"
-            echo "is_release_week=false" >> $GITHUB_OUTPUT
-          fi
+          # Every scheduled Monday is now a release (weekly cadence). The former
+          # biweekly even/odd-week gate (anchored 2025-12-22) has been removed so
+          # the freeze fires every Monday. Output kept for downstream `if:` wiring.
+          echo "Release week (weekly cadence — every Monday)"
+          echo "is_release_week=true" >> $GITHUB_OUTPUT
 
       - name: Summary
         env:
