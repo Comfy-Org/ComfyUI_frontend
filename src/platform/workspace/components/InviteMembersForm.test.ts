@@ -80,14 +80,16 @@ describe('InviteMembersForm', () => {
     )
   })
 
-  it('turns comma- and enter-delimited input into chips', async () => {
+  it('turns comma-, whitespace-, and enter-delimited input into chips', async () => {
     const { user } = renderForm()
 
-    await user.type(emailInput(), 'a@b.com,')
-    await user.type(emailInput(), 'c@d.com{Enter}')
+    await user.type(emailInput(), 'a@b.com ')
+    await user.type(emailInput(), 'c@d.com,')
+    await user.type(emailInput(), 'e@f.com{Enter}')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
   })
 
   it('disables submit with no chips and flags invalid emails', async () => {
@@ -107,7 +109,7 @@ describe('InviteMembersForm', () => {
   it('creates an invite per email, tracks telemetry, and emits submitted', async () => {
     const { user, emitted } = renderForm()
 
-    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.type(emailInput(), 'A@B.com C@D.com{Enter}')
     await user.click(submitButton())
 
     await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
@@ -120,14 +122,18 @@ describe('InviteMembersForm', () => {
     expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
   })
 
-  it('keeps failed emails as chips, toasts, and emits the invited subset on partial failure', async () => {
+  it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
+    let shouldFail = true
     mockCreateInvite.mockImplementation(async (email: string) => {
-      if (email === 'fail@x.com') throw new Error('nope')
+      if (email === 'fail@x.com' && shouldFail) {
+        shouldFail = false
+        throw new Error('nope')
+      }
       return pendingInviteFor(email)
     })
     const { user, emitted } = renderForm()
 
-    await user.type(emailInput(), 'ok@x.com,fail@x.com{Enter}')
+    await user.type(emailInput(), 'ok@x.com fail@x.com{Enter}')
     await user.click(submitButton())
 
     await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
@@ -136,8 +142,18 @@ describe('InviteMembersForm', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(emitted().submitted).toEqual([[['ok@x.com']]])
+    expect(emitted().submitted).toBeUndefined()
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+
+    await user.click(submitButton())
+
+    await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(3))
+    expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
+    expect(mockTrackInviteSent).toHaveBeenCalledTimes(2)
+    expect(mockTrackInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
       count: 1
     })
