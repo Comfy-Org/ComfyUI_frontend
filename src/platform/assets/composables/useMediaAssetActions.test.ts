@@ -451,9 +451,7 @@ describe('useMediaAssetActions', () => {
         filename: 'open.json'
       })
       mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
-      mockLoadApiJson.mockImplementationOnce(() => {
-        throw new Error('boom')
-      })
+      mockLoadApiJson.mockRejectedValueOnce(new Error('boom'))
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const actions = useMediaAssetActions()
 

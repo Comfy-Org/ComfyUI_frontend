@@ -414,7 +414,7 @@ export function useMediaAssetActions() {
     if (!app.isApiJson(apiPrompt)) return false
 
     try {
-      app.loadApiJson(apiPrompt, filename)
+      await app.loadApiJson(apiPrompt, filename)
       return true
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)

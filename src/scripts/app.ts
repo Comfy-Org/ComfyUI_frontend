@@ -1934,7 +1934,7 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          this.loadApiJson(promptObj, fileName)
+          void this.loadApiJson(promptObj, fileName)
           return
         }
       } catch (err) {
@@ -2149,7 +2149,7 @@ export class ComfyApp {
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
 
-    useWorkflowService().afterLoadNewGraph(
+    return useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
