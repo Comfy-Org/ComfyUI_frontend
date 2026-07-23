@@ -717,7 +717,7 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
-useGLSLPreview(lgraphNode)
+const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
@@ -780,7 +780,12 @@ const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
 
-  if (!node || !newOutputs?.images?.length || node.hideOutputImages)
+  if (
+    !node ||
+    !newOutputs?.images?.length ||
+    node.hideOutputImages ||
+    hideExecutedOutput.value
+  )
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
