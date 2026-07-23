@@ -2775,7 +2775,7 @@
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
-      "descriptionQuota": "Your free plan includes {runs} executions each month to try Comfy Cloud.",
+      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
       "nextRefresh": "Your next refresh will occur on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {

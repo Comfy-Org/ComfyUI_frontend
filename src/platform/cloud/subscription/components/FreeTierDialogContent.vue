@@ -69,7 +69,9 @@
           </p>
 
           <p
-            v-if="!isCreditsBlockedVariant && formattedRenewalDate"
+            v-if="
+              !isCreditsBlockedVariant && !quotaEnabled && formattedRenewalDate
+            "
             class="m-0 text-sm text-text-secondary"
           >
             {{
