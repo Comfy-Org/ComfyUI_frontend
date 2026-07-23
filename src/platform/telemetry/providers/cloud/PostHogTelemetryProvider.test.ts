@@ -77,6 +77,28 @@ function createProvider(
   return provider
 }
 
+type BeforeSendEvent = Record<string, unknown> & {
+  properties?: Record<string, unknown>
+}
+
+function runBeforeSend(event: BeforeSendEvent): BeforeSendEvent {
+  const { before_send } = hoisted.mockInit.mock.calls[0][1]
+  const chain: Array<(e: BeforeSendEvent) => BeforeSendEvent> = Array.isArray(
+    before_send
+  )
+    ? before_send
+    : [before_send]
+  return chain.reduce((acc, fn) => fn(acc), event)
+}
+
+function setLocation(search: string): void {
+  Object.defineProperty(window.location, 'search', {
+    configurable: true,
+    value: search,
+    writable: true
+  })
+}
+
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -200,17 +222,19 @@ describe('PostHogTelemetryProvider', () => {
       delete window.__comfyDesktop2
     })
 
-    it('registers client=web and deployment=cloud in a plain browser', async () => {
+    it('stamps client=web and deployment=cloud on events in a plain browser', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+      const result = runBeforeSend({ event: 'test', properties: {} })
+
+      expect(result.properties).toMatchObject({
         client: 'web',
         deployment: 'cloud'
       })
     })
 
-    it('registers client=desktop when the desktop preload bridge is present', async () => {
+    it('stamps client=desktop when the desktop preload bridge is present', async () => {
       window.__comfyDesktop2 = {
         isRemote: () => false,
         Telemetry: { capture: vi.fn() }
@@ -218,50 +242,42 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+      const result = runBeforeSend({ event: 'test', properties: {} })
+
+      expect(result.properties).toMatchObject({
         client: 'desktop',
         deployment: 'cloud'
       })
     })
 
-    it('registers platform axes before flushing pre-init queued events', async () => {
-      const provider = createProvider()
-      provider.trackSignupOpened()
+    it('keeps stamping platform axes after logout wipes super properties', async () => {
+      createProvider()
       await vi.dynamicImportSettled()
 
-      const registerOrder = hoisted.mockRegister.mock.invocationCallOrder[0]
-      const captureOrder = hoisted.mockCapture.mock.invocationCallOrder[0]
-      expect(registerOrder).toBeLessThan(captureOrder)
+      const logout = hoisted.mockOnUserLogout.mock.calls[0][0]
+      logout()
+
+      const result = runBeforeSend({ event: 'test', properties: {} })
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+      expect(result.properties).toMatchObject({
+        client: 'web',
+        deployment: 'cloud'
+      })
     })
   })
 
   describe('desktop entry capture', () => {
-    function setLocation(search: string): void {
-      Object.defineProperty(window.location, 'search', {
-        configurable: true,
-        value: search,
-        writable: true
-      })
-    }
-
     afterEach(() => {
       setLocation('')
     })
-
-    // The platform-axes register (client/deployment) always fires, so these
-    // assert no register call carrying desktop-entry attribution props.
-    function desktopEntryRegisterCalls(): unknown[][] {
-      return hoisted.mockRegister.mock.calls.filter(
-        ([props]) => props && 'source_app' in (props as Record<string, unknown>)
-      )
-    }
 
     it('does not register desktop props when utm_source is absent', async () => {
       setLocation('')
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(desktopEntryRegisterCalls()).toHaveLength(0)
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
     })
 
     it('does not register desktop props when utm_source is not comfy.desktop', async () => {
@@ -269,7 +285,7 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(desktopEntryRegisterCalls()).toHaveLength(0)
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
     })
 
     it('registers source_app and desktop_device_id when arriving from desktop', async () => {
@@ -750,6 +766,10 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('logout', () => {
+    afterEach(() => {
+      setLocation('')
+    })
+
     it('registers onUserLogout watcher after init', async () => {
       createProvider()
       await vi.dynamicImportSettled()
@@ -765,6 +785,34 @@ describe('PostHogTelemetryProvider', () => {
       callback()
 
       expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('re-registers desktop entry props after reset wipes super properties', async () => {
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-abc')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      hoisted.mockRegister.mockClear()
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop',
+        desktop_device_id: 'device-abc'
+      })
+      expect(hoisted.mockReset.mock.invocationCallOrder[0]).toBeLessThan(
+        hoisted.mockRegister.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('does not register anything on logout for non-desktop visitors', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
     })
 
     it('does not register the watcher before init resolves', () => {
@@ -826,8 +874,6 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const { before_send } = hoisted.mockInit.mock.calls[0][1]
-
       const event = {
         event: 'test',
         properties: {
@@ -849,7 +895,7 @@ describe('PostHogTelemetryProvider', () => {
         }
       }
 
-      const result = before_send(event)
+      const result = runBeforeSend(event)
 
       // event.properties — all four PII keys stripped, non-PII preserved
       expect(result.properties).not.toHaveProperty('email')
@@ -885,6 +931,7 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
+      expect(initConfig.before_send).not.toContain(remoteBefore_send)
       expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
