@@ -21,6 +21,7 @@
       )
     "
     :data-selected="selected"
+    :data-asset-id="asset?.id"
     :draggable="true"
     @click.stop="$emit('click')"
     @contextmenu.prevent.stop="

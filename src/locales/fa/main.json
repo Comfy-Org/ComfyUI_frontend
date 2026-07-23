@@ -2972,6 +2972,7 @@
       "loading": "در حال بارگذاری درخواست احراز هویت…",
       "missingRequest": "این درخواست احراز هویت وجود ندارد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "noWorkspaces": "هیچ ورک‌اسپیس واجدی برای این درخواست موجود نیست.",
+      "detailsHeader": "جزئیات",
       "permissionsHeader": "دسترسی‌ها",
       "redirectNotice": "شما به این آدرس هدایت خواهید شد",
       "resourceFallback": "این برنامه",
@@ -2979,7 +2980,6 @@
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "title": "{client} درخواست دسترسی دارد",
-      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -4127,7 +4127,6 @@
     "modelsSelected": "{count} مدل",
     "noResults": "قالبی یافت نشد",
     "noResultsHint": "لطفاً جستجو یا فیلترهای خود را تغییر دهید",
-    "resetFilters": "پاک‌کردن فیلترها",
     "resultsCount": "نمایش {count} از {total} قالب",
     "runsOnFilter": "اجرا روی",
     "runsOnSelected": "{count} اجرا روی",
