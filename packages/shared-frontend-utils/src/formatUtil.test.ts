@@ -117,6 +117,12 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
         expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
       })
+
+      it('should identify Gaussian splat extensions that Load3D accepts', () => {
+        expect(getMediaTypeFromFilename('scene.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
+      })
     })
 
     describe('text files', () => {
