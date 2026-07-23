@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { CONFIRMATION_DIALOG_CONTENT_CLASS } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -686,13 +687,19 @@ export function useMediaAssetActions() {
     const isSingle = assetArray.length === 1
 
     return new Promise((resolve) => {
+      // onConfirm is async, so it suspends before resolve(true) runs while
+      // closeDialog() synchronously fires onClose. Guard so a successful
+      // confirm cannot be overwritten by the close handler's resolve(false).
+      let confirmed = false
+      const title = isSingle
+        ? t('mediaAsset.deleteAssetTitle')
+        : t('mediaAsset.deleteSelectedTitle')
       dialogStore.showDialog({
         key: 'delete-assets-confirmation',
-        title: isSingle
-          ? t('mediaAsset.deleteAssetTitle')
-          : t('mediaAsset.deleteSelectedTitle'),
+        title,
         component: ConfirmationDialogContent,
         props: {
+          title,
           message: isSingle
             ? t('mediaAsset.deleteAssetDescription')
             : t('mediaAsset.deleteSelectedDescription', {
@@ -701,6 +708,7 @@ export function useMediaAssetActions() {
           type: 'delete',
           itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
           onConfirm: async () => {
+            confirmed = true
             // Show loading overlay for all assets being deleted
             assetArray.forEach((asset) =>
               assetsStore.setAssetDeleting(asset.id, true)
@@ -834,14 +842,17 @@ export function useMediaAssetActions() {
             }
 
             resolve(true)
-          },
-          onCancel: () => {
-            resolve(false)
           }
         },
         dialogComponentProps: {
           renderer: 'reka',
-          size: 'md'
+          size: 'md',
+          headless: true,
+          describedBy: true,
+          contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
+          onClose: () => {
+            if (!confirmed) resolve(false)
+          }
         }
       })
     })

@@ -28,6 +28,7 @@ describe('PromptDialogContent', () => {
     render(PromptDialogContent, {
       global: { plugins: [i18n] },
       props: {
+        title: 'Rename',
         message: 'Enter a name',
         defaultValue: '',
         onConfirm: vi.fn(),
@@ -36,6 +37,36 @@ describe('PromptDialogContent', () => {
     })
     return { user }
   }
+
+  it('renders the title in the modal header', () => {
+    renderComponent({ title: 'Export workflow' })
+    expect(
+      screen.getByRole('heading', { name: 'Export workflow' })
+    ).toBeInTheDocument()
+  })
+
+  it('puts the description-id on the message so the dialog can describe itself', () => {
+    renderComponent({
+      message: 'Enter a new file name',
+      descriptionId: 'global-prompt-description'
+    })
+
+    expect(screen.getByText('Enter a new file name')).toHaveAttribute(
+      'id',
+      'global-prompt-description'
+    )
+  })
+
+  it('closes the dialog without confirming when Cancel is clicked', async () => {
+    const onConfirm = vi.fn()
+    const { user } = renderComponent({ onConfirm })
+    const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(closeSpy).toHaveBeenCalledOnce()
+  })
 
   it('pre-fills the input with defaultValue', () => {
     renderComponent({ defaultValue: 'my workflow' })

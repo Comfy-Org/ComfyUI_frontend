@@ -18,6 +18,11 @@
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
           :aria-labelledby="item.key"
+          :aria-describedby="
+            item.dialogComponentProps.describedBy
+              ? `${item.key}-description`
+              : undefined
+          "
           @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
@@ -38,10 +43,22 @@
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
           <template v-if="item.dialogComponentProps.headless">
+            <!--
+              DialogContent's aria-labelledby/aria-describedby point at
+              item.key derived ids, so self-rendered content must put those
+              ids on its heading and message for the dialog to keep its
+              accessible name and description.
+            -->
             <component
               :is="item.component"
               v-bind="item.contentProps"
               :maximized="item.dialogComponentProps.maximized"
+              :title-id="item.key"
+              :description-id="
+                item.dialogComponentProps.describedBy
+                  ? `${item.key}-description`
+                  : undefined
+              "
             />
           </template>
           <template v-else>
