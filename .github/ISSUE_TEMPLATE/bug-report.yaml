@@ -40,6 +40,37 @@ body:
       required: true
 
   - type: dropdown
+    id: evidence-type
+    attributes:
+      label: Evidence type
+      description: Choose the evidence that supports this report.
+      options:
+        - Visual
+        - Non-visual
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: >-
+        Visual reports require distinct before and after links or one screencast.
+        For non-visual reports, explain why visuals do not apply and include test
+        or log output.
+      placeholder: |
+        Visual:
+        Before: Drag in a screenshot.
+        After: Drag in a screenshot.
+        Or Screencast: Drag in one recording that shows both states.
+
+        Non-visual:
+        N/A: Explain why visual evidence does not apply.
+        Test/log evidence: Paste the command and result, logs, or a link.
+    validations:
+      required: true
+
+  - type: dropdown
     id: severity
     attributes:
       label: How is this affecting you?

@@ -29,6 +29,46 @@ body:
         - While collaborating with team members...
     validations:
       required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Concrete example or steps
+      description: Show the exact workflow or steps where the problem occurs.
+      placeholder: |
+        1. Open a workflow with...
+        2. Try to...
+        3. Observe...
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence-type
+    attributes:
+      label: Evidence type
+      description: Choose the evidence that supports this request.
+      options:
+        - Visual
+        - Non-visual
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: >-
+        Visual requests require distinct before and after links or one screencast.
+        For non-visual requests, explain why visuals do not apply and include test
+        or log output.
+      placeholder: |
+        Visual:
+        Before: Drag in a screenshot.
+        After: Drag in a screenshot.
+        Or Screencast: Drag in one recording that shows both states.
+
+        Non-visual:
+        N/A: Explain why visual evidence does not apply.
+        Test/log evidence: Paste the command and result, logs, or a link.
+    validations:
+      required: true
   - type: dropdown
     id: frequency
     attributes:
