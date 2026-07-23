@@ -383,6 +383,15 @@ onUpdated(() => {
   visibility: visible;
 }
 
+/* Touch devices have no hover state, so the hover-revealed close button is
+   otherwise unreachable (and the status/dirty indicator stacked over it can't
+   be dismissed). Always show the close button there. */
+@media (hover: none) {
+  :deep(.close-button) {
+    visibility: visible;
+  }
+}
+
 :deep(.p-scrollpanel-content) {
   height: 100%;
 }
