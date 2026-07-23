@@ -123,6 +123,7 @@
       <SubscriptionTermsNote />
 
       <Button
+        v-if="showSubmit"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -160,13 +161,15 @@ type PersonalTierKey = 'standard' | 'creator' | 'pro'
 const {
   previewData,
   isLoading = false,
-  teamPlan = null
+  teamPlan = null,
+  showSubmit = true
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
   /** Set for a team credit-commit change: plan name + refill credits come from
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
+  showSubmit?: boolean
 }>()
 
 defineEmits<{

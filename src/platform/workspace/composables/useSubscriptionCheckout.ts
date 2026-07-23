@@ -269,7 +269,7 @@ export function useSubscriptionCheckout(
     emit('close', true)
   }
 
-  async function handleSubscription() {
+  async function handleSubscription(confirmationToken?: string) {
     if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
 
     const tierKey = selectedTierKey.value
@@ -288,6 +288,7 @@ export function useSubscriptionCheckout(
       if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await subscribe(planSlug, {
+        confirmationToken,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
@@ -334,24 +335,25 @@ export function useSubscriptionCheckout(
       return
     }
 
-    // needs_payment_method / pending_payment both finish asynchronously, so poll
-    // the billing op either way. needs_payment_method additionally points at a
-    // Stripe page to collect a card when the backend supplies the URL; without
-    // it we still poll rather than silently stranding the user on confirm.
+    if (response.next_action_redirect_url) {
+      billingOperationStore.beginRedirectOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+      globalThis.location.assign(response.next_action_redirect_url)
+      return
+    }
+
     if (
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
-      const paymentWindow = window.open(response.payment_method_url, '_blank')
-      if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
-        })
-      }
+      billingOperationStore.beginRedirectOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+      globalThis.location.assign(response.payment_method_url)
+      return
     }
     await advanceToSuccessOnOperation(response.billing_op_id)
   }
@@ -367,7 +369,7 @@ export function useSubscriptionCheckout(
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
 
-  async function handleTeamSubscription() {
+  async function handleTeamSubscription(confirmationToken?: string) {
     if (!permissions.value.canManageSubscription) return
 
     const teamCheckout = selectedTeamCheckout.value
@@ -387,6 +389,7 @@ export function useSubscriptionCheckout(
     try {
       const planSlug = getTeamPlanSlug(billingCycle)
       const response = await subscribe(planSlug, {
+        confirmationToken,
         teamCreditStopId: stop.id,
         billingCycle,
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,

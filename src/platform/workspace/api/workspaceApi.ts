@@ -159,6 +159,7 @@ type SubscribeBillingCycle = 'monthly' | 'yearly'
 interface SubscribeRequest {
   plan_slug: string
   idempotency_key?: string
+  confirmation_token?: string
   return_url?: string
   cancel_url?: string
   /** Required for the per-credit Team plan; selects the slider stop. */
@@ -167,6 +168,7 @@ interface SubscribeRequest {
 }
 
 export interface SubscribeOptions {
+  confirmationToken?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -185,6 +187,7 @@ export interface SubscribeResponse {
   status: SubscribeStatus
   effective_at?: string
   payment_method_url?: string
+  next_action_redirect_url?: string
 }
 
 interface CancelSubscriptionRequest {
@@ -676,6 +679,7 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          confirmation_token: options.confirmationToken,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
