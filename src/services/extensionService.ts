@@ -15,6 +15,16 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
+const LEGACY_CLOUD_RUM_EXTENSION = '/extensions/cloud/rum.js'
+
+export function shouldLoadExtension(
+  extension: string,
+  isCloudBuild: boolean
+): boolean {
+  if (extension.includes('extensions/core')) return false
+  return !isCloudBuild || extension !== LEGACY_CLOUD_RUM_EXTENSION
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -41,7 +51,9 @@ export const useExtensionService = () => {
     extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
-        .filter((extension) => !extension.includes('extensions/core'))
+        .filter((extension) =>
+          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+        )
         .map(async (ext) => {
           try {
             await import(/* @vite-ignore */ api.fileURL(ext))
