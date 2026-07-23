@@ -171,6 +171,27 @@ describe('GPUBrushRenderer', () => {
       // readback = 1 compute pipeline
       expect(device.createComputePipeline).toHaveBeenCalledTimes(1)
     })
+
+    it('uses maximum blending for accumulated stroke coverage', () => {
+      const accumulatePipeline = (
+        device.createRenderPipeline as ReturnType<typeof vi.fn>
+      ).mock.calls[1][0] as GPURenderPipelineDescriptor
+      const target = accumulatePipeline.fragment as GPUFragmentState
+      const blend = target.targets?.[0]?.blend
+
+      expect(blend).toEqual({
+        color: {
+          srcFactor: 'one',
+          dstFactor: 'one',
+          operation: 'max'
+        },
+        alpha: {
+          srcFactor: 'one',
+          dstFactor: 'one',
+          operation: 'max'
+        }
+      })
+    })
   })
 
   describe('prepareStroke', () => {
@@ -213,7 +234,7 @@ describe('GPUBrushRenderer', () => {
   describe('renderStrokeToAccumulator', () => {
     const settings = {
       size: 10,
-      opacity: 1,
+      coverage: 1,
       hardness: 0.5,
       color: [1, 1, 1] as [number, number, number],
       width: 256,
@@ -242,6 +263,10 @@ describe('GPUBrushRenderer', () => {
       // uniform + instance data = 2 writeBuffer calls
       expect(device.queue.writeBuffer).toHaveBeenCalledTimes(2)
       expect(device.queue.submit).toHaveBeenCalled()
+
+      const uniformData = (device.queue.writeBuffer as ReturnType<typeof vi.fn>)
+        .mock.calls[0][2] as ArrayBuffer
+      expect(new Float32Array(uniformData)[3]).toBe(1)
     })
 
     it('does not render when points array is empty', () => {
