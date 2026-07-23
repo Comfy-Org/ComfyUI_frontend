@@ -400,12 +400,30 @@ const openOutput = (index: number) => {
   galleryActiveIndex.value = index
 }
 
+/**
+ * Cancelling leaves activeJobId pointing at a job the backend will never
+ * report on, so the pill would keep claiming a run in progress. Reconcile it
+ * against what the queue actually holds, the way a reconnect does.
+ */
+const reconcileActiveJob = () => {
+  executionStore.clearActiveJobIfStale(
+    new Set([
+      ...queueStore.runningTasks.map((task) => task.jobId),
+      ...queueStore.pendingTasks.map((task) => task.jobId)
+    ])
+  )
+}
+
 const cancelJob = wrapWithErrorHandlingAsync(async (job: JobListItem) => {
   const jobId = job.taskRef?.jobId
   if (!jobId) return
   await api.cancelJob(String(jobId))
   executionStore.clearInitializationByJobId(String(jobId))
+  // Cancelled work leaves the batch; it was never done, so shrink the total
+  // rather than letting the counter read it as progress.
+  batchTotal.value = Math.max(0, batchTotal.value - 1)
   await queueStore.update()
+  reconcileActiveJob()
 })
 
 const toJobIds = (tasks: TaskItemImpl[]) =>
@@ -419,7 +437,9 @@ const cancelJobIds = wrapWithErrorHandlingAsync(async (jobIds: string[]) => {
   // State-agnostic batch cancel (see api.ts cancelJobs for the runtime-parity caveat).
   await api.cancelJobs(jobIds)
   executionStore.clearInitializationByJobIds(jobIds)
+  batchTotal.value = Math.max(0, batchTotal.value - jobIds.length)
   await queueStore.update()
+  reconcileActiveJob()
 })
 
 /**
