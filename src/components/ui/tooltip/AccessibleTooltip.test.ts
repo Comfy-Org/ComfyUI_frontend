@@ -1,24 +1,24 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import AccessibleTooltip from './AccessibleTooltip.vue'
 
-function openDialogAbove(baseZIndex: number): {
-  zIndex: number
-  close: () => void
-} {
+const openDialogs: HTMLElement[] = []
+afterEach(() => {
+  for (const dialog of openDialogs.splice(0)) {
+    ZIndex.clear(dialog)
+    dialog.remove()
+  }
+})
+
+function openDialogAbove(baseZIndex: number): number {
   const dialog = document.body.appendChild(document.createElement('div'))
   ZIndex.set('modal', dialog, baseZIndex)
-  return {
-    zIndex: Number(dialog.style.zIndex),
-    close: () => {
-      ZIndex.clear(dialog)
-      dialog.remove()
-    }
-  }
+  openDialogs.push(dialog)
+  return Number(dialog.style.zIndex)
 }
 
 function renderInCard(
@@ -84,7 +84,7 @@ describe('AccessibleTooltip', () => {
   })
 
   it('lifts above a dialog that raised the shared modal z-index', async () => {
-    const dialog = openDialogAbove(2400)
+    const dialogZIndex = openDialogAbove(2400)
     const { user, unmount } = renderInCard()
 
     await user.hover(screen.getByRole('button'))
@@ -93,9 +93,8 @@ describe('AccessibleTooltip', () => {
     expect(
       Number(tooltip.style.zIndex),
       'disclosure must out-stack the open dialog, or it renders invisibly behind the modal'
-    ).toBeGreaterThan(dialog.zIndex)
+    ).toBeGreaterThan(dialogZIndex)
 
-    dialog.close()
     unmount()
   })
 
