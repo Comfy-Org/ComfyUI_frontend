@@ -41,7 +41,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const bucket = getGraphNodes(rootGraphId)
     const existing = bucket.get(state.id)
     if (existing && toRaw(existing) !== toRaw(state)) {
-      console.warn(
+      console.error(
         `[nodeDataStore] Node ${state.id} is already registered in graph ${rootGraphId}; refusing to overwrite the live registration.`
       )
       return state

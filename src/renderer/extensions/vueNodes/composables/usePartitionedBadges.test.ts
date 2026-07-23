@@ -53,7 +53,7 @@ function makeNode(
   }
   const node = new TestNode(type)
   node.id = NODE_ID
-  node.type = type
+  node._state.type = type
   seedGraph(node)
   return node
 }

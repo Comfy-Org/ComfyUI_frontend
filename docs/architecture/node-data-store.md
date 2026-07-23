@@ -110,13 +110,19 @@ Follows the shipped trio convention (`LLink` / `Reroute`):
 - Chokepoints: `LGraph.add` / `LGraph.remove` (the canonical sites),
   `unregisterAllNodeStates(graph)` on graph `clear()`, identity-checked
   delete (`toRaw` compare) so only the registered state vacates its key.
-- Class fields become accessors reading through `_state`.
+- Class fields become accessors reading through `_state`. Reads go
+  through the reactive proxy directly (there is no `_stateRaw` raw view),
+  so `node.title` / `node.mode` / … track inside Vue effects, matching a
+  read of the store's `NodeState`. The one measured tight loop that reads
+  `id` per node — `LGraph.computeExecutionOrder` — hoists it to a local
+  once per iteration.
   `LGraphNodeProperties`' instrumented descriptors keep their
   get/set + `node:property:changed` emission but store the value in
   `_state` instead of a closure — trigger consumers (minimap,
   `useErrorClearingHooks`) keep working unchanged.
-- Serialization is unaffected: `serialize()` reads the same properties
-  through the accessors.
+- `serialize()` / `toJSON` are unaffected: they read each field through
+  its accessor, so the wire format is identical. Raw enumeration is not —
+  see Decision 7.
 
 ## Decision 6: What remains of useGraphNodeManager
 
@@ -133,6 +139,40 @@ Remaining renderer-side lifecycle, slimmed into `useVueNodeLifecycle`
   layout is renderer policy, not entity data.
 - `node:slot-label:changed` slot-array reprojection — dies with the
   Slot extraction phase.
+
+## Decision 7: Enumerability & extension migration (implemented 2026-07-22)
+
+Adopting `_state` moves the shell-state fields (`title`, `type`, `mode`,
+`flags`, `color`, `bgcolor`, `resizable`, `shape`, `showAdvanced`) from
+own enumerable data properties on each node to getter/setters on
+`LGraphNode.prototype` backed by the store proxy. Consequences for
+extension authors:
+
+- **Serialization and reactive reads are unchanged.** `serialize()` /
+  `toJSON` still emit every field (explicit accessor reads), and
+  `node.<field>` reads/writes still work and are now reactive — reading
+  in a Vue effect tracks the store, writing goes through to it.
+- **Raw enumeration no longer carries these fields.** They are prototype
+  accessors, not own properties, so for a non-instrumented node
+  `Object.keys(node)`, `{ ...node }`, `Object.assign({}, node)`, and
+  `JSON.stringify(node)` do not include them. (`LGraphNodeProperties`
+  instruments `title` / `mode` / `color` / `bgcolor` / `showAdvanced`
+  with own enumerable accessors, so those reappear on instrumented
+  nodes — do not rely on either behavior.) To snapshot shell state, read
+  the node's accessors or the registered `NodeState` from
+  `useNodeDataStore().getNode(rootGraphId, id)`, not a spread of the node.
+- **`type` is now read-only.** It is a getter with no setter on every
+  node class; assigning `node.type = …` fails type-checking and throws in
+  strict mode. `type` is fixed at construction (`LiteGraph.createNode` /
+  the `LGraphNode(title, type)` constructor); deserialization sets it via
+  `configure`. Extensions that need a different type should create the
+  correct node rather than mutating an existing one.
+
+Extension migration map: read a field → `node.<field>` (reactive) or
+`useNodeDataStore().getNode(rootGraphId, node.id)`; snapshot all shell
+state → read that `NodeState`, not `{ ...node }`; set `title` / `mode` /
+colours / `flags` / `shape` / `showAdvanced` → assign the accessor (writes
+through to the store); set `type` → construct the intended node type.
 
 ## Scope
 

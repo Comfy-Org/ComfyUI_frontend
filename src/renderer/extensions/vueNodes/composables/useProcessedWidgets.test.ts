@@ -59,7 +59,7 @@ function createNode(
 ): LGraphNode {
   const node = new LGraphNode(type)
   node.id = id
-  node.type = type
+  node._state.type = type
   node.widgets = widgets
   return node
 }

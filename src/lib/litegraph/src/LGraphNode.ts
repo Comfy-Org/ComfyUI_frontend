@@ -1,4 +1,4 @@
-import { toRaw, toValue } from 'vue'
+import { toValue } from 'vue'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
@@ -272,7 +272,7 @@ export class LGraphNode
 
   /** The title text of the node. */
   get title(): string {
-    return this._stateRaw.title
+    return this._state.title
   }
 
   set title(value: string) {
@@ -296,26 +296,20 @@ export class LGraphNode
   graph: LGraph | Subgraph | null = null
 
   /**
-   * The node's shell state. Once registered with {@link useNodeDataStore} via
-   * {@link registerNodeState}, this is the store's reactive proxy, so field
-   * writes are tracked. Built with placeholders in the constructor; the owning
-   * graph id is filled in and the state registered at {@link LGraph.add}.
+   * The node's shell state and the single source of truth for the fields the
+   * renderer draws. Once registered with {@link useNodeDataStore} via
+   * {@link registerNodeState}, this is the store's reactive proxy, so both
+   * reads (through the scalar getters below) and writes are tracked. Built with
+   * placeholders in the constructor; the owning graph id is filled in and the
+   * state registered at {@link LGraph.add}.
    */
   _state: NodeState
-
-  /**
-   * The raw (non-reactive) view of {@link _state}, `toRaw(_state)`. Scalar field
-   * getters read through this so hot litegraph paths (draw, execution order)
-   * skip Vue's proxy trap; setters still write through {@link _state} so the
-   * renderer tracks changes. Same object as `_state`, not a copy.
-   */
-  _stateRaw: NodeState
 
   /** The root graph this node is registered with in {@link useNodeDataStore}, if any. */
   _graphId?: UUID
 
   get id(): NodeId {
-    return this._stateRaw.id
+    return this._state.id
   }
 
   set id(value: NodeId) {
@@ -323,11 +317,7 @@ export class LGraphNode
   }
 
   get type(): string {
-    return this._stateRaw.type
-  }
-
-  set type(value: string) {
-    this._state.type = value
+    return this._state.type
   }
 
   inputs: INodeInputSlot[] = []
@@ -369,7 +359,7 @@ export class LGraphNode
   /** Execution order, automatically computed during run @see {@link LGraph.computeExecutionOrder} */
   order: number = 0
   get mode(): LGraphEventMode {
-    return this._stateRaw.mode
+    return this._state.mode
   }
 
   set mode(value: LGraphEventMode) {
@@ -382,7 +372,7 @@ export class LGraphNode
    * @see {@link renderingColor}
    */
   get color(): string | undefined {
-    return this._stateRaw.color
+    return this._state.color
   }
 
   set color(value: string | undefined) {
@@ -393,7 +383,7 @@ export class LGraphNode
    * @see {@link renderingBgColor}
    */
   get bgcolor(): string | undefined {
-    return this._stateRaw.bgcolor
+    return this._state.bgcolor
   }
 
   set bgcolor(value: string | undefined) {
@@ -530,7 +520,7 @@ export class LGraphNode
   mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
   get resizable(): boolean | undefined {
-    return this._stateRaw.resizable
+    return this._state.resizable
   }
 
   set resizable(value: boolean | undefined) {
@@ -545,7 +535,7 @@ export class LGraphNode
   block_delete?: boolean
   selected?: boolean
   get showAdvanced(): boolean | undefined {
-    return this._stateRaw.showAdvanced
+    return this._state.showAdvanced
   }
 
   set showAdvanced(value: boolean | undefined) {
@@ -647,7 +637,7 @@ export class LGraphNode
   }
 
   get shape(): RenderShape | undefined {
-    return this._stateRaw.shape
+    return this._state.shape
   }
 
   set shape(v: RenderShape | 'default' | 'box' | 'round' | 'circle' | 'card') {
@@ -686,7 +676,7 @@ export class LGraphNode
    */
   get renderingShape(): RenderShape {
     return (
-      this._stateRaw.shape ||
+      this._state.shape ||
       this.constructor.shape ||
       LiteGraph.NODE_DEFAULT_SHAPE
     )
@@ -932,7 +922,6 @@ export class LGraphNode
       mode: LGraphEventMode.ALWAYS,
       flags: {}
     }
-    this._stateRaw = this._state
     this.size = [LiteGraph.NODE_WIDTH, 60]
     this.pos = [10, 10]
     this.strokeStyles = {
@@ -966,6 +955,11 @@ export class LGraphNode
       if (j === 'id') {
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
+        continue
+      }
+
+      if (j === 'type') {
+        this._state.type = String(info.type)
         continue
       }
 
@@ -4329,7 +4323,6 @@ export function registerNodeState(
   const registered = useNodeDataStore().registerNode(rootGraphId, node._state)
   if (registered !== node._state) {
     node._state = registered
-    node._stateRaw = toRaw(registered)
     node._graphId = rootGraphId
   }
 }

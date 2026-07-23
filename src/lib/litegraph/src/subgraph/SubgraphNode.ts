@@ -61,10 +61,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return super.type as SubgraphId
   }
 
-  override set type(value: SubgraphId) {
-    super.type = value
-  }
-
   override readonly isVirtualNode = true as const
   override graph: GraphOrSubgraph | null
 
@@ -233,7 +229,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       { signal }
     )
 
-    this.type = subgraph.id
     this.configure(instanceData)
 
     this.addTitleButton({

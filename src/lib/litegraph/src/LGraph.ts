@@ -773,14 +773,16 @@ export class LGraph
         continue
       }
 
+      const { id } = node
+
       // add to pending nodes
-      M[node.id] = node
+      M[id] = node
 
       // num of input connections
       let num = 0
       if (node.inputs) {
         for (const slotIndex of node.inputs.keys()) {
-          if (inputHasLink(this, node.id, slotIndex)) {
+          if (inputHasLink(this, id, slotIndex)) {
             num += 1
           }
         }
@@ -793,7 +795,7 @@ export class LGraph
       } else {
         // num of input links
         if (set_level) node._level = 0
-        remaining_links[node.id] = num
+        remaining_links[id] = num
       }
     }
 
@@ -802,17 +804,19 @@ export class LGraph
       const node = S.shift()
       if (node === undefined) break
 
+      const { id } = node
+
       // add to ordered list
       L.push(node)
       // remove from the pending nodes
-      delete M[node.id]
+      delete M[id]
 
       if (!node.outputs) continue
 
       // for every output
       for (const slotIndex of node.outputs.keys()) {
         // for every connection
-        for (const link of outputLinks(this, node.id, slotIndex)) {
+        for (const link of outputLinks(this, id, slotIndex)) {
           // already visited link (ignore it)
           if (visited_links[link.id]) continue
 
@@ -821,6 +825,7 @@ export class LGraph
             visited_links[link.id] = true
             continue
           }
+          const targetId = target_node.id
 
           if (set_level) {
             node._level ??= 0
@@ -832,10 +837,10 @@ export class LGraph
           // mark as visited
           visited_links[link.id] = true
           // reduce the number of links remaining
-          remaining_links[target_node.id] -= 1
+          remaining_links[targetId] -= 1
 
           // if no more links, then add to starters array
-          if (remaining_links[target_node.id] == 0) S.push(target_node)
+          if (remaining_links[targetId] == 0) S.push(target_node)
         }
       }
     }
@@ -2115,10 +2120,12 @@ export class LGraph
           console.warn(
             `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
           )
-          node = new LGraphNode(n_info.title || n_info.type || 'Missing Node')
+          node = new LGraphNode(
+            n_info.title || n_info.type || 'Missing Node',
+            String(n_info.type)
+          )
           node.last_serialization = n_info
           node.has_errors = true
-          node.type = String(n_info.type)
         } else {
           throw new Error(
             `Cannot unpack: node type "${n_info.type}" is not registered`

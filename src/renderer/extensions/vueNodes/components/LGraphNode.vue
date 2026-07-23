@@ -302,7 +302,7 @@ import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId,
-  subgraphIdFromGraphId
+  nodeLocatorFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toNodeId } from '@/types/nodeId'
@@ -346,10 +346,9 @@ const nodeId = computed(() => nodeData.id)
 useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
-const nodeLocatorInput = computed(() => ({
-  id: nodeData.id,
-  subgraphId: subgraphIdFromGraphId(nodeData.graphId, canvasStore.rootGraphId)
-}))
+const nodeLocatorInput = computed(() =>
+  nodeLocatorFromState(nodeData, canvasStore.rootGraphId)
+)
 
 const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {

@@ -13,6 +13,7 @@ import {
 } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
@@ -27,6 +28,17 @@ export function subgraphIdFromGraphId(
   rootGraphId: UUID | undefined
 ): string | null {
   return graphId && graphId !== rootGraphId ? graphId : null
+}
+
+/** Builds the `{ id, subgraphId }` locator shape the traversal helpers expect from a node's shell state. */
+export function nodeLocatorFromState(
+  state: Pick<NodeState, 'id' | 'graphId'>,
+  rootGraphId: UUID | undefined
+): { id: NodeId; subgraphId: string | null } {
+  return {
+    id: state.id,
+    subgraphId: subgraphIdFromGraphId(state.graphId, rootGraphId)
+  }
 }
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {

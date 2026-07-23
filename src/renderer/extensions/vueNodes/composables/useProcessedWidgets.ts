@@ -54,6 +54,7 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData,
   getNodeByLocatorId,
+  nodeLocatorFromState,
   subgraphIdFromGraphId
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
@@ -150,17 +151,6 @@ function buildSlotMetadata(
   return metadata
 }
 
-/** The `{ id, subgraphId }` shape the graph-traversal locator helpers expect. */
-function nodeLocatorData(
-  nodeData: NodeState,
-  rootGraph: LGraph | null
-): { id: NodeId; subgraphId: string | null } {
-  return {
-    id: nodeData.id,
-    subgraphId: subgraphIdFromGraphId(nodeData.graphId, rootGraph?.id)
-  }
-}
-
 function getProcessedNodeExecutionId(
   isGraphReady: boolean,
   rootGraph: LGraph | null,
@@ -170,7 +160,7 @@ function getProcessedNodeExecutionId(
 
   return getExecutionIdFromNodeData(
     rootGraph,
-    nodeLocatorData(nodeData, rootGraph)
+    nodeLocatorFromState(nodeData, rootGraph.id)
   )
 }
 
@@ -195,7 +185,7 @@ function getHostNode(
 ): LGraphNode | null {
   if (!rootGraph) return null
   const locatorId = getLocatorIdFromNodeData(
-    nodeLocatorData(nodeData, rootGraph)
+    nodeLocatorFromState(nodeData, rootGraph.id)
   )
   return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
 }

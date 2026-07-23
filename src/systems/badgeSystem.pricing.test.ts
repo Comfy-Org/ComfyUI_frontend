@@ -56,7 +56,7 @@ describe('badge derivation pricing input connectivity', () => {
   function setup(inputNames: string[]) {
     const node = new ApiNode('api')
     node.id = toNodeId(5)
-    node.type = 'ApiNode'
+    node._state.type = 'ApiNode'
     for (const name of inputNames) node.addInput(name, 'IMAGE')
     const graph = new LGraph()
     graph.id = graphId
