@@ -37,6 +37,8 @@ import {
   inputHasLink,
   inputLink,
   inputLinkId,
+  captureInputLayout,
+  replaceNodeInputs,
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
@@ -1729,14 +1731,19 @@ export class LGraphNode
    */
   removeInput(slot: number): void {
     const { graph, inputs } = this
-    if (graph) this.disconnectInput(slot, true)
-    const slotInfo = inputs.splice(slot, 1)
+    const slotInfo = inputs[slot]
+    if (!slotInfo) return
 
     if (graph) {
-      for (let oldSlot = slot + 1; oldSlot <= inputs.length; ++oldSlot) {
-        const link = inputLink(graph, this.id, oldSlot)
-        if (link) link.target_slot--
-      }
+      const previous = captureInputLayout(this)
+      replaceNodeInputs(
+        this,
+        previous,
+        previous.inputs.toSpliced(slot, 1),
+        previous.links,
+        true
+      )
+      if (this.inputs.includes(slotInfo)) return
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&
@@ -1744,8 +1751,10 @@ export class LGraphNode
         )
           floatingLink.target_slot--
       }
+    } else {
+      inputs.splice(slot, 1)
     }
-    this.onInputRemoved?.(slot, slotInfo[0])
+    this.onInputRemoved?.(slot, slotInfo)
     this.setDirtyCanvas(true, true)
   }
 

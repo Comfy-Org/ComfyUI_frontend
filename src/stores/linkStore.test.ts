@@ -148,6 +148,25 @@ describe('useLinkStore', () => {
     }
   })
 
+  it('moves into a removed link target in one transaction', () => {
+    const store = useLinkStore()
+    const mover = link(1, 5, 0, 9, 0)
+    const removed = link(2, 5, 1, 9, 1)
+    store.registerLink(graphA, mover)
+    store.registerLink(graphA, removed)
+
+    expect(
+      store.updateEndpoints(
+        graphA,
+        [{ topology: mover, patch: { targetSlot: 1 } }],
+        [removed]
+      )
+    ).toEqual({ ok: true, value: [mover] })
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(1))
+    expect([...store.graphTopologies(graphA)]).toEqual([mover])
+  })
   it('rejects duplicate final targets without partial mutation', () => {
     const store = useLinkStore()
     const first = link(1, 5, 0, 9, 0)

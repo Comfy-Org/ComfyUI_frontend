@@ -163,6 +163,35 @@ describe('slotLinks', () => {
     expect(target.getInputLink(1)).toBe(first)
   })
 
+  it('exposes the committed layout to reentrant disconnect callbacks', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    source.addOutput('replacement', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('remove', 'INT')
+    target.addInput('keep', 'INT')
+    graph.add(target)
+    const removed = source.connect(0, target, 0)!
+    const kept = source.connect(0, target, 1)!
+    const reconnect = vi.fn(() => source.connect(1, target, 0))
+    expect(target.onConnectionsChange).toBeUndefined()
+    target.onConnectionsChange = (type, _slot, connected, link) => {
+      if (type !== NodeSlotType.INPUT || connected || link !== removed) return
+      expect(target.inputs.map(({ name }) => name)).toEqual(['keep'])
+      expect(target.getInputLink(0)).toBe(kept)
+      reconnect()
+    }
+
+    replaceNodeInputs(target, captureInputLayout(target), [target.inputs[1]])
+
+    expect(graph.getLink(removed.id)).toBeUndefined()
+    expect(graph.getLink(kept.id)).toBeUndefined()
+    expect(reconnect).toHaveBeenCalledOnce()
+    expect(target.getInputLink(0)).toBe(reconnect.mock.results[0].value)
+  })
+
   it('disconnects a removed linked input before replacing the layout', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')

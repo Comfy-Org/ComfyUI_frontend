@@ -109,16 +109,11 @@ export const useLinkStore = defineStore('link', () => {
     return next
   }
 
-  /** Places a validated link under its current endpoints. */
-  function place(graphId: UUID, topology: LinkTopology): LinkTopology {
+  /** Places a link whose target availability has already been validated. */
+  function placeValidated(graphId: UUID, topology: LinkTopology): LinkTopology {
     if (hasUniqueTarget(topology)) {
       const key = targetKey(topology.targetNodeId, topology.targetSlot)
-      const targets = graphTargets(graphId)
-      const existing = targets.get(key)
-      if (existing && toRaw(existing) !== toRaw(topology)) {
-        throw new Error('Link target slot ' + key + ' is already occupied')
-      }
-      targets.set(key, topology)
+      graphTargets(graphId).set(key, topology)
     } else {
       graphUnkeyed(graphId).add(topology)
     }
@@ -141,7 +136,7 @@ export const useLinkStore = defineStore('link', () => {
       const existing = graphTargets(graphId).get(key)
       if (existing && toRaw(existing) !== toRaw(topology)) return undefined
     }
-    return place(graphId, topology)
+    return placeValidated(graphId, topology)
   }
 
   /** Removes a link's placement; only the registered topology may vacate it. */
@@ -211,19 +206,21 @@ export const useLinkStore = defineStore('link', () => {
     }
   }
 
-  /** Atomically validates and applies endpoint updates. */
+  /** Atomically validates and applies endpoint updates and removals. */
   function updateEndpoints(
     graphId: UUID,
-    updates: readonly EndpointUpdate[]
+    updates: readonly EndpointUpdate[],
+    removals: readonly LinkTopology[] = []
   ): EndpointUpdateResult<LinkTopology[]> {
-    const error = validateEndpointUpdates(graphId, updates)
+    const error = validateEndpointUpdates(graphId, updates, removals)
     if (error) return { ok: false, error }
 
     for (const { topology } of updates) displace(graphId, topology)
+    for (const topology of removals) displace(graphId, topology)
 
     const value = updates.map(({ topology, patch }) => {
       Object.assign(reactive(topology), patchedEndpoints(topology, patch))
-      return place(graphId, topology)
+      return placeValidated(graphId, topology)
     })
     return { ok: true, value }
   }
