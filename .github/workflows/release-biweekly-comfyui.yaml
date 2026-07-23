@@ -202,18 +202,37 @@ jobs:
           TARGET_BRANCH="${{ needs.resolve-version.outputs.target_branch }}"
           echo "Waiting for version bump PR for v${TARGET_VERSION} on ${TARGET_BRANCH} to be merged..."
 
-          # Poll for up to 30 minutes (a human or automation needs to merge the version bump PR)
-          for i in $(seq 1 60); do
+          # Poll for up to 4 hours (a human needs to merge the Release-labeled bump PR;
+          # the previous 30-min window was routinely too short — see #14033 / run
+          # 29979988134, where the bump PR wasn't merged in time and this job hard-failed,
+          # which in turn SKIPPED create-comfyui-pr and silently dropped the pin PR).
+          ATTEMPTS=480
+          for i in $(seq 1 "$ATTEMPTS"); do
             # Check if the tag exists (release-draft-create creates a tag on merge)
             if gh api "repos/Comfy-Org/ComfyUI_frontend/git/ref/tags/v${TARGET_VERSION}" --silent 2>/dev/null; then
               echo "✅ Tag v${TARGET_VERSION} found — release PR has been merged"
               exit 0
             fi
-            echo "Attempt $i/60: Tag v${TARGET_VERSION} not found yet, waiting 30s..."
+            echo "Attempt $i/${ATTEMPTS}: Tag v${TARGET_VERSION} not found yet, waiting 30s..."
             sleep 30
           done
 
-          echo "❌ Timed out waiting for tag v${TARGET_VERSION}"
+          # Self-documenting timeout: publish-pypi failing also skips create-comfyui-pr,
+          # so make the recovery command explicit instead of leaving the operator to guess.
+          RECOVERY="gh run rerun ${{ github.run_id }} --failed  # re-runs publish-pypi + create-comfyui-pr once the tag exists"
+          echo "❌ Timed out waiting for tag v${TARGET_VERSION} after 4h (bump PR not merged)."
+          echo "::error title=Release bump PR not merged in time::Tag v${TARGET_VERSION} never appeared. Merge the Release-labeled bump PR for ${TARGET_BRANCH}, then recover with: ${RECOVERY}"
+          {
+            echo "## ⚠️ Release stalled — waiting on bump PR merge"
+            echo ""
+            echo "Timed out waiting for tag \`v${TARGET_VERSION}\` on \`${TARGET_BRANCH}\` (bump PR not merged within 4h)."
+            echo ""
+            echo "**Recover once the bump PR is merged and the tag exists:**"
+            echo ""
+            echo '```bash'
+            echo "${RECOVERY}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Checkout code at target version
@@ -464,3 +483,110 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### PR Body:" >> $GITHUB_STEP_SUMMARY
           cat pr-body.txt >> $GITHUB_STEP_SUMMARY
+
+  # Post-release assertion: verify the release actually reached users after publish.
+  # Additive and report-only in the sense that it changes no existing job — it just
+  # fails loudly (with annotations + a job summary) if the release is inconsistent.
+  # Motivated by 1.47.9, where v1.47.9 published while 19 QA-fix commits sat unreleased
+  # past the tag and nothing caught it until a manual `git rev-list` (see #14033).
+  release-done:
+    name: Verify release reached users
+    needs: [resolve-version, publish-pypi, create-comfyui-pr]
+    # Only assert when a publish actually happened (skipped/failed publish → skip).
+    if: always() && needs.publish-pypi.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ComfyUI_frontend
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Assert release consistency
+        env:
+          TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
+          TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
+        run: |
+          set -euo pipefail
+
+          FAILED=0
+          {
+            echo "## Release-done assertion"
+            echo ""
+            echo "Target: \`v${TARGET_VERSION}\` on \`${TARGET_BRANCH}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # --- 1. No commits stranded past the release tag (the 1.47.9 class) ---
+          if ! git fetch --quiet --tags origin "${TARGET_BRANCH}"; then
+            echo "::error title=Fetch failed::Could not fetch ${TARGET_BRANCH} from origin."
+            echo "- ❌ Failed to fetch \`${TARGET_BRANCH}\` from origin" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          elif git rev-parse -q --verify "refs/tags/v${TARGET_VERSION}^{commit}" >/dev/null; then
+            # Guard the substitution: a failed rev-list (empty/non-numeric output)
+            # must be a hard failure, not a silent "no commits stranded" pass.
+            STRANDED=$(git rev-list "v${TARGET_VERSION}..FETCH_HEAD" --count) || STRANDED=""
+            if ! [[ "$STRANDED" =~ ^[0-9]+$ ]]; then
+              echo "::error title=Could not compute stranded commits::git rev-list failed or produced non-numeric output."
+              echo "- ❌ Could not determine stranded-commit count for \`v${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+              FAILED=1
+            elif [ "$STRANDED" -ne 0 ]; then
+              echo "::error title=Commits stranded past the release tag::${STRANDED} commit(s) on ${TARGET_BRANCH} are newer than v${TARGET_VERSION}; the published release does not contain them."
+              echo "- ❌ **${STRANDED}** commit(s) on \`${TARGET_BRANCH}\` are newer than \`v${TARGET_VERSION}\` (stranded)" >> "$GITHUB_STEP_SUMMARY"
+              FAILED=1
+            else
+              echo "- ✅ No commits stranded past \`v${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "::error title=Release tag missing::Tag v${TARGET_VERSION} not found."
+            echo "- ❌ Tag \`v${TARGET_VERSION}\` not found" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          fi
+
+          # --- 2. Target version is actually on PyPI ---
+          PACKAGE="comfyui-frontend-package"
+          HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json") || HTTP_CODE="000"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "- ✅ PyPI has \`${PACKAGE}==${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error title=Target version missing on PyPI::${PACKAGE}==${TARGET_VERSION} returned HTTP ${HTTP_CODE}."
+            echo "- ❌ PyPI missing \`${PACKAGE}==${TARGET_VERSION}\` (HTTP ${HTTP_CODE})" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          fi
+          # For main-line releases the target should also be PyPI's `latest`. core/*
+          # patches are intentionally non-latest (a patch must not steal `latest` from a
+          # higher minor), so there this is informational only.
+          # Guard the fetch+parse: an empty result means the query failed, which must
+          # be reported as a fetch failure rather than masquerading as a version mismatch.
+          PYPI_LATEST=$(curl -sf --connect-timeout 10 --max-time 30 "https://pypi.org/pypi/${PACKAGE}/json" | jq -r '.info.version // empty') || PYPI_LATEST=""
+          if [ -z "$PYPI_LATEST" ]; then
+            echo "::error title=Could not fetch PyPI latest::Failed to query PyPI info endpoint for ${PACKAGE}."
+            echo "- ❌ Could not determine PyPI \`latest\` version for \`${PACKAGE}\`" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          elif [ "$TARGET_BRANCH" = "main" ] && [ "$PYPI_LATEST" != "$TARGET_VERSION" ]; then
+            echo "::error title=PyPI latest mismatch::PyPI latest is ${PYPI_LATEST}, expected ${TARGET_VERSION}."
+            echo "- ❌ PyPI \`latest\` is \`${PYPI_LATEST}\`, expected \`${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          else
+            echo "- ℹ️ PyPI \`latest\` = \`${PYPI_LATEST}\` (target branch \`${TARGET_BRANCH}\`)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # --- 3. ComfyUI master pin (warn-only: the pin PR is merged by a human) ---
+          # Guard the fetch: a failed download leaves PIN empty and the check stays
+          # warn-only (reported as <none>), never aborting the job.
+          if REQS=$(curl -sf --connect-timeout 10 --max-time 30 "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"); then
+            PIN=$(printf '%s\n' "$REQS" | grep -oE "comfyui-frontend-package==[0-9.]+" | head -1 | cut -d= -f3) || PIN=""
+          else
+            PIN=""
+          fi
+          if [ "$PIN" = "$TARGET_VERSION" ]; then
+            echo "- ✅ ComfyUI \`master\` pins \`${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning title=ComfyUI pin not yet updated::ComfyUI master pins ${PIN:-<none>}, target ${TARGET_VERSION} (expected until the pin PR is merged)."
+            echo "- ⚠️ ComfyUI \`master\` pins \`${PIN:-<none>}\`, target \`${TARGET_VERSION}\` — warn only (pin PR likely still open)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$FAILED" -ne 0 ]; then
+            echo "release-done assertion FAILED — see annotations above."
+            exit 1
+          fi
+          echo "release-done assertion passed."
