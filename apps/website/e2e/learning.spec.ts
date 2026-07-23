@@ -170,7 +170,7 @@ test.describe('Learning category pages @smoke', () => {
     ).toHaveAttribute('aria-current', 'page')
   })
 
-  test('filtering in place swaps the heading, description, and title', async ({
+  test('selecting a category swaps the heading, description, and title', async ({
     page
   }) => {
     await page.goto('/learning')
@@ -186,6 +186,25 @@ test.describe('Learning category pages @smoke', () => {
       'content',
       EXPECTED_META.vfx.description
     )
+  })
+
+  test('Back and Forward walk through category selections', async ({
+    page
+  }) => {
+    await page.goto('/learning')
+    await categoryNav(page).locator('a[href="/learning/vfx"]').click()
+    await expect(page).toHaveURL('/learning/vfx')
+
+    await page.goBack()
+    await expect(page).toHaveURL('/learning')
+    await expect(page).toHaveTitle('Learning - Comfy')
+    await expect(
+      categoryNav(page).locator('a[href="/learning"]')
+    ).toHaveAttribute('aria-current', 'page')
+
+    await page.goForward()
+    await expect(page).toHaveURL('/learning/vfx')
+    await expect(page).toHaveTitle(EXPECTED_META.vfx.title)
   })
 
   for (const category of populatedCategories) {

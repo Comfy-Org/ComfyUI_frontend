@@ -2,12 +2,11 @@
 // Sidebar directory for /learning: a persistent left sidebar carries the page
 // title and the category nav (with counts and blurbs), while the content
 // column shows a compact featured banner followed by a dense, scannable row
-// list. Each category is still its own statically generated page (for direct
-// loads and crawlers), but on the directory pages the nav filters in place:
-// once hydrated it swaps the featured banner and rows client-side and syncs
-// the URL, so switching filters never reloads or jumps the page. `category` is
-// undefined on /learning (all).
-import { computed, ref } from 'vue'
+// list. Each category is its own statically generated page; the nav entries
+// are plain links that ClientRouter upgrades to client-side navigations, so
+// Back/Forward walk through category selections and each page's SSR head
+// keeps title and meta correct. `category` is undefined on /learning (all).
+import { computed } from 'vue'
 
 import type { LearningCategory } from '../../data/learningTutorials'
 import type { Locale } from '../../i18n/translations'
@@ -16,8 +15,7 @@ import {
   featuredFor,
   filterByCategory,
   learningDescription,
-  learningHeading,
-  learningMetaTitle
+  learningHeading
 } from '../../data/learningTutorials'
 import FeaturedTutorialCard from './FeaturedTutorialCard.vue'
 import LearningCategoryNav from './LearningCategoryNav.vue'
@@ -35,55 +33,15 @@ const {
   headingTag?: 'h1' | 'p'
 }>()
 
-// Only the primary directory pages filter in place; on the tutorial-dialog
-// backdrop (headingTag 'p') the nav stays plain links that navigate away.
-const filterInPlace = headingTag === 'h1'
+const heading = computed(() => learningHeading(locale, category))
+const description = computed(() => learningDescription(locale, category))
 
-const activeCategory = ref(category)
-
-const heading = computed(() => learningHeading(locale, activeCategory.value))
-const description = computed(() =>
-  learningDescription(locale, activeCategory.value)
-)
-
-const featured = computed(() => featuredFor(activeCategory.value))
+const featured = computed(() => featuredFor(category))
 const rows = computed(() =>
-  filterByCategory(activeCategory.value).filter(
+  filterByCategory(category).filter(
     (tutorial) => tutorial.id !== featured.value?.id
   )
 )
-
-function setMeta(selector: string, content: string) {
-  document.head.querySelector(selector)?.setAttribute('content', content)
-}
-
-// Keep the document title and social/description meta in step with the filter,
-// so an in-place category switch reads correctly on refresh, share, and in the
-// tab title even though no real navigation happened.
-function syncHeadMeta(value: LearningCategory | undefined) {
-  const title = learningMetaTitle(locale, value)
-  document.title = title
-  setMeta('meta[name="description"]', description.value)
-  setMeta('meta[property="og:title"]', title)
-  setMeta('meta[property="og:description"]', description.value)
-  setMeta('meta[name="twitter:title"]', title)
-  setMeta('meta[name="twitter:description"]', description.value)
-}
-
-function selectCategory(value: LearningCategory | undefined, href: string) {
-  activeCategory.value = value
-  // Reflect the filter in the URL (preserving ClientRouter's history state) so
-  // refresh, share, and deep links resolve to the matching static page.
-  history.replaceState(history.state, '', href)
-  syncHeadMeta(value)
-  // The list swaps in place, so scroll back to the top to reveal the new
-  // featured item and first rows (honoring reduced-motion preferences).
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-  window.scrollTo({
-    top: 0,
-    behavior: reduceMotion.matches ? 'auto' : 'smooth'
-  })
-}
 </script>
 
 <template>
@@ -102,12 +60,7 @@ function selectCategory(value: LearningCategory | undefined, href: string) {
             {{ description }}
           </p>
 
-          <LearningCategoryNav
-            :category="activeCategory"
-            :locale="locale"
-            :interactive="filterInPlace"
-            @select="selectCategory"
-          />
+          <LearningCategoryNav :category="category" :locale="locale" />
         </div>
       </aside>
 
