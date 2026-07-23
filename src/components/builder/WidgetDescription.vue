@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -11,6 +12,8 @@ const { widget } = defineProps<{
   widget: IBaseWidget
   description?: string
   disabled?: boolean
+  labelClass?: string
+  labelType?: string
 }>()
 
 const placeholder = computed(() =>
@@ -28,7 +31,8 @@ function onEditComplete(val: string) {
   <EditableText
     :model-value="description || placeholder"
     :is-editing
-    label-class="truncate"
+    :label-class="cn('truncate', labelClass)"
+    :label-type
     @dblclick="!disabled && (isEditing = true)"
     @edit="onEditComplete"
     @cancel="isEditing = false"
