@@ -1,0 +1,164 @@
+{
+  "labels": [
+    "ReadsArbitraryFile",
+    "CreatesLargeOutputs",
+    "DisabledOnCloud",
+    "WritesToDisk",
+    "NetworkAccess",
+    "Stateful",
+    "HasCustomEndpoints",
+    "RequiresExternalAPI",
+    "PathParsing",
+    "DuplicateOfCoreNode"
+  ],
+  "node_packs": [
+    {
+      "name": "core",
+      "node_labels": {
+        "LoadImageDataSetFromFolder": [
+          "ReadsArbitraryFile"
+        ],
+        "LoadImageTextDataSetFromFolder": [
+          "ReadsArbitraryFile"
+        ],
+        "LoadTrainingDataset": [
+          "ReadsArbitraryFile"
+        ],
+        "SaveImageDataSetToFolder": [
+          "WritesToDisk"
+        ],
+        "SaveImageTextDataSetToFolder": [
+          "WritesToDisk"
+        ],
+        "SaveLoRA": [
+          "CreatesLargeOutputs"
+        ],
+        "SaveTrainingDataset": [
+          "WritesToDisk"
+        ],
+        "CheckpointSave": [
+          "CreatesLargeOutputs"
+        ],
+        "ImageOnlyCheckpointSave": [
+          "CreatesLargeOutputs"
+        ],
+        "ModelSave": [
+          "CreatesLargeOutputs"
+        ],
+        "ModelSaveKJ": [
+          "CreatesLargeOutputs"
+        ],
+        "LoraSave": [
+          "WritesToDisk"
+        ],
+        "CLIPSave": [
+          "WritesToDisk"
+        ],
+        "VAESave": [
+          "WritesToDisk"
+        ]
+      }
+    },
+    {
+      "name": "https://github.com/kijai/ComfyUI-KJNodes@377ed49f540da1c5e419cd2fc494ccc79543d3c4",
+      "node_labels": {
+        "CameraPoseVisualizer": [
+          "ReadsArbitraryFile"
+        ],
+        "LoadVideosFromFolder": [
+          "ReadsArbitraryFile"
+        ],
+        "LoadImagesFromFolderKJ": [
+          "ReadsArbitraryFile"
+        ],
+        "SaveImageKJ": [
+          "WritesToDisk"
+        ],
+        "SaveStringKJ": [
+          "WritesToDisk"
+        ],
+        "ModelSaveKJ": [
+          "WritesToDisk"
+        ],
+        "StartRecordCUDAMemoryHistory": [
+          "Stateful"
+        ],
+        "EndRecordCUDAMemoryHistory": [
+          "Stateful",
+          "WritesToDisk"
+        ],
+        "VisualizeCUDAMemoryHistory": [
+          "WritesToDisk"
+        ],
+        "WebcamCaptureCV2": [
+          "DisabledOnCloud"
+        ],
+        "ScreencapStream": [
+          "DisabledOnCloud"
+        ],
+        "PlaySoundKJ": [
+          "ReadsArbitraryFile"
+        ],
+        "GGUFLoaderKJ": [
+          "DisabledOnCloud"
+        ]
+      }
+    },
+    {
+      "name": "comfyui-videohelpersuite",
+      "version": "1.7.9",
+      "node_labels": {
+        "VHS_LoadVideoPath": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_LoadVideoFFmpegPath": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_LoadImagesPath": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_LoadImagePath": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_SelectFilename": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_LoadImages": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_LoadAudio": [
+          "ReadsArbitraryFile"
+        ],
+        "VHS_BatchManager": [
+          "DisabledOnCloud"
+        ]
+      }
+    },
+    {
+      "name": "ComfyUI-WanVideoWrapper",
+      "version": "1.4.7",
+      "node_labels": {
+        "WanVideoVRAMManagement": [
+          "DisabledOnCloud"
+        ],
+        "WanVideoSetBlockSwap": [
+          "DisabledOnCloud"
+        ],
+        "WanVideoBlockSwap": [
+          "DisabledOnCloud"
+        ],
+        "WanVideoLoraSelectByName": [
+          "DisabledOnCloud"
+        ],
+        "DownloadAndLoadNLFModel": [
+          "NetworkAccess",
+          "DisabledOnCloud"
+        ]
+      }
+    },
+    {
+      "name": "comfyui_essentials",
+      "version": "1.1.0"
+    }
+  ]
+}

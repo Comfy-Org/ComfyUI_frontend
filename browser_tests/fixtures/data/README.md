@@ -39,3 +39,10 @@ await page.route('**/api/system_stats', (route) =>
    corresponding TypeScript type.
 3. Keep values realistic but stable — avoid dates, random IDs, or
    values that would cause test flakiness.
+
+## `cloud/`
+
+Not mock data: vendored inputs for `scripts/gen-cloud-manifest.ts`, which
+generates `customNodeManifest.cloud.json`. `cloud/supported_nodes.yaml` is
+a byte-exact copy of a Cloud-owned file. Never edit it locally; provenance
+and the refresh procedure live in the generator's header.
