@@ -72,14 +72,14 @@
             </span>
             <div class="flex shrink-0 items-center gap-2">
               <button
-                v-tooltip.bottom="locateTooltip"
+                v-tooltip.bottom="pauseTooltip"
                 type="button"
-                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary"
-                :aria-label="t('queueStatus.locate')"
-                data-testid="queue-status-row-view"
-                @click="viewJob(job)"
+                class="flex size-4 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-text-secondary disabled:opacity-40"
+                :aria-label="t('queueStatus.pause')"
+                data-testid="queue-status-row-pause"
+                disabled
               >
-                <i class="icon-[lucide--locate] size-4" />
+                <i class="icon-[comfy--pause] size-4" />
               </button>
               <button
                 v-tooltip.bottom="cancelTooltip"
@@ -369,20 +369,17 @@ const jobSubtitle = (job: JobListItem) => job.meta
 const stopTooltip = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
 )
-const locateTooltip = computed(() =>
-  buildTooltipConfig(t('queueStatus.locate'))
+// No pause endpoint exists yet, so the control is present but inert.
+const pauseTooltip = computed(() =>
+  buildTooltipConfig(t('queueStatus.pauseUnavailable'))
 )
 const cancelTooltip = computed(() => buildTooltipConfig(t('queueStatus.cancel')))
 
-const { galleryActiveIndex, galleryItems, onViewItem } = useResultGallery(() =>
+const { galleryActiveIndex, galleryItems } = useResultGallery(() =>
   activeJobs.value
     .map((job) => job.taskRef)
     .filter((task): task is TaskItemImpl => !!task)
 )
-
-const viewJob = (job: JobListItem) => {
-  void onViewItem(job)
-}
 
 /**
  * Latest finished results, newest first. Surfaced on the idle popover because
