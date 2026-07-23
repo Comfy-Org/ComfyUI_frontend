@@ -9,6 +9,7 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   findActiveIndex,
+  getJobAssets,
   getJobDetail,
   getJobWorkflow,
   getOutputsForTask
@@ -23,6 +24,7 @@ vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
 vi.mock('@/scripts/api', () => ({
   api: {
     getJobDetail: vi.fn(),
+    getJobAssets: vi.fn(),
     apiURL: vi.fn((path: string) => `/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
@@ -356,6 +358,46 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('getJobAssets', () => {
+    it('caches assets after the first fetch', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue([
+        { id: 'a1', name: 'a.png', created_at: 't' }
+      ])
+
+      await getJobAssets(jobId)
+      const result = await getJobAssets(jobId)
+
+      expect(result.map((asset) => asset.id)).toEqual(['a1'])
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes concurrent requests for the same job', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue([
+        { id: 'a1', name: 'a.png', created_at: 't' }
+      ])
+
+      const [first, second] = await Promise.all([
+        getJobAssets(jobId),
+        getJobAssets(jobId)
+      ])
+
+      expect(first).toEqual(second)
+      expect(api.getJobAssets).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not cache empty results', async () => {
+      const jobId = uniqueId('job-assets')
+      vi.mocked(api.getJobAssets).mockResolvedValue([])
+
+      await getJobAssets(jobId)
+      await getJobAssets(jobId)
+
+      expect(api.getJobAssets).toHaveBeenCalledTimes(2)
     })
   })
 

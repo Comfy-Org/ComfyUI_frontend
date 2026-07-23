@@ -13,10 +13,16 @@ import type { JobId } from '@/schemas/apiSchema'
 import type {
   JobDetail,
   JobListItem,
+  JobOutputAsset,
   JobStatus,
   RawJobListItem
 } from './jobTypes'
-import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
+import {
+  zJobAssetsResponse,
+  zJobDetail,
+  zJobsListResponse,
+  zWorkflowContainer
+} from './jobTypes'
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
@@ -175,6 +181,58 @@ export async function fetchJobDetail(
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
+}
+
+// Server caps the page size at 500; a single job's outputs fit well within a
+// few pages, so this bound also guards against a runaway pagination loop.
+const JOB_ASSETS_PAGE_SIZE = 500
+const JOB_ASSETS_MAX_PAGES = 20
+
+/**
+ * Fetches all output assets for a job from GET /api/jobs/{job_id}/assets,
+ * paginating internally. Each asset carries a real asset id plus per-output
+ * node context (node_id, output_key, output_index) resolved server-side by
+ * content hash. Returns an empty array on any failure (e.g. the endpoint is
+ * unavailable on non-cloud distributions) so callers can degrade gracefully.
+ */
+export async function fetchJobAssets(
+  fetchApi: (url: string) => Promise<Response>,
+  jobId: JobId
+): Promise<JobOutputAsset[]> {
+  const assets: JobOutputAsset[] = []
+  let offset = 0
+
+  try {
+    for (let page = 0; page < JOB_ASSETS_MAX_PAGES; page++) {
+      const url = `/jobs/${encodeURIComponent(jobId)}/assets?limit=${JOB_ASSETS_PAGE_SIZE}&offset=${offset}`
+      const res = await fetchApi(url)
+      if (!res.ok) {
+        console.warn(
+          `[Jobs API] Failed to fetch assets for job ${jobId}: ${res.status}`
+        )
+        if (offset === 0) return []
+        break
+      }
+
+      const data = zJobAssetsResponse.parse(await res.json())
+      assets.push(...data.assets)
+
+      const hasMore = data.pagination?.has_more ?? false
+      if (hasMore && data.assets.length === 0) {
+        console.warn(
+          `[Jobs API] Job ${jobId} assets page reported has_more with an empty page; stopping pagination`
+        )
+      }
+
+      if (!hasMore || data.assets.length === 0) break
+      offset += data.assets.length
+    }
+  } catch (error) {
+    console.error(`Failed to fetch assets for job ${jobId}:`, error)
+    return offset === 0 ? [] : assets
+  }
+
+  return assets
 }
 
 /**

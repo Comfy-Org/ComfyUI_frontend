@@ -4,6 +4,7 @@ import {
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -381,6 +382,245 @@ describe('fetchJobs', () => {
         expect.any(String)
       )
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('fetchJobAssets', () => {
+    function createAssetsResponse(
+      jobId: string,
+      assets: Record<string, unknown>[],
+      hasMore = false,
+      offset = 0
+    ) {
+      return {
+        job_id: jobId,
+        assets,
+        pagination: {
+          offset,
+          limit: 500,
+          total: assets.length,
+          has_more: hasMore
+        }
+      }
+    }
+
+    it('fetches job assets with node context', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: 'blake3:abc',
+                preview_url: '/view/a.png',
+                mime_type: 'image/png',
+                size: 123,
+                node_id: '9',
+                output_key: 'images',
+                output_index: 0,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs/job1/assets?limit=500&offset=0'
+      )
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('asset-1')
+      expect(result[0].node_id).toBe('9')
+      expect(result[0].output_index).toBe(0)
+    })
+
+    it('accepts null node context fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                node_id: null,
+                output_key: null,
+                output_index: null,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].node_id).toBeNull()
+    })
+
+    it('accepts null hash, preview_url, mime_type, size, and created_at fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: null,
+                preview_url: null,
+                mime_type: null,
+                size: null,
+                created_at: null
+              }
+            ])
+          )
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('asset-1')
+    })
+
+    it('paginates until has_more is false', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a1', name: 'a.png', created_at: 't' }],
+                true,
+                0
+              )
+            )
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a2', name: 'b.png', created_at: 't' }],
+                false,
+                1
+              )
+            )
+        })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        '/jobs/job1/assets?limit=500&offset=1'
+      )
+      expect(result.map((a) => a.id)).toEqual(['a1', 'a2'])
+    })
+
+    it('returns empty array and logs the status on non-ok response', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('404')
+      )
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('accepts an envelope without job_id, offset, limit, or asset created_at', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            assets: [{ id: 'asset-1', name: 'a.png' }],
+            pagination: { total: 1, has_more: false }
+          })
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result.map((a) => a.id)).toEqual(['asset-1'])
+    })
+
+    it('stops after one page when pagination is absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            assets: [{ id: 'asset-1', name: 'a.png', created_at: 't' }]
+          })
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(result).toHaveLength(1)
+    })
+
+    it('returns empty array on error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
+      consoleSpy.mockRestore()
+    })
+
+    it('stops at the page cap when the server always reports has_more', async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        const offset = Number(
+          new URL(url, 'http://x').searchParams.get('offset')
+        )
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: `a${offset}`, name: `${offset}.png`, created_at: 't' }],
+                true,
+                offset
+              )
+            )
+        })
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(20)
+      expect(result).toHaveLength(20)
+    })
+
+    it('warns when has_more is true but the page is empty', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('has_more with an empty page')
+      )
+      consoleWarnSpy.mockRestore()
     })
   })
 })
