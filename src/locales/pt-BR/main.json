@@ -3017,6 +3017,7 @@
       "appTypeNative": "Aplicativo nativo",
       "appTypeWeb": "Aplicativo web",
       "deny": "Cancelar",
+      "detailsHeader": "Detalhes",
       "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
       "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
       "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
@@ -3024,7 +3025,6 @@
       "loading": "Carregando solicitação de autorização…",
       "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
       "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
-      "detailsHeader": "Detalhes",
       "permissionsHeader": "Permissões",
       "redirectNotice": "Você será redirecionado para",
       "resourceFallback": "este aplicativo",
@@ -4026,6 +4026,7 @@
       "waitingForSubscription": "Conclua sua assinatura na nova aba. Detectaremos automaticamente quando você terminar!"
     },
     "resubscribe": "Reassinar",
+    "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
     "saveYearly": "Economize 20%",

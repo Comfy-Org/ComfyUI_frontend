@@ -328,7 +328,6 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -338,6 +337,10 @@ import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWor
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  formatSubscriptionDate,
+  resolveSubscriptionTierKey
+} from './subscriptionPanelWorkspace.logic'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
@@ -426,27 +429,18 @@ const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
-function formatSubtitleDate(isoDate: string | null | undefined) {
-  if (!isoDate) return ''
-  return new Date(isoDate).toLocaleDateString(locale.value, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-}
-
 const formattedRenewalDate = computed(() =>
-  formatSubtitleDate(subscription.value?.renewalDate)
+  formatSubscriptionDate(subscription.value?.renewalDate, locale.value)
 )
 
 const formattedEndDate = computed(() =>
-  formatSubtitleDate(subscription.value?.endDate)
+  formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
 const subscriptionTierName = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return ''
-  const key = TIER_TO_KEY[tier] ?? 'standard'
+  const key = resolveSubscriptionTierKey(tier)
   const baseName = t(`subscription.tiers.${key}.name`)
   return isYearlySubscription.value
     ? t('subscription.tierNameYearly', { name: baseName })
@@ -457,11 +451,9 @@ const planDisplayName = computed(() =>
   isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
 )
 
-const tierKey = computed(() => {
-  const tier = subscription.value?.tier
-  if (!tier) return 'free'
-  return TIER_TO_KEY[tier] ?? 'standard'
-})
+const tierKey = computed(() =>
+  resolveSubscriptionTierKey(subscription.value?.tier)
+)
 
 const TEAM_PERK_KEYS = [
   'inviteMembers',

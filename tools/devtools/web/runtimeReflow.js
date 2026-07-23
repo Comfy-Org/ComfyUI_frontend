@@ -37,7 +37,7 @@ app.registerExtension({
         const img = new Image()
         img.onload = () => {
           this.imgs = [img]
-          resizeViaDirectSizeMutation(this, Math.max(this.size[1] + 120, 200))
+          resizeViaDirectSizeMutation(this, this.size[1] + 120)
         }
         img.src = ONE_PIXEL_PNG
       }

@@ -3017,6 +3017,7 @@
       "appTypeNative": "原生應用程式",
       "appTypeWeb": "網頁應用程式",
       "deny": "取消",
+      "detailsHeader": "詳細資訊",
       "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
       "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
       "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
@@ -3024,7 +3025,6 @@
       "loading": "正在載入授權請求…",
       "missingRequest": "找不到此授權請求。請從用戶端應用程式重新啟動。",
       "noWorkspaces": "此請求沒有可用的合格工作區。",
-      "detailsHeader": "詳細資訊",
       "permissionsHeader": "權限",
       "redirectNotice": "您將被重新導向至",
       "resourceFallback": "此應用程式",
@@ -4014,6 +4014,7 @@
       "waitingForSubscription": "請在新分頁中完成訂閱。完成後我們會自動偵測！"
     },
     "resubscribe": "重新訂閱",
+    "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
     "saveYearly": "節省 20%",

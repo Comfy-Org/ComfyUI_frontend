@@ -3017,6 +3017,7 @@
       "appTypeNative": "ネイティブアプリ",
       "appTypeWeb": "ウェブアプリ",
       "deny": "キャンセル",
+      "detailsHeader": "詳細",
       "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
       "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
       "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
@@ -3024,7 +3025,6 @@
       "loading": "認可リクエストを読み込み中…",
       "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
       "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
-      "detailsHeader": "詳細",
       "permissionsHeader": "権限",
       "redirectNotice": "リダイレクト先：",
       "resourceFallback": "このアプリ",
@@ -4014,6 +4014,7 @@
       "waitingForSubscription": "新しいタブで購読を完了してください。完了を自動的に検知します！"
     },
     "resubscribe": "再購読する",
+    "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
     "saveYearly": "20%お得",
