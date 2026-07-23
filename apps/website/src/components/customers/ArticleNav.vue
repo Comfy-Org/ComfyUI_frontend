@@ -15,7 +15,7 @@ const { categories } = defineProps<{
 
 const activeSection = ref(categories[0]?.value ?? '')
 
-const HEADER_OFFSET = -144
+const HEADER_OFFSET_PX = -144
 const BOTTOM_THRESHOLD_PX = 4
 const SCROLL_SAFETY_MS = 1500
 
@@ -52,7 +52,7 @@ function scrollToSection(id: string) {
   const el = document.getElementById(id)
   if (el) {
     scrollTo(el, {
-      offset: HEADER_OFFSET,
+      offset: HEADER_OFFSET_PX,
       duration: 0.8,
       immediate: prefersReducedMotion(),
       onComplete: clearScrollLock

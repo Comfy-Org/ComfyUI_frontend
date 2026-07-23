@@ -172,8 +172,10 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedIds.add(asset.id)
 
       const assetTime = new Date(asset.created_at ?? 0).getTime()
+      // `<=` keeps same-timestamp ordering consistent with the initial
+      // newest-first sort: new items land before existing equal-time items.
       const insertIndex = allHistoryItems.value.findIndex(
-        (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+        (item) => new Date(item.created_at ?? 0).getTime() <= assetTime
       )
 
       if (insertIndex === -1) {
@@ -207,11 +209,11 @@ export const useAssetsStore = defineStore('assets', () => {
     epoch: number
   }
 
-  // Tracks whether the walk is keyset-paginated, independent of the current
-  // cursor value: once a cursor has been minted the walk stays in cursor mode
-  // even after it exhausts (`historyNextCursor` back to null), so head-refresh
-  // merges keep preserving scroll-loaded items instead of replacing them.
-  let historyCursorMode = false
+  // True once any `next_cursor` has been received in the current walk epoch;
+  // stays true even after the cursor exhausts (`historyNextCursor` back to
+  // null), so head-refresh merges keep preserving scroll-loaded items
+  // instead of replacing them.
+  let hadCursorThisWalk = false
 
   const isRejectedCursorError = (err: unknown): boolean =>
     err instanceof JobsApiError && err.status === 400
@@ -239,12 +241,18 @@ export const useAssetsStore = defineStore('assets', () => {
       historyFetchEpoch += 1
       walk.epoch = historyFetchEpoch
       historyNextCursor.value = null
-      historyCursorMode = false
+      hadCursorThisWalk = false
       historyOffset.value = 0
-      allHistoryItems.value = []
-      loadedIds.clear()
-      loadedJobIds.clear()
-      return fetchHistoryJobsPage({ offset: 0 })
+      const page = await fetchHistoryJobsPage({ offset: 0 })
+      // The destructive reset waits until the fallback page is in hand, so a
+      // failed fallback leaves the loaded list intact instead of stranding
+      // `historyAssets` with no backing items.
+      if (walk.epoch === historyFetchEpoch) {
+        allHistoryItems.value = []
+        loadedIds.clear()
+        loadedJobIds.clear()
+      }
+      return page
     }
   }
 
@@ -256,10 +264,10 @@ export const useAssetsStore = defineStore('assets', () => {
    * cursor (keyset mode). The walk upgrades automatically — offset paging is
    * only used until the first cursor is received.
    *
-   * An empty page with no cursor is treated as terminal regardless of
-   * `has_more`, because offset paging would refetch the same page forever.
-   * A cursor that hasn't advanced (the server echoed back the value it was
-   * given) is also treated as terminal to prevent an infinite dedup loop.
+   * `hasMoreHistory` mirrors the server's `has_more`, with two local terminal
+   * overrides: an empty page with no cursor (offset paging would refetch the
+   * same page forever) and a cursor that hasn't advanced — the server echoed
+   * back the value it was given (an infinite dedup loop otherwise).
    *
    * @param loadMore - When `true`, appends the next page to the existing list
    *   (infinite-scroll continuation). When `false` (default), resets all
@@ -274,7 +282,7 @@ export const useAssetsStore = defineStore('assets', () => {
       historyFetchEpoch += 1
       historyOffset.value = 0
       historyNextCursor.value = null
-      historyCursorMode = false
+      hadCursorThisWalk = false
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
@@ -298,11 +306,11 @@ export const useAssetsStore = defineStore('assets', () => {
 
     const cursorStuck =
       page.nextCursor != null && page.nextCursor === requestedAfter
-    if (page.nextCursor != null) historyCursorMode = true
+    if (page.nextCursor != null) hadCursorThisWalk = true
     // The server ignores `offset` once the walk is keyset-paginated, so only
     // advance it while still in offset mode; otherwise the offset used by the
     // recovery fallback would drift past valid rows.
-    if (!historyCursorMode) historyOffset.value += page.jobs.length
+    if (!hadCursorThisWalk) historyOffset.value += page.jobs.length
     hasMoreHistory.value =
       page.hasMore &&
       !cursorStuck &&
@@ -334,10 +342,6 @@ export const useAssetsStore = defineStore('assets', () => {
     } catch (err) {
       console.error('Error fetching history assets:', err)
       historyError.value = err
-      // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
     } finally {
       historyLoading.value = false
     }
@@ -362,18 +366,16 @@ export const useAssetsStore = defineStore('assets', () => {
       if (walk.epoch !== historyFetchEpoch) return
       console.error('Error loading more history:', err)
       historyError.value = err
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
     } finally {
       isLoadingMore.value = false
     }
   }
 
   /**
-   * A head page with no further rows spans the whole timeline, so replacing
-   * local state with it also prunes jobs deleted server-side (e.g. after the
-   * queue history is cleared from another surface).
+   * Replaces local history state with the given head page. Called either when
+   * the page spans the whole timeline (`!hasMore`) — which also prunes jobs
+   * deleted server-side (e.g. after the queue history is cleared from another
+   * surface) — or when rebuilding from the top in offset mode.
    *
    * Bumps `historyFetchEpoch`, which cancels any concurrent
    * `loadMoreHistory`/`fetchHistoryAssets` continuation.
@@ -388,7 +390,7 @@ export const useAssetsStore = defineStore('assets', () => {
     page.jobs.forEach((job) => loadedJobIds.add(job.id))
     historyOffset.value = page.jobs.length
     historyNextCursor.value = page.nextCursor ?? null
-    historyCursorMode = page.nextCursor != null
+    hadCursorThisWalk = page.nextCursor != null
     hasMoreHistory.value = page.hasMore
   }
 
@@ -404,6 +406,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * mid-flight schedules exactly one trailing refresh — the shared response
    * was dispatched before that caller's event, so it could miss the very
    * completion the caller is reacting to.
+   *
+   * Never rejects: failures are recorded in `historyError`.
    */
   const refreshHistoryHead = (): Promise<void> => {
     if (!headRefreshInFlight) {
@@ -412,6 +416,8 @@ export const useAssetsStore = defineStore('assets', () => {
       })
       return headRefreshInFlight
     }
+    // Re-entering refreshHistoryHead (not doRefreshHistoryHead) lets callers
+    // arriving during the trailing window join the next leading slot.
     headRefreshTrailing ??= headRefreshInFlight.then(() => {
       headRefreshTrailing = null
       return refreshHistoryHead()
@@ -434,6 +440,9 @@ export const useAssetsStore = defineStore('assets', () => {
       const reachesLoadedItems = page.jobs.some((job) =>
         loadedJobIds.has(job.id)
       )
+      // The head page didn't reach any already-loaded item and the server
+      // still has more rows: the gap between the new head and the loaded list
+      // can't be filled by merging, so restart the walk from scratch.
       if (page.hasMore && !reachesLoadedItems) {
         await updateHistory()
         return
@@ -446,7 +455,7 @@ export const useAssetsStore = defineStore('assets', () => {
       // the next offset request (the server timeline shifted down by the new
       // completions), so rebuild from the head page — which resets
       // historyOffset to a position consistent with that page.
-      if (page.hasMore && historyCursorMode) {
+      if (page.hasMore && hadCursorThisWalk) {
         page.jobs.forEach((job) => loadedJobIds.add(job.id))
         mergeHistoryAssets(mapHistoryToAssets(page.jobs))
         trimHistoryToLimit()

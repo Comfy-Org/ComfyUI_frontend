@@ -20,6 +20,8 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0008](0008-entity-component-system.md)                     | Entity Component System                     | Proposed | 2026-03-23 |
 | [0009](0009-subgraph-promoted-widgets-use-linked-inputs.md) | Subgraph Promoted Widgets Use Linked Inputs | Proposed | 2026-05-05 |
 | [0010](0010-remove-nx-orchestration.md)                     | Remove Nx Orchestration                     | Accepted | 2026-05-19 |
+| [0011](0011-derived-credential-lifecycle.md)                | Derived Credential Lifecycle for Cloud Auth | Proposed | 2026-07-09 |
+| [0012](0012-cloud-release-notes-use-comfyui-version.md)     | Cloud Release Notes Use the ComfyUI Version | Accepted | 2026-07-13 |
 
 ## Creating a New ADR
 

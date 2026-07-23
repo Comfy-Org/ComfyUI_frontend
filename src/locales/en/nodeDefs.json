@@ -1166,6 +1166,48 @@
       }
     }
   },
+  "ByteDanceSeedAudio": {
+    "display_name": "ByteDance Seed Audio 1.0",
+    "description": "Generate speech, music, sound effects and multi-speaker dialogue from a single prompt with ByteDance Seed Audio 1.0. Describe the voice(s), emotion, ambience, background music and sound effects in the prompt, and include the lines to speak. Optionally pick a built-in preset voice, clone voices from up to 3 reference clips (tagged {'@'}Audio1-3 in the prompt), or derive a voice from a character image. Up to 2 minutes of audio per run.",
+    "inputs": {
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Describe the voice(s), emotion, pacing, ambience, background music and sound effects, and include the lines to speak (name characters inline for dialogue). In 'audio reference' mode, refer to connected clips by order as @Audio1, @Audio2, @Audio3. Maximum 3000 characters."
+      },
+      "reference_mode": {
+        "name": "reference_mode",
+        "tooltip": "How to condition the voice: 'text only' (describe everything in the prompt), 'audio reference' (clone up to 3 voices, tagged @Audio1-3), 'image reference' (derive a voice from one character image), or 'preset voice' (pick a built-in named voice that reads the prompt)."
+      },
+      "sample_rate": {
+        "name": "sample_rate",
+        "tooltip": "Output sample rate in Hz."
+      },
+      "speech_rate": {
+        "name": "speech_rate",
+        "tooltip": "Speaking speed. 0 = normal, 100 = 2.0x, -50 = 0.5x."
+      },
+      "loudness_rate": {
+        "name": "loudness_rate",
+        "tooltip": "Loudness. 0 = normal, 100 = 2.0x, -50 = 0.5x."
+      },
+      "pitch_rate": {
+        "name": "pitch_rate",
+        "tooltip": "Pitch shift in semitones (-12 to 12)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedNode": {
     "display_name": "ByteDance Seed",
     "description": "Generate text responses with ByteDance's Seed 2.0 models. Provide a text prompt and optionally one or more images or videos for multimodal context.",
@@ -1275,17 +1317,15 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the image."
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Enable the model's prompt-optimization reasoning ('thinking') for better adherence. Can substantially increase generation time — notably on Seedream 5.0 Pro. Can only be disabled for text-to-image (not when reference images are provided)."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
-      "model_fail_on_partial": {
-        "name": "fail_on_partial"
-      },
       "model_height": {
         "name": "height"
-      },
-      "model_max_images": {
-        "name": "max_images"
       },
       "model_size_preset": {
         "name": "size_preset"
@@ -1735,7 +1775,7 @@
     }
   },
   "CLIPTextEncodeControlnet": {
-    "display_name": "CLIPTextEncodeControlnet",
+    "display_name": "CLIP Text Encode (Controlnet)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -2009,6 +2049,10 @@
       "1": {
         "name": "hex",
         "tooltip": null
+      },
+      "2": {
+        "name": "alpha",
+        "tooltip": null
       }
     }
   },
@@ -2233,6 +2277,17 @@
       },
       "conditioning_from": {
         "name": "conditioning_from"
+      }
+    }
+  },
+  "ConditioningMultiply": {
+    "display_name": "Conditioning (Multiply)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "multiplier": {
+        "name": "multiplier"
       }
     }
   },
@@ -2791,6 +2846,14 @@
       "background": {
         "name": "background",
         "tooltip": "Optional image used as background in the canvas and preview."
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Bounding boxes, elements, or a JSON string to initialize the canvas. A new upstream value initializes the canvas; edits made on the canvas take priority and are kept until the upstream value changes again."
+      },
+      "last_incoming": {
+        "name": "last_incoming",
+        "tooltip": "Internal state managed by the canvas: the upstream bboxes value that last initialized it. Leave empty to re-initialize the canvas from the bboxes input on the next run."
       }
     },
     "outputs": {
@@ -5088,6 +5151,40 @@
       }
     }
   },
+  "GeminiVideoOmni": {
+    "display_name": "Google Gemini Omni (Video)",
+    "description": "Generate a video with audio from a text prompt using Google's Gemini Omni Flash model. Optionally provide reference images and/or videos to guide or edit the result. Describe the desired length (3-10s) and aspect ratio (16:9 or 9:16) directly in the prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini video model used to generate the video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Generate Video Tracks",
     "inputs": {
@@ -6162,94 +6259,6 @@
       },
       "std": {
         "name": "std"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV1": {
-    "display_name": "Ideogram V1",
-    "description": "Generates images using the Ideogram V1 model.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Whether to use turbo mode (faster generation, potentially lower quality)"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "The aspect ratio for image generation."
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determine if MagicPrompt should be used in generation"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description of what to exclude from the image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "IdeogramV2": {
-    "display_name": "Ideogram V2",
-    "description": "Generates images using the Ideogram V2 model.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt for the image generation"
-      },
-      "turbo": {
-        "name": "turbo",
-        "tooltip": "Whether to use turbo mode (faster generation, potentially lower quality)"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "The aspect ratio for image generation. Ignored if resolution is not set to AUTO."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "The resolution for image generation. If not set to AUTO, this overrides the aspect_ratio setting."
-      },
-      "magic_prompt_option": {
-        "name": "magic_prompt_option",
-        "tooltip": "Determine if MagicPrompt should be used in generation"
-      },
-      "seed": {
-        "name": "seed"
-      },
-      "style_type": {
-        "name": "style_type",
-        "tooltip": "Style type for generation (V2 only)"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Description of what to exclude from the image"
-      },
-      "num_images": {
-        "name": "num_images"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
       }
     },
     "outputs": {
@@ -8940,7 +8949,7 @@
     }
   },
   "LoadLatent": {
-    "display_name": "LoadLatent",
+    "display_name": "Load Latent",
     "inputs": {
       "latent": {
         "name": "latent"
@@ -10563,10 +10572,16 @@
   },
   "MaskPreview": {
     "display_name": "Preview Mask",
-    "description": "Saves the input images to your ComfyUI output directory.",
+    "description": "Preview the masks without saving them to the ComfyUI output directory.",
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -14326,7 +14341,7 @@
     }
   },
   "PhotoMakerEncode": {
-    "display_name": "PhotoMakerEncode",
+    "display_name": "PhotoMaker Encode",
     "inputs": {
       "photomaker": {
         "name": "photomaker"
@@ -14348,7 +14363,7 @@
     }
   },
   "PhotoMakerLoader": {
-    "display_name": "PhotoMakerLoader",
+    "display_name": "Load PhotoMaker Model",
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker_model_name"
@@ -14577,6 +14592,7 @@
   },
   "Preview3D": {
     "display_name": "Preview 3D & Animation",
+    "description": "Preview a 3D model file without saving it to the ComfyUI output directory.",
     "inputs": {
       "model_file": {
         "name": "model_file",
@@ -14595,6 +14611,7 @@
   },
   "Preview3DAdvanced": {
     "display_name": "Preview 3D (Advanced)",
+    "description": "Preview a 3D model file without saving it to the ComfyUI output directory.",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
@@ -14641,21 +14658,18 @@
   },
   "PreviewAny": {
     "display_name": "Preview as Text",
+    "description": "Preview any input value as text.",
     "inputs": {
       "source": {
         "name": "source"
       },
-      "preview_markdown": {
-        "name": "Preview"
-      },
-      "preview_text": {
-        "name": "Preview"
-      },
-      "previewMode": {}
+      "preview_mode": {},
+      "preview_text": {}
     }
   },
   "PreviewAudio": {
     "display_name": "Preview Audio",
+    "description": "Preview the audio without saving it to the ComfyUI output directory.",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -14673,6 +14687,7 @@
   },
   "PreviewGaussianSplat": {
     "display_name": "Preview Splat",
+    "description": "Preview a gaussian splat 3D file without saving it to the ComfyUI output directory.",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
@@ -14719,7 +14734,7 @@
   },
   "PreviewImage": {
     "display_name": "Preview Image",
-    "description": "Saves the input images to your ComfyUI output directory.",
+    "description": "Preview the images without saving them to the ComfyUI output directory.",
     "inputs": {
       "images": {
         "name": "images"
@@ -14733,6 +14748,7 @@
   },
   "PreviewPointCloud": {
     "display_name": "Preview Point Cloud",
+    "description": "Preview a point cloud 3D file without saving it to the ComfyUI output directory.",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
@@ -14842,7 +14858,7 @@
     }
   },
   "PrimitiveString": {
-    "display_name": "Text String (DEPRECATED)",
+    "display_name": "Text",
     "inputs": {
       "value": {
         "name": "value"
@@ -14855,7 +14871,7 @@
     }
   },
   "PrimitiveStringMultiline": {
-    "display_name": "Input Text",
+    "display_name": "Text (Multiline)",
     "inputs": {
       "value": {
         "name": "value"
@@ -17213,6 +17229,55 @@
       }
     }
   },
+  "Save3DAdvanced": {
+    "display_name": "Save 3D (Advanced)",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model file from an upstream 3D node."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveAnimatedPNG": {
     "display_name": "Save Animated PNG",
     "inputs": {
@@ -17358,6 +17423,55 @@
       }
     }
   },
+  "SaveGaussianSplat": {
+    "display_name": "Save Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "A gaussian splat 3D file."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "Save 3D Model",
     "inputs": {
@@ -17479,7 +17593,7 @@
     }
   },
   "SaveLatent": {
-    "display_name": "SaveLatent",
+    "display_name": "Save Latent",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -17511,6 +17625,55 @@
       }
     }
   },
+  "SavePointCloud": {
+    "display_name": "Save Point Cloud",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Point cloud file (.ply)"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "SaveSVGNode": {
     "display_name": "Save SVG",
     "description": "Save SVG files on disk.",
@@ -17526,6 +17689,29 @@
     "outputs": {
       "0": {
         "name": "svg",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveText": {
+    "display_name": "Save Text",
+    "description": "Save text content to a file in the output directory.",
+    "inputs": {
+      "text": {
+        "name": "text"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "format": {
+        "name": "format"
+      },
+      "preview_mode": {},
+      "preview_text": {}
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
         "tooltip": null
       }
     }
@@ -17554,7 +17740,7 @@
   },
   "SaveVideo": {
     "display_name": "Save Video",
-    "description": "Saves the input images to your ComfyUI output directory.",
+    "description": "Saves the input videos to your ComfyUI output directory.",
     "inputs": {
       "video": {
         "name": "video",
@@ -17829,6 +18015,117 @@
       "0": {
         "name": "seed",
         "tooltip": null
+      }
+    }
+  },
+  "SeedVR2Conditioning": {
+    "display_name": "Apply SeedVR2 Conditioning",
+    "description": "Build SeedVR2 positive/negative conditioning from a VAE latent.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The SeedVR2 model."
+      },
+      "vae_conditioning": {
+        "name": "vae_conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "The positive conditioning for sampling."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "The negative conditioning for sampling."
+      }
+    }
+  },
+  "SeedVR2PostProcessing": {
+    "display_name": "Post-Process SeedVR2 Output",
+    "description": "Align the generated image with the original resized image and apply color correction.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "The generated image to process."
+      },
+      "original_resized_images": {
+        "name": "original_resized_images",
+        "tooltip": "The original resized image before pre-processing, used as reference."
+      },
+      "color_correction_method": {
+        "name": "color_correction_method",
+        "tooltip": "Method to match the generated image colors to the original image. lab: transfer color in CIELAB space, preserving detail (most faithful). wavelet: transfer low-frequency color, keeping upscaled high-frequency detail. adain: match per-channel mean/std (fastest, global tint). none: skip color transfer (geometry alignment only)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "The aligned, color-corrected image."
+      }
+    }
+  },
+  "SeedVR2Preprocess": {
+    "display_name": "Pre-Process SeedVR2 Input",
+    "description": "Pad a resized image for SeedVR2 model. Alpha channel is dropped. The node Post-Process SeedVR2 Output re-applies it from the original resized image.",
+    "inputs": {
+      "resized_images": {
+        "name": "resized_images",
+        "tooltip": "The resized image to process."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "The padded image for VAE encoding."
+      }
+    }
+  },
+  "SeedVR2TemporalChunk": {
+    "display_name": "Split SeedVR2 Latent",
+    "description": "Split a SeedVR2 video latent into overlapping temporal chunks small enough to sample one at a time within VRAM, wiring latents outputs to both Apply SeedVR2 Conditioning and the sampler latent input before recombining with Merge SeedVR2 Latents.",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "The VAE-encoded SeedVR2 latent to split."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Latent frames shared between adjacent chunks and crossfaded at merge; 0 = no overlap."
+      },
+      "chunking_mode": {
+        "name": "chunking_mode",
+        "tooltip": "manual = use frames_per_chunk exactly; auto = predict the largest chunk that fits free VRAM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "The temporal chunks in sequence order."
+      },
+      "1": {
+        "name": "temporal_overlap",
+        "tooltip": "The effective latent-frame overlap between adjacent chunks, for Merge SeedVR2 Latents."
+      }
+    }
+  },
+  "SeedVR2TemporalMerge": {
+    "display_name": "Merge SeedVR2 Latents",
+    "description": "Recombine sampled SeedVR2 latent temporal chunks into one latent, crossfading each overlap with a Hann window sized by the temporal_overlap wired from Split SeedVR2 Latent.",
+    "inputs": {
+      "latents": {
+        "name": "latents",
+        "tooltip": "The sampled temporal chunks in sequence order."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "The temporal_overlap output of Split SeedVR2 Latent. 0 = plain concatenation."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": "The recombined full-length latent."
       }
     }
   },
@@ -18344,293 +18641,6 @@
       }
     }
   },
-  "StabilityAudioInpaint": {
-    "display_name": "Stability AI Audio Inpaint",
-    "description": "Transforms part of existing audio sample using text instructions.",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "audio": {
-        "name": "audio",
-        "tooltip": "Audio must be between 6 and 190 seconds long."
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Controls the duration in seconds of the generated audio."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for generation."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Controls the number of sampling steps."
-      },
-      "mask_start": {
-        "name": "mask_start"
-      },
-      "mask_end": {
-        "name": "mask_end"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityAudioToAudio": {
-    "display_name": "Stability AI Audio To Audio",
-    "description": "Transforms existing audio samples into new high-quality compositions using text instructions.",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "audio": {
-        "name": "audio",
-        "tooltip": "Audio must be between 6 and 190 seconds long."
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Controls the duration in seconds of the generated audio."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for generation."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Controls the number of sampling steps."
-      },
-      "strength": {
-        "name": "strength",
-        "tooltip": "Parameter controls how much influence the audio parameter has on the generated audio."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageSD_3_5Node": {
-    "display_name": "Stability AI Stable Diffusion 3.5 Image",
-    "description": "Generates images synchronously based on prompt and resolution.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
-      },
-      "model": {
-        "name": "model"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Aspect ratio of generated image."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Optional desired style of generated image."
-      },
-      "cfg_scale": {
-        "name": "cfg_scale",
-        "tooltip": "How strictly the diffusion process adheres to the prompt text (higher values keep your image closer to your prompt)"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Denoise of input image; 0.0 yields image identical to input, 1.0 is as if no image was provided at all."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityStableImageUltraNode": {
-    "display_name": "Stability AI Stable Image Ultra",
-    "description": "Generates images synchronously based on prompt and resolution.",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defineselements, colors, and subjects will lead to better results. To control the weight of a given word use the format `(word:weight)`,where `word` is the word you'd like to control the weight of and `weight`is a value between 0 and 1. For example: `The sky was a crisp (blue:0.3) and (green:0.8)`would convey a sky that was blue and green, but more green than blue."
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Aspect ratio of generated image."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Optional desired style of generated image."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "image": {
-        "name": "image"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "A blurb of text describing what you do not wish to see in the output image. This is an advanced feature."
-      },
-      "image_denoise": {
-        "name": "image_denoise",
-        "tooltip": "Denoise of input image; 0.0 yields image identical to input, 1.0 is as if no image was provided at all."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityTextToAudio": {
-    "display_name": "Stability AI Text To Audio",
-    "description": "Generates high-quality music and sound effects from text descriptions.",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "Controls the duration in seconds of the generated audio."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for generation."
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Controls the number of sampling steps."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleConservativeNode": {
-    "display_name": "Stability AI Upscale Conservative",
-    "description": "Upscale image with minimal alterations to 4K resolution.",
-    "inputs": {
-      "image": {
-        "name": "image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
-      },
-      "creativity": {
-        "name": "creativity",
-        "tooltip": "Controls the likelihood of creating additional details not heavily conditioned by the init image."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleCreativeNode": {
-    "display_name": "Stability AI Upscale Creative",
-    "description": "Upscale image with minimal alterations to 4K resolution.",
-    "inputs": {
-      "image": {
-        "name": "image"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "What you wish to see in the output image. A strong, descriptive prompt that clearly defines elements, colors, and subjects will lead to better results."
-      },
-      "creativity": {
-        "name": "creativity",
-        "tooltip": "Controls the likelihood of creating additional details not heavily conditioned by the init image."
-      },
-      "style_preset": {
-        "name": "style_preset",
-        "tooltip": "Optional desired style of generated image."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "The random seed used for creating the noise."
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Keywords of what you do not wish to see in the output image. This is an advanced feature."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "StabilityUpscaleFastNode": {
-    "display_name": "Stability AI Upscale Fast",
-    "description": "Quickly upscales an image via Stability API call to 4x its original size; intended for upscaling low-quality/compressed images.",
-    "inputs": {
-      "image": {
-        "name": "image"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
     "inputs": {
@@ -19125,8 +19135,99 @@
       }
     }
   },
+  "SyncLipSyncNode": {
+    "display_name": "sync.so Lip Sync",
+    "description": "Re-sync mouth movement in a video to new speech audio using sync.so. Handles close-ups, profiles and obstructions automatically while preserving the speaker's expression. Cost scales with output duration.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Footage of the speaker to re-sync. Up to 4K (4096x2160); a constant frame rate of 24/25/30 fps works best."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech audio to sync the mouth to."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so generation model."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_speaker_frame": {
+        "name": "speaker_frame"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      },
+      "model_sync_mode": {
+        "name": "sync_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SyncTalkingImageNode": {
+    "display_name": "sync.so Talking Image",
+    "description": "Animate a still portrait into a talking video driven by speech audio, using sync.so's sync-3 model. The output duration matches the audio. Cost scales with output duration.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "A single image with a clearly visible face, up to 4K (4096x2160)."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech audio driving the talking video; the output duration matches it. Chain any TTS node here to drive the animation from text."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional guidance for how the portrait comes to life, e.g. 'make the subject smile and look at the camera'. Leave empty for natural talking motion."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "sync.so generation model. Image input is exclusive to sync-3."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_speaker_selection": {
+        "name": "speaker_selection"
+      },
+      "model_speaker_x": {
+        "name": "speaker_x"
+      },
+      "model_speaker_y": {
+        "name": "speaker_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "T5TokenizerOptions": {
-    "display_name": "T5TokenizerOptions",
+    "display_name": "T5 Tokenizer Options",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -19755,6 +19856,42 @@
     "outputs": {
       "0": {
         "name": "generated_text",
+        "tooltip": null
+      }
+    }
+  },
+  "TextOverlay": {
+    "display_name": "Draw Text Overlay",
+    "description": "Draw text overlay on an image or batch of images.",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "text": {
+        "name": "text"
+      },
+      "font_size": {
+        "name": "font_size",
+        "tooltip": "Font size as a percentage of the image height."
+      },
+      "color": {
+        "name": "color",
+        "tooltip": "Color of the text."
+      },
+      "position": {
+        "name": "position"
+      },
+      "align": {
+        "name": "align"
+      },
+      "outline": {
+        "name": "outline",
+        "tooltip": "Draw a black outline around the text."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
         "tooltip": null
       }
     }

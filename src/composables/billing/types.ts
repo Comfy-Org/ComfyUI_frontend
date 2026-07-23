@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   BillingStatus,
@@ -75,9 +76,10 @@ export interface BillingActions {
    */
   requireActiveSubscription: () => Promise<void>
   /**
-   * Shows the subscription dialog.
+   * Shows the subscription dialog. Pass a reason so the paywall open and any
+   * downstream checkout stay attributed to the triggering product moment.
    */
-  showSubscriptionDialog: () => void
+  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {
@@ -110,5 +112,13 @@ export interface BillingContext extends BillingState, BillingActions {
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * True when the subscription is a team plan of either generation. Unlike
+   * `isLegacyTeamPlan` this does not require an active subscription: the spend
+   * gate folds billing_status into is_active, so a paused or payment-failed team
+   * plan reports is_active=false and must still read as a team plan.
+   */
+  isTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
 }

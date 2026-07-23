@@ -10,6 +10,7 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AddCreditsClickMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -30,6 +31,8 @@ import type {
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   SharedWorkflowRunMetadata,
+  ResubscribeClickMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -45,7 +48,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import { TelemetryEvents } from '../../types'
+import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -126,8 +129,19 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.capture(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.capture(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
+  }
+
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {

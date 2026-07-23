@@ -623,7 +623,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
         .mockResolvedValueOnce(
           mockHistoryPage(
             Array.from({ length: 10 }, (_, i) => createMockJobItem(10 + i)),
@@ -646,8 +646,11 @@ describe('assetsStore - Refactored (Option A)', () => {
         200,
         { offset: 0 }
       )
-      // List is replaced (not merged) so there are no duplicates from the reset
-      expect(store.historyAssets).toHaveLength(10)
+      // List is replaced (not merged): only the recovery page's items remain
+      const recoveredIds = store.historyAssets.map((a) => a.id)
+      expect(recoveredIds).toEqual(
+        Array.from({ length: 10 }, (_, i) => `prompt_${10 + i}`)
+      )
       expect(store.historyError).toBe(null)
 
       // The recovered page minted a fresh cursor, so the walk resumes in cursor mode
@@ -672,7 +675,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
         .mockRejectedValueOnce(new Error('network down'))
 
       await store.updateHistory()
@@ -696,7 +699,11 @@ describe('assetsStore - Refactored (Option A)', () => {
         200,
         { offset: 0 }
       )
-      expect(store.historyAssets).toHaveLength(5)
+      // The failed fallback left the loaded list intact, so the retried page
+      // merges (deduping the overlap) instead of replacing the display state
+      expect(store.historyAssets).toHaveLength(10)
+      const ids = store.historyAssets.map((a) => a.id)
+      expect(new Set(ids).size).toBe(ids.length)
     })
 
     it('releases isLoadingMore when the offset-0 recovery retry also fails, so the next scroll is not dropped', async () => {
@@ -753,7 +760,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
         .mockResolvedValueOnce(mockHistoryPage(serverStateAfterDeletions))
 
       await store.updateHistory()
@@ -783,7 +790,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             { hasMore: true, nextCursor: 'cursor-1' }
           )
         )
-        .mockRejectedValueOnce(new JobsApiError(500, 'server error'))
+        .mockRejectedValueOnce(new JobsApiError('server error', 500))
 
       await store.updateHistory()
       await store.loadMoreHistory()
@@ -843,14 +850,24 @@ describe('assetsStore - Refactored (Option A)', () => {
         status: 'failed' as const,
         preview_output: null
       }))
-      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
-        mockHistoryPage(failedJobs, { hasMore: true })
-      )
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(mockHistoryPage(failedJobs, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage([createMockJobItem(10)]))
 
       await store.updateHistory()
 
       expect(store.historyAssets).toHaveLength(0)
       expect(store.hasMoreHistory).toBe(true)
+
+      // The next page continues past the undisplayable jobs, not from 0
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { offset: 3 }
+      )
+      expect(store.historyAssets).toHaveLength(1)
     })
 
     it('does not let a stale rejected continuation drop the new walk cursor', async () => {
@@ -878,7 +895,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
       await store.updateHistory()
 
-      rejectStale!(new JobsApiError(400, 'INVALID_CURSOR'))
+      rejectStale!(new JobsApiError('INVALID_CURSOR', 400))
       await staleLoad
 
       // The superseded walk neither nulled the fresh cursor nor fired an
