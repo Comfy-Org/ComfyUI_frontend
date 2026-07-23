@@ -381,15 +381,17 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${Math.round(delay)}ms:`,
             err
           )
-          toastStore.add({
-            severity: 'warn',
-            summary: t('workspaceAuth.refreshRetrying'),
-            detail: t('workspaceAuth.refreshRetryingDetail', {
-              attempt: attempt + 1,
-              delay: Math.round(delay / 1000)
-            }),
-            life: delay + 2000
-          })
+          if (attempt === 0) {
+            toastStore.add({
+              severity: 'warn',
+              summary: t('workspaceAuth.refreshRetrying'),
+              detail: t('workspaceAuth.refreshRetryingDetail', {
+                attempt: attempt + 1,
+                delay: Math.round(delay / 1000)
+              }),
+              life: delay + 2000
+            })
+          }
           await new Promise((resolve) => setTimeout(resolve, delay))
           continue
         }
