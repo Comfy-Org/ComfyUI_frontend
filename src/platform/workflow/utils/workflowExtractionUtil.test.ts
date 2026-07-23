@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 vi.mock('@/services/jobOutputCache', () => ({
-  getJobWorkflow: vi.fn()
+  getJobWorkflow: vi.fn(),
+  getJobApiPrompt: vi.fn()
 }))
 vi.mock('@/platform/assets/utils/assetUrlUtil', () => ({
   getAssetUrl: vi.fn()
@@ -19,9 +20,10 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { getJobWorkflow } from '@/services/jobOutputCache'
+import { getJobApiPrompt, getJobWorkflow } from '@/services/jobOutputCache'
 
 import {
+  extractApiPromptFromAsset,
   extractWorkflowFromAsset,
   supportsWorkflowMetadata
 } from './workflowExtractionUtil'
@@ -155,6 +157,33 @@ describe('extractWorkflowFromAsset', () => {
     )
 
     expect(result.filename).toBe('foo.json')
+  })
+})
+
+describe('extractApiPromptFromAsset', () => {
+  const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+
+  afterEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('returns the stored API graph for an output asset', async () => {
+    vi.mocked(getOutputAssetMetadata).mockReturnValue(jobMetadata)
+    vi.mocked(getJobApiPrompt).mockResolvedValue(apiPrompt)
+
+    await expect(extractApiPromptFromAsset(makeAsset())).resolves.toEqual(
+      apiPrompt
+    )
+    expect(getJobApiPrompt).toHaveBeenCalledWith('job-42')
+  })
+
+  it('returns undefined for assets with no job', async () => {
+    vi.mocked(getOutputAssetMetadata).mockReturnValue(null)
+
+    await expect(
+      extractApiPromptFromAsset(makeAsset())
+    ).resolves.toBeUndefined()
+    expect(getJobApiPrompt).not.toHaveBeenCalled()
   })
 })
 

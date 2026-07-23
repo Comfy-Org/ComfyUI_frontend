@@ -9,7 +9,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import {
+  extractApiPromptFromAsset,
+  extractWorkflowFromAsset
+} from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -396,6 +399,45 @@ export function useMediaAssetActions() {
   }
 
   /**
+   * Open the asset's stored API-format graph as a new workflow, the way the
+   * canvas already does when an API-format JSON file is dropped onto it.
+   *
+   * Layout is invented and groups/reroutes cannot survive API format, so the
+   * result is reopenable rather than faithful. It is only handed to the editor
+   * — nothing is written back to the job or the asset.
+   */
+  const openApiPromptAsWorkflow = async (
+    asset: AssetItem,
+    filename: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const apiPrompt = await extractApiPromptFromAsset(asset)
+      if (!app.isApiJson(apiPrompt)) return { success: false }
+
+      await app.loadApiJson(apiPrompt, filename)
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to open API graph as workflow:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : undefined
+      }
+    }
+  }
+
+  /**
+   * Open an asset's workflow in a new tab, falling back to the stored API
+   * graph for assets whose job embeds no workflow (API submissions)
+   */
+  const openAssetWorkflow = async (asset: AssetItem) => {
+    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+
+    return workflow
+      ? await workflowActions.openWorkflowAction(workflow, filename)
+      : await openApiPromptAsWorkflow(asset, filename)
+  }
+
+  /**
    * Open the workflow from this asset in a new tab
    * Uses shared workflow extraction and action service
    */
@@ -403,11 +445,7 @@ export function useMediaAssetActions() {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
-
-    // Use shared action service
-    const result = await workflowActions.openWorkflowAction(workflow, filename)
+    const result = await openAssetWorkflow(targetAsset)
 
     if (!result.success) {
       toast.add({
@@ -569,11 +607,7 @@ export function useMediaAssetActions() {
 
     for (const asset of assets) {
       try {
-        const { workflow, filename } = await extractWorkflowFromAsset(asset)
-        const result = await workflowActions.openWorkflowAction(
-          workflow,
-          filename
-        )
+        const result = await openAssetWorkflow(asset)
 
         if (result.success) {
           succeeded++

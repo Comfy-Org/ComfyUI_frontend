@@ -97,15 +97,16 @@ export const zJobsListResponse = z.object({
 
 /** Schema for workflow container structure in job detail responses */
 export const zWorkflowContainer = z.object({
+  prompt: z.unknown(),
   extra_data: z
     .object({
       extra_pnginfo: z
         .object({
           workflow: z.unknown()
         })
-        .optional()
+        .nullish()
     })
-    .optional()
+    .nullish()
 })
 
 export type JobStatus = z.infer<typeof zJobStatus>
