@@ -298,15 +298,30 @@ export interface CreateTopupResponse {
   amount_cents: number
 }
 
-type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
-
-export interface BillingOpStatusResponse {
-  id: string
-  status: BillingOpStatus
-  error_message?: string
-  started_at: string
-  completed_at?: string
+interface BillingOpCustomerAction {
+  type: 'pay_hosted_invoice'
+  url: string
 }
+
+interface BillingOpStatusBase {
+  id: string
+  started_at: string
+}
+
+export type BillingOpStatusResponse = BillingOpStatusBase &
+  (
+    | {
+        status: 'pending'
+        customer_action?: BillingOpCustomerAction
+      }
+    | {
+        status: 'succeeded' | 'failed'
+        error_message?: string
+        customer_action?: never
+      }
+  ) & {
+    completed_at?: string
+  }
 
 interface BillingEvent {
   event_type: string

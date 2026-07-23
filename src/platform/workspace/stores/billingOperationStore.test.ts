@@ -78,10 +78,12 @@ describe('billingOperationStore', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.useFakeTimers()
+    localStorage.clear()
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   describe('startOperation', () => {
@@ -171,6 +173,198 @@ describe('billingOperationStore', () => {
         summary: 'billingOperation.topupProcessing',
         group: 'billing-operation'
       })
+    })
+
+    it('persists recovery context before navigating to a hosted invoice', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-hosted',
+        status: 'pending',
+        customer_action: {
+          type: 'pay_hosted_invoice',
+          url: 'https://invoice.test/bearer-token'
+        },
+        started_at: new Date().toISOString()
+      })
+      const assignSpy = vi
+        .spyOn(globalThis.location, 'assign')
+        .mockImplementation(() => {})
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-hosted', 'subscription', {
+        hostedInvoiceReturnUrl: globalThis.location.href
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(assignSpy).toHaveBeenCalledWith(
+        'https://invoice.test/bearer-token'
+      )
+      expect(store.getOperation('op-hosted')).toMatchObject({
+        status: 'pending',
+        paymentNavigationStarted: true
+      })
+      const persisted = localStorage.getItem('comfy.billing.pending_operation')
+      expect(persisted).toContain('op-hosted')
+      expect(persisted).toContain(globalThis.location.href)
+      expect(persisted).not.toContain('bearer-token')
+    })
+
+    it('resumes a hosted invoice operation after browser return', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-return',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValueOnce({
+          id: 'op-return',
+          status: 'pending',
+          customer_action: {
+            type: 'pay_hosted_invoice',
+            url: 'https://invoice.test/bearer-token'
+          },
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValueOnce({
+          id: 'op-return',
+          status: 'succeeded',
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString()
+        })
+      vi.spyOn(globalThis.location, 'assign').mockImplementation(() => {})
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-return', 'subscription', {
+        hostedInvoiceReturnUrl: globalThis.location.href
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1500)
+
+      store.resumePendingOperations()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(localStorage.getItem('comfy.billing.pending_operation')).toBeNull()
+    })
+
+    it('does not navigate when recovery context cannot be persisted', async () => {
+      const setItemSpy = vi
+        .spyOn(globalThis.localStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new Error('storage unavailable')
+        })
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-storage-failure',
+        status: 'pending',
+        customer_action: {
+          type: 'pay_hosted_invoice',
+          url: 'https://invoice.test/bearer-token'
+        },
+        started_at: new Date().toISOString()
+      })
+      const assignSpy = vi.spyOn(globalThis.location, 'assign')
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-storage-failure', 'subscription', {
+        hostedInvoiceReturnUrl: globalThis.location.href
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(assignSpy).not.toHaveBeenCalled()
+      expect(store.getOperation('op-storage-failure')).toMatchObject({
+        status: 'failed'
+      })
+      setItemSpy.mockRestore()
+    })
+
+    it('does not navigate a topup operation carrying a customer action', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-topup-action',
+          status: 'pending',
+          customer_action: {
+            type: 'pay_hosted_invoice',
+            url: 'https://invoice.test/bearer-token'
+          },
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValueOnce({
+          id: 'op-topup-action',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+      const assignSpy = vi.spyOn(globalThis.location, 'assign')
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-topup-action', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(1500)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(assignSpy).not.toHaveBeenCalled()
+    })
+
+    it('recovers a persisted operation after reload without reusing its URL', async () => {
+      localStorage.setItem(
+        'comfy.billing.pending_operation',
+        JSON.stringify({
+          opId: 'op-reload',
+          type: 'subscription',
+          startedAt: Date.now() - 300_000,
+          returnUrl: globalThis.location.href,
+          paymentNavigationStarted: true
+        })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reload',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+      const assignSpy = vi.spyOn(globalThis.location, 'assign')
+
+      const store = useBillingOperationStore()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-reload')).toMatchObject({
+        status: 'succeeded'
+      })
+      expect(assignSpy).not.toHaveBeenCalled()
+      expect(localStorage.getItem('comfy.billing.pending_operation')).toBeNull()
+    })
+
+    it('coalesces reload and pageshow recovery polling', async () => {
+      localStorage.setItem(
+        'comfy.billing.pending_operation',
+        JSON.stringify({
+          opId: 'op-single-flight',
+          type: 'subscription',
+          startedAt: Date.now(),
+          returnUrl: globalThis.location.href,
+          paymentNavigationStarted: true
+        })
+      )
+      let resolveStatus!: (value: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      store.resumePendingOperations()
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+      resolveStatus({
+        id: 'op-single-flight',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
     })
   })
 
