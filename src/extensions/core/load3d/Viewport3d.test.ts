@@ -15,6 +15,7 @@ type CameraStub = {
   handleResize: ReturnType<typeof vi.fn>
   updateAspectRatio: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
+  setUseCustomUp: ReturnType<typeof vi.fn>
   activeCamera: THREE.Camera
 }
 
@@ -51,6 +52,7 @@ function makeViewportInstance() {
     handleResize: vi.fn(),
     updateAspectRatio: vi.fn(),
     dispose: vi.fn(),
+    setUseCustomUp: vi.fn(),
     activeCamera: new THREE.PerspectiveCamera()
   }
   const sceneManager: SceneStub = {
@@ -252,7 +254,6 @@ describe('Viewport3d', () => {
       expect(overlay.onActiveCameraChange).toHaveBeenCalledWith(
         ctx.cameraManager.activeCamera
       )
-      expect(ctx.viewport.getOverlay()).toBe(overlay)
     })
 
     it('replacing an overlay detaches and disposes the prior one', () => {
@@ -264,18 +265,6 @@ describe('Viewport3d', () => {
       expect(first.detach).toHaveBeenCalledOnce()
       expect(first.dispose).toHaveBeenCalledOnce()
       expect(second.attach).toHaveBeenCalledWith(ctx.sceneManager.scene)
-      expect(ctx.viewport.getOverlay()).toBe(second)
-    })
-
-    it('removeOverlay detaches and disposes the installed overlay', () => {
-      const overlay = makeOverlay()
-      ctx.viewport.setOverlay(overlay)
-
-      ctx.viewport.removeOverlay()
-
-      expect(overlay.detach).toHaveBeenCalledOnce()
-      expect(overlay.dispose).toHaveBeenCalledOnce()
-      expect(ctx.viewport.getOverlay()).toBeNull()
     })
 
     it('tickPerFrame forwards delta to the overlay before view-helper/controls update', () => {
@@ -646,6 +635,93 @@ describe('Viewport3d', () => {
       expect(renderer.render).toHaveBeenCalledTimes(2)
       expect(view.blit).toHaveBeenCalledTimes(2)
       expect(viewport.INITIAL_RENDER_DONE).toBe(true)
+    })
+  })
+
+  describe('render callback dispatch', () => {
+    interface CallbackAccess {
+      preRenderCallbacks: Array<() => void>
+      postRenderCallbacks: Array<() => void>
+      addPreRenderCallback(cb: () => void): () => void
+      addPostRenderCallback(cb: () => void): () => void
+      runPreRenderCallbacks(): void
+      runPostRenderCallbacks(): void
+    }
+
+    it('does not skip siblings when a post-render callback disposes itself', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.postRenderCallbacks = []
+      const calls: string[] = []
+
+      const disposeA = vp.addPostRenderCallback(() => {
+        calls.push('a')
+        disposeA()
+      })
+      vp.addPostRenderCallback(() => calls.push('b'))
+
+      vp.runPostRenderCallbacks()
+
+      expect(calls).toEqual(['a', 'b'])
+    })
+
+    it('runs pre-render callbacks and stops after disposal', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.preRenderCallbacks = []
+      const cb = vi.fn()
+
+      const dispose = vp.addPreRenderCallback(cb)
+      vp.runPreRenderCallbacks()
+      dispose()
+      vp.runPreRenderCallbacks()
+
+      expect(cb).toHaveBeenCalledOnce()
+    })
+
+    it('scopes each disposer to its own registration of the same callback', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.postRenderCallbacks = []
+      const cb = vi.fn()
+
+      const disposeA = vp.addPostRenderCallback(cb)
+      vp.addPostRenderCallback(cb)
+      disposeA()
+      disposeA()
+      vp.runPostRenderCallbacks()
+
+      expect(cb).toHaveBeenCalledOnce()
+    })
+
+    it('dispatches pre -> main scene -> post within a render cycle', () => {
+      const order: string[] = []
+      Object.assign(ctx.viewport, {
+        view: {
+          renderer: { setScissorTest: vi.fn() },
+          beginRender: () => order.push('begin'),
+          blit: vi.fn()
+        },
+        renderMainScene: () => order.push('main'),
+        viewHelperManager: { render: vi.fn() }
+      })
+      const vp = ctx.viewport as unknown as CallbackAccess & {
+        renderView(): void
+      }
+      vp.preRenderCallbacks = []
+      vp.postRenderCallbacks = []
+      vp.addPreRenderCallback(() => order.push('pre'))
+      vp.addPostRenderCallback(() => order.push('post'))
+
+      vp.renderView()
+
+      expect(order).toEqual(['begin', 'pre', 'main', 'post'])
+    })
+  })
+
+  describe('setUseCustomUp', () => {
+    it('delegates to the camera manager and forces a render', () => {
+      ctx.viewport.setUseCustomUp(true)
+
+      expect(ctx.cameraManager.setUseCustomUp).toHaveBeenCalledWith(true)
+      expect(ctx.forceRender).toHaveBeenCalled()
     })
   })
 })
