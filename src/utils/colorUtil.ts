@@ -1,4 +1,5 @@
 import { memoize } from 'es-toolkit/compat'
+import { clamp } from 'es-toolkit/math'
 
 type RGB = { r: number; g: number; b: number }
 interface HSB {
@@ -37,9 +38,9 @@ export function isTransparent(color: string) {
 }
 
 export function rgbToHsl({ r, g, b }: RGB): HSL {
-  r /= 255
-  g /= 255
-  b /= 255
+  r = clamp(r, 0, 255) / 255
+  g = clamp(g, 0, 255) / 255
+  b = clamp(b, 0, 255) / 255
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b)
   let h = 0,
@@ -453,7 +454,7 @@ const applyColorAdjustments = (
     hsla.l = Math.max(0, Math.min(100, hsla.l + options.lightness * 100.0))
   }
 
-  if (options.opacity) {
+  if (options.opacity !== undefined) {
     hsla.a = Math.max(0, Math.min(1, options.opacity))
   }
 

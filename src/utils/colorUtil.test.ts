@@ -450,5 +450,17 @@ describe('colorUtil - adjustColor', () => {
         'hsla(0, 0%, 0%, 1)'
       )
     })
+
+    it('applies zero opacity', () => {
+      expect(adjustColor('rgba(255, 0, 0, 0.5)', { opacity: 0 })).toBe(
+        'hsla(0, 100%, 50%, 0)'
+      )
+    })
+
+    it('clamps RGB channels before applying adjustments', () => {
+      expect(adjustColor('rgb(510, 0, 0)', { opacity: 0.5 })).toBe(
+        'hsla(0, 100%, 50%, 0.5)'
+      )
+    })
   })
 })

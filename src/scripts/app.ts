@@ -33,6 +33,7 @@ import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissing
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
+import { parseWorkflowView } from '@/platform/workflow/core/utils/workflowView'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
@@ -1343,6 +1344,7 @@ export class ComfyApp {
 
     const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const fitView = () => {
+      const workflowView = parseWorkflowView(graphData.extra?.ds)
       if (
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
@@ -1350,9 +1352,9 @@ export class ComfyApp {
         // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
-        } else if (graphData.extra?.ds) {
-          this.canvas.ds.offset = graphData.extra.ds.offset
-          this.canvas.ds.scale = graphData.extra.ds.scale
+        } else if (workflowView) {
+          this.canvas.ds.offset = workflowView.offset
+          this.canvas.ds.scale = workflowView.scale
 
           // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
