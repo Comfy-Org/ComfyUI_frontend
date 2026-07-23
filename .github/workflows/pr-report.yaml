@@ -133,7 +133,7 @@ jobs:
 
       - name: Remove legacy separate comments
         if: steps.pr-meta.outputs.skip != 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const prNumber = Number('${{ steps.pr-meta.outputs.number }}');

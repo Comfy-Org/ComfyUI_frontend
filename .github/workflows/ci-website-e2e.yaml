@@ -102,7 +102,7 @@ jobs:
       - name: Categorize failures
         id: failures
         if: always() && !cancelled() && steps.tests.outcome != 'success'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs')
@@ -133,7 +133,7 @@ jobs:
 
       - name: Write job summary
         if: always() && !cancelled()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
@@ -218,7 +218,7 @@ jobs:
 
       - name: Build e2e section content
         id: content
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
           REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
