@@ -140,8 +140,8 @@
           {{ t('auth.login.privacyLink') }} </a
         >.
         {{ t('auth.login.questionsContactPrefix') }}
-        <a href="mailto:hello@comfy.org" class="cursor-pointer text-blue-500">
-          hello@comfy.org</a
+        <a href="mailto:support@comfy.org" class="cursor-pointer text-blue-500">
+          support@comfy.org</a
         >.
       </p>
     </template>
