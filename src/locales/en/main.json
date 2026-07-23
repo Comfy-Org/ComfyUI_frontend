@@ -2776,14 +2776,14 @@
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
       "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
-      "nextRefresh": "Your next refresh will occur on {date}.",
+      "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {
         "title": "You're out of free credits",
-        "subtitle": "Subscribe to unlock top-ups and more"
+        "subtitle": "Subscribe to add top-ups and more"
       },
       "topUpBlocked": {
-        "title": "Unlock top-ups and more"
+        "title": "Add top-ups and more"
       },
       "upgradeCta": "View plans"
     },
