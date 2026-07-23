@@ -116,7 +116,11 @@ import type {
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
-import { findFirstNode, getAllNestedItems } from './utils/collections'
+import {
+  findFirstNode,
+  getAllNestedItems,
+  getDraggedItems
+} from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -3554,7 +3558,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._autoPan?.updatePointer(e.clientX, e.clientY)
 
         const selected = this.selectedItems
-        const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
+        const allItems = getDraggedItems(selected, e)
 
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
