@@ -84,18 +84,21 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 let nodeIdCounter = 0
 
 function createState(nodeCount = 0): ComfyWorkflowJSON {
-  const nodes = Array.from({ length: nodeCount }, () => ({
-    id: ++nodeIdCounter,
-    type: 'TestNode',
-    pos: [0, 0],
-    size: [100, 50],
-    flags: {},
-    order: 0,
-    mode: 0,
-    inputs: [],
-    outputs: [],
-    properties: {}
-  }))
+  const nodes: ComfyWorkflowJSON['nodes'] = Array.from(
+    { length: nodeCount },
+    () => ({
+      id: ++nodeIdCounter,
+      type: 'TestNode',
+      pos: [0, 0],
+      size: [100, 50],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: {}
+    })
+  )
   return {
     nodes,
     links: [],
@@ -106,7 +109,7 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
     last_node_id: nodeIdCounter,
     last_link_id: 0,
     definitions: undefined
-  } as unknown as ComfyWorkflowJSON
+  }
 }
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
