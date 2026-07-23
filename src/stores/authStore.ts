@@ -30,6 +30,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -139,6 +140,18 @@ export const useAuthStore = defineStore('auth', () => {
   void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
+    const previousUserId = currentUser.value?.uid ?? null
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+
+    // A direct account switch (A -> B, or sign-out) must re-handshake the
+    // realtime socket so a tab stops receiving the previous account's live
+    // events. The initial connect is owned by api.init(), so only react once an
+    // identity has been recorded (`identityChanged` is false on first sign-in).
+    if (isCloud && identityChanged) {
+      void api.resetSocket()
+    }
+
     currentUser.value = user
     isInitialized.value = true
     if (user === null) {
