@@ -1,8 +1,9 @@
 <script setup lang="ts">
-const { src, alt, label } = defineProps<{
+const { src, alt, label, filter } = defineProps<{
   src: string
   alt: string
   label?: string
+  filter?: string
 }>()
 </script>
 
@@ -21,6 +22,7 @@ const { src, alt, label } = defineProps<{
         :key="src"
         :src
         :alt
+        :style="{ filter }"
         draggable="false"
         class="absolute inset-0 size-full object-cover select-none"
         decoding="async"

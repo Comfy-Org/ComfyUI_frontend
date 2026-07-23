@@ -12,7 +12,8 @@ const links = computed(() => {
   // The OUTPUT pill draws its own dot, so that wire end gets none here.
   const pairs = [
     { from: PORTS.inputOut, to: PORTS.angleIn, dotAtEnd: true },
-    { from: PORTS.angleOut, to: PORTS.outputIn, dotAtEnd: false }
+    { from: PORTS.angleOut, to: PORTS.colorIn, dotAtEnd: true },
+    { from: PORTS.colorOut, to: PORTS.outputIn, dotAtEnd: false }
   ]
   return pairs.map(({ from, to, dotAtEnd }) => {
     const a = portPoint(from, positions)

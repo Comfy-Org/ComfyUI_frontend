@@ -1,4 +1,4 @@
-export type ElementKey = 'input' | 'angle' | 'output'
+export type ElementKey = 'input' | 'angle' | 'color' | 'output'
 
 export interface ElementRect {
   left: number
@@ -14,15 +14,16 @@ export const FLOW: {
   canvas: { width: number; height: number }
   elements: Record<ElementKey, ElementRect>
 } = {
-  canvas: { width: 95, height: 42 },
+  canvas: { width: 95, height: 44 },
   elements: {
     input: { left: 0, top: 5.3, width: 19, height: 10.3 },
-    angle: { left: 26, top: 21, width: 20, height: 20 },
+    angle: { left: 24, top: 21, width: 20, height: 20 },
+    color: { left: 48, top: 25, width: 14, height: 16 },
     output: { left: 67, top: 4, width: 49, height: 26.5 }
   }
 }
 
-export const ELEMENT_KEYS: ElementKey[] = ['input', 'angle', 'output']
+export const ELEMENT_KEYS: ElementKey[] = ['input', 'angle', 'color', 'output']
 
 /** Minimum width (em) of a card that must stay inside the canvas when dragged. */
 export const DRAG_MARGIN = 8
@@ -35,12 +36,14 @@ interface Port {
 
 /** Port offsets relative to each element's top-left corner (em). */
 export const PORTS: Record<
-  'inputOut' | 'angleIn' | 'angleOut' | 'outputIn',
+  'inputOut' | 'angleIn' | 'angleOut' | 'colorIn' | 'colorOut' | 'outputIn',
   Port
 > = {
   inputOut: { el: 'input', dx: 17.5, dy: 1.6 },
   angleIn: { el: 'angle', dx: 1.3, dy: 1.125 },
   angleOut: { el: 'angle', dx: 18.7, dy: 1.125 },
+  colorIn: { el: 'color', dx: 1, dy: 1.125 },
+  colorOut: { el: 'color', dx: 13, dy: 1.125 },
   outputIn: { el: 'output', dx: 2.15, dy: 2 }
 }
 

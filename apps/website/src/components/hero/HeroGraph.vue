@@ -7,6 +7,7 @@ import type { Locale } from '../../i18n/translations'
 import { DEFAULT_POSE } from './cameraVocabulary'
 import { resolveAsset } from './assetResolver'
 import AngleNode from './AngleNode.vue'
+import ColorNode from './ColorNode.vue'
 import GraphLinks from './GraphLinks.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroImageCard from './HeroImageCard.vue'
@@ -16,6 +17,15 @@ import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasEl = ref<HTMLElement>()
+
+const hue = ref(0)
+const saturation = ref(1)
+
+const outputFilter = computed(() =>
+  hue.value === 0 && saturation.value === 1
+    ? undefined
+    : `hue-rotate(${hue.value}deg) saturate(${saturation.value})`
+)
 
 const positions = reactive(
   Object.fromEntries(
@@ -142,9 +152,15 @@ function wrapperStyle(key: ElementKey) {
           v-model:elevation="pose.elevation"
           v-model:zoom="pose.zoom"
         />
+        <ColorNode
+          v-else-if="key === 'color'"
+          v-model:hue="hue"
+          v-model:saturation="saturation"
+        />
         <HeroImageCard
           v-else
           :src="output.src"
+          :filter="outputFilter"
           alt="Generated image rendered from the selected camera angle"
           label="OUTPUT"
         />
