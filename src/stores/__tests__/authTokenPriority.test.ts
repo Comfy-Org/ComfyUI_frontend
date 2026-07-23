@@ -5,8 +5,13 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import type * as ApiModule from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
+
+const { mockResetSocket } = vi.hoisted(() => ({
+  mockResetSocket: vi.fn()
+}))
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
@@ -88,6 +93,16 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+// authStore.onAuthStateChanged (cloud) calls api.resetSocket() on an identity
+// change (the sign-out / account-switch cases below). Keep the real API
+// singleton but stub resetSocket so those transitions don't open a real
+// WebSocket (unavailable in this test environment).
+vi.mock('@/scripts/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof ApiModule>()
+  Object.assign(actual.api, { resetSocket: mockResetSocket })
+  return actual
+})
 
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
 vi.mock('@/stores/apiKeyAuthStore', () => ({
