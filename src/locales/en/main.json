@@ -12,10 +12,10 @@
     "greeting": "Hello,",
     "greetingNamed": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholderPrefix": "Describe ideas, @ to reference, ",
+    "placeholderPrefix": "Describe ideas, {'@'} to reference, ",
     "placeholderAddNodes": "add nodes from graph",
     "placeholderSuffix": ", or drag in assets",
-    "placeholderAria": "Describe ideas, @ to reference, add nodes from graph, or drag in assets",
+    "placeholderAria": "Describe ideas, {'@'} to reference, add nodes from graph, or drag in assets",
     "attachMenu": {
       "trigger": "Add",
       "addNodesFromGraph": "Add nodes from graph",
