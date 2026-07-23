@@ -4560,13 +4560,14 @@
     "activeGenerations": "Active generations",
     "cancelAll": "Cancel all",
     "nothingRunning": "Nothing running yet",
-    "locate": "Show on canvas",
     "cancel": "Stop this run",
     "starting": "Starting",
     "queuedCount": "Queued {count}",
     "runningPosition": "Running {position}/{total}",
     "recentResults": "Recent results",
     "viewResult": "Open result",
-    "goToHistory": "Open history"
+    "goToHistory": "Open history",
+    "pause": "Pause",
+    "pauseUnavailable": "Pause is not available yet"
   }
 }
