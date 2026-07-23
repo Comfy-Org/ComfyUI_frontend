@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "应用 Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "mask": {
+        "name": "掩码"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型补丁"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "按指定的分贝（dB）调整音频音量。",
     "display_name": "音频调整音量",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "通过 HeyGen 虚拟人生成讲解者视频。包含 HeyGen 最受欢迎的公开虚拟人；可通过 look ID 覆盖选择任意形象。",
+    "display_name": "HeyGen 虚拟人视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出宽高比。'auto' 跟随虚拟人源视频比例。"
+      },
+      "background_color": {
+        "name": "背景颜色",
+        "tooltip": "可选纯色背景，使用十六进制代码（如 '#00ff00'）。留空则使用虚拟人自带背景。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "custom_avatar_id": {
+        "name": "自定义虚拟人 ID",
+        "tooltip": "可选的 HeyGen 虚拟人 look ID。设置后将覆盖上方选择的虚拟人。可使用 HeyGen 3000+ 公开形象（或你的私人虚拟人）。"
+      },
+      "engine": {
+        "name": "引擎",
+        "tooltip": "渲染引擎；每个选项仅显示支持该引擎的虚拟人。'auto' 提供所有虚拟人并自动选择最佳引擎（优先 Avatar IV）。Avatar V 画质最高，Avatar III 最经济。"
+      },
+      "engine_avatar": {
+        "name": "虚拟人"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出视频分辨率。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "不会发送给 HeyGen；更改后可强制重新生成。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "通过文本脚本（HeyGen 文本转语音）或自定义音频驱动虚拟人。"
+      },
+      "speech_custom_voice_id": {
+        "name": "自定义语音 ID"
+      },
+      "speech_text": {
+        "name": "文本"
+      },
+      "speech_voice": {
+        "name": "语音"
+      },
+      "speech_voice_speed": {
+        "name": "语速"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "通过人物照片或文本提示（生成角色）创建你自己的可复用 HeyGen 虚拟人。将生成的 avatar_id 输入到 HeyGen 虚拟人视频的 custom_avatar_id，并保存该 ID 以便在后续工作流中复用。",
+    "display_name": "HeyGen 创建虚拟人",
+    "inputs": {
+      "source": {
+        "name": "来源",
+        "tooltip": "通过文本提示生成新角色，或通过连接的人像照片创建虚拟人。"
+      },
+      "source_prompt": {
+        "name": "提示词"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "虚拟人 look ID。传递给 HeyGen 虚拟人视频的 custom_avatar_id；保存以便后续复用。"
+      },
+      "1": {
+        "name": "预览",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "将任意人物图像动画化为口型同步的说话视频（HeyGen Avatar IV）。可通过文本脚本或自定义音频驱动。",
+    "display_name": "HeyGen 说话照片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出宽高比。'auto' 跟随输入图像。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "expressiveness": {
+        "name": "表现力",
+        "tooltip": "动画面部和手势的表现力程度。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "要动画化的人物图像。若大于2K将自动缩小。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出视频分辨率。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "不会发送到 HeyGen；更改后可强制重新生成。"
+      },
+      "speech": {
+        "name": "语音",
+        "tooltip": "通过文本脚本（HeyGen 文本转语音）或自定义音频驱动头像。"
+      },
+      "speech_custom_voice_id": {
+        "name": "自定义语音ID"
+      },
+      "speech_text": {
+        "name": "文本"
+      },
+      "speech_voice": {
+        "name": "语音"
+      },
+      "speech_voice_speed": {
+        "name": "语速"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "使用 HeyGen 的 Starfish TTS 引擎将文本生成语音音频。包含 HeyGen 最受欢迎的17种语言语音。",
+    "display_name": "HeyGen 文本转语音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "custom_voice_id": {
+        "name": "自定义语音ID",
+        "tooltip": "可选的 HeyGen 语音ID。设置后将覆盖上方选择的语音。所选语音需支持 Starfish 引擎。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "不会发送到 HeyGen；更改后可强制重新生成。"
+      },
+      "speed": {
+        "name": "语速",
+        "tooltip": "语音速度倍数。"
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "将文本作为 SSML 标记处理（用于停顿、强调和发音控制）。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "要合成的文本（最多5000字符）。生成的语音时长需至少1秒。"
+      },
+      "voice": {
+        "name": "语音",
+        "tooltip": "要使用的语音（精选自 HeyGen 最受欢迎的 Starfish 兼容语音）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "将带有语音的视频翻译为另一种语言。克隆原说话人的声音，并重新动画嘴型以匹配翻译后的语音。",
+    "display_name": "HeyGen 视频翻译",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "“speed”速度更快；“precision”可生成更高质量的唇形同步，但价格翻倍。"
+      },
+      "output_language": {
+        "name": "目标语言",
+        "tooltip": "翻译后视频的目标语言。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "不会发送给 HeyGen；更改此项可强制重新运行。"
+      },
+      "speaker_count": {
+        "name": "说话人数",
+        "tooltip": "视频中的说话人数。0 = 自动检测。"
+      },
+      "translate_audio_only": {
+        "name": "仅翻译音频",
+        "tooltip": "只替换音轨，保留原始嘴型（无唇形同步）。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "需要翻译语音的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "在采样后期，将模型输出在多个偏移补丁网格位置上取平均。消除缝隙。",
     "display_name": "HiDream-O1 补丁缝隙平滑",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "从指定文件夹加载视频数据集并返回视频列表。支持的格式：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "加载视频（来自文件夹）",
+    "inputs": {
+      "folder": {
+        "name": "文件夹",
+        "tooltip": "包含视频文件的文件夹。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "惰性视频引用；只有在下游需要时才解码帧。"
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "从指定文件夹加载视频和文本字幕对的数据集，并以列表形式返回。支持的格式：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "加载视频-文本（来自文件夹）",
+    "inputs": {
+      "folder": {
+        "name": "文件夹",
+        "tooltip": "包含视频文件和 .txt 字幕的文件夹。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "惰性视频引用；只有在下游需要时才解码帧。"
+      },
+      "1": {
+        "name": "文本",
+        "tooltip": "文本字幕列表。"
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "随机打乱视频列表的顺序。",
+    "display_name": "打乱视频列表",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。"
+      },
+      "videos": {
+        "name": "视频",
+        "tooltip": "要打乱顺序的视频列表。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "已打乱顺序的视频"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "随机打乱视频-文本对的顺序。",
+    "display_name": "打乱视频-文本对",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "要打乱顺序的文本列表。"
+      },
+      "videos": {
+        "name": "视频",
+        "tooltip": "要打乱顺序的视频列表。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "已打乱顺序的视频"
+      },
+      "1": {
+        "name": "文本",
+        "tooltip": "已打乱顺序的文本"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "通用的跳过层引导节点，可用于每个DiT模型。",
     "display_name": "跳过层引导（DiT）",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "使用多种策略从视频中采样固定数量的帧。",
+    "display_name": "采样视频帧",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "num_frames": {
+        "name": "帧数",
+        "tooltip": "要采样的帧数。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子（仅在'random'策略下使用）。"
+      },
+      "strategy": {
+        "name": "采样策略",
+        "tooltip": "uniform：均匀间隔，head：前N帧，tail：后N帧，random：随机排序。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "输入视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "采样后的视频。"
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "视频线性CFG引导",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "从视频中随机裁剪连续的一段帧。",
+    "display_name": "裁剪视频（时间随机）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "length": {
+        "name": "保留帧数",
+        "tooltip": "要保留的帧数。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "输入视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "裁剪后的视频（惰性）。"
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "从视频中裁剪连续的一段帧。",
+    "display_name": "裁剪视频（时间）",
+    "inputs": {
+      "length": {
+        "name": "保留帧数",
+        "tooltip": "要保留的帧数。"
+      },
+      "start_frame": {
+        "name": "起始帧索引",
+        "tooltip": "起始帧索引。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "输入视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": "裁剪后的视频（惰性）。"
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "应用 Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型补丁"
+      },
+      "render_video": {
+        "name": "渲染视频",
+        "tooltip": "由相机轨迹渲染的引导视频，最常见的是输入图像的点云渲染变形。"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

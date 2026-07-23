@@ -29,6 +29,7 @@ const {
   poster,
   tracks = [],
   autoplay = false,
+  autoplayUnmuted = false,
   loop = false,
   minimal = false,
   hideControls = false,
@@ -41,6 +42,9 @@ const {
   poster?: string
   tracks?: readonly VideoTrack[]
   autoplay?: boolean
+  /** Attempt autoplay with sound; browsers without engagement-based
+   * permission reject it, and playback falls back to muted. */
+  autoplayUnmuted?: boolean
   loop?: boolean
   minimal?: boolean
   hideControls?: boolean
@@ -97,16 +101,28 @@ useEventListener(videoEl, 'durationchange', syncNativeDuration)
 
 // The muted attribute only sets defaultMuted, so SSR-rendered autoplay
 // videos count as unmuted and get blocked; force the property and kick
-// playback. Scoped to hideControls (decorative) clips so chrome-visible
-// consumers keep native semantics. flush: 'post' guarantees this runs
-// after useMediaControls' internal muted watcher on the same source.
+// playback. With autoplayUnmuted, sound is attempted first — play()
+// rejects with NotAllowedError when the browser lacks engagement-based
+// autoplay permission, and playback retries muted. flush: 'post'
+// guarantees this runs after useMediaControls' internal muted watcher
+// on the same source.
 watch(
   [videoEl, () => src],
-  ([el]) => {
-    if (!el || !autoplay || !hideControls) return
+  async ([el]) => {
+    if (!el || !autoplay) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       el.pause()
       return
+    }
+    if (autoplayUnmuted) {
+      el.pause()
+      el.muted = false
+      try {
+        await el.play()
+        return
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+      }
     }
     el.muted = true
     el.play().catch((error: unknown) => {

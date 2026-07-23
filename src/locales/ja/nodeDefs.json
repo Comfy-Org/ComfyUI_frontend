@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "Anima LLLite を適用",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "オーディオの音量をデシベル（dB）単位で指定した量だけ調整します。",
     "display_name": "オーディオ音量調整",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "温度"
       },
       "prompt": {
         "name": "プロンプト",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "HeyGen アバターから話すプレゼンター動画を生成します。HeyGen の最も人気のある公開アバターが含まれており、任意の look ID を上書き指定できます。",
+    "display_name": "HeyGen アバター動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」はアバターの元映像に従います。"
+      },
+      "background_color": {
+        "name": "背景色",
+        "tooltip": "任意の単色背景（例: '#00ff00' のような16進コード）。空欄の場合はアバター自身の背景が使用されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "custom_avatar_id": {
+        "name": "カスタムアバターID",
+        "tooltip": "任意の HeyGen アバター look ID。設定すると上記で選択したアバターを上書きします。HeyGen の 3000 以上の公開 look（または自身のプライベートアバター）が利用可能です。"
+      },
+      "engine": {
+        "name": "エンジン",
+        "tooltip": "レンダリングエンジン。各選択肢には対応するアバターのみが表示されます。「auto」はすべてのアバターを提供し、最適なエンジン（Avatar IV 推奨）を選択します。Avatar V は最高品質、Avatar III は最も手頃です。"
+      },
+      "engine_avatar": {
+        "name": "アバター"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGen には送信されません。変更すると再実行を強制します。"
+      },
+      "speech": {
+        "name": "スピーチ",
+        "tooltip": "テキストスクリプト（HeyGen テキスト読み上げ）または自身の音声でアバターを動かします。"
+      },
+      "speech_custom_voice_id": {
+        "name": "カスタムボイスID"
+      },
+      "speech_text": {
+        "name": "テキスト"
+      },
+      "speech_voice": {
+        "name": "ボイス"
+      },
+      "speech_voice_speed": {
+        "name": "ボイス速度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "人物の写真またはテキストプロンプト（生成キャラクター）から再利用可能な HeyGen アバターを作成します。生成された avatar_id を HeyGen アバター動画の custom_avatar_id に入力し、ID を保存して今後のワークフローでアバターを再利用してください。",
+    "display_name": "HeyGen アバター作成",
+    "inputs": {
+      "source": {
+        "name": "ソース",
+        "tooltip": "テキストプロンプトから新しいキャラクターを生成するか、接続された人物写真からアバターを作成します。"
+      },
+      "source_prompt": {
+        "name": "プロンプト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "アバターID",
+        "tooltip": "アバター look ID。HeyGen アバター動画の custom_avatar_id に渡してください。後でアバターを再利用するために保存してください。"
+      },
+      "1": {
+        "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "人物の画像をリップシンクされたトーキングビデオ（HeyGen Avatar IV）にアニメーション化します。テキストスクリプトまたは自身の音声で操作できます。",
+    "display_name": "HeyGen トーキングフォト",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力アスペクト比。「auto」は入力画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "expressiveness": {
+        "name": "表現力",
+        "tooltip": "アニメーションされた顔やジェスチャーの表現力の度合い。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "アニメーション化する人物の画像。2Kを超える場合は自動でダウンスケールされます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力ビデオの解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行されます。"
+      },
+      "speech": {
+        "name": "音声",
+        "tooltip": "アバターをテキストスクリプト（HeyGen テキスト読み上げ）または自身の音声で操作します。"
+      },
+      "speech_custom_voice_id": {
+        "name": "カスタムボイスID"
+      },
+      "speech_text": {
+        "name": "テキスト"
+      },
+      "speech_voice": {
+        "name": "ボイス"
+      },
+      "speech_voice_speed": {
+        "name": "ボイス速度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "HeyGenのStarfish TTSエンジンを使ってテキストから音声を生成します。17言語でHeyGenの人気ボイスを利用可能です。",
+    "display_name": "HeyGen テキスト読み上げ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "custom_voice_id": {
+        "name": "カスタムボイスID",
+        "tooltip": "オプションのHeyGenボイスID。設定すると上記で選択したボイスを上書きします。ボイスはStarfishエンジンに対応している必要があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行されます。"
+      },
+      "speed": {
+        "name": "速度",
+        "tooltip": "音声の速度倍率。"
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "テキストをSSMLマークアップとして扱います（ポーズ、強調、発音制御など）。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "合成するテキスト（最大5000文字）。生成される音声は1秒以上である必要があります。"
+      },
+      "voice": {
+        "name": "ボイス",
+        "tooltip": "使用するボイス（HeyGenのStarfish対応人気ボイスから厳選）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "話されているビデオを別の言語に翻訳します。元の話者の声をクローンし、翻訳された音声に合わせて口の動きを再アニメーションします。",
+    "display_name": "HeyGenビデオ翻訳",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+      },
+      "output_language": {
+        "name": "出力言語",
+        "tooltip": "翻訳ビデオのターゲット言語。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "HeyGenには送信されません。変更すると再実行を強制します。"
+      },
+      "speaker_count": {
+        "name": "話者数",
+        "tooltip": "ビデオ内の話者数。0 = 自動検出。"
+      },
+      "translate_audio_only": {
+        "name": "音声のみ翻訳",
+        "tooltip": "音声トラックのみを入れ替え、元の口の動きを維持します（リップシンクなし）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "翻訳する音声付きビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "サンプリングの後半で、複数のシフトしたパッチグリッド位置にわたってモデル出力を平均化します。継ぎ目を除去します。",
     "display_name": "HiDream-O1 パッチ継ぎ目スムージング",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "指定したフォルダからビデオのデータセットを読み込み、ビデオのリストを返します。対応フォーマット：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "ビデオ読み込み（フォルダから）",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "ビデオファイルが含まれるフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "遅延ビデオ参照。フレームは下流で必要なときのみデコードされます。"
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "指定したフォルダからビデオとテキストキャプションのペアのデータセットを読み込み、リストとして返します。対応フォーマット：MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "ビデオ＋テキスト読み込み（フォルダから）",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "ビデオファイルと.txtキャプションが含まれるフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "遅延ビデオ参照。フレームは下流で必要なときのみデコードされます。"
+      },
+      "1": {
+        "name": "テキスト",
+        "tooltip": "テキストキャプションのリスト。"
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "ビデオリストの順序をランダムにシャッフルします。",
+    "display_name": "ビデオリストをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "videos": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルするビデオリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルされたビデオ"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "ビデオとテキストのペアの順序をランダムにシャッフルします。",
+    "display_name": "ビデオ＋テキストペアをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "シャッフルするテキストリスト。"
+      },
+      "videos": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルするビデオリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "シャッフルされたビデオ"
+      },
+      "1": {
+        "name": "テキスト",
+        "tooltip": "シャッフルされたテキスト"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "プロンプト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "さまざまな戦略を使って、ビデオから固定数のフレームをサンプリングします。",
+    "display_name": "ビデオフレームのサンプリング",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "num_frames": {
+        "name": "フレーム数",
+        "tooltip": "サンプリングするフレーム数。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード（「random」戦略のみ使用）。"
+      },
+      "strategy": {
+        "name": "戦略",
+        "tooltip": "uniform: 均等間隔, head: 最初のN, tail: 最後のN, random: ランダムでソート。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "サンプリングされたビデオ。"
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "ビデオ線形CFGガイダンス",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "ビデオから連続した範囲のフレームをランダムにクロップします。",
+    "display_name": "ビデオのクロップ（時間的ランダム）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "保持するフレーム数。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ランダムシード。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "クロップされたビデオ（遅延）。"
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "ビデオから連続した範囲のフレームをクロップします。",
+    "display_name": "ビデオのクロップ（時間的）",
+    "inputs": {
+      "length": {
+        "name": "長さ",
+        "tooltip": "保持するフレーム数。"
+      },
+      "start_frame": {
+        "name": "開始フレーム",
+        "tooltip": "開始フレームのインデックス。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "入力ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオ",
+        "tooltip": "クロップされたビデオ（遅延）。"
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "Wan Uni3C ControlNet の適用",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "render_video": {
+        "name": "レンダービデオ",
+        "tooltip": "カメラ軌道からレンダリングされたガイダンスビデオ。最も一般的には入力画像のワープされた点群レンダリング。"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
