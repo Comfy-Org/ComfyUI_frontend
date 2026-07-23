@@ -80,6 +80,9 @@ function createWidgetState(disabled: boolean): DomWidgetState {
 
   state.zIndex = 2
   state.size = [100, 40]
+  // DomWidgets.vue snapshots widget.computedDisabled into widgetState each frame.
+  // In unit tests there's no draw loop, so set the snapshot directly.
+  state.computedDisabled = disabled
 
   return reactive(state)
 }
