@@ -70,7 +70,6 @@ LiteGraphGlobal {
     "Always",
     "On Event",
     "Never",
-    "On Trigger",
   ],
   "NODE_MODES_COLORS": [
     "#666",
@@ -95,7 +94,6 @@ LiteGraphGlobal {
   "NO_TITLE": 1,
   "Nodes": {},
   "ON_EVENT": 1,
-  "ON_TRIGGER": 3,
   "OUTPUT": 2,
   "RIGHT": 4,
   "ROUND_RADIUS": 8,
@@ -153,7 +151,6 @@ LiteGraphGlobal {
   "dialog_close_on_mouse_leave": false,
   "dialog_close_on_mouse_leave_delay": 500,
   "distance": [Function],
-  "do_add_triggers_slots": false,
   "highlight_selected_group": true,
   "isInsideRectangle": [Function],
   "leftMouseClickBehavior": "panning",

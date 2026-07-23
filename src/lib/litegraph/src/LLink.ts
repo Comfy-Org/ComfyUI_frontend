@@ -114,8 +114,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   _data?: unknown
   /** Centre point of the link, calculated during render only - can be inaccurate */
   _pos: Point
-  /** @todo Clean up - never implemented in comfy. */
-  _last_time?: number
   /** The last canvas 2D path that was used to render this link */
   path?: Path2D
   /** @inheritdoc */

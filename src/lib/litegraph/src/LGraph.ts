@@ -281,14 +281,10 @@ export class LGraph
   errors_in_execution?: boolean
   /** @deprecated Unused */
   execution_time!: number
-  _last_trigger_time?: number
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
   config: LGraphConfig = {}
   vars: Dictionary<unknown> = {}
-  nodes_executing: boolean[] = []
-  nodes_actioning: (string | boolean)[] = []
-  nodes_executedAction: string[] = []
   extra: LGraphExtra = {}
 
   /** @deprecated Deserialising a workflow sets this unused property. */
@@ -455,10 +451,6 @@ export class LGraph
 
     this.catch_errors = true
 
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
-
     // notify canvas to redraw
     this.change()
 
@@ -590,10 +582,8 @@ export class LGraph
       for (let i = 0; i < num; i++) {
         for (let j = 0; j < limit; ++j) {
           const node = nodes[j]
-          // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
-            // wrap node.onExecute();
-            node.doExecute?.()
+          if (node.mode == LGraphEventMode.ALWAYS) {
+            node.onExecute?.()
           }
         }
 
@@ -631,9 +621,6 @@ export class LGraph
     this.iteration += 1
     this.elapsed_time = (now - this.last_update_time) * 0.001
     this.last_update_time = now
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
   }
 
   /**
@@ -1361,24 +1348,6 @@ export class LGraph
     this.events.dispatch(action, param as never)
   }
 
-  /** @todo Clean up - never implemented. */
-  triggerInput(name: string, value: unknown): void {
-    const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - onTrigger method may not exist on all node types
-      node.onTrigger(value)
-    }
-  }
-
-  /** @todo Clean up - never implemented. */
-  setCallback(name: string, func?: () => void): void {
-    const nodes = this.findNodesByTitle(name)
-    for (const node of nodes) {
-      // @ts-expect-error - setTrigger method may not exist on all node types
-      node.setTrigger(func)
-    }
-  }
-
   // used for undo, called before any change is made to the graph
   beforeChange(info?: LGraphNode): void {
     if (this.onBeforeChange) {
@@ -1394,17 +1363,6 @@ export class LGraph
   afterChange(info?: LGraphNode | null): void {
     this.onAfterChange?.(this, info)
     this.canvasAction((c) => c.onAfterChange?.(this))
-  }
-
-  /**
-   * clears the triggered slot animation in all links (stop visual animation)
-   */
-  clearTriggeredSlots(): void {
-    for (const link_info of this._links.values()) {
-      if (!link_info) continue
-
-      if (link_info._last_time) link_info._last_time = 0
-    }
   }
 
   /* Called when something visually changed (not the graph!) */

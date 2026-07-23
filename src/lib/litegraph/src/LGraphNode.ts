@@ -232,7 +232,6 @@ supported callbacks:
     + onDropFile : file dropped over the node
     + onConnectInput : if returns false the incoming connection will be canceled
     + onConnectionsChange : a connection changed (new one or removed) (NodeSlotType.INPUT or NodeSlotType.OUTPUT, slot, true if connected, link_info, input_info )
-    + onAction: action slot triggered
     + getExtraMenuOptions: to add option to context menu
 */
 
@@ -371,11 +370,6 @@ export class LGraphNode
   get renderingBoxColor(): string {
     if (this.boxcolor) return this.boxcolor
 
-    if (LiteGraph.node_box_coloured_when_on) {
-      if (this.action_triggered) return '#FFF'
-      if (this.execute_triggered) return '#AAA'
-    }
-
     if (LiteGraph.node_box_coloured_by_mode) {
       const modeColour =
         LiteGraph.NODE_MODES_COLORS[this.mode ?? LGraphEventMode.ALWAYS]
@@ -419,10 +413,6 @@ export class LGraphNode
    */
   progress?: number
 
-  exec_version?: number
-  action_call?: string
-  execute_triggered?: number
-  action_triggered?: number
   /**
    * @deprecated This property is unsupported and will be removed in a future release.
    * Use `widgets_start_y` or a custom `arrange()` override instead.
@@ -694,12 +684,6 @@ export class LGraphNode
     this: LGraphNode,
     param?: unknown,
     options?: { action_call?: string }
-  ): void
-  onAction?(
-    this: LGraphNode,
-    action: string,
-    param: unknown,
-    options: { action_call?: string }
   ): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
@@ -1416,43 +1400,9 @@ export class LGraphNode
     return r
   }
 
-  addOnTriggerInput(): number {
-    const trigS = this.findInputSlot('onTrigger')
-    if (trigS == -1) {
-      this.addInput('onTrigger', LiteGraph.EVENT, {
-        nameLocked: true
-      })
-      return this.findInputSlot('onTrigger')
-    }
-    return trigS
-  }
-
-  addOnExecutedOutput(): number {
-    const trigS = this.findOutputSlot('onExecuted')
-    if (trigS == -1) {
-      this.addOutput('onExecuted', LiteGraph.ACTION, {
-        nameLocked: true
-      })
-      return this.findOutputSlot('onExecuted')
-    }
-    return trigS
-  }
-
-  onAfterExecuteNode(param: unknown, options?: { action_call?: string }) {
-    const trigS = this.findOutputSlot('onExecuted')
-    if (trigS != -1) {
-      this.triggerSlot(trigS, param, null, options)
-    }
-  }
-
   changeMode(modeTo: number): boolean {
     switch (modeTo) {
       case LGraphEventMode.ON_EVENT:
-        break
-
-      case LGraphEventMode.ON_TRIGGER:
-        this.addOnTriggerInput()
-        this.addOnExecutedOutput()
         break
 
       case LGraphEventMode.NEVER:
@@ -1470,189 +1420,6 @@ export class LGraphNode
     }
     this.mode = modeTo
     return true
-  }
-
-  /**
-   * Triggers the node code execution, place a boolean/counter to mark the node as being executed
-   */
-  doExecute(param?: unknown, options?: { action_call?: string }): void {
-    options = options || {}
-    if (this.onExecute) {
-      // enable this to give the event an ID
-      options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
-      if (!this.graph) throw new NullGraphError()
-
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
-      this.graph.nodes_executing[this.id] = true
-      this.onExecute(param, options)
-      // @ts-expect-error deprecated
-      this.graph.nodes_executing[this.id] = false
-
-      // save execution/action ref
-      this.exec_version = this.graph.iteration
-      if (options?.action_call) {
-        this.action_call = options.action_call
-        // @ts-expect-error deprecated
-        this.graph.nodes_executedAction[this.id] = options.action_call
-      }
-    }
-    // the nFrames it will be used (-- each step), means "how old" is the event
-    this.execute_triggered = 2
-    this.onAfterExecuteNode?.(param, options)
-  }
-
-  /**
-   * Triggers an action, wrapped by logics to control execution flow
-   * @param action name
-   */
-  actionDo(
-    action: string,
-    param: unknown,
-    options: { action_call?: string }
-  ): void {
-    options = options || {}
-    if (this.onAction) {
-      // enable this to give the event an ID
-      options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
-      if (!this.graph) throw new NullGraphError()
-
-      // @ts-expect-error deprecated
-      this.graph.nodes_actioning[this.id] = action || 'actioning'
-      this.onAction(action, param, options)
-      // @ts-expect-error deprecated
-      this.graph.nodes_actioning[this.id] = false
-
-      // save execution/action ref
-      if (options?.action_call) {
-        this.action_call = options.action_call
-        // @ts-expect-error deprecated
-        this.graph.nodes_executedAction[this.id] = options.action_call
-      }
-    }
-    // the nFrames it will be used (-- each step), means "how old" is the event
-    this.action_triggered = 2
-    this.onAfterExecuteNode?.(param, options)
-  }
-
-  /**
-   * Triggers an event in this node, this will trigger any output with the same name
-   * @param action name ( "on_play", ... ) if action is equivalent to false then the event is send to all
-   */
-  trigger(
-    action: string,
-    param: unknown,
-    options: { action_call?: string }
-  ): void {
-    const { outputs } = this
-    if (!outputs || !outputs.length) {
-      return
-    }
-
-    if (this.graph) this.graph._last_trigger_time = LiteGraph.getTime()
-
-    for (const [i, output] of outputs.entries()) {
-      if (
-        !output ||
-        output.type !== LiteGraph.EVENT ||
-        (action && output.name != action)
-      ) {
-        continue
-      }
-      this.triggerSlot(i, param, null, options)
-    }
-  }
-
-  /**
-   * Triggers a slot event in this node: cycle output slots and launch execute/action on connected nodes
-   * @param slot the index of the output slot
-   * @param link_id [optional] in case you want to trigger and specific output link in a slot
-   */
-  triggerSlot(
-    slot: number,
-    param: unknown,
-    link_id: number | null,
-    options?: { action_call?: string }
-  ): void {
-    options = options || {}
-    if (!this.outputs) return
-
-    if (slot == null) {
-      console.error('slot must be a number')
-      return
-    }
-
-    if (typeof slot !== 'number')
-      console.warn(
-        "slot must be a number, use node.trigger('name') if you want to use a string"
-      )
-
-    const output = this.outputs[slot]
-    if (!output) return
-
-    const links = output.links
-    if (!links || !links.length) return
-
-    if (!this.graph) throw new NullGraphError()
-    this.graph._last_trigger_time = LiteGraph.getTime()
-
-    // for every link attached here
-    for (const id of links) {
-      // to skip links
-      if (link_id != null && link_id != id) continue
-
-      const link_info = this.graph._links.get(id)
-      // not connected
-      if (!link_info) continue
-
-      link_info._last_time = LiteGraph.getTime()
-      const node = this.graph.getNodeById(link_info.target_id)
-      // node not found?
-      if (!node) continue
-
-      if (node.mode === LGraphEventMode.ON_TRIGGER) {
-        // generate unique trigger ID if not present
-        if (!options.action_call)
-          options.action_call = `${this.id}_trigg_${Math.floor(Math.random() * 9999)}`
-        // -- wrapping node.onExecute(param); --
-        node.doExecute?.(param, options)
-      } else if (node.onAction) {
-        // generate unique action ID if not present
-        if (!options.action_call)
-          options.action_call = `${this.id}_act_${Math.floor(Math.random() * 9999)}`
-        // pass the action name
-        const target_connection = node.inputs[link_info.target_slot]
-        node.actionDo(target_connection.name, param, options)
-      }
-    }
-  }
-
-  /**
-   * clears the trigger slot animation
-   * @param slot the index of the output slot
-   * @param link_id [optional] in case you want to trigger and specific output link in a slot
-   */
-  clearTriggeredSlot(slot: number, link_id: number): void {
-    if (!this.outputs) return
-
-    const output = this.outputs[slot]
-    if (!output) return
-
-    const links = output.links
-    if (!links || !links.length) return
-
-    if (!this.graph) throw new NullGraphError()
-
-    // for every link attached here
-    for (const id of links) {
-      // to skip links
-      if (link_id != null && link_id != id) continue
-
-      const link_info = this.graph._links.get(id)
-      // not connected
-      if (!link_info) continue
-
-      link_info._last_time = 0
-    }
   }
 
   /**
@@ -2680,12 +2447,6 @@ export class LGraphNode
     const slot = node.findSlotByType(findInputs, slotType, false, true)
     if (slot >= 0 && slot !== null) return slot
 
-    // TODO: Remove or reimpl. events.  WILL CREATE THE onTrigger IN SLOT
-    if (opts.createEventInCase && slotType == LiteGraph.EVENT) {
-      if (findInputs) return -1
-      if (LiteGraph.do_add_triggers_slots) return node.addOnExecutedOutput()
-    }
-
     // connect to the first general output slot if not found a specific type and
     if (opts.typedToWildcard) {
       const generalSlot = node.findSlotByType(findInputs, 0, false, true, true)
@@ -2877,14 +2638,6 @@ export class LGraphNode
       if (targetIndex == -1) {
         if (LiteGraph.debug)
           console.error(`Connect: Error, no slot of name ${targetIndex}`)
-        return null
-      }
-    } else if (target_slot === LiteGraph.EVENT) {
-      // TODO: Events
-      if (LiteGraph.do_add_triggers_slots) {
-        target_node.changeMode(LGraphEventMode.ON_TRIGGER)
-        targetIndex = target_node.findInputSlot('onTrigger')
-      } else {
         return null
       }
     } else if (typeof target_slot === 'number') {
