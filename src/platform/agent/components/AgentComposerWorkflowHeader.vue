@@ -124,9 +124,7 @@ function switchWorkflow(workflow: ComfyWorkflow) {
           />
           <ComboboxInput
             v-model="searchQuery"
-            :placeholder="
-              t('g.searchPlaceholder', { subject: t('g.workflows') })
-            "
+            :placeholder="t('agent.workflowHeader.searchPlaceholder')"
             class="w-full border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -137,23 +135,27 @@ function switchWorkflow(workflow: ComfyWorkflow) {
             v-for="workflow in filteredWorkflows"
             :key="workflow.key"
             :value="workflow"
-            class="flex cursor-pointer items-center gap-2 rounded-md p-2 text-sm text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+            class="flex cursor-pointer items-center gap-2 rounded-md p-2 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
             @select="switchWorkflow(workflow)"
           >
             <i
-              class="icon-[comfy--workflow] size-3.5 shrink-0 text-muted-foreground"
+              class="icon-[comfy--workflow] size-3 shrink-0 text-muted-foreground"
             />
             <span class="min-w-0 flex-1 truncate">{{ workflow.filename }}</span>
-            <span
-              v-if="workflow.isModified"
-              class="size-1.5 shrink-0 rounded-full bg-base-foreground"
-              aria-hidden="true"
-            />
-            <i
-              v-if="workflow.key === activeWorkflow?.key"
-              class="icon-[lucide--check] size-3.5 shrink-0"
-              aria-hidden="true"
-            />
+            <span class="flex size-3.5 shrink-0 items-center justify-center">
+              <span
+                v-if="workflow.isModified || !workflow.isPersisted"
+                class="size-1.5 shrink-0 rounded-full bg-base-foreground"
+                aria-hidden="true"
+              />
+            </span>
+            <span class="flex size-3.5 shrink-0 items-center justify-center">
+              <i
+                v-if="workflow.key === activeWorkflow?.key"
+                class="icon-[lucide--check] size-3.5"
+                aria-hidden="true"
+              />
+            </span>
           </ComboboxItem>
           <ComboboxEmpty
             class="px-3 py-6 text-center text-sm text-muted-foreground"

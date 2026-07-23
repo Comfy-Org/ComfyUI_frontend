@@ -23,7 +23,8 @@
     "workflowHeader": {
       "dismiss": "Dismiss",
       "switchWorkflow": "Switch workflow",
-      "chooseWorkflow": "Choose a workflow"
+      "chooseWorkflow": "Choose a workflow",
+      "searchPlaceholder": "Search open workflows"
     },
     "nodeSelection": {
       "bannerTitle": "Add nodes from graph",
