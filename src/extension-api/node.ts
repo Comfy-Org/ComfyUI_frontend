@@ -16,6 +16,8 @@
  * This is the sanctioned replacement for the legacy `node.size[1] = h` idiom
  * and the migration destination for the runtime `size` Proxy in PR #13867.
  */
+import { watch } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -68,19 +70,41 @@ export function createNodeHandle(node: LGraphNode): NodeHandle {
 
     setSize([width, height]: Size): void {
       if (!Number.isFinite(width) || !Number.isFinite(height)) return
-      const mutations = useLayoutMutations()
-      // `currentSource` is shared store state that `resizeNode` reads directly,
-      // so tag this one mutation as External and restore the prior source
-      // afterwards — otherwise every later mutation on the same store is
-      // mislabeled External. Mirrors the save/restore pattern in
-      // layoutStore.batchUpdateNodeBounds.
-      const previousSource = layoutStore.getCurrentSource()
-      mutations.setSource(LayoutSource.External)
-      try {
-        mutations.resizeNode(id, { width, height })
-      } finally {
-        mutations.setSource(previousSource)
+
+      const applyResize = (): void => {
+        const mutations = useLayoutMutations()
+        // `currentSource` is shared store state that `resizeNode` reads
+        // directly, so tag this one mutation as External and restore the prior
+        // source afterwards — otherwise every later mutation on the same store
+        // is mislabeled External. Mirrors the save/restore pattern in
+        // layoutStore.batchUpdateNodeBounds.
+        const previousSource = layoutStore.getCurrentSource()
+        mutations.setSource(LayoutSource.External)
+        try {
+          mutations.resizeNode(id, { width, height })
+        } finally {
+          mutations.setSource(previousSource)
+        }
       }
+
+      const layoutRef = layoutStore.getNodeLayoutRef(id)
+      if (layoutRef.value) {
+        applyResize()
+        return
+      }
+
+      // `nodeCreated` runs synchronously while the node is still being
+      // constructed, before the node is registered in the layout store: during
+      // graph load, layout creation is deferred to `onAfterGraphConfigured`.
+      // `resizeNode` no-ops without a layout entry, so wait for the entry to
+      // appear (seeded from the node's own size) and then apply the resize once
+      // — still routed through the layout store command, so the Vue node reflows
+      // to the requested height.
+      const stop = watch(layoutRef, (layout) => {
+        if (!layout) return
+        stop()
+        applyResize()
+      })
     },
 
     autosize(): void {

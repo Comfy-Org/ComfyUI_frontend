@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
@@ -57,6 +59,42 @@ describe('createNodeHandle', () => {
       // ...but the shared source state is restored so later mutations on the
       // same store are not mislabeled.
       expect(layoutStore.getCurrentSource()).toBe(sourceBefore)
+    })
+
+    it('applies a deferred resize once the node is registered in the layout store', async () => {
+      // A handle can be created (and setSize called from `nodeCreated`) before
+      // the node exists in the layout store — during graph load, layout
+      // creation is deferred to onAfterGraphConfigured. Regression guard for
+      // the resize being silently dropped in that window.
+      const LATE = toNodeId('99')
+      const handle = createNodeHandle(
+        createMockLGraphNode({
+          id: LATE,
+          comfyClass: 'KSampler',
+          size: [100, 50]
+        })
+      )
+      expect(layoutStore.getNodeLayoutRef(LATE).value).toBeNull()
+
+      handle.setSize([250, 180])
+      // No layout entry yet → nothing applied.
+      expect(layoutStore.getNodeLayoutRef(LATE).value).toBeNull()
+
+      // Node registered later (as onAfterGraphConfigured seeds it from the
+      // node's own size); the deferred resize now flushes through the store.
+      const mutations = useLayoutMutations()
+      mutations.createNode(LATE, {
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 50 },
+        zIndex: 0,
+        visible: true
+      })
+      await nextTick()
+
+      expect(layoutStore.getNodeLayoutRef(LATE).value?.size).toEqual({
+        width: 250,
+        height: 180
+      })
     })
 
     it.for([
