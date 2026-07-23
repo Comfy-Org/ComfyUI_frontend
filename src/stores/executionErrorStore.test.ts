@@ -68,7 +68,7 @@ describe('executionErrorStore — node error operations', () => {
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = null
+      store.recordNodeErrors(null)
       // Should not error
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -79,7 +79,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears entirely if there are only simple errors for the same slot', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -92,7 +92,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -105,7 +105,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears only the specific slot errors, leaving other errors alone', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -124,7 +124,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -141,7 +141,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does nothing if executionId is not found in lastNodeErrors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -154,7 +154,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(999)]),
@@ -167,7 +167,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('preserves complex errors when slot has both simple and complex errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -186,7 +186,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -199,7 +199,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears one node while preserving another in multi-node errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -224,7 +224,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'LoadModel'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -238,7 +238,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears entire node when no slotName and all errors are simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -257,7 +257,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
@@ -266,7 +266,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear when no slotName and some errors are not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -285,7 +285,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
@@ -294,7 +294,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear if the error is not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -307,7 +307,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       store.clearSimpleNodeErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -323,11 +323,11 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '12:5': nodeError([
           validationError('required_input_missing', 'seed_input')
         ])
-      }
+      })
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
 
@@ -342,7 +342,7 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '12:5': nodeError([
           validationError(
             'custom_validation_failed',
@@ -351,7 +351,7 @@ describe('executionErrorStore — node error operations', () => {
             'Custom validation failed'
           )
         ])
-      }
+      })
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
 
@@ -389,11 +389,11 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '1:2:3': nodeError([
           validationError('required_input_missing', 'seed_input')
         ])
-      }
+      })
 
       expect(store.surfacedNodeErrors).toHaveProperty('1')
 
@@ -413,7 +413,7 @@ describe('executionErrorStore — node error operations', () => {
   describe('clearWidgetRelatedErrors', () => {
     it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -426,7 +426,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Valid value (5 < 10)
       store.clearWidgetRelatedErrors(
@@ -444,7 +444,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('optimistically clears value_not_in_list error for string combo values', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -457,7 +457,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'KSampler'
         }
-      }
+      })
 
       store.clearWidgetRelatedErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -471,7 +471,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear error if value is still out of range', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -484,7 +484,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Invalid value (15 > 10)
       store.clearWidgetRelatedErrors(
@@ -503,13 +503,13 @@ describe('executionErrorStore — node error operations', () => {
 
     it('validates the base target against live widget bounds, not recorded ones', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': nodeError([
           validationError('value_bigger_than_max', 'testWidget', {
             input_config: ['INT', { max: 100 }]
           })
         ])
-      }
+      })
 
       store.clearWidgetRelatedErrors(
         createNodeExecutionId([toNodeId(123)]),
@@ -530,11 +530,11 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '12:5': nodeError([
           validationError('value_bigger_than_max', 'seed_input', {}, 'Too high')
         ])
-      }
+      })
 
       expect(store.surfacedNodeErrors).toHaveProperty('12')
 
@@ -570,7 +570,7 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '12:5': nodeError([
           validationError('value_bigger_than_max', 'seed_input', {
             input_config: ['INT', { max: 100 }]
@@ -581,7 +581,7 @@ describe('executionErrorStore — node error operations', () => {
             input_config: ['INT', { max: 50 }]
           })
         ])
-      }
+      })
 
       expect(store.surfacedNodeErrors?.['12'].errors).toHaveLength(2)
 
@@ -610,11 +610,11 @@ describe('executionErrorStore — node error operations', () => {
       mockGraphReady(rootGraph)
 
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '12:5': nodeError([
           validationError('required_input_missing', 'seed_input')
         ])
-      }
+      })
 
       const hostLocatorId = createNodeLocatorId(null, toNodeId(12))
 
@@ -770,6 +770,28 @@ describe('surfaceMissingMedia — silent option', () => {
   })
 })
 
+describe('recordNodeErrors', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('normalizes an empty error record to null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors({})
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps a null error record as null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors(null)
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
 describe('clearAllErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
@@ -782,7 +804,7 @@ describe('clearAllErrors', () => {
   })
 
   it('resets all error categories and closes error overlay', () => {
-    executionErrorStore.lastExecutionError = {
+    executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
       node_id: '1',
@@ -791,13 +813,13 @@ describe('clearAllErrors', () => {
       exception_message: 'fail',
       exception_type: 'RuntimeError',
       traceback: []
-    }
-    executionErrorStore.lastPromptError = {
+    })
+    executionErrorStore.recordPromptError({
       type: 'execution',
       message: 'fail',
       details: ''
-    }
-    executionErrorStore.lastNodeErrors = {
+    })
+    executionErrorStore.recordNodeErrors({
       '1': {
         errors: [
           {
@@ -810,7 +832,7 @@ describe('clearAllErrors', () => {
         dependent_outputs: [],
         class_type: 'Test'
       }
-    }
+    })
     missingNodesStore.setMissingNodeTypes(
       fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
     )

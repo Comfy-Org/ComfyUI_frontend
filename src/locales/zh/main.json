@@ -3008,6 +3008,7 @@
       "loading": "正在加载授权请求…",
       "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
       "noWorkspaces": "此请求没有可用的工作区。",
+      "detailsHeader": "详情",
       "permissionsHeader": "权限",
       "redirectNotice": "您将被重定向到",
       "resourceFallback": "此应用",
@@ -3015,7 +3016,6 @@
       "sessionErrorToastSummary": "无法继续 OAuth 登录",
       "subtitle": "登录 {resource} 以继续",
       "title": "{client} 请求访问权限",
-      "workspaceHelp": "权限仅适用于此工作区。",
       "workspaceLabel": "工作区"
     },
     "scopes": {
@@ -4170,7 +4170,6 @@
     "modelsSelected": "已选 {count} 个模型",
     "noResults": "未找到模板",
     "noResultsHint": "请尝试调整搜索或筛选条件",
-    "resetFilters": "清除筛选",
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",

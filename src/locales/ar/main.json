@@ -3008,6 +3008,7 @@
       "loading": "جارٍ تحميل طلب التفويض…",
       "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
       "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "detailsHeader": "التفاصيل",
       "permissionsHeader": "الأذونات",
       "redirectNotice": "سيتم إعادة توجيهك إلى",
       "resourceFallback": "هذا التطبيق",
@@ -3015,7 +3016,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count} نماذج",
     "noResults": "لم يتم العثور على قوالب",
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
-    "resetFilters": "مسح المرشحات",
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",

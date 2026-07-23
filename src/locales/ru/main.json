@@ -3008,6 +3008,7 @@
       "loading": "Загрузка запроса авторизации…",
       "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
       "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "detailsHeader": "Детали",
       "permissionsHeader": "Разрешения",
       "redirectNotice": "Вы будете перенаправлены на",
       "resourceFallback": "это приложение",
@@ -3015,7 +3016,6 @@
       "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
       "subtitle": "Войдите в {resource}, чтобы продолжить",
       "title": "{client} запрашивает доступ",
-      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
       "workspaceLabel": "Рабочее пространство"
     },
     "scopes": {
@@ -4158,7 +4158,6 @@
     "modelsSelected": "{count} моделей",
     "noResults": "Шаблоны не найдены",
     "noResultsHint": "Попробуйте изменить параметры поиска или фильтры",
-    "resetFilters": "Очистить фильтры",
     "resultsCount": "Показано {count} из {total} шаблонов",
     "runsOnFilter": "Запускается на",
     "runsOnSelected": "{count} запусков на",
