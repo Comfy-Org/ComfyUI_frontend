@@ -39,12 +39,6 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-// Stub model-type fetching so mounting the modal does not fire a real
-// `api.getModelFolders()` network request. The unmocked call hit
-// http://localhost:3000/api/experiment/models, failed with ECONNREFUSED, and
-// logged via console.error asynchronously after the test had finished —
-// racing with vitest worker teardown and surfacing as a flaky
-// "EnvironmentTeardownError: Closing rpc while onUserConsoleLog was pending".
 vi.mock('@/platform/assets/composables/useModelTypes', () => ({
   useModelTypes: () => ({
     fetchModelTypes: vi.fn().mockResolvedValue(undefined)
