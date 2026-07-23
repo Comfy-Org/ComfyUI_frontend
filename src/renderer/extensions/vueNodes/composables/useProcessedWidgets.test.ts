@@ -1,9 +1,12 @@
 import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -22,6 +25,18 @@ import {
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+
+const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn()
+}))
+
+vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
+  const actual = await importActual<typeof GraphTraversalUtil>()
+  return {
+    ...actual,
+    executionIdToNodeLocatorId
+  }
+})
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -480,6 +495,49 @@ describe('computeProcessedWidgets borderStyle', () => {
       createNodeLocatorId(subgraphId, toNodeId('inner-node'))
     )
   })
+
+  it('resolves a promoted widget locator from its source execution id', () => {
+    const sourceExecutionId = createNodeExecutionId([
+      toNodeId('host-node'),
+      toNodeId('inner-node')
+    ])
+    executionIdToNodeLocatorId.mockImplementationOnce((_graph, executionId) =>
+      executionId === sourceExecutionId ? 'source:inner-node' : undefined
+    )
+    const widget = createMockWidget({
+      name: 'curve',
+      type: 'curve',
+      nodeId: toNodeId('host-node'),
+      sourceExecutionId
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: toNodeId('host-node'),
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: null
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: fromAny<LGraph, unknown>({}),
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe('source:inner-node')
+    expect(executionIdToNodeLocatorId).toHaveBeenCalledWith(
+      expect.anything(),
+      sourceExecutionId
+    )
+  })
+
   it('deduplication keeps visible widget over hidden duplicate', () => {
     const sharedWidgetId = widgetId(GRAPH_ID, toNodeId('1'), 'text')
     const hiddenWidget = createMockWidget({
