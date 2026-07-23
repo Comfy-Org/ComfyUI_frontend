@@ -418,8 +418,6 @@ export class AssetsSidebarTab extends SidebarTab {
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
-    // Wait for the popover content to render. Use the default timeout so slower
-    // (e.g. cloud) app inits don't burst-fail a tight explicit timeout.
     await expect(
       this.listViewOption.or(this.gridViewOption).first()
     ).toBeVisible()
@@ -428,8 +426,6 @@ export class AssetsSidebarTab extends SidebarTab {
   async openFilterMenu() {
     await this.dismissToasts()
     await this.filterButton.click()
-    // Wait for the filter popover to open. Use the default timeout so slower
-    // (e.g. cloud) app inits don't burst-fail a tight explicit timeout.
     await expect(this.filterCheckbox('Image')).toBeVisible()
   }
 
@@ -437,8 +433,6 @@ export class AssetsSidebarTab extends SidebarTab {
     filter: MediaFilterKind | MediaFilterLabel
   ): Promise<void> {
     const checkbox = this.filterCheckbox(filter)
-    // Ensure the popover has finished opening before reading its state; a stale
-    // read here races the reka-ui slide/fade animation.
     await expect(checkbox).toBeVisible()
     const before = await checkbox.getAttribute('aria-checked')
     await checkbox.click()

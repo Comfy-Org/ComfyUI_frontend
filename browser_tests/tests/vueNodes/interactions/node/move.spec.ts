@@ -422,11 +422,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
         loadCheckpointHeaderPos
       )
 
-      // Poll the header position so the assertion retries until the touch pan
-      // has settled, instead of reading a single mid-animation bounding box.
-      // A screen bounding box read is pixel-quantized, so assert to the nearest
-      // pixel (precision 0 == within 0.5px) rather than the default precision 2
-      // (within 0.005px), which sub-pixel canvas rounding cannot satisfy.
       await expect
         .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.x))
         .toBeCloseTo(loadCheckpointHeaderPos.x + 64, 0)
