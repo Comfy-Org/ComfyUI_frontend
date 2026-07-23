@@ -12,7 +12,7 @@ System design, data flow, and the reasoning behind every invariant:
 ## Prerequisites
 
 1. A ComfyUI backend on `127.0.0.1:8288` with every manifest pack (the
-   `pack` entries in `browser_tests/fixtures/data/customNodeManifest.json`)
+   `pack` entries in `browser_tests/fixtures/data/customNodeManifest.core.json`)
    and ComfyUI_devtools
    installed. Launch it with `--multi-user` (the repo-wide browser-test
    prerequisite; the fixture writes per-worker user settings and the suite

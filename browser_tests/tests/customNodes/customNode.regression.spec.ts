@@ -171,8 +171,8 @@ for (const entry of loadManifest()) {
       test.skip(
         !entry.tiers.includes('run') ||
           missing.length > 0 ||
-          entry.requiresGpu ||
-          entry.requiresModels.length > 0 ||
+          ('requiresGpu' in entry &&
+            (entry.requiresGpu || entry.requiresModels.length > 0)) ||
           !entry.workflow ||
           !existsSync(resolve(workflowRelative)),
         `run tier unavailable for ${entry.pack}`

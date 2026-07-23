@@ -737,7 +737,7 @@ for (const entry of loadManifest()) {
         savePackGeometry(entry.pack, {
           recordedAt: {
             core: process.env.CN_GEOMETRY_CORE ?? 'unrecorded',
-            pin: entry.pin
+            pin: 'pin' in entry ? entry.pin : entry.deployRef
           },
           schema: 1,
           nodes: measuredGeometry

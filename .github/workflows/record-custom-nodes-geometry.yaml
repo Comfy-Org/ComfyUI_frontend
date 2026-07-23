@@ -52,7 +52,7 @@ jobs:
           set -euo pipefail
           pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
             > /tmp/torch-constraints.txt || true
-          manifest=browser_tests/fixtures/data/customNodeManifest.json
+          manifest=browser_tests/fixtures/data/customNodeManifest.core.json
           mapfile -t entries < <(jq -c '.[]' "$manifest")
           for entry in "${entries[@]}"; do
             repo=$(jq -r '.repo' <<<"$entry")

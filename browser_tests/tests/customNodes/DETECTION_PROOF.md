@@ -47,7 +47,7 @@ The gate protects against two distinct things, and the proof covers both:
   broken version). The gate catches these too. CI clones every pack fresh at
   its pin, so editing pack files in the frontend repo does nothing - the clone
   overwrites them. Two ways deliver a pack break on CI: (a) point the manifest
-  (`browser_tests/fixtures/data/customNodeManifest.json`) `repo`/`pin` at a
+  (`browser_tests/fixtures/data/customNodeManifest.core.json`) `repo`/`pin` at a
   broken fork, which is exactly the pinned-bump scenario and the most
   production-faithful; or (b) a self-contained CI step that patches each cloned
   pack in place right after install. The proof PR uses (b) - no external repos,
