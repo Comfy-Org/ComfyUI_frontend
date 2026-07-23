@@ -108,6 +108,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
     } finally {
       document.body.removeChild(dialog)
     }
@@ -124,6 +125,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
     } finally {
       document.body.removeChild(dialog)
     }
