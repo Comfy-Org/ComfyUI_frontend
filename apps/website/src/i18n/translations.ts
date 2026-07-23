@@ -2337,6 +2337,7 @@ const translations = {
   'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
+  'nav.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
@@ -2351,6 +2352,7 @@ const translations = {
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
+  'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -4602,6 +4604,54 @@ const translations = {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
   },
+
+  // Events page (/events)
+  // zh-CN strings pending native review
+  'events.page.title': {
+    en: 'Events - Livestreams, Hackathons & Community Meetups | Comfy',
+    'zh-CN': '活动 - 直播、黑客松与社区聚会 | Comfy'
+  },
+  'events.page.description': {
+    en: 'Livestreams and hackathons we run. Community events worldwide. Join upcoming Comfy events or catch up on past livestreams, hackathons, and community meetups.',
+    'zh-CN':
+      '我们举办的直播和黑客松，以及遍布全球的社区活动。参加即将举行的 Comfy 活动，或回看过往的直播、黑客松和社区聚会。'
+  },
+  'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
+  'events.hero.title': {
+    en: 'Creators, all in one place',
+    'zh-CN': '创作者，齐聚一堂'
+  },
+  'events.hero.subtitle': {
+    en: 'Livestreams and hackathons we run. Community events worldwide.',
+    'zh-CN': '我们举办的直播和黑客松，以及遍布全球的社区活动。'
+  },
+  'events.hero.prevSlide': {
+    en: 'Previous featured event',
+    'zh-CN': '上一个精选活动'
+  },
+  'events.hero.nextSlide': {
+    en: 'Next featured event',
+    'zh-CN': '下一个精选活动'
+  },
+  'events.upcoming.title': {
+    en: 'Upcoming events',
+    'zh-CN': '即将举行的活动'
+  },
+  'events.upcoming.description': {
+    en: 'Join the waitlist to share and learn with other creators.',
+    'zh-CN': '加入候补名单，与其他创作者分享和学习。'
+  },
+  'events.upcoming.learnMore': { en: 'Learn more', 'zh-CN': '了解更多' },
+  'events.past.title': {
+    en: 'See our past events',
+    'zh-CN': '回顾过往活动'
+  },
+  'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
+  'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
+  'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
+  'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
+  'events.category.community': { en: 'Community', 'zh-CN': '社区' },
 
   // Brand Portal page (/brand)
   'brand.page.title': {
