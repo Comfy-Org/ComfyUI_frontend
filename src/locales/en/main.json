@@ -2594,6 +2594,7 @@
     "reactivatePlan": "Reactivate plan",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
+    "resubscribeFailed": "Failed to reactivate subscription",
     "subscribeFailed": "Failed to subscribe",
     "canceledCard": {
       "title": "Your subscription has been canceled",
