@@ -984,11 +984,32 @@ export class LGraphNode
       }
 
       if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+        const allWidgets = this.widgets ?? []
+        // Legacy payloads written by pre-compact serialize() emit a JSON
+        // null at every preceding `serialize: false` slot, so the array
+        // is longer than the serializable widget count. Read by widget
+        // index in that case to undo the shift; otherwise consume the
+        // compact array sequentially.
+        const serializableCount = allWidgets.reduce(
+          (count, widget) => (widget.serialize === false ? count : count + 1),
+          0
+        )
+        const isLegacyIndexedLayout =
+          info.widgets_values.length > serializableCount
+
+        if (isLegacyIndexedLayout) {
+          for (const [widgetIndex, widget] of allWidgets.entries()) {
+            if (widget.serialize === false) continue
+            if (widgetIndex >= info.widgets_values.length) break
+            widget.value = info.widgets_values[widgetIndex]
+          }
+        } else {
+          let i = 0
+          for (const widget of allWidgets) {
+            if (widget.serialize === false) continue
+            if (i >= info.widgets_values.length) break
+            widget.value = info.widgets_values[i++]
+          }
         }
       }
     }
@@ -1039,15 +1060,17 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
+      // Compact write to mirror configure()'s compacting read; indexed
+      // assignment would leave null holes that shift values on round-trip.
       o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget?.value
-        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        o.widgets_values[i] =
+        o.widgets_values.push(
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
+        )
       }
     }
 
