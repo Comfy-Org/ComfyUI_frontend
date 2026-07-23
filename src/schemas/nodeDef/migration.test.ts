@@ -5,6 +5,31 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('NodeDef Migration', () => {
+  it('preserves interactive display definitions', () => {
+    const nodeDef = {
+      name: 'Interactive',
+      display_name: 'Interactive',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: '',
+      output_node: true,
+      interactive_ui: [
+        {
+          id: 'stream',
+          kind: 'video_stream',
+          views: [
+            { id: 'source', role: 'local_source', label: 'Webcam' },
+            { id: 'result', role: 'remote_output', label: 'Inverted' }
+          ]
+        }
+      ]
+    } as ComfyNodeDefV1
+
+    expect(transformNodeDefV1ToV2(nodeDef).interactive_ui).toEqual(
+      nodeDef.interactive_ui
+    )
+  })
+
   it('should transform a plain object to V2 format', () => {
     const plainObject = {
       required: {

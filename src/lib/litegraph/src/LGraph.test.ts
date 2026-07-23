@@ -306,6 +306,20 @@ describe('Graph Clearing and Callbacks', () => {
     expect(graph.nodes.length).toBe(0)
   })
 
+  test('clear() calls onRemoved() for nodes in subgraph definitions', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const innerNode = new LGraphNode('InnerNode')
+    const onRemoved = vi.fn()
+    innerNode.onRemoved = onRemoved
+    subgraph.add(innerNode)
+    graph.subgraphs.set(subgraph.id, subgraph)
+
+    graph.clear()
+
+    expect(onRemoved).toHaveBeenCalledOnce()
+  })
+
   test('clear() removes graph-scoped preview and widget-value state', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 

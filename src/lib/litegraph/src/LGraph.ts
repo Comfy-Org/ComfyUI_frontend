@@ -409,6 +409,11 @@ export class LGraph
 
     // used to detect changes
     this._version = -1
+    for (const subgraph of this._subgraphs.values()) {
+      for (const node of subgraph.nodes) {
+        fireNodeRemovalLifecycle(node)
+      }
+    }
     this._subgraphs.clear()
 
     // safe clear

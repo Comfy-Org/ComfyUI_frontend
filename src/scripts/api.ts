@@ -4,6 +4,16 @@ import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
+import {
+  INTERACTION_MEDIA,
+  decodeInteractionMedia,
+  encodeInteractionMedia,
+  parseInteractionControl
+} from '@/services/interactionProtocol'
+import type {
+  InteractionControl,
+  InteractionMediaMetadata
+} from '@/services/interactionProtocol'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
@@ -140,6 +150,11 @@ interface QueuePromptOptions {
    * 'default' uses the server's CLI setting and is not sent to backend.
    */
   previewMethod?: PreviewMethod
+  /**
+   * Wait for the current WebSocket connection to receive its server session ID
+   * before submitting a prompt that requires a live browser session.
+   */
+  requireConnectedClient?: boolean
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -157,6 +172,11 @@ export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
+  interaction: InteractionControl
+  interaction_media: {
+    metadata: InteractionMediaMetadata
+    blob: Blob
+  }
   progress: ProgressWsMessage
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
@@ -344,6 +364,9 @@ export class ComfyApi extends EventTarget {
    */
   user: string
   socket: WebSocket | null = null
+  private socketGeneration = 0
+  private confirmedSocket: WebSocket | null = null
+  private confirmedClientId?: string
 
   /**
    * Cache Firebase auth store composable function.
@@ -645,6 +668,7 @@ export class ComfyApi extends EventTarget {
     if (this.socket) {
       return
     }
+    const generation = ++this.socketGeneration
 
     let opened = false
     let existingSession = window.name
@@ -679,14 +703,19 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    this.socket = new WebSocket(wsUrl)
-    this.socket.binaryType = 'arraybuffer'
+    if (generation !== this.socketGeneration || this.socket) return
+    const socket = new WebSocket(wsUrl)
+    this.socket = socket
+    this.confirmedSocket = null
+    this.confirmedClientId = undefined
+    socket.binaryType = 'arraybuffer'
 
-    this.socket.addEventListener('open', () => {
+    socket.addEventListener('open', () => {
+      if (this.socket !== socket) return
       opened = true
 
       // Send feature flags as the first message
-      this.socket!.send(
+      socket.send(
         JSON.stringify({
           type: 'feature_flags',
           data: this.getClientFeatureFlags()
@@ -698,29 +727,44 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('error', () => {
-      if (this.socket) this.socket.close()
+    socket.addEventListener('error', () => {
+      socket.close()
       if (!isReconnect && !opened) {
         this._pollQueue()
       }
     })
 
-    this.socket.addEventListener('close', () => {
+    socket.addEventListener('close', () => {
+      if (this.socket !== socket) return
+      this.confirmedSocket = null
+      this.confirmedClientId = undefined
       setTimeout(async () => {
+        if (this.socket !== socket) return
         this.socket = null
         await this.createSocket(true)
       }, 300)
       if (opened) {
+        this.serverFeatureFlags.value = {}
         this.dispatchCustomEvent('status', null)
         this.dispatchCustomEvent('reconnecting')
       }
     })
 
-    this.socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
+      if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
           const view = new DataView(event.data)
           const eventType = view.getUint32(0)
+
+          if (eventType === INTERACTION_MEDIA) {
+            const { metadata, media } = decodeInteractionMedia(event.data)
+            this.dispatchCustomEvent('interaction_media', {
+              metadata,
+              blob: new Blob([media], { type: metadata.mime })
+            })
+            return
+          }
 
           let imageMime
           switch (eventType) {
@@ -818,6 +862,8 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
+                this.confirmedSocket = socket
+                this.confirmedClientId = clientId
                 window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
@@ -853,6 +899,12 @@ export class ComfyApi extends EventTarget {
               )
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
+            case 'interaction':
+              this.dispatchCustomEvent(
+                'interaction',
+                parseInteractionControl(msg.data)
+              )
+              break
             default:
               if (this._registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
@@ -876,6 +928,41 @@ export class ComfyApi extends EventTarget {
    */
   init() {
     this.createSocket()
+  }
+
+  sendInteractionControl(
+    data: Omit<InteractionControl, 'op'> & {
+      op: 'ready' | 'stop' | 'cancel'
+      width?: number
+      height?: number
+      fps?: number
+      mime?: 'image/jpeg'
+    }
+  ): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false
+    try {
+      this.socket.send(JSON.stringify({ type: 'interaction', data }))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  sendInteractionMedia(
+    metadata: InteractionMediaMetadata,
+    media: ArrayBuffer
+  ): boolean {
+    if (
+      this.socket?.readyState !== WebSocket.OPEN ||
+      this.socket.bufferedAmount > 2 * 1024 * 1024
+    )
+      return false
+    try {
+      this.socket.send(encodeInteractionMedia(metadata, media))
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**
@@ -953,9 +1040,20 @@ export class ComfyApi extends EventTarget {
     options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
+    let clientId = this.clientId ?? ''
+
+    if (options?.requireConnectedClient) {
+      const confirmedClientId = await this.waitForSocketSession()
+      if (!confirmedClientId) {
+        throw new Error(
+          'The browser connection is still reconnecting. Wait a moment and try again.'
+        )
+      }
+      clientId = confirmedClientId
+    }
 
     const body: QueuePromptRequestBody = {
-      client_id: this.clientId ?? '', // TODO: Unify clientId access
+      client_id: clientId,
       prompt,
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
@@ -1004,6 +1102,22 @@ export class ComfyApi extends EventTarget {
     }
 
     return await res.json()
+  }
+
+  private async waitForSocketSession(
+    timeout = 5000
+  ): Promise<string | undefined> {
+    const deadline = Date.now() + timeout
+    while (Date.now() < deadline) {
+      if (
+        this.socket &&
+        this.socket === this.confirmedSocket &&
+        this.socket.readyState === WebSocket.OPEN
+      ) {
+        return this.confirmedClientId
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 50))
+    }
   }
 
   /**

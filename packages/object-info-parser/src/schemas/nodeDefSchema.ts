@@ -273,6 +273,20 @@ const zPriceBadge = z.object({
 
 export type PriceBadge = z.infer<typeof zPriceBadge>
 
+export const zInteractiveUi = z.array(
+  z.object({
+    id: z.string().min(1),
+    kind: z.string().min(1),
+    views: z.array(
+      z.object({
+        id: z.string().min(1),
+        role: z.enum(['local_source', 'remote_output']),
+        label: z.string().optional()
+      })
+    )
+  })
+)
+
 export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
@@ -317,7 +331,8 @@ export const zComfyNodeDef = z.object({
   /** Category for the Essentials tab. If set, the node appears in Essentials. */
   essentials_category: z.string().optional(),
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
-  isGlobal: z.boolean().optional()
+  isGlobal: z.boolean().optional(),
+  interactive_ui: zInteractiveUi.optional()
 })
 
 export const zAutogrowOptions = z.object({

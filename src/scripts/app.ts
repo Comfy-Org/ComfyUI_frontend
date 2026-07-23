@@ -1682,9 +1682,15 @@ export class ComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
+            const requiresConnectedClient = Object.values(p.output).some(
+              (node) =>
+                !!useNodeDefStore().nodeDefsByName[node.class_type]
+                  ?.interactive_ui?.length
+            )
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
-              previewMethod
+              previewMethod,
+              requireConnectedClient: requiresConnectedClient
             })
             delete api.authToken
             delete api.apiKey
