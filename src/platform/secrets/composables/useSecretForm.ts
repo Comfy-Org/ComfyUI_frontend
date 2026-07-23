@@ -54,6 +54,16 @@ function isJsonObject(value: string): boolean {
 // file can't be read into memory or block the main thread on JSON.parse.
 const MAX_JSON_FILE_BYTES = 1024 * 1024
 
+// Typed over the generated enum so a new server-side credential_type is a
+// compile error here instead of silently degrading to 'text'.
+const CREDENTIAL_TYPE_TO_INPUT: Record<
+  NonNullable<SecretMetadata['credential_type']>,
+  SecretInputType
+> = {
+  api_key: 'text',
+  gcp_service_account: 'json_file'
+}
+
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
   secret?: MaybeRefOrGetter<SecretMetadata | undefined>
@@ -142,9 +152,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     const storedCredentialType =
       mode === 'edit' ? toValue(secretRef)?.credential_type : undefined
     if (storedCredentialType) {
-      return storedCredentialType === 'gcp_service_account'
-        ? 'json_file'
-        : 'text'
+      return CREDENTIAL_TYPE_TO_INPUT[storedCredentialType] ?? 'text'
     }
     if (!form.provider) return 'text'
     return providerInfoById.value.get(form.provider)?.input_type ?? 'text'

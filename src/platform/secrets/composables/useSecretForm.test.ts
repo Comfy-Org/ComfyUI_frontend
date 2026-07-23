@@ -534,6 +534,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
+        availableProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -553,6 +554,38 @@ describe('useSecretForm', () => {
       expect(mockUpdate).toHaveBeenCalledWith('secret-sa', {
         name: secret.name,
         secret_value: '{"type":"service_account"}'
+      })
+    })
+
+    it('allows a name-only update for a stored gcp_service_account secret without JSON validation', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({
+        id: 'secret-sa',
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+      mockUpdate.mockResolvedValue({})
+
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => ['gemini'],
+        availableProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      form.name = 'Renamed SA'
+      form.secretValue = ''
+
+      await handleSubmit()
+
+      expect(errors.secretValue).toBe('')
+      expect(mockUpdate).toHaveBeenCalledWith('secret-sa', {
+        name: 'Renamed SA'
       })
     })
 
