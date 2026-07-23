@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import ProcessToast from './ProcessToast.vue'
 
@@ -128,9 +128,12 @@ export const AllStates: Story = {
 }
 
 /**
- * Full-bleed demo with a control bar docked at the bottom: every case mapped
- * in Figma, driven by hand or played through in order. The backend rarely
- * reaches these states on demand, so this is how they get reviewed and shown.
+ * Full-bleed demo with a control bar docked at the bottom. Each case carries
+ * the panel rows it would really have, so the expanded view stays truthful:
+ * a finished run shows no active work, a failure shows the failure.
+ *
+ * The backend rarely reaches these states on demand, so this is where they
+ * get reviewed and shown.
  */
 export const Demo: Story = {
   parameters: { layout: 'fullscreen' },
@@ -146,6 +149,14 @@ export const Demo: Story = {
       const runSeconds = computed(() => opts.runSeconds ?? 20)
       const holdSeconds = computed(() => opts.holdSeconds ?? 3)
 
+      type Row = {
+        title: string
+        meta: string
+        /** null renders no progress rule, as for queued and finished work */
+        percent: number | null
+        /** Tracks the demo clock instead of a fixed percent */
+        live?: boolean
+      }
       type Case = {
         name: string
         verb: string
@@ -153,48 +164,87 @@ export const Demo: Story = {
         status?: 'progress' | 'done' | 'failed'
         failedCount?: number
         showPercentText?: boolean
-        /** Drives the percent from 0 to 100 while on screen. */
         ticks?: boolean
-        /** Seconds to hold before advancing; ticking cases run their course. */
-        hold?: number
-        /** Only an executing job can be stopped, as in the queue instance. */
         stoppable?: boolean
+        rows: Row[]
       }
 
+      const WORKFLOW = "Add Product to Character's Hand"
+
       const cases: Case[] = [
-        { name: 'Queued', verb: 'Queued 3', percent: null },
-        { name: 'Starting', verb: 'Starting', percent: null },
+        {
+          name: 'Queued',
+          verb: 'Queued 3',
+          percent: null,
+          rows: [
+            { title: WORKFLOW, meta: 'In queue...', percent: null },
+            { title: WORKFLOW, meta: 'In queue...', percent: null },
+            { title: WORKFLOW, meta: 'In queue...', percent: null }
+          ]
+        },
+        {
+          name: 'Starting',
+          verb: 'Starting',
+          percent: null,
+          rows: [{ title: WORKFLOW, meta: 'Starting', percent: null }]
+        },
         {
           name: 'Running',
           verb: 'Running',
           percent: 0,
           ticks: true,
-          stoppable: true
+          stoppable: true,
+          rows: [{ title: WORKFLOW, meta: 'Running', percent: 0, live: true }]
         },
         {
-          name: 'Batch 3/7',
+          name: 'Parallel 3/7',
           verb: 'Running 3/7',
           percent: 0,
           ticks: true,
           showPercentText: false,
-          stoppable: true
+          stoppable: true,
+          rows: [
+            { title: WORKFLOW, meta: 'Running', percent: 0, live: true },
+            { title: 'Upscale to 4K', meta: 'Running', percent: 68 },
+            { title: 'Relight product shot', meta: 'Running', percent: 24 },
+            { title: 'Background swap', meta: 'In queue...', percent: null },
+            { title: 'Add reflections', meta: 'In queue...', percent: null }
+          ]
         },
         {
           name: 'With failures',
           verb: 'Running',
           percent: 62,
           failedCount: 2,
-          stoppable: true
+          stoppable: true,
+          rows: [
+            { title: WORKFLOW, meta: 'Running · 62%', percent: 62 },
+            { title: 'Upscale to 4K', meta: 'Failed', percent: null },
+            { title: 'Relight product shot', meta: 'Failed', percent: null }
+          ]
         },
-        { name: 'Completed', verb: 'Completed', status: 'done' },
-        { name: 'Failed', verb: 'Failed', status: 'failed' }
+        {
+          name: 'Completed',
+          verb: 'Completed',
+          status: 'done',
+          rows: []
+        },
+        {
+          name: 'Failed',
+          verb: 'Failed',
+          status: 'failed',
+          rows: [{ title: WORKFLOW, meta: 'Failed', percent: null }]
+        }
       ]
 
       const index = ref(0)
       const percent = ref(0)
       const playing = ref(false)
-      const expanded = ref(false)
+      const expanded = ref(true)
+      const stopped = ref(false)
       const current = computed(() => cases[index.value])
+      // Rows are a working copy so cancelling one actually removes it
+      const rows = ref<Row[]>([...cases[0].rows])
 
       const TICK_MS = 100
       let timer: ReturnType<typeof setInterval> | undefined
@@ -204,16 +254,16 @@ export const Demo: Story = {
         index.value = i
         percent.value = 0
         heldMs = 0
+        stopped.value = false
+        rows.value = cases[i].rows.map((row) => ({ ...row }))
       }
-
-      const advance = () => {
-        select((index.value + 1) % cases.length)
-      }
+      const advance = () => select((index.value + 1) % cases.length)
 
       const onTick = () => {
+        if (stopped.value) return
         const step = current.value
         if (step.ticks) {
-          // A full 0-100 sweep spans runSeconds, slow enough to actually watch
+          // A full 0-100 sweep spans runSeconds, slow enough to watch
           percent.value = Math.min(
             100,
             percent.value + (100 * TICK_MS) / (runSeconds.value * 1000)
@@ -223,23 +273,49 @@ export const Demo: Story = {
         }
         if (!playing.value) return
         heldMs += TICK_MS
-        if (heldMs >= (step.hold ?? holdSeconds.value) * 1000) advance()
+        if (heldMs >= holdSeconds.value * 1000) advance()
       }
 
       onMounted(() => {
         timer = setInterval(onTick, TICK_MS)
       })
       onBeforeUnmount(() => clearInterval(timer))
-      watch([runSeconds, holdSeconds], () => {
-        heldMs = 0
-      })
 
-      return { cases, index, percent, playing, expanded, current, select }
+      const rowPercent = (row: Row) =>
+        row.live ? Math.round(percent.value) : row.percent
+      const rowMeta = (row: Row) =>
+        row.live ? `Running · ${Math.round(percent.value)}%` : row.meta
+
+      /** Stopping the run freezes progress and clears the active work. */
+      const stopRun = () => {
+        stopped.value = true
+        playing.value = false
+        rows.value = []
+      }
+      const cancelRow = (i: number) => {
+        rows.value.splice(i, 1)
+        if (!rows.value.length) stopRun()
+      }
+
+      return {
+        cases,
+        index,
+        percent,
+        playing,
+        expanded,
+        stopped,
+        rows,
+        current,
+        select,
+        stopRun,
+        cancelRow,
+        rowPercent,
+        rowMeta
+      }
     },
     template: `
       <div class="relative flex h-screen flex-col bg-charcoal-900">
-        <!-- Stage -->
-        <div class="flex flex-1 items-start justify-end p-6">
+        <div class="flex flex-1 items-start justify-end overflow-auto p-6">
           <ProcessToast
             :verb="current.verb"
             :percent="current.ticks ? Math.round(percent) : (current.percent ?? null)"
@@ -247,42 +323,62 @@ export const Demo: Story = {
             :failed-count="current.failedCount ?? 0"
             :show-percent-text="current.showPercentText ?? true"
             :hide-action="!current.stoppable"
-            :expanded="expanded"
+            :expanded="expanded && current.status === undefined"
             @toggle-expand="expanded = !expanded"
           >
             <template #action>
-              <button class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground">
+              <button
+                class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground"
+                title="Stop run"
+                @click="stopRun"
+              >
                 <i class="icon-[comfy--stop] size-4" />
               </button>
             </template>
+
             <template #panel>
               <div class="mt-1 flex w-80 flex-col overflow-clip rounded-lg border border-solid border-charcoal-700 bg-comfy-menu-bg drop-shadow-[1px_1px_4px_rgba(0,0,0,0.4)]">
                 <div class="flex items-center justify-between py-3.5 pr-3 pl-4">
                   <span class="text-[13px] font-semibold text-base-foreground">Active generations</span>
-                  <span class="text-[11px] font-medium text-base-foreground">Cancel all</span>
+                  <span
+                    v-if="rows.length"
+                    class="cursor-pointer text-[11px] font-medium text-base-foreground"
+                    @click="stopRun"
+                  >Cancel all</span>
                 </div>
-                <div class="flex flex-col gap-1.5 px-[9px] pb-[9px]">
-                  <div class="relative flex flex-col gap-1 overflow-clip rounded-lg bg-secondary-background px-3 py-2">
+                <div class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-[9px] pb-[9px]">
+                  <div
+                    v-for="(row, i) in rows"
+                    :key="row.title + i"
+                    class="relative flex flex-col gap-1 overflow-clip rounded-lg bg-secondary-background px-3 py-2"
+                  >
                     <div class="flex items-center justify-between gap-2">
-                      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">Add Product to Character's Hand</span>
+                      <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">{{ row.title }}</span>
                       <div class="flex shrink-0 items-center gap-2 text-text-secondary">
-                        <i class="icon-[lucide--locate] size-4" />
-                        <i class="icon-[comfy--stop] size-4" />
+                        <i class="icon-[comfy--pause] size-4 opacity-40" title="Pause (no API yet)" />
+                        <i
+                          class="icon-[comfy--stop] size-4 cursor-pointer"
+                          title="Stop this run"
+                          @click="cancelRow(i)"
+                        />
                       </div>
                     </div>
-                    <span class="truncate text-xs text-muted-foreground">Running · {{ Math.round(percent) }}%</span>
+                    <span class="truncate text-xs text-muted-foreground">{{ rowMeta(row) }}</span>
                     <div
+                      v-if="rowPercent(row) !== null"
                       class="absolute bottom-0 left-0 h-px rounded-[1px] bg-base-foreground"
-                      :style="{ width: Math.round(percent) + '%' }"
+                      :style="{ width: rowPercent(row) + '%' }"
                     />
                   </div>
+                  <p v-if="!rows.length" class="px-2 py-4 text-center text-xs text-muted-foreground">
+                    Nothing running yet
+                  </p>
                 </div>
               </div>
             </template>
           </ProcessToast>
         </div>
 
-        <!-- Control bar -->
         <div class="flex flex-wrap items-center gap-2 border-t border-solid border-charcoal-700 bg-comfy-menu-bg px-3 py-2">
           <button
             class="cursor-pointer rounded-md border-none bg-base-foreground px-3 py-1.5 text-xs font-medium text-base-background"
@@ -306,8 +402,9 @@ export const Demo: Story = {
           <div class="mx-1 h-5 w-px bg-base-foreground/15" />
 
           <button
-            class="cursor-pointer rounded-md border-none px-2.5 py-1.5 text-xs"
+            class="cursor-pointer rounded-md border-none px-2.5 py-1.5 text-xs disabled:opacity-40"
             :class="expanded ? 'bg-base-foreground text-base-background' : 'bg-secondary-background text-muted-foreground'"
+            :disabled="current.status !== undefined"
             @click="expanded = !expanded"
           >
             Panel
