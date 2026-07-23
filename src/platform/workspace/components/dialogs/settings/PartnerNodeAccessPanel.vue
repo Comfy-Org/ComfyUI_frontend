@@ -106,7 +106,7 @@
         </label>
         <div class="flex items-center gap-2">
           <Button
-            v-if="!allProvidersEnabled"
+            v-if="isRestricted"
             variant="textonly"
             size="lg"
             :loading="pendingBulkAction === 'enable'"
@@ -116,7 +116,6 @@
             {{ $t('workspacePanel.partnerNodes.enableAll') }}
           </Button>
           <Button
-            v-else
             variant="textonly"
             size="lg"
             :disabled="!isRestricted || isSaving || !canEditPolicy"
@@ -378,9 +377,6 @@ const isPolicyLoaded = computed(
 )
 const isReadOnly = computed(() => workspaceRole.value !== 'owner')
 const canEditPolicy = computed(() => !isReadOnly.value && isPolicyLoaded.value)
-const allProvidersEnabled = computed(() =>
-  providers.value.every(({ id }) => isProviderEnabled(id))
-)
 
 const providerRows = computed(() =>
   providers.value
