@@ -39,9 +39,7 @@ export const usePartnerNodeGovernanceStore = defineStore(
 
     const governedWorkspaceId = computed(() => {
       const workspace = workspaceStore.activeWorkspace
-      return flags.teamWorkspacesEnabled &&
-        flags.partnerNodeGovernanceEnabled &&
-        workspace?.type === 'team'
+      return flags.partnerNodeGovernanceEnabled && workspace?.type === 'team'
         ? workspace.id
         : null
     })

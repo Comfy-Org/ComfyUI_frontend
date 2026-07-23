@@ -16,7 +16,6 @@ const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
 const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockFlags = vi.hoisted(() => ({
-  teamWorkspacesEnabled: true,
   partnerNodeGovernanceEnabled: true
 }))
 
@@ -83,7 +82,6 @@ describe('partnerNodeGovernanceStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockUpdatePartnerNodePolicy.mockReset()
-    mockFlags.teamWorkspacesEnabled = true
     mockFlags.partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
