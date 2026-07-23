@@ -51,10 +51,12 @@ const settingStore = useSettingStore()
 const enableDomClipping = computed(() =>
   settingStore.get('Comfy.DOMClippingEnabled')
 )
-const style = computed<CSSProperties>(() => {
-  const isDisabled = widget.computedDisabled
+const style = ref<CSSProperties>({})
 
-  return {
+function composeStyle() {
+  const isDisabled = widgetState.computedDisabled
+
+  style.value = {
     ...positionStyle.value,
     ...(enableDomClipping.value ? clippingStyle.value : {}),
     zIndex: widgetState.zIndex,
@@ -64,7 +66,7 @@ const style = computed<CSSProperties>(() => {
         : 'auto',
     opacity: isDisabled ? 0.5 : 1
   }
-})
+}
 
 const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
@@ -118,15 +120,32 @@ watch(
     () => widgetState.visible,
     left,
     top,
-    enableDomClipping
+    enableDomClipping,
+    clippingStyle
   ],
   () => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
+    composeStyle()
   },
   { immediate: true }
+)
+
+watch(
+  [
+    () => widgetState.zIndex,
+    () => widgetState.readonly,
+    () => widgetState.computedDisabled,
+    enableDomClipping
+  ],
+  () => {
+    if (enableDomClipping.value) {
+      updateDomClipping()
+    }
+    composeStyle()
+  }
 )
 
 watch(
