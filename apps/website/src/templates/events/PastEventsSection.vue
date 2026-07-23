@@ -5,7 +5,8 @@ import type { Locale } from '../../i18n/translations'
 
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
-import { pastEvents } from '../../data/events'
+import { localizeHref } from '../../config/routes'
+import { pastEvents, pastEventPath } from '../../data/events'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -23,7 +24,11 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     },
     cta: {
       label: t('events.past.watchNow', locale),
-      href: event.watch.href[locale]
+      // Events with a recording open their own page (dialog over the
+      // directory); the rest link straight out to YouTube.
+      href: event.youtubeVideoId
+        ? localizeHref(pastEventPath(event), locale)
+        : event.watch.href[locale]
     }
   }))
 )

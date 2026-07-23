@@ -4752,6 +4752,7 @@ const translations = {
   'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
   'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
   'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
+  'events.past.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
   'events.category.community': { en: 'Community', 'zh-CN': '社区' },

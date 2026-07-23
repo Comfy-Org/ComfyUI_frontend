@@ -37,8 +37,14 @@ export type PastEvent = {
   id: string
   category: EventCategory
   title: LocalizedText
+  description: LocalizedText
   media: EventMedia
   watch: { href: LocalizedText }
+  // Recording played on the event's own page (/events/[slug]); without it
+  // the card falls back to a plain link to `watch.href`.
+  youtubeVideoId?: string
+  // ISO date the recording was published; VideoObject uploadDate.
+  publishedDate: string
 }
 
 const UPCOMING_LIVESTREAM: LocalizedText = {
@@ -72,6 +78,11 @@ function eventVideo(
 const youtubeHref: LocalizedText = {
   en: externalLinks.youtube,
   'zh-CN': externalLinks.youtube
+}
+
+function youtubeWatchHref(videoId: string): LocalizedText {
+  const href = `https://www.youtube.com/watch?v=${videoId}`
+  return { en: href, 'zh-CN': href }
 }
 
 const foundersLiveFeatured: FeaturedEvent = {
@@ -132,11 +143,18 @@ export const pastEvents: readonly PastEvent[] = [
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI'
     },
+    description: {
+      en: 'Comfy MCP lets Claude, Cursor, and almost any AI agent you already use build, run, and iterate real Comfy Cloud workflows for you. Join Jo Zhang for a live walkthrough.',
+      'zh-CN':
+        'Comfy MCP 让 Claude、Cursor 以及几乎所有你正在使用的 AI 智能体为你构建、运行并迭代真实的 Comfy Cloud 工作流。欢迎观看 Jo Zhang 的现场演示。'
+    },
     media: eventImage('mcp.jpg', {
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
     }),
-    watch: { href: youtubeHref }
+    watch: { href: youtubeWatchHref('sX2sJ5-4MS4') },
+    youtubeVideoId: 'sX2sJ5-4MS4',
+    publishedDate: '2026-07-15'
   },
   {
     id: 'production-pipeline',
@@ -145,11 +163,18 @@ export const pastEvents: readonly PastEvent[] = [
       en: 'Reinventing the Production Pipeline',
       'zh-CN': '重塑生产流水线'
     },
+    description: {
+      en: 'Erin Sarofsky (COO/Owner, Sarofsky) and Ryan Summers (Head of Creative Innovation, Sarofsky) share how their team used ComfyUI to reinvent the studio production pipeline.',
+      'zh-CN':
+        'Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。'
+    },
     media: eventImage('reinventing-the.jpg', {
       en: 'Reinventing the Production Pipeline livestream recording',
       'zh-CN': '重塑生产流水线直播回放'
     }),
-    watch: { href: youtubeHref }
+    watch: { href: youtubeWatchHref('dsYggO4lsSo') },
+    youtubeVideoId: 'dsYggO4lsSo',
+    publishedDate: '2026-07-08'
   },
   {
     id: 'june-launches',
@@ -158,11 +183,18 @@ export const pastEvents: readonly PastEvent[] = [
       en: 'June Launches | Desktop, MCP & Core Engine Improvements',
       'zh-CN': '六月发布 | 桌面版、MCP 与核心引擎改进'
     },
+    description: {
+      en: 'Your front-row seat to everything we shipped in June: product leaders Jedrzej Kosinski, Alexis Rolland, Jo Zhang, and Matt Miller walk through desktop, MCP, and core engine improvements.',
+      'zh-CN':
+        '第一时间了解我们六月发布的所有内容：产品负责人 Jedrzej Kosinski、Alexis Rolland、Jo Zhang 和 Matt Miller 介绍桌面版、MCP 与核心引擎改进。'
+    },
     media: eventImage('june-launch.jpg', {
       en: 'June Launches livestream recording',
       'zh-CN': '六月发布直播回放'
     }),
-    watch: { href: youtubeHref }
+    watch: { href: youtubeWatchHref('yo7b_zHd20g') },
+    youtubeVideoId: 'yo7b_zHd20g',
+    publishedDate: '2026-06-29'
   },
   {
     id: 'krea-founders-live',
@@ -171,10 +203,28 @@ export const pastEvents: readonly PastEvent[] = [
       en: 'Krea X Comfy: Founders Live',
       'zh-CN': 'Krea X Comfy：创始人直播'
     },
+    description: {
+      en: 'A special live conversation with Victor Perez (CEO, Krea), Miguel Lara (Krea team), and ComfyAnonymous (Co-Founder, Comfy Org) on building creative AI tools.',
+      'zh-CN':
+        '与 Victor Perez（Krea CEO）、Miguel Lara（Krea 团队）以及 ComfyAnonymous（Comfy Org 联合创始人）的特别直播对谈，聊聊创意 AI 工具的打造。'
+    },
     media: eventImage('krea.jpg', {
       en: 'Krea X Comfy Founders Live recording',
       'zh-CN': 'Krea X Comfy 创始人直播回放'
     }),
-    watch: { href: youtubeHref }
+    watch: { href: youtubeWatchHref('31jiUhCEjJ4') },
+    youtubeVideoId: '31jiUhCEjJ4',
+    publishedDate: '2026-06-24'
   }
 ]
+
+// Past events that have a recording and therefore their own /events/[slug]
+// page; the slug is the event id.
+export const watchablePastEvents: readonly PastEvent[] = pastEvents.filter(
+  (event) => event.youtubeVideoId
+)
+
+export const pastEventPath = (event: PastEvent): string => `/events/${event.id}`
+
+export const getPastEventBySlug = (slug: string): PastEvent | undefined =>
+  watchablePastEvents.find((event) => event.id === slug)
