@@ -2979,7 +2979,7 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
-      "workspaceHelp": "ההרשאות חלות על סביבת עבודה זו בלבד.",
+      "detailsHeader": "פרטים",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -4127,7 +4127,6 @@
     "modelsSelected": "{count} מודלים",
     "noResults": "לא נמצאו תבניות",
     "noResultsHint": "נסה לשנות את החיפוש או המסננים",
-    "resetFilters": "ניקוי המסננים",
     "resultsCount": "מציג {count} מתוך {total} תבניות",
     "runsOnFilter": "פועל על",
     "runsOnSelected": "{count} פועל על",

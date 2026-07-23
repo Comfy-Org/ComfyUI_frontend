@@ -1,7 +1,11 @@
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SecretMetadata, SecretProvider } from '../types'
+import type {
+  SecretMetadata,
+  SecretProvider,
+  SecretProviderInfo
+} from '../types'
 import { useSecretForm } from './useSecretForm'
 
 vi.mock('vue-i18n', () => ({
@@ -113,6 +117,7 @@ describe('useSecretForm', () => {
 
       form.name = 'My Secret'
       form.provider = 'huggingface'
+      await nextTick()
       form.secretValue = ''
 
       await handleSubmit()
@@ -218,7 +223,7 @@ describe('useSecretForm', () => {
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['civitai'],
+        availableProviders: () => [{ id: 'civitai' }],
         visible,
         onSaved: vi.fn()
       })
@@ -231,7 +236,11 @@ describe('useSecretForm', () => {
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['civitai', 'civitai', 'huggingface'],
+        availableProviders: () => [
+          { id: 'civitai' },
+          { id: 'civitai' },
+          { id: 'huggingface' }
+        ],
         visible,
         onSaved: vi.fn()
       })
@@ -247,7 +256,7 @@ describe('useSecretForm', () => {
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['runway', 'gemini'],
+        availableProviders: () => [{ id: 'runway' }, { id: 'gemini' }],
         visible,
         onSaved: vi.fn()
       })
@@ -273,7 +282,7 @@ describe('useSecretForm', () => {
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['brand-new-provider'],
+        availableProviders: () => [{ id: 'brand-new-provider' }],
         visible,
         onSaved: vi.fn()
       })
@@ -294,7 +303,7 @@ describe('useSecretForm', () => {
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['huggingface'],
+        availableProviders: () => [{ id: 'huggingface' }],
         visible,
         onSaved: vi.fn()
       })
@@ -307,7 +316,7 @@ describe('useSecretForm', () => {
 
     it('reacts to availableProviders changing', () => {
       const visible = ref(true)
-      const availableProviders = ref<string[] | null>(null)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
       const { providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
@@ -318,14 +327,14 @@ describe('useSecretForm', () => {
 
       expect(providerOptions.value).toHaveLength(2)
 
-      availableProviders.value = ['huggingface']
+      availableProviders.value = [{ id: 'huggingface' }]
 
       expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
     })
 
     it('clears a selection the resolved allowlist no longer offers', async () => {
       const visible = ref(true)
-      const availableProviders = ref<string[] | null>(null)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
       const { form, providerOptions } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
@@ -335,7 +344,7 @@ describe('useSecretForm', () => {
       })
 
       form.provider = 'civitai'
-      availableProviders.value = ['huggingface']
+      availableProviders.value = [{ id: 'huggingface' }]
       await nextTick()
 
       expect(providerOptions.value.map((o) => o.value)).toEqual(['huggingface'])
@@ -344,7 +353,7 @@ describe('useSecretForm', () => {
 
     it('keeps a selection the resolved allowlist still offers', async () => {
       const visible = ref(true)
-      const availableProviders = ref<string[] | null>(null)
+      const availableProviders = ref<SecretProviderInfo[] | null>(null)
       const { form } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
@@ -354,7 +363,7 @@ describe('useSecretForm', () => {
       })
 
       form.provider = 'huggingface'
-      availableProviders.value = ['huggingface', 'civitai']
+      availableProviders.value = [{ id: 'huggingface' }, { id: 'civitai' }]
       await nextTick()
 
       expect(form.provider).toBe('huggingface')
@@ -366,7 +375,7 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => createMockSecret({ provider: 'huggingface' }),
         existingProviders: () => [],
-        availableProviders: () => ['civitai'],
+        availableProviders: () => [{ id: 'civitai' }],
         visible,
         onSaved: vi.fn()
       })
@@ -418,7 +427,7 @@ describe('useSecretForm', () => {
       const { form, providerHelp } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => ['runway', 'gemini'],
+        availableProviders: () => [{ id: 'runway' }, { id: 'gemini' }],
         visible,
         onSaved: vi.fn()
       })
@@ -441,6 +450,384 @@ describe('useSecretForm', () => {
 
       form.provider = 'huggingface'
       expect(providerHelp.value).toBe('secrets.providerHint')
+    })
+  })
+
+  describe('server-driven provider metadata', () => {
+    it('prefers the server-provided label over the registry label', () => {
+      const visible = ref(true)
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini', label: 'Gemini (Vertex)' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(
+        providerOptions.value.find((o) => o.value === 'gemini')?.label
+      ).toBe('Gemini (Vertex)')
+    })
+
+    it('defaults selectedInputType to text', () => {
+      const visible = ref(true)
+      const { form, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(selectedInputType.value).toBe('text')
+      form.provider = 'gemini'
+      expect(selectedInputType.value).toBe('text')
+    })
+
+    it('reports json_file input type for a json_file provider', () => {
+      const visible = ref(true)
+      const { form, selectedInputType } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      expect(selectedInputType.value).toBe('json_file')
+    })
+  })
+
+  describe('json_file credential input', () => {
+    const vertexProviders: SecretProviderInfo[] = [
+      { id: 'gemini', input_type: 'json_file' }
+    ]
+
+    it('loads file contents into the secret value', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const file = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(file)
+
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+      expect(fileName.value).toBe('sa.json')
+    })
+
+    it('rejects invalid JSON for a json_file provider', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = 'not json'
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+    })
+
+    it('rejects JSON that is not an object for a json_file provider', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = '["not", "an", "object"]'
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.invalidJson')
+    })
+
+    it('rejects a file larger than the size cap', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const oversized = new File(['x'.repeat(1024 * 1024 + 1)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('reports an error when the file read fails', async () => {
+      const visible = ref(true)
+      const { errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const unreadable = {
+        name: 'sa.json',
+        size: 20,
+        text: () => Promise.reject(new Error('read failed'))
+      } as unknown as File
+      await loadSecretFromFile(unreadable)
+
+      expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
+    })
+
+    it('clears an uploaded credential when the provider changes', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      const file = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(file)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      form.provider = 'huggingface'
+      await nextTick()
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('discards a file read superseded by a provider change', async () => {
+      const visible = ref(true)
+      const { form, fileName, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+      form.provider = 'huggingface'
+      await nextTick()
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('clears a previously loaded credential when a replacement is oversized', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const good = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(good)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      const oversized = new File(['x'.repeat(1024 * 1024)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('clears a previously loaded credential when a replacement read fails', async () => {
+      const visible = ref(true)
+      const { form, fileName, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        visible,
+        onSaved: vi.fn()
+      })
+
+      const good = new File(['{"type":"service_account"}'], 'sa.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(good)
+      expect(form.secretValue).toBe('{"type":"service_account"}')
+
+      const unreadable = {
+        name: 'replacement.json',
+        size: 20,
+        text: () => Promise.reject(new Error('read failed'))
+      } as unknown as File
+      await loadSecretFromFile(unreadable)
+
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileReadFailed')
+    })
+
+    it('discards an in-flight read invalidated by a later oversized selection', async () => {
+      const visible = ref(true)
+      const { form, errors, loadSecretFromFile } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+      const oversized = new File(['x'.repeat(1024 * 1024)], 'big.json', {
+        type: 'application/json'
+      })
+      await loadSecretFromFile(oversized)
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('discards a file read superseded by a form reset', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret({ provider: 'gemini' })
+      const { form, loadSecretFromFile } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      visible.value = true
+      await nextTick()
+
+      let resolveRead: (value: string) => void = () => {}
+      const slowFile = {
+        name: 'sa.json',
+        size: 26,
+        text: () =>
+          new Promise<string>((resolve) => {
+            resolveRead = resolve
+          })
+      } as unknown as File
+
+      const pending = loadSecretFromFile(slowFile)
+
+      visible.value = false
+      await nextTick()
+      visible.value = true
+      await nextTick()
+
+      resolveRead('{"type":"service_account"}')
+      await pending
+
+      expect(form.secretValue).toBe('')
+    })
+
+    it('rejects pasted JSON that exceeds the size cap', async () => {
+      const visible = ref(true)
+      const { form, errors, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = `{"key":"${'a'.repeat(1024 * 1024)}"}`
+
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(errors.secretValue).toBe('secrets.errors.fileTooLarge')
+    })
+
+    it('submits valid JSON for a json_file provider', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+      const { form, handleSubmit } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => vertexProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.name = 'Vertex SA'
+      form.provider = 'gemini'
+      form.secretValue = '{"type":"service_account"}'
+
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Vertex SA',
+        secret_value: '{"type":"service_account"}',
+        provider: 'gemini'
+      })
     })
   })
 

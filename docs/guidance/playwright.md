@@ -131,7 +131,14 @@ await node.expectBypassed()
 
 ## Test Tags
 
-- `@mobile` — Mobile viewport tests
+- `@mobile` — Mobile viewport tests (runs on Android Pixel 5 via `mobile-chrome` project)
+- `@mobile-ios` — iOS-specific tests (runs on iPhone 15 via `mobile-safari` project). Use
+  this tag sparingly for regressions that only reproduce under iOS-shaped conditions
+  (WKWebView bridge exposure, WebKit-only quirks, iOS Safari/Chrome/Firefox/Edge UAs).
+  Playwright's WebKit engine does not expose embedded-WKWebView globals such as
+  `window.webkit.messageHandlers`; when a test depends on that surface, inject it via
+  `page.addInitScript()` and set `userAgent` on the context. See
+  `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the reference pattern.
 - `@2x` — High DPI tests
 
 ## Test Data

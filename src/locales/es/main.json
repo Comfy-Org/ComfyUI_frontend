@@ -2972,6 +2972,7 @@
       "loading": "Cargando solicitud de autorización…",
       "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
       "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
+      "detailsHeader": "Detalles",
       "permissionsHeader": "Permisos",
       "redirectNotice": "Serás redirigido a",
       "resourceFallback": "esta aplicación",
@@ -2979,7 +2980,6 @@
       "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
       "subtitle": "Inicia sesión en {resource} para continuar",
       "title": "{client} quiere acceder",
-      "workspaceHelp": "Los permisos se aplican solo a este espacio de trabajo.",
       "workspaceLabel": "Espacio de trabajo"
     },
     "scopes": {
@@ -4115,7 +4115,6 @@
     "modelsSelected": "{count} modelos",
     "noResults": "No se encontraron plantillas",
     "noResultsHint": "Intenta ajustar tu búsqueda o filtros",
-    "resetFilters": "Limpiar filtros",
     "resultsCount": "Mostrando {count} de {total} plantillas",
     "runsOnFilter": "Ejecuta en",
     "runsOnSelected": "{count} ejecuciones en",
