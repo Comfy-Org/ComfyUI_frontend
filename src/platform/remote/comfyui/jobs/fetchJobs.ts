@@ -214,6 +214,12 @@ export async function fetchJobAssets(
       const data = zJobAssetsResponse.parse(await res.json())
       assets.push(...data.assets)
 
+      if (data.pagination.has_more && data.assets.length === 0) {
+        console.warn(
+          `[Jobs API] Job ${jobId} assets page reported has_more with an empty page; stopping pagination`
+        )
+      }
+
       if (!data.pagination.has_more || data.assets.length === 0) break
       offset += data.assets.length
     }

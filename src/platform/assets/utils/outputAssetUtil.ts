@@ -136,6 +136,7 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
     size: asset.size ?? item.size,
     mime_type: asset.mime_type ?? item.mime_type,
     preview_url: asset.preview_url ?? item.preview_url,
+    // zJobOutputAsset has no separate thumbnail_url field; preview_url covers both
     thumbnail_url: asset.preview_url ?? item.thumbnail_url,
     user_metadata: {
       ...item.user_metadata,
@@ -163,7 +164,13 @@ async function enrichWithJobAssets(
 ): Promise<AssetItem[]> {
   if (!items.length) return items
 
-  const jobAssets = await api.getJobAssets(jobId)
+  let jobAssets: JobOutputAsset[]
+  try {
+    jobAssets = await api.getJobAssets(jobId)
+  } catch (error) {
+    console.error(`Failed to enrich job ${jobId} with assets:`, error)
+    return items
+  }
   if (!jobAssets.length) return items
 
   const assetsByName = new Map<string, JobOutputAsset[]>()

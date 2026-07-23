@@ -541,5 +541,49 @@ describe('fetchJobs', () => {
       expect(result).toEqual([])
       consoleSpy.mockRestore()
     })
+
+    it('stops at the page cap when the server always reports has_more', async () => {
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        const offset = Number(
+          new URL(url, 'http://x').searchParams.get('offset')
+        )
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: `a${offset}`, name: `${offset}.png`, created_at: 't' }],
+                true,
+                offset
+              )
+            )
+        })
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(20)
+      expect(result).toHaveLength(20)
+    })
+
+    it('warns when has_more is true but the page is empty', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))
+      })
+
+      const result = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(result).toEqual([])
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('has_more with an empty page')
+      )
+      consoleWarnSpy.mockRestore()
+    })
   })
 })
