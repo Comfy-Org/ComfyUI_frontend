@@ -51,10 +51,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -212,23 +210,17 @@ supported callbacks:
     + onDrawBackground: render the background area inside the node (only in edit mode)
     + onMouseDown
     + onMouseMove
-    + onMouseUp
     + onMouseEnter
     + onMouseLeave
-    + onExecute: execute the node
     + onPropertyChanged: when a property is changed in the panel (return true to skip default behaviour)
     + onGetInputs: returns an array of possible inputs
     + onGetOutputs: returns an array of possible outputs
-    + onBounding: in case this node has a bigger bounding than the node itself (the callback receives the bounding as [x,y,w,h])
     + onDblClick: double clicked in the node
-    + onNodeTitleDblClick: double clicked in the node title
     + onInputDblClick: input slot double clicked (can be used to automatically create a node connected)
-    + onOutputDblClick: output slot double clicked (can be used to automatically create a node connected)
     + onConfigure: called after the node has been configured
     + onSerialize: to add extra info when serializing (the callback receives the object that should be filled with the data)
     + onSelected
     + onDeselected
-    + onDropItem : DOM item dropped over the node
     + onDropFile : file dropped over the node
     + onConnectInput : if returns false the incoming connection will be canceled
     + onConnectionsChange : a connection changed (new one or removed) (NodeSlotType.INPUT or NodeSlotType.OUTPUT, slot, true if connected, link_info, input_info )
@@ -434,18 +426,11 @@ export class LGraphNode
   badges: (LGraphBadge | (() => LGraphBadge))[] = []
   title_buttons: LGraphButton[] = []
   badgePosition: BadgePosition = BadgePosition.TopLeft
-  onOutputRemoved?(this: LGraphNode, slot: number): void
-  onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
   /**
    * The width of the node when collapsed.
    * Updated by {@link LGraphCanvas.drawNode}
    */
   _collapsed_width?: number
-  /**
-   * Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}.
-   * WARNING: Making changes to boundingRect via onBounding is poorly supported, and will likely result in strange behaviour.
-   */
-  onBounding?(this: LGraphNode, out: Rect): void
   console?: string[]
   _level?: number
   _shape?: RenderShape
@@ -484,7 +469,7 @@ export class LGraphNode
   /** @inheritdoc {@link boundingRect} */
   private _boundingRect: Rectangle = new Rectangle()
   /**
-   * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
+   * Cached node position & area as `x, y, width, height`.
    *
    * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
    */
@@ -686,15 +671,8 @@ export class LGraphNode
     link_info: LLink | null | undefined,
     inputOrOutput: INodeInputSlot | INodeOutputSlot | SubgraphIO
   ): void
-  onInputAdded?(this: LGraphNode, input: INodeInputSlot): void
-  onOutputAdded?(this: LGraphNode, output: INodeOutputSlot): void
   onConfigure?(this: LGraphNode, serialisedNode: ISerialisedNode): void
   onSerialize?(this: LGraphNode, serialised: ISerialisedNode): void
-  onExecute?(
-    this: LGraphNode,
-    param?: unknown,
-    options?: { action_call?: string }
-  ): void
   onAction?(
     this: LGraphNode,
     action: string,
@@ -703,21 +681,6 @@ export class LGraphNode
   ): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
-  /**
-   * Callback invoked by {@link connect} to override the target slot index.
-   * Its return value overrides the target index selection.
-   * @param target_slot The current input slot index
-   * @param requested_slot The originally requested slot index - could be negative, or if using (deprecated) name search, a string
-   * @returns {number | null} If a number is returned, the connection will be made to that input index.
-   * If an invalid index or non-number (false, null, NaN etc) is returned, the connection will be cancelled.
-   */
-  onBeforeConnectInput?(
-    this: LGraphNode,
-    target_slot: number,
-    requested_slot?: number | string
-  ): number | false | null
-  onShowCustomPanelInfo?(this: LGraphNode, panel: Panel): void
-  onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: Panel): boolean
   onWidgetChanged?(
     this: LGraphNode,
     name: string,
@@ -726,7 +689,6 @@ export class LGraphNode
     w: IBaseWidget
   ): void
   onDeselected?(this: LGraphNode): void
-  onKeyUp?(this: LGraphNode, e: KeyboardEvent): void
   onKeyDown?(this: LGraphNode, e: KeyboardEvent): void
   onSelected?(this: LGraphNode): void
   getExtraMenuOptions?(
@@ -736,11 +698,6 @@ export class LGraphNode
   ): (IContextMenuValue<unknown> | null)[]
   getMenuOptions?(this: LGraphNode, canvas: LGraphCanvas): IContextMenuValue[]
   onAdded?(this: LGraphNode, graph: LGraph): void
-  onDrawCollapsed?(
-    this: LGraphNode,
-    ctx: CanvasRenderingContext2D,
-    cavnas: LGraphCanvas
-  ): boolean
   onDrawForeground?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
@@ -761,39 +718,9 @@ export class LGraphNode
   ): IContextMenuValue[]
 
   // FIXME: Re-typing
-  onDropItem?(this: LGraphNode, event: Event): boolean
-  onDropData?(
-    this: LGraphNode,
-    data: string | ArrayBuffer,
-    filename: string,
-    file: File
-  ): void
   onDropFile?(this: LGraphNode, file: File): void
   onInputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
   onInputDblClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
-  onOutputClick?(this: LGraphNode, index: number, e: CanvasPointerEvent): void
-  onOutputDblClick?(
-    this: LGraphNode,
-    index: number,
-    e: CanvasPointerEvent
-  ): void
-  onGetPropertyInfo?(this: LGraphNode, property: string): INodePropertyInfo
-  onNodeOutputAdd?(this: LGraphNode, value: unknown): void
-  onNodeInputAdd?(this: LGraphNode, value: unknown): void
-  onMenuNodeInputs?(
-    this: LGraphNode,
-    entries: (IContextMenuValue<INodeSlotContextItem> | null)[]
-  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
-  onMenuNodeOutputs?(
-    this: LGraphNode,
-    entries: (IContextMenuValue<INodeSlotContextItem> | null)[]
-  ): (IContextMenuValue<INodeSlotContextItem> | null)[]
-  onMouseUp?(
-    this: LGraphNode,
-    e: CanvasPointerEvent,
-    pos: Point,
-    canvas: LGraphCanvas
-  ): void
   onMouseEnter?(this: LGraphNode, e: CanvasPointerEvent): void
   /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */
   onMouseDown?(
@@ -809,37 +736,12 @@ export class LGraphNode
     pos: Point,
     canvas: LGraphCanvas
   ): void
-  /** @param pos Offset from {@link LGraphNode.pos}. */
-  onNodeTitleDblClick?(
-    this: LGraphNode,
-    e: CanvasPointerEvent,
-    pos: Point,
-    canvas: LGraphCanvas
-  ): void
-  onDrawTitle?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
-  onDrawTitleText?(
-    this: LGraphNode,
-    ctx: CanvasRenderingContext2D,
-    title_height: number,
-    size: Size,
-    scale: number,
-    title_text_font: string,
-    selected?: boolean
-  ): void
   onDrawTitleBox?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
     title_height: number,
     size: Size,
     scale: number
-  ): void
-  onDrawTitleBar?(
-    this: LGraphNode,
-    ctx: CanvasRenderingContext2D,
-    title_height: number,
-    size: Size,
-    scale: number,
-    fgcolor: string
   ): void
   onRemoved?(this: LGraphNode): void
   onMouseMove?(
@@ -848,7 +750,6 @@ export class LGraphNode
     pos: Point,
     arg2: LGraphCanvas
   ): void
-  onPropertyChange?(this: LGraphNode): void
   updateOutputData?(this: LGraphNode, origin_slot: number): void
 
   private _getErrorStrokeStyle(
@@ -947,7 +848,6 @@ export class LGraphNode
           ? this.graph._links.get(input.link)
           : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
-      this.onInputAdded?.(input)
     }
 
     this.outputs ??= []
@@ -961,7 +861,6 @@ export class LGraphNode
         const link = this.graph ? this.graph._links.get(linkId) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
       }
-      this.onOutputAdded?.(output)
     }
 
     // SubgraphNode callback.
@@ -1220,8 +1119,6 @@ export class LGraphNode
 
     if (node.updateOutputData) {
       node.updateOutputData(link.origin_slot)
-    } else {
-      node.onExecute?.()
     }
 
     return link.data
@@ -1477,25 +1374,6 @@ export class LGraphNode
    */
   doExecute(param?: unknown, options?: { action_call?: string }): void {
     options = options || {}
-    if (this.onExecute) {
-      // enable this to give the event an ID
-      options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
-      if (!this.graph) throw new NullGraphError()
-
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
-      this.graph.nodes_executing[this.id] = true
-      this.onExecute(param, options)
-      // @ts-expect-error deprecated
-      this.graph.nodes_executing[this.id] = false
-
-      // save execution/action ref
-      this.exec_version = this.graph.iteration
-      if (options?.action_call) {
-        this.action_call = options.action_call
-        // @ts-expect-error deprecated
-        this.graph.nodes_executedAction[this.id] = options.action_call
-      }
-    }
     // the nFrames it will be used (-- each step), means "how old" is the event
     this.execute_triggered = 2
     this.onAfterExecuteNode?.(param, options)
@@ -1613,7 +1491,6 @@ export class LGraphNode
         // generate unique trigger ID if not present
         if (!options.action_call)
           options.action_call = `${this.id}_trigg_${Math.floor(Math.random() * 9999)}`
-        // -- wrapping node.onExecute(param); --
         node.doExecute?.(param, options)
       } else if (node.onAction) {
         // generate unique action ID if not present
@@ -1712,7 +1589,6 @@ export class LGraphNode
 
     this.outputs ||= []
     this.outputs.push(output)
-    this.onOutputAdded?.(output)
 
     if (LiteGraph.auto_load_slot_types)
       LiteGraph.registerNodeAndSlotType(this, type, true)
@@ -1746,7 +1622,6 @@ export class LGraphNode
       }
     }
 
-    this.onOutputRemoved?.(slot)
     this.setDirtyCanvas(true, true)
   }
 
@@ -1771,7 +1646,6 @@ export class LGraphNode
     this.inputs.push(input)
     this.expandToFitContent()
 
-    this.onInputAdded?.(input)
     LiteGraph.registerNodeAndSlotType(this, type)
 
     this.setDirtyCanvas(true, true)
@@ -1787,7 +1661,7 @@ export class LGraphNode
       this.disconnectInput(slot, true)
     }
     const { inputs } = this
-    const slot_info = inputs.splice(slot, 1)
+    inputs.splice(slot, 1)
 
     for (let i = slot; i < inputs.length; ++i) {
       const input = inputs[i]
@@ -1799,7 +1673,6 @@ export class LGraphNode
         if (link) link.target_slot--
       }
     }
-    this.onInputRemoved?.(slot, slot_info[0])
     this.setDirtyCanvas(true, true)
   }
 
@@ -1983,11 +1856,6 @@ export class LGraphNode
     if (this.constructor.widgets_info?.[property])
       info = this.constructor.widgets_info[property]
 
-    // litescene mode using the constructor
-    if (!info && this.onGetPropertyInfo) {
-      info = this.onGetPropertyInfo(property)
-    }
-
     info ||= {}
     info.type ||= typeof this.properties[property]
     if (info.widget == 'combo') info.type = 'enum'
@@ -2142,7 +2010,7 @@ export class LGraphNode
    *
    * Populates {@link out} with the results in graph space.
    * Populates {@link _collapsed_width} with the collapsed width if the node is collapsed.
-   * Adjusts for title and collapsed status, but does not call {@link onBounding}.
+   * Adjusts for title and collapsed status.
    * @param out `x, y, width, height` are written to this array.
    * @param ctx The canvas context to use for measuring text.
    */
@@ -2201,7 +2069,6 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
-    this.onBounding?.(bounds)
 
     const renderArea = this._renderArea
     renderArea.set(bounds)
@@ -2893,16 +2760,6 @@ export class LGraphNode
       targetIndex = 0
     }
 
-    // Allow target node to change slot
-    if (target_node.onBeforeConnectInput) {
-      // This way node can choose another slot (or make a new one?)
-      const requestedIndex = target_node.onBeforeConnectInput(
-        targetIndex,
-        target_slot
-      )
-      targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
-    }
-
     if (
       targetIndex === null ||
       !target_node.inputs ||
@@ -3575,7 +3432,7 @@ export class LGraphNode
   }
 
   /**
-   * Allows to get onMouseMove and onMouseUp events even if the mouse is out of focus
+   * Allows to get onMouseMove events even if the mouse is out of focus
    * @deprecated Use {@link LGraphCanvas.pointer} instead.
    */
   captureInput(v: boolean): void {
@@ -3701,7 +3558,6 @@ export class LGraphNode
   drawTitleBarBackground(
     ctx: CanvasRenderingContext2D,
     {
-      scale,
       title_height = LiteGraph.NODE_TITLE_HEIGHT,
       low_quality = false
     }: DrawTitleOptions
@@ -3709,11 +3565,6 @@ export class LGraphNode
     const fgcolor = this.renderingColor
     const shape = this.renderingShape
     const size = this.renderingSize
-
-    if (this.onDrawTitleBar) {
-      this.onDrawTitleBar(ctx, title_height, size, scale, fgcolor)
-      return
-    }
 
     if (this.title_mode === TitleMode.TRANSPARENT_TITLE) {
       return
@@ -3826,7 +3677,6 @@ export class LGraphNode
   drawTitleText(
     ctx: CanvasRenderingContext2D,
     {
-      scale,
       default_title_color,
       low_quality = false,
       title_height = LiteGraph.NODE_TITLE_HEIGHT
@@ -3834,18 +3684,6 @@ export class LGraphNode
   ): void {
     const size = this.renderingSize
     const selected = this.selected
-
-    if (this.onDrawTitleText) {
-      this.onDrawTitleText(
-        ctx,
-        title_height,
-        size,
-        scale,
-        this.titleFontStyle,
-        selected
-      )
-      return
-    }
 
     // Don't render title text if low quality
     if (low_quality) {

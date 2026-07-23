@@ -265,7 +265,6 @@ export class LGraph
   _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
   _nodes_in_order: LGraphNode[] = []
-  _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
   iteration: number = 0
   globaltime: number = 0
@@ -423,8 +422,6 @@ export class LGraph
     this._nodes_by_id = {}
     // nodes sorted in execution order
     this._nodes_in_order = []
-    // nodes that contain onExecute sorted in execution order
-    this._nodes_executable = null
 
     this._links.clear()
     this.reroutes.clear()
@@ -572,44 +569,22 @@ export class LGraph
    * Run N steps (cycles) of the graph
    * @param num number of steps to run, default is 1
    * @param do_not_catch_errors [optional] if you want to try/catch errors
-   * @param limit max number of nodes to execute (used to execute from start to a node)
    */
-  runStep(num: number, do_not_catch_errors: boolean, limit?: number): void {
+  runStep(num: number, do_not_catch_errors: boolean): void {
     num = num || 1
 
     const start = LiteGraph.getTime()
     this.globaltime = 0.001 * (start - this.starttime)
 
-    const nodes = this._nodes_executable || this._nodes
-    if (!nodes) return
-
-    limit = limit || nodes.length
-
     if (do_not_catch_errors) {
       // iterations
       for (let i = 0; i < num; i++) {
-        for (let j = 0; j < limit; ++j) {
-          const node = nodes[j]
-          // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
-            // wrap node.onExecute();
-            node.doExecute?.()
-          }
-        }
-
         this.fixedtime += this.fixedtime_lapse
       }
     } else {
       try {
         // iterations
         for (let i = 0; i < num; i++) {
-          for (let j = 0; j < limit; ++j) {
-            const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
-              node.onExecute?.()
-            }
-          }
-
           this.fixedtime += this.fixedtime_lapse
         }
         this.errors_in_execution = false
@@ -641,20 +616,11 @@ export class LGraph
    * nodes with only inputs.
    */
   updateExecutionOrder(): void {
-    this._nodes_in_order = this.computeExecutionOrder(false)
-    this._nodes_executable = []
-    for (const node of this._nodes_in_order) {
-      if (node.onExecute) {
-        this._nodes_executable.push(node)
-      }
-    }
+    this._nodes_in_order = this.computeExecutionOrder()
   }
 
   // This is more internal, it computes the executable nodes in order and returns it
-  computeExecutionOrder(
-    only_onExecute: boolean,
-    set_level?: boolean
-  ): LGraphNode[] {
+  computeExecutionOrder(set_level?: boolean): LGraphNode[] {
     const L: LGraphNode[] = []
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
@@ -664,10 +630,6 @@ export class LGraph
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
-      if (only_onExecute && !node.onExecute) {
-        continue
-      }
-
       // add to pending nodes
       M[node.id] = node
 
@@ -789,7 +751,7 @@ export class LGraph
   arrange(margin?: number, layout?: string): void {
     margin = margin || 100
 
-    const nodes = this.computeExecutionOrder(false, true)
+    const nodes = this.computeExecutionOrder(true)
     const columns: LGraphNode[][] = []
     for (const node of nodes) {
       const col = node._level || 1
