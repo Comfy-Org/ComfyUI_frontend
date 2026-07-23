@@ -58,6 +58,14 @@ describe('dismissSplashLoader', () => {
     expect(el.isConnected).toBe(true)
   })
 
+  it('stops intercepting pointer events the moment dismissal begins', () => {
+    const el = mountSplash(0)
+
+    dismissSplashLoader()
+
+    expect(el.style.pointerEvents).toBe('none')
+  })
+
   it('fades out and removes after the minimum window plus fade', () => {
     const el = mountSplash(0)
 

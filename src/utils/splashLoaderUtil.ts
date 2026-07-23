@@ -51,6 +51,7 @@ export function dismissSplashLoader(): void {
   const el = document.getElementById(SPLASH_LOADER_ID)
   if (!el || el.dataset.dismissing === 'true') return
   el.dataset.dismissing = 'true'
+  el.style.pointerEvents = 'none'
 
   const shownAt = Number(el.dataset.shownAt)
   const delay = remainingSplashVisibleMs(shownAt, Date.now())
