@@ -717,7 +717,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
         .mockRejectedValueOnce(new Error('network down'))
 
       await store.updateHistory()
@@ -737,7 +737,10 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.loadMoreHistory()
       expect(fetchHistoryPage).toHaveBeenCalledTimes(4)
       expect(store.historyError).toBe(null)
-      expect(store.historyAssets).toHaveLength(3)
+      // The destructive reset waits for the fallback page, so the failed
+      // fallback left the original 10 items intact; the retry merges its 3
+      // new items on top instead of replacing the list.
+      expect(store.historyAssets).toHaveLength(13)
     })
 
     it('does not skip or duplicate rows when items are deleted server-side before cursor recovery', async () => {
@@ -1410,7 +1413,7 @@ describe('assetsStore - Refactored (Option A)', () => {
         createMockJobItem(100 + i)
       )
       vi.mocked(fetchHistoryPage)
-        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError('INVALID_CURSOR', 400))
         .mockResolvedValueOnce(mockHistoryPage(recoveredBatch))
       await store.loadMoreHistory()
 
