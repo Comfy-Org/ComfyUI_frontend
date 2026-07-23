@@ -1,6 +1,8 @@
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  SubscriptionTier,
+  TierKey
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 
 export function resolveSubscriptionTierKey(
   tier: SubscriptionTier | null | undefined
