@@ -3,6 +3,9 @@
     "dockToTop": "停靠到顶部",
     "feedback": "反馈",
     "feedbackTooltip": "反馈",
+    "freeTierPartner": "合作节点需要付费套餐",
+    "freeTierRuns": "剩余 {available} / {MAX_AVAILABLE} 次运行",
+    "freeTierRunsExhausted": "没有剩余运行次数",
     "share": "分享",
     "shareTooltip": "分享工作流"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
+      "googleSsoInAppBrowserNotice": "如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。",
       "insecureContextWarning": "此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。",
       "loginButton": "登录",
       "loginWithGithub": "使用Github登录",
@@ -785,6 +789,11 @@
       "gpuUsage": "GPU 使用"
     },
     "faqs": "常见问题",
+    "insufficient": {
+      "memberCta": "好的，知道了",
+      "memberDescription": "您的团队已用完所有积分。工作区管理员需要添加更多积分以运行工作流。",
+      "memberTitle": "此工作区积分已用完"
+    },
     "invoiceHistory": "发票历史",
     "lastUpdated": "最近更新",
     "loadEventsError": "活动加载失败。请重试。",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "队列中没有{filter}导出",
     "preparingExport": "正在准备导出...",
     "retryDownload": "重试下载"
+  },
+  "feedback": {
+    "title": "分享反馈"
   },
   "g": {
     "1x": "1倍",
@@ -2783,7 +2795,6 @@
     "accept": "好的，我来帮忙！",
     "description": "您一直在使用此功能。能否花一点时间分享您的反馈？",
     "dontAskAgain": "不再询问",
-    "loadError": "加载问卷失败。请稍后再试。",
     "notNow": "暂不",
     "title": "帮助我们改进"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "调整",
     "advanced": "高级",
+    "anima": "anima",
     "animate": "动画",
     "attention_experiments": "注意力实验",
     "audio": "音频",
@@ -2849,6 +2862,7 @@
     "create": "创建",
     "custom": "自定义",
     "dancer": "舞者",
+    "dataset": "数据集",
     "debug": "调试",
     "detection": "检测",
     "experimental": "实验性",
@@ -2870,6 +2884,7 @@
     "image": "图像",
     "infinite talk": "无限对话",
     "instructpix2pix": "InstructPix2Pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "Latent",
     "loaders": "加载器",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "多GPU",
     "noise": "噪波",
@@ -4135,7 +4151,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "筛选条件：",
     "allTemplates": "全部模板",
     "categories": "分类",
     "category": {
@@ -4160,9 +4175,12 @@
       "Video": "视频生成",
       "Video API": "视频 API"
     },
+    "clearAllFilters": "清除所有筛选器",
     "error": {
       "templateNotFound": "未找到模板 \"{templateName}\""
     },
+    "filtersApplied": "已应用 {count} 个筛选器",
+    "filtersButton": "筛选器",
     "licenseFilter": "许可证",
     "loading": "正在加载模板...",
     "loadingMore": "正在加载更多模板...",
@@ -4260,6 +4278,9 @@
     "updateRequested": "已请求更新",
     "useApiKeyTip": "提示：无法正常登录？请使用 Comfy API Key 选项。",
     "userNotAuthenticated": "用户未认证"
+  },
+  "typeform": {
+    "loadError": "表单加载失败，请稍后再试。"
   },
   "userSelect": {
     "enterUsername": "输入用户名",
@@ -4396,6 +4417,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "在此之前成员可保持全部访问权限。重新激活以保留共享积分和席位。",
+        "reactivate": "重新激活套餐",
+        "title": "您的团队套餐将于 {date} 结束"
+      },
+      "outOfCredits": {
+        "addCredits": "添加积分",
+        "body": "您的团队已用完所有积分。请添加更多积分以继续生成，或等待积分在 {date} 自动补充。",
+        "bodyNoDate": "您的团队已用完所有积分。请添加更多积分以继续生成。",
+        "dismiss": "忽略",
+        "memberBody": "您的团队已用完所有积分。工作区管理员需要添加更多积分以继续生成。",
+        "title": "积分已用完"
+      },
+      "paused": {
+        "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
+        "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
+        "title": "订阅已暂停"
+      },
+      "updatePayment": "更新付款方式",
+      "warning": {
+        "body": "您的上一次付款未成功。如未更新付款方式，订阅将在 {date} 暂停。",
+        "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
+        "title": "付款被拒绝"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "降级为成员",
       "demoteMessage": "他们将失去管理员权限。",

@@ -3,6 +3,9 @@
     "dockToTop": "Acoplar en la parte superior",
     "feedback": "Comentarios",
     "feedbackTooltip": "Comentarios",
+    "freeTierPartner": "Los nodos de socios requieren un plan de pago",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} ejecuciones restantes",
+    "freeTierRunsExhausted": "No quedan ejecuciones",
     "share": "Compartir",
     "shareTooltip": "Compartir flujo de trabajo"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "Elegible para el plan gratuito",
       "freeTierDescription": "Regístrate con Google para obtener {credits} créditos gratis cada mes. No se necesita tarjeta.",
       "freeTierDescriptionGeneric": "Regístrate con Google para obtener créditos gratis cada mes. No se necesita tarjeta.",
+      "googleSsoInAppBrowserNotice": "Si abriste esto desde un navegador dentro de una app (por ejemplo, Instagram, LinkedIn), es posible que el inicio de sesión con Google no funcione. Usa GitHub o correo electrónico, o abre esta página en el navegador predeterminado de tu dispositivo.",
       "insecureContextWarning": "Esta conexión no es segura (HTTP): tus credenciales pueden ser interceptadas por atacantes si continúas con el inicio de sesión.",
       "loginButton": "Iniciar sesión",
       "loginWithGithub": "Iniciar sesión con Github",
@@ -785,6 +789,11 @@
       "gpuUsage": "Uso de GPU"
     },
     "faqs": "Preguntas frecuentes",
+    "insufficient": {
+      "memberCta": "Entendido",
+      "memberDescription": "Tu equipo ha utilizado todos sus créditos. Los administradores del espacio de trabajo deben añadir más créditos para ejecutar flujos de trabajo.",
+      "memberTitle": "Este espacio de trabajo se ha quedado sin créditos"
+    },
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
     "loadEventsError": "No se pudo cargar la actividad. Por favor, inténtalo de nuevo.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "No hay exportaciones de {filter} en la cola",
     "preparingExport": "Preparando exportación...",
     "retryDownload": "Reintentar descarga"
+  },
+  "feedback": {
+    "title": "Compartir comentarios"
   },
   "g": {
     "1x": "1x",
@@ -2783,7 +2795,6 @@
     "accept": "¡Claro, ayudaré!",
     "description": "Has estado usando esta función. ¿Te tomarías un momento para compartir tus comentarios?",
     "dontAskAgain": "No preguntar de nuevo",
-    "loadError": "No se pudo cargar la encuesta. Por favor, inténtalo de nuevo más tarde.",
     "notNow": "Ahora no",
     "title": "Ayúdanos a mejorar"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "ajustes",
     "advanced": "avanzado",
+    "anima": "anima",
     "animate": "animar",
     "attention_experiments": "experimentos_de_atención",
     "audio": "audio",
@@ -2849,6 +2862,7 @@
     "create": "crear",
     "custom": "personalizado",
     "dancer": "bailarín",
+    "dataset": "dataset",
     "debug": "depurar",
     "detection": "detección",
     "experimental": "experimental",
@@ -2870,6 +2884,7 @@
     "image": "imagen",
     "infinite talk": "charla infinita",
     "instructpix2pix": "instruirpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latent",
     "loaders": "cargadores",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
+    "model_patches": "model_patches",
     "move": "mover",
     "multigpu": "multigpu",
     "noise": "ruido",
@@ -4123,7 +4139,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtros:",
     "allTemplates": "Todas las plantillas",
     "categories": "Categorías",
     "category": {
@@ -4148,9 +4163,12 @@
       "Video": "Video",
       "Video API": "API de Video"
     },
+    "clearAllFilters": "Borrar todos los filtros",
     "error": {
       "templateNotFound": "Plantilla \"{templateName}\" no encontrada"
     },
+    "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
+    "filtersButton": "Filtros",
     "licenseFilter": "Licencia",
     "loading": "Cargando plantillas...",
     "loadingMore": "Cargando más plantillas...",
@@ -4248,6 +4266,9 @@
     "updateRequested": "Actualización solicitada",
     "useApiKeyTip": "Consejo: ¿No puedes acceder al inicio de sesión normal? Usa la opción de clave API de Comfy.",
     "userNotAuthenticated": "Usuario no autenticado"
+  },
+  "typeform": {
+    "loadError": "No se pudo cargar el formulario. Por favor, inténtalo de nuevo más tarde."
   },
   "userSelect": {
     "enterUsername": "Introduce un nombre de usuario",
@@ -4384,6 +4405,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "Los miembros mantienen el acceso completo hasta entonces. Reactiva para conservar tus créditos y plazas compartidas.",
+        "reactivate": "Reactivar plan",
+        "title": "El plan de tu equipo termina el {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Añadir créditos",
+        "body": "Tu equipo ha utilizado todos sus créditos. Añade más créditos para continuar generando o espera hasta que se recarguen el {date}.",
+        "bodyNoDate": "Tu equipo ha utilizado todos sus créditos. Añade más créditos para continuar generando.",
+        "dismiss": "Descartar",
+        "memberBody": "Tu equipo ha utilizado todos sus créditos. Los administradores del espacio de trabajo deben añadir más créditos para continuar generando.",
+        "title": "Sin créditos"
+      },
+      "paused": {
+        "body": "La suscripción de este espacio de trabajo está pausada. Actualiza el pago para reanudar.",
+        "memberBody": "La suscripción de este espacio de trabajo está pausada. Los administradores del espacio de trabajo deben actualizar el método de pago.",
+        "title": "Suscripción pausada"
+      },
+      "updatePayment": "Actualizar pago",
+      "warning": {
+        "body": "Tu último pago no se realizó correctamente. Tu suscripción se pausará el {date} a menos que actualices el pago.",
+        "bodyNoDate": "Tu último pago no se realizó correctamente. Actualiza el pago para evitar una pausa.",
+        "title": "Pago rechazado"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Degradar a miembro",
       "demoteMessage": "Perderá acceso de administrador.",

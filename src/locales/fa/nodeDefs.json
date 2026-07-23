@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "اعمال Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "mask": {
+        "name": "ماسک"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      },
+      "strength": {
+        "name": "شدت"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "تنظیم حجم صدا به میزان مشخص بر حسب دسی‌بل (dB).",
     "display_name": "تنظیم حجم صدا",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "دمای مدل"
       },
       "prompt": {
         "name": "پرامپت",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "تولید ویدئوی ارائه‌دهنده سخنگو از یک آواتار HeyGen. شامل محبوب‌ترین آواتارهای عمومی HeyGen؛ هر شناسه ظاهر (look ID) را می‌توان به عنوان جایگزین وارد کرد.",
+    "display_name": "ویدئوی آواتار HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر خروجی. 'auto' از منبع آواتار پیروی می‌کند."
+      },
+      "background_color": {
+        "name": "رنگ پس‌زمینه",
+        "tooltip": "رنگ پس‌زمینه یکدست به صورت کد هگزادسیمال (مثلاً '#00ff00'). برای استفاده از پس‌زمینه خود آواتار، خالی بگذارید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "custom_avatar_id": {
+        "name": "شناسه آواتار سفارشی",
+        "tooltip": "شناسه ظاهر آواتار HeyGen (اختیاری). در صورت تنظیم، آواتار انتخاب‌شده بالا را جایگزین می‌کند. هر یک از بیش از ۳۰۰۰ ظاهر عمومی HeyGen (یا آواتارهای خصوصی شما) قابل استفاده است."
+      },
+      "engine": {
+        "name": "موتور",
+        "tooltip": "موتور رندر؛ هر گزینه فقط آواتارهایی را نمایش می‌دهد که از آن پشتیبانی می‌کنند. 'auto' همه آواتارها را ارائه می‌دهد و بهترین موتور را انتخاب می‌کند (Avatar IV ترجیح داده می‌شود). Avatar V بالاترین کیفیت را دارد، Avatar III مقرون‌به‌صرفه‌ترین است."
+      },
+      "engine_avatar": {
+        "name": "آواتار"
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح خروجی ویدئو."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "برای HeyGen ارسال نمی‌شود؛ تغییر آن باعث اجرای مجدد می‌شود."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "آواتار را با یک متن (HeyGen text-to-speech) یا صدای خودتان هدایت کنید."
+      },
+      "speech_custom_voice_id": {
+        "name": "شناسه صدای سفارشی"
+      },
+      "speech_text": {
+        "name": "متن"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_speed": {
+        "name": "سرعت صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "آواتار قابل استفاده مجدد خود را از عکس یک فرد یا یک پرامپت متنی (شخصیت تولیدشده) بسازید. شناسه آواتار به‌دست‌آمده را در custom_avatar_id ویدئوی آواتار HeyGen وارد کنید — و این شناسه را برای استفاده مجدد در جریان‌های کاری آینده ذخیره نمایید.",
+    "display_name": "ساخت آواتار HeyGen",
+    "inputs": {
+      "source": {
+        "name": "منبع",
+        "tooltip": "یک شخصیت جدید از طریق پرامپت متنی تولید کنید یا آواتار را از عکس متصل‌شده یک فرد بسازید."
+      },
+      "source_prompt": {
+        "name": "پرامپت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه آواتار",
+        "tooltip": "شناسه ظاهر آواتار. آن را به custom_avatar_id ویدئوی آواتار HeyGen بدهید؛ برای استفاده بعدی ذخیره کنید."
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "هر تصویر از یک فرد را به یک ویدیوی صحبت‌کننده با هماهنگی لب (HeyGen Avatar IV) تبدیل کنید. می‌توانید آن را با یک متن یا صدای خود هدایت کنید.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت تصویر",
+        "tooltip": "نسبت تصویر خروجی. مقدار 'auto' مطابق با تصویر ورودی خواهد بود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "expressiveness": {
+        "name": "بیان‌گری",
+        "tooltip": "میزان بیان‌گری چهره و حرکات متحرک."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر فردی که قرار است متحرک شود. در صورت بزرگ‌تر بودن از ۲K به طور خودکار کوچک می‌شود."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ با تغییر آن اجرای مجدد انجام می‌شود."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "آواتار را با یک متن (HeyGen text-to-speech) یا صدای خود هدایت کنید."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "متن"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_speed": {
+        "name": "سرعت صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "تولید صدای گفتاری از متن با استفاده از موتور Starfish TTS شرکت HeyGen. شامل محبوب‌ترین صداهای HeyGen در ۱۷ زبان.",
+    "display_name": "HeyGen تبدیل متن به گفتار",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "شناسه صدای HeyGen اختیاری. در صورت تنظیم، جایگزین صدای انتخاب‌شده می‌شود. صدا باید از موتور Starfish پشتیبانی کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ با تغییر آن اجرای مجدد انجام می‌شود."
+      },
+      "speed": {
+        "name": "سرعت",
+        "tooltip": "ضریب سرعت گفتار."
+      },
+      "ssml": {
+        "name": "SSML",
+        "tooltip": "متن را به عنوان نشانه‌گذاری SSML در نظر بگیرید (برای مکث، تأکید و کنترل تلفظ)."
+      },
+      "text": {
+        "name": "متن",
+        "tooltip": "متنی که باید به گفتار تبدیل شود (حداکثر ۵۰۰۰ کاراکتر). صدای تولید شده باید حداقل ۱ ثانیه باشد."
+      },
+      "voice": {
+        "name": "صدا",
+        "tooltip": "صدایی که استفاده می‌شود (منتخب از محبوب‌ترین صداهای سازگار با Starfish شرکت HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "یک ویدیوی گفتاری را به زبان دیگری ترجمه می‌کند. صدای گوینده اصلی را شبیه‌سازی کرده و حرکات دهان را با گفتار ترجمه‌شده هماهنگ می‌کند.",
+    "display_name": "ترجمه ویدیو HeyGen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت 'speed' سریع‌تر است؛ 'precision' هماهنگی لب با کیفیت بالاتر و هزینه دو برابر را ارائه می‌دهد."
+      },
+      "output_language": {
+        "name": "زبان خروجی",
+        "tooltip": "زبان مقصد برای ویدیوی ترجمه‌شده."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "به HeyGen ارسال نمی‌شود؛ برای اجرای مجدد مقدار آن را تغییر دهید."
+      },
+      "speaker_count": {
+        "name": "تعداد گویندگان",
+        "tooltip": "تعداد گویندگان در ویدیو. ۰ = تشخیص خودکار."
+      },
+      "translate_audio_only": {
+        "name": "فقط ترجمه صدا",
+        "tooltip": "فقط ترک صوتی را جایگزین می‌کند و حرکات دهان اصلی را حفظ می‌کند (بدون هماهنگی لب)."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی با گفتار برای ترجمه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "میانگین‌گیری خروجی مدل در چندین موقعیت شبکه پچ جابجا شده در بخش پایانی نمونه‌گیری. درزها را حذف می‌کند.",
     "display_name": "هموارسازی درز پچ HiDream-O1",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "یک مجموعه داده از ویدیوها را از پوشه مشخص‌شده بارگذاری کرده و فهرستی از ویدیوها بازمی‌گرداند. فرمت‌های پشتیبانی‌شده: MP4، AVI، MOV، WEBM، MKV، FLV.",
+    "display_name": "بارگذاری ویدیو (از پوشه)",
+    "inputs": {
+      "folder": {
+        "name": "پوشه",
+        "tooltip": "پوشه حاوی فایل‌های ویدیویی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ارجاعات ویدیویی Lazy؛ فریم‌ها فقط در صورت نیاز در مراحل بعدی رمزگشایی می‌شوند."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "یک مجموعه داده از جفت‌های ویدیو و کپشن متنی را از پوشه مشخص‌شده بارگذاری کرده و به صورت فهرست بازمی‌گرداند. فرمت‌های پشتیبانی‌شده: MP4، AVI، MOV، WEBM، MKV، FLV.",
+    "display_name": "بارگذاری ویدیو-متن (از پوشه)",
+    "inputs": {
+      "folder": {
+        "name": "پوشه",
+        "tooltip": "پوشه حاوی فایل‌های ویدیویی و کپشن‌های .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ارجاعات ویدیویی Lazy؛ فریم‌ها فقط در صورت نیاز در مراحل بعدی رمزگشایی می‌شوند."
+      },
+      "1": {
+        "name": "متن‌ها",
+        "tooltip": "فهرست کپشن‌های متنی."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "ترتیب ویدیوها را به صورت تصادفی در یک فهرست جابجا می‌کند.",
+    "display_name": "درهم‌ریختن فهرست ویدیوها",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی."
+      },
+      "videos": {
+        "name": "ویدیوها",
+        "tooltip": "فهرست ویدیوهایی که باید درهم‌ریخته شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ویدیوهای درهم‌ریخته"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "ترتیب جفت‌های ویدیو-متن را به صورت تصادفی در یک فهرست جابجا می‌کند.",
+    "display_name": "درهم‌ریختن جفت‌های ویدیو-متن",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی."
+      },
+      "texts": {
+        "name": "متن‌ها",
+        "tooltip": "فهرست متن‌هایی که باید درهم‌ریخته شوند."
+      },
+      "videos": {
+        "name": "ویدیوها",
+        "tooltip": "فهرست ویدیوهایی که باید درهم‌ریخته شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیوها",
+        "tooltip": "ویدیوهای درهم‌ریخته"
+      },
+      "1": {
+        "name": "متن‌ها",
+        "tooltip": "متن‌های درهم‌ریخته"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "نسخه عمومی نود SkipLayerGuidance که می‌تواند روی هر مدل DiT استفاده شود.",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "پرامپت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "تعداد ثابتی از فریم‌های یک ویدیو را با استفاده از استراتژی‌های مختلف نمونه‌گیری کنید.",
+    "display_name": "نمونه‌گیری فریم ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "num_frames": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نمونه‌گیری شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی (فقط در حالت 'random' استفاده می‌شود)."
+      },
+      "strategy": {
+        "name": "استراتژی",
+        "tooltip": "uniform: با فاصله مساوی، head: اولین N فریم، tail: آخرین N فریم، random: تصادفی مرتب‌شده."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی نمونه‌گیری‌شده."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "VideoLinearCFGGuidance",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "یک بازه پیوسته از فریم‌های ویدیو را به صورت تصادفی برش دهید.",
+    "display_name": "برش تصادفی زمانی ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "length": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نگه داشته شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی برش‌خورده (به صورت lazy)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "یک بازه پیوسته از فریم‌های ویدیو را برش دهید.",
+    "display_name": "برش زمانی ویدیو",
+    "inputs": {
+      "length": {
+        "name": "تعداد فریم‌ها",
+        "tooltip": "تعداد فریم‌هایی که باید نگه داشته شوند."
+      },
+      "start_frame": {
+        "name": "فریم شروع",
+        "tooltip": "اندیس فریم شروع."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی برش‌خورده (به صورت lazy)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "اعمال Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "render_video": {
+        "name": "رندر ویدیو",
+        "tooltip": "ویدیوی راهنما که از مسیر دوربین رندر شده است، معمولاً رندرهای point cloud تغییر شکل یافته از تصویر ورودی."
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      },
+      "strength": {
+        "name": "شدت"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
