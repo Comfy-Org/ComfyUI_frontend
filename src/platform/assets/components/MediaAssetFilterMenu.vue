@@ -88,8 +88,11 @@
                   />
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
+                  <!-- align first option (not the search row) with the trigger:
+                       border+padding = 5; author adds the 40px search row + 1px separator -->
                   <DropdownMenuSubContent
                     :side-offset="2"
+                    :align-offset="cat === 'author' ? -46 : -5"
                     :collision-padding="10"
                     :style="contentStyle"
                     :class="menuClass"
