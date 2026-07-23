@@ -52,9 +52,16 @@
             />
           </div>
 
-          <!-- Verb and percent read as one sentence, so they share a run -->
+          <!-- Verb and percent read as one sentence, so they share a run.
+               The reserved width stops the pill resizing as the copy changes
+               state or the percent ticks. -->
           <span
-            class="text-sm leading-5 font-normal tabular-nums whitespace-nowrap text-base-foreground"
+            :class="
+              cn(
+                'text-sm leading-5 font-normal tabular-nums whitespace-nowrap text-base-foreground',
+                labelWidthClass
+              )
+            "
           >
             {{ label }}
           </span>
@@ -188,6 +195,8 @@ const {
   hideAction = false,
   showPercentText = true,
   progressClass = 'bg-base-foreground',
+  // Sized to "Running 100%", the widest label the queue instance can show.
+  labelWidthClass = 'min-w-[100px]',
   pillClass
 } = defineProps<{
   /** Status verb, e.g. "Running", "Downloading", "Completed", "Failed". */
@@ -205,6 +214,11 @@ const {
   hideAction?: boolean
   /** Keep the progress bar but drop the numeric percent from the label. */
   showPercentText?: boolean
+  /**
+   * Width reserved for the label so the pill holds its size as the copy
+   * changes. Size it to the longest state this instance can show.
+   */
+  labelWidthClass?: string
   /** Tailwind bg class for the progress bar. */
   progressClass?: string
   pillClass?: string

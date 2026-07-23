@@ -288,7 +288,9 @@ const toastView = computed<ToastView | null>(() => {
   if (initializingCount.value > 0) {
     return {
       status: 'progress',
-      verb: t('queue.initializingAlmostReady'),
+      // The queue panel's "Initializing - Almost ready" is too long for a pill
+      // that must hold one width across every state.
+      verb: t('queueStatus.starting'),
       percent: null,
       showPercentText: false,
       showStop: false
