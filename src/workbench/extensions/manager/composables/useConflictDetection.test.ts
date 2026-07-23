@@ -15,6 +15,10 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
 // Mock @vueuse/core until function
@@ -43,12 +47,12 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 vi.mock('@/workbench/extensions/manager/utils/versionUtil', () => ({
   getFrontendVersion: vi.fn(() => '1.24.0'),
-  checkVersionCompatibility: vi.fn()
+  checkVersionCompatibility: vi.fn(() => null)
 }))
 
 vi.mock('@/workbench/extensions/manager/utils/systemCompatibility', () => ({
-  checkOSCompatibility: vi.fn(),
-  checkAcceleratorCompatibility: vi.fn(),
+  checkOSCompatibility: vi.fn(() => null),
+  checkAcceleratorCompatibility: vi.fn(() => null),
   normalizeOSList: vi.fn((list) => list)
 }))
 
@@ -451,6 +455,21 @@ describe('useConflictDetection', () => {
       const types = conflicts.map((c) => c.type)
       expect(types).toContain('pending')
       expect(types).not.toContain('banned')
+    })
+
+    it('forwards supported_os/supported_accelerators to the systemCompatibility checks', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      checkNodeCompatibility({
+        status: 'NodeVersionStatusActive',
+        supported_os: ['Linux'],
+        supported_accelerators: ['CUDA']
+      } as components['schemas']['NodeVersion'])
+
+      expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
+      expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
+        ['CUDA'],
+        undefined
+      )
     })
   })
 

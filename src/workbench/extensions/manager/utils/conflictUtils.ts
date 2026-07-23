@@ -49,9 +49,27 @@ export function createPendingConflict(
 }
 
 /**
+ * Single source of truth for mapping a Node/NodeVersion status string to
+ * banned/pending booleans. NodeStatusBanned is a Node-only value; NodeVersion
+ * has no pending-equivalent Node status, so isPending only checks the
+ * NodeVersion enum.
+ */
+export function deriveStatusFlags(status?: string): {
+  isBanned: boolean
+  isPending: boolean
+} {
+  return {
+    isBanned:
+      status === 'NodeStatusBanned' || status === 'NodeVersionStatusBanned',
+    isPending: status === 'NodeVersionStatusPending'
+  }
+}
+
+/**
  * Normalized compatibility inputs for a single package, produced by each call
  * site from its own source shape. Banned/pending are pre-derived booleans
- * because the two callers read different enums (see {@link evaluateCompatibility}).
+ * (see {@link deriveStatusFlags}) since the two callers read status from
+ * different source shapes (Node vs NodeVersion).
  */
 export interface CompatibilityInput {
   supported_os?: RegistryOS[]
@@ -66,16 +84,12 @@ export interface CompatibilityInput {
  * Runs the six compatibility leaf checks and collects the conflicts that fire.
  *
  * Canonical order = comfyui_version → frontend_version → OS → accelerator →
- * banned → pending. This is the order surfaced by the primary conflict dialog
- * (analyzePackageConflicts → runFullConflictAnalysis → WarningTabPanel); every
- * consumer filters conflicts by `.type`, so the order is cosmetic only.
+ * banned → pending; every consumer filters conflicts by `.type`, so the order
+ * is cosmetic only.
  */
 export function evaluateCompatibility(
   input: CompatibilityInput,
-  env: Pick<
-    SystemEnvironment,
-    'comfyui_version' | 'frontend_version' | 'os' | 'accelerator'
-  >
+  env: SystemEnvironment
 ): ConflictDetail[] {
   const conflicts: ConflictDetail[] = []
 

@@ -25,6 +25,7 @@ import type {
 } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import {
   consolidateConflictsByPackage,
+  deriveStatusFlags,
   evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
 import { normalizeOSList } from '@/workbench/extensions/manager/utils/systemCompatibility'
@@ -203,6 +204,8 @@ export function useConflictDetection() {
         })
 
         if (versionData) {
+          const { isBanned, isPending } = deriveStatusFlags(versionData.status)
+
           // Combine local installation data with version-specific Registry data
           const requirement: NodeRequirements = {
             // Basic package info
@@ -222,8 +225,8 @@ export function useConflictDetection() {
 
             // Status information
             version_status: versionData.status,
-            is_banned: versionData.status === 'NodeVersionStatusBanned',
-            is_pending: versionData.status === 'NodeVersionStatusPending'
+            is_banned: isBanned,
+            is_pending: isPending
           }
 
           requirements.push(requirement)
@@ -576,6 +579,7 @@ export function useConflictDetection() {
   function checkNodeCompatibility(
     node: Node | components['schemas']['NodeVersion']
   ) {
+    const { isBanned, isPending } = deriveStatusFlags(node.status)
     const conflicts = evaluateCompatibility(
       {
         supported_os: normalizeOSList(node.supported_os),
@@ -584,10 +588,8 @@ export function useConflictDetection() {
         supported_comfyui_version: node.supported_comfyui_version,
         supported_comfyui_frontend_version:
           node.supported_comfyui_frontend_version,
-        isBanned:
-          node.status === 'NodeStatusBanned' ||
-          node.status === 'NodeVersionStatusBanned',
-        isPending: node.status === 'NodeVersionStatusPending'
+        isBanned,
+        isPending
       },
       {
         comfyui_version: systemEnvironment.value?.comfyui_version,

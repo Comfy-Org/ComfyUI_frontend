@@ -70,6 +70,55 @@ describe('conflictUtils', () => {
         }
       ])
     })
+
+    it('reports no conflicts for an unconstrained package when the system environment has not loaded yet', () => {
+      // Version checks treat a nil current version as compatible; OS/accelerator
+      // checks treat a nil supported list as "all supported". Together these mean
+      // a package with no declared constraints never conflicts, even before
+      // systemEnvironment has loaded.
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: undefined,
+          supported_comfyui_frontend_version: undefined,
+          supported_os: undefined,
+          supported_accelerators: undefined,
+          isBanned: false,
+          isPending: false
+        },
+        {
+          comfyui_version: undefined,
+          frontend_version: undefined,
+          os: undefined,
+          accelerator: undefined
+        }
+      )
+
+      expect(conflicts).toEqual([])
+    })
+
+    it('reports OS/accelerator conflicts when a package declares constraints but the environment has not loaded yet', () => {
+      // An unknown current OS/accelerator does NOT satisfy a declared
+      // supported list, so a package with real constraints appears
+      // incompatible (not compatible) before systemEnvironment has loaded.
+      const conflicts = evaluateCompatibility(
+        {
+          supported_comfyui_version: undefined,
+          supported_comfyui_frontend_version: undefined,
+          supported_os: ['Linux'],
+          supported_accelerators: ['CUDA'],
+          isBanned: false,
+          isPending: false
+        },
+        {
+          comfyui_version: undefined,
+          frontend_version: undefined,
+          os: undefined,
+          accelerator: undefined
+        }
+      )
+
+      expect(conflicts.map((c) => c.type)).toEqual(['os', 'accelerator'])
+    })
   })
 
   describe('createBannedConflict', () => {
