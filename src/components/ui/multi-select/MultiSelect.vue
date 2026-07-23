@@ -50,7 +50,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[popoverStyle, contentStyle]"
+        :style="[popoverStyle, contentStyle, liftedContentStyle]"
         :class="selectContentClass"
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
@@ -166,6 +166,7 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -219,6 +220,7 @@ const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
 const isOpen = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const selectedCount = computed(() => selectedItems.value.length)
 
 function onContentKeydown(event: KeyboardEvent) {
