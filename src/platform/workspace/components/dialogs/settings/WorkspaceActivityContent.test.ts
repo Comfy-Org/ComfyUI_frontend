@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -8,16 +7,13 @@ import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspac
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
-const { mockWorkspaceRole, mockNavigateToPanel, mockRequestMembersSort } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
-    return {
-      mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-      mockNavigateToPanel: vi.fn(),
-      mockRequestMembersSort: vi.fn()
-    }
-  })
+const { mockWorkspaceRole } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
+  return {
+    mockWorkspaceRole: ref<'owner' | 'member'>('owner')
+  }
+})
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
@@ -30,14 +26,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
     userDisplayName: { value: 'Ada Lovelace' },
     userEmail: { value: 'ada@example.com' }
   })
-}))
-
-vi.mock('@/platform/settings/composables/useSettingsNavigation', () => ({
-  useSettingsNavigation: () => ({ navigateToPanel: mockNavigateToPanel })
-}))
-
-vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
-  requestMembersSort: mockRequestMembersSort
 }))
 
 vi.mock('@/config/comfyApi', () => ({
@@ -76,8 +64,6 @@ describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
     globalThis.ResizeObserver = NoopResizeObserver
     mockWorkspaceRole.value = 'owner'
-    mockNavigateToPanel.mockClear()
-    mockRequestMembersSort.mockClear()
   })
 
   it('renders the empty state when there is no activity', () => {
@@ -85,27 +71,18 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.getByText('No activity yet.')).toBeTruthy()
   })
 
-  it('shows the per-user footer actions to an owner', () => {
+  it('shows the full activity link to an owner', () => {
     renderContent([])
     const link = screen.getByRole('link', { name: /full activity/i })
     expect(link.getAttribute('href')).toBe(
       'https://platform.test/profile/usage'
     )
-    expect(screen.getByRole('button', { name: /see members/i })).toBeTruthy()
   })
 
-  it('hides the per-user footer from members', () => {
+  it('hides the full activity link from members', () => {
     mockWorkspaceRole.value = 'member'
     renderContent([])
     expect(screen.queryByRole('link', { name: /full activity/i })).toBeNull()
-    expect(screen.queryByRole('button', { name: /see members/i })).toBeNull()
-  })
-
-  it('deep-links to the Members panel pre-sorted by spend', async () => {
-    renderContent([])
-    await userEvent.click(screen.getByRole('button', { name: /see members/i }))
-    expect(mockRequestMembersSort).toHaveBeenCalledWith('credits')
-    expect(mockNavigateToPanel).toHaveBeenCalledWith('workspace-members')
   })
 
   it('marks a credit inflow with a leading plus', () => {

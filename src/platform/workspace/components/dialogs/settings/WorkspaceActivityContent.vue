@@ -181,18 +181,6 @@
           <i class="icon-[lucide--external-link] size-4" />
           {{ $t('workspacePanel.activity.fullActivity') }}
         </a>
-        <div class="flex items-center gap-3">
-          <p class="text-sm text-muted-foreground">
-            {{ $t('workspacePanel.activity.perUserHint') }}
-          </p>
-          <button
-            class="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 font-[inherit] text-sm text-base-foreground transition-colors hover:text-muted-foreground"
-            @click="goToMembers"
-          >
-            {{ $t('workspacePanel.activity.seeMembers') }}
-            <i class="icon-[lucide--arrow-right] size-4" />
-          </button>
-        </div>
       </div>
       <Pagination
         v-model:page="page"
@@ -220,9 +208,7 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useAutoPageSize } from '@/platform/workspace/composables/useAutoPageSize'
-import { requestMembersSort } from '@/platform/workspace/composables/useMembersPanel'
 import { useWorkspaceActivity } from '@/platform/workspace/composables/useWorkspaceActivity'
 import type {
   ActivityEvent,
@@ -255,13 +241,6 @@ const selfName = computed(() =>
 )
 
 const fullActivityUrl = `${getComfyPlatformBaseUrl()}/profile/usage`
-
-const { navigateToPanel } = useSettingsNavigation()
-
-function goToMembers() {
-  requestMembersSort('credits')
-  navigateToPanel('workspace-members')
-}
 
 const {
   page,

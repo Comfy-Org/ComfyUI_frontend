@@ -23,17 +23,6 @@ type ActiveView = 'active' | 'pending'
 type SortField = 'inviteDate' | 'expiryDate' | 'role'
 type SortDirection = 'asc' | 'desc'
 
-// One-shot cross-panel request from the Activity tab to open the Members table
-// sorted by a per-member column. Those columns ship with member auditing on the
-// Members panel (DES-479); until then useMembersPanel clears the request without
-// a matching column to apply it to.
-type RequestedMembersSort = 'credits' | 'lastActivity'
-const requestedMembersSort = ref<RequestedMembersSort | null>(null)
-
-export function requestMembersSort(field: RequestedMembersSort) {
-  requestedMembersSort.value = field
-}
-
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
@@ -133,9 +122,6 @@ export function useMembersPanel() {
     isPlanLoading
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-
-  // Consume the Activity tab's cross-panel sort request (see requestMembersSort).
-  if (requestedMembersSort.value) requestedMembersSort.value = null
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.

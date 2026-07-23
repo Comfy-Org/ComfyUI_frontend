@@ -241,6 +241,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page)
 
     const content = await openPlanAndCredits(page)
+    await expect(
+      page
+        .getByRole('dialog')
+        .locator('nav')
+        .getByRole('button', { name: 'Members', exact: true })
+    ).toHaveCount(0)
 
     // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
     // 10,550 -> used 10,550).
