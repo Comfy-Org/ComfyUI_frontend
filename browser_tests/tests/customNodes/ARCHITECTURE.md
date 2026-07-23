@@ -705,7 +705,7 @@ from the same manifest: a gating PR check where nothing git-level moves,
 and a nightly non-gating canary that is where drift is allowed to show up
 instead.
 
-### The PR gate (`custom-nodes-e2e`, gating)
+### The PR gate (`custom-nodes-e2e-core`, gating)
 
 Everything git-level is pinned: ComfyUI core is provisioned at the exact
 commit the suite was last verified green against, and every pack at its
@@ -804,5 +804,5 @@ The one place where architecture names meet code symbols.
 | Core smoke                            | `browser_tests/tests/customNodes/coreSmoke.spec.ts`                        |                                                                                                                                                                                                                                 |
 | Dynamic-input (autogrow) tier         | `browser_tests/tests/customNodes/dynamicInputs.spec.ts`                    | `AUTOGROW_CASES` (curated cases), `consumerShape` (graph + DOM census), per-path connect/disconnect loop                                                                                                                        |
 | Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                                               |
-| PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e`; core pin via `comfyui_ref`                                                                                                                                                                     |
+| PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e-core`; core pin via `comfyui_ref`                                                                                                                                                                |
 | Nightly canary                        | `.github/workflows/ci-nightly-custom-nodes-canary.yaml`                    | `canary-core-drift` (core floats), `canary-pack-drift` (packs float at HEAD), label-deduped issue filing                                                                                                                        |

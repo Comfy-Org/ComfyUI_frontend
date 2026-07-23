@@ -2,7 +2,7 @@
 # packs actually installed, so the load/run tiers execute for real. This is a
 # GATING check: if a pack fails to install or any tier is skipped, the job goes
 # red - a regression gate that let a broken pack through as a "skip" would be
-# pointless. Mark `custom-nodes-e2e` as a required status check in branch
+# pointless. Mark `custom-nodes-e2e-core` as a required status check in branch
 # protection to block merges on failure.
 #
 # The gate is deterministic at the GIT level: ComfyUI core and every pack are
@@ -50,7 +50,7 @@ jobs:
   # setup time -
   # first cut setup with a prebuilt image of the pinned packs, then shard if
   # the job exceeds ~12 minutes.
-  custom-nodes-e2e:
+  custom-nodes-e2e-core:
     needs: changes
     # Run only when non-docs code changed AND the PR is same-repo. Fork PRs can
     # edit the manifest's repo/pin URLs, and this job clones and pip-installs
