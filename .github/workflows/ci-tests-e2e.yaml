@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.17
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -131,14 +131,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
+        browser:
+          [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server

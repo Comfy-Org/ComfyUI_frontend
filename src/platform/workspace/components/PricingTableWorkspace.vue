@@ -129,7 +129,7 @@
                 {{ t('subscription.monthlyCreditsPerMemberLabel') }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i class="icon-[lucide--component] text-sm text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
@@ -316,6 +316,7 @@ import type {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useCommandStore } from '@/stores/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -348,6 +349,7 @@ interface PricingTierConfig {
 }
 
 const { t, n } = useI18n()
+const commandStore = useCommandStore()
 
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
@@ -533,8 +535,8 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
   })
 }
 
-function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
+async function handleContactUs() {
+  await commandStore.execute('Comfy.ContactSupport')
 }
 
 function handleViewEnterprise() {

@@ -12,7 +12,11 @@ export default {
   './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
 
   './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
+    // oxfmt ignores the lockfile and errors when left with zero targets
+    const formattable = stagedFiles.filter((f) => !f.endsWith('pnpm-lock.yaml'))
+    if (formattable.length === 0) return []
+
+    const commands = [...formatAndEslint(formattable), 'pnpm typecheck']
 
     const relativePaths = stagedFiles.map((f) =>
       path.relative(process.cwd(), f).replace(/\\/g, '/')
@@ -35,7 +39,7 @@ function formatAndEslint(fileNames: string[]) {
   return [
     `pnpm exec oxfmt --write ${joinedPaths}`,
     `pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix ${joinedPaths}`,
-    `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
+    `pnpm exec eslint --cache --fix --no-warn-ignored --no-error-on-unmatched-pattern ${joinedPaths}`
   ]
 }
 

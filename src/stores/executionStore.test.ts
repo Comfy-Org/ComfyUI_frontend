@@ -21,6 +21,7 @@ const {
   mockOpenWorkflows,
   mockShowTextPreview,
   mockTrackExecutionError,
+  mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
   mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
@@ -33,6 +34,7 @@ const {
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
+    mockTrackExecutionOutcome: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
     mockTrackSharedWorkflowRun: vi.fn()
   }
@@ -92,6 +94,7 @@ vi.mock('@/platform/distribution/types', async () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
+    trackExecutionOutcome: mockTrackExecutionOutcome,
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
@@ -614,6 +617,7 @@ describe('useExecutionStore - workflowStatus', () => {
       nodes: ['1'],
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
       workflow
     })
   }
@@ -631,6 +635,7 @@ describe('useExecutionStore - workflowStatus', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
 
+    expect(mockTrackExecutionOutcome).not.toHaveBeenCalled()
     expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
@@ -648,7 +653,13 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionSuccess('job-1')
 
     callStoreJob('job-1', workflowA)
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'success'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    expect(store.queuedJobs['job-1']).toBeUndefined()
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {
@@ -656,6 +667,10 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionError('job-1')
 
     callStoreJob('job-1', workflowA)
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'failure'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('failed')
   })
 
@@ -672,6 +687,10 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
 
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
+      startTime: 42,
+      outcome: 'success'
+    })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
@@ -935,7 +954,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return node error by locator ID for root graph node', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -948,7 +967,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.getNodeErrors(
         createNodeLocatorId(null, toNodeId(123))
@@ -974,7 +993,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123:456': {
           errors: [
             {
@@ -987,7 +1006,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'SubgraphNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const locatorId = createNodeLocatorId(subgraphUuid, toNodeId(456))
       const result = store.getNodeErrors(locatorId)
@@ -1006,7 +1025,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return false when node has errors but slot is not mentioned', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1019,7 +1038,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1029,7 +1048,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return true when slot has error', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1042,7 +1061,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1052,7 +1071,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should return true when multiple errors exist for the same slot', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1071,7 +1090,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1081,7 +1100,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
     })
 
     it('should handle errors without extra_info', () => {
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -1093,7 +1112,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
           class_type: 'TestNode',
           dependent_outputs: []
         }
-      }
+      })
 
       const result = store.slotHasError(
         createNodeLocatorId(null, toNodeId(123)),
@@ -1339,7 +1358,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
           ]
         }
       }
-      errorStore.lastExecutionError = {
+      errorStore.recordExecutionError({
         prompt_id: 'old-job',
         timestamp: 0,
         node_id: '1',
@@ -1348,13 +1367,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         exception_message: 'boom',
         exception_type: 'RuntimeError',
         traceback: []
-      }
-      errorStore.lastPromptError = {
+      })
+      errorStore.recordPromptError({
         type: 'old-error',
         message: 'old prompt error',
         details: ''
-      }
-      errorStore.lastNodeErrors = nodeErrors
+      })
+      errorStore.recordNodeErrors(nodeErrors)
       errorStore.showErrorOverlay()
 
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })

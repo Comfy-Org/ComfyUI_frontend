@@ -5,6 +5,7 @@ import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
   absoluteUrl,
+  articleNode,
   buildPageGraph,
   collectGraphIds,
   comfyUiApplicationNode,
@@ -54,6 +55,44 @@ describe('itemListNode', () => {
     const items = node.itemListElement as Record<string, unknown>[]
     expect('name' in items[0]).toBe(false)
     expect(items[1].name).toBe('Designer')
+  })
+})
+
+describe('articleNode', () => {
+  const pageUrl = 'https://comfy.org/customers/acme/'
+
+  it('attributes the article to its page and to Comfy Org', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme ships faster',
+      description: 'How Acme used Comfy',
+      imageUrl: 'https://media.comfy.org/acme.webp',
+      locale: 'en'
+    })
+    const webPageRef = { '@id': jsonLdId(pageUrl, 'webpage') }
+    const orgRef = { '@id': organizationId(siteUrl) }
+    expect(node['@id']).toBe(jsonLdId(pageUrl, 'article'))
+    expect(node.headline).toBe('Acme ships faster')
+    expect(node.description).toBe('How Acme used Comfy')
+    expect(node.image).toBe('https://media.comfy.org/acme.webp')
+    expect(node.isPartOf).toEqual(webPageRef)
+    expect(node.mainEntityOfPage).toEqual(webPageRef)
+    expect(node.author).toEqual(orgRef)
+    expect(node.publisher).toEqual(orgRef)
+  })
+
+  it('drops image and description from the markup when not supplied', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme',
+      locale: 'zh-CN'
+    })
+    const emitted = JSON.parse(JSON.stringify(node))
+    expect('image' in emitted).toBe(false)
+    expect('description' in emitted).toBe(false)
+    expect(emitted.inLanguage).toBe('zh-CN')
   })
 })
 
@@ -168,6 +207,31 @@ describe('comfyUiSourceCodeNode', () => {
   it('links the source code to the ComfyUI application via targetProduct', () => {
     const node = comfyUiSourceCodeNode(siteUrl)
     expect(node.targetProduct).toEqual({ '@id': comfyUiSoftwareId(siteUrl) })
+  })
+})
+
+describe('ComfyUI entity links', () => {
+  it('names the home page as the canonical page for the application', () => {
+    const node = comfyUiApplicationNode(siteUrl)
+    expect(node.mainEntityOfPage).toBe(`${siteUrl}/`)
+  })
+
+  it('links the application back to the source code emitted alongside it', () => {
+    const app = comfyUiApplicationNode(siteUrl)
+    const source = comfyUiSourceCodeNode(siteUrl)
+    expect(app.isBasedOn).toEqual({ '@id': source['@id'] })
+  })
+
+  it('claims no canonical page or source code for third-party software', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: 'https://comfy.org/p/supported-models/foo/#software',
+      name: 'Foo Model',
+      url: 'https://comfy.org/p/supported-models/foo/',
+      applicationCategory: 'MultimediaApplication'
+    })
+    expect(node.mainEntityOfPage).toBeUndefined()
+    expect(node.isBasedOn).toBeUndefined()
   })
 })
 

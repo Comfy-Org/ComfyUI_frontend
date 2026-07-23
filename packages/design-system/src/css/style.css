@@ -15,6 +15,9 @@
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
+/* Badge icon names are built at runtime, so the scanner cannot find them. */
+@source inline("icon-mask-[comfy--{3d-decomp,ai-model,anthropic,batch-images-node,bfl,bria,brightness-contrast,bytedance,canny,canny-to-image,canny-to-video,channels,chromatic-aberration,claude,comfy-c,comfy-logo,credits,depth-to-image,depth-to-video,dial,elevenlabs,extensions-blocks,file-output,frames-to-video,gemini,get-video-components,glow,grain,grok,hitpaw,ideogram,image-ai-edit,image-batch,image-blur,image-canny,image-captioning,image-collage,image-compare,image-depth,image-edit,image-inpaint,image-invert,image-outpaint,image-outpainting,image-remove-background,image-rotate,image-select-object-segmentation,image-shader,image-sharpen,image-to-3d,image-to-image,image-to-layers,image-to-video,image-upscale,image-vectorize,kling,load-3d,load-audio,load-video,lora-loader,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,open-ai-chat-node,openai,pin,pixverse,play,pose-to-image,pose-to-video,quiver,recraft,reve,rodin,runway,save-3d,save-audio,save-video,send,sora,stability-ai,template,tencent,text-prompt-enhance,text-to-3d,text-to-audio,text-to-image,text-to-video,topaz,tripo,veo,video-captioning,video-edit,video-enhance,video-extract-frame,video-inpaint,video-interpolation,video-select-object-segmentation,video-slice,video-split-screen,video-trim,video-upscale,vidu,voice-clone,wan,wavespeed,workflow}]");
+
 @custom-variant touch (@media (hover: none));
 
 @theme {
@@ -49,7 +52,7 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
 
-  --color-credit: #fabc25;
+  --color-credit: #ddbd31;
 
   --color-coral-500: #f75951;
   --color-coral-600: #e04e48;
@@ -78,9 +81,9 @@
   --color-interface-panel-job-progress-border: var(--base-foreground);
 
   --color-blue-selection: rgb(from var(--color-azure-600) r g b / 0.3);
-  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b/ 0.15);
-  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b/ 0.1);
-  --color-modal-tag: rgb(from var(--color-smoke-400) r g b/ 0.4);
+  --color-node-hover-100: rgb(from var(--color-charcoal-800) r g b / 0.15);
+  --color-node-hover-200: rgb(from var(--color-charcoal-800) r g b / 0.1);
+  --color-modal-tag: rgb(from var(--color-smoke-400) r g b / 0.4);
   --color-alpha-charcoal-600-30: color-mix(
     in srgb,
     var(--color-charcoal-600) 30%,
@@ -107,7 +110,7 @@
   --color-highlight: var(--p-primary-color);
 
   /* Special Colors (temporary) */
-  --color-dark-elevation-1.5: rgba(from white r g b/ 0.015);
+  --color-dark-elevation-1-5: rgba(from white r g b / 0.015);
   --color-dark-elevation-2: rgba(from white r g b / 0.03);
 }
 
@@ -139,26 +142,6 @@
 
   --button-surface: var(--color-white);
   --button-surface-contrast: var(--color-black);
-
-  --subscription-button-gradient:
-    linear-gradient(
-      315deg,
-      rgb(105 230 255 / 0.15) 0%,
-      rgb(99 73 233 / 0.5) 100%
-    ),
-    radial-gradient(
-      70.71% 70.71% at 50% 50%,
-      rgb(62 99 222 / 0.15) 0.01%,
-      rgb(66 0 123 / 0.5) 100%
-    ),
-    linear-gradient(
-      92deg,
-      #d000ff 0.38%,
-      #b009fe 37.07%,
-      #3e1ffc 65.17%,
-      #009dff 103.86%
-    ),
-    linear-gradient(var(--color-button-surface, #2d2e32));
 
   /* Code styling colors for help menu*/
   --code-text-color: rgb(0 122 255 / 1);
@@ -1873,9 +1856,9 @@ audio.comfy-audio.empty-audio-widget {
     /* Shadow Cover TOP */
     linear-gradient(--value(--color-*) 30%, transparent) center top,
     /* Shadow Cover BOTTOM */
-      linear-gradient(transparent, --value(--color-*) 70%) center bottom,
+    linear-gradient(transparent, --value(--color-*) 70%) center bottom,
     /* Shadow TOP */
-      radial-gradient(
+    radial-gradient(
         farthest-side at 50% 0,
         color-mix(in oklab, --value(--color-*), #777777 35%),
         60%,
@@ -1883,7 +1866,7 @@ audio.comfy-audio.empty-audio-widget {
       )
       center top,
     /* Shadow BOTTOM */
-      radial-gradient(
+    radial-gradient(
         farthest-side at 50% 100%,
         color-mix(in oklab, --value(--color-*), #777777 35%),
         60%,

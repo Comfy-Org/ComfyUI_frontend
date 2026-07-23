@@ -51,9 +51,19 @@
       "permanent": true
     },
     {
+      "source": "/discord",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
       "source": "/press",
       "destination": "/about",
       "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/login",
+      "permanent": false
     }
   ]
 }
