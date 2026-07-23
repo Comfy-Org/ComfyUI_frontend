@@ -4,17 +4,26 @@
          on the right to hold the chevron. Terminal states drop the slab. -->
     <div
       data-testid="process-toast-pill"
-      :class="cn('relative isolate flex items-center rounded-lg', pillClass)"
+      :class="
+        cn(
+          'relative isolate flex items-center overflow-clip rounded-lg',
+          pillClass
+        )
+      "
     >
+      <!-- Every in-progress state holds one width so the run bar doesn't
+           breathe as the job moves through them. Terminal states are the
+           exception: the work is over, so the pill shrinks to its message. -->
       <div
         :class="
           cn(
             'z-2 flex h-9 items-center gap-2 overflow-clip rounded-lg bg-[#232426] py-1',
-            hasSlab ? '-mr-2 pr-3 pl-2' : 'px-3'
+            hasSlab ? '-mr-2 pr-3 pl-2' : 'px-3',
+            !isTerminal && chipWidthClass
           )
         "
       >
-        <div class="flex items-center gap-1.5">
+        <div class="flex min-w-0 flex-1 items-center gap-1.5">
           <!-- Status icon. All three stay mounted and cross-fade, so the swap
                animates in both directions without a motion library. -->
           <div class="relative size-4 shrink-0">
@@ -52,16 +61,9 @@
             />
           </div>
 
-          <!-- Verb and percent read as one sentence, so they share a run.
-               The reserved width stops the pill resizing as the copy changes
-               state or the percent ticks. -->
+          <!-- Verb and percent read as one sentence, so they share a run -->
           <span
-            :class="
-              cn(
-                'text-sm leading-5 font-normal tabular-nums whitespace-nowrap text-base-foreground',
-                labelWidthClass
-              )
-            "
+            class="truncate text-sm leading-5 font-normal tabular-nums whitespace-nowrap text-base-foreground"
           >
             {{ label }}
           </span>
@@ -195,8 +197,8 @@ const {
   hideAction = false,
   showPercentText = true,
   progressClass = 'bg-base-foreground',
-  // Sized to "Running 100%", the widest label the queue instance can show.
-  labelWidthClass = 'min-w-[100px]',
+  // Fits the widest in-progress state: "Running 100%" plus a failure badge.
+  chipWidthClass = 'min-w-[236px]',
   pillClass
 } = defineProps<{
   /** Status verb, e.g. "Running", "Downloading", "Completed", "Failed". */
@@ -215,10 +217,11 @@ const {
   /** Keep the progress bar but drop the numeric percent from the label. */
   showPercentText?: boolean
   /**
-   * Width reserved for the label so the pill holds its size as the copy
-   * changes. Size it to the longest state this instance can show.
+   * Width held by every in-progress state, so the pill stays put as the job
+   * moves between them. Size it to the widest one this instance can show;
+   * terminal states ignore it and shrink to their message.
    */
-  labelWidthClass?: string
+  chipWidthClass?: string
   /** Tailwind bg class for the progress bar. */
   progressClass?: string
   pillClass?: string
