@@ -3024,6 +3024,7 @@
       "loading": "Carregando solicitação de autorização…",
       "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
       "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
+      "detailsHeader": "Detalhes",
       "permissionsHeader": "Permissões",
       "redirectNotice": "Você será redirecionado para",
       "resourceFallback": "este aplicativo",
@@ -3031,7 +3032,6 @@
       "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
       "subtitle": "Faça login em {resource} para continuar",
       "title": "{client} deseja acesso",
-      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
       "workspaceLabel": "Workspace"
     },
     "scopes": {

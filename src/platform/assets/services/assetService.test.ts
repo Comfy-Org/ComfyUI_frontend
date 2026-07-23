@@ -30,10 +30,16 @@ vi.mock('@/stores/modelToNodeStore', () => {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name'
   }
+  const nodeTypeCategories: Record<string, string> = {
+    CheckpointLoaderSimple: 'checkpoints',
+    LoraLoader: 'loras'
+  }
   return {
     useModelToNodeStore: vi.fn(() => ({
       getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn()
+      getCategoryForNodeType: vi.fn(
+        (nodeType: string) => nodeTypeCategories[nodeType]
+      )
     }))
   }
 })
@@ -700,6 +706,118 @@ describe(assetService.getAllAssetsByTag, () => {
     ).rejects.toMatchObject({ name: 'AbortError' })
 
     expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+})
+
+describe(assetService.getAssetsPageForNodeType, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns an empty page without fetching when no category is registered', async () => {
+    const page = await assetService.getAssetsPageForNodeType('UnknownLoader')
+
+    expect(page).toEqual({ assets: [], total: 0, has_more: false })
+    expect(fetchApiMock).not.toHaveBeenCalled()
+  })
+
+  it('requests the models and category tags and returns the page envelope', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })], {
+        hasMore: true,
+        total: 3,
+        nextCursor: 'cursor-1'
+      })
+    )
+
+    const page = await assetService.getAssetsPageForNodeType(
+      'CheckpointLoaderSimple'
+    )
+
+    expect(page.assets.map((a) => a.id)).toEqual(['ckpt-1'])
+    expect(page.total).toBe(3)
+    expect(page.has_more).toBe(true)
+    expect(page.next_cursor).toBe('cursor-1')
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models,checkpoints')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+    // First page carries neither a cursor nor an offset.
+    expect(params.has('after')).toBe(false)
+    expect(params.has('offset')).toBe(false)
+  })
+
+  it('sends after instead of offset when a cursor is provided', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-2' })])
+    )
+
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500,
+      after: 'cursor-2'
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('after')).toBe('cursor-2')
+    expect(params.has('offset')).toBe(false)
+  })
+
+  it('sends an empty-string cursor as the after param rather than falling back to offset', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-4' })])
+    )
+
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500,
+      after: ''
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('after')).toBe('')
+    expect(params.has('offset')).toBe(false)
+  })
+
+  it('sends the offset when paging without a cursor', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-3' })])
+    )
+
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('offset')).toBe('500')
+    expect(params.has('after')).toBe(false)
+  })
+})
+
+describe(assetService.getAssetsForNodeType, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns just the assets array from the page response', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
+    )
+
+    const assets = await assetService.getAssetsForNodeType(
+      'CheckpointLoaderSimple'
+    )
+
+    expect(assets.map((a) => a.id)).toEqual(['ckpt-1'])
+  })
+
+  it('returns an empty array when no category is registered', async () => {
+    const assets = await assetService.getAssetsForNodeType('UnknownLoader')
+
+    expect(assets).toEqual([])
+    expect(fetchApiMock).not.toHaveBeenCalled()
   })
 })
 

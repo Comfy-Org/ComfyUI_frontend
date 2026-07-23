@@ -3024,6 +3024,7 @@
       "loading": "Yetkilendirme isteği yükleniyor…",
       "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
       "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "detailsHeader": "Detaylar",
       "permissionsHeader": "İzinler",
       "redirectNotice": "Yönlendirileceksiniz:",
       "resourceFallback": "bu uygulama",
@@ -3031,7 +3032,6 @@
       "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
       "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
       "title": "{client} erişim istiyor",
-      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
       "workspaceLabel": "Çalışma Alanı"
     },
     "scopes": {
