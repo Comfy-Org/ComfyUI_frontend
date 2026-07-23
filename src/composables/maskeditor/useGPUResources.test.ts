@@ -208,9 +208,9 @@ describe('gpuRender', () => {
   it('uses full coverage for each GPU stroke sample', async () => {
     vi.stubGlobal('GPUTextureUsage', {
       TEXTURE_BINDING: 0x0004,
-      STORAGE_BINDING: 0x0080,
+      STORAGE_BINDING: 0x0008,
       RENDER_ATTACHMENT: 0x0010,
-      COPY_DST: 0x0008,
+      COPY_DST: 0x0002,
       COPY_SRC: 0x0001
     })
     Object.defineProperty(navigator, 'gpu', {
