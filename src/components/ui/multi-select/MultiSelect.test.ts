@@ -1,6 +1,7 @@
+import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -151,5 +152,48 @@ describe('MultiSelect', () => {
 
       unmount()
     })
+  })
+})
+
+describe('MultiSelect z-index', () => {
+  const openDialogs: HTMLElement[] = []
+
+  afterEach(() => {
+    for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
+  })
+
+  function openDialog(): number {
+    const dialog = document.createElement('div')
+    ZIndex.set('modal', dialog, 1700)
+    openDialogs.push(dialog)
+    return Number(dialog.style.zIndex)
+  }
+
+  it('opens above a dialog that raised the counter after mount', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent()
+
+    let dialogZIndex = openDialog()
+    while (dialogZIndex <= 3000) dialogZIndex = openDialog()
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    const content = findContentElement()
+    expect(Number(content?.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
+  it('keeps the static z-index when no dialog is stacked above it', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderInParent()
+
+    await user.click(screen.getByRole('button'))
+    await nextTick()
+
+    expect(findContentElement()?.style.zIndex).toBe('')
+
+    unmount()
   })
 })

@@ -40,7 +40,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle]"
+        :style="[optionStyle, contentStyle, liftedZIndex]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -97,6 +97,7 @@ import {
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -152,4 +153,5 @@ const optionStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
   maxWidth: popoverMaxWidth
 })
+const liftedZIndex = useModalLiftedZIndex(isOpen)
 </script>

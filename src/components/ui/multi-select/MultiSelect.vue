@@ -51,7 +51,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[popoverStyle, contentStyle]"
+        :style="[popoverStyle, contentStyle, liftedZIndex]"
         :class="cn(selectContentClass, 'flex flex-col')"
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
@@ -167,6 +167,7 @@ import {
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -242,6 +243,7 @@ const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
   maxWidth: popoverMaxWidth
 })
+const liftedZIndex = useModalLiftedZIndex(isOpen)
 
 const fuseOptions: UseFuseOptions<SelectOption> = {
   fuseOptions: {
