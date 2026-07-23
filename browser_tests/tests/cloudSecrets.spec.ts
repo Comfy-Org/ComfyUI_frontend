@@ -193,9 +193,15 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
       .filter({ hasText: 'Secret Value' })
     await expect(formDialog).toBeVisible()
 
-    // Pick the entitled Runway provider from the server-driven dropdown.
+    await formDialog.locator('#secret-provider').click()
+    await page.getByRole('option', { name: 'Gemini' }).click()
+    await expect(formDialog.locator('#secret-provider')).toContainText('Gemini')
+    await expect(formDialog).toBeVisible()
+
     await formDialog.locator('#secret-provider').click()
     await page.getByRole('option', { name: 'Runway' }).click()
+    await expect(formDialog.locator('#secret-provider')).toContainText('Runway')
+    await expect(formDialog).toBeVisible()
 
     await formDialog.locator('#secret-name').fill('My Runway Key')
     await formDialog.locator('input[type="password"]').fill(RUNWAY_KEY_VALUE)
@@ -233,6 +239,33 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     await expect(settingsDialog.getByText('My Runway Key')).toBeHidden()
     await expect(settingsDialog.getByText(/No secrets stored/)).toBeVisible()
     expect(backend.store).toHaveLength(0)
+  })
+
+  test('the Add Secret backdrop closes only Add Secret', async ({ page }) => {
+    await mockCloudBoot(page, {
+      features: BOOT_FEATURES,
+      settings: BOOT_SETTINGS
+    })
+    await bootCloud(page)
+    await mockSecretsBackend(page, ['runway'])
+
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
+
+    const settingsDialog = await openSecretsPanel(page)
+    await settingsDialog.getByRole('button', { name: 'Add Secret' }).click()
+
+    const formDialog = page
+      .getByRole('dialog')
+      .filter({ hasText: 'Secret Value' })
+    await expect(formDialog).toBeVisible()
+
+    const dialogOverlays = page.getByTestId('dialog-overlay')
+    await expect(dialogOverlays).toHaveCount(2)
+    await dialogOverlays.last().click({ position: { x: 8, y: 8 } })
+
+    await expect(formDialog).toBeHidden()
+    await expect(settingsDialog).toBeVisible()
   })
 
   test('a non-entitled account never sees the gated providers', async ({
