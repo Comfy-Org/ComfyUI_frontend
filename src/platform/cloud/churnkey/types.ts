@@ -33,6 +33,7 @@ export interface ChurnkeyInitConfig {
   handleDiscount: ChurnkeyUnsupportedHandler
   handleTrialExtension: ChurnkeyUnsupportedHandler
   handlePlanChange: ChurnkeyUnsupportedHandler
+  handleRebate: ChurnkeyUnsupportedHandler
   onClose: (results: ChurnkeySessionResults) => void
   onError: (error: unknown, type?: string) => void
 }

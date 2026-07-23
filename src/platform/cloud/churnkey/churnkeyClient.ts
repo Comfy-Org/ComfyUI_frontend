@@ -65,12 +65,19 @@ function createSession(
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
 
-        function settle(fn: () => void) {
+        function settle(fn: () => void, { deferClearState = false } = {}) {
           if (settled) return
           settled = true
-          runBestEffort(() => {
-            window.churnkey?.clearState?.()
-          })
+          const clearState = () =>
+            runBestEffort(() => {
+              window.churnkey?.clearState?.()
+            })
+          if (deferClearState) {
+            // ChurnKey checks its error state after onError returns.
+            queueMicrotask(clearState)
+          } else {
+            clearState()
+          }
           fn()
         }
 
@@ -87,14 +94,18 @@ function createSession(
           handleDiscount: rejectUnsupportedOffer,
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
+          handleRebate: rejectUnsupportedOffer,
           onClose: (results) => settle(() => resolve(results)),
           onError: (error, type) =>
-            settle(() => {
-              runBestEffort(() => {
-                window.churnkey?.hide?.()
-              })
-              reject(churnkeyError(error, type))
-            })
+            settle(
+              () => {
+                runBestEffort(() => {
+                  window.churnkey?.hide?.()
+                })
+                reject(churnkeyError(error, type))
+              },
+              { deferClearState: true }
+            )
         }
 
         try {

@@ -96,6 +96,9 @@ describe('churnkeyClient', () => {
     await expect(config.handlePlanChange()).rejects.toThrow(
       'Unsupported ChurnKey offer'
     )
+    await expect(config.handleRebate()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
 
     config.onClose({ aborted: true })
     await expect(showPromise).resolves.toEqual({ aborted: true })
@@ -125,10 +128,11 @@ describe('churnkeyClient', () => {
     config.onError('No active subscription', 'cancel_flow')
     config.onClose({ aborted: true })
 
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(mocks.clearState).not.toHaveBeenCalled()
     await expect(showPromise).rejects.toThrow(
       'No active subscription (cancel_flow)'
     )
-    expect(mocks.hide).toHaveBeenCalledOnce()
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 

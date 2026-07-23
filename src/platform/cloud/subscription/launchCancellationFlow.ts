@@ -93,6 +93,7 @@ async function runCancellationFlow(
     return null
   })
   if (!session) {
+    if (!isLaunchWorkspaceCurrent()) return
     await showFallback()
     return
   }

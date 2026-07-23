@@ -265,6 +265,27 @@ describe('launchCancellationFlow', () => {
     expect(showFallback).not.toHaveBeenCalled()
   })
 
+  it('does not fall back for a workspace selected during failed preparation', async () => {
+    let failPreparation: ((reason: Error) => void) | undefined
+    mocks.prepare.mockReturnValue(
+      new Promise((_resolve, reject) => {
+        failPreparation = reject
+      })
+    )
+    const showFallback = vi.fn()
+
+    const flow = launchCancellationFlow({ showFallback })
+    await vi.waitFor(() => expect(failPreparation).toBeTypeOf('function'))
+    mocks.activeWorkspaceId = 'workspace-2'
+    const rejectPreparation = failPreparation
+    if (!rejectPreparation) throw new Error('Expected preparation to be open')
+    rejectPreparation(new Error('provider unavailable'))
+    await flow
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+  })
+
   it('rejects cancellation after the active workspace changes', async () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
