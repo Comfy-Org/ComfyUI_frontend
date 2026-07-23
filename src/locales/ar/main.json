@@ -366,6 +366,7 @@
     "typeText": "نص"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "وضع {mode}، إجراءات سير العمل",
     "app": "التطبيق",
     "blueprint": "المخطط",
     "clearWorkflow": "مسح سير العمل",
@@ -2078,7 +2079,10 @@
       "appBuilder": "منشئ التطبيقات",
       "apps": "التطبيقات",
       "appsEmptyMessage": "سيتم عرض التطبيقات المحفوظة هنا.\nانقر أدناه لبناء تطبيقك الأول.",
-      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك."
+      "appsEmptyMessageAction": "انقر أدناه لإنشاء أول تطبيق لك.",
+      "buildAnApp": "إنشاء تطبيق",
+      "create": "إنشاء",
+      "createApp": "إنشاء تطبيق"
     },
     "arrange": {
       "atLeastOne": "عقدة واحدة على الأقل",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "الانتقال إلى المخرجات"
     },
     "backToWorkflow": "العودة إلى سير العمل",
-    "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
-    "buildAnApp": "أنشئ تطبيقًا",
     "builder": {
       "exit": "خروج من البناء",
       "exitConfirmMessage": "لديك تغييرات غير محفوظة ستفقد\nهل تريد الخروج بدون حفظ؟",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "حدث خطأ أثناء التوليد. قد يكون ذلك بسبب مدخلات مخفية غير صالحة، أو موارد مفقودة، أو مشاكل في إعداد سير العمل.",
       "support": "الاتصال بالدعم"
     },
+    "feedbackLoadError": "فشل تحميل نموذج الملاحظات. يرجى المحاولة لاحقًا.",
     "giveFeedback": "إعطاء ملاحظات",
     "graphMode": "وضع الرسم البياني",
     "hasCreditCost": "يتطلب أرصدة إضافية",
@@ -2198,6 +2201,7 @@
     "loadingModel": "جارٍ تحميل النموذج ثلاثي الأبعاد...",
     "materialMode": "وضع المادة",
     "materialModes": {
+      "clay": "طين",
       "depth": "العمق",
       "lineart": "الرسم الخطي",
       "normal": "عادي",
@@ -2205,7 +2209,29 @@
       "pointCloud": "سحابة نقطية",
       "wireframe": "إطار سلكي"
     },
+    "menuBar": {
+      "bgColor": "لون الخلفية",
+      "bgImage": "صورة الخلفية",
+      "deleteRecording": "حذف التسجيل",
+      "downloadRecording": "تحميل التسجيل",
+      "fov": "زاوية الرؤية",
+      "intensity": "الشدة",
+      "material": "الخامة",
+      "originalMaterialOnly": "الخامة الأصلية فقط",
+      "panorama": "بانوراما",
+      "record": "تسجيل",
+      "recording": "جارٍ التسجيل",
+      "removeBackground": "إزالة الخلفية",
+      "showGrid": "إظهار الشبكة",
+      "skeleton": "الهيكل العظمي",
+      "startNewRecording": "بدء تسجيل جديد",
+      "stopRecording": "إيقاف التسجيل",
+      "switchProjection": "تبديل الإسقاط",
+      "upDirection": "اتجاه الأعلى",
+      "videoRecordingTooltip": "تسجيل فيديو للمشهد [mp4]"
+    },
     "model": "النموذج",
+    "model3d": "نموذج ثلاثي الأبعاد",
     "openIn3DViewer": "افتح في عارض ثلاثي الأبعاد",
     "panoramaMode": "وضع البانوراما",
     "previewOutput": "معاينة المخرج",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "نص",
     "training": "تدريب",
     "transform": "تحويل",
@@ -2981,6 +3008,7 @@
       "loading": "جارٍ تحميل طلب التفويض…",
       "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
       "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "detailsHeader": "التفاصيل",
       "permissionsHeader": "الأذونات",
       "redirectNotice": "سيتم إعادة توجيهك إلى",
       "resourceFallback": "هذا التطبيق",
@@ -2988,7 +3016,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "يوجد سر بهذا الاسم بالفعل",
       "duplicateProvider": "يوجد سر لهذا المزود بالفعل",
+      "fileReadFailed": "تعذر قراءة الملف المحدد. يرجى المحاولة مرة أخرى",
+      "fileTooLarge": "الملف كبير جدًا. يرجى رفع بيانات اعتماد JSON أقل من ١ ميجابايت",
+      "invalidJson": "يجب أن يحتوي الملف على كائن JSON صالح",
       "nameRequired": "الاسم مطلوب",
       "nameTooLong": "يجب ألا يزيد الاسم عن ٢٥٥ حرفًا",
       "providerRequired": "المزود مطلوب",
       "secretValueRequired": "قيمة السر مطلوبة"
     },
+    "jsonFileHint": "الصق ملف JSON أو قم برفعه. سيتم تشفيره ولن يكون بالإمكان عرضه مرة أخرى.",
+    "jsonFileHintEdit": "اتركه فارغًا للاحتفاظ بالقيمة الحالية، أو ارفع ملف JSON جديد لاستبداله.",
+    "jsonFilePlaceholder": "قم برفع أو لصق بيانات اعتماد المزود بصيغة JSON",
     "lastUsed": "آخر استخدام في {date}",
     "modelProviders": "مزودو النماذج",
     "name": "الاسم",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "اترك الحقل فارغًا للاحتفاظ بالقيمة الحالية.",
     "secretValuePlaceholder": "أدخل مفتاح API الخاص بك",
     "secretValuePlaceholderEdit": "أدخل قيمة جديدة للتغيير",
-    "title": "مفاتيح API والأسرار"
+    "title": "مفاتيح API والأسرار",
+    "uploadJsonFile": "رفع ملف JSON"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -4124,7 +4158,6 @@
     "modelsSelected": "{count} نماذج",
     "noResults": "لم يتم العثور على قوالب",
     "noResultsHint": "حاول تعديل البحث أو المرشحات",
-    "resetFilters": "مسح المرشحات",
     "resultsCount": "عرض {count} من {total} قالب",
     "runsOnFilter": "يعمل على",
     "runsOnSelected": "{count} يعمل على",

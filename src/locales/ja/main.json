@@ -366,6 +366,7 @@
     "typeText": "テキスト"
   },
   "breadcrumbsMenu": {
+    "activeModeWorkflowActions": "{mode}モード、ワークフローアクション",
     "app": "アプリ",
     "blueprint": "ブループリント",
     "clearWorkflow": "ワークフローをクリア",
@@ -2078,7 +2079,10 @@
       "appBuilder": "アプリビルダー",
       "apps": "アプリ",
       "appsEmptyMessage": "保存されたアプリはここに表示されます。\n下をクリックして最初のアプリを作成しましょう。",
-      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。"
+      "appsEmptyMessageAction": "下のボタンをクリックして最初のアプリを作成しましょう。",
+      "buildAnApp": "アプリを作成",
+      "create": "作成",
+      "createApp": "アプリを作成"
     },
     "arrange": {
       "atLeastOne": "少なくとも1つ",
@@ -2091,8 +2095,6 @@
       "switchToOutputsButton": "出力に切り替え"
     },
     "backToWorkflow": "ワークフローに戻る",
-    "beta": "アプリモード ベータ版 - フィードバックを送る",
-    "buildAnApp": "アプリを作成",
     "builder": {
       "exit": "ビルダーを終了",
       "exitConfirmMessage": "保存されていない変更は失われます。\n保存せずに終了しますか？",
@@ -2130,6 +2132,7 @@
       "requiresGraph": "生成中に問題が発生しました。無効な非表示入力、リソースの不足、またはワークフロー設定の問題が原因の可能性があります。",
       "support": "サポートに連絡"
     },
+    "feedbackLoadError": "フィードバックフォームの読み込みに失敗しました。後でもう一度お試しください。",
     "giveFeedback": "フィードバックを送る",
     "graphMode": "グラフモード",
     "hasCreditCost": "追加クレジットが必要です",
@@ -2198,6 +2201,7 @@
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {
+      "clay": "クレイ",
       "depth": "深度",
       "lineart": "線画",
       "normal": "ノーマル",
@@ -2205,7 +2209,29 @@
       "pointCloud": "ポイントクラウド",
       "wireframe": "ワイヤーフレーム"
     },
+    "menuBar": {
+      "bgColor": "背景色",
+      "bgImage": "背景画像",
+      "deleteRecording": "録画を削除",
+      "downloadRecording": "録画をダウンロード",
+      "fov": "視野角 (FOV)",
+      "intensity": "強度",
+      "material": "マテリアル",
+      "originalMaterialOnly": "オリジナルマテリアルのみ",
+      "panorama": "パノラマ",
+      "record": "録画",
+      "recording": "録画中",
+      "removeBackground": "背景を削除",
+      "showGrid": "グリッドを表示",
+      "skeleton": "スケルトン",
+      "startNewRecording": "新しい録画を開始",
+      "stopRecording": "録画を停止",
+      "switchProjection": "投影を切り替え",
+      "upDirection": "上方向",
+      "videoRecordingTooltip": "シーンのビデオ録画 [mp4]"
+    },
     "model": "モデル",
+    "model3d": "3Dモデル",
     "openIn3DViewer": "3Dビューアで開く",
     "panoramaMode": "パノラマ",
     "previewOutput": "出力のプレビュー",
@@ -2888,6 +2914,7 @@
     "stable video 3d": "stable video 3d",
     "stable zero123": "stable zero123",
     "supir": "supir",
+    "sync_so": "sync.so",
     "text": "テキスト",
     "training": "トレーニング",
     "transform": "変換",
@@ -2981,6 +3008,7 @@
       "loading": "認可リクエストを読み込み中…",
       "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
       "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
+      "detailsHeader": "詳細",
       "permissionsHeader": "権限",
       "redirectNotice": "リダイレクト先：",
       "resourceFallback": "このアプリ",
@@ -2988,7 +3016,6 @@
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
       "subtitle": "続行するには{resource}にサインインしてください",
       "title": "{client} がアクセスを要求しています",
-      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
@@ -3238,11 +3265,17 @@
     "errors": {
       "duplicateName": "この名前のシークレットはすでに存在します",
       "duplicateProvider": "このプロバイダーのシークレットはすでに存在します",
+      "fileReadFailed": "選択したファイルを読み取れませんでした",
+      "fileTooLarge": "ファイルが大きすぎます。1MB未満のJSON認証情報をアップロードしてください",
+      "invalidJson": "ファイルは有効なJSONオブジェクトを含む必要があります",
       "nameRequired": "名前は必須です",
       "nameTooLong": "名前は255文字以内で入力してください",
       "providerRequired": "プロバイダーは必須です",
       "secretValueRequired": "シークレット値は必須です"
     },
+    "jsonFileHint": "JSONを貼り付けるか、ファイルをアップロードしてください。暗号化され、再度表示することはできません。",
+    "jsonFileHintEdit": "現在の値を保持する場合は空欄のままにしてください。新しいJSONファイルをアップロードすると置き換えられます。",
+    "jsonFilePlaceholder": "プロバイダーのJSON認証情報をアップロードまたは貼り付けてください",
     "lastUsed": "最終使用日：{date}",
     "modelProviders": "モデルプロバイダー",
     "name": "名前",
@@ -3259,7 +3292,8 @@
     "secretValueHintEdit": "現在の値を保持する場合は空欄のままにしてください。",
     "secretValuePlaceholder": "APIキーを入力してください",
     "secretValuePlaceholderEdit": "変更する場合は新しい値を入力",
-    "title": "APIキーとシークレット"
+    "title": "APIキーとシークレット",
+    "uploadJsonFile": "JSONファイルをアップロード"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "グループノードをバイパス",
@@ -4124,7 +4158,6 @@
     "modelsSelected": "{count}件のモデル",
     "noResults": "テンプレートが見つかりません",
     "noResultsHint": "検索条件やフィルターを調整してみてください",
-    "resetFilters": "フィルターをクリア",
     "resultsCount": "{total}件中{count}件のテンプレートを表示中",
     "runsOnFilter": "実行環境",
     "runsOnSelected": "{count} 回実行",
