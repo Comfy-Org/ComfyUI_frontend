@@ -96,6 +96,7 @@
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
                     :side-offset="2"
+                    :align-offset="-5"
                     :collision-padding="10"
                     :style="contentStyle"
                     :class="menuClass"
