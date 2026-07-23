@@ -18,6 +18,7 @@ const env = vi.hoisted(() => {
     isLoggedIn: false,
     teamWorkspacesEnabled: false,
     billingControlEnabled: false,
+    authenticatedConfigLoaded: false,
     userSecretsEnabled: false,
     isActiveSubscription: false,
     billingType: 'legacy' as 'legacy' | 'workspace'
@@ -74,6 +75,10 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  isAuthenticatedConfigLoaded: env.fakeRef('authenticatedConfigLoaded')
+}))
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
@@ -119,6 +124,7 @@ describe('useSettingUI', () => {
       isLoggedIn: false,
       teamWorkspacesEnabled: false,
       billingControlEnabled: false,
+      authenticatedConfigLoaded: false,
       userSecretsEnabled: false,
       isActiveSubscription: false,
       billingType: 'legacy'
@@ -191,6 +197,7 @@ describe('useSettingUI', () => {
         isCloud: true,
         isLoggedIn: true,
         teamWorkspacesEnabled: true,
+        authenticatedConfigLoaded: true,
         isActiveSubscription: true,
         billingType: 'workspace'
       })
@@ -216,6 +223,23 @@ describe('useSettingUI', () => {
         key: 'workspace',
         label: 'Workspace'
       })
+    })
+
+    it('keeps the legacy Workspace panel until authenticated config loads', () => {
+      env.state.authenticatedConfigLoaded = false
+      env.state.billingControlEnabled = true
+
+      const { findPanelByKey, navGroups } = useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Workspace' },
+        { id: 'credits', label: 'Credits' }
+      ])
+      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
+      expect(findPanelByKey('workspace-members')).toBeNull()
     })
 
     it('uses the split workspace shell and hides standalone Credits when enabled', () => {

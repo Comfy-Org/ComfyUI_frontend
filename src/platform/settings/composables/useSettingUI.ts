@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import {
   getSettingInfo,
   useSettingStore
@@ -217,9 +218,13 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
+  const billingControlsEnabled = computed(
+    () => isAuthenticatedConfigLoaded.value && flags.billingControlEnabled
+  )
+
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    return flags.billingControlEnabled
+    return billingControlsEnabled.value
       ? [planCreditsPanel, membersPanel]
       : [workspacePanel]
   })
@@ -330,7 +335,7 @@ export function useSettingUI(
         ...visibleWorkspacePanels.value.map((panel) => panel.node),
         // The legacy per-account Credits panel is redundant once the workspace
         // Plan & Credits panel is present, which now owns the credit balance.
-        ...(!flags.billingControlEnabled &&
+        ...(!billingControlsEnabled.value &&
         isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -420,7 +425,7 @@ export function useSettingUI(
           (child as SettingTreeNode & { translatedLabel?: string })
             .translatedLabel ?? child.label,
         icon:
-          child.key === 'workspace' && flags.billingControlEnabled
+          child.key === 'workspace' && billingControlsEnabled.value
             ? CATEGORY_ICONS.PlanCredits
             : (CATEGORY_ICONS[child.key] ??
               CATEGORY_ICONS[child.label] ??
