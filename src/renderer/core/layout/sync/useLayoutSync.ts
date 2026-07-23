@@ -51,9 +51,7 @@ export function useLayoutSync() {
         liteNode.size[0] !== layout.size.width ||
         liteNode.size[1] !== layout.size.height
       ) {
-        // Assign through the setter so both axes update together. The setter's
-        // isSizeEqual guard makes this write-back a no-op commit (the value now
-        // equals the layout), so no feedback loop through handleLayoutChange.
+        // The setter's isSizeEqual guard no-ops this equal write-back.
         liteNode.size = [layout.size.width, layout.size.height]
         liteNode.onResize?.(liteNode.size)
       }
