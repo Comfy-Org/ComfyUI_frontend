@@ -38,7 +38,10 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ canAccessSubscriptionFeatures: ref(false) })
+  useBillingContext: () => ({
+    canAccessSubscriptionFeatures: env.fakeRef('isActiveSubscription'),
+    type: env.fakeRef('billingType')
+  })
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({

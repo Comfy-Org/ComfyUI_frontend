@@ -135,7 +135,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     showSubscriptionDialog: mockShowSubscriptionDialog,
     manageSubscription: mockManageSubscription,
     resubscribe: mockResubscribe,
-    initialize: mockInitialize
+    initialize: mockInitialize,
+    getMaxSeats: () => 5
   })
 }))
 
