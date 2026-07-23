@@ -85,7 +85,7 @@ afterEach(() => {
 describe('MultiSelect', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    ZIndex.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const user = userEvent.setup()
     const { unmount } = renderInParent()

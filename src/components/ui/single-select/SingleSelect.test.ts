@@ -91,7 +91,7 @@ afterEach(() => {
 describe('SingleSelect', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    ZIndex.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent()
 
