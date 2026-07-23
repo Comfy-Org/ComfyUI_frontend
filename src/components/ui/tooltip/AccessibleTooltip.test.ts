@@ -1,9 +1,25 @@
+import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import AccessibleTooltip from './AccessibleTooltip.vue'
+
+function openDialogAbove(baseZIndex: number): {
+  zIndex: number
+  close: () => void
+} {
+  const dialog = document.body.appendChild(document.createElement('div'))
+  ZIndex.set('modal', dialog, baseZIndex)
+  return {
+    zIndex: Number(dialog.style.zIndex),
+    close: () => {
+      ZIndex.clear(dialog)
+      dialog.remove()
+    }
+  }
+}
 
 function renderInCard(
   label: string | string[] = ['Kling', 'Luma'],
@@ -64,6 +80,22 @@ describe('AccessibleTooltip', () => {
     const tooltip = await screen.findByTestId('disclosure-tooltip')
     expect(tooltip).toHaveTextContent('Kling, Luma')
 
+    unmount()
+  })
+
+  it('lifts above a dialog that raised the shared modal z-index', async () => {
+    const dialog = openDialogAbove(2400)
+    const { user, unmount } = renderInCard()
+
+    await user.hover(screen.getByRole('button'))
+    const tooltip = await screen.findByTestId('disclosure-tooltip')
+
+    expect(
+      Number(tooltip.style.zIndex),
+      'disclosure must out-stack the open dialog, or it renders invisibly behind the modal'
+    ).toBeGreaterThan(dialog.zIndex)
+
+    dialog.close()
     unmount()
   })
 
