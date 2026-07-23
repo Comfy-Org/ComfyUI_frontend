@@ -34,7 +34,9 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    canAccessSubscriptionFeatures: computed(() => state.canAccessSubscriptionFeatures),
+    canAccessSubscriptionFeatures: computed(
+      () => state.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled
