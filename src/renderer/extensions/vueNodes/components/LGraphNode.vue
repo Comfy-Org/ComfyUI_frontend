@@ -40,6 +40,7 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
+    @keydown="nodeMediaContentRef?.handleKeyDown($event)"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
@@ -158,6 +159,7 @@
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
               v-if="nodeMedia"
+              ref="nodeMediaContentRef"
               :node-data="nodeData"
               :media="nodeMedia"
             />
@@ -799,6 +801,7 @@ const nodeMedia = computed(() => {
 })
 
 const nodeContainerRef = ref<HTMLDivElement>()
+const nodeMediaContentRef = ref<InstanceType<typeof NodeContent>>()
 
 // Drag and drop support
 const isDraggingOver = ref(false)
