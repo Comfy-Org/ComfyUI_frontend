@@ -47,6 +47,77 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
+const ONCALL_TIMEOUT_MS = 15_000
+
+export interface DatadogCredentials {
+  apiKey: string | undefined
+  appKey: string | undefined
+}
+
+export interface OnCallLookup {
+  emails: string[]
+  /** Set whenever the lookup could not produce an answer. */
+  warning: string | null
+}
+
+/**
+ * Ask Datadog who is on call right now. Every failure mode degrades to an
+ * empty result with a warning rather than throwing: an unreachable rotation
+ * must leave PRs with the fallback owner, never unowned.
+ */
+export async function fetchOnCallEmails(
+  config: ReleaseSheriffConfig,
+  { apiKey, appKey }: DatadogCredentials
+): Promise<OnCallLookup> {
+  const { site, scheduleId } = config.datadog
+
+  if (!scheduleId) {
+    return {
+      emails: [],
+      warning:
+        'No Datadog On-Call schedule configured in .github/release-sheriff.json'
+    }
+  }
+
+  if (!apiKey || !appKey) {
+    return {
+      emails: [],
+      warning: 'DATADOG_API_KEY / DATADOG_APP_KEY are not available'
+    }
+  }
+
+  const url = new URL(
+    `https://api.${site}/api/v2/on-call/schedules/${scheduleId}/responders`
+  )
+  url.searchParams.set('include', 'responders.shifts.user')
+  url.searchParams.set('filter[position]', 'current')
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'DD-API-KEY': apiKey,
+        'DD-APPLICATION-KEY': appKey
+      },
+      signal: AbortSignal.timeout(ONCALL_TIMEOUT_MS)
+    })
+
+    if (!response.ok) {
+      return {
+        emails: [],
+        warning: `Datadog On-Call responded ${response.status} ${response.statusText}`
+      }
+    }
+
+    return { emails: parseOnCallEmails(await response.json()), warning: null }
+  } catch (error) {
+    return {
+      emails: [],
+      warning: `Datadog On-Call lookup failed (${String(error)})`
+    }
+  }
+}
+
 export type SheriffSource = 'datadog' | 'fallback' | 'none'
 
 export interface SheriffResolution {
