@@ -8,11 +8,8 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type {
-  NodeBoundsUpdate,
-  NodeId,
-  Point
-} from '@/renderer/core/layout/types'
+import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -38,7 +35,7 @@ function useNodeDragIndividual() {
   // Drag state
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
-  let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+  let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
@@ -65,18 +62,17 @@ function useNodeDragIndividual() {
     lastPointerY = event.clientY
 
     const selectedNodes = toValue(selectedNodeIds)
-    const nodeIdKey = String(nodeId)
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeIdKey)
+    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
       for (const id of selectedNodes) {
         // Skip the current node being dragged
-        if (id === nodeIdKey) continue
+        if (id === nodeId) continue
 
         const nodeLayout = layoutStore.getNodeLayoutRef(id).value
         if (nodeLayout) {

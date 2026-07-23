@@ -7,6 +7,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   BaseWidget,
@@ -18,6 +19,7 @@ import {
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -60,7 +62,7 @@ describe('SubgraphNode Construction', () => {
       size: [180, 80]
     })
 
-    expect(subgraphNode.id).toBe(42)
+    expect(subgraphNode.id).toBe(toNodeId(42))
     expect(Array.from(subgraphNode.pos)).toEqual([300, 150])
     expect(Array.from(subgraphNode.size)).toEqual([180, 80])
   })
@@ -963,11 +965,11 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
     })
 
     const parentGraph = new LGraph()
-    const instanceData = {
-      id: 1 as const,
+    const instanceData = fromPartial<ExportedSubgraphInstance>({
+      id: 1,
       type: subgraph.id,
-      pos: [0, 0] as [number, number],
-      size: [200, 100] as [number, number],
+      pos: [0, 0],
+      size: [200, 100],
       inputs: [
         { name: 'a', type: 'STRING', link: null },
         { name: 'b', type: 'NUMBER', link: null },
@@ -979,13 +981,9 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
       flags: {},
       mode: 0,
       order: 0
-    }
+    })
 
-    const node = new SubgraphNode(
-      parentGraph,
-      subgraph,
-      instanceData as ExportedSubgraphInstance
-    )
+    const node = new SubgraphNode(parentGraph, subgraph, instanceData)
 
     expect(node.inputs).toHaveLength(2)
     expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)

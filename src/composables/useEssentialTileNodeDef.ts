@@ -12,12 +12,11 @@ export function resolveEssentialTileNodeDef(
 ): ComfyNodeDefImpl | undefined {
   const name = tile.nodeName
   if (!name) return undefined
-  const byName = nodeDefStore.allNodeDefsByName[name]
-  if (byName) return byName
-  const target = name.startsWith(BLUEPRINT_TYPE_PREFIX)
-    ? name.slice(BLUEPRINT_TYPE_PREFIX.length)
-    : name
-  return nodeDefStore.nodeDefs.find((d) => d.display_name === target)
+  if (!name.startsWith(BLUEPRINT_TYPE_PREFIX))
+    return nodeDefStore.allNodeDefsByName[name]
+
+  const subgraphName = name.slice(BLUEPRINT_TYPE_PREFIX.length)
+  return nodeDefStore.allNodeDefsByDisplayName[subgraphName]
 }
 
 export function useEssentialTileNodeDef(tile: MaybeRefOrGetter<EssentialTile>) {

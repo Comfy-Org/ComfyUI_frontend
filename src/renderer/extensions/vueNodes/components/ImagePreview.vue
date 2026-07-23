@@ -206,6 +206,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -215,7 +216,7 @@ interface ImagePreviewProps {
   /** Array of image URLs to display */
   readonly imageUrls: readonly string[]
   /** Optional node ID for context-aware actions */
-  readonly nodeId?: string
+  readonly nodeId?: NodeId
 }
 
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
@@ -328,7 +329,7 @@ function handleImageError() {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
 }

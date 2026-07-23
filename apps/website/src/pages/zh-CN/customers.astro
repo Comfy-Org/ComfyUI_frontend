@@ -1,15 +1,19 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ContactSection from '../../components/customers/ContactSection.vue'
+import FeedbackSection from '../../components/customers/FeedbackSection.vue'
 import HeroSection from '../../components/customers/HeroSection.vue'
 import StorySection from '../../components/customers/StorySection.vue'
-import FeedbackSection from '../../components/customers/FeedbackSection.vue'
 import VideoSection from '../../components/customers/VideoSection.vue'
-import ContactSection from '../../components/customers/ContactSection.vue'
+import { toCardProps } from '../../utils/customers'
+import { loadStories } from '../../utils/loadStories'
+
+const stories = (await loadStories('zh-CN')).map(toCardProps)
 ---
 
-<BaseLayout title="客户故事 — Comfy">
+<BaseLayout title="客户故事 - Comfy">
   <HeroSection locale="zh-CN" client:load />
-  <StorySection locale="zh-CN" />
+  <StorySection stories={stories} locale="zh-CN" />
   <FeedbackSection locale="zh-CN" client:load />
   <VideoSection locale="zh-CN" client:load />
   <ContactSection locale="zh-CN" />

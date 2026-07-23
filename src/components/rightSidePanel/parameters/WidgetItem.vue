@@ -70,7 +70,7 @@ const widgetComponent = computed(() => {
 
 const isLinked = computed(() => {
   const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(String(node.id))
+    .nodeManager.value?.vueNodeData.get(node.id)
     ?.widgets?.find((w) => w.name === widget.name)
   return safeWidget?.slotMetadata
     ? !!safeWidget.slotMetadata.linked
@@ -79,10 +79,10 @@ const isLinked = computed(() => {
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(node.id))
+  const bareNodeId = stripGraphPrefix(node.id)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId
+    : graphId && bareNodeId
       ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
       : undefined
   const widgetName = widgetState?.name ?? widget.name
@@ -212,7 +212,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :node-id="String(node.id)"
+      :node-id="node.id"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
     />

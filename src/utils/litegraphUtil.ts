@@ -20,13 +20,14 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -322,20 +323,21 @@ export function getLinkTypeColor(typeName: string): string {
 }
 
 export function resolveNode(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
-  if (!graph) return undefined
-  const found = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!graph || !parsedNodeId) return undefined
+  const found = graph.getNodeById(parsedNodeId)
   if (found) return found
   for (const sg of graph.subgraphs.values()) {
-    const node = sg.getNodeById(nodeId)
+    const node = sg.getNodeById(parsedNodeId)
     if (node) return node
   }
   return undefined
 }
 export function resolveNodeWidget(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
@@ -350,7 +352,10 @@ export function resolveNodeWidget(
     }
   }
 
-  const node = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!parsedNodeId) return []
+
+  const node = graph.getNodeById(parsedNodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
     const widget = node.widgets?.find((w) => w.name === widgetName)
@@ -367,10 +372,11 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
+  const nodeId = parseNodeId(node.id)
+  if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, node.id, name)
+  return widgetId(graphId, nodeId, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

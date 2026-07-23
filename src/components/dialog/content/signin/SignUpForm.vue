@@ -33,10 +33,11 @@
       v-if="turnstileEnabled"
       ref="turnstileWidget"
       v-model:token="turnstileToken"
+      v-model:unavailable="turnstileUnavailable"
     />
 
     <small
-      v-show="submitBlockedByTurnstile"
+      v-show="waitingForTurnstile"
       id="comfy-org-sign-up-turnstile-hint"
       role="status"
       aria-live="polite"
@@ -51,11 +52,9 @@
       v-else
       type="submit"
       class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid || submitBlockedByTurnstile"
+      :disabled="!$form.valid || waitingForTurnstile"
       :aria-describedby="
-        submitBlockedByTurnstile
-          ? 'comfy-org-sign-up-turnstile-hint'
-          : undefined
+        waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
       "
     >
       {{ t('auth.signup.signUpButton') }}
@@ -70,11 +69,11 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTurnstile } from '@/composables/auth/useTurnstile'
+import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
@@ -86,25 +85,21 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
-const { enabled: turnstileEnabled, enforced: turnstileEnforced } =
-  useTurnstile()
-const turnstileToken = ref('')
+const { enabled: turnstileEnabled } = useTurnstile()
+const {
+  token: turnstileToken,
+  unavailable: turnstileUnavailable,
+  waiting: waitingForTurnstile
+} = useTurnstileGate(turnstileEnabled)
 const turnstileWidget =
   useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
-const submitBlockedByTurnstile = computed(
-  () => turnstileEnforced.value && !turnstileToken.value
-)
-
-watch(turnstileEnabled, (on) => {
-  if (!on) turnstileToken.value = ''
-})
 
 const emit = defineEmits<{
   submit: [values: SignUpData, turnstileToken?: string]
 }>()
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid && !submitBlockedByTurnstile.value) {
+  if (event.valid && !waitingForTurnstile.value) {
     emit(
       'submit',
       event.values as SignUpData,

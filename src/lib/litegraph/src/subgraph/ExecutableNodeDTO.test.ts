@@ -3,11 +3,13 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  ExecutableNodeDTO,
   LGraph,
-  LGraphNode,
   LGraphEventMode,
-  ExecutableNodeDTO
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   createNestedSubgraphs,
@@ -41,7 +43,7 @@ describe('ExecutableNodeDTO Creation', () => {
   it('should create DTO with subgraph path', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Inner Node')
-    node.id = 42
+    node.id = toNodeId(42)
     graph.add(node)
     const subgraphPath = ['10', '20'] as const
 
@@ -56,7 +58,7 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Test Node')
     node.addInput('input1', 'number')
     node.addInput('input2', 'string')
-    node.inputs[0].link = 123 // Simulate connected input
+    node.inputs[0].link = toLinkId(123) // Simulate connected input
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -115,7 +117,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate simple ID for root node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Root Node')
-    node.id = 5
+    node.id = toNodeId(5)
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -126,7 +128,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate path-based ID for nested node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Nested Node')
-    node.id = 3
+    node.id = toNodeId(3)
     graph.add(node)
     const path = ['1', '2'] as const
 
@@ -138,7 +140,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle deep nesting paths', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = 99
+    node.id = toNodeId(99)
     graph.add(node)
     const path = ['1', '2', '3', '4', '5'] as const
 
@@ -150,11 +152,11 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle string and number IDs consistently', () => {
     const graph = new LGraph()
     const node1 = new LGraphNode('Node 1')
-    node1.id = 10
+    node1.id = toNodeId(10)
     graph.add(node1)
 
     const node2 = new LGraphNode('Node 2')
-    node2.id = 20
+    node2.id = toNodeId(20)
     graph.add(node2)
 
     const dto1 = new ExecutableNodeDTO(node1, ['5'], new Map(), undefined)
@@ -487,7 +489,7 @@ describe('ExecutableNodeDTO Properties', () => {
   it('should provide access to basic properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
-    node.id = 42
+    node.id = toNodeId(42)
     node.addInput('input', 'number')
     node.addOutput('output', 'string')
     graph.add(node)
@@ -505,7 +507,7 @@ describe('ExecutableNodeDTO Properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
     node.addInput('testInput', 'number')
-    node.inputs[0].link = 999 // Simulate connection
+    node.inputs[0].link = toLinkId(999) // Simulate connection
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -549,7 +551,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     // Create DTOs
     for (let i = 0; i < 100; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = i
+      node.id = toNodeId(i)
       graph.add(node)
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       nodes.push(dto)
@@ -619,7 +621,7 @@ describe('ExecutableNodeDTO Integration', () => {
   it('should preserve original node properties through DTO', () => {
     const graph = new LGraph()
     const originalNode = new LGraphNode('Original')
-    originalNode.id = 123
+    originalNode.id = toNodeId(123)
     originalNode.addInput('test', 'number')
     originalNode.properties = { value: 42 }
     graph.add(originalNode)
@@ -632,7 +634,7 @@ describe('ExecutableNodeDTO Integration', () => {
     )
 
     // DTO should provide access to original node properties
-    expect(dto.node.id).toBe(123)
+    expect(Number(dto.node.id)).toBe(123)
     expect(dto.node.inputs).toHaveLength(1)
     expect(dto.node.properties.value).toBe(42)
 
@@ -644,7 +646,7 @@ describe('ExecutableNodeDTO Integration', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 99 })
     const innerNode = subgraph.nodes[0]
-    innerNode.id = 55
+    innerNode.id = toNodeId(55)
 
     const dto = new ExecutableNodeDTO(
       innerNode,
@@ -655,8 +657,8 @@ describe('ExecutableNodeDTO Integration', () => {
 
     // DTO provides execution context
     expect(dto.id).toBe('99:55') // Path-based execution ID
-    expect(dto.node.id).toBe(55) // Original node ID preserved
-    expect(dto.subgraphNode?.id).toBe(99) // Subgraph context
+    expect(Number(dto.node.id)).toBe(55) // Original node ID preserved
+    expect(Number(dto.subgraphNode?.id)).toBe(99) // Subgraph context
   })
 })
 
@@ -669,7 +671,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
     // Create DTOs to test performance
     for (let i = 0; i < 1000; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = i
+      node.id = toNodeId(i)
       node.addInput('in', 'number')
       graph.add(node)
 
@@ -692,7 +694,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
   it('should handle complex path generation correctly', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = 999
+    node.id = toNodeId(999)
     graph.add(node)
 
     // Test deterministic path generation behavior

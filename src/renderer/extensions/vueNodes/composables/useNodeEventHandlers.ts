@@ -15,7 +15,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -24,7 +24,7 @@ function useNodeEventHandlersIndividual() {
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
-    return nodeManager.value?.getNode(String(nodeId))
+    return nodeManager.value?.getNode(nodeId)
   }
 
   /**

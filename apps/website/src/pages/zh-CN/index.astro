@@ -9,11 +9,25 @@ import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightS
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
 import { t } from '../../i18n/translations'
+import {
+  comfyUiApplicationNode,
+  comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
+  pageContext,
+} from '../../utils/jsonLd'
+
+const { siteUrl } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
 ---
 
 <BaseLayout
-  title="Comfy — 视觉 AI 的最强可控性"
+  title="Comfy - 视觉 AI 的最强可控性"
   description={t('hero.subtitle', 'zh-CN')}
+  mainEntityId={comfyUiSoftwareId(siteUrl)}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
 >
   <HeroSection locale="zh-CN" client:load />

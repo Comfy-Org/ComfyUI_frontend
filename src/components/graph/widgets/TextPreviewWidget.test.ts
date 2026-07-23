@@ -3,6 +3,9 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 const execHolder = vi.hoisted(() => ({
   state: null as {
     executingNodeIds: Array<string | number>
@@ -35,7 +38,7 @@ const SkeletonStub = defineComponent({
 
 function renderPreview(
   text: string,
-  { nodeId = 'node-1' }: { nodeId?: string | number } = {}
+  { nodeId = toNodeId('node-1') }: { nodeId?: NodeId } = {}
 ) {
   const value = ref(text)
   const Harness = defineComponent({
@@ -167,21 +170,21 @@ describe('TextPreviewWidget', () => {
     it('hides the Skeleton on mount when execution is already idle', () => {
       execState().executingNodeIds = []
       execState().isIdle = true
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
     it('shows a Skeleton on mount when the parent node is executing', () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
 
     it('hides the Skeleton when execution transitions to idle', async () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
 
       execState().executingNodeIds = []
@@ -194,7 +197,7 @@ describe('TextPreviewWidget', () => {
     it('hides the Skeleton when the parent node leaves executingNodeIds', async () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { nodeId: toNodeId('n1') })
 
       execState().executingNodeIds = ['other']
       await nextTick()

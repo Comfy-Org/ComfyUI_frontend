@@ -420,6 +420,14 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
+  // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
+  // TypeScript resolver cannot see but are valid at build time.
+  {
+    files: ['apps/website/**/*.{ts,mts,vue}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {

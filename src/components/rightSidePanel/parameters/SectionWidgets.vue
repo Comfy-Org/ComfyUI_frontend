@@ -31,7 +31,7 @@ import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
@@ -135,6 +135,7 @@ watchDebounced(
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, 'h-7')
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -151,10 +152,11 @@ function isWidgetShownOnParents(
   const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
     if (source) {
+      const widgetNodeId = widgetNode.id
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
           ? source.nodeId
-          : String(widgetNode.id)
+          : widgetNodeId
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
@@ -162,7 +164,7 @@ function isWidgetShownOnParents(
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: String(widgetNode.id),
+      sourceNodeId: widgetNode.id,
       sourceWidgetName: widget.name
     })
   })

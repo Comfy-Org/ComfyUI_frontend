@@ -5,6 +5,8 @@ import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -18,7 +20,7 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import NodeHeader from './NodeHeader.vue'
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '1',
+  id: toNodeId('1'),
   title: 'KSampler',
   type: 'KSampler',
   mode: 0,

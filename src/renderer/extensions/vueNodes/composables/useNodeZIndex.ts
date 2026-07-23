@@ -4,7 +4,7 @@
  * Provides focused functionality for managing node layering through z-index.
  * Integrates with the layout system to ensure proper visual ordering.
  */
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 

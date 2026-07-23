@@ -7,7 +7,7 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -34,7 +34,7 @@ enum TaskItemDisplayStatus {
 }
 
 interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   mediaType: string
   format?: string
   frame_rate?: number
@@ -47,7 +47,7 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   // 'audio' | 'images' | ...
   mediaType: string
 
@@ -224,7 +224,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {

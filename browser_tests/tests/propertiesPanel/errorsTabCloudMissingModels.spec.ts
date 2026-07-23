@@ -23,6 +23,7 @@ import {
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
@@ -384,11 +385,11 @@ test.describe(
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.graph.getNodeById(1)
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph.getNodeById(nodeId)
             return node?.widgets?.find((widget) => widget.name === 'ckpt_name')
               ?.value
-          })
+          }, toNodeId(1))
         )
         .toBe(CLOUD_IMPORTED_CANONICAL_MODEL_NAME)
     })

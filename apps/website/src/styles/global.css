@@ -61,7 +61,13 @@
 
 @theme {
   --color-site-dropdown: #332b38;
+  --color-site-bg-soft: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink) 88%,
+    black 12%
+  );
   --color-primary-comfy-yellow: #f2ff59;
+  --color-primary-comfy-orange: #fabc25;
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
@@ -70,12 +76,14 @@
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
   --color-primary-comfy-plum: #49378b;
+  --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
   --radius-4xl: 2rem;
@@ -91,6 +99,14 @@
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
+}
+
+/* Pre-hydration hide for a dismissed announcement banner (set by an inline
+   script in BaseLayout head) — prevents any flash before Vue hydrates.
+   The [data-banner-dismissed] literal is BANNER_DISMISS_ATTR in utils/banner.ts;
+   keep them in sync. */
+[data-banner-dismissed] [data-slot='announcement-banner'] {
+  display: none;
 }
 
 @keyframes border-angle-spin {
@@ -162,6 +178,43 @@
   animation: ripple-effect 4s linear infinite;
 }
 
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@utility animate-cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.card-slide-enter-active {
+  transition:
+    transform 0.5s cubic-bezier(0.16, 0.84, 0.3, 1),
+    opacity 0.5s cubic-bezier(0.16, 0.84, 0.3, 1);
+}
+
+.card-slide-enter-from {
+  transform: translateX(34px);
+  opacity: 0;
+}
+
+.card-slide-leave-active {
+  transition:
+    transform 0.45s ease,
+    opacity 0.45s ease;
+}
+
+.card-slide-leave-to {
+  transform: translateX(46px);
+  opacity: 0;
+}
+
 @utility animate-delay-* {
   animation-delay: --value([*]);
 }
@@ -209,7 +262,7 @@
 @utility ppformula-text-center {
   display: inline-block;
   position: relative;
-  top: 0.19em;
+  top: 0.1em;
 }
 
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
@@ -222,6 +275,6 @@ video::-webkit-media-controls-panel {
 
 :root {
   --site-bg: var(--color-primary-comfy-ink);
-  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
 }

@@ -58,8 +58,11 @@ function createFormData(
     customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
+    thumbnailUrl: null,
+    existingThumbnailType: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
+    comparisonAfterUrl: null,
     exampleImages: [],
     tutorialUrl: '',
     metadata: {},
@@ -143,6 +146,110 @@ describe('useComfyHubPublishSubmission', () => {
     expect(mockPublishWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({
         thumbnailTokenOrUrl: 'token-1'
+      })
+    )
+  })
+
+  it('sends the existing thumbnail URL when no new file is attached', async () => {
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'image',
+        thumbnailFile: null,
+        thumbnailUrl: 'https://cdn.example.com/existing-thumb.png',
+        existingThumbnailType: 'image'
+      })
+    )
+
+    expect(mockRequestAssetUploadUrl).not.toHaveBeenCalled()
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailTokenOrUrl: 'https://cdn.example.com/existing-thumb.png'
+      })
+    )
+  })
+
+  it('sends the existing comparison URLs when no new files are attached', async () => {
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'imageComparison',
+        thumbnailFile: null,
+        comparisonBeforeFile: null,
+        comparisonAfterFile: null,
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        existingThumbnailType: 'imageComparison'
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailTokenOrUrl: 'https://cdn.example.com/before.png',
+        thumbnailComparisonTokenOrUrl: 'https://cdn.example.com/after.png'
+      })
+    )
+  })
+
+  it('does not submit an existing thumbnail URL after the type is switched away', async () => {
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'video',
+        thumbnailFile: null,
+        thumbnailUrl: 'https://cdn.example.com/existing-image.png',
+        existingThumbnailType: 'image'
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailType: 'video',
+        thumbnailTokenOrUrl: undefined
+      })
+    )
+  })
+
+  it('prefers a newly uploaded thumbnail file over the existing URL', async () => {
+    const thumbnailFile = new File(['thumbnail'], 'new-thumb.png', {
+      type: 'image/png'
+    })
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'image',
+        thumbnailFile,
+        thumbnailUrl: 'https://cdn.example.com/existing-thumb.png',
+        existingThumbnailType: 'image'
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailTokenOrUrl: 'token-1'
+      })
+    )
+  })
+
+  it('prefers a newly uploaded comparison-after file over the existing URL', async () => {
+    const afterFile = new File(['after'], 'after.png', { type: 'image/png' })
+
+    const { submitToComfyHub } = useComfyHubPublishSubmission()
+    await submitToComfyHub(
+      createFormData({
+        thumbnailType: 'imageComparison',
+        comparisonBeforeFile: null,
+        comparisonAfterFile: afterFile,
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        comparisonAfterUrl: 'https://cdn.example.com/after.png',
+        existingThumbnailType: 'imageComparison'
+      })
+    )
+
+    expect(mockPublishWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thumbnailComparisonTokenOrUrl: 'token-1'
       })
     )
   })

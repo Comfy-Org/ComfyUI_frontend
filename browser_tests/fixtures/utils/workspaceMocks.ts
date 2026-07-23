@@ -34,6 +34,27 @@ export function member(
 }
 
 /**
+ * Stub `POST /api/auth/token` with a valid workspace token for `ws`. Without
+ * this the mint fails and auth cannot resolve the active workspace.
+ */
+export async function mockWorkspaceTokenMint(
+  page: Page,
+  ws: Pick<WorkspaceWithRole, 'id' | 'name' | 'type' | 'role'>
+) {
+  await page.route('**/api/auth/token', (r) =>
+    r.fulfill(
+      jsonRoute({
+        token: 'mock-workspace-token',
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        workspace: { id: ws.id, name: ws.name, type: ws.type },
+        role: ws.role,
+        permissions: []
+      })
+    )
+  )
+}
+
+/**
  * Stub the workspace resolution + members list so the cloud app boots into the
  * given workspace with the given roster (drives the original-owner gate).
  */
@@ -46,17 +67,7 @@ export async function mockWorkspace(
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill(jsonRoute({ workspaces: [ws] }))
   })
-  await page.route('**/api/auth/token', (r) =>
-    r.fulfill(
-      jsonRoute({
-        token: 'mock-workspace-token',
-        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        workspace: { id: ws.id, name: ws.name, type: ws.type },
-        role: ws.role,
-        permissions: []
-      })
-    )
-  )
+  await mockWorkspaceTokenMint(page, ws)
   await page.route('**/api/workspace/members**', (r) =>
     r.fulfill(
       jsonRoute({

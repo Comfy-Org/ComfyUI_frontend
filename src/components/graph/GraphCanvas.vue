@@ -18,8 +18,8 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #side-toolbar>
-      <SideToolbar />
+    <template #side-toolbar>
+      <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
@@ -39,6 +39,10 @@
       <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
+      <div
+        ref="canvasPanelBoundsRef"
+        class="pointer-events-none absolute inset-0"
+      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -73,7 +77,7 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionErrorStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
           ? 'Execution error'
           : null
       "
@@ -89,7 +93,10 @@
   />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle v-if="comfyAppReady" />
+  <SelectionRectangle
+    v-if="comfyAppReady"
+    :panel-el="canvasPanelBoundsRef ?? undefined"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -116,6 +123,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -202,6 +210,7 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)

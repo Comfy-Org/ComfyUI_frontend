@@ -114,9 +114,11 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -127,11 +129,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
-  isPersonal = false
+  isPersonal = false,
+  initialCheckout
 } = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   isPersonal?: boolean
+  initialCheckout?: SubscriptionCheckoutSelection
 }>()
 
 const emit = defineEmits<{
@@ -154,7 +158,15 @@ const {
   handleConfirmTransition,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason, {
+  tierPlanType: isPersonal ? 'personal' : 'team'
+})
+
+onMounted(() => {
+  if (initialCheckout?.planMode === 'personal') {
+    void handleSubscribeClick(initialCheckout)
+  }
+})
 </script>
 
 <style scoped>

@@ -12,6 +12,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -33,8 +34,8 @@ export interface Member {
   joined_at: string
   role: WorkspaceRole
   // True when this member is the workspace's original owner/creator
-  // (member.id == workspace.created_by_user_id). Gates the creator-only
-  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // (member.id == workspace.created_by_user_id). Used for personal creator
+  // protections and Team-to-personal downgrade eligibility.
   // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
 }
@@ -58,7 +59,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -250,6 +250,9 @@ export type BillingStatus =
   | 'pending_payment'
   | 'paid'
   | 'payment_failed'
+  // A Stripe-paused subscription stays `active` on the activity axis; the pause
+  // is a payment-lifecycle fact. Not emitted until cloud#5075 ships.
+  | 'paused'
   | 'inactive'
 
 export interface CurrentTeamCreditStop {
@@ -260,6 +263,7 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
@@ -544,6 +548,20 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }

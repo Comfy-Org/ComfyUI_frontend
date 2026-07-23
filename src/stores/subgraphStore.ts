@@ -11,9 +11,9 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {
@@ -66,7 +66,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         return node && subgraphs.some((s) => s.id === node.type)
       }
       if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
-      const errors: Record<NodeId, NodeError> = {}
+      const errors: Record<SerializedNodeId, NodeError> = {}
       //mark errors for all but first subgraph node
       let firstSubgraphFound = false
       for (let i = 0; i < nodes.length; i++) {
@@ -80,7 +80,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           dependent_outputs: []
         }
       }
-      useExecutionErrorStore().lastNodeErrors = errors
+      useExecutionErrorStore().recordNodeErrors(errors)
       useCanvasStore().getCanvas().draw(true, true)
       throw new Error(
         'The root graph of a subgraph blueprint must consist of only a single subgraph node'

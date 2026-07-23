@@ -75,14 +75,14 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled)
+      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
-        sourceNodeId: String(interiorNode.id),
+        sourceNodeId: interiorNode.id,
         sourceWidgetName: getWidgetName(widget)
       })
   )

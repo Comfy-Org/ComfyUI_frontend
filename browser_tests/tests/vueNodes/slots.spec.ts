@@ -2,14 +2,15 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 
 test('Can display a slot mismatched from widget type', async ({
   comfyPage
 }) => {
-  await comfyPage.page.evaluate(() => {
-    const emptyLatent = window.app!.graph.getNodeById(5)!
+  await comfyPage.page.evaluate((nodeId) => {
+    const emptyLatent = window.app!.graph.getNodeById(nodeId)!
     emptyLatent.inputs[0].type = 'INT,FLOAT'
-  })
+  }, toNodeId(5))
   await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
   const width = comfyPage.vueNodes

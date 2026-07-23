@@ -31,6 +31,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import { toNodeId } from '@/types/nodeId'
 
 function makeModelCandidate(
   name: string,
@@ -88,7 +89,7 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors'),
-        makeModelCandidate('model_b.safetensors', { nodeId: '2' })
+        makeModelCandidate('model_b.safetensors', { nodeId: toNodeId('2') })
       ])
 
       expect(store.missingModelCount).toBe(2)
@@ -108,6 +109,24 @@ describe('missingModelStore', () => {
       await store.refreshMissingModels()
 
       expect(refreshSpy).toHaveBeenCalledWith({ silent: true })
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('forwards the node definition reload option to the app', async () => {
+      const store = useMissingModelStore()
+      const refreshSpy = vi
+        .spyOn(app, 'refreshMissingModels')
+        .mockResolvedValue({
+          missingModels: [],
+          confirmedCandidates: []
+        })
+
+      await store.refreshMissingModels({ reloadDefs: false })
+
+      expect(refreshSpy).toHaveBeenCalledWith({
+        silent: true,
+        reloadDefs: false
+      })
       expect(store.isRefreshingMissingModels).toBe(false)
     })
 
@@ -166,41 +185,43 @@ describe('missingModelStore', () => {
     it('returns true when node has missing model', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '5' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('5') })
       ])
 
-      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 5))).toBe(
-        true
-      )
+      expect(
+        store.hasMissingModelOnNode(createNodeLocatorId(null, toNodeId(5)))
+      ).toBe(true)
     })
 
     it('returns false when node has no missing model', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '5' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('5') })
       ])
 
-      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 99))).toBe(
-        false
-      )
+      expect(
+        store.hasMissingModelOnNode(createNodeLocatorId(null, toNodeId(99)))
+      ).toBe(false)
     })
 
     it('returns false when no models are missing', () => {
       const store = useMissingModelStore()
-      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 1))).toBe(
-        false
-      )
+      expect(
+        store.hasMissingModelOnNode(createNodeLocatorId(null, toNodeId(1)))
+      ).toBe(false)
     })
 
     it('compares subgraph locators against missing model execution IDs', () => {
       const store = useMissingModelStore()
       const locatorId = createNodeLocatorId(
         '11111111-1111-1111-1111-111111111111',
-        63
+        toNodeId(63)
       )
       mockNodeLocatorIdToNodeExecutionId.mockReturnValueOnce('65:70:63')
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '65:70:63' })
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: toNodeId('65:70:63')
+        })
       ])
 
       expect(store.hasMissingModelOnNode(locatorId)).toBe(true)
@@ -212,15 +233,15 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           widgetName: 'ckpt_name'
         }),
         makeModelCandidate('model_b.safetensors', {
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           widgetName: 'vae_name'
         }),
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '2',
+          nodeId: toNodeId('2'),
           widgetName: 'ckpt_name'
         })
       ])
@@ -239,7 +260,7 @@ describe('missingModelStore', () => {
     it('sets missingModelCandidates to null when all removed', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') })
       ])
 
       store.removeMissingModelByNameOnNodes(
@@ -255,7 +276,7 @@ describe('missingModelStore', () => {
     it('clears missingModelCandidates and interaction state', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') })
       ])
       store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
@@ -275,7 +296,7 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '5',
+          nodeId: toNodeId('5'),
           widgetName: 'ckpt_name'
         })
       ])
@@ -287,7 +308,7 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '5',
+          nodeId: toNodeId('5'),
           widgetName: 'ckpt_name'
         })
       ])
@@ -306,11 +327,11 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '5',
+          nodeId: toNodeId('5'),
           widgetName: 'ckpt_name'
         }),
         makeModelCandidate('model_b.safetensors', {
-          nodeId: '8',
+          nodeId: toNodeId('8'),
           widgetName: 'lora_name'
         })
       ])
@@ -325,7 +346,7 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '5',
+          nodeId: toNodeId('5'),
           widgetName: 'ckpt_name'
         })
       ])
@@ -346,7 +367,7 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '5',
+          nodeId: toNodeId('5'),
           widgetName: 'ckpt_name'
         })
       ])
@@ -363,11 +384,11 @@ describe('missingModelStore', () => {
     it('appends to existing candidates', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') })
       ])
 
       store.addMissingModels([
-        makeModelCandidate('model_b.safetensors', { nodeId: '2' })
+        makeModelCandidate('model_b.safetensors', { nodeId: toNodeId('2') })
       ])
 
       expect(store.missingModelCandidates).toHaveLength(2)
@@ -380,7 +401,7 @@ describe('missingModelStore', () => {
       expect(store.missingModelCandidates).toBeNull()
 
       store.addMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') })
       ])
 
       expect(store.missingModelCandidates).toHaveLength(1)
@@ -390,7 +411,7 @@ describe('missingModelStore', () => {
     it('does nothing when given empty array', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') })
       ])
 
       store.addMissingModels([])
@@ -404,14 +425,14 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', {
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           widgetName: 'ckpt_name'
         }),
         makeModelCandidate('model_b.safetensors', {
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           widgetName: 'vae_name'
         }),
-        makeModelCandidate('model_c.safetensors', { nodeId: '2' })
+        makeModelCandidate('model_c.safetensors', { nodeId: toNodeId('2') })
       ])
 
       store.removeMissingModelsByNodeId('1')
@@ -423,8 +444,8 @@ describe('missingModelStore', () => {
     it('keeps candidates with non-matching nodeId', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' }),
-        makeModelCandidate('model_b.safetensors', { nodeId: '2' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') }),
+        makeModelCandidate('model_b.safetensors', { nodeId: toNodeId('2') })
       ])
 
       store.removeMissingModelsByNodeId('99')
@@ -435,8 +456,8 @@ describe('missingModelStore', () => {
     it('sets candidates to null when all are removed', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('model_a.safetensors', { nodeId: '1' }),
-        makeModelCandidate('model_b.safetensors', { nodeId: '1' })
+        makeModelCandidate('model_a.safetensors', { nodeId: toNodeId('1') }),
+        makeModelCandidate('model_b.safetensors', { nodeId: toNodeId('1') })
       ])
 
       store.removeMissingModelsByNodeId('1')
@@ -456,9 +477,9 @@ describe('missingModelStore', () => {
     it('removes all candidates whose nodeId starts with the prefix', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
-        makeModelCandidate('b.safetensors', { nodeId: '65:70:64' }),
-        makeModelCandidate('c.safetensors', { nodeId: '65:80:5' })
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:70:63') }),
+        makeModelCandidate('b.safetensors', { nodeId: toNodeId('65:70:64') }),
+        makeModelCandidate('c.safetensors', { nodeId: toNodeId('65:80:5') })
       ])
 
       store.removeMissingModelsByPrefix('65:70:')
@@ -470,9 +491,9 @@ describe('missingModelStore', () => {
     it('removes deeply nested interior nodes under the container', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
-        makeModelCandidate('b.safetensors', { nodeId: '65:70:80:5' }),
-        makeModelCandidate('c.safetensors', { nodeId: '65:71:63' })
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:70:63') }),
+        makeModelCandidate('b.safetensors', { nodeId: toNodeId('65:70:80:5') }),
+        makeModelCandidate('c.safetensors', { nodeId: toNodeId('65:71:63') })
       ])
 
       store.removeMissingModelsByPrefix('65:70:')
@@ -484,9 +505,9 @@ describe('missingModelStore', () => {
     it('does not match siblings that share a numeric prefix (trailing colon)', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:70:1' }),
-        makeModelCandidate('b.safetensors', { nodeId: '65:705:1' }),
-        makeModelCandidate('c.safetensors', { nodeId: '65:70' })
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:70:1') }),
+        makeModelCandidate('b.safetensors', { nodeId: toNodeId('65:705:1') }),
+        makeModelCandidate('c.safetensors', { nodeId: toNodeId('65:70') })
       ])
 
       store.removeMissingModelsByPrefix('65:70:')
@@ -502,8 +523,8 @@ describe('missingModelStore', () => {
     it('sets candidates to null when all are removed', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
-        makeModelCandidate('b.safetensors', { nodeId: '65:70:64' })
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:70:63') }),
+        makeModelCandidate('b.safetensors', { nodeId: toNodeId('65:70:64') })
       ])
 
       store.removeMissingModelsByPrefix('65:70:')
@@ -515,7 +536,7 @@ describe('missingModelStore', () => {
     it('does nothing when no candidates match', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:71:1' })
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:71:1') })
       ])
 
       store.removeMissingModelsByPrefix('65:70:')
@@ -539,7 +560,7 @@ describe('missingModelStore', () => {
         isMissing: true
       }
       store.setMissingModels([
-        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
+        makeModelCandidate('a.safetensors', { nodeId: toNodeId('65:70:63') }),
         workflowLevel
       ])
 
@@ -554,9 +575,15 @@ describe('missingModelStore', () => {
     it('clears interaction state for removed names not used elsewhere', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
-        makeModelCandidate('shared.safetensors', { nodeId: '65:70:63' }),
-        makeModelCandidate('shared.safetensors', { nodeId: '65:80:5' }),
-        makeModelCandidate('only-interior.safetensors', { nodeId: '65:70:64' })
+        makeModelCandidate('shared.safetensors', {
+          nodeId: toNodeId('65:70:63')
+        }),
+        makeModelCandidate('shared.safetensors', {
+          nodeId: toNodeId('65:80:5')
+        }),
+        makeModelCandidate('only-interior.safetensors', {
+          nodeId: toNodeId('65:70:64')
+        })
       ])
       store.selectedLibraryModel['shared.safetensors'] = 'shared-replacement'
       store.selectedLibraryModel['only-interior.safetensors'] =

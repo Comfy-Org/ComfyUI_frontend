@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
+import {
+  zHubWorkflowPrefillResponse,
+  zSharedWorkflowResponse
+} from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 function makePayload(name: string) {
   return {
@@ -50,5 +53,20 @@ describe('zSharedWorkflowResponse name sanitization', () => {
   it('trims whitespace from sanitized names', () => {
     const result = zSharedWorkflowResponse.parse(makePayload('  spaced name  '))
     expect(result.name).toBe('spaced name')
+  })
+})
+
+describe('zHubWorkflowPrefillResponse tag tolerance', () => {
+  it('drops a malformed tag without discarding the rest of the prefill', () => {
+    const result = zHubWorkflowPrefillResponse.safeParse({
+      description: 'A cool workflow',
+      thumbnail_url: 'https://cdn.example.com/thumb.png',
+      tags: [{ name: 'art', display_name: 'Art' }, 'rawtag', { name: 'broken' }]
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.data?.tags).toEqual(['Art', 'rawtag'])
+    expect(result.data?.description).toBe('A cool workflow')
+    expect(result.data?.thumbnail_url).toBe('https://cdn.example.com/thumb.png')
   })
 })

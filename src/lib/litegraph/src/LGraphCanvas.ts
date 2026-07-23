@@ -11,6 +11,8 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -21,7 +23,9 @@ import type { AnimationOptions } from './DragAndScale'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeId, NodeProperty } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
+import { parseNodeId, serializeNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
@@ -213,7 +217,7 @@ interface LGraphCanvasState {
   selectionChanged: boolean
 
   /** ID of node currently in ghost placement mode (semi-transparent, following cursor). */
-  ghostNodeId: NodeId | null
+  ghostNodeId: SerializedNodeId | null
 }
 
 /**
@@ -224,7 +228,7 @@ interface ClipboardPasteResult {
   /** All successfully created items */
   created: Positionable[]
   /** Map: original node IDs to newly created nodes */
-  nodes: Map<NodeId, LGraphNode>
+  nodes: Map<SerializedNodeId, LGraphNode>
   /** Map: original link IDs to new link IDs */
   links: Map<LinkId, LLink>
   /** Map: original reroute IDs to newly created reroutes */
@@ -678,7 +682,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * The IDs of the nodes that are currently visible on the canvas. More
    * performant than {@link visible_nodes} for visibility checks.
    */
-  private _visible_node_ids: Set<NodeId> = new Set()
+  private _visible_node_ids: Set<SerializedNodeId> = new Set()
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
@@ -691,7 +695,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
   /** A map of nodes that require selective-redraw */
-  dirty_nodes = new Map<NodeId, LGraphNode>()
+  dirty_nodes = new Map<SerializedNodeId, LGraphNode>()
   dirty_area?: Rect | null
   /** @deprecated Unused */
   node_in_panel?: LGraphNode | null
@@ -2587,6 +2591,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             return
           } else if (e.altKey && !e.shiftKey) {
             const newReroute = graph.createReroute([x, y], linkSegment)
+            if (!newReroute) return
+
             pointer.onDragStart = (pointer) =>
               this._startDraggingItems(newReroute, pointer)
             pointer.onDragEnd = (e) => this._processDraggedItems(e)
@@ -3773,7 +3779,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this._ghostKeyHandler = null
     }
 
-    const node = this.graph?.getNodeById(nodeId)
+    const parsedNodeId = parseNodeId(nodeId)
+    const node = parsedNodeId ? this.graph?.getNodeById(parsedNodeId) : null
     if (!node) return
 
     if (cancelled) {
@@ -4035,7 +4042,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const cloned = item.clone()?.serialize()
         if (!cloned) continue
 
-        cloned.id = item.id
+        cloned.id = serializeNodeId(item.id)
         serialisable.nodes.push(cloned)
 
         // Links
@@ -4168,7 +4175,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const results: ClipboardPasteResult = {
       created: [],
-      nodes: new Map<NodeId, LGraphNode>(),
+      nodes: new Map<SerializedNodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
       subgraphs: new Map<SubgraphId, Subgraph>()
@@ -4217,7 +4224,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         continue
       }
 
-      nodes.set(info.id, node)
+      nodes.set(serializeNodeId(info.id), node)
       info.id = -1
 
       graph.add(node)
@@ -4242,7 +4249,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       const reroute = graph.setReroute(rerouteInfo)
       created.push(reroute)
-      reroutes.set(id, reroute)
+      reroutes.set(toRerouteId(id), reroute)
     }
 
     // Remap reroute parentIds for pasted reroutes
@@ -4256,21 +4263,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Links
     for (const info of parsed.links) {
       // Find the copied node / reroute ID
-      let outNode: LGraphNode | null | undefined = nodes.get(info.origin_id)
-      let afterRerouteId: number | undefined
+      let outNode: LGraphNode | null | undefined = nodes.get(
+        serializeNodeId(info.origin_id)
+      )
+      let afterRerouteId: RerouteId | undefined
       if (info.parentId != null)
-        afterRerouteId = reroutes.get(info.parentId)?.id
+        afterRerouteId = reroutes.get(toRerouteId(info.parentId))?.id
 
       // If it wasn't copied, use the original graph value
       if (
         connectInputs &&
         LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs
       ) {
-        outNode ??= graph.getNodeById(info.origin_id)
-        afterRerouteId ??= info.parentId
+        const originNodeId = parseNodeId(info.origin_id)
+        outNode ??= originNodeId ? graph.getNodeById(originNodeId) : null
+        if (info.parentId !== undefined) {
+          afterRerouteId ??= toRerouteId(info.parentId)
+        }
       }
 
-      const inNode = nodes.get(info.target_id)
+      const inNode = nodes.get(serializeNodeId(info.target_id))
       if (inNode) {
         const link = outNode?.connect(
           info.origin_slot,
@@ -4278,7 +4290,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           info.target_slot,
           afterRerouteId
         )
-        if (link) links.set(info.id, link)
+        if (link) links.set(toLinkId(info.id), link)
       }
     }
 
@@ -4311,7 +4323,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const newPositions = created
       .filter((item): item is LGraphNode => item instanceof LGraphNode)
       .map((node) => ({
-        nodeId: String(node.id),
+        nodeId: node.id,
         bounds: {
           x: node.pos[0],
           y: node.pos[1],
@@ -6694,7 +6706,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           const linkId =
             segment instanceof Reroute
               ? segment.linkIds.values().next().value
-              : segment.id
+              : segment instanceof LLink
+                ? segment.id
+                : undefined
           if (linkId !== undefined) {
             graph.removeLink(linkId)
             // Clean up layout store
@@ -8957,8 +8971,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 }
 
 function patchLinkNodeIds(
-  links: { origin_id: NodeId; target_id: NodeId }[] | undefined,
-  remappedIds: Map<NodeId, NodeId>
+  links:
+    | { origin_id: SerializedNodeId; target_id: SerializedNodeId }[]
+    | undefined,
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
 ) {
   if (!links?.length) return
 
@@ -8973,8 +8989,8 @@ function patchLinkNodeIds(
 
 function remapNodeId(
   nodeId: string,
-  remappedIds: Map<NodeId, NodeId>
-): NodeId | undefined {
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
+): SerializedNodeId | undefined {
   const directMatch = remappedIds.get(nodeId)
   if (directMatch !== undefined) return directMatch
   if (!/^-?\d+$/.test(nodeId)) return undefined
@@ -8987,7 +9003,7 @@ function remapNodeId(
 
 function remapProxyWidgets(
   info: ISerialisedNode,
-  remappedIds: Map<NodeId, NodeId> | undefined
+  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
 ) {
   if (!remappedIds || remappedIds.size === 0) return
 
@@ -9018,7 +9034,7 @@ function hasStringSourceNodeId(
 
 function remapPreviewExposures(
   info: ISerialisedNode,
-  remappedIds: Map<NodeId, NodeId> | undefined
+  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
 ) {
   if (!remappedIds || remappedIds.size === 0) return
 
@@ -9040,10 +9056,11 @@ export function remapClipboardSubgraphNodeIds(
 ): void {
   const usedNodeIds = new Set<number>()
   forEachNode(rootGraph, (node) => {
-    if (typeof node.id !== 'number') return
-    usedNodeIds.add(node.id)
-    if (rootGraph.state.lastNodeId < node.id)
-      rootGraph.state.lastNodeId = node.id
+    const numericId = Number(node.id)
+    if (!Number.isInteger(numericId)) return
+    usedNodeIds.add(numericId)
+    if (rootGraph.state.lastNodeId < numericId)
+      rootGraph.state.lastNodeId = numericId
   })
 
   function nextUniqueNodeId() {
@@ -9053,9 +9070,12 @@ export function remapClipboardSubgraphNodeIds(
     return nextId
   }
 
-  const subgraphNodeIdMap = new Map<SubgraphId, Map<NodeId, NodeId>>()
+  const subgraphNodeIdMap = new Map<
+    SubgraphId,
+    Map<SerializedNodeId, SerializedNodeId>
+  >()
   for (const subgraphInfo of parsed.subgraphs ?? []) {
-    const remappedIds = new Map<NodeId, NodeId>()
+    const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
     const interiorNodes = subgraphInfo.nodes ?? []
 
     for (const nodeInfo of interiorNodes) {

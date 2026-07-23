@@ -1,9 +1,21 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingNodeType } from '@/types/comfy'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({
@@ -37,24 +49,37 @@ vi.mock(
 
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { toNodeId } from '@/types/nodeId'
+
+function mockGraphReady(rootGraph: typeof app.rootGraph) {
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+}
 
 describe('executionErrorStore — node error operations', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = null
+      store.recordNodeErrors(null)
       // Should not error
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'widgetName')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'widgetName'
+      )
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('clears entirely if there are only simple errors for the same slot', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -67,9 +92,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Should be entirely removed (empty object becomes null)
       expect(store.lastNodeErrors).toBeNull()
@@ -77,7 +105,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears only the specific slot errors, leaving other errors alone', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -96,9 +124,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // otherSlot error should still exist
       expect(store.lastNodeErrors).not.toBeNull()
@@ -110,7 +141,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does nothing if executionId is not found in lastNodeErrors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -123,9 +154,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([999]), 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(999)]),
+        'testSlot'
+      )
 
       // Original error should remain untouched
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -133,7 +167,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('preserves complex errors when slot has both simple and complex errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -152,9 +186,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Mixed simple+complex: not all are simple, so none are cleared
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
@@ -162,7 +199,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears one node while preserving another in multi-node errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -187,9 +224,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'LoadModel'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'steps')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'steps'
+      )
 
       // Node 123 cleared, node 456 remains
       expect(store.lastNodeErrors?.['123']).toBeUndefined()
@@ -198,7 +238,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears entire node when no slotName and all errors are simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -217,16 +257,16 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('does not clear when no slotName and some errors are not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -245,16 +285,16 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
     })
 
     it('does not clear if the error is not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -267,19 +307,113 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Error should remain
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('clears a lifted host slot error from the raw interior record', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(12)]), 'seed')
+
+      expect(store.lastNodeErrors).toBeNull()
+      expect(store.surfacedNodeErrors).toBeNull()
+    })
+
+    it('does not clear lifted host slot errors when the raw error is not simple', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError(
+            'custom_validation_failed',
+            'seed_input',
+            {},
+            'Custom validation failed'
+          )
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(12)]), 'seed')
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.lastNodeErrors?.['12:5'].errors).toHaveLength(1)
+    })
+
+    it('clears a nested lifted error fixed at an intermediate host level', () => {
+      const rootGraph = createTestRootGraph()
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const outerHost = createTestSubgraphNode(outerSubgraph, { id: 1 })
+      rootGraph.add(outerHost)
+
+      const middleSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const middleHost = createTestSubgraphNode(middleSubgraph, {
+        id: 2,
+        parentGraph: outerSubgraph
+      })
+      outerSubgraph.add(middleHost)
+      outerSubgraph.inputNode.slots[0].connect(middleHost.inputs[0], middleHost)
+
+      const leaf = new LGraphNode('LeafNode')
+      leaf.id = toNodeId(3)
+      const leafInput = leaf.addInput('seed_input', '*')
+      middleSubgraph.add(leaf)
+      middleSubgraph.inputNode.slots[0].connect(leafInput, leaf)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '1:2:3': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('1')
+
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(1), toNodeId(2)]),
+        'seed'
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a fix at the intermediate host clears the raw interior error'
+      ).toBeNull()
+      expect(store.surfacedNodeErrors).toBeNull()
     })
   })
 
   describe('clearWidgetRelatedErrors', () => {
     it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -292,11 +426,11 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Valid value (5 < 10)
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId([123]),
+        createNodeExecutionId([toNodeId(123)]),
         'testWidget',
         'testWidget',
         5,
@@ -310,7 +444,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('optimistically clears value_not_in_list error for string combo values', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -323,10 +457,10 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'KSampler'
         }
-      }
+      })
 
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId([123]),
+        createNodeExecutionId([toNodeId(123)]),
         'sampler',
         'sampler',
         'euler_a'
@@ -337,7 +471,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does not clear error if value is still out of range', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -350,11 +484,11 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Invalid value (15 > 10)
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId([123]),
+        createNodeExecutionId([toNodeId(123)]),
         'testWidget',
         'testWidget',
         15,
@@ -365,6 +499,137 @@ describe('executionErrorStore — node error operations', () => {
 
       expect(store.lastNodeErrors).not.toBeNull()
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('validates the base target against live widget bounds, not recorded ones', () => {
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '123': nodeError([
+          validationError('value_bigger_than_max', 'testWidget', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ])
+      })
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testWidget',
+        'testWidget',
+        150,
+        { max: 200 }
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a value within the refreshed widget bounds clears despite stale recorded bounds'
+      ).toBeNull()
+    })
+
+    it('does not clear lifted range errors until the host value is in range', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {}, 'Too high')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        200,
+        { max: 100 }
+      )
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.lastNodeErrors?.['12:5'].errors).toHaveLength(1)
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        50,
+        { max: 100 }
+      )
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears fan-out lifted targets per their own recorded bounds', () => {
+      const { rootGraph, subgraph } = createBoundaryLinkedSubgraph()
+      const second = new LGraphNode('SecondInterior')
+      second.id = toNodeId(7)
+      const secondInput = second.addInput('other_input', '*')
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(secondInput, second)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ]),
+        '12:7': nodeError([
+          validationError('value_bigger_than_max', 'other_input', {
+            input_config: ['INT', { max: 50 }]
+          })
+        ])
+      })
+
+      expect(store.surfacedNodeErrors?.['12'].errors).toHaveLength(2)
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        75,
+        { max: 100 }
+      )
+
+      expect(
+        store.lastNodeErrors?.['12:5'],
+        'the target whose max=100 is satisfied by 75 clears'
+      ).toBeUndefined()
+      expect(
+        store.lastNodeErrors?.['12:7'].errors,
+        'the target whose max=50 is still violated by 75 stays'
+      ).toHaveLength(1)
+    })
+  })
+
+  describe('surfacedNodeErrors', () => {
+    it('derives boundary-lifted errors while preserving the raw record', () => {
+      const { rootGraph, host } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      const hostLocatorId = createNodeLocatorId(null, toNodeId(12))
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+      expect(
+        store.surfacedNodeErrors?.['12'].errors[0].extra_info
+      ).toMatchObject({
+        input_name: 'seed',
+        source_execution_id: '12:5',
+        source_input_name: 'seed_input'
+      })
+      expect(store.getNodeErrors(hostLocatorId)?.class_type).toBe(host.title)
+      expect(store.allErrorExecutionIds).toEqual(['12'])
+      expect(store.activeGraphErrorNodeIds).toEqual(new Set(['12']))
     })
   })
 })
@@ -380,7 +645,7 @@ describe('surfaceMissingModels — silent option', () => {
     store.surfaceMissingModels([
       fromAny({
         name: 'model.safetensors',
-        nodeId: '1',
+        nodeId: toNodeId('1'),
         nodeType: 'Loader',
         widgetName: 'ckpt',
         isMissing: true,
@@ -397,7 +662,7 @@ describe('surfaceMissingModels — silent option', () => {
       [
         fromAny({
           name: 'model.safetensors',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
@@ -416,7 +681,7 @@ describe('surfaceMissingModels — silent option', () => {
       [
         fromAny({
           name: 'model.safetensors',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
@@ -448,7 +713,7 @@ describe('surfaceMissingMedia — silent option', () => {
     store.surfaceMissingMedia([
       fromAny({
         name: 'photo.png',
-        nodeId: '1',
+        nodeId: toNodeId('1'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -465,7 +730,7 @@ describe('surfaceMissingMedia — silent option', () => {
       [
         fromAny({
           name: 'photo.png',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -484,7 +749,7 @@ describe('surfaceMissingMedia — silent option', () => {
       [
         fromAny({
           name: 'photo.png',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -505,6 +770,28 @@ describe('surfaceMissingMedia — silent option', () => {
   })
 })
 
+describe('recordNodeErrors', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('normalizes an empty error record to null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors({})
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps a null error record as null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors(null)
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
 describe('clearAllErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
@@ -517,7 +804,7 @@ describe('clearAllErrors', () => {
   })
 
   it('resets all error categories and closes error overlay', () => {
-    executionErrorStore.lastExecutionError = {
+    executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
       node_id: '1',
@@ -526,13 +813,13 @@ describe('clearAllErrors', () => {
       exception_message: 'fail',
       exception_type: 'RuntimeError',
       traceback: []
-    }
-    executionErrorStore.lastPromptError = {
+    })
+    executionErrorStore.recordPromptError({
       type: 'execution',
       message: 'fail',
       details: ''
-    }
-    executionErrorStore.lastNodeErrors = {
+    })
+    executionErrorStore.recordNodeErrors({
       '1': {
         errors: [
           {
@@ -545,7 +832,7 @@ describe('clearAllErrors', () => {
         dependent_outputs: [],
         class_type: 'Test'
       }
-    }
+    })
     missingNodesStore.setMissingNodeTypes(
       fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
     )

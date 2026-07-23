@@ -11,6 +11,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { toNodeId } from '@/types/nodeId'
 
 type TestWidget = BaseDOMWidget<object | string>
 
@@ -21,7 +22,7 @@ function createNode(
   pos: [number, number]
 ) {
   const node = new LGraphNode(title)
-  node.id = id
+  node.id = toNodeId(id)
   node.pos = [...pos]
   node.size = [240, 120]
   graph.add(node)

@@ -21,6 +21,7 @@ import {
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 beforeEach(() => {
@@ -161,7 +162,7 @@ function makeNestedPromotedModelGraph({
       input === sourceInput ? sourceWidget : undefined
   })
 
-  const innerWidgetId = widgetId('graph', 77, 'inner_ckpt')
+  const innerWidgetId = widgetId('graph', toNodeId(77), 'inner_ckpt')
   const innerInput = fromAny<INodeInputSlot, unknown>({
     name: 'inner_ckpt',
     link: outerLinkId,
@@ -169,7 +170,7 @@ function makeNestedPromotedModelGraph({
     widgetId: innerWidgetId
   })
   const innerNode = fromAny<LGraphNode, unknown>({
-    id: 77,
+    id: toNodeId(77),
     type: 'inner-subgraph-uuid',
     inputs: [innerInput],
     mode: innerMode,
@@ -193,7 +194,7 @@ function makeNestedPromotedModelGraph({
     _testExecutionId: innerExecutionId
   })
 
-  const outerWidgetId = widgetId('graph', 65, 'outer_ckpt')
+  const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
   useWidgetValueStore().registerWidget(outerWidgetId, {
     type: 'combo',
     value: hostValue,
@@ -207,7 +208,7 @@ function makeNestedPromotedModelGraph({
     widgetId: outerWidgetId
   })
   const outerNode = fromAny<LGraphNode, unknown>({
-    id: 65,
+    id: toNodeId(65),
     type: 'outer-subgraph-uuid',
     inputs: [outerInput],
     isSubgraphNode: () => true,
@@ -811,7 +812,7 @@ describe('scanAllModelCandidates', () => {
       }
     })
 
-    const hostWidgetId = widgetId('graph', 65, 'promoted_ckpt')
+    const hostWidgetId = widgetId('graph', toNodeId(65), 'promoted_ckpt')
     useWidgetValueStore().registerWidget(hostWidgetId, {
       type: 'combo',
       value: 'missing_model.safetensors',
@@ -825,7 +826,7 @@ describe('scanAllModelCandidates', () => {
       widgetId: hostWidgetId
     })
     const hostNode = fromAny<LGraphNode, unknown>({
-      id: 65,
+      id: toNodeId(65),
       type: 'abc-def-uuid',
       inputs: [hostInput],
       isSubgraphNode: () => true,
@@ -888,7 +889,7 @@ describe('scanAllModelCandidates', () => {
       getWidgetFromSlot: () => sourceWidget
     })
 
-    const hostWidgetId = widgetId('graph', 65, 'promoted_ckpt')
+    const hostWidgetId = widgetId('graph', toNodeId(65), 'promoted_ckpt')
     useWidgetValueStore().registerWidget(hostWidgetId, {
       type: 'combo',
       value: 'missing_model.safetensors',
@@ -902,7 +903,7 @@ describe('scanAllModelCandidates', () => {
       widgetId: hostWidgetId
     })
     const hostNode = fromAny<LGraphNode, unknown>({
-      id: 65,
+      id: toNodeId(65),
       type: 'abc-def-uuid',
       inputs: [hostInput],
       isSubgraphNode: () => true,
@@ -969,7 +970,7 @@ describe('scanAllModelCandidates', () => {
       }
     })
 
-    const innerWidgetId = widgetId('graph', 77, 'inner_ckpt')
+    const innerWidgetId = widgetId('graph', toNodeId(77), 'inner_ckpt')
     const innerInput = fromAny<INodeInputSlot, unknown>({
       name: 'inner_ckpt',
       link: outerLinkId,
@@ -977,7 +978,7 @@ describe('scanAllModelCandidates', () => {
       widgetId: innerWidgetId
     })
     const innerNode = fromAny<LGraphNode, unknown>({
-      id: 77,
+      id: toNodeId(77),
       type: 'inner-subgraph-uuid',
       inputs: [innerInput],
       isSubgraphNode: () => true,
@@ -1000,7 +1001,7 @@ describe('scanAllModelCandidates', () => {
       _testExecutionId: '65:77'
     })
 
-    const outerWidgetId = widgetId('graph', 65, 'outer_ckpt')
+    const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
     useWidgetValueStore().registerWidget(outerWidgetId, {
       type: 'combo',
       value: 'missing_model.safetensors',
@@ -1014,7 +1015,7 @@ describe('scanAllModelCandidates', () => {
       widgetId: outerWidgetId
     })
     const outerNode = fromAny<LGraphNode, unknown>({
-      id: 65,
+      id: toNodeId(65),
       type: 'outer-subgraph-uuid',
       inputs: [outerInput],
       isSubgraphNode: () => true,

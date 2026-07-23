@@ -115,7 +115,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--image-edit]',
-            partnerLogo: 'icon-[comfy--grok] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--grok]',
             nodeName: 'GrokImageEditNodeV2'
           },
           {
@@ -145,7 +145,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--image-vectorize]',
-            partnerLogo: 'icon-[comfy--recraft] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--recraft]',
             nodeName: 'RecraftVectorizeImageNode'
           },
           {
@@ -168,7 +168,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         tiles: [
           {
             icon: 'icon-[comfy--text-to-video]',
-            partnerLogo: 'icon-[comfy--grok] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--grok]',
             nodeName: 'GrokVideoNode'
           },
           {
@@ -232,7 +232,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--text-prompt-enhance]',
-            partnerLogo: 'icon-[comfy--claude] text-[#D97757]',
+            partnerLogo: 'icon-[comfy--claude]',
             nodeName: 'ClaudeNode'
           },
           {
@@ -259,12 +259,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-s1.5-[lucide--speech]',
-            partnerLogo: 'icon-[comfy--elevenlabs] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--elevenlabs]',
             nodeName: 'ElevenLabsTextToSpeech'
           },
           {
             icon: 'icon-[comfy--voice-clone]',
-            partnerLogo: 'icon-[comfy--elevenlabs] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--elevenlabs]',
             nodeName: 'ElevenLabsInstantVoiceClone'
           }
         ]
@@ -434,7 +434,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--image-remove-background]',
-            partnerLogo: 'icon-[comfy--recraft] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--recraft]',
             nodeName: 'RecraftRemoveBackgroundNode'
           }
         ]
@@ -449,7 +449,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--video-upscale]',
-            partnerLogo: 'icon-[comfy--topaz] text-[#B6B6B6]',
+            partnerLogo: 'icon-[comfy--topaz]',
             nodeName: 'TopazVideoEnhanceV2'
           }
         ]

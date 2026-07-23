@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -9,7 +9,11 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
@@ -21,6 +25,7 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -31,6 +36,7 @@ import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
+  registerTestSubgraphNodeTypes,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
@@ -168,6 +174,42 @@ describe('SubgraphWidgetPromotion', () => {
           value: 42
         }
       )
+    })
+
+    it('preserves the host value when its source is converted to a nested subgraph', async () => {
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const sourceType = 'test/nested-conversion-source'
+
+      class SourceNode extends LGraphNode {
+        constructor() {
+          super('Source')
+          const input = this.addInput('value', 'STRING')
+          input.widget = { name: 'value' }
+          this.addWidget('text', 'value', 'source value', () => {})
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, SourceNode)
+      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
+      registerTestSubgraphNodeTypes(rootGraph)
+
+      const source = LiteGraph.createNode(sourceType)
+      if (!source) throw new Error('Failed to create source node')
+      subgraph.add(source)
+      const link = subgraph.inputNode.slots[0].connect(source.inputs[0], source)
+      if (!link) throw new Error('Failed to connect promoted input')
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+      writePromotedWidgetValue(host, 0, 'host value')
+
+      subgraph.convertToSubgraph(new Set([source]))
+      await Promise.resolve()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('host value')
     })
 
     it('should promote all widget types', () => {
@@ -1130,13 +1172,24 @@ describe('SubgraphWidgetPromotion', () => {
 
     describe('previewExposures round-trip', () => {
       const CANVAS = '$$canvas-image-preview'
-      const exposure12 = { sourceNodeId: '12', sourcePreviewName: CANVAS }
+      const exposure12 = {
+        sourceNodeId: toNodeId('12'),
+        sourcePreviewName: CANVAS
+      }
       const exposure14 = {
+        sourceNodeId: toNodeId('14'),
+        sourcePreviewName: 'videopreview'
+      }
+      const serializedExposure12 = {
+        sourceNodeId: '12',
+        sourcePreviewName: CANVAS
+      }
+      const serializedExposure14 = {
         sourceNodeId: '14',
         sourcePreviewName: 'videopreview'
       }
-      const named12 = { name: CANVAS, ...exposure12 }
-      const named14 = { name: 'videopreview', ...exposure14 }
+      const named12 = { name: CANVAS, ...serializedExposure12 }
+      const named14 = { name: 'videopreview', ...serializedExposure14 }
 
       it('hydrates previewExposures into the store during configure', () => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())

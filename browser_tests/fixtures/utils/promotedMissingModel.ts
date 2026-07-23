@@ -10,10 +10,11 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
-export interface PromotedMissingModelWorkflow {
+interface PromotedMissingModelWorkflow {
   workflowName: string
   hostNodeId: number
   hostNodeTitle: string
@@ -418,7 +419,7 @@ async function enterSubgraphForStaleInteriorCheck(
       throw new Error(`Expected visible subgraph node ${targetNodeId}`)
     }
     window.app!.canvas.setGraph(node.subgraph)
-  }, numericNodeId)
+  }, toNodeId(normalizedNodeId))
   await comfyPage.nextFrame()
   await comfyPage.vueNodes.waitForNodes()
 }

@@ -1,0 +1,16 @@
+---
+interface Props {
+  name: string
+}
+
+const { name } = Astro.props
+---
+
+<blockquote
+  class="border-primary-comfy-yellow my-8 rounded-2xl border-l-4 bg-(--site-bg-soft) p-8"
+>
+  <p class="text-lg/relaxed font-light text-primary-comfy-canvas italic">
+    "<slot />"
+  </p>
+  <p class="text-primary-comfy-yellow mt-4 text-sm font-semibold">{name}</p>
+</blockquote>

@@ -11,6 +11,7 @@ import {
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
@@ -58,7 +59,7 @@ function addInteriorNode(
   } = { id: 10 }
 ): LGraphNode {
   const node = new LGraphNode('test')
-  node.id = options.id
+  node.id = toNodeId(options.id)
   if (options.previewMediaType) {
     node.previewMediaType = options.previewMediaType
   }
@@ -69,7 +70,7 @@ function addInteriorNode(
 function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   const store = useNodeOutputStore()
   for (const nodeId of nodeIds) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
     store.nodeOutputs[locatorId] = {
       images: [{ filename: 'output.png' }]
     }
@@ -82,7 +83,7 @@ function seedPreviewImages(
 ) {
   const store = useNodeOutputStore()
   for (const { nodeId, urls } of entries) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
     store.nodePreviewImages[locatorId] = urls
   }
 }
@@ -232,7 +233,9 @@ describe(usePromotedPreviews, () => {
     exposePreview(setup, '10')
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
-    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -255,7 +258,9 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value).toEqual([])
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
-    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    seedPreviewImages(setup.subgraph.id, [
+      { nodeId: toNodeId(10), urls: [blobUrl] }
+    ])
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     expect(promotedPreviews.value).toEqual([

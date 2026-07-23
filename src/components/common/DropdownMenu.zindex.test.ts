@@ -1,7 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import type { MenuItem } from 'primevue/menuitem'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -14,9 +15,9 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderMenu() {
+function renderMenu(entries: MenuItem[] = [{ label: 'Item A' }]) {
   return render(DropdownMenu, {
-    props: { entries: [{ label: 'Item A' }] },
+    props: { entries },
     global: { plugins: [i18n], directives: { tooltip: {} } }
   })
 }
@@ -52,5 +53,33 @@ describe('DropdownMenu z-index', () => {
     const menu = await screen.findByRole('menu')
     expect(menu.style.zIndex).toBe('')
     expect(menu.className).toContain('z-1700')
+  })
+
+  it('opens a nested menu above a registered dialog', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 1700)
+    const dialogZ = Number(openModal.style.zIndex)
+    const command = vi.fn()
+    const user = userEvent.setup()
+    renderMenu([
+      {
+        label: 'Change role',
+        items: [
+          { label: 'Owner', command },
+          { label: 'Member', command }
+        ]
+      }
+    ])
+
+    await user.click(screen.getByRole('button'))
+    await user.click(screen.getByRole('menuitem', { name: 'Change role' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Owner' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Member' })).toBeVisible()
+    const submenu = screen
+      .getAllByRole('menu')
+      .find((menu) => within(menu).queryByRole('menuitem', { name: 'Owner' }))
+    expect(submenu).toBeDefined()
+    expect(Number(submenu?.style.zIndex)).toBeGreaterThan(dialogZ)
   })
 })

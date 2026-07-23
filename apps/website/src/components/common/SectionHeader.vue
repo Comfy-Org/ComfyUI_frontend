@@ -7,12 +7,14 @@ const {
   label,
   headingTag = 'h2',
   maxWidth = 'lg',
-  headingSize = 'section'
+  headingSize = 'section',
+  align = 'center'
 } = defineProps<{
   label?: string
   headingTag?: 'h1' | 'h2' | 'h3'
   maxWidth?: 'md' | 'lg' | 'xl'
   headingSize?: 'section' | 'hero'
+  align?: 'center' | 'start'
 }>()
 
 const maxWidthClass = {
@@ -28,13 +30,20 @@ const headingSizeClass = {
 </script>
 
 <template>
-  <div :class="cn('mx-auto text-center', maxWidthClass[maxWidth])">
+  <div
+    :class="
+      cn(
+        maxWidthClass[maxWidth],
+        align === 'center' ? 'mx-auto text-center' : 'text-left'
+      )
+    "
+  >
     <SectionLabel v-if="label">{{ label }}</SectionLabel>
     <component
       :is="headingTag"
       :class="
         cn(
-          'text-primary-comfy-canvas',
+          'text-balance text-primary-comfy-canvas',
           label && 'mt-4',
           headingSizeClass[headingSize]
         )

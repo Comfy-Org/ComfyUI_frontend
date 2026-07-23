@@ -4,8 +4,9 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
-import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
   /**
@@ -43,7 +44,7 @@ export class VueNodeHelpers {
       .locator('.lg-slot--input')
       .filter({
         has: this.page.locator(
-          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, true)}"]`
         )
       })
   }
@@ -192,6 +193,13 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
+   */
+  getVisibleWidgetTooltip(): Locator {
+    return this.page.locator('.p-tooltip-text:visible')
+  }
+
+  /**
    * Select an option from a combo widget on a node.
    */
   async selectComboOption(
@@ -251,14 +259,18 @@ export class VueNodeHelpers {
     const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
     if (!key) return false
 
-    return await this.page.evaluate((key) => {
-      const [nodeId, type, slotId] = key.split('-')
-      const node = app?.canvas?.graph?.getNodeById(nodeId)
-      if (!node) return false
+    const [rawNodeId, type, slotId] = key.split('-')
+    const nodeId = toNodeId(rawNodeId)
+    return await this.page.evaluate(
+      ([nodeId, type, slotId]) => {
+        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        if (!node) return false
 
-      return type === 'in'
-        ? node.inputs[Number(slotId)]?.link !== null
-        : !!node.outputs[Number(slotId)].links?.length
-    }, key)
+        return type === 'in'
+          ? node.inputs[Number(slotId)]?.link !== null
+          : !!node.outputs[Number(slotId)]?.links?.length
+      },
+      [nodeId, type, slotId] as const
+    )
   }
 }

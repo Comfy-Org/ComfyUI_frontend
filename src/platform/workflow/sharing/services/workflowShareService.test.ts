@@ -177,7 +177,10 @@ describe(useWorkflowShareService, () => {
       if (path === '/hub/workflows/wf-prefill') {
         return mockJsonResponse({
           description: 'A cool workflow',
-          tags: ['art', 'upscale'],
+          tags: [
+            { name: 'art', display_name: 'Art' },
+            { name: 'upscale', display_name: 'Upscale' }
+          ],
           thumbnail_type: 'image_comparison',
           sample_image_urls: ['https://example.com/img1.png']
         })
@@ -192,7 +195,7 @@ describe(useWorkflowShareService, () => {
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toEqual({
       description: 'A cool workflow',
-      tags: ['art', 'upscale'],
+      tags: ['Art', 'Upscale'],
       thumbnailType: 'imageComparison',
       sampleImageUrls: ['https://example.com/img1.png']
     })

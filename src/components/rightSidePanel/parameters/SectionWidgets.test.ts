@@ -17,6 +17,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
@@ -81,7 +82,7 @@ function createHostWithPromotedModel(): {
   graph.add(host)
 
   const sourceNode = new LGraphNode('CheckpointLoaderSimple')
-  sourceNode.id = 42
+  sourceNode.id = toNodeId(42)
   const sourceInput = sourceNode.addInput('ckpt_name', 'COMBO')
   const sourceWidget = sourceNode.addWidget(
     'combo',

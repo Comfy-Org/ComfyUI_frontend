@@ -1,13 +1,14 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AddCreditsClickMetadata,
+  AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
+  ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -18,10 +19,14 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  ResubscribeClickMetadata,
   RunButtonProperties,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
+  SubscriptionCancellationMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -72,6 +77,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
+  trackAuthFailed(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
   trackUserLoggedIn(): void {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
@@ -99,8 +108,23 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
   }
 
-  trackAddApiCreditButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAddApiCreditButtonClicked?.())
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackSubscriptionCancellation?.(event, metadata)
+    )
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.dispatch((provider) => provider.trackResubscribeClicked?.(metadata))
+  }
+
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAddApiCreditButtonClicked?.(metadata)
+    )
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
@@ -243,6 +267,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowExecution(): void {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
+  }
+
+  trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackExecutionOutcome?.(metadata))
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {

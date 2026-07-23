@@ -31,6 +31,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -138,11 +139,21 @@ export const useAuthStore = defineStore('auth', () => {
   void setPersistence(auth, browserLocalPersistence)
 
   onAuthStateChanged(auth, (user) => {
+    const previousUserId = currentUser.value?.uid ?? null
+    const identityChanged =
+      previousUserId !== null && previousUserId !== (user?.uid ?? null)
+
+    if (user === null || identityChanged) {
+      useWorkspaceAuthStore().clearWorkspaceContext()
+    }
+    if (identityChanged) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+
     currentUser.value = user
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
-      useWorkspaceAuthStore().clearWorkspaceContext()
     } else if (isCloud) {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
@@ -182,10 +193,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getIdToken = async (): Promise<string | undefined> => {
-    if (!currentUser.value) return
+    const user = currentUser.value
+    if (!user) return
     try {
-      return await currentUser.value.getIdToken()
+      const token = await user.getIdToken()
+      return currentUser.value?.uid === user.uid ? token : undefined
     } catch (error: unknown) {
+      if (currentUser.value?.uid !== user.uid) return
       if (
         error instanceof FirebaseError &&
         error.code === AuthErrorCodes.NETWORK_REQUEST_FAILED
@@ -221,12 +235,21 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
-      const token = useWorkspaceAuthStore().unifiedToken
+      const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Recover the workspace token rather than downgrade to the personal
+      // identity, which is what makes cloud requests oscillate.
+      if (activeWorkspaceId) {
+        return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
+      }
+
+      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
     }
 
@@ -257,11 +280,22 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().unifiedToken ?? undefined
+      return useWorkspaceAuthStore().getUnifiedToken()
     }
 
     if (flags.teamWorkspacesEnabled) {
-      const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
+      const workspaceAuth = useWorkspaceAuthStore()
+      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+
+      // Mirror getAuthHeader for WebSocket/queue auth.
+      if (activeWorkspaceId) {
+        return (
+          (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
+          undefined
+        )
+      }
+
+      const wsToken = workspaceAuth.getWorkspaceToken()
       if (wsToken) return wsToken
     }
 
@@ -286,6 +320,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
+    const requestOwnerUid = currentUser.value?.uid ?? null
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
@@ -317,6 +352,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
+      // A direct A->B account switch nulls balance in onAuthStateChanged; a
+      // late-resolving request from the previous identity must not repaint it.
+      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+        return null
+      }
       // Update the last balance update time
       lastBalanceUpdateTime.value = new Date()
       balance.value = balanceData

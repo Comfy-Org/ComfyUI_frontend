@@ -1,6 +1,14 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :aria-current="highlighted ? 'true' : undefined"
+      :class="
+        cn(
+          'flex min-h-8 items-center gap-1',
+          selectionEmphasisClass(highlighted)
+        )
+      "
+    >
       <Button
         v-if="hasMultipleNodeTypes"
         data-testid="missing-node-pack-expand"
@@ -216,6 +224,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
@@ -227,9 +237,11 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import type { MissingNodeType } from '@/types/comfy'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const { group, showInfoButton } = defineProps<{
+const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup
   showInfoButton: boolean
+  /** Emphasize the header row (pack containing the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -1,14 +1,22 @@
+import { createSharedComposable } from '@vueuse/core'
+import { computed, toValue } from 'vue'
+
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import { trackNodePrice } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { mapAllNodes } from '@/utils/graphTraversalUtil'
 
 type LinkedWidgetInput = INodeInputSlot & {
-  _subgraphSlot?: { linkIds?: number[] }
+  _subgraphSlot?: SubgraphInput
 }
 
 const componentIconSvg = new Image()
@@ -149,3 +157,20 @@ export const usePriceBadge = () => {
     updateSubgraphCredits
   }
 }
+export const useCreditsBadgesInGraph = createSharedComposable(() => {
+  const { isCreditsBadge } = usePriceBadge()
+  const vueNodeLifecycle = useVueNodeLifecycle()
+  return computed(() => {
+    void vueNodeLifecycle.nodeManager.value?.vueNodeData.size
+    if (!app.graph) return []
+    return mapAllNodes(app.graph, (node) => {
+      if (node.isSubgraphNode()) return
+
+      const priceBadge = node.badges.find(isCreditsBadge)
+      if (!priceBadge) return
+
+      trackNodePrice(node)
+      return [node.title, toValue(priceBadge).text, node.id] as const
+    })
+  })
+})

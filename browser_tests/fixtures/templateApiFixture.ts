@@ -7,10 +7,6 @@ export const templateApiFixture = base.extend<{
   templateApi: TemplateHelper
 }>({
   templateApi: async ({ page }, use) => {
-    const templateApi = createTemplateHelper(page)
-
-    await use(templateApi)
-
-    await templateApi.clearMocks()
+    await use(createTemplateHelper(page))
   }
 })

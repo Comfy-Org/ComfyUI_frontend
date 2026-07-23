@@ -22,7 +22,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -49,6 +50,7 @@ const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
 )
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
 const resolvedInputs = useResolvedSelectedInputs()
 
@@ -75,7 +77,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
+    matchingWidget.nodeId = node.id
 
     return [
       {
@@ -124,7 +126,7 @@ function nodeToNodeData(node: LGraphNode) {
 
   return {
     ...nodeData,
-    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
+    hasErrors: !!executionErrorStore.surfacedNodeErrors?.[node.id],
     dropIndicator,
     onDragDrop: node.onDragDrop,
     onDragOver: node.onDragOver
@@ -139,7 +141,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: -1, onDragDrop }
+  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
@@ -235,7 +237,7 @@ defineExpose({ handleDragDrop })
           :node-data
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
             )
           "

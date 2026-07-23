@@ -142,4 +142,60 @@ describe('useComfyHubPublishWizard', () => {
       expect(currentStep.value).toBe('finish')
     })
   })
+
+  describe('applyPrefill', () => {
+    it('restores the existing thumbnail URL into the form', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/thumb.png'
+      )
+    })
+
+    it('restores the comparison-after URL into the form', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        thumbnailType: 'imageComparison',
+        thumbnailUrl: 'https://cdn.example.com/before.png',
+        thumbnailComparisonUrl: 'https://cdn.example.com/after.png'
+      })
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/before.png'
+      )
+      expect(formData.value.comparisonAfterUrl).toBe(
+        'https://cdn.example.com/after.png'
+      )
+      expect(formData.value.existingThumbnailType).toBe('imageComparison')
+    })
+
+    it('does not overwrite a freshly attached thumbnail file with the prefill URL', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      const file = new File(['x'], 'thumb.png', { type: 'image/png' })
+      formData.value = { ...formData.value, thumbnailFile: file }
+
+      applyPrefill({ thumbnailUrl: 'https://cdn.example.com/thumb.png' })
+
+      expect(formData.value.thumbnailFile?.name).toBe('thumb.png')
+      expect(formData.value.thumbnailUrl).toBeNull()
+    })
+
+    it('restores description, tags, and sample images alongside the thumbnail', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        description: 'Restored description',
+        tags: ['art'],
+        thumbnailUrl: 'https://cdn.example.com/thumb.png',
+        sampleImageUrls: ['https://cdn.example.com/sample.png']
+      })
+      expect(formData.value.description).toBe('Restored description')
+      expect(formData.value.tags).toEqual(['art'])
+      expect(formData.value.thumbnailUrl).toBe(
+        'https://cdn.example.com/thumb.png'
+      )
+      expect(formData.value.exampleImages).toHaveLength(1)
+      expect(formData.value.exampleImages[0].url).toBe(
+        'https://cdn.example.com/sample.png'
+      )
+    })
+  })
 })

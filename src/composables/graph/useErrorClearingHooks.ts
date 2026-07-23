@@ -34,6 +34,8 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -53,6 +55,14 @@ type OriginalCallbacks = {
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
+
+function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
+  if (!app.rootGraph) return String(nodeId)
+
+  return (
+    getExecutionIdForNodeInGraph(app.rootGraph, graph, nodeId) ?? String(nodeId)
+  )
+}
 
 function installNodeHooks(node: LGraphNode): void {
   if (hookedNodes.has(node)) return
@@ -319,7 +329,7 @@ function scheduleAddedNodeScan(node: LGraphNode): void {
 
 function handleNodeModeChange(
   localGraph: LGraph,
-  nodeId: number,
+  nodeId: NodeId,
   oldMode: number,
   newMode: number
 ): void {
@@ -416,9 +426,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors
     // are keyed; without this, removal falls back to the local ID and
     // misses subgraph entries.
-    const execId = app.rootGraph
-      ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
-      : String(node.id)
+    const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
@@ -429,7 +437,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
-        event.nodeId as number,
+        toNodeId(event.nodeId),
         event.oldValue as number,
         event.newValue as number
       )

@@ -90,9 +90,10 @@ function handleHideInput() {
 
   const source = widgetPromotedSource(node, widget)
   if (source) {
+    const currentNodeId = node.id
     for (const parent of parents) {
       const sourceNodeId =
-        String(node.id) === String(parent.id) ? source.nodeId : String(node.id)
+        String(node.id) === String(parent.id) ? source.nodeId : currentNodeId
       demotePromotedInput(parent, {
         sourceNodeId,
         sourceWidgetName: source.widgetName

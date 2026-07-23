@@ -3,7 +3,7 @@ import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -147,13 +147,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 
-    this._state = useWidgetValueStore().registerWidget(
+    const registered = useWidgetValueStore().registerWidget(
       widgetId(graphId, nodeId, this.name),
       {
         ...this._state,
         value: this.value
       }
     )
+    if (registered) this._state = registered
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

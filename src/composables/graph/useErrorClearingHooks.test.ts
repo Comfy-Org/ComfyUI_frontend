@@ -22,6 +22,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -168,7 +169,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -181,7 +182,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
@@ -200,7 +201,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -213,7 +214,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 150, 20, node.widgets![0])
 
@@ -231,7 +232,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
       fromAny<LGraph, unknown>(undefined)
     )
-    store.lastNodeErrors = {
+    store.recordNodeErrors({
       [String(node.id)]: {
         errors: [
           {
@@ -244,7 +245,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
         dependent_outputs: [],
         class_type: 'TestNode'
       }
-    }
+    })
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
@@ -1108,7 +1109,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     graph.add(host)
 
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    interiorNode.id = 1
+    interiorNode.id = toNodeId(1)
     subgraph.add(interiorNode)
     const input = interiorNode.addInput('ckpt_name', 'COMBO')
     const widget = interiorNode.addWidget(
