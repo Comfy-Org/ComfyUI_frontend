@@ -1,23 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import EventsHeroSection from '../templates/events/EventsHeroSection.vue'
-import PastEventsSection from '../templates/events/PastEventsSection.vue'
-import UpcomingEventsSection from '../templates/events/UpcomingEventsSection.vue'
-import { t } from '../i18n/translations'
-import { absoluteUrl } from '../utils/jsonLd'
-
-const locale = 'en' as const
+import EventsPage from '../templates/events/EventsPage.astro'
 ---
 
-<BaseLayout
-  title={t('events.page.title', locale)}
-  description={t('events.page.description', locale)}
-  breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.events', locale) },
-  ]}
->
-  <EventsHeroSection locale={locale} client:load />
-  <UpcomingEventsSection locale={locale} />
-  <PastEventsSection locale={locale} client:visible />
-</BaseLayout>
+<EventsPage />
