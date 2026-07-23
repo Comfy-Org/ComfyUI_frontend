@@ -3017,6 +3017,7 @@
       "appTypeNative": "네이티브 앱",
       "appTypeWeb": "웹 앱",
       "deny": "취소",
+      "detailsHeader": "세부 정보",
       "errorExpired": "이 동의 요청이 만료되었거나 이미 사용되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
       "errorScopeBroadening": "이전에 승인된 권한이 이 요청을 포함하지 않습니다. 새로운 권한으로 다시 인증해야 합니다.",
       "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
@@ -3024,7 +3025,6 @@
       "loading": "인증 요청을 불러오는 중…",
       "missingRequest": "이 인증 요청이 누락되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
       "noWorkspaces": "이 요청에 사용할 수 있는 워크스페이스가 없습니다.",
-      "detailsHeader": "세부 정보",
       "permissionsHeader": "권한",
       "redirectNotice": "다음으로 리디렉션됩니다",
       "resourceFallback": "이 앱",
@@ -4014,6 +4014,7 @@
       "waitingForSubscription": "새 탭에서 구독을 완료해주세요. 완료되면 자동으로 감지합니다!"
     },
     "resubscribe": "다시 구독하기",
+    "resubscribeFailed": "구독을 다시 활성화하지 못했습니다",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
     "saveYearly": "20% 절감",
