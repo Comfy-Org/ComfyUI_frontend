@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/vue'
+import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,6 +18,8 @@ const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
+
+afterEach(cleanup)
 
 const {
   mockMembers,
@@ -91,6 +93,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     activeView: mockActiveView,
     maxSeats: computed(() => 20),
     hasTeamPlan: mockHasTeamPlan,
+    hasMemberSeats: computed(() => mockIsOnTeamPlan.value),
     isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
     hasLapsedTeamPlan: mockHasLapsedTeamPlan,

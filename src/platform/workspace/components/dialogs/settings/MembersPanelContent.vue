@@ -8,7 +8,7 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              <template v-if="isOnTeamPlan">
+              <template v-if="hasMemberSeats">
                 {{
                   $t('workspacePanel.members.membersCount', {
                     count: members.length,
@@ -149,7 +149,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto">
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="!hasTeamPlan">
+            <template v-if="!hasMemberSeats">
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -175,7 +175,8 @@
                 "
                 :show-credits-column="uiConfig.showCreditsColumn"
                 :can-manage-members="permissions.canManageMembers"
-                :is-single-seat-plan="!isOnTeamPlan"
+                :is-single-seat-plan="!hasMemberSeats"
+                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
                 :menu-items="memberMenus.get(member.id)"
               />
@@ -196,13 +197,13 @@
     <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
-        !isPlanLoading && !isOnTeamPlan && permissions.canManageSubscription
+        !isPlanLoading && !hasMemberSeats && permissions.canManageSubscription
       "
       :reactivate="hasLapsedTeamPlan"
       @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
-    <div v-if="isOnTeamPlan" class="flex items-center pt-2">
+    <div v-if="hasMemberSeats" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
@@ -235,9 +236,8 @@ const {
   searchQuery,
   activeView,
   maxSeats,
-  hasTeamPlan,
-  isOnTeamPlan,
   hasLapsedTeamPlan,
+  hasMemberSeats,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
@@ -256,6 +256,7 @@ const {
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
+  isOriginalOwner,
   toggleSort,
   showTeamPlans,
   handleResendInvite,

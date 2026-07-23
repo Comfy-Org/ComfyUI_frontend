@@ -537,6 +537,7 @@ describe('useMembersPanel', () => {
 
     it('uses the single-user member layout for a personal plan', async () => {
       mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
 
       const panel = await setup()
 
@@ -546,10 +547,13 @@ describe('useMembersPanel', () => {
       expect(panel.uiConfig.value.membersGridCols).toBe('grid-cols-1')
     })
 
-    it('uses the backend workspace override regardless of tier', async () => {
+    it('enables member management from backend capacity regardless of tier', async () => {
+      mockIsTeamPlan.value = false
       mockSubscription.value = { tier: 'CREATOR', isCancelled: false }
       const panel = await setup()
       expect(panel.maxSeats.value).toBe(73)
+      expect(panel.permissions.value.canInviteMembers).toBe(true)
+      expect(panel.uiConfig.value.showMembersList).toBe(true)
     })
   })
 
@@ -892,6 +896,7 @@ describe('useMembersPanel', () => {
 
     it('hides Team member controls for a personal plan', async () => {
       mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
       mockMembers.value = [createMember(), createMember({ id: '2' })]
       const panel = await setup()
       expect(panel.showViewTabs.value).toBe(false)
@@ -909,6 +914,7 @@ describe('useMembersPanel', () => {
 
     it('opens the upsell dialog when not on a team plan', async () => {
       mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
       const panel = await setup()
       panel.handleInviteMember()
       expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
@@ -954,14 +960,15 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
     })
 
-    it('disables the invite button when not on a team plan', async () => {
+    it('keeps the invite button enabled from backend capacity without a team plan', async () => {
       mockIsTeamPlan.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(false)
     })
 
     it('disables the invite button when the team plan is cancelled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
+      mockMaxSeats.value = 1
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
