@@ -563,6 +563,21 @@ export const useDialogService = () => {
     })
   }
 
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
