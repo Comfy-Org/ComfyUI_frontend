@@ -87,7 +87,7 @@
                   />
                 </div>
                 <div class="flex items-baseline gap-1 font-inter font-semibold">
-                  <span class="text-2xl">${{ tierPrice }}</span>
+                  <span class="text-2xl">{{ displayPrice }}</span>
                   <span class="text-base">
                     {{
                       isInPersonalWorkspace
@@ -285,6 +285,7 @@ import {
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -438,6 +439,8 @@ const tierKey = computed(() => {
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
+
+const { displayPrice } = useWorkspacePlanPricing()
 
 const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
