@@ -8,27 +8,20 @@ import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspac
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
-const {
-  mockCanManageSubscription,
-  mockNavigateToPanel,
-  mockRequestMembersSort
-} = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    mockCanManageSubscription: ref(true),
-    mockNavigateToPanel: vi.fn(),
-    mockRequestMembersSort: vi.fn()
-  }
-})
+const { mockWorkspaceRole, mockNavigateToPanel, mockRequestMembersSort } =
+  vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { ref } = require('vue') as typeof import('vue')
+    return {
+      mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
+      mockNavigateToPanel: vi.fn(),
+      mockRequestMembersSort: vi.fn()
+    }
+  })
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return { canManageSubscription: mockCanManageSubscription.value }
-      }
-    }
+    workspaceRole: mockWorkspaceRole
   })
 }))
 
@@ -82,7 +75,7 @@ const creditedRow: ActivityEvent = {
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
     globalThis.ResizeObserver = NoopResizeObserver
-    mockCanManageSubscription.value = true
+    mockWorkspaceRole.value = 'owner'
     mockNavigateToPanel.mockClear()
     mockRequestMembersSort.mockClear()
   })
@@ -92,7 +85,7 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.getByText('No activity yet.')).toBeTruthy()
   })
 
-  it('shows the per-user footer actions to a billing manager', () => {
+  it('shows the per-user footer actions to an owner', () => {
     renderContent([])
     const link = screen.getByRole('link', { name: /full activity/i })
     expect(link.getAttribute('href')).toBe(
@@ -102,7 +95,7 @@ describe('WorkspaceActivityContent', () => {
   })
 
   it('hides the per-user footer from members', () => {
-    mockCanManageSubscription.value = false
+    mockWorkspaceRole.value = 'member'
     renderContent([])
     expect(screen.queryByRole('link', { name: /full activity/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /see members/i })).toBeNull()

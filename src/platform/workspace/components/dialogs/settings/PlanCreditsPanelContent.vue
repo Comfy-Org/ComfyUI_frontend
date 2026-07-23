@@ -41,7 +41,7 @@ type View = 'overview' | 'activity'
 
 const { t } = useI18n()
 
-// The Invoices tab (owner/admin only) is added by FE-1245, which owns the
+// The owner-only Invoices tab is added by FE-1245, which owns the
 // next-invoice banner + Stripe portal link that fill it.
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
