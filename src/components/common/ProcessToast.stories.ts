@@ -335,13 +335,24 @@ export const Demo: Story = {
     template: `
       <div class="relative flex h-screen flex-col bg-charcoal-900">
         <div class="flex flex-1 items-start justify-end overflow-auto p-6">
+          <!-- Stopped means the queue drained, so the app falls back to the
+               idle pill; the demo has to do the same or the frozen toast
+               reads as a stop that did nothing. -->
+          <button
+            v-if="stopped"
+            class="flex h-6 cursor-pointer items-center rounded-md border border-solid border-base-foreground/40 bg-transparent px-2 text-xs text-base-foreground opacity-50"
+            @click="select(index)"
+          >
+            0 active
+          </button>
           <ProcessToast
+            v-else
             :verb="current.verb"
             :percent="current.ticks ? Math.round(percent) : (current.percent ?? null)"
             :status="current.status ?? 'progress'"
             :failed-count="current.failedCount ?? 0"
             :show-percent-text="current.showPercentText ?? true"
-            :hide-action="!current.stoppable"
+            :hide-action="!current.stoppable || (runningRows > 1 && expanded)"
             :expanded="expanded && current.status === undefined"
             @toggle-expand="expanded = !expanded"
           >

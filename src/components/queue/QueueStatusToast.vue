@@ -16,7 +16,7 @@
       :status="toastView.status"
       :failed-count="failedCount"
       :expanded="expanded"
-      :hide-action="!toastView.showStop"
+      :hide-action="!toastView.showStop || (hasParallelRuns && expanded)"
       :show-percent-text="toastView.showPercentText"
       progress-class="bg-base-foreground"
       @toggle-expand="expanded = !expanded"
