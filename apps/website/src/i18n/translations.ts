@@ -4261,6 +4261,46 @@ const translations = {
     en: 'Frequently Asked Questions',
     'zh-CN': '常见问题'
   },
+  'models.faq.howToUse.question': {
+    en: 'How do I use {name} in ComfyUI?',
+    'zh-CN': '如何在 ComfyUI 中使用 {name}？'
+  },
+  'models.faq.howToUse.answerWithDocs': {
+    en: 'Follow the step-by-step tutorial at {url}. You can also load any of the {count} community workflow templates that use {name} directly in ComfyUI.',
+    'zh-CN':
+      '按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载任意 {count} 个使用 {name} 的社区工作流模板。'
+  },
+  'models.faq.howToUse.answerNoDocs': {
+    en: 'Open ComfyUI and browse the {count} community workflow templates that use {name}. Load one as a starting point, then customize the nodes and parameters to fit your use case.',
+    'zh-CN':
+      '打开 ComfyUI，浏览 {count} 个使用 {name} 的社区工作流模板。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。'
+  },
+  'models.faq.workflowCount.question': {
+    en: 'How many ComfyUI workflows use {name}?',
+    'zh-CN': '有多少个 ComfyUI 工作流使用 {name}？'
+  },
+  'models.faq.workflowCount.answer': {
+    en: 'There are {count} community workflow templates that use {name} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。每个模板都可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.isFree.question': {
+    en: 'Is {name} free to use in ComfyUI?',
+    'zh-CN': '在 ComfyUI 中使用 {name} 是免费的吗？'
+  },
+  'models.faq.isFree.answerHuggingFace': {
+    en: '{name} weights are available to download from Hugging Face.',
+    'zh-CN': '{name} 的权重文件可从 Hugging Face 下载。'
+  },
+  'models.faq.isFree.answerCloud': {
+    en: '{name} is available as a cloud API through Comfy Cloud.',
+    'zh-CN': '{name} 可通过 Comfy Cloud 以云端 API 的形式使用。'
+  },
+  'models.faq.isFree.answer': {
+    en: 'ComfyUI is free and open source. {weightsNote} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.',
+    'zh-CN':
+      'ComfyUI 是免费且开源的。{weightsNote} 仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
+  },
   'models.index.title': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'

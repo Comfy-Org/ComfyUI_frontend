@@ -64,28 +64,50 @@ const software = softwareApplicationNode({
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
 })
+const workflowCount = String(model.workflowCount)
+
+const howToUseAnswer = model.docsUrl
+  ? t('models.faq.howToUse.answerWithDocs', locale)
+      .replace('{url}', model.docsUrl)
+      .replace('{count}', workflowCount)
+      .replace('{name}', displayName)
+  : t('models.faq.howToUse.answerNoDocs', locale)
+      .replace('{count}', workflowCount)
+      .replace('{name}', displayName)
+
+const weightsNote = model.huggingFaceUrl
+  ? t('models.faq.isFree.answerHuggingFace', locale)
+      .replace('{name}', displayName)
+  : t('models.faq.isFree.answerCloud', locale)
+      .replace('{name}', displayName)
+
 const faqs = [
   {
     id: 'what-is',
-    question: `What is ${displayName}?`,
+    question: t('models.whatIs.heading', locale)
+      .replace('{name}', displayName),
     answer: whatIsDescription,
   },
   {
     id: 'how-to-use',
-    question: `How do I use ${displayName} in ComfyUI?`,
-    answer: model.docsUrl
-      ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
-      : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`,
+    question: t('models.faq.howToUse.question', locale)
+      .replace('{name}', displayName),
+    answer: howToUseAnswer,
   },
   {
     id: 'workflow-count',
-    question: `How many ComfyUI workflows use ${displayName}?`,
-    answer: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
+    question: t('models.faq.workflowCount.question', locale)
+      .replace('{name}', displayName),
+    answer: t('models.faq.workflowCount.answer', locale)
+      .replace('{count}', workflowCount)
+      .replace('{name}', displayName),
   },
   {
     id: 'is-free',
-    question: `Is ${displayName} free to use in ComfyUI?`,
-    answer: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+    question: t('models.faq.isFree.question', locale)
+      .replace('{name}', displayName),
+    answer: t('models.faq.isFree.answer', locale)
+      .replace('{weightsNote}', weightsNote),
   },
 ]
 const faqPage: JsonLdNode = {
@@ -152,5 +174,9 @@ const faqPage: JsonLdNode = {
     {/* TODO: shared HowComfyWorks component */}
   </section>
 
-  <FAQSplit01 heading={t('models.faq.heading')} faqs={faqs} client:visible />
+  <FAQSplit01
+    heading={t('models.faq.heading', locale)}
+    faqs={faqs}
+    client:visible
+  />
 </BaseLayout>
