@@ -36,13 +36,27 @@ describe('createNodeHandle', () => {
 
   describe('setSize', () => {
     it('resizes the node in layoutStore with the External source', () => {
+      const sourceBefore = layoutStore.getCurrentSource()
+      const resizeSources: LayoutSource[] = []
+      // Node-scoped listeners fire synchronously (global onChange is queued).
+      const unsubscribe = layoutStore.onNodeChange(NODE, (change) => {
+        if (change.operation.type === 'resizeNode') {
+          resizeSources.push(change.source)
+        }
+      })
+
       createNodeHandle(mockNode()).setSize([250, 180])
+      unsubscribe()
 
       expect(layoutStore.getNodeLayoutRef(NODE).value?.size).toEqual({
         width: 250,
         height: 180
       })
-      expect(layoutStore.getCurrentSource()).toBe(LayoutSource.External)
+      // The resize operation itself is tagged External...
+      expect(resizeSources).toEqual([LayoutSource.External])
+      // ...but the shared source state is restored so later mutations on the
+      // same store are not mislabeled.
+      expect(layoutStore.getCurrentSource()).toBe(sourceBefore)
     })
 
     it.for([

@@ -69,8 +69,18 @@ export function createNodeHandle(node: LGraphNode): NodeHandle {
     setSize([width, height]: Size): void {
       if (!Number.isFinite(width) || !Number.isFinite(height)) return
       const mutations = useLayoutMutations()
+      // `currentSource` is shared store state that `resizeNode` reads directly,
+      // so tag this one mutation as External and restore the prior source
+      // afterwards — otherwise every later mutation on the same store is
+      // mislabeled External. Mirrors the save/restore pattern in
+      // layoutStore.batchUpdateNodeBounds.
+      const previousSource = layoutStore.getCurrentSource()
       mutations.setSource(LayoutSource.External)
-      mutations.resizeNode(id, { width, height })
+      try {
+        mutations.resizeNode(id, { width, height })
+      } finally {
+        mutations.setSource(previousSource)
+      }
     },
 
     autosize(): void {
