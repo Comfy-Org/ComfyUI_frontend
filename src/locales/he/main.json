@@ -2979,7 +2979,7 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
-      "workspaceHelp": "ההרשאות חלות על סביבת עבודה זו בלבד.",
+      "detailsHeader": "פרטים",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {

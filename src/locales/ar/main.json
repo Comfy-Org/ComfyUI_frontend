@@ -2972,6 +2972,7 @@
       "loading": "جارٍ تحميل طلب التفويض…",
       "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
       "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "detailsHeader": "التفاصيل",
       "permissionsHeader": "الأذونات",
       "redirectNotice": "سيتم إعادة توجيهك إلى",
       "resourceFallback": "هذا التطبيق",
@@ -2979,7 +2980,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
