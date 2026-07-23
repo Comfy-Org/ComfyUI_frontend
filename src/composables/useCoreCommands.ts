@@ -510,7 +510,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -533,7 +533,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
@@ -555,7 +555,7 @@ export function useCoreCommands(): ComfyCommand[] {
       }) => {
         trackRunButton(metadata)
         if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog()
+          showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
 
