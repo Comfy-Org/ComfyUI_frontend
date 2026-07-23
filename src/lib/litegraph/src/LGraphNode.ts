@@ -108,6 +108,15 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 export type NodeProperty = string | number | boolean | object
 
+/** TypedArray methods that mutate in place, so must trigger a layout commit. */
+const MUTATING_SIZE_METHODS = new Set([
+  'set',
+  'fill',
+  'copyWithin',
+  'reverse',
+  'sort'
+])
+
 interface INodePropertyInfo {
   name?: string
   type?: string
@@ -529,7 +538,9 @@ export class LGraphNode
    *
    * The Proxy is created once and reused; index writes pass straight through to
    * the backing `Float64Array`, and function/length access is forwarded to the
-   * real typed array so spread, iteration and `.length` keep working.
+   * real typed array so spread, iteration and `.length` keep working. In-place
+   * mutating methods ({@link MUTATING_SIZE_METHODS}) also commit, so growing the
+   * node via `node.size.set(...)` reflows just like a bare element write.
    *
    * TODO(litegraph-stable-resize-api): this Proxy is the deprecation on-ramp for
    * a stable resize API that does not exist yet. Its set trap already commits the
@@ -545,7 +556,17 @@ export class LGraphNode
     return (this._sizeProxy ??= new Proxy(this._size, {
       get: (target, prop) => {
         const value = Reflect.get(target, prop, target)
-        return typeof value === 'function' ? value.bind(target) : value
+        if (typeof value !== 'function') return value
+        if (typeof prop !== 'string' || !MUTATING_SIZE_METHODS.has(prop))
+          return value.bind(target)
+
+        // `set`/`fill`/etc. mutate the backing array without hitting the set
+        // trap, so commit through the same path a bare element write would.
+        return (...args: unknown[]) => {
+          const result = Reflect.apply(value, target, args)
+          this._sizeUpdated()
+          return result
+        }
       },
       set: (target, prop, value) => {
         const result = Reflect.set(target, prop, value)
