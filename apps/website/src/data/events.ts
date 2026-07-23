@@ -1,5 +1,5 @@
 import type { EventItem } from '../components/common/EventsSection.vue'
-import { externalLinks } from '../config/routes'
+import { externalLinks, getRoutes } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
 export const learningEvents: readonly EventItem[] = [
@@ -131,28 +131,28 @@ export const featuredEvents: readonly FeaturedEvent[] = [
   { ...foundersLiveFeatured, id: 'krea-founders-live-placeholder' }
 ]
 
-// TODO: placeholder rows — replace with real upcoming events. Copy, location,
-// dates, and links are all intentionally generic so it's obvious they need
-// filling in.
-const upcomingEventPlaceholder: Omit<UpcomingEvent, 'id'> = {
-  name: { en: 'Event name', 'zh-CN': '活动名称' },
-  description: {
-    en: 'Description here fpo orem ipsum dolar sit amcription here fpolorem…',
-    'zh-CN': '活动描述占位文本，此处填写活动的简要说明……'
-  },
-  location: {
-    en: 'Location, State, Country',
-    'zh-CN': '地点、州/省、国家'
-  },
-  dateLabel: { en: 'Month, Date, Year', 'zh-CN': '年月日' },
-  link: { href: { en: '#', 'zh-CN': '#' } }
+const launchesHref: LocalizedText = {
+  en: getRoutes('en').launches,
+  'zh-CN': getRoutes('zh-CN').launches
 }
 
+// zh-CN copy is a first pass and pending native review.
 export const upcomingEvents: readonly UpcomingEvent[] = [
-  { ...upcomingEventPlaceholder, id: 'upcoming-placeholder-1' },
-  { ...upcomingEventPlaceholder, id: 'upcoming-placeholder-2' },
-  { ...upcomingEventPlaceholder, id: 'upcoming-placeholder-3' },
-  { ...upcomingEventPlaceholder, id: 'upcoming-placeholder-4' }
+  {
+    id: 'july-launches',
+    name: { en: 'July Launches', 'zh-CN': '七月发布' },
+    description: {
+      en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
+      'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'July 29, 2026 · 10AM PT',
+      'zh-CN': '2026年7月29日 · 上午10点（PT）'
+    },
+    dateTime: '2026-07-29T10:00:00-07:00',
+    link: { href: launchesHref }
+  }
 ]
 
 export const pastEvents: readonly PastEvent[] = [
