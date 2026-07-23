@@ -7,10 +7,15 @@ export interface ChurnkeyHandlerResult {
 }
 
 export interface ChurnkeySessionResults {
-  status?: 'canceled' | 'discounted' | 'paused' | 'closed'
+  aborted?: boolean
+  canceled?: boolean
   acceptedOffer?: Record<string, unknown> | null
   [key: string]: unknown
 }
+
+type ChurnkeyUnsupportedHandler = (
+  ...args: unknown[]
+) => Promise<ChurnkeyHandlerResult>
 
 export interface ChurnkeyInitConfig {
   appId: string
@@ -20,10 +25,14 @@ export interface ChurnkeyInitConfig {
   mode: ChurnkeyMode
   customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
-    customer: string,
-    surveyResponse: string,
-    freeformFeedback?: string
+    customer: unknown,
+    surveyResponse?: string | null,
+    freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
+  handlePause: ChurnkeyUnsupportedHandler
+  handleDiscount: ChurnkeyUnsupportedHandler
+  handleTrialExtension: ChurnkeyUnsupportedHandler
+  handlePlanChange: ChurnkeyUnsupportedHandler
   onClose: (results: ChurnkeySessionResults) => void
   onError: (error: unknown, type?: string) => void
 }

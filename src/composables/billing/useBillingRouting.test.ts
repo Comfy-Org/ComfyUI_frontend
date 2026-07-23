@@ -12,7 +12,7 @@ const { mockFlags, mockActiveWorkspace, mockActiveWorkspaceBillingRail } =
       value: null as { id: string; type: 'personal' | 'team' } | null
     },
     mockActiveWorkspaceBillingRail: {
-      value: null as 'legacy_stripe' | 'stripe' | null
+      value: null as 'legacy_stripe' | 'metronome' | 'stripe' | null
     }
   }))
 

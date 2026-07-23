@@ -14,7 +14,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = 'legacy_stripe' | 'stripe'
+export type BillingRail = 'legacy_stripe' | 'metronome' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId

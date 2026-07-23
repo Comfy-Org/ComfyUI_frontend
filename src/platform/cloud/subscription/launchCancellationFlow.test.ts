@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
     }
   },
   tier: { value: 'PRO' },
+  activeWorkspaceId: 'workspace-1' as string | null,
+  billingRail: 'stripe' as 'legacy_stripe' | 'metronome' | 'stripe' | null,
   cancelSubscription: vi.fn(),
   fetchStatus: vi.fn(),
   prepare: vi.fn(),
@@ -45,6 +47,17 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return mocks.activeWorkspaceId
+    },
+    get activeWorkspaceBillingRail() {
+      return mocks.billingRail
+    }
+  })
+}))
+
 import { launchCancellationFlow } from './launchCancellationFlow'
 
 function session(
@@ -56,13 +69,26 @@ function session(
 describe('launchCancellationFlow', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mocks.billingType.value = 'workspace'
+    mocks.activeWorkspaceId = 'workspace-1'
+    mocks.billingRail = 'stripe'
     mocks.cancelSubscription.mockResolvedValue(undefined)
     mocks.fetchStatus.mockResolvedValue(undefined)
   })
 
   it('uses the native dialog for legacy billing', async () => {
     mocks.billingType.value = 'legacy'
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).toHaveBeenCalledOnce()
+    expect(mocks.prepare).not.toHaveBeenCalled()
+  })
+
+  it('uses the native dialog for Metronome billing', async () => {
+    mocks.billingRail = 'metronome'
     const showFallback = vi.fn()
 
     await launchCancellationFlow({ showFallback })
@@ -85,7 +111,7 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
-        return { status: 'canceled' }
+        return { canceled: true }
       })
     )
     const showFallback = vi.fn()
@@ -112,7 +138,7 @@ describe('launchCancellationFlow', () => {
   })
 
   it('tracks an abandoned flow when the user closes the embed', async () => {
-    mocks.prepare.mockResolvedValue(session(async () => ({ status: 'closed' })))
+    mocks.prepare.mockResolvedValue(session(async () => ({ aborted: true })))
 
     await launchCancellationFlow({ showFallback: vi.fn() })
 
@@ -130,6 +156,10 @@ describe('launchCancellationFlow', () => {
     await launchCancellationFlow({ showFallback: preparationFallback })
 
     expect(preparationFallback).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledWith(
+      'Failed to prepare ChurnKey cancellation flow:',
+      expect.any(Error)
+    )
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
 
     mocks.prepare.mockResolvedValueOnce(
@@ -141,7 +171,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback: runtimeFallback })
 
-    expect(runtimeFallback).toHaveBeenCalledOnce()
+    expect(runtimeFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
     expect(mocks.trackCancellation).toHaveBeenLastCalledWith(
       'failed',
       expect.objectContaining({ error_message: 'provider unavailable' })
@@ -152,8 +182,8 @@ describe('launchCancellationFlow', () => {
     mocks.cancelSubscription.mockRejectedValue(new Error('API down'))
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
-        await options.handleCancel('Too expensive')
-        return { canceled: true }
+        await options.handleCancel('Too expensive').catch(() => undefined)
+        return { aborted: true }
       })
     )
     const showFallback = vi.fn()
@@ -168,7 +198,7 @@ describe('launchCancellationFlow', () => {
       'failed',
       expect.objectContaining({ error_message: 'API down' })
     )
-    expect(showFallback).toHaveBeenCalledOnce()
+    expect(showFallback).toHaveBeenCalledWith({ flowAlreadyOpened: true })
   })
 
   it('does not reopen cancellation after the API already succeeded', async () => {
@@ -208,7 +238,46 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).toHaveBeenCalledOnce()
     const resolveFlow = closeFlow
     if (!resolveFlow) throw new Error('Expected the flow to be open')
-    resolveFlow({ status: 'closed' })
+    resolveFlow({ aborted: true })
     await first
+  })
+
+  it('does not show or cancel for a workspace selected during preparation', async () => {
+    let finishPreparation: ((value: ChurnkeySession) => void) | undefined
+    const show = vi.fn().mockResolvedValue({ aborted: true })
+    mocks.prepare.mockReturnValue(
+      new Promise((resolve) => {
+        finishPreparation = resolve
+      })
+    )
+    const showFallback = vi.fn()
+
+    const flow = launchCancellationFlow({ showFallback })
+    await vi.waitFor(() => expect(finishPreparation).toBeTypeOf('function'))
+    mocks.activeWorkspaceId = 'workspace-2'
+    const resolvePreparation = finishPreparation
+    if (!resolvePreparation) throw new Error('Expected preparation to be open')
+    resolvePreparation(session(show))
+    await flow
+
+    expect(show).not.toHaveBeenCalled()
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
+  it('rejects cancellation after the active workspace changes', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async (options) => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        await options.handleCancel('Too expensive')
+        return { canceled: true }
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(mocks.cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
   })
 })

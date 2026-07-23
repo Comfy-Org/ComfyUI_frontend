@@ -79,16 +79,26 @@ describe('churnkeyClient', () => {
     expect(config).not.toHaveProperty('customer')
     expect(config).not.toHaveProperty('subscriptions')
     expect(config).not.toHaveProperty('record')
-    expect(config).not.toHaveProperty('handlePause')
-    expect(config).not.toHaveProperty('handleDiscount')
 
     await expect(
-      config.handleCancel('cus_test_1', 'Too expensive', 'Feedback')
+      config.handleCancel({ id: 'cus_test_1' }, 'Too expensive', 'Feedback')
     ).resolves.toEqual({ message: 'Canceled' })
     expect(handleCancel).toHaveBeenCalledWith('Too expensive', 'Feedback')
+    await expect(config.handlePause()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
+    await expect(config.handleDiscount()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
+    await expect(config.handleTrialExtension()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
+    await expect(config.handlePlanChange()).rejects.toThrow(
+      'Unsupported ChurnKey offer'
+    )
 
-    config.onClose({ status: 'closed' })
-    await expect(showPromise).resolves.toEqual({ status: 'closed' })
+    config.onClose({ aborted: true })
+    await expect(showPromise).resolves.toEqual({ aborted: true })
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
@@ -113,7 +123,7 @@ describe('churnkeyClient', () => {
     const showPromise = session.show({ handleCancel: vi.fn() })
     const config = capturedConfig()
     config.onError('No active subscription', 'cancel_flow')
-    config.onClose({ status: 'closed' })
+    config.onClose({ aborted: true })
 
     await expect(showPromise).rejects.toThrow(
       'No active subscription (cancel_flow)'

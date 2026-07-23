@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
+const mocks = vi.hoisted(() => ({
+  launchCancellationFlow: vi.fn(),
+  showDialog: vi.fn()
+}))
 
 vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
+  useDialogStore: () => ({ showDialog: mocks.showDialog })
 }))
 
 vi.mock('@/i18n', () => ({
@@ -22,13 +25,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isActiveSubscription: { value: true },
     isFreeTier: { value: false },
-    type: { value: 'legacy' }
+    type: { value: 'workspace' }
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/launchCancellationFlow', () => {
-  throw new Error('chunk failed to load')
-})
+vi.mock('@/platform/cloud/subscription/launchCancellationFlow', () => ({
+  launchCancellationFlow: mocks.launchCancellationFlow
+}))
 
 vi.mock(
   '@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue',
@@ -37,20 +40,28 @@ vi.mock(
 
 import { useDialogService } from '@/services/dialogService'
 
-describe('showCancelSubscriptionFlow', () => {
+describe('showCancelSubscriptionFlow delegation', () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })
 
-  it('falls back to the native dialog when its module fails to load', async () => {
+  it('passes cancelAt and a working native fallback to the orchestrator', async () => {
+    mocks.launchCancellationFlow.mockImplementation(
+      async ({ cancelAt, showFallback }) => {
+        expect(cancelAt).toBe('2026-08-01T00:00:00Z')
+        await showFallback({ flowAlreadyOpened: true })
+      }
+    )
+
     await useDialogService().showCancelSubscriptionFlow('2026-08-01T00:00:00Z')
 
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(mocks.launchCancellationFlow).toHaveBeenCalledOnce()
+    expect(mocks.showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'cancel-subscription',
         props: {
           cancelAt: '2026-08-01T00:00:00Z',
-          flowAlreadyOpened: false
+          flowAlreadyOpened: true
         }
       })
     )

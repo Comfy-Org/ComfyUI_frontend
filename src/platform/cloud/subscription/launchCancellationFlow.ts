@@ -3,11 +3,18 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionCancellationMetadata } from '@/platform/telemetry/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
+
+export interface CancellationFallbackOptions {
+  flowAlreadyOpened?: boolean
+}
 
 interface LaunchCancellationFlowOptions {
   cancelAt?: string
-  showFallback: () => unknown | Promise<unknown>
+  showFallback: (
+    options?: CancellationFallbackOptions
+  ) => void | Promise<unknown>
 }
 
 function cancellationMetadata(
@@ -62,19 +69,34 @@ export async function launchCancellationFlow({
 
 async function runCancellationFlow(
   cancelAt: string | undefined,
-  showFallback: () => unknown | Promise<unknown>
+  showFallback: (
+    options?: CancellationFallbackOptions
+  ) => void | Promise<unknown>
 ): Promise<void> {
   const billing = useBillingContext()
-  if (billing.type.value !== 'workspace') {
+  const workspaceStore = useTeamWorkspaceStore()
+  const launchWorkspaceId = workspaceStore.activeWorkspaceId
+  if (
+    billing.type.value !== 'workspace' ||
+    !launchWorkspaceId ||
+    workspaceStore.activeWorkspaceBillingRail !== 'stripe'
+  ) {
     await showFallback()
     return
   }
 
-  const session = await prepareChurnkey().catch(() => null)
+  const isLaunchWorkspaceCurrent = () =>
+    workspaceStore.activeWorkspaceId === launchWorkspaceId
+
+  const session = await prepareChurnkey().catch((error) => {
+    console.warn('Failed to prepare ChurnKey cancellation flow:', error)
+    return null
+  })
   if (!session) {
     await showFallback()
     return
   }
+  if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()
   const metadata = cancellationMetadata(billing, cancelAt)
@@ -87,6 +109,9 @@ async function runCancellationFlow(
     const results = await session.show({
       customerAttributes: customerAttributes(billing),
       handleCancel: async () => {
+        if (!isLaunchWorkspaceCurrent()) {
+          throw new Error('Active workspace changed during cancellation')
+        }
         telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
           await billing.cancelSubscription()
@@ -103,16 +128,17 @@ async function runCancellationFlow(
       }
     })
 
-    if (!didCancelSucceed && results.status === 'closed') {
+    if (cancelError) throw cancelError
+    if (!didCancelSucceed && results.aborted === true) {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {
-    if (didCancelSucceed) return
+    if (didCancelSucceed || !isLaunchWorkspaceCurrent()) return
     telemetry?.trackSubscriptionCancellation('failed', {
       ...metadata,
       error_message:
         getErrorMessage(cancelError ?? error) ?? t('g.unknownError')
     })
-    await showFallback()
+    await showFallback({ flowAlreadyOpened: true })
   }
 }

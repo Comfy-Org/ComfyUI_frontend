@@ -42,13 +42,17 @@ function runBestEffort(cleanup: () => void): void {
 export interface ChurnkeyShowOptions {
   customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
-    surveyResponse: string,
-    freeformFeedback?: string
+    surveyResponse?: string | null,
+    freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
 }
 
 export interface ChurnkeySession {
   show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
+}
+
+function rejectUnsupportedOffer(): Promise<never> {
+  return Promise.reject(new Error('Unsupported ChurnKey offer'))
 }
 
 function createSession(
@@ -79,6 +83,10 @@ function createSession(
           customerAttributes: options.customerAttributes,
           handleCancel: (_customer, surveyResponse, freeformFeedback) =>
             options.handleCancel(surveyResponse, freeformFeedback),
+          handlePause: rejectUnsupportedOffer,
+          handleDiscount: rejectUnsupportedOffer,
+          handleTrialExtension: rejectUnsupportedOffer,
+          handlePlanChange: rejectUnsupportedOffer,
           onClose: (results) => settle(() => resolve(results)),
           onError: (error, type) =>
             settle(() => {
