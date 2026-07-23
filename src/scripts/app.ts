@@ -1663,6 +1663,7 @@ export class ComfyApp {
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1686,6 +1687,7 @@ export class ComfyApp {
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
+                  startTime,
                   workflow: queuedWorkflow
                 })
               }
