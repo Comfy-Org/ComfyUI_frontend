@@ -9,13 +9,15 @@ const { positions } = defineProps<{
 }>()
 
 const links = computed(() => {
-  // The OUTPUT pill draws its own dot, so that wire end gets none here.
+  // Node headers and the OUTPUT pill draw their own dots; the only wire end
+  // without a DOM dot is the one on the input card, so it alone gets an SVG
+  // dot — everywhere else the spline just terminates on the existing dot.
   const pairs = [
-    { from: PORTS.inputOut, to: PORTS.angleIn, dotAtEnd: true },
-    { from: PORTS.angleOut, to: PORTS.colorIn, dotAtEnd: true },
-    { from: PORTS.colorOut, to: PORTS.outputIn, dotAtEnd: false }
+    { from: PORTS.inputOut, to: PORTS.angleIn, dotAtStart: true },
+    { from: PORTS.angleOut, to: PORTS.colorIn, dotAtStart: false },
+    { from: PORTS.colorOut, to: PORTS.outputIn, dotAtStart: false }
   ]
-  return pairs.map(({ from, to, dotAtEnd }) => {
+  return pairs.map(({ from, to, dotAtStart }) => {
     const a = portPoint(from, positions)
     const b = portPoint(to, positions)
     const x1 = a.x * 10
@@ -23,11 +25,9 @@ const links = computed(() => {
     const x2 = b.x * 10
     const y2 = b.y * 10
     const d = Math.max(30, Math.abs(x2 - x1) * 0.5)
-    const dots = [{ cx: x1, cy: y1 }]
-    if (dotAtEnd) dots.push({ cx: x2, cy: y2 })
     return {
       path: `M ${x1} ${y1} C ${x1 + d} ${y1}, ${x2 - d} ${y2}, ${x2} ${y2}`,
-      dots
+      dots: dotAtStart ? [{ cx: x1, cy: y1 }] : []
     }
   })
 })

@@ -18,7 +18,7 @@ export const FLOW: {
   elements: {
     input: { left: 0, top: 5.3, width: 19, height: 10.3 },
     angle: { left: 24, top: 21, width: 20, height: 20 },
-    color: { left: 48, top: 25, width: 14, height: 16 },
+    color: { left: 48, top: 26, width: 14, height: 9 },
     output: { left: 67, top: 4, width: 49, height: 26.5 }
   }
 }
@@ -34,16 +34,19 @@ interface Port {
   dy: number
 }
 
-/** Port offsets relative to each element's top-left corner (em). */
+/** Port offsets relative to each element's top-left corner (em).
+ * Header dots are laid out with px-[1.05em] padding and a 0.55em dot, so
+ * their centres sit 1.325em in from the node edge at the header's midline —
+ * these values must match so wire ends land exactly on the DOM dots. */
 export const PORTS: Record<
   'inputOut' | 'angleIn' | 'angleOut' | 'colorIn' | 'colorOut' | 'outputIn',
   Port
 > = {
   inputOut: { el: 'input', dx: 17.5, dy: 1.6 },
-  angleIn: { el: 'angle', dx: 1.3, dy: 1.125 },
-  angleOut: { el: 'angle', dx: 18.7, dy: 1.125 },
-  colorIn: { el: 'color', dx: 1, dy: 1.125 },
-  colorOut: { el: 'color', dx: 13, dy: 1.125 },
+  angleIn: { el: 'angle', dx: 1.325, dy: 1.125 },
+  angleOut: { el: 'angle', dx: 18.675, dy: 1.125 },
+  colorIn: { el: 'color', dx: 1.325, dy: 1.125 },
+  colorOut: { el: 'color', dx: 12.675, dy: 1.125 },
   outputIn: { el: 'output', dx: 2.15, dy: 2 }
 }
 
