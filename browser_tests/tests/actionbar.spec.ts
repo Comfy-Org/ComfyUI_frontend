@@ -1,4 +1,4 @@
-import type { Response } from '@playwright/test'
+import type { Page, Request, Response } from '@playwright/test'
 import { errors, expect, mergeTests } from '@playwright/test'
 
 import type { PromptResponse } from '@/schemas/apiSchema'
@@ -9,6 +9,29 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
+
+function isPromptRequest(request: Request): boolean {
+  return (
+    request.method() === 'POST' &&
+    new URL(request.url()).pathname === '/api/prompt'
+  )
+}
+
+function collectPromptRequests(
+  page: Page
+): Disposable & { readonly requests: Request[] } {
+  const requests: Request[] = []
+  function onRequest(request: Request) {
+    if (isPromptRequest(request)) requests.push(request)
+  }
+  page.on('request', onRequest)
+  return {
+    requests,
+    [Symbol.dispose]() {
+      page.off('request', onRequest)
+    }
+  }
+}
 
 test.describe('Actionbar', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -148,12 +171,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     ).toHaveLength(1)
     const latentNode = latentNodes[0]
     const originalSize = await latentNode.getSize()
-    const promptRequest = comfyPage.page
-      .waitForRequest('**/api/prompt', { timeout: 3000 })
-      .catch((error: unknown) => {
-        if (error instanceof errors.TimeoutError) return null
-        throw error
-      })
+    using promptRequests = collectPromptRequests(comfyPage.page)
 
     await comfyPage.nodeOps.resizeNode(
       DefaultGraphPositions.emptyLatent.pos,
@@ -166,10 +184,19 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
       await latentNode.getSize(),
       'the resize gesture should change the serialized node size'
     ).not.toEqual(originalSize)
+
+    if (promptRequests.requests.length === 0) {
+      await comfyPage.page
+        .waitForRequest(isPromptRequest, { timeout: 3000 })
+        .catch((error: unknown) => {
+          if (!(error instanceof errors.TimeoutError)) throw error
+        })
+    }
+
     expect(
-      await promptRequest,
+      promptRequests.requests,
       'resizing a node should not submit a prompt in change mode'
-    ).toBeNull()
+    ).toHaveLength(0)
   })
 
   test('Can dock actionbar into top menu', async ({ comfyPage }) => {
