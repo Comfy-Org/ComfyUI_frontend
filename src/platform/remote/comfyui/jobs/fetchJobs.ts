@@ -207,6 +207,9 @@ export async function fetchJobAssets(
       const url = `/jobs/${encodeURIComponent(jobId)}/assets?limit=${JOB_ASSETS_PAGE_SIZE}&offset=${offset}`
       const res = await fetchApi(url)
       if (!res.ok) {
+        console.warn(
+          `[Jobs API] Failed to fetch assets for job ${jobId}: ${res.status}`
+        )
         if (offset === 0) return []
         break
       }
@@ -214,13 +217,14 @@ export async function fetchJobAssets(
       const data = zJobAssetsResponse.parse(await res.json())
       assets.push(...data.assets)
 
-      if (data.pagination.has_more && data.assets.length === 0) {
+      const hasMore = data.pagination?.has_more ?? false
+      if (hasMore && data.assets.length === 0) {
         console.warn(
           `[Jobs API] Job ${jobId} assets page reported has_more with an empty page; stopping pagination`
         )
       }
 
-      if (!data.pagination.has_more || data.assets.length === 0) break
+      if (!hasMore || data.assets.length === 0) break
       offset += data.assets.length
     }
   } catch (error) {

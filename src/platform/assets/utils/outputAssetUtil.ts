@@ -2,8 +2,8 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { api } from '@/scripts/api'
 import {
+  getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
@@ -125,24 +125,25 @@ function mapOutputsToAssetItems({
 /**
  * Overlays a resolved job asset onto a synthesized output item, linking it to
  * the asset system: the placeholder `<jobId>-<outputKey>` id becomes the real
- * asset id, and hash/size/mime/preview plus per-output node context
- * (`nodeId`, `outputKey`, `outputIndex`) are filled from the endpoint.
+ * asset id, and size/mime/preview plus `nodeId` are filled from the endpoint.
+ *
+ * The endpoint's `hash` is deliberately not copied: downstream
+ * `getAssetUrlFilename` treats `hash` as the storage filename, which the
+ * endpoint's (`blake3:`-prefixed) value is not. The synthesized
+ * `thumbnail_url` wins over the asset's `preview_url` because it carries the
+ * resolution-capped `res=` variant; the asset value is the unbounded original.
  */
 function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
   return {
     ...item,
     id: asset.id,
-    hash: asset.hash ?? item.hash,
     size: asset.size ?? item.size,
     mime_type: asset.mime_type ?? item.mime_type,
     preview_url: asset.preview_url ?? item.preview_url,
-    // zJobOutputAsset has no separate thumbnail_url field; preview_url covers both
-    thumbnail_url: asset.preview_url ?? item.thumbnail_url,
+    thumbnail_url: item.thumbnail_url ?? asset.preview_url ?? undefined,
     user_metadata: {
       ...item.user_metadata,
-      nodeId: asset.node_id ?? item.user_metadata?.nodeId,
-      outputKey: asset.output_key ?? item.user_metadata?.outputKey,
-      outputIndex: asset.output_index ?? item.user_metadata?.outputIndex
+      nodeId: asset.node_id ?? item.user_metadata?.nodeId
     }
   }
 }
@@ -153,10 +154,11 @@ function overlayJobAsset(item: AssetItem, asset: JobOutputAsset): AssetItem {
  * across the history and asset id spaces). Cloud-only; degrades to the
  * unresolved items when the endpoint returns nothing (e.g. not yet deployed).
  *
- * Each resolved asset is consumed at most once so that two outputs sharing a
- * filename (e.g. the same file under different subfolders) map to distinct
- * assets rather than colliding on one real id — a duplicate `AssetItem.id`
- * makes Vue reuse a DOM node and visibly duplicate the asset on scroll.
+ * A filename duplicated on either side — among the outputs or among the
+ * returned assets — is left unresolved: `zJobOutputAsset` carries no
+ * subfolder and the endpoint's ordering is unspecified, so there is no field
+ * to pair duplicates reliably, and a wrong pairing would render one file's
+ * preview under another's identity.
  */
 async function enrichWithJobAssets(
   jobId: string,
@@ -166,7 +168,7 @@ async function enrichWithJobAssets(
 
   let jobAssets: JobOutputAsset[]
   try {
-    jobAssets = await api.getJobAssets(jobId)
+    jobAssets = await getJobAssets(jobId)
   } catch (error) {
     console.error(`Failed to enrich job ${jobId} with assets:`, error)
     return items
@@ -183,9 +185,16 @@ async function enrichWithJobAssets(
     }
   }
 
+  const itemNameCounts = new Map<string, number>()
+  for (const item of items) {
+    itemNameCounts.set(item.name, (itemNameCounts.get(item.name) ?? 0) + 1)
+  }
+
   return items.map((item) => {
-    const match = assetsByName.get(item.name)?.shift()
-    return match ? overlayJobAsset(item, match) : item
+    const candidates = assetsByName.get(item.name)
+    const isUnambiguous =
+      candidates?.length === 1 && itemNameCounts.get(item.name) === 1
+    return isUnambiguous ? overlayJobAsset(item, candidates[0]) : item
   })
 }
 

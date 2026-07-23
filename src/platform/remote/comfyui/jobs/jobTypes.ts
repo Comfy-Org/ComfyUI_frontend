@@ -117,11 +117,24 @@ const zJobOutputAsset = z
   })
   .passthrough()
 
-/** Paginated list of a single job's output assets. */
+/**
+ * Paginated list of a single job's output assets. The envelope is lenient
+ * where `zJobsListResponse` is strict: the cloud serialiser drops null fields
+ * (`exclude_none=True`) and this endpoint's pagination convention is
+ * unconfirmed, so a missing bookkeeping field must degrade to "no more pages"
+ * rather than reject the payload and silently disable enrichment.
+ */
 export const zJobAssetsResponse = z.object({
-  job_id: z.string(),
+  job_id: z.string().optional(),
   assets: z.array(zJobOutputAsset),
-  pagination: zPaginationInfo
+  pagination: z
+    .object({
+      offset: z.number().nullable().optional(),
+      limit: z.number().nullable().optional(),
+      total: z.number().nullable().optional(),
+      has_more: z.boolean().nullable().optional()
+    })
+    .optional()
 })
 
 /** Schema for workflow container structure in job detail responses */

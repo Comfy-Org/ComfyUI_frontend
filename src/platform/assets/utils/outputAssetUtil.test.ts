@@ -14,11 +14,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/services/jobOutputCache', () => ({
   getJobDetail: mocks.getJobDetail,
-  getPreviewableOutputsFromJobDetail: mocks.getPreviewableOutputsFromJobDetail
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: { getJobAssets: mocks.getJobAssets }
+  getPreviewableOutputsFromJobDetail: mocks.getPreviewableOutputsFromJobDetail,
+  getJobAssets: mocks.getJobAssets
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -370,22 +367,52 @@ describe('resolveOutputAssetItems', () => {
 
       expect(mocks.getJobAssets).toHaveBeenCalledWith('job-cloud')
       expect(asset.id).toBe('asset-real')
-      expect(asset.hash).toBe('blake3:abc')
       expect(asset.size).toBe(999)
       expect(asset.mime_type).toBe('image/png')
       expect(asset.preview_url).toBe('/view/real.png')
-      expect(asset.thumbnail_url).toBe('/view/real.png')
       expect(asset.user_metadata).toEqual(
         expect.objectContaining({
           jobId: 'job-cloud',
-          nodeId: '7',
-          outputKey: 'images',
-          outputIndex: 2
+          nodeId: '7'
         })
       )
+      expect(asset.user_metadata).not.toHaveProperty('outputKey')
+      expect(asset.user_metadata).not.toHaveProperty('outputIndex')
     })
 
-    it('maps same-named outputs to distinct assets without colliding ids', async () => {
+    it('does not adopt the endpoint hash as the storage filename', async () => {
+      mocks.getJobAssets.mockResolvedValue([
+        {
+          id: 'asset-real',
+          name: 'a.png',
+          hash: 'blake3:abc',
+          created_at: '2025-01-01T00:00:00.000Z'
+        }
+      ])
+
+      const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
+
+      expect(asset.id).toBe('asset-real')
+      expect(asset.hash).toBeUndefined()
+    })
+
+    it('prefers the synthesized resolution-capped thumbnail over the asset preview', async () => {
+      mocks.getJobAssets.mockResolvedValue([
+        {
+          id: 'asset-real',
+          name: 'a.png',
+          preview_url: '/view/full-size.png',
+          created_at: '2025-01-01T00:00:00.000Z'
+        }
+      ])
+
+      const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
+
+      expect(asset.thumbnail_url).toBe('https://example.com/a.png')
+      expect(asset.preview_url).toBe('/view/full-size.png')
+    })
+
+    it('leaves same-named outputs unresolved rather than guessing the pairing', async () => {
       const metadata: OutputAssetMetadata = {
         jobId: 'job-dup',
         nodeId: '1',
@@ -403,31 +430,50 @@ describe('resolveOutputAssetItems', () => {
 
       const results = await resolveOutputAssetItems(metadata)
 
-      // Consume-once FIFO: each output is paired with the next unconsumed
-      // asset in the endpoint's original order.
-      expect(results.map((asset) => asset.id)).toEqual(['asset-a', 'asset-b'])
+      // zJobOutputAsset has no subfolder, so duplicates cannot be paired
+      // reliably; both keep their unique synthesized ids.
+      expect(results.map((asset) => asset.id)).toEqual([
+        'job-dup-1-b-img.png',
+        'job-dup-1-a-img.png'
+      ])
     })
 
-    it('keeps a unique synthesized id when the endpoint has fewer matches', async () => {
+    it('leaves an output unresolved when multiple assets share its filename', async () => {
+      mocks.getJobAssets.mockResolvedValue([
+        { id: 'asset-a', name: 'a.png', created_at: 't' },
+        { id: 'asset-b', name: 'a.png', created_at: 't' }
+      ])
+
+      const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
+
+      expect(asset.id).toBe('job-cloud-1-sub-a.png')
+    })
+
+    it('resolves unambiguous names while skipping duplicated ones', async () => {
       const metadata: OutputAssetMetadata = {
-        jobId: 'job-partial',
+        jobId: 'job-mixed',
         nodeId: '1',
         subfolder: 'a',
-        outputCount: 2,
+        outputCount: 3,
         allOutputs: [
           createOutput({ filename: 'img.png', nodeId: '1', subfolder: 'a' }),
-          createOutput({ filename: 'img.png', nodeId: '1', subfolder: 'b' })
+          createOutput({ filename: 'img.png', nodeId: '1', subfolder: 'b' }),
+          createOutput({ filename: 'unique.png', nodeId: '2', subfolder: 'a' })
         ]
       }
       mocks.getJobAssets.mockResolvedValue([
-        { id: 'asset-a', name: 'img.png', node_id: '1', created_at: 't' }
+        { id: 'asset-a', name: 'img.png', created_at: 't' },
+        { id: 'asset-b', name: 'img.png', created_at: 't' },
+        { id: 'asset-unique', name: 'unique.png', created_at: 't' }
       ])
 
       const results = await resolveOutputAssetItems(metadata)
 
-      const ids = results.map((asset) => asset.id)
-      expect(new Set(ids).size).toBe(2)
-      expect(ids).toContain('asset-a')
+      expect(results.map((asset) => asset.id)).toEqual([
+        'asset-unique',
+        'job-mixed-1-b-img.png',
+        'job-mixed-1-a-img.png'
+      ])
     })
 
     it('leaves unmatched outputs unresolved', async () => {
