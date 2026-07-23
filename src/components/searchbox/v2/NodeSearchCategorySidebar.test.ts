@@ -112,6 +112,27 @@ describe('NodeSearchCategorySidebar', () => {
       expect(screen.getByText('conditioning')).toBeInTheDocument()
     })
 
+    it('should render categories alphabetically at every level', async () => {
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'zeta' }),
+        createMockNodeDef({ name: 'Node2', category: 'alpha/charlie' }),
+        createMockNodeDef({ name: 'Node3', category: 'middle' }),
+        createMockNodeDef({ name: 'Node4', category: 'alpha/bravo' })
+      ])
+
+      const { user } = createRender()
+
+      expect(
+        screen.getAllByRole('treeitem').map((item) => item.textContent?.trim())
+      ).toEqual(['alpha', 'middle', 'zeta'])
+
+      await clickCategory(user, 'alpha', true)
+
+      expect(
+        screen.getAllByRole('treeitem').map((item) => item.textContent?.trim())
+      ).toEqual(['alpha', 'bravo', 'charlie', 'middle', 'zeta'])
+    })
+
     it('should emit update:selectedCategory when category is clicked', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'Node1', category: 'sampling' })
