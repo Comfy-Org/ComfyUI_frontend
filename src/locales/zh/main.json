@@ -3017,6 +3017,7 @@
       "appTypeNative": "本地应用",
       "appTypeWeb": "网页应用",
       "deny": "取消",
+      "detailsHeader": "详情",
       "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
       "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
       "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
@@ -3024,7 +3025,6 @@
       "loading": "正在加载授权请求…",
       "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
       "noWorkspaces": "此请求没有可用的工作区。",
-      "detailsHeader": "详情",
       "permissionsHeader": "权限",
       "redirectNotice": "您将被重定向到",
       "resourceFallback": "此应用",
@@ -4026,6 +4026,7 @@
       "waitingForSubscription": "请在新标签页中完成订阅。我们会自动检测到您已完成！"
     },
     "resubscribe": "重新订阅",
+    "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
     "saveYearly": "立省 20%",

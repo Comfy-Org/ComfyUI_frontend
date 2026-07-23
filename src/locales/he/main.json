@@ -3017,6 +3017,7 @@
       "appTypeNative": "יישום מקורי (Native)",
       "appTypeWeb": "יישום אינטרנט",
       "deny": "ביטול",
+      "detailsHeader": "פרטים",
       "errorExpired": "בקשת הסכמה זו פגה או כבר נוצלה. אנא התחל מחדש מיישום הלקוח.",
       "errorScopeBroadening": "ההרשאות שאושרו בעבר אינן מכסות בקשה זו. יהיה עליך לאשר מחדש עם ההרשאות החדשות.",
       "errorUnavailable": "תכונה זו אינה זמינה כרגע. אנא פנה לתמיכה אם הבעיה נמשכת.",
@@ -3031,7 +3032,6 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
-      "detailsHeader": "פרטים",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -4026,6 +4026,7 @@
       "waitingForSubscription": "השלם את ההרשמה שלך בכרטיסייה החדשה. נזהה אוטומטית כשתסיים!"
     },
     "resubscribe": "הירשם מחדש",
+    "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
     "saveYearly": "חסוך 20%",
