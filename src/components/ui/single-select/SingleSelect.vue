@@ -40,7 +40,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle]"
+        :style="[optionStyle, contentStyle, liftedContentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -97,6 +97,7 @@ import {
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -140,6 +141,7 @@ const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 const isOpen = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

@@ -6,7 +6,6 @@
     :class="triggerClass"
     :label="modelFilterLabel"
     :options="modelOptions"
-    :content-style="contentStyle"
     :show-search-box="true"
     :show-selected-count="true"
     :show-clear-button="true"
@@ -19,7 +18,6 @@
     :class="triggerClass"
     :label="useCaseFilterLabel"
     :options="useCaseOptions"
-    :content-style="contentStyle"
     :show-search-box="true"
     :show-selected-count="true"
     :show-clear-button="true"
@@ -32,7 +30,6 @@
     :class="triggerClass"
     :label="runsOnFilterLabel"
     :options="runsOnOptions"
-    :content-style="contentStyle"
     :show-search-box="true"
     :show-selected-count="true"
     :show-clear-button="true"
@@ -45,7 +42,6 @@
     :class="triggerClass"
     :label="$t('templateWorkflows.sorting')"
     :options="sortOptions"
-    :content-style="contentStyle"
   >
     <template #icon>
       <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
@@ -54,8 +50,6 @@
 </template>
 
 <script setup lang="ts">
-import type { StyleValue } from 'vue'
-
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
@@ -69,7 +63,6 @@ const {
   modelFilterLabel,
   useCaseFilterLabel,
   runsOnFilterLabel,
-  contentStyle,
   triggerClass = ''
 } = defineProps<{
   modelOptions: SelectOption[]
@@ -79,7 +72,6 @@ const {
   modelFilterLabel: string
   useCaseFilterLabel: string
   runsOnFilterLabel: string
-  contentStyle?: StyleValue
   triggerClass?: string
 }>()
 
