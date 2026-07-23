@@ -8,8 +8,23 @@ vi.mock('typegpu', () => ({
   }
 }))
 
+const mockRenderer = vi.hoisted(() => ({
+  clearPreview: vi.fn(),
+  compositeStroke: vi.fn(),
+  destroy: vi.fn(),
+  prepareStroke: vi.fn(),
+  renderStrokeToAccumulator: vi.fn(),
+  blitToCanvas: vi.fn()
+}))
+
 vi.mock('./gpu/GPUBrushRenderer', () => ({
-  GPUBrushRenderer: vi.fn()
+  GPUBrushRenderer: vi.fn(
+    class MockGPUBrushRenderer {
+      constructor() {
+        return mockRenderer
+      }
+    }
+  )
 }))
 
 const mockStore = reactive({
@@ -184,9 +199,54 @@ describe('initPreviewCanvas', () => {
   })
 })
 
-describe('gpuDrawPoint', () => {
+describe('gpuRender', () => {
   it('resolves immediately when renderer is not initialised', async () => {
     const { gpuDrawPoint } = setup()
     await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
+  })
+
+  it('uses full coverage for each GPU stroke sample', async () => {
+    vi.stubGlobal('GPUTextureUsage', {
+      TEXTURE_BINDING: 0x0004,
+      STORAGE_BINDING: 0x0080,
+      RENDER_ATTACHMENT: 0x0010,
+      COPY_DST: 0x0008,
+      COPY_SRC: 0x0001
+    })
+    Object.defineProperty(navigator, 'gpu', {
+      configurable: true,
+      value: { getPreferredCanvasFormat: vi.fn(() => 'rgba8unorm') }
+    })
+
+    const imageData = {
+      data: new Uint8ClampedArray(4 * 4 * 4)
+    } as ImageData
+    const context = {
+      getImageData: vi.fn(() => imageData),
+      putImageData: vi.fn()
+    } as unknown as CanvasRenderingContext2D
+    const gpuDevice = {
+      createTexture: vi.fn(() => ({
+        createView: vi.fn(),
+        destroy: vi.fn()
+      })),
+      queue: {
+        writeTexture: vi.fn()
+      }
+    }
+    mockStore.tgpuRoot = { device: gpuDevice } as unknown
+    mockStore.maskCanvas = { width: 4, height: 4 } as HTMLCanvasElement
+    mockStore.rgbCanvas = { width: 4, height: 4 } as HTMLCanvasElement
+    mockStore.maskCtx = context
+    mockStore.rgbCtx = context
+
+    const resources = setup()
+    await resources.initGPUResources()
+    resources.gpuRender([{ x: 2, y: 2 }])
+
+    expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ coverage: 1 })
+    )
   })
 })

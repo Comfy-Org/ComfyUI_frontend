@@ -21,24 +21,35 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-function createMockCtx(): CanvasRenderingContext2D {
+function createMockCtx(
+  maskAlpha = 0,
+  onPutImageData?: (imageData: ImageData) => void
+): CanvasRenderingContext2D {
+  const data = new Uint8ClampedArray(4 * 4 * 4)
+  for (let i = 3; i < data.length; i += 4) data[i] = maskAlpha
+
   return fromPartial<CanvasRenderingContext2D>({
     drawImage: vi.fn(),
     getImageData: vi.fn(() => ({
-      data: new Uint8ClampedArray(4 * 4 * 4),
+      data: data.slice(),
       width: 4,
       height: 4
     })),
-    putImageData: vi.fn(),
+    putImageData: vi.fn((imageData: ImageData) => onPutImageData?.(imageData)),
     globalCompositeOperation: 'source-over'
   })
 }
 
-function createMockCanvas(): HTMLCanvasElement {
+function createMockCanvas(
+  maskAlpha = 0,
+  onPutImageData?: (imageData: ImageData) => void
+): HTMLCanvasElement {
+  const context = createMockCtx(maskAlpha, onPutImageData)
+
   return fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
-    getContext: vi.fn(() => createMockCtx()),
+    getContext: vi.fn(() => context),
     toBlob: vi.fn((cb: BlobCallback) => {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),
@@ -88,6 +99,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode
+  let outputImageData: ImageData[]
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
@@ -109,6 +121,7 @@ describe('useMaskEditorSaver', () => {
       properties: { image: 'original.png [input]' },
       graph: { setDirtyCanvas: vi.fn() }
     })
+    outputImageData = []
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -136,7 +149,9 @@ describe('useMaskEditorSaver', () => {
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
         if (tagName === 'canvas')
-          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
+          return fromAny<HTMLCanvasElement, unknown>(
+            createMockCanvas(0, (imageData) => outputImageData.push(imageData))
+          )
         return originalCreateElement(tagName, options)
       }
     )
@@ -200,5 +215,14 @@ describe('useMaskEditorSaver', () => {
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
     expect(body.get('subfolder')).toBeNull()
+  })
+
+  it('exports full internal mask coverage as zero PNG alpha', async () => {
+    mockEditorStore.maskCanvas = createMockCanvas(255)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(outputImageData[0]?.data[3]).toBe(0)
   })
 })
