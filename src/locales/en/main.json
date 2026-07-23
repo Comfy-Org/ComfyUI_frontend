@@ -2683,7 +2683,7 @@
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit1FreeTier": "More monthly credits, top up anytime",
+      "benefit1FreeTier": "Monthly credits, top up anytime",
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
     },
@@ -2782,14 +2782,15 @@
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
       "descriptionGeneric": "Your free plan includes a monthly credit allowance to try Comfy Cloud.",
+      "descriptionQuota": "Your free plan includes {runs} runs to get started with Comfy Cloud — no card needed.",
       "nextRefresh": "Your credits refresh on {date}.",
       "subscribeCta": "Subscribe for more",
       "outOfCredits": {
         "title": "You're out of free credits",
-        "subtitle": "Subscribe to unlock top-ups and more"
+        "subtitle": "Subscribe to add top-ups and more"
       },
       "topUpBlocked": {
-        "title": "Unlock top-ups and more"
+        "title": "Add top-ups and more"
       },
       "upgradeCta": "View plans"
     },
