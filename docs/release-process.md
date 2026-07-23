@@ -42,8 +42,8 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 
 `pr-assign-release-sheriff.yaml` assigns the on-call release sheriff to any
 open backport PR (label `backport`, or "backport" in the title) and any
-release version-bump PR (label `Release`, or a `version-bump-*` branch) that
-has no assignee. It also requests their review, since backport merges are
+release version-bump PR (label `Release`, or a `version-bump-<version>`
+branch) that has no assignee. It also requests their review, since backport merges are
 gated on an approval. Existing assignees and review requests are never
 overwritten.
 

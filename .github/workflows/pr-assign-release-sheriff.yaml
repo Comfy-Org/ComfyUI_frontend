@@ -77,9 +77,15 @@ jobs:
             --json "$FIELDS" > release-label.json
           gh pr list --state open --search 'backport in:title' --limit 100 \
             --json "$FIELDS" > backport-title.json
+          # Catches a version-bump PR whose `Release` label went missing. The
+          # branch prefix alone also matches ordinary feature branches, so the
+          # authoritative rule additionally requires a version number.
+          gh pr list --state open --search 'head:version-bump-' --limit 100 \
+            --json "$FIELDS" > version-bump-branch.json
 
           jq -s 'add | unique_by(.number)' \
-            backport-label.json release-label.json backport-title.json > prs.json
+            backport-label.json release-label.json backport-title.json \
+            version-bump-branch.json > prs.json
 
           echo "Candidate PRs: $(jq 'length' prs.json)"
 

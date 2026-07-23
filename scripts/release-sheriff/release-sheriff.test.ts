@@ -135,10 +135,25 @@ describe('sheriffScopeOf', () => {
     )
   })
 
+  it('matches prerelease version bump branches', () => {
+    expect(
+      sheriffScopeOf(pr({ headRefName: 'version-bump-1.46.0-beta.1' }))
+    ).toBe('version-bump-branch')
+  })
+
   it('ignores unrelated PRs', () => {
     expect(sheriffScopeOf(pr())).toBeNull()
     expect(
       sheriffScopeOf(pr({ headRefName: 'feat/version-bump-ui' }))
+    ).toBeNull()
+  })
+
+  it('ignores feature branches that merely start with version-bump-', () => {
+    expect(
+      sheriffScopeOf(pr({ headRefName: 'version-bump-fix-subscription-i18n' }))
+    ).toBeNull()
+    expect(
+      sheriffScopeOf(pr({ headRefName: 'version-bump-codex-test-ci-guard' }))
     ).toBeNull()
   })
 })

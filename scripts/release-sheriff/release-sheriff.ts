@@ -86,13 +86,20 @@ export type SheriffScope =
   | 'release-label'
   | 'version-bump-branch'
 
+/**
+ * `release-version-bump.yaml` names its branch after the new version, so the
+ * version must be matched too — plain `version-bump-*` also catches ordinary
+ * feature branches like `version-bump-fix-subscription-i18n`.
+ */
+const VERSION_BUMP_BRANCH = /^version-bump-\d+\.\d+\.\d+/
+
 export function sheriffScopeOf(pr: PullRequestSummary): SheriffScope | null {
   const labels = pr.labels.map((label) => label.name.toLowerCase())
 
   if (labels.includes('backport')) return 'backport-label'
   if (pr.title.toLowerCase().includes('backport')) return 'backport-title'
   if (labels.includes('release')) return 'release-label'
-  if (pr.headRefName.startsWith('version-bump-')) return 'version-bump-branch'
+  if (VERSION_BUMP_BRANCH.test(pr.headRefName)) return 'version-bump-branch'
   return null
 }
 
