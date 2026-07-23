@@ -27,7 +27,7 @@
   },
   "Comfy_Appearance_DisableAnimations": {
     "name": "Disable animations",
-    "tooltip": "Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation."
+    "tooltip": "Turns off most UI animations and transitions. Speeds up inference when the display GPU is also used for generation."
   },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",

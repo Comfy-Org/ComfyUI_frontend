@@ -598,7 +598,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
-      'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
+      'Turns off most UI animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
       document.body.classList.toggle('disable-animations', !!value)
     },
