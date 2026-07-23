@@ -632,7 +632,10 @@ const THREE_D_EXTENSIONS = [
   'glb',
   'stl',
   'usdz',
-  'ply'
+  'ply',
+  'spz',
+  'splat',
+  'ksplat'
 ] as const
 const TEXT_EXTENSIONS = [
   'txt',
