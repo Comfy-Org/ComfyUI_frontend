@@ -28,7 +28,9 @@ test.describe('Runtime node reflow', { tag: '@vue-nodes' }, () => {
     await growNodeByWidget(comfyPage, nodeId)
 
     await expect
-      .poll(() => node.boundingBox().then((box) => box?.height ?? 0))
+      .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
+        message: 'adding a widget then mutating size[1] reflows the Vue node'
+      })
       .toBeGreaterThan(initialHeight + REFLOW_GROWTH_THRESHOLD)
   })
 
@@ -38,12 +40,13 @@ test.describe('Runtime node reflow', { tag: '@vue-nodes' }, () => {
     const { nodeId, node, initialHeight } =
       await addReflowNodeAndMeasure(comfyPage)
 
-    // No widget is added here — growth is triggered purely by `img.onload`
-    // setting `node.imgs` and `node.size[1]`.
     await growNodeByPreview(comfyPage, nodeId)
 
     await expect
-      .poll(() => node.boundingBox().then((box) => box?.height ?? 0))
+      .poll(() => node.boundingBox().then((box) => box?.height ?? 0), {
+        message:
+          'img.onload mutating size[1] with no widget change reflows the Vue node'
+      })
       .toBeGreaterThan(initialHeight + REFLOW_GROWTH_THRESHOLD)
   })
 })

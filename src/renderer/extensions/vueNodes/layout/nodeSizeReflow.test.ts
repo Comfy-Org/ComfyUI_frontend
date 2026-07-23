@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LayoutOperation } from '@/renderer/core/layout/types'
+import type {
+  LayoutOperation,
+  ResizeNodeOperation
+} from '@/renderer/core/layout/types'
 
 function setup() {
   const graph = new LGraph()
@@ -18,11 +21,11 @@ function setup() {
   useGraphNodeManager(graph)
 
   const applySpy = vi.spyOn(layoutStore, 'applyOperation')
-  const resizeCommits = () =>
+  const resizeCommits = (): ResizeNodeOperation[] =>
     applySpy.mock.calls
       .map(([operation]: [LayoutOperation]) => operation)
       .filter(
-        (operation) =>
+        (operation): operation is ResizeNodeOperation =>
           operation.type === 'resizeNode' && operation.nodeId === node.id
       )
 
@@ -44,12 +47,31 @@ describe('LGraphNode size reflow', () => {
     const layout = layoutStore.getNodeLayoutRef(node.id)
     expect(layout.value?.size.height).toBe(100)
 
-    // rgthree "not enough space" idiom: element mutation, bypassing the setter.
     node.size[1] = 180
 
     expect(layout.value?.size.height).toBe(180)
     expect(layout.value?.size.width).toBe(210)
-    expect(resizeCommits()).toHaveLength(1)
+    expect(
+      resizeCommits(),
+      'element mutation bypassing the setter still commits exactly one resize'
+    ).toHaveLength(1)
+  })
+
+  it('commits per-axis for sequential bare-element writes on both axes', () => {
+    const { node, resizeCommits } = setup()
+
+    node.size[0] = 260
+    node.size[1] = 140
+
+    const layout = layoutStore.getNodeLayoutRef(node.id)
+    expect(layout.value?.size).toEqual({ width: 260, height: 140 })
+    expect(
+      resizeCommits().map((operation) => operation.size),
+      'each bare-element write commits independently, so the width grows before the height'
+    ).toEqual([
+      { width: 260, height: 100 },
+      { width: 260, height: 140 }
+    ])
   })
 
   it('commits once when the whole size array is assigned via the setter', () => {
@@ -68,12 +90,28 @@ describe('LGraphNode size reflow', () => {
     node.size[1] = 300
     expect(resizeCommits()).toHaveLength(1)
 
-    // Emulate the useLayoutSync write-back (layout -> node) with the equal size.
     const layout = layoutStore.getNodeLayoutRef(node.id).value
     node.size = [layout!.size.width, layout!.size.height]
 
-    // The isSizeEqual guard makes the equal write-back a no-op: still one commit.
-    expect(resizeCommits()).toHaveLength(1)
+    expect(
+      resizeCommits(),
+      'the layout-sync write-back re-applies the equal size, but the isSizeEqual guard keeps it a no-op'
+    ).toHaveLength(1)
+  })
+
+  it('commits when an in-place TypedArray method mutates size', () => {
+    const { node, resizeCommits } = setup()
+
+    const size = node.size
+    if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
+    size.set([260, 160])
+
+    const layout = layoutStore.getNodeLayoutRef(node.id)
+    expect(layout.value?.size).toEqual({ width: 260, height: 160 })
+    expect(
+      resizeCommits(),
+      'size.set(...) mutates in place without hitting the set trap, but still commits'
+    ).toHaveLength(1)
   })
 
   it('does not commit for size mutations before the node joins a graph', () => {
