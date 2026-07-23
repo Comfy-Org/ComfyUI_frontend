@@ -41,7 +41,6 @@ import AgentComposerNodeChips from './AgentComposerNodeChips.vue'
 import AgentComposerPlaceholderOverlay from './AgentComposerPlaceholderOverlay.vue'
 import AgentComposerWorkflowHeader from './AgentComposerWorkflowHeader.vue'
 import AgentNodeMentionPicker from './AgentNodeMentionPicker.vue'
-import AgentPromptSuggestions from './AgentPromptSuggestions.vue'
 
 const {
   messages,
@@ -249,7 +248,7 @@ function onNewChatFromHistory() {
       </div>
 
       <ConversationEmptyState v-if="isEmpty">
-        <AgentChatEmptyState :name="userName" />
+        <AgentChatEmptyState :name="userName" @select="onSuggestionSelect" />
       </ConversationEmptyState>
       <Conversation v-else>
         <template #overlay>
@@ -330,7 +329,6 @@ function onNewChatFromHistory() {
         <div
           class="@container mx-auto flex w-full max-w-[640px] flex-col gap-4"
         >
-          <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
               <AgentComposerWorkflowHeader />

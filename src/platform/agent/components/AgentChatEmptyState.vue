@@ -4,13 +4,19 @@ import EmptyHeader from '@/components/ui/empty/EmptyHeader.vue'
 import EmptyMedia from '@/components/ui/empty/EmptyMedia.vue'
 import EmptyTitle from '@/components/ui/empty/EmptyTitle.vue'
 
+import AgentPromptSuggestions from './AgentPromptSuggestions.vue'
+
 const { name } = defineProps<{
   name?: string
+}>()
+
+const emit = defineEmits<{
+  select: [suggestion: string]
 }>()
 </script>
 
 <template>
-  <Empty class="pt-12">
+  <Empty class="gap-8 pt-12">
     <EmptyHeader>
       <EmptyMedia>
         <div class="rounded-xl border border-plum-600">
@@ -33,5 +39,6 @@ const { name } = defineProps<{
         <span class="block">{{ $t('agent.greetingQuestion') }}</span>
       </EmptyTitle>
     </EmptyHeader>
+    <AgentPromptSuggestions @select="emit('select', $event)" />
   </Empty>
 </template>
