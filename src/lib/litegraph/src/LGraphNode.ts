@@ -554,7 +554,7 @@ export class LGraphNode
    */
   public get size(): Size {
     return (this._sizeProxy ??= new Proxy(this._size, {
-      get: (target, prop) => {
+      get: (target, prop, receiver) => {
         const value = Reflect.get(target, prop, target)
         if (typeof value !== 'function') return value
         if (typeof prop !== 'string' || !MUTATING_SIZE_METHODS.has(prop))
@@ -562,10 +562,12 @@ export class LGraphNode
 
         // `set`/`fill`/etc. mutate the backing array without hitting the set
         // trap, so commit through the same path a bare element write would.
+        // `fill`/`copyWithin`/`reverse`/`sort` return the backing array; hand
+        // back the Proxy so a chained index write still routes through the trap.
         return (...args: unknown[]) => {
           const result = Reflect.apply(value, target, args)
           this._sizeUpdated()
-          return result
+          return result === target ? receiver : result
         }
       },
       set: (target, prop, value) => {

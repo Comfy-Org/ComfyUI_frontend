@@ -114,6 +114,21 @@ describe('LGraphNode size reflow', () => {
     ).toHaveLength(1)
   })
 
+  it('commits a chained index write after a fluent TypedArray mutator', () => {
+    const { node, resizeCommits } = setup()
+
+    const size = node.size
+    if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
+    size.fill(160)[1] = 180
+
+    const layout = layoutStore.getNodeLayoutRef(node.id)
+    expect(layout.value?.size).toEqual({ width: 160, height: 180 })
+    expect(
+      resizeCommits(),
+      'fill(...) returns the Proxy, so the chained [1] = write still commits'
+    ).toHaveLength(2)
+  })
+
   it('does not commit for size mutations before the node joins a graph', () => {
     const detached = new LGraphNode('detached')
 
