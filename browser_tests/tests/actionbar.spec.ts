@@ -1,13 +1,20 @@
 import type { Response } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
+import { errors, expect, mergeTests } from '@playwright/test'
+
+import type { PromptResponse } from '@/schemas/apiSchema'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Actionbar', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+  })
+
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */
@@ -112,6 +119,57 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
       'last queued prompt width should be the last change'
     ).toBe(END)
     expect(promptNumber, 'queued prompt count should be 2').toBe(2)
+  })
+
+  test('Does not auto-queue when resizing a node', async ({ comfyPage }) => {
+    const promptResponse: PromptResponse = {
+      prompt_id: 'layout-change',
+      node_errors: {},
+      error: ''
+    }
+    await comfyPage.page.route('**/api/prompt', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(promptResponse)
+      })
+    })
+
+    const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
+    await queueOpts.setMode('change')
+    await expect.poll(() => queueOpts.getMode()).toBe('change')
+    await comfyPage.actionbar.queueButton.toggleOptions()
+
+    const latentNodes =
+      await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage')
+    expect(
+      latentNodes,
+      'the default workflow should contain an EmptyLatentImage node'
+    ).toHaveLength(1)
+    const latentNode = latentNodes[0]
+    const originalSize = await latentNode.getSize()
+    const promptRequest = comfyPage.page
+      .waitForRequest('**/api/prompt', { timeout: 3000 })
+      .catch((error: unknown) => {
+        if (error instanceof errors.TimeoutError) return null
+        throw error
+      })
+
+    await comfyPage.nodeOps.resizeNode(
+      DefaultGraphPositions.emptyLatent.pos,
+      DefaultGraphPositions.emptyLatent.size,
+      1.2,
+      1.2
+    )
+
+    expect(
+      await latentNode.getSize(),
+      'the resize gesture should change the serialized node size'
+    ).not.toEqual(originalSize)
+    expect(
+      await promptRequest,
+      'resizing a node should not submit a prompt in change mode'
+    ).toBeNull()
   })
 
   test('Can dock actionbar into top menu', async ({ comfyPage }) => {
