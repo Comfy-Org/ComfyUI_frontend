@@ -314,8 +314,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     'tool icons remain visible in light and dark themes',
     { tag: ['@smoke'] },
     async ({ comfyPage, maskEditor }) => {
-      test.setTimeout(30_000)
       const initialTheme = await comfyPage.menu.getThemeId()
+      const alternateTheme = initialTheme === 'light' ? 'dark' : 'light'
       const dialog = await maskEditor.openDialog()
 
       try {
@@ -323,7 +323,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
           .poll(() => getMinimumToolIconContrast(dialog))
           .toBeGreaterThanOrEqual(3)
 
-        await comfyPage.menu.toggleTheme()
+        await comfyPage.settings.setSetting(
+          'Comfy.ColorPalette',
+          alternateTheme
+        )
         await expect
           .poll(() => getMinimumToolIconContrast(dialog))
           .toBeGreaterThanOrEqual(3)
