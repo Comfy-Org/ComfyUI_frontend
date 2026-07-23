@@ -294,16 +294,20 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
+   * @returns true if the workflow was (or already is) open and active, false
+   * if the user cancelled the switch (e.g. declined to exit node selection
+   * mode) - callers that optimistically reflect the selection in the UI
+   * before this resolves should use this to revert on cancellation.
    */
   const openWorkflow = async (
     workflow: ComfyWorkflow,
     options: { force: boolean } = { force: false }
-  ) => {
+  ): Promise<boolean> => {
     const isSwitchingWorkflow = !workflowStore.isActive(workflow)
     if (!isSwitchingWorkflow) {
-      if (!options.force) return
+      if (!options.force) return true
     } else if (!(await confirmExitNodeSelectionMode())) {
-      return
+      return false
     }
 
     const loadFromRemote = !workflow.isLoaded
@@ -330,6 +334,7 @@ export const useWorkflowService = () => {
     showPendingWarnings(undefined, {
       silent: !loadFromRemote && !options.force
     })
+    return true
   }
 
   /**

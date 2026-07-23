@@ -16,7 +16,12 @@
     "placeholderAddNodes": "add nodes from graph",
     "placeholderSuffix": ", or drag in assets",
     "placeholderAria": "Describe ideas, @ to reference, add nodes from graph, or drag in assets",
-    "attach": "Attach files or photos",
+    "attachMenu": {
+      "trigger": "Add",
+      "addNodesFromGraph": "Add nodes from graph",
+      "addMediaAssets": "Add from media assets",
+      "attachAssets": "Attach images or other assets"
+    },
     "send": "Send",
     "scrollToBottom": "Scroll to latest",
     "disclaimer": "Agent generation does not impact the graph.",
@@ -35,7 +40,8 @@
       "exitConfirmMessage": "You're selecting nodes from the graph to reference in the chat. Switching workflows will exit this mode."
     },
     "mentionPicker": {
-      "empty": "No nodes found"
+      "empty": "No nodes found",
+      "searchPlaceholder": "type to search nodes"
     },
     "suggestions": {
       "duck": "Generate a yellow duck with a hockey mask",

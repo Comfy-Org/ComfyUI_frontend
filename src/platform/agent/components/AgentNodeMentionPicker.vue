@@ -26,6 +26,18 @@ const filteredNodes = computed(() => {
   )
 })
 
+const duplicateTitleCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const node of filteredNodes.value) {
+    counts.set(node.title, (counts.get(node.title) ?? 0) + 1)
+  }
+  return counts
+})
+
+function hasDuplicateTitle(node: LGraphNode) {
+  return (duplicateTitleCounts.value.get(node.title) ?? 0) > 1
+}
+
 const highlightedIndex = ref(0)
 watch(filteredNodes, () => {
   highlightedIndex.value = 0
@@ -47,7 +59,7 @@ defineExpose({ moveHighlight, confirmHighlighted })
 
 <template>
   <div
-    class="absolute bottom-full left-0 z-10 mb-1 max-h-56 w-64 overflow-y-auto rounded-lg border border-border-subtle bg-base-background py-1 shadow-interface"
+    class="absolute inset-x-0 bottom-full z-10 mb-1 max-h-56 overflow-y-auto rounded-lg border border-border-subtle bg-base-background py-1 shadow-interface"
   >
     <button
       v-for="(node, index) in filteredNodes"
@@ -55,14 +67,20 @@ defineExpose({ moveHighlight, confirmHighlighted })
       type="button"
       :class="
         cn(
-          'flex w-full cursor-pointer items-center gap-2 truncate border-0 bg-transparent px-3 py-1.5 text-left text-sm text-base-foreground',
+          'flex w-full cursor-pointer items-center gap-2 border-0 bg-transparent px-3 py-1.5 text-left text-sm text-base-foreground',
           index === highlightedIndex && 'bg-secondary-background-hover'
         )
       "
       @mouseenter="highlightedIndex = index"
       @click="emit('select', node)"
     >
-      {{ node.title }}
+      <span class="min-w-0 flex-1 truncate">{{ node.title }}</span>
+      <span
+        v-if="hasDuplicateTitle(node)"
+        class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+      >
+        #{{ node.id }}
+      </span>
     </button>
     <p
       v-if="!filteredNodes.length"

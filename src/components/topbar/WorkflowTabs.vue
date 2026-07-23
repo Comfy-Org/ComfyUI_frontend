@@ -24,6 +24,7 @@
       pt:bar-x="h-1"
     >
       <SelectButton
+        :key="selectButtonKey"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
@@ -204,6 +205,11 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
+// Bumped to force-remount SelectButton after a cancelled switch, since it
+// otherwise keeps optimistically showing the clicked tab as selected even
+// though `selectedWorkflow` (its `model-value`) never actually changed.
+const selectButtonKey = ref(0)
+
 const onWorkflowChange = async (option: WorkflowOption) => {
   // Prevent unselecting the current workflow
   if (!option) {
@@ -214,7 +220,10 @@ const onWorkflowChange = async (option: WorkflowOption) => {
     return
   }
 
-  await workflowService.openWorkflow(option.workflow)
+  const switched = await workflowService.openWorkflow(option.workflow)
+  if (!switched) {
+    selectButtonKey.value++
+  }
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {

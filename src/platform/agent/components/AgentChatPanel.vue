@@ -16,7 +16,6 @@ import MessageToolCalls from '@/components/ai-elements/message/MessageToolCalls.
 import PromptInput from '@/components/ai-elements/prompt-input/PromptInput.vue'
 import PromptInputAttachments from '@/components/ai-elements/prompt-input/PromptInputAttachments.vue'
 import PromptInputBody from '@/components/ai-elements/prompt-input/PromptInputBody.vue'
-import PromptInputButton from '@/components/ai-elements/prompt-input/PromptInputButton.vue'
 import PromptInputModelSelect from '@/components/ai-elements/prompt-input/PromptInputModelSelect.vue'
 import PromptInputSubmit from '@/components/ai-elements/prompt-input/PromptInputSubmit.vue'
 import PromptInputTextarea from '@/components/ai-elements/prompt-input/PromptInputTextarea.vue'
@@ -28,6 +27,7 @@ import { useMentionTrigger } from '@/platform/agent/composables/useMentionTrigge
 import { useAgentPanelStore } from '@/platform/agent/stores/agentPanelStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
@@ -36,6 +36,7 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import AgentChatEmptyState from './AgentChatEmptyState.vue'
 import AgentChatHeader from './AgentChatHeader.vue'
 import AgentChatHistory from './AgentChatHistory.vue'
+import AgentComposerAttachMenu from './AgentComposerAttachMenu.vue'
 import AgentComposerNodeChips from './AgentComposerNodeChips.vue'
 import AgentComposerPlaceholderOverlay from './AgentComposerPlaceholderOverlay.vue'
 import AgentComposerWorkflowHeader from './AgentComposerWorkflowHeader.vue'
@@ -61,6 +62,7 @@ const {
 const authStore = useAuthStore()
 const agentPanelStore = useAgentPanelStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const sidebarTabStore = useSidebarTabStore()
 
 const model = ref('Auto')
 const showHistory = ref(false)
@@ -109,6 +111,10 @@ function removeAttachment(index: number) {
 function onAddNodesFromGraph() {
   if (agentNodeSelectionStore.isActive) return
   agentNodeSelectionStore.enter()
+}
+
+function onAddMediaAssets() {
+  sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
 function onRemoveNodeChip(node: LGraphNode) {
@@ -311,71 +317,84 @@ function onNewChatFromHistory() {
         >
           <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
-            <PromptInput @submit="onSubmit">
-              <AgentComposerWorkflowHeader />
-              <PromptInputBody class="bg-secondary-background">
-                <AgentComposerNodeChips
-                  :nodes="agentNodeSelectionStore.referencedNodes"
-                  @remove="onRemoveNodeChip"
-                />
-                <PromptInputAttachments
-                  :attachments="attachments"
-                  @remove="removeAttachment"
-                />
-                <div class="relative">
-                  <AgentComposerPlaceholderOverlay
-                    v-if="!input"
-                    :disabled="agentNodeSelectionStore.isActive"
-                    @add-nodes-from-graph="onAddNodesFromGraph"
+            <div class="relative">
+              <PromptInput @submit="onSubmit">
+                <AgentComposerWorkflowHeader />
+                <PromptInputBody class="bg-secondary-background">
+                  <AgentComposerNodeChips
+                    :nodes="agentNodeSelectionStore.referencedNodes"
+                    :graph-nodes="agentNodeSelectionStore.graphNodes"
+                    @remove="onRemoveNodeChip"
                   />
-                  <PromptInputTextarea
-                    ref="promptTextarea"
-                    v-model="input"
-                    class="pt-3"
-                    :aria-label="$t('agent.placeholderAria')"
-                    @keydown="onTextareaKeydown"
+                  <PromptInputAttachments
+                    :attachments="attachments"
+                    @remove="removeAttachment"
                   />
-                  <AgentNodeMentionPicker
-                    v-if="mentionTrigger.isMentionActive.value"
-                    ref="mentionPicker"
-                    :nodes="agentNodeSelectionStore.graphNodes"
-                    :query="mentionTrigger.mentionQuery.value"
-                    @select="onMentionSelect"
-                  />
-                </div>
-                <PromptInputToolbar>
-                  <PromptInputTools>
-                    <input
-                      ref="fileInput"
-                      type="file"
-                      multiple
-                      class="hidden"
-                      @change="onFilesSelected"
+                  <div class="relative">
+                    <AgentComposerPlaceholderOverlay
+                      v-if="!input"
+                      :disabled="agentNodeSelectionStore.isActive"
+                      @add-nodes-from-graph="onAddNodesFromGraph"
                     />
-                    <Tooltip :delay-duration="500">
-                      <TooltipTrigger>
-                        <PromptInputButton
-                          :aria-label="$t('agent.attach')"
-                          @click="openFilePicker"
-                        >
-                          <i class="icon-[lucide--paperclip] size-4" />
-                        </PromptInputButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" class="whitespace-nowrap">
-                        {{ $t('agent.attach') }}
-                      </TooltipContent>
-                    </Tooltip>
-                  </PromptInputTools>
-                  <PromptInputTools>
-                    <PromptInputModelSelect v-model="model" />
-                    <PromptInputSubmit
-                      :status="status"
-                      :disabled="submitDisabled"
+                    <div
+                      v-else-if="
+                        mentionTrigger.isMentionActive.value &&
+                        !mentionTrigger.mentionQuery.value
+                      "
+                      aria-hidden="true"
+                      class="pointer-events-none absolute inset-0 flex items-start px-4 pt-2 pb-3 text-sm"
+                    >
+                      <p class="mt-1 line-clamp-2 leading-5">
+                        <span class="invisible whitespace-pre-wrap">{{
+                          input
+                        }}</span
+                        ><span class="text-muted-foreground">{{
+                          $t('agent.mentionPicker.searchPlaceholder')
+                        }}</span>
+                      </p>
+                    </div>
+                    <PromptInputTextarea
+                      ref="promptTextarea"
+                      v-model="input"
+                      class="pt-3"
+                      :aria-label="$t('agent.placeholderAria')"
+                      @keydown="onTextareaKeydown"
                     />
-                  </PromptInputTools>
-                </PromptInputToolbar>
-              </PromptInputBody>
-            </PromptInput>
+                  </div>
+                  <PromptInputToolbar>
+                    <PromptInputTools>
+                      <input
+                        ref="fileInput"
+                        type="file"
+                        multiple
+                        class="hidden"
+                        @change="onFilesSelected"
+                      />
+                      <AgentComposerAttachMenu
+                        :disabled="agentNodeSelectionStore.isActive"
+                        @add-nodes-from-graph="onAddNodesFromGraph"
+                        @add-media-assets="onAddMediaAssets"
+                        @attach-assets="openFilePicker"
+                      />
+                    </PromptInputTools>
+                    <PromptInputTools>
+                      <PromptInputModelSelect v-model="model" />
+                      <PromptInputSubmit
+                        :status="status"
+                        :disabled="submitDisabled"
+                      />
+                    </PromptInputTools>
+                  </PromptInputToolbar>
+                </PromptInputBody>
+              </PromptInput>
+              <AgentNodeMentionPicker
+                v-if="mentionTrigger.isMentionActive.value"
+                ref="mentionPicker"
+                :nodes="agentNodeSelectionStore.graphNodes"
+                :query="mentionTrigger.mentionQuery.value"
+                @select="onMentionSelect"
+              />
+            </div>
             <p class="my-0 text-center text-xs text-muted-foreground">
               {{ $t('agent.disclaimer') }}
             </p>

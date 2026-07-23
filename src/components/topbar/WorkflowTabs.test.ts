@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -56,19 +57,35 @@ vi.mock('@/composables/element/useOverflowObserver', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow: vi.fn(),
-    closeWorkflow: vi.fn()
-  })
+const workflowServiceMocks = vi.hoisted(() => ({
+  openWorkflow: vi.fn(),
+  closeWorkflow: vi.fn()
 }))
 
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => workflowServiceMocks
+}))
+
+interface MockWorkflow {
+  key: string
+  path: string
+  filename: string
+}
+
+interface MockWorkflowOption {
+  value: string
+  workflow: MockWorkflow
+}
+
+const workflowStoreState = vi.hoisted(() =>
+  reactive({
+    openWorkflows: [] as MockWorkflow[],
+    activeWorkflow: null as MockWorkflow | null
+  })
+)
+
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () =>
-    reactive({
-      openWorkflows: [],
-      activeWorkflow: null
-    })
+  useWorkflowStore: () => workflowStoreState
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -93,7 +110,10 @@ vi.mock('./WorkflowOverflowMenu.vue', () => ({
 vi.mock('./WorkflowTab.vue', () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
-    render: () => h('div')
+    props: ['workflowOption'],
+    setup(props: { workflowOption: MockWorkflowOption }) {
+      return () => h('span', props.workflowOption.workflow.filename)
+    }
   })
 }))
 
@@ -121,7 +141,7 @@ function renderComponent() {
 
   const result = render(WorkflowTabs, {
     global: {
-      plugins: [i18n],
+      plugins: [PrimeVue, i18n],
       directives: {
         tooltip: {}
       }
@@ -129,6 +149,19 @@ function renderComponent() {
   })
 
   return { user, ...result }
+}
+
+/** PrimeVue SelectButton renders toggle buttons with aria-pressed. */
+function getToggleButtons(container: Element) {
+  return container.querySelectorAll<HTMLElement>(  
+    '[data-pc-name="pctogglebutton"]'
+  )
+}
+
+function getToggleButtonByLabel(container: Element, label: string) {
+  return Array.from(getToggleButtons(container)).find((button) =>
+    button.textContent?.includes(label)
+  )
 }
 
 describe('WorkflowTabs feedback button', () => {
@@ -139,6 +172,9 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
+    workflowStoreState.openWorkflows = []
+    workflowStoreState.activeWorkflow = null
+    workflowServiceMocks.openWorkflow.mockReset()
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
@@ -186,5 +222,56 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs cancelled workflow switch', () => {
+  const workflowA: MockWorkflow = { key: 'a', path: 'a.json', filename: 'A' }
+  const workflowB: MockWorkflow = { key: 'b', path: 'b.json', filename: 'B' }
+
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isDesktop = false
+    distribution.isNightly = false
+    tabBarLayout.value = 'Default'
+    workflowStoreState.openWorkflows = [workflowA, workflowB]
+    workflowStoreState.activeWorkflow = workflowA
+    workflowServiceMocks.openWorkflow.mockReset()
+  })
+
+  it('keeps the original tab selected when the user cancels the switch', async () => {
+    workflowServiceMocks.openWorkflow.mockResolvedValue(false)
+    const { user, container } = renderComponent()
+
+    await user.click(screen.getByText('B'))
+
+    expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(workflowB)
+    await waitFor(() => {
+      expect(getToggleButtonByLabel(container, 'A')).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+      expect(getToggleButtonByLabel(container, 'B')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+    })
+  })
+
+  it('selects the clicked tab once the switch succeeds', async () => {
+    workflowServiceMocks.openWorkflow.mockImplementation(async () => {
+      workflowStoreState.activeWorkflow = workflowB
+      return true
+    })
+    const { user, container } = renderComponent()
+
+    await user.click(screen.getByText('B'))
+
+    await waitFor(() =>
+      expect(getToggleButtonByLabel(container, 'B')).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    )
   })
 })

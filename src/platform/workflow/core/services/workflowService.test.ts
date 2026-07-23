@@ -503,22 +503,26 @@ describe('useWorkflowService', () => {
       const workflow = createWorkflow(null, { loadable: true })
       mockConfirm.mockResolvedValue(true)
 
-      await useWorkflowService().openWorkflow(workflow)
+      const result = await useWorkflowService().openWorkflow(workflow)
 
       expect(mockConfirm).toHaveBeenCalled()
       expect(app.loadGraphData).toHaveBeenCalled()
       expect(agentNodeSelectionStore.isActive).toBe(false)
+      expect(result).toBe(true)
     })
 
     it('cancels the switch and keeps node selection mode active when declined', async () => {
       const workflow = createWorkflow(null, { loadable: true })
       mockConfirm.mockResolvedValue(false)
 
-      await useWorkflowService().openWorkflow(workflow)
+      const result = await useWorkflowService().openWorkflow(workflow)
 
       expect(mockConfirm).toHaveBeenCalled()
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(agentNodeSelectionStore.isActive).toBe(true)
+      // Callers that optimistically reflect the selection in the UI (e.g. the
+      // workflow tab bar) rely on this to revert when the user cancels.
+      expect(result).toBe(false)
     })
 
     it('does not prompt when reopening the already active workflow', async () => {
