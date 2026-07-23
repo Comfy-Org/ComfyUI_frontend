@@ -96,10 +96,13 @@
           transform: translateX(-880px);
         }
       }
+      /* Reduced motion: skip the rise/wave animation but still render the
+         final, fully-filled logo frame (the end state of splash-rise). */
       @media (prefers-reduced-motion: reduce) {
         #splash-loader .wave-group,
         #splash-loader .wave-path {
           animation: none;
+          will-change: auto;
         }
         #splash-loader .wave-group {
           transform: translateY(-80px);
@@ -158,6 +161,7 @@
         if (el) {
           el.style.background = bg
           el.style.color = fg
+          el.dataset.shownAt = String(Date.now())
         }
       })()
     </script>

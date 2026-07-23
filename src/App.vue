@@ -16,6 +16,7 @@ import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import { dismissSplashLoader } from '@/utils/splashLoaderUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -28,7 +29,7 @@ watch(
   isLoading,
   (loading, prevLoading) => {
     if (prevLoading && !loading) {
-      document.getElementById('splash-loader')?.remove()
+      dismissSplashLoader()
     }
   },
   { flush: 'post' }

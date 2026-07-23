@@ -52,6 +52,7 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
+import { dismissSplashLoader } from '@/utils/splashLoaderUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()
@@ -87,7 +88,7 @@ const login = async () => {
 }
 
 onMounted(async () => {
-  document.getElementById('splash-loader')?.remove()
+  dismissSplashLoader()
 
   await userStore.initialize()
 })

@@ -12,10 +12,11 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { dismissSplashLoader } from '@/utils/splashLoaderUtil'
 
 import CloudTemplate from './CloudTemplate.vue'
 
 onMounted(() => {
-  document.getElementById('splash-loader')?.remove()
+  dismissSplashLoader()
 })
 </script>
