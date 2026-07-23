@@ -263,6 +263,8 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  max_seats: number
+  occupied_seats: number
   billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier

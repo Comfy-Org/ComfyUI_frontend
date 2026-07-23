@@ -13,6 +13,8 @@ import { useBillingContext } from './useBillingContext'
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
+  max_seats: 73,
+  occupied_seats: 72,
   has_funds: true,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY'
@@ -51,7 +53,7 @@ const {
       has_funds: true,
       subscription_tier: 'PRO',
       subscription_duration: 'MONTHLY'
-    } as BillingStatusResponse
+    } as Partial<BillingStatusResponse>
   }
 }))
 
@@ -177,7 +179,9 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getBillingStatus: vi.fn(() => Promise.resolve(mockBillingStatus.value)),
+    getBillingStatus: vi.fn(() =>
+      Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
+    ),
     getBillingBalance: vi.fn().mockResolvedValue({
       amount_micros: 10000000,
       currency: 'usd'

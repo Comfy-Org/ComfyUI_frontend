@@ -260,8 +260,8 @@ const {
   mockMembers,
   mockPendingInvites,
   mockOriginalOwnerId,
-  mockTotalMemberSlots,
-  mockIsInviteLimitReached,
+  mockMaxSeats,
+  mockOccupiedSeats,
   mockPermissions,
   mockUiConfig,
   mockIsActiveSubscription,
@@ -281,8 +281,8 @@ const {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
-    mockTotalMemberSlots: ref(0),
-    mockIsInviteLimitReached: ref(false),
+    mockMaxSeats: ref<number | null>(73),
+    mockOccupiedSeats: ref<number | null>(0),
     mockPermissions: ref({
       canViewOtherMembers: true,
       canViewPendingInvites: true,
@@ -335,14 +335,11 @@ vi.mock('pinia', async (importOriginal) => {
 })
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
     activeWorkspace: mockActiveWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
     originalOwnerId: mockOriginalOwnerId,
-    totalMemberSlots: mockTotalMemberSlots,
-    isInviteLimitReached: mockIsInviteLimitReached,
     resendInvite: mockResendInvite
   })
 }))
@@ -377,6 +374,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     subscriptionStatus: mockSubscriptionStatus,
+    maxSeats: mockMaxSeats,
+    occupiedSeats: mockOccupiedSeats,
     getMaxSeats: (tierKey: string) => {
       const seats: Record<string, number> = {
         free: 1,
@@ -413,8 +412,8 @@ describe('useMembersPanel', () => {
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
-    mockTotalMemberSlots.value = 0
-    mockIsInviteLimitReached.value = false
+    mockMaxSeats.value = 73
+    mockOccupiedSeats.value = 0
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true
@@ -510,10 +509,10 @@ describe('useMembersPanel', () => {
       expect(panel.uiConfig.value.membersGridCols).toBe('grid-cols-1')
     })
 
-    it('caps members at the flat team maximum regardless of tier', async () => {
+    it('uses the backend workspace override regardless of tier', async () => {
       mockSubscription.value = { tier: 'CREATOR', isCancelled: false }
       const panel = await setup()
-      expect(panel.maxSeats.value).toBe(30)
+      expect(panel.maxSeats.value).toBe(73)
     })
   })
 
@@ -793,8 +792,8 @@ describe('useMembersPanel', () => {
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('disables the invite button at the member cap (30)', async () => {
-      mockTotalMemberSlots.value = 30
+    it('disables the invite button at the backend member limit', async () => {
+      mockOccupiedSeats.value = 73
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       expect(panel.inviteTooltip.value).toBe(
@@ -805,16 +804,31 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the invite button enabled below the member cap', async () => {
-      mockTotalMemberSlots.value = 29
+      mockOccupiedSeats.value = 72
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.inviteTooltip.value).toBeNull()
     })
 
-    it('disables the invite button at the flat backend member cap', async () => {
-      mockIsInviteLimitReached.value = true
+    it('fails closed without showing a limit tooltip while loading', async () => {
+      mockMaxSeats.value = null
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.inviteTooltip.value).toBeNull()
+    })
+
+    it('fails closed while backend occupancy is unresolved', async () => {
+      mockOccupiedSeats.value = null
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.inviteTooltip.value).toBeNull()
+    })
+
+    it('treats a zero backend limit as unlimited', async () => {
+      mockMaxSeats.value = 0
+      mockOccupiedSeats.value = 1000
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
     })
 
     it('disables the invite button when not on a team plan', async () => {

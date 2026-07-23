@@ -84,6 +84,8 @@ function createDeferred<T>() {
 
 const activeStatus = {
   is_active: true,
+  max_seats: 73,
+  occupied_seats: 72,
   has_funds: true,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
@@ -94,6 +96,8 @@ const activeStatus = {
 
 const freeStatus = {
   is_active: true,
+  max_seats: 0,
+  occupied_seats: 100,
   has_funds: true,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
@@ -157,6 +161,8 @@ describe('useWorkspaceBilling', () => {
       expect(mockBillingPlans.fetchPlans).toHaveBeenCalledTimes(1)
       expect(billing.isInitialized.value).toBe(true)
       expect(billing.isLoading.value).toBe(false)
+      expect(billing.maxSeats.value).toBe(73)
+      expect(billing.occupiedSeats.value).toBe(72)
     })
 
     it('is a no-op after first successful initialize', async () => {
@@ -267,6 +273,37 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.fetchStatus()).rejects.toThrow('boom')
       expect(billing.error.value).toBe('boom')
+    })
+
+    it('invalidates capacity during refresh and keeps it null after failure', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const refreshedStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(
+        refreshedStatus.promise
+      )
+      const refresh = billing.fetchStatus()
+
+      expect(billing.maxSeats.value).toBeNull()
+      expect(billing.occupiedSeats.value).toBeNull()
+
+      refreshedStatus.resolve({
+        ...activeStatus,
+        max_seats: 80,
+        occupied_seats: 75
+      })
+      await refresh
+      expect(billing.maxSeats.value).toBe(80)
+      expect(billing.occupiedSeats.value).toBe(75)
+
+      mockWorkspaceApi.getBillingStatus.mockRejectedValueOnce(
+        new Error('refresh failed')
+      )
+      await expect(billing.fetchStatus()).rejects.toThrow('refresh failed')
+      expect(billing.maxSeats.value).toBeNull()
+      expect(billing.occupiedSeats.value).toBeNull()
     })
 
     it('keeps the newest status when an older request resolves last', async () => {

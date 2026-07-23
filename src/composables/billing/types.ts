@@ -92,6 +92,10 @@ export interface BillingState {
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
+  /** Effective member limit for the current workspace; zero is unlimited. */
+  maxSeats: ComputedRef<number | null>
+  /** Seats occupied in the current workspace. */
+  occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
   isActiveSubscription: ComputedRef<boolean>

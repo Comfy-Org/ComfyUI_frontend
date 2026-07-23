@@ -52,6 +52,8 @@ export function useBillingContext(): BillingContext {
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
     currentTeamCreditStop: computed(() => null),
+    maxSeats: computed(() => null),
+    occupiedSeats: computed(() => null),
     isLoading: ref(false),
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => state.value.isActiveSubscription),

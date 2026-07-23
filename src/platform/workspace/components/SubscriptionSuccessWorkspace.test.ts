@@ -3,8 +3,6 @@ import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -14,15 +12,22 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockMembers, mockPendingInvites } = vi.hoisted(() => ({
-  mockMembers: [] as unknown[],
-  mockPendingInvites: [] as unknown[]
+const { mockMembers, mockPendingInvites, mockMaxSeats, mockOccupiedSeats } =
+  vi.hoisted(() => ({
+    mockMembers: [] as unknown[],
+    mockPendingInvites: [] as unknown[],
+    mockMaxSeats: { value: 73 as number | null },
+    mockOccupiedSeats: { value: 1 as number | null }
+  }))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    maxSeats: mockMaxSeats,
+    occupiedSeats: mockOccupiedSeats
+  })
 }))
 
-// Provide just the seat cap + member/invite slots so the component import doesn't
-// drag the team store's i18n/app chain into this unit test.
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites
@@ -117,6 +122,8 @@ describe('SubscriptionSuccessWorkspace', () => {
     mockFlags.teamWorkspacesEnabled = true
     mockMembers.length = 0
     mockPendingInvites.length = 0
+    mockMaxSeats.value = 73
+    mockOccupiedSeats.value = 1
   })
 
   afterEach(() => {
@@ -164,10 +171,7 @@ describe('SubscriptionSuccessWorkspace', () => {
   it('renders the invite block capped at the workspace member limit', () => {
     renderTeamCard()
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    // The buyer holds one of the flat team-member seats, so the rest are invitable.
-    expect(screen.getByTestId('invite-form')).toHaveTextContent(
-      `seats:${MAX_WORKSPACE_MEMBERS - 1}`
-    )
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:72')
   })
 
   it('places the Send invites action in the footer for a team upgrade', () => {
@@ -195,10 +199,9 @@ describe('SubscriptionSuccessWorkspace', () => {
   it('subtracts existing members and pending invites from invitable seats', () => {
     mockMembers.push({}, {})
     mockPendingInvites.push({})
+    mockOccupiedSeats.value = 10
     renderTeamCard()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent(
-      `seats:${MAX_WORKSPACE_MEMBERS - 3}`
-    )
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:63')
   })
 
   it('swaps the form for the success message once invites are submitted', async () => {
