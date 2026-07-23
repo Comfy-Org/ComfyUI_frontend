@@ -1934,7 +1934,12 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          void this.loadApiJson(promptObj, fileName)
+          try {
+            await this.loadApiJson(promptObj, fileName)
+          } catch (err) {
+            console.error('Failed to load API prompt:', err)
+            this.showErrorOnFileLoad(file)
+          }
           return
         }
       } catch (err) {

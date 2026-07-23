@@ -750,6 +750,23 @@ describe('ComfyApp', () => {
       expect(createNode).not.toHaveBeenCalled()
     })
 
+    it('should alert the user when loading an embedded API prompt fails', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'KSampler', inputs: {} } }
+      })
+      const loadApiJson = vi
+        .spyOn(app, 'loadApiJson')
+        .mockRejectedValue(new Error('build failed'))
+
+      const imageFile = createTestFile('api.png', 'image/png')
+
+      await expect(app.handleFile(imageFile)).resolves.toBeUndefined()
+
+      expect(loadApiJson).toHaveBeenCalled()
+      expect(mockToastStore.addAlert).toHaveBeenCalled()
+      expect(createNode).not.toHaveBeenCalled()
+    })
+
     it('should not create Load3DAdvanced node when mesh upload fails', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(undefined)
