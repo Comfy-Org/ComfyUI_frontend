@@ -24,12 +24,19 @@ describe('resolveAsset', () => {
     )
   })
 
-  it('degrades distance to the nearest shipped label', () => {
+  it('matches the shipped distance bucket for a front pose', () => {
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 9 }).src).toContain(
-      'medium-shot'
+      'close-up'
     )
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 0 }).src).toContain(
       'wide-shot'
+    )
+  })
+
+  it('degrades distance to the nearest shipped label when the bucket is missing', () => {
+    // front high-angle ships only medium + wide, so a close-up zoom degrades.
+    expect(resolveAsset({ azimuth: 0, elevation: 60, zoom: 9 }).src).toContain(
+      'front-view__high-angle-shot__medium-shot'
     )
   })
 
@@ -37,8 +44,11 @@ describe('resolveAsset', () => {
     expect(resolveAsset({ azimuth: 315, elevation: 0, zoom: 5 }).src).toContain(
       'front-view'
     )
-    expect(resolveAsset({ azimuth: 150, elevation: 0, zoom: 5 }).src).toContain(
-      'back-view'
+    expect(resolveAsset({ azimuth: 90, elevation: 0, zoom: 8 }).src).toContain(
+      'right-side-view'
+    )
+    expect(resolveAsset({ azimuth: 270, elevation: 0, zoom: 8 }).src).toContain(
+      'left-side-view'
     )
   })
 
