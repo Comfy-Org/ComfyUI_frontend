@@ -116,7 +116,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const retryDelay =
       remainingMs <= 10_000
         ? remainingMs
-        : Math.min(60_000, Math.floor(remainingMs / 2)) + jitter
+        : Math.min(60_000, Math.floor(remainingMs / 2) + jitter)
 
     refreshTimerId = setTimeout(() => {
       void refreshToken()
