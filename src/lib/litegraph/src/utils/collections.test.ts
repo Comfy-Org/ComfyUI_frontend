@@ -24,15 +24,26 @@ describe('getDraggedItems', () => {
     group._bounding.set([0, 0, 500, 500])
     graph.add(group)
 
+    // Give the nodes an explicit size so their bounding-box centres are
+    // deterministically inside the group's bounds — recomputeInsideNodes()
+    // selects by centre point, not by pos alone.
     nodeA = new TestNode()
     nodeA.pos = [50, 50]
+    nodeA.size = [100, 100]
     graph.add(nodeA)
 
     nodeB = new TestNode()
     nodeB.pos = [100, 100]
+    nodeB.size = [100, 100]
     graph.add(nodeB)
 
     group.recomputeInsideNodes()
+
+    // Guard: fail loudly if the fixture did not actually nest the nodes.
+    // Without this, the modifier tests below (which assert the nodes are
+    // *absent*) would pass vacuously if the group's child set were empty.
+    expect(group.children.has(nodeA)).toBe(true)
+    expect(group.children.has(nodeB)).toBe(true)
 
     selected = new Set<Positionable>([group])
   })
