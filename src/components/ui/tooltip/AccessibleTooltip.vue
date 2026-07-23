@@ -9,6 +9,7 @@ import {
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -28,13 +29,14 @@ const {
 }>()
 
 const open = ref(false)
+const contentStyle = useModalLiftedZIndex(open)
 
 const labelText = computed(() =>
   Array.isArray(label) ? label.join(', ') : label
 )
 
 const contentClass = cn(
-  'z-2000 max-w-48 rounded-md bg-charcoal-300 px-3 py-2',
+  'z-1700 max-w-48 rounded-md bg-charcoal-300 px-3 py-2',
   'text-xs text-white shadow-interface will-change-[transform,opacity]',
   'data-[state=closed]:animate-out data-[state=open]:animate-in',
   'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -70,6 +72,7 @@ const contentClass = cn(
           aria-hidden
           aria-label=" "
           data-testid="disclosure-tooltip"
+          :style="contentStyle"
           :class="contentClass"
         >
           {{ labelText }}
