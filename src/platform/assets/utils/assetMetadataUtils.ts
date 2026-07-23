@@ -2,6 +2,11 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
+// Reserved tag literals (mirror assetService's MODELS_TAG/MISSING_TAG). Kept
+// local so this leaf util doesn't pull the heavier assetService -> i18n chain.
+const MODELS_TAG = 'models'
+const MISSING_TAG = 'missing'
+
 /**
  * Type-safe utilities for extracting metadata from assets.
  * These utilities check user_metadata first, then metadata, then fallback.
@@ -140,14 +145,177 @@ export function getSourceName(url: string): string {
   return 'Source'
 }
 
+const MODEL_TYPE_TAG_PREFIX = 'model_type:'
+
 /**
- * Extracts the model type from asset tags
+ * Extracts the model type from asset tags as a bare (non-namespaced) value.
+ * Never returns a raw `model_type:*` literal: this value feeds edit widgets
+ * whose save path writes tags back verbatim, so a namespaced tag leaking
+ * through here would round-trip the prefixed literal into the tag set.
  * @param asset - The asset to extract model type from
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
-  const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
+  const typeTag = asset.tags?.find(
+    (tag) => tag && tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+  )
   return typeTag ?? null
+}
+
+/** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
+function getModelTypeTagValues(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+    .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
+    .filter((tag) => tag.length > 0)
+}
+
+/** Legacy grouping: each non-`models` tag's top-level path segment. */
+function getBareTagCategories(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+    .map((tag) => tag.split('/')[0])
+}
+
+/**
+ * Resolves the category keys a model asset is grouped under.
+ *
+ * `modelTypeMode` reflects whether the backend declares the `model_type:` tag
+ * scheme (the `supports_model_type_tags` capability). When true, an asset's
+ * `model_type:*` values are authoritative; an asset with no `model_type:` tag
+ * still routes by its bare tags. When false (the default) categories come from
+ * the legacy bare-tag top-level grouping and `model_type:` is ignored.
+ */
+export function getAssetCategories(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (modelTypeMode) {
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
+    // Uncovered assets route by bare tags, but namespace residue (e.g. a
+    // malformed empty `model_type:`) must not surface as a raw category.
+    return getBareTagCategories(asset).filter(
+      (category) => !category.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
+  }
+
+  return getBareTagCategories(asset)
+}
+
+/**
+ * Resolves the primary tag a browser surface titles itself after. In
+ * `modelTypeMode` a covered asset uses its first `model_type:*` value — the
+ * key it groups under — while an uncovered asset keeps the legacy selection
+ * (first non-`models` tag, verbatim, hierarchical paths intact). Outside the
+ * mode this is exactly the legacy selection.
+ */
+export function getPrimaryCategoryTag(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string | undefined {
+  if (modelTypeMode) {
+    const [modelType] = getModelTypeTagValues(asset)
+    if (modelType) return modelType
+    return asset.tags.find(
+      (tag) => tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    )
+  }
+  return asset.tags.find((tag) => tag !== MODELS_TAG)
+}
+
+/** Number of `parent/child` segments in a tag, used to pick the most specific. */
+function pathDepth(tag: string): number {
+  return tag.split('/').length
+}
+
+/** Removes the `model_type:` namespace prefix from a tag when present. */
+export function stripModelTypePrefix(tag: string): string {
+  return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
+    : tag
+}
+
+/**
+ * Resolves the labels shown as an asset card's type badges.
+ *
+ * In `modelTypeMode` a covered asset badges every `model_type:*` value — the
+ * same keys it groups under (`getAssetCategories`) — so a shared-root asset
+ * tagged with several categories carries each of them; whichever category
+ * view the card appears in is represented on the card. Uncovered assets (and
+ * legacy mode) keep the original single selection: first non-`models` tag,
+ * with bare hierarchical tags showing the segment after the first `/`.
+ */
+export function getAssetTypeBadges(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (modelTypeMode) {
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
+  }
+  const typeTag = asset.tags.find(
+    (tag) =>
+      tag !== MODELS_TAG &&
+      !(modelTypeMode && tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+  )
+  if (!typeTag) return []
+  return [
+    typeTag.includes('/') ? typeTag.slice(typeTag.indexOf('/') + 1) : typeTag
+  ]
+}
+
+/**
+ * Ordered node-category candidates for an asset, most specific first.
+ *
+ * Callers resolve a node provider by trying each candidate in order and taking
+ * the first that maps to a provider. The full (possibly hierarchical) value is
+ * kept so `modelToNodeStore`'s `parent/child` fallback still works.
+ *
+ * In `modelTypeMode` (backend declares `supports_model_type_tags`) candidates
+ * come in two tiers. Tier 1: the stripped `model_type:*` values plus bare tags
+ * *related* to one of them (equal to it, or extending it as a `parent/child`
+ * path), ordered by descending depth — so a resolvable `LLM/Qwen-VL/...` twin
+ * wins over a flat `model_type:LLM`, while ties keep `model_type:*` values
+ * ahead of bare tags. Tier 2: unrelated bare tags (e.g. a user-added
+ * `foo/bar`), tried only when nothing authoritative resolves — they can no
+ * longer pre-empt a resolvable `model_type:*` value however deep they are.
+ * An uncovered asset (no `model_type:` tag) routes by all its bare tags,
+ * deepest first. Outside `modelTypeMode` the legacy first-non-reserved tag is
+ * used verbatim.
+ */
+export function getAssetNodeCategoryCandidates(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string[] {
+  if (!modelTypeMode) {
+    const legacy = asset.tags.find(
+      (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+    )
+    return legacy ? [legacy] : []
+  }
+
+  const bareTags = asset.tags.filter(
+    (tag) =>
+      tag !== MODELS_TAG &&
+      tag !== MISSING_TAG &&
+      !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+  )
+
+  const byDepthDesc = (a: string, b: string) => pathDepth(b) - pathDepth(a)
+
+  const modelTypes = getModelTypeTagValues(asset)
+  if (modelTypes.length === 0) return bareTags.toSorted(byDepthDesc)
+
+  const isRelated = (tag: string) =>
+    modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
+
+  return [
+    ...[...new Set([...modelTypes, ...bareTags.filter(isRelated)])].sort(
+      byDepthDesc
+    ),
+    ...bareTags.filter((tag) => !isRelated(tag)).sort(byDepthDesc)
+  ]
 }
 
 /**

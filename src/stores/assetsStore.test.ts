@@ -989,6 +989,27 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('refresh error surfacing', () => {
+    it('surfaces a failed refresh on the committed state consumers read', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('existing')])
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getError(nodeType)).toBeUndefined()
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockRejectedValueOnce(
+        new Error('backend down')
+      )
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['existing'])
+      expect(store.getError(nodeType)?.message).toBe('backend down')
+    })
+  })
+
   describe('concurrent request handling', () => {
     it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
@@ -1036,6 +1057,34 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await store.updateModelsForNodeType(nodeType)
 
       expect(store.getAssets(nodeType)).toHaveLength(2)
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a newer request single-flighted when a stale request finishes after invalidation', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      let resolveFirst!: (response: AssetResponse) => void
+      const firstFetch = new Promise<AssetResponse>((resolve) => {
+        resolveFirst = resolve
+      })
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockReturnValueOnce(firstFetch)
+        .mockReturnValue(new Promise<AssetResponse>(() => {}))
+
+      const staleRequest = store.updateModelsForNodeType(nodeType)
+      store.invalidateCategory('checkpoints')
+      void store.updateModelsForNodeType(nodeType)
+
+      resolveFirst(makePage([createMockAsset('stale')]))
+      await staleRequest
+
+      // The stale request's teardown must not evict the newer request's
+      // single-flight entry: a third call short-circuits instead of starting
+      // a duplicate walk.
+      void store.updateModelsForNodeType(nodeType)
       expect(
         vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(2)
@@ -1872,6 +1921,39 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       })
       expect(store.getAssets('tag:models')).toHaveLength(2)
     })
+  })
+})
+
+describe('assetsStore - Model Assets Cache (non-cloud)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mockIsCloud.value = false
+    vi.clearAllMocks()
+  })
+
+  it('caches model assets fetched by tag on non-cloud builds', async () => {
+    const store = useAssetsStore()
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue({
+      assets: [
+        {
+          id: 'm1',
+          name: 'sd_xl_base_1.0.safetensors',
+          tags: ['checkpoints', 'models']
+        },
+        { id: 'm2', name: 'lora.safetensors', tags: ['loras', 'models'] }
+      ],
+      total: 2,
+      has_more: false
+    })
+
+    await store.updateModelsForTag('models')
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
+      'models',
+      true,
+      expect.anything()
+    )
+    expect(store.getAssets('tag:models')).toHaveLength(2)
   })
 })
 

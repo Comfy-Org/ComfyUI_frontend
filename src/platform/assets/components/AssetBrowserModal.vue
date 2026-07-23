@@ -100,6 +100,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
@@ -109,12 +110,14 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtils'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { OnCloseKey } from '@/types/widgetTypes'
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -191,9 +194,21 @@ const focusedAsset = ref<AssetDisplayItem | null>(null)
 const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
+  const modelTypeMode = flags.supportsModelTypeTags
+  // A node-typed picker is FOR a category; title off that category rather
+  // than guessing from the first asset, whose first model_type value may be
+  // a different category it shares a root with.
+  if (modelTypeMode && props.nodeType) {
+    const mapped = modelToNodeStore.getCategoryForNodeType(props.nodeType)
+    if (mapped) return mapped
+  }
+
   const assets = fetchedAssets.value ?? []
+  // Covered assets title off the model_type value they group under (so title
+  // and grouping cannot diverge); uncovered assets keep the legacy verbatim
+  // first tag.
   const tagFromAssets = assets
-    .map((asset) => asset.tags?.find((tag) => tag !== 'models'))
+    .map((asset) => getPrimaryCategoryTag(asset, modelTypeMode))
     .find((tag): tag is string => typeof tag === 'string' && tag.length > 0)
 
   if (tagFromAssets) return tagFromAssets

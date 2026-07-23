@@ -1,21 +1,14 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
-import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetBaseModels,
+  getAssetCategories
+} from '@/platform/assets/utils/assetMetadataUtils'
 
-export function filterByCategory(category: string) {
+export function filterByCategory(category: string, modelTypeMode: boolean) {
   return (asset: AssetItem) => {
     if (category === 'all') return true
-
-    // Check if any tag matches the category (for exact matches)
-    if (asset.tags.includes(category)) return true
-
-    // Check if any tag's top-level folder matches the category
-    return asset.tags.some((tag) => {
-      if (typeof tag === 'string' && tag.includes('/')) {
-        return tag.split('/')[0] === category
-      }
-      return false
-    })
+    return getAssetCategories(asset, modelTypeMode).includes(category)
   }
 }
 
