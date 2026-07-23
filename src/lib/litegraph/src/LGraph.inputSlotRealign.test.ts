@@ -7,6 +7,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode,
@@ -306,6 +307,48 @@ describe('LGraph.configure realigns links after input definition order changes (
     expect(graph.getLink(toLinkId(1))?.target_slot).toBe(2)
     expect(graph.getNodeById(toNodeId(2))?.getInputLink(2)?.id).toBe(
       toLinkId(1)
+    )
+  })
+})
+
+describe('realignInputLinkSlots', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it.for([
+    ['registered link id', false],
+    ['purged link alias', true]
+  ] as const)('rekeys a serialized %s', (_name, usePurgedAlias) => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('second', 'number')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const purgedId = toLinkId(99)
+    const serializedId = usePurgedAlias ? purgedId : link.id
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], link: null },
+      { ...nodeData.inputs![1], link: serializedId }
+    ]
+    const survivorByPurged = usePurgedAlias
+      ? new Map([[purgedId, link.id]])
+      : new Map()
+
+    realignInputLinkSlots(graph, [nodeData], survivorByPurged)
+
+    const store = useLinkStore()
+    expect(link.target_slot).toBe(1)
+    expect(
+      store.getInputSlotLink(graph.rootGraph.id, target.id, 0)
+    ).toBeUndefined()
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 1)?.id).toBe(
+      link.id
     )
   })
 })
