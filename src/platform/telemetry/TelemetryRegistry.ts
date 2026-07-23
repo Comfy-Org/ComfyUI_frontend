@@ -7,9 +7,8 @@ import type {
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
+  ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -22,6 +21,8 @@ import type {
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -266,6 +267,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowExecution(): void {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
+  }
+
+  trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackExecutionOutcome?.(metadata))
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {

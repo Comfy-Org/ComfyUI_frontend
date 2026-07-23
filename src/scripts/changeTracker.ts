@@ -1,3 +1,4 @@
+import { useDebounceFn } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
@@ -145,6 +146,10 @@ export class ChangeTracker {
     }
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
+      const firstInvalidIndex = navigation.findIndex(
+        (id) => !app.rootGraph.subgraphs.has(id)
+      )
+      if (firstInvalidIndex !== -1) navigation.splice(firstInvalidIndex)
       useSubgraphNavigationStore().restoreState(navigation)
 
       const activeId = navigation.at(-1)
@@ -210,8 +215,18 @@ export class ChangeTracker {
       this.activeState = currentState
       this.redoQueue.length = 0
       this.updateModified()
+      this.squashState()
     }
   }
+  squashState = useDebounceFn(() => {
+    if (
+      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      ChangeTracker.isLoadingGraph
+    )
+      return
+
+    this.activeState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+  }, 50)
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {

@@ -45,7 +45,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      await settingRow.locator('.p-toggleswitch').click()
+      await settingRow.getByRole('switch').click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<boolean>(settingId))

@@ -23,7 +23,19 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+    }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
@@ -73,8 +85,7 @@ export function useSubscriptionCheckout(
     subscribe,
     previewSubscribe,
     plans,
-    fetchStatus,
-    fetchBalance,
+    fetchPlans,
     isTeamPlan,
     resubscribe
   } = useBillingContext()
@@ -112,10 +123,21 @@ export function useSubscriptionCheckout(
     if (tierPlanType === 'team' || !isTeamPlan.value) return false
 
     const { useDialogService } = await import('@/services/dialogService')
-    await useDialogService().showDowngradeToPersonalDialog({
+    const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
+    if (!result) return true
+
+    previewData.value = result.preview
+    trackWorkspaceCheckoutStarted({
+      tier: tierKey,
+      cycle: selectedBillingCycle.value,
+      checkoutType: 'change',
+      billingOpId: result.response.billing_op_id,
+      paymentIntentSource
+    })
+    await handleSubscribeResponse(result.response, result.preview.is_immediate)
     return true
   }
 
@@ -152,7 +174,11 @@ export function useSubscriptionCheckout(
     selectedBillingCycle.value = billingCycle
 
     try {
-      const planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      if (!planSlug) {
+        await fetchPlans()
+        planSlug = getApiPlanSlug(tierKey, billingCycle)
+      }
       if (!planSlug) {
         toast.add({
           severity: 'error',
@@ -295,13 +321,15 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void
+    response: SubscribeResponse | void,
+    shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
     if (!response) return
 
     if (response.status === 'subscribed') {
-      telemetry?.trackMonthlySubscriptionSucceeded()
-      await Promise.all([fetchStatus(), fetchBalance()])
+      if (shouldTrackSubscriptionSuccess) {
+        telemetry?.trackMonthlySubscriptionSucceeded()
+      }
       checkoutStep.value = 'success'
       return
     }

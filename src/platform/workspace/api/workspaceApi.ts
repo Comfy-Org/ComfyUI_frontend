@@ -12,6 +12,7 @@ import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+export type BillingRail = 'legacy_stripe' | 'stripe'
 
 interface Workspace {
   id: WorkspaceId
@@ -58,7 +59,6 @@ export interface ListMembersParams {
 export interface PendingInvite {
   id: WorkspaceInviteId
   email: string
-  token: string
   invited_at: string
   expires_at: string
 }
@@ -263,6 +263,7 @@ export interface CurrentTeamCreditStop {
 
 export interface BillingStatusResponse {
   is_active: boolean
+  billing_rail?: BillingRail
   subscription_status?: BillingSubscriptionStatus
   subscription_tier?: SubscriptionTier
   subscription_duration?: SubscriptionDuration
@@ -547,6 +548,20 @@ export const workspaceApi = {
         api.apiURL(`/workspace/invites/${inviteId}`),
         { headers }
       )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async resendInvite(inviteId: WorkspaceInviteId): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL(`/workspace/invites/${encodeURIComponent(inviteId)}/resend`),
+        null,
+        { headers }
+      )
+      return response.data
     } catch (err) {
       handleAxiosError(err)
     }
