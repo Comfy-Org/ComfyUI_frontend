@@ -8,13 +8,14 @@
     data-testid="queue-status-toast"
     class="pointer-events-auto flex animate-in flex-col items-end gap-1 fade-in-0 zoom-in-95 duration-200 motion-reduce:animate-none"
   >
+    <!-- hide-chevron stays off: dropping the slab whenever the job list is
+         momentarily empty would resize the pill mid-run. -->
     <ProcessToast
       :verb="toastView.verb"
       :percent="toastView.percent"
       :status="toastView.status"
       :failed-count="failedCount"
       :expanded="expanded"
-      :hide-chevron="activeJobs.length === 0"
       :hide-action="!toastView.showStop"
       :show-percent-text="toastView.showPercentText"
       progress-class="bg-base-foreground"
