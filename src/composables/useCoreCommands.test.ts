@@ -278,7 +278,7 @@ describe('useCoreCommands', () => {
   function createMockSettingStore(
     getReturnValue: boolean
   ): ReturnType<typeof useSettingStore> {
-    return {
+    return fromPartial<ReturnType<typeof useSettingStore>>({
       get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
       load: vi.fn(),
@@ -305,7 +305,7 @@ describe('useCoreCommands', () => {
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set()
-    } satisfies ReturnType<typeof useSettingStore>
+    })
   }
 
   beforeEach(() => {

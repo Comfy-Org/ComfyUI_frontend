@@ -27,7 +27,7 @@ catalog:
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
   '@lobehub/i18n-cli': ^1.26.1
   '@lucide/vue': ^1.17.0
-  '@pinia/testing': ^1.0.3
+  '@pinia/testing': ^2.0.1
   '@playwright/test': ^1.61.1
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
@@ -59,7 +59,7 @@ catalog:
   '@total-typescript/shoehorn': ^0.1.2
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
-  '@types/node': ^24.1.0
+  '@types/node': ^25.9.5
   '@types/semver': ^7.7.0
   '@types/three': ^0.184.1
   '@vee-validate/zod': ^4.15.1
@@ -93,12 +93,12 @@ catalog:
   fast-check: ^4.5.3
   firebase: ^11.6.0
   glob: ^13.0.6
-  globals: ^16.5.0
+  globals: ^17.7.0
   gsap: ^3.14.2
   happy-dom: 20.9.0
   husky: ^9.1.7
   jiti: 2.7.0
-  jsdom: ^27.4.0
+  jsdom: ^29.1.1
   jsonata: ^2.1.0
   knip: ^6.27.0
   lenis: ^1.3.21
@@ -111,7 +111,7 @@ catalog:
   oxlint: ^1.74.0
   oxlint-tsgolint: ^0.24.0
   picocolors: ^1.1.1
-  pinia: ^3.0.4
+  pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
   pretty-bytes: ^7.1.0
@@ -120,30 +120,30 @@ catalog:
   reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.5.0
-  stylelint: ^16.26.1
+  stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
   three: ^0.184.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
-  typescript: ^5.9.3
+  typescript: ^6.0.3
   typescript-eslint: ^8.64.0
-  unplugin-icons: ^22.5.0
+  unplugin-icons: ^23.0.1
   unplugin-typegpu: 0.8.0
-  unplugin-vue-components: ^30.0.0
+  unplugin-vue-components: ^32.1.0
   uuid: ^11.1.1
   vee-validate: ^4.15.1
   vite: ^8.1.4
-  vite-plugin-dts: ^4.5.4
+  vite-plugin-dts: ^5.0.3
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.1.5
   vitest: ^4.1.10
   vue: ^3.5.39
   vue-component-type-helpers: ^3.3.7
   vue-eslint-parser: ^10.4.1
-  vue-i18n: ^9.14.5
-  vue-router: ^4.4.3
+  vue-i18n: ^11.4.6
+  vue-router: ^5.2.0
   vue-tsc: ^3.3.7
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
