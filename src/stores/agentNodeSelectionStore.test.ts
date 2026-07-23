@@ -2,11 +2,26 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type * as LitegraphUtilModule from '@/utils/litegraphUtil'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+function createMockWorkflow(path: string): LoadedComfyWorkflow {
+  return new ComfyWorkflowClass({
+    path,
+    modified: Date.now(),
+    size: 100
+  }) as LoadedComfyWorkflow
+}
 
 vi.mock('@/utils/litegraphUtil', async (importOriginal) => {
   const actual = await importOriginal<typeof LitegraphUtilModule>()
@@ -142,5 +157,26 @@ describe('useAgentNodeSelectionStore', () => {
 
     expect(store.referencedNodes).toEqual([node])
     expect(canvas.select).toHaveBeenCalledTimes(1)
+  })
+
+  test('graphNodes refreshes after switching workflows even though the graph object is reused', () => {
+    const canvasStore = useCanvasStore()
+    const workflowStore = useWorkflowStore()
+
+    const nodeA = createMockLGraphNode({ id: 1 })
+    // Workflow switches reconfigure the same root LGraph instance in place
+    // rather than replacing it with a new object.
+    const graph = { nodes: [nodeA] }
+    canvasStore.currentGraph = graph as unknown as LGraph
+    workflowStore.activeWorkflow = createMockWorkflow('a.json')
+
+    const store = useAgentNodeSelectionStore()
+    expect(store.graphNodes).toEqual([nodeA])
+
+    const nodeB = createMockLGraphNode({ id: 2 })
+    graph.nodes = [nodeB]
+    workflowStore.activeWorkflow = createMockWorkflow('b.json')
+
+    expect(store.graphNodes).toEqual([nodeB])
   })
 })

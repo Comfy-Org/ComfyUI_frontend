@@ -18,14 +18,14 @@ const canvasInteractions = useCanvasInteractions()
       <div
         v-if="agentNodeSelectionStore.isBannerVisible"
         data-testid="node-selection-mode-banner"
-        class="pointer-events-auto flex items-center gap-4 rounded-lg border border-l-4 border-interface-stroke border-l-node-component-executing bg-interface-panel-surface px-4 py-2 shadow-interface"
+        class="pointer-events-auto flex max-w-lg items-center gap-8 rounded-lg border border-l-4 border-interface-stroke border-l-node-component-executing bg-interface-panel-surface p-4 shadow-interface"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <div class="flex flex-col">
           <span class="text-sm font-medium text-base-foreground">
             {{ t('agent.nodeSelection.bannerTitle') }}
           </span>
-          <span class="text-xs text-muted-foreground">
+          <span class="text-sm text-muted-foreground">
             {{ t('agent.nodeSelection.bannerSubtitle') }}
           </span>
         </div>

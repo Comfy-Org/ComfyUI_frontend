@@ -95,6 +95,14 @@ const submitDisabled = computed(
   () => status.value === 'ready' && input.value.trim() === ''
 )
 
+// Nodes already referenced via a chip don't need to be mentioned again.
+const mentionableNodes = computed(() =>
+  agentNodeSelectionStore.graphNodes.filter(
+    (node) =>
+      !agentNodeSelectionStore.referencedNodes.some((n) => n.id === node.id)
+  )
+)
+
 function onSubmit() {
   if (status.value === 'submitted' || status.value === 'streaming') {
     stop()
@@ -132,19 +140,26 @@ function onMentionSelect(node: LGraphNode) {
   nextTick(() => promptTextarea.value?.focus())
 }
 
+// Captured ahead of PromptInputTextarea's own bubble-phase Enter handler so
+// selecting a mention can stop propagation and prevent it from also
+// submitting the prompt.
 function onTextareaKeydown(event: KeyboardEvent) {
   if (!mentionTrigger.isMentionActive.value) return
 
   if (event.key === 'ArrowDown') {
     event.preventDefault()
+    event.stopPropagation()
     mentionPicker.value?.moveHighlight(1)
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
+    event.stopPropagation()
     mentionPicker.value?.moveHighlight(-1)
-  } else if (event.key === 'Enter') {
+  } else if (event.key === 'Enter' || event.key === 'Tab') {
     event.preventDefault()
+    event.stopPropagation()
     mentionPicker.value?.confirmHighlighted()
   } else if (event.key === 'Escape') {
+    event.stopPropagation()
     mentionTrigger.close()
   }
 }
@@ -317,9 +332,9 @@ function onNewChatFromHistory() {
         >
           <AgentPromptSuggestions v-if="isEmpty" @select="onSuggestionSelect" />
           <div class="flex flex-col gap-2.5">
-            <div class="relative">
-              <PromptInput @submit="onSubmit">
-                <AgentComposerWorkflowHeader />
+            <PromptInput @submit="onSubmit">
+              <AgentComposerWorkflowHeader />
+              <div class="relative">
                 <PromptInputBody class="bg-secondary-background">
                   <AgentComposerNodeChips
                     :nodes="agentNodeSelectionStore.referencedNodes"
@@ -330,7 +345,7 @@ function onNewChatFromHistory() {
                     :attachments="attachments"
                     @remove="removeAttachment"
                   />
-                  <div class="relative">
+                  <div class="relative" @keydown.capture="onTextareaKeydown">
                     <AgentComposerPlaceholderOverlay
                       v-if="!input"
                       :disabled="agentNodeSelectionStore.isActive"
@@ -358,7 +373,6 @@ function onNewChatFromHistory() {
                       v-model="input"
                       class="pt-3"
                       :aria-label="$t('agent.placeholderAria')"
-                      @keydown="onTextareaKeydown"
                     />
                   </div>
                   <PromptInputToolbar>
@@ -386,15 +400,16 @@ function onNewChatFromHistory() {
                     </PromptInputTools>
                   </PromptInputToolbar>
                 </PromptInputBody>
-              </PromptInput>
-              <AgentNodeMentionPicker
-                v-if="mentionTrigger.isMentionActive.value"
-                ref="mentionPicker"
-                :nodes="agentNodeSelectionStore.graphNodes"
-                :query="mentionTrigger.mentionQuery.value"
-                @select="onMentionSelect"
-              />
-            </div>
+                <AgentNodeMentionPicker
+                  v-if="mentionTrigger.isMentionActive.value"
+                  ref="mentionPicker"
+                  :nodes="mentionableNodes"
+                  :graph-nodes="agentNodeSelectionStore.graphNodes"
+                  :query="mentionTrigger.mentionQuery.value"
+                  @select="onMentionSelect"
+                />
+              </div>
+            </PromptInput>
             <p class="my-0 text-center text-xs text-muted-foreground">
               {{ $t('agent.disclaimer') }}
             </p>

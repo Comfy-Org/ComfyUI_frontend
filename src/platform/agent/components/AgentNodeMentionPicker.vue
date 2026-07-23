@@ -5,8 +5,11 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { nodes, query } = defineProps<{
+const { nodes, graphNodes, query } = defineProps<{
+  /** Mentionable nodes, e.g. the graph's nodes minus already-referenced ones. */
   nodes: LGraphNode[]
+  /** All nodes in the graph, used to detect duplicate titles for disambiguation. */
+  graphNodes: LGraphNode[]
   query: string
 }>()
 
@@ -26,9 +29,11 @@ const filteredNodes = computed(() => {
   )
 })
 
+// Duplicates are detected against the whole graph, not just the currently
+// mentionable subset, so ids stay consistent with the chips' disambiguation.
 const duplicateTitleCounts = computed(() => {
   const counts = new Map<string, number>()
-  for (const node of filteredNodes.value) {
+  for (const node of graphNodes) {
     counts.set(node.title, (counts.get(node.title) ?? 0) + 1)
   }
   return counts
@@ -59,34 +64,36 @@ defineExpose({ moveHighlight, confirmHighlighted })
 
 <template>
   <div
-    class="absolute inset-x-0 bottom-full z-10 mb-1 max-h-56 overflow-y-auto rounded-lg border border-border-subtle bg-base-background py-1 shadow-interface"
+    class="absolute inset-x-0 bottom-full z-10 mb-1 overflow-hidden rounded-lg border border-border-default bg-base-background p-1 shadow-md"
   >
-    <button
-      v-for="(node, index) in filteredNodes"
-      :key="node.id"
-      type="button"
-      :class="
-        cn(
-          'flex w-full cursor-pointer items-center gap-2 border-0 bg-transparent px-3 py-1.5 text-left text-sm text-base-foreground',
-          index === highlightedIndex && 'bg-secondary-background-hover'
-        )
-      "
-      @mouseenter="highlightedIndex = index"
-      @click="emit('select', node)"
-    >
-      <span class="min-w-0 flex-1 truncate">{{ node.title }}</span>
-      <span
-        v-if="hasDuplicateTitle(node)"
-        class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+    <div class="scrollbar-custom max-h-56 overflow-y-auto">
+      <button
+        v-for="(node, index) in filteredNodes"
+        :key="node.id"
+        type="button"
+        :class="
+          cn(
+            'flex w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 py-1.5 text-left text-sm text-base-foreground outline-none',
+            index === highlightedIndex && 'bg-secondary-background-hover'
+          )
+        "
+        @mouseenter="highlightedIndex = index"
+        @click="emit('select', node)"
       >
-        #{{ node.id }}
-      </span>
-    </button>
-    <p
-      v-if="!filteredNodes.length"
-      class="px-3 py-2 text-sm text-muted-foreground"
-    >
-      {{ t('agent.mentionPicker.empty') }}
-    </p>
+        <span class="min-w-0 flex-1 truncate">{{ node.title }}</span>
+        <span
+          v-if="hasDuplicateTitle(node)"
+          class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+        >
+          #{{ node.id }}
+        </span>
+      </button>
+      <p
+        v-if="!filteredNodes.length"
+        class="px-3 py-2 text-sm text-muted-foreground"
+      >
+        {{ t('agent.mentionPicker.empty') }}
+      </p>
+    </div>
   </div>
 </template>

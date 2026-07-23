@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -19,15 +20,23 @@ export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
     const canvasStore = useCanvasStore()
+    const workflowStore = useWorkflowStore()
 
     const isActive = ref(false)
     const referencedNodes = ref<Raw<LGraphNode>[]>([])
     let restoreAllowDragnodes: boolean | undefined
 
-    /** Nodes in the current graph, available as `@`-mention candidates. */
-    const graphNodes = computed<LGraphNode[]>(() =>
-      (canvasStore.currentGraph?.nodes ?? []).filter(isLGraphNode)
-    )
+    /**
+     * Nodes in the current graph, available as `@`-mention candidates.
+     * Switching workflows re-`configure`s the same root `LGraph` instance
+     * rather than replacing it, so `currentGraph` alone wouldn't change and
+     * this would keep returning the outgoing workflow's nodes - depending on
+     * `activeWorkflow` too ensures every switch is picked up.
+     */
+    const graphNodes = computed<LGraphNode[]>(() => {
+      void workflowStore.activeWorkflow
+      return (canvasStore.currentGraph?.nodes ?? []).filter(isLGraphNode)
+    })
 
     watch(
       () => canvasStore.selectedItems,
