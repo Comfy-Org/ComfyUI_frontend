@@ -24,6 +24,14 @@ const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
  * - Cloud builds prefer the per-env sitekey delivered via remote config
  *   (`turnstile_sitekey`) and fall back to the build-time constant, so the widget
  *   still renders during a remote-config gap rather than silently disappearing.
+ * - Cloud dev-server builds (e.g. running locally against the staging API) are
+ *   the one exception: a dev-server hostname is never in a real widget's
+ *   domain allowlist, so the real sitekey is guaranteed to fail there ("Verifying…"
+ *   loops into "Verification failed"). We use the always-pass test key instead —
+ *   it's cryptographically isolated from the real widgets' secrets, so it can't
+ *   mint a token those widgets (or their siteverify checks) would trust.
+ *   Production/preview cloud builds are unaffected and keep the remote-config
+ *   → build-time-constant resolution above.
  */
 export function getTurnstileSiteKey(): string {
   // Gate on the __DISTRIBUTION__ build define rather than the cross-module
@@ -33,6 +41,10 @@ export function getTurnstileSiteKey(): string {
   const isCloudBuild = __DISTRIBUTION__ === 'cloud'
   if (!isCloudBuild) {
     return import.meta.env.DEV ? TURNSTILE_TEST_SITE_KEY : ''
+  }
+
+  if (import.meta.env.DEV) {
+    return TURNSTILE_TEST_SITE_KEY
   }
 
   return configValueOrDefault(

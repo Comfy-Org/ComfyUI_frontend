@@ -59,14 +59,36 @@ describe('getTurnstileSiteKey', () => {
       vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     })
 
-    it('returns the sitekey delivered via remote config', () => {
-      mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
+    describe('production / preview (not a dev server)', () => {
+      beforeEach(() => {
+        vi.stubEnv('DEV', false)
+      })
 
-      expect(getTurnstileSiteKey()).toBe('0x4AAAAAreal')
+      it('returns the sitekey delivered via remote config', () => {
+        mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
+
+        expect(getTurnstileSiteKey()).toBe('0x4AAAAAreal')
+      })
+
+      it('falls back to the build-time per-env sitekey during a remote-config gap', () => {
+        expect(getTurnstileSiteKey()).toBe(STAGING_TURNSTILE_SITE_KEY)
+      })
     })
 
-    it('falls back to the build-time per-env sitekey during a remote-config gap', () => {
-      expect(getTurnstileSiteKey()).toBe(STAGING_TURNSTILE_SITE_KEY)
+    describe('local dev server', () => {
+      beforeEach(() => {
+        vi.stubEnv('DEV', true)
+      })
+
+      it('uses the always-pass test key instead of the real sitekey, since a dev-server hostname is never in the real widget allowlist', () => {
+        expect(getTurnstileSiteKey()).toBe(TURNSTILE_TEST_SITE_KEY)
+      })
+
+      it('ignores a remote-config sitekey too, so it never overrides the test key locally', () => {
+        mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
+
+        expect(getTurnstileSiteKey()).toBe(TURNSTILE_TEST_SITE_KEY)
+      })
     })
   })
 })
