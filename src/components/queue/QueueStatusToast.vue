@@ -28,7 +28,7 @@
           class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground opacity-90 transition-opacity hover:opacity-100"
           :aria-label="t('processToast.stop')"
           data-testid="queue-status-stop"
-          @click="stopRunning"
+          @click="onStopClick"
         >
           <i class="icon-[comfy--stop] size-4" />
         </button>
@@ -366,8 +366,25 @@ const jobPercent = (job: JobListItem) =>
 /** buildJobDisplay already derives per-state copy; don't re-invent it here. */
 const jobSubtitle = (job: JobListItem) => job.meta
 
+/**
+ * With one run there is no ambiguity, so stop interrupts it. With several,
+ * stopping "the run" would silently take them all down; open the panel instead
+ * and let the choice be explicit.
+ */
+const hasParallelRuns = computed(() => runningCount.value > 1)
+const onStopClick = () => {
+  if (hasParallelRuns.value) {
+    expanded.value = true
+    return
+  }
+  void stopRunning()
+}
 const stopTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.interruptAll'))
+  buildTooltipConfig(
+    hasParallelRuns.value
+      ? t('queueStatus.chooseRunToStop')
+      : t('sideToolbar.queueProgressOverlay.interruptAll')
+  )
 )
 // No pause endpoint exists yet, so the control is present but inert.
 const pauseTooltip = computed(() =>

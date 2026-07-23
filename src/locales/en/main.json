@@ -4568,6 +4568,7 @@
     "viewResult": "Open result",
     "goToHistory": "Open history",
     "pause": "Pause",
-    "pauseUnavailable": "Pause is not available yet"
+    "pauseUnavailable": "Pause is not available yet",
+    "chooseRunToStop": "Choose which run to stop"
   }
 }
