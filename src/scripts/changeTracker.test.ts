@@ -121,10 +121,6 @@ function mockCanvasState(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
 }
 
-function cloneState(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
-  return structuredClone(state)
-}
-
 async function createSubgraphState(
   subgraphCount = 1
 ): Promise<ComfyWorkflowJSON> {
@@ -322,7 +318,7 @@ describe('ChangeTracker', () => {
       ])('does not dispatch executionGraphChanged for $name', ({ mutate }) => {
         const initial = createState(1)
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         mutate(changed)
         mockCanvasState(changed)
 
@@ -341,7 +337,7 @@ describe('ChangeTracker', () => {
       it('does not dispatch a graph change for the canvas viewport', () => {
         const initial = createState(1)
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         changed.extra = {
           ds: {
             scale: 2,
@@ -361,7 +357,7 @@ describe('ChangeTracker', () => {
           [1, initial.nodes[0].id, 0, initial.nodes[1].id, 0, '*']
         ]
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         changed.links = [
           [2, changed.nodes[0].id, 0, changed.nodes[1].id, 0, '*']
         ]
@@ -404,7 +400,7 @@ describe('ChangeTracker', () => {
         ({ mutate }) => {
           const initial = createState(2)
           const tracker = createTracker(initial)
-          const changed = cloneState(initial)
+          const changed = structuredClone(initial)
           mutate(changed)
           mockCanvasState(changed)
 
@@ -420,7 +416,7 @@ describe('ChangeTracker', () => {
       it('ignores layout changes inside a subgraph', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
         if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
@@ -442,7 +438,7 @@ describe('ChangeTracker', () => {
       it('detects widget changes inside a subgraph', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
         if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
@@ -458,7 +454,7 @@ describe('ChangeTracker', () => {
 
       it('detects data changes when optional subgraph collections are omitted', async () => {
         const initial = await createSubgraphState()
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
         if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
@@ -478,7 +474,7 @@ describe('ChangeTracker', () => {
       it('ignores subgraph presentation metadata changes', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         const subgraph = getSubgraphDefinition(changed)
         subgraph.name = 'Renamed subgraph'
         subgraph.description = 'Updated description'
@@ -500,7 +496,7 @@ describe('ChangeTracker', () => {
       it('ignores subgraph definition order changes', async () => {
         const initial = await createSubgraphState(2)
         const tracker = createTracker(initial)
-        const changed = cloneState(initial)
+        const changed = structuredClone(initial)
         const subgraphs = changed.definitions?.subgraphs
         if (!subgraphs) throw new Error('subgraph definitions missing')
         subgraphs.reverse()
@@ -525,7 +521,7 @@ describe('ChangeTracker', () => {
           initial.nodes[0].type = nodeType
           initial.nodes[0].widgets_values = ['Initial content']
           const tracker = createTracker(initial)
-          const changed = cloneState(initial)
+          const changed = structuredClone(initial)
           changed.nodes[0].widgets_values = ['Updated content']
           mockCanvasState(changed)
 
@@ -587,7 +583,7 @@ describe('ChangeTracker', () => {
   describe('undo and redo', () => {
     it('dispatches executionGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
-      const changed = cloneState(initial)
+      const changed = structuredClone(initial)
       changed.nodes[0].widgets_values = [2]
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
@@ -615,7 +611,7 @@ describe('ChangeTracker', () => {
 
     it('does not dispatch executionGraphChanged for layout-only undo or redo', async () => {
       const initial = createState(1)
-      const changed = cloneState(initial)
+      const changed = structuredClone(initial)
       changed.nodes[0].size = [200, 100]
       const tracker = createTracker(changed)
       tracker.undoQueue.push(initial)
