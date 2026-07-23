@@ -2,7 +2,15 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  h,
+  inject,
+  provide,
+  reactive,
+  ref
+} from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
@@ -186,6 +194,38 @@ const i18n = createI18n({
   }
 })
 
+const popoverOpenKey = Symbol('popoverOpen')
+
+const PopoverStub = defineComponent({
+  setup(_, { slots }) {
+    provide(popoverOpenKey, ref(false))
+    return () => h('div', slots.default?.())
+  }
+})
+
+const PopoverTriggerStub = defineComponent({
+  setup(_, { slots }) {
+    const isOpen = inject(popoverOpenKey, ref(false))
+    return () =>
+      h(
+        'div',
+        {
+          onClick: () => {
+            isOpen.value = !isOpen.value
+          }
+        },
+        slots.default?.()
+      )
+  }
+})
+
+const PopoverContentStub = defineComponent({
+  setup(_, { slots }) {
+    const isOpen = inject(popoverOpenKey, ref(false))
+    return () => (isOpen.value ? h('div', slots.default?.()) : null)
+  }
+})
+
 function renderComponent() {
   return render(PricingTable, {
     props: {
@@ -215,9 +255,9 @@ function renderComponent() {
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
-        Popover: { template: '<div><slot /></div>' },
-        PopoverTrigger: { template: '<div><slot /></div>' },
-        PopoverContent: { template: '<div><slot /></div>' }
+        Popover: PopoverStub,
+        PopoverTrigger: PopoverTriggerStub,
+        PopoverContent: PopoverContentStub
       }
     }
   })
@@ -472,5 +512,24 @@ describe('PricingTable', () => {
 
       expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
     })
+  })
+
+  it('opens the video estimate help popover from its trigger', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+
+    expect(
+      screen.queryByText('Based on average usage.')
+    ).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'How is this calculated?' })[0]
+    )
+
+    expect(screen.getByText('Based on average usage.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Try template' })).toHaveAttribute(
+      'href',
+      'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+    )
   })
 })
