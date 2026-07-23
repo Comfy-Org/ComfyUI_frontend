@@ -95,7 +95,6 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
-import { useSettingsNavigation } from '@/platform/settings/composables/useSettingsNavigation'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
@@ -136,14 +135,6 @@ const { fetchBalance } = useBillingContext()
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
 
-// Let a panel deep-link into a sibling panel (e.g. the Activity tab → Members).
-const { requestedPanelKey } = useSettingsNavigation()
-watch(requestedPanelKey, (key) => {
-  if (!key) return
-  activeCategoryKey.value = key
-  requestedPanelKey.value = null
-})
-
 const searchableNavItems = computed(() =>
   navGroups.value.flatMap((g) =>
     g.items.map((item) => ({
@@ -179,11 +170,6 @@ const activeSettingCategory = computed<SettingTreeNode | null>(() => {
 const activePanel = computed(() => {
   if (!activeCategoryKey.value) return null
   return findPanelByKey(activeCategoryKey.value)
-})
-
-watch([activePanel, activeCategoryKey], ([panel, key]) => {
-  if (panel || key !== 'workspace-members') return
-  if (findPanelByKey('workspace')) activeCategoryKey.value = 'workspace'
 })
 
 const getGroupSortOrder = (group: SettingTreeNode): number =>
