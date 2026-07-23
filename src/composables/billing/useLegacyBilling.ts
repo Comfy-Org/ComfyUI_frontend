@@ -49,6 +49,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     () => legacyCanAccessSubscriptionFeatures.value
   )
   const isFreeTier = computed(() => subscriptionTier.value === 'FREE')
+  const maxSeats = computed(() => null)
+  const occupiedSeats = computed(() => null)
 
   const subscription = computed<SubscriptionInfo | null>(() => {
     if (!legacyCanAccessSubscriptionFeatures.value && !subscriptionTier.value) {
@@ -209,6 +211,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
     canAccessSubscriptionFeatures,

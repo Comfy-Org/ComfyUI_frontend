@@ -9,14 +9,20 @@ import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceSto
 
 const {
   mockCreateInvite,
+  mockFetchStatus,
   mockToastAdd,
   mockTrackInviteSent,
   mockTrackInviteFailed
 } = vi.hoisted(() => ({
   mockCreateInvite: vi.fn(),
+  mockFetchStatus: vi.fn(),
   mockToastAdd: vi.fn(),
   mockTrackInviteSent: vi.fn(),
   mockTrackInviteFailed: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchStatus: mockFetchStatus })
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -80,6 +86,7 @@ function submitButton() {
 describe('InviteMembersForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFetchStatus.mockResolvedValue(undefined)
     mockCreateInvite.mockImplementation(async (email: string) =>
       pendingInviteFor(email)
     )
@@ -124,6 +131,7 @@ describe('InviteMembersForm', () => {
       source: 'post_upgrade_success',
       count: 2
     })
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
     expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
   })
 
@@ -179,6 +187,7 @@ describe('InviteMembersForm', () => {
     )
     expect(emitted().submitted).toBeUndefined()
     expect(mockTrackInviteSent).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
   it('caps the number of chips at maxSeats', async () => {

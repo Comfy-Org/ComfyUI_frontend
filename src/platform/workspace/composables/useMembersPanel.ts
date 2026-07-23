@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
@@ -14,10 +15,7 @@ import type {
   PendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
-import {
-  MAX_WORKSPACE_MEMBERS,
-  useTeamWorkspaceStore
-} from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
@@ -103,14 +101,8 @@ export function useMembersPanel() {
     showInviteMemberUpsellDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
-  const {
-    activeWorkspace,
-    members,
-    pendingInvites,
-    originalOwnerId,
-    totalMemberSlots,
-    isInviteLimitReached
-  } = storeToRefs(workspaceStore)
+  const { activeWorkspace, members, pendingInvites, originalOwnerId } =
+    storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
   const {
     permissions: workspacePermissions,
@@ -125,10 +117,7 @@ export function useMembersPanel() {
     isPlanLoading
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-
-  // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
-  // the subscription tier.
-  const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
+  const { maxSeats, occupiedSeats } = useBillingContext()
 
   const permissions = computed(() => {
     const canManageMembers =
@@ -202,9 +191,12 @@ export function useMembersPanel() {
 
   const showInviteButton = computed(() => workspaceRole.value === 'owner')
 
-  // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
   const isMemberLimitReached = computed(
-    () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+    () =>
+      maxSeats.value !== null &&
+      occupiedSeats.value !== null &&
+      maxSeats.value > 0 &&
+      occupiedSeats.value >= maxSeats.value
   )
 
   // Invite is allowed only on an active (non-cancelled) team plan that is under
@@ -212,6 +204,8 @@ export function useMembersPanel() {
   const isInviteDisabled = computed(
     () =>
       isPlanLoading.value ||
+      maxSeats.value === null ||
+      occupiedSeats.value === null ||
       !isOnTeamPlan.value ||
       isCancelled.value ||
       isMemberLimitReached.value
@@ -219,12 +213,18 @@ export function useMembersPanel() {
 
   const inviteTooltip = computed(() => {
     if (!isOnTeamPlan.value) return null
+    if (maxSeats.value === null || occupiedSeats.value === null) return null
     if (!isMemberLimitReached.value) return null
     return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
   })
 
   function handleInviteMember() {
-    if (isPlanLoading.value) return
+    if (
+      isPlanLoading.value ||
+      maxSeats.value === null ||
+      occupiedSeats.value === null
+    )
+      return
     if (!isOnTeamPlan.value) {
       void showInviteMemberUpsellDialog()
       return

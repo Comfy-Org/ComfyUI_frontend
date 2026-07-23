@@ -73,25 +73,29 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
-import {
-  MAX_WORKSPACE_MEMBERS,
-  useTeamWorkspaceStore
-} from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const workspaceStore = useTeamWorkspaceStore()
+const { maxSeats, occupiedSeats } = useBillingContext()
 
 const step = ref<'form' | 'invited'>('form')
 const invitedEmails = ref<string[]>([])
 const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
 
-const invitableSeats = computed(() =>
-  Math.max(0, MAX_WORKSPACE_MEMBERS - workspaceStore.totalMemberSlots)
+const invitableSeats = computed(() => {
+  if (maxSeats.value === null || occupiedSeats.value === null) return 0
+  if (maxSeats.value === 0) return Number.POSITIVE_INFINITY
+  return Math.max(0, maxSeats.value - occupiedSeats.value)
+})
+const canSubmit = computed(
+  () =>
+    maxSeats.value !== null &&
+    occupiedSeats.value !== null &&
+    (inviteForm.value?.canSubmit ?? false)
 )
-const canSubmit = computed(() => inviteForm.value?.canSubmit ?? false)
 const loading = computed(() => inviteForm.value?.loading ?? false)
 
 function onClose() {
@@ -99,6 +103,7 @@ function onClose() {
 }
 
 function handleInvite() {
+  if (maxSeats.value === null || occupiedSeats.value === null) return
   void inviteForm.value?.submit()?.catch(console.error)
 }
 

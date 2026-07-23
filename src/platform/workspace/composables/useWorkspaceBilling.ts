@@ -75,6 +75,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const error = ref<string | null>(null)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const seatCapacity = shallowRef<{
+    maxSeats: number
+    occupiedSeats: number
+  } | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
   // Prevent older status and balance responses from overwriting newer state.
   const latestBillingReadIds = { status: 0, balance: 0 }
@@ -133,6 +137,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
+  const maxSeats = computed(() => seatCapacity.value?.maxSeats ?? null)
+  const occupiedSeats = computed(
+    () => seatCapacity.value?.occupiedSeats ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -157,6 +165,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
+    seatCapacity.value = null
     const workspaceId = workspaceStore.activeWorkspace?.id
     isLoading.value = true
     error.value = null
@@ -170,6 +179,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       }
 
       statusData.value = status
+      seatCapacity.value = {
+        maxSeats: status.max_seats,
+        occupiedSeats: status.occupied_seats
+      }
       if (workspaceId && status.billing_rail) {
         workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
       }
@@ -418,6 +431,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    maxSeats,
+    occupiedSeats,
     isLoading,
     error,
     canAccessSubscriptionFeatures,
