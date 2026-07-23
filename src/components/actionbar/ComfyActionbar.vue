@@ -320,9 +320,11 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto z-1300',
     isDragging.value && 'pointer-events-none select-none',
+    // Floating keeps its surface and shadow, but no stroke: the shadow already
+    // separates it from the canvas.
     isDocked.value
       ? 'static border-none bg-transparent p-0'
-      : ['fixed shadow-interface', 'border-interface-stroke']
+      : 'fixed border-none shadow-interface'
   )
 )
 </script>
