@@ -15,6 +15,7 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 import { slotFloatingLinks } from '../LLink'
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -111,6 +112,9 @@ const test = baseTest.extend<TestContext>({
 
   validateLinkIntegrity: async ({ graph }, use) => {
     await use(() => {
+      const linkStore = useLinkStore()
+      const graphId = graph.rootGraph.id
+
       for (const reroute of graph.reroutes.values()) {
         if (reroute.origin_id === undefined) {
           expect(reroute.linkIds.size).toBe(0)
@@ -141,10 +145,11 @@ const test = baseTest.extend<TestContext>({
 
       // Check that all link references are valid (Can be found in the graph)
       for (const node of graph.nodes.values()) {
-        for (const input of node.inputs) {
-          if (input.link) {
-            expect(graph.links.keys()).toContain(input.link)
-            expect(graph.links.get(input.link)?.target_id).toBe(node.id)
+        for (const slotIndex of node.inputs.keys()) {
+          const link = linkStore.getInputSlotLink(graphId, node.id, slotIndex)
+          if (link) {
+            expect(graph.links.keys()).toContain(link.id)
+            expect(graph.links.get(link.id)?.target_id).toBe(node.id)
           }
         }
         for (const output of node.outputs) {
@@ -160,7 +165,8 @@ const test = baseTest.extend<TestContext>({
           graph.getNodeById(link!.origin_id)?.outputs[link!.origin_slot].links
         ).toContain(link.id)
         expect(
-          graph.getNodeById(link!.target_id)?.inputs[link!.target_slot].link
+          linkStore.getInputSlotLink(graphId, link.target_id, link.target_slot)
+            ?.id
         ).toBe(link.id)
       }
 
@@ -344,11 +350,16 @@ describe('LinkConnector Integration', () => {
       // All four nodes should have no links
       for (const nodeId of [1, 2, 3, 9]) {
         const {
-          inputs: [input],
           outputs: [output]
         } = graph.getNodeById(toNodeId(nodeId))!
 
-        expect(input.link).toBeNull()
+        expect(
+          useLinkStore().getInputSlotLink(
+            graph.rootGraph.id,
+            toNodeId(nodeId),
+            0
+          )
+        ).toBeUndefined()
 
         expect([0, undefined]).toContain(output.links?.length)
 
@@ -553,11 +564,16 @@ describe('LinkConnector Integration', () => {
       // All four nodes should have no links
       for (const nodeId of [1, 2, 3, 9]) {
         const {
-          inputs: [input],
           outputs: [output]
         } = graph.getNodeById(toNodeId(nodeId))!
 
-        expect(input.link).toBeNull()
+        expect(
+          useLinkStore().getInputSlotLink(
+            graph.rootGraph.id,
+            toNodeId(nodeId),
+            0
+          )
+        ).toBeUndefined()
 
         expect([0, undefined]).toContain(output.links?.length)
 
@@ -902,11 +918,12 @@ describe('LinkConnector Integration', () => {
     // Original nodes should have no links
     for (const nodeId of [1, 4]) {
       const {
-        inputs: [input],
         outputs: [output]
       } = graph.getNodeById(toNodeId(nodeId))!
 
-      expect(input.link).toBeNull()
+      expect(
+        useLinkStore().getInputSlotLink(graph.rootGraph.id, toNodeId(nodeId), 0)
+      ).toBeUndefined()
 
       expect([0, undefined]).toContain(output.links?.length)
 

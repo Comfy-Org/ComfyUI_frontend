@@ -1749,9 +1749,8 @@ export class LGraph
 
   /**
    * Removes duplicate links that share the same connection tuple
-   * (origin_id, origin_slot, target_id, target_slot). Keeps the link
-   * referenced by input.link and removes orphaned duplicates from
-   * output.links and the graph's _links map.
+   * (origin_id, origin_slot, target_id, target_slot). Keeps the link registered
+   * to the target input slot and removes orphaned duplicates from the graph.
    *
    * Three phases: group links by tuple, select the survivor, purge duplicates.
    * @returns A map from each purged duplicate id to the survivor kept in its

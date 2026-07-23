@@ -200,6 +200,39 @@ describe('drawConnections', () => {
 
     expect([...canvas.renderedPaths]).toEqual([firstLink, secondLink])
   })
+
+  it('connects, draws, and serializes without deprecation warnings', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [300, 100]
+    targetNode.addInput('in', 'STRING')
+    graph.add(targetNode)
+
+    const onWarning = vi.fn()
+    const warningCallbacks = vi
+      .spyOn(LiteGraph, 'onDeprecationWarning', 'get')
+      .mockReturnValue([onWarning])
+
+    try {
+      const link = sourceNode.connect(0, targetNode, 0)
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+      canvas.drawConnections(createMockCtx())
+      const serialized = graph.serialize()
+
+      expect(link).not.toBeNull()
+      expect([...canvas.renderedPaths]).toEqual([link])
+      expect(serialized.links).toHaveLength(1)
+      expect(onWarning).not.toHaveBeenCalled()
+    } finally {
+      warningCallbacks.mockRestore()
+    }
+  })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [0, 100]
