@@ -49,6 +49,38 @@ export class PropertiesPanelHelper {
     return this.root.locator('.scrollbar-thin')
   }
 
+  /** Draggable widget rows of the first widgets section in the panel. */
+  get sectionWidgetRows(): Locator {
+    return this.root
+      .getByTestId('section-widgets-list')
+      .first()
+      .locator('.widget-item')
+  }
+
+  /**
+   * Drag the widget row at `fromIndex` down onto the row at `toIndex`.
+   * Grabs the row by its header strip (`y + 8`): the widget body owns its own
+   * pointer events, but the header is pointer-events-none so the grab lands on
+   * the draggable row itself.
+   */
+  async dragSectionWidgetRow(
+    fromIndex: number,
+    toIndex: number
+  ): Promise<void> {
+    const rows = this.sectionWidgetRows
+    const from = await rows.nth(fromIndex).boundingBox()
+    const to = await rows.nth(toIndex).boundingBox()
+    if (!from || !to) throw new Error('widget row not visible')
+
+    const { mouse } = this.page
+    await mouse.move(from.x + from.width / 2, from.y + 8)
+    await mouse.down()
+    await mouse.move(to.x + to.width / 2, to.y + to.height * 0.95, {
+      steps: 20
+    })
+    await mouse.up()
+  }
+
   get errorsTabIcon(): Locator {
     return this.root.locator('nav i[class*="lucide--octagon-alert"]')
   }
