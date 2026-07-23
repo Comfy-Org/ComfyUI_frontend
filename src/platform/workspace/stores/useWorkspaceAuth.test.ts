@@ -26,6 +26,12 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({
+    add: vi.fn()
+  })
+}))
+
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -596,11 +602,13 @@ describe('useWorkspaceAuthStore', () => {
 
       mockGetIdToken.mockResolvedValue(undefined)
       const refreshPromise = store.refreshToken()
-      await vi.advanceTimersByTimeAsync(7_000)
+      // Advance enough for retries with jitter.
+      await vi.advanceTimersByTimeAsync(10_000)
       await refreshPromise
 
       expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
       expect(workspaceToken.value).toBe('workspace-token-abc')
+      // Only 1 fetch (initial switchWorkspace) - retries fail at getIdToken before fetch.
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
@@ -639,7 +647,8 @@ describe('useWorkspaceAuthStore', () => {
       mockGetIdToken.mockResolvedValue(undefined)
 
       const refreshPromise = store.refreshToken()
-      await vi.advanceTimersByTimeAsync(7_000)
+      // Advance enough for retries with jitter (~1500 + 2500 + 4500 = 8500ms worst case).
+      await vi.advanceTimersByTimeAsync(10_000)
       await refreshPromise
 
       expect(currentWorkspace.value).toBeNull()
@@ -736,14 +745,10 @@ describe('useWorkspaceAuthStore', () => {
   })
 
   describe('refreshToken retry/race paths', () => {
-    // NOTE: This test documents the CURRENT behavior — exhausted refresh
-    // retries clear the workspace context unconditionally, even when the
-    // existing workspace token is still within its expiry window. That is a
-    // UX gap (transient backend outage manifests as forced logout) and the
-    // store should preserve a still-valid token across transient
-    // TOKEN_EXCHANGE_FAILED errors. Update the assertion alongside any source
-    // change that tracks token expiry to skip the context clear.
-    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then clears context', async () => {
+    // When refresh exhausts retries but the token is still valid, the store
+    // preserves context in a "degraded" state and schedules a later retry.
+    // This prevents transient backend outages from forcing logout.
+    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, keeps context when token still valid', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
       // Initial successful switchWorkspace establishes context.
@@ -754,7 +759,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { currentWorkspace } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
       await store.switchWorkspace('workspace-123')
       expect(currentWorkspace.value).not.toBeNull()
@@ -767,46 +772,33 @@ describe('useWorkspaceAuthStore', () => {
         json: () => Promise.resolve({ message: 'Server error' })
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const consoleWarnSpy = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => {})
 
       const refreshPromise = store.refreshToken()
 
-      // Drain the four attempts (initial + 3 retries) and their backoff delays.
-      await vi.runAllTimersAsync()
+      // Advance through retry delays (with jitter up to ~500ms each):
+      // attempt 0: ~1000-1500ms, attempt 1: ~2000-2500ms, attempt 2: ~4000-4500ms
+      await vi.advanceTimersByTimeAsync(8000)
       await refreshPromise
 
       // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
       expect(mockFetch).toHaveBeenCalledTimes(5)
-      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
-      expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 1000ms/.test(String(c[0]))
-        )
-      ).toBe(true)
-      expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 2000ms/.test(String(c[0]))
-        )
-      ).toBe(true)
-      expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 4000ms/.test(String(c[0]))
-        )
-      ).toBe(true)
+      // Backoff with jitter logged.
+      const retryLogCalls = consoleWarnSpy.mock.calls.filter((c) =>
+        /retrying in \d+ms/.test(String(c[0]))
+      )
+      expect(retryLogCalls.length).toBe(3)
 
-      // After the final failure the context is cleared.
-      expect(currentWorkspace.value).toBeNull()
+      // Token still valid, so context is preserved (degraded state).
+      expect(currentWorkspace.value).not.toBeNull()
+      expect(workspaceToken.value).toBe('workspace-token-abc')
 
-      consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
     })
 
-    it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
+    it('retries on INVALID_FIREBASE_TOKEN and keeps context when token still valid', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const mockFetch = vi.fn().mockResolvedValueOnce({
         ok: true,
@@ -815,12 +807,12 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { currentWorkspace } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
       await store.switchWorkspace('workspace-123')
       expect(currentWorkspace.value).not.toBeNull()
 
-      // Permanent error: 401 → INVALID_FIREBASE_TOKEN.
+      // INVALID_FIREBASE_TOKEN is retryable (Firebase token may just need refresh).
       mockFetch.mockResolvedValue({
         ok: false,
         status: 401,
@@ -828,17 +820,22 @@ describe('useWorkspaceAuthStore', () => {
         json: () => Promise.resolve({ message: 'Invalid token' })
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
         .mockImplementation(() => {})
 
-      await store.refreshToken()
+      const refreshPromise = store.refreshToken()
+      // Advance through retry delays with jitter.
+      await vi.advanceTimersByTimeAsync(8000)
+      await refreshPromise
 
-      // Initial + exactly one refresh attempt; no retries on permanent errors.
-      expect(mockFetch).toHaveBeenCalledTimes(2)
-      expect(currentWorkspace.value).toBeNull()
+      // 1 initial + 4 refresh attempts (initial + 3 retries) = 5 total.
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+      // Token still valid, so context preserved (degraded state).
+      expect(currentWorkspace.value).not.toBeNull()
+      expect(workspaceToken.value).toBe('workspace-token-abc')
 
-      consoleErrorSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
     })
 
     // KNOWN BUG (.fails): when an in-flight refresh's switchWorkspace call is

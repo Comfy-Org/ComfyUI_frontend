@@ -3664,7 +3664,13 @@
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
-    }
+    },
+    "refreshRetrying": "Reconnecting...",
+    "refreshRetryingDetail": "Attempt {attempt}, retrying in {delay}s",
+    "refreshDegraded": "Connection issue",
+    "refreshDegradedDetail": "Using cached session. Will retry automatically.",
+    "sessionExpired": "Session expired",
+    "sessionExpiredDetail": "Please sign in again to continue."
   },
   "nightly": {
     "badge": {

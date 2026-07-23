@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
@@ -56,6 +57,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
 
+  // AbortController for cancelling in-flight refresh operations
+  let currentRefreshAbort: AbortController | null = null
+
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
   let refreshRequestId = 0
 
@@ -69,6 +73,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (refreshTimerId !== null) {
       clearTimeout(refreshTimerId)
       refreshTimerId = null
+    }
+  }
+
+  function abortCurrentRefresh(): void {
+    if (currentRefreshAbort) {
+      currentRefreshAbort.abort()
+      currentRefreshAbort = null
     }
   }
 
@@ -100,10 +111,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
 
     const remainingMs = workspaceTokenExpiresAt.value - Date.now()
+    // Add jitter to prevent thundering herd across browser tabs
+    const jitter = Math.random() * 5000
     const retryDelay =
       remainingMs <= 10_000
         ? remainingMs
-        : Math.min(60_000, Math.floor(remainingMs / 2))
+        : Math.min(60_000, Math.floor(remainingMs / 2) + jitter)
 
     refreshTimerId = setTimeout(() => {
       void refreshToken()
@@ -146,7 +159,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function destroy(): void {
+    refreshRequestId++
     stopRefreshTimer()
+    abortCurrentRefresh()
   }
 
   function initializeFromSession(): boolean {
@@ -310,10 +325,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const capturedRequestId = refreshRequestId
     const maxRetries = 3
     const baseDelayMs = 1000
+    const toastStore = useToastStore()
+
+    // Create AbortController for this refresh operation
+    abortCurrentRefresh()
+    const abortController = new AbortController()
+    currentRefreshAbort = abortController
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Check if workspace context changed since refresh started (user switched workspaces)
-      if (capturedRequestId !== refreshRequestId) {
+      if (
+        capturedRequestId !== refreshRequestId ||
+        abortController.signal.aborted
+      ) {
         console.warn(
           'Aborting stale token refresh: workspace context changed during refresh'
         )
@@ -334,6 +358,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           if (capturedRequestId === refreshRequestId) {
             console.error('Workspace access revoked or auth invalid:', err)
             clearWorkspaceContext()
+            toastStore.add({
+              severity: 'error',
+              summary: t('workspaceAuth.errors.accessDenied'),
+              life: 10000
+            })
           }
           return
         }
@@ -346,11 +375,24 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             err.code === 'NOT_AUTHENTICATED')
 
         if (shouldRetryImmediately) {
-          const delay = baseDelayMs * Math.pow(2, attempt)
+          // Add jitter to prevent thundering herd
+          const jitter = Math.random() * 500
+          const delay = baseDelayMs * Math.pow(2, attempt) + jitter
           console.warn(
-            `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
+            `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${Math.round(delay)}ms:`,
             err
           )
+          if (attempt === 0) {
+            toastStore.add({
+              severity: 'warn',
+              summary: t('workspaceAuth.refreshRetrying'),
+              detail: t('workspaceAuth.refreshRetryingDetail', {
+                attempt: attempt + 1,
+                delay: Math.round(delay / 1000)
+              }),
+              life: delay + 2000
+            })
+          }
           await new Promise((resolve) => setTimeout(resolve, delay))
           continue
         }
@@ -363,12 +405,24 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             'Workspace token refresh failed, keeping current token until expiry:',
             err
           )
+          toastStore.add({
+            severity: 'warn',
+            summary: t('workspaceAuth.refreshDegraded'),
+            detail: t('workspaceAuth.refreshDegradedDetail'),
+            life: 10000
+          })
           scheduleRefreshRetry()
           return
         }
 
         if (capturedRequestId === refreshRequestId) {
           console.error('Failed to refresh workspace token after retries:', err)
+          toastStore.add({
+            severity: 'error',
+            summary: t('workspaceAuth.sessionExpired'),
+            detail: t('workspaceAuth.sessionExpiredDetail'),
+            life: 10000
+          })
           clearWorkspaceContext()
         }
         return
@@ -394,6 +448,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function clearWorkspaceContext(): void {
     // Increment request ID to invalidate any in-flight stale refresh operations
     refreshRequestId++
+    abortCurrentRefresh()
     stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null
