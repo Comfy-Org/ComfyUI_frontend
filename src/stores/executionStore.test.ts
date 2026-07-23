@@ -659,6 +659,7 @@ describe('useExecutionStore - workflowStatus', () => {
       outcome: 'success'
     })
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    expect(store.queuedJobs['job-1']).toBeUndefined()
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {

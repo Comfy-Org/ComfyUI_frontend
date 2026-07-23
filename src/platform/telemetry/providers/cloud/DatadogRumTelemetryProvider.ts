@@ -1,3 +1,5 @@
+import { datadogRum } from '@datadog/browser-rum'
+
 import type { ExecutionOutcomeMetadata, TelemetryProvider } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
@@ -5,7 +7,7 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     startTime,
     outcome
   }: ExecutionOutcomeMetadata): void {
-    window.DD_RUM?.addDurationVital('workflow_execution', {
+    datadogRum.addDurationVital('workflow_execution', {
       startTime: performance.timeOrigin + startTime,
       duration: performance.now() - startTime,
       context: {

@@ -780,6 +780,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (pending === 'running' && workflowStatus.value.has(workflow)) return
     applyWorkflowStatus(workflow, pending)
     trackExecutionOutcome(jobId, pending)
+    if (pending === 'running' || activeJobId.value === jobId) return
+    delete queuedJobs.value[jobId]
+    jobIdToWorkflow.delete(jobId)
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
