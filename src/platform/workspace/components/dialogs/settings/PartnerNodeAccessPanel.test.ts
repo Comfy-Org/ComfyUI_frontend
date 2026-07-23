@@ -333,6 +333,10 @@ describe('PartnerNodeAccessPanel', () => {
         .getByRole('switch', { name: 'Set access for OpenAI (inc. Sora)' })
         .getAttribute('aria-checked')
     ).toBe('false')
+    expect(
+      screen.queryByRole('button', { name: 'Enable all' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Disable all' })).toBeDisabled()
   })
 
   it('disables provider controls while access is unrestricted', () => {
@@ -348,12 +352,28 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('saves enable-all changes immediately', async () => {
     const user = userEvent.setup()
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: false }]
+    }
     mockIsProviderEnabled.mockReturnValue(false)
     renderComponent()
 
+    expect(screen.getByRole('button', { name: 'Disable all' })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: 'Enable all' }))
 
     expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(true)
+  })
+
+  it('keeps both bulk actions visible while access is restricted', () => {
+    mockPolicy.value = {
+      enforcementEnabled: true,
+      providers: [{ providerId: 'openai', enabled: true }]
+    }
+    renderComponent()
+
+    expect(screen.getByRole('button', { name: 'Enable all' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Disable all' })).toBeEnabled()
   })
 
   it('surfaces save failures', async () => {
