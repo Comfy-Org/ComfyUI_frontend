@@ -4564,6 +4564,8 @@
     "cancel": "Cancel",
     "queuedCount": "Queued ({count})",
     "runningPosition": "Running {position}/{total}",
+    "recentResults": "Recent results",
+    "viewResult": "View result",
     "goToHistory": "Go to history"
   }
 }
