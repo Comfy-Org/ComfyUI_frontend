@@ -286,15 +286,32 @@ export const Demo: Story = {
       const rowMeta = (row: Row) =>
         row.live ? `Running · ${Math.round(percent.value)}%` : row.meta
 
-      /** Stopping the run freezes progress and clears the active work. */
+      const runningRows = computed(
+        () => rows.value.filter((row) => row.meta.startsWith('Running')).length
+      )
+
+      /**
+       * One run stops outright. Several would mean silently taking them all
+       * down, so the panel opens and the choice becomes explicit.
+       */
       const stopRun = () => {
+        if (runningRows.value > 1) {
+          expanded.value = true
+          return
+        }
+        stopped.value = true
+        playing.value = false
+        rows.value = []
+      }
+      /** Cancel all is unambiguous by name, so it clears everything. */
+      const cancelAll = () => {
         stopped.value = true
         playing.value = false
         rows.value = []
       }
       const cancelRow = (i: number) => {
         rows.value.splice(i, 1)
-        if (!rows.value.length) stopRun()
+        if (!rows.value.length) cancelAll()
       }
 
       return {
@@ -308,6 +325,8 @@ export const Demo: Story = {
         current,
         select,
         stopRun,
+        cancelAll,
+        runningRows,
         cancelRow,
         rowPercent,
         rowMeta
@@ -329,7 +348,7 @@ export const Demo: Story = {
             <template #action>
               <button
                 class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-base-foreground"
-                title="Stop run"
+                :title="runningRows > 1 ? 'Choose which run to stop' : 'Stop run'"
                 @click="stopRun"
               >
                 <i class="icon-[comfy--stop] size-4" />
@@ -343,7 +362,7 @@ export const Demo: Story = {
                   <span
                     v-if="rows.length"
                     class="cursor-pointer text-[11px] font-medium text-base-foreground"
-                    @click="stopRun"
+                    @click="cancelAll"
                   >Cancel all</span>
                 </div>
                 <div class="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto px-[9px] pb-[9px]">
