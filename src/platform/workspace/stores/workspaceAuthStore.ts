@@ -159,6 +159,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function destroy(): void {
+    refreshRequestId++
     stopRefreshTimer()
     abortCurrentRefresh()
   }
