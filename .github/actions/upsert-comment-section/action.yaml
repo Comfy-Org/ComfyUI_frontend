@@ -81,30 +81,74 @@ runs:
 
             if (!existing) {
               try {
-                const created = await github.rest.issues.createComment({
+                await github.rest.issues.createComment({
                   ...context.repo,
                   issue_number: prNumber,
                   body: `${commentMarker}\n${sectionBlock}`
                 })
-                // Concurrent writers may have also created a comment; deduplicate
-                // by keeping the lowest-id copy and deleting the rest.
+                // Concurrent writers may have also created a comment; merge all
+                // sections from every duplicate into the lowest-id copy, verify,
+                // then delete the rest so no report content is lost.
                 const allComments = await github.paginate(
                   github.rest.issues.listComments,
                   { ...context.repo, issue_number: prNumber }
                 )
-                const duplicates = allComments.filter(
+                const markers = allComments.filter(
                   (c) =>
                     c.user?.login === 'github-actions[bot]' &&
-                    c.body?.includes(commentMarker) &&
-                    c.id !== created.data.id
+                    c.body?.includes(commentMarker)
                 )
-                for (const dup of duplicates) {
+                if (markers.length > 1) {
+                  markers.sort((a, b) => a.id - b.id)
+                  const canonical = markers[0]
+                  // Merge sections from all duplicates into the canonical body
+                  let mergedBody = canonical.body ?? ''
+                  for (const dup of markers.slice(1)) {
+                    const dupSections = (dup.body ?? '').match(
+                      /<!-- section:[a-z0-9-]+:start -->[\s\S]*?<!-- section:[a-z0-9-]+:end -->/g
+                    ) ?? []
+                    for (const block of dupSections) {
+                      const nameMatch = block.match(/<!-- section:([a-z0-9-]+):start -->/)
+                      if (!nameMatch) continue
+                      const name = nameMatch[1]
+                      const startTag = `<!-- section:${name}:start -->`
+                      const endTag = `<!-- section:${name}:end -->`
+                      const existingRegex = new RegExp(
+                        `${escapeRegex(startTag)}[\\s\\S]*?${escapeRegex(endTag)}`
+                      )
+                      mergedBody = existingRegex.test(mergedBody)
+                        ? mergedBody.replace(existingRegex, block)
+                        : mergedBody.trimEnd() + '\n\n' + block
+                    }
+                  }
                   try {
-                    await github.rest.issues.deleteComment({
+                    await github.rest.issues.updateComment({
                       ...context.repo,
-                      comment_id: dup.id
+                      comment_id: canonical.id,
+                      body: mergedBody
                     })
-                  } catch (_) {}
+                    // Verify canonical has all sections before deleting duplicates
+                    const verified = (await github.rest.issues.getComment({
+                      ...context.repo,
+                      comment_id: canonical.id
+                    })).data.body ?? ''
+                    const allSections = markers.flatMap(
+                      (m) => sectionStartsIn(m.body ?? '')
+                    )
+                    const allPresent = allSections.every((s) => verified.includes(s))
+                    if (allPresent) {
+                      for (const dup of markers.slice(1)) {
+                        try {
+                          await github.rest.issues.deleteComment({
+                            ...context.repo,
+                            comment_id: dup.id
+                          })
+                        } catch (_) {}
+                      }
+                    }
+                  } catch (_) {
+                    // Leave duplicates rather than risk losing content
+                  }
                 }
                 return
               } catch (err) {
