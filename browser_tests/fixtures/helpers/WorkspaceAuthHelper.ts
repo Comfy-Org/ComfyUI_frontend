@@ -43,6 +43,10 @@ export class WorkspaceAuthHelper {
         body: JSON.stringify(defaultWorkspaceTokenResponse)
       })
     )
+
+    await this.page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 204 })
+    )
   }
 
   async mockTokenRoute(
