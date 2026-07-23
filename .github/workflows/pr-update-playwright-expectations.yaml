@@ -95,7 +95,7 @@ jobs:
         with:
           ref: ${{ needs.setup.outputs.branch }}
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: dist/
@@ -177,7 +177,7 @@ jobs:
 
       # Download all changed snapshot files from shards
       - name: Download snapshot artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: snapshots-shard-*
           path: ./downloaded-snapshots

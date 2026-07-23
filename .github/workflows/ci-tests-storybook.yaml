@@ -156,7 +156,7 @@ jobs:
 
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: storybook-static
           path: storybook-static
