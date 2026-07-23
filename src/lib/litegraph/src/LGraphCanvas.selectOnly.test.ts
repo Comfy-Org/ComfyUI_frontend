@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
@@ -94,5 +99,26 @@ describe('LGraphCanvas selectOnly mode', () => {
     canvas['_startDraggingItems'](node, canvas.pointer, true)
 
     expect(canvas.isDragging).toBe(true)
+  })
+
+  it('does not select non-node items, e.g. groups, when selectOnly is on', () => {
+    const { canvas } = createHarness()
+    canvas.selectOnly = true
+    const group = new LGraphGroup('Test Group')
+
+    canvas.select(group)
+
+    expect(group.selected).toBeFalsy()
+    expect(canvas.selectedItems.has(group)).toBe(false)
+  })
+
+  it('still selects nodes directly via select() when selectOnly is on', () => {
+    const { canvas, node } = createHarness()
+    canvas.selectOnly = true
+
+    canvas.select(node)
+
+    expect(node.selected).toBe(true)
+    expect(canvas.selectedItems.has(node)).toBe(true)
   })
 })

@@ -202,7 +202,7 @@ interface LGraphCanvasState {
   draggingCanvas: boolean
   /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
   readOnly: boolean
-  /** When `true`, clicking/box-selecting items still works, but dragging, resizing, connecting links, and widget interaction are disabled. Unlike {@link readOnly}, this does not disable selection. */
+  /** When `true`, clicking/box-selecting nodes still works, but dragging, resizing, connecting links, and widget interaction are disabled, and only nodes (not groups, reroutes, etc.) can be selected. Unlike {@link readOnly}, this does not disable selection. */
   selectOnly: boolean
 
   /** Bit flags indicating what is currently below the pointer. */
@@ -4588,6 +4588,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
+    // selectOnly mode restricts selection to nodes - groups, reroutes, etc. are excluded.
+    if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
     item.selected = true

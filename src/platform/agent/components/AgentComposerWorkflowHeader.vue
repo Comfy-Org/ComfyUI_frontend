@@ -65,13 +65,13 @@ function switchWorkflow(workflow: ComfyWorkflow) {
   <ComboboxRoot v-model:open="isOpen" ignore-filter>
     <ComboboxAnchor as-child>
       <div
-        class="-mb-5 flex w-full items-center justify-between gap-1 rounded-t-2xl border border-border-default bg-secondary-background px-3 pt-3 pb-7 text-xs"
+        class="-mb-5 flex w-full items-center justify-between gap-1 rounded-t-2xl border border-border-default bg-base-background px-3 pt-3 pb-7 text-xs"
       >
         <Button
           type="button"
           variant="muted-textonly"
           size="unset"
-          class="min-w-0 gap-1.5 rounded-md px-1.5 py-1 text-xs font-normal text-base-foreground"
+          class="min-w-0 gap-2 rounded-md px-1.5 py-1 text-xs font-normal text-base-foreground"
           :aria-label="t('agent.workflowHeader.switchWorkflow')"
           aria-haspopup="listbox"
           :aria-expanded="isOpen"

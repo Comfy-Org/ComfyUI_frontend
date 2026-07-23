@@ -523,6 +523,35 @@ describe('computeProcessedWidgets borderStyle', () => {
     expect(result[0].renderKey).toBe('node:1:color:color')
   })
 
+  it('forces widgets disabled when forceDisabled is set', () => {
+    const widget = createMockWidget({
+      name: 'text',
+      type: 'combo'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: toNodeId('1'),
+        type: 'TestNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi,
+      forceDisabled: true
+    })
+
+    expect(result[0].simplified.options?.disabled).toBe(true)
+  })
+
   it('omits the processed widget id when node id normalization fails', () => {
     const widget = createMockWidget({
       name: 'text',

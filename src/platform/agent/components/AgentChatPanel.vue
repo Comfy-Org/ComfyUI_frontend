@@ -107,6 +107,7 @@ function removeAttachment(index: number) {
 }
 
 function onAddNodesFromGraph() {
+  if (agentNodeSelectionStore.isActive) return
   agentNodeSelectionStore.enter()
 }
 
@@ -312,7 +313,7 @@ function onNewChatFromHistory() {
           <div class="flex flex-col gap-2.5">
             <PromptInput @submit="onSubmit">
               <AgentComposerWorkflowHeader />
-              <PromptInputBody>
+              <PromptInputBody class="bg-secondary-background">
                 <AgentComposerNodeChips
                   :nodes="agentNodeSelectionStore.referencedNodes"
                   @remove="onRemoveNodeChip"
@@ -324,6 +325,7 @@ function onNewChatFromHistory() {
                 <div class="relative">
                   <AgentComposerPlaceholderOverlay
                     v-if="!input"
+                    :disabled="agentNodeSelectionStore.isActive"
                     @add-nodes-from-graph="onAddNodesFromGraph"
                   />
                   <PromptInputTextarea

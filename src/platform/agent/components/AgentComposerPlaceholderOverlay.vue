@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { disabled = false } = defineProps<{
+  disabled?: boolean
+}>()
+
 const emit = defineEmits<{
   addNodesFromGraph: []
 }>()
@@ -16,7 +22,15 @@ const { t } = useI18n()
       {{ t('agent.placeholderPrefix') }}
       <button
         type="button"
-        class="pointer-events-auto inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 align-middle text-sm text-muted-foreground hover:text-base-foreground"
+        :disabled="disabled"
+        :class="
+          cn(
+            'pointer-events-auto inline-flex items-center gap-1 border-0 bg-transparent p-0 align-middle text-sm text-muted-foreground',
+            disabled
+              ? 'cursor-not-allowed opacity-50'
+              : 'cursor-pointer hover:text-base-foreground'
+          )
+        "
         @click="emit('addNodesFromGraph')"
       >
         <i class="icon-[lucide--mouse-pointer-click] size-3.5" />{{
