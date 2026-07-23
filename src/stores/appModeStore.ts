@@ -230,14 +230,13 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   let unwatchReadOnly: (() => void) | undefined
   function enforceReadOnly(inSelect: boolean) {
-    const { state } = getCanvas()
-    if (!state) return
-    state.readOnly = inSelect
+    const canvas = getCanvas()
+    canvas.read_only = inSelect
     unwatchReadOnly?.()
     if (inSelect)
       unwatchReadOnly = watch(
-        () => state.readOnly,
-        () => (state.readOnly = true)
+        () => canvas.read_only,
+        () => (canvas.read_only = true)
       )
   }
 
