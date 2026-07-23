@@ -548,7 +548,7 @@ export class LiteGraphGlobal {
       node = new base_class(title)
     }
 
-    node.type = type
+    node._state.type = type
 
     if (!node.title && title) node.title = title
     node.properties ||= {}

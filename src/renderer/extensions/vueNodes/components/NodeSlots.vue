@@ -58,7 +58,7 @@ import type { NodeState } from '@/types/nodeState'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId,
-  subgraphIdFromGraphId
+  nodeLocatorFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -83,10 +83,9 @@ const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
 const nodeLocatorId = computed(() =>
-  getLocatorIdFromNodeData({
-    id: nodeData.id,
-    subgraphId: subgraphIdFromGraphId(nodeData.graphId, canvasStore.rootGraphId)
-  })
+  getLocatorIdFromNodeData(
+    nodeLocatorFromState(nodeData, canvasStore.rootGraphId)
+  )
 )
 
 const liveNode = computed(() => {
