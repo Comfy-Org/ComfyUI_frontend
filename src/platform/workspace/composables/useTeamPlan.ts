@@ -7,6 +7,7 @@ export function useTeamPlan() {
     isActiveSubscription,
     isInitialized,
     isTeamPlan,
+    maxSeats,
     subscription,
     subscriptionStatus
   } = useBillingContext()
@@ -21,6 +22,9 @@ export function useTeamPlan() {
       (subscriptionStatus.value === 'canceled' ||
         subscriptionStatus.value === 'ended')
   )
+  const hasMemberSeats = computed(
+    () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
+  )
   const isPlanLoading = computed(() => !isInitialized.value)
 
   return {
@@ -28,6 +32,7 @@ export function useTeamPlan() {
     isOnTeamPlan,
     isCancelled,
     hasLapsedTeamPlan,
+    hasMemberSeats,
     isPlanLoading
   }
 }

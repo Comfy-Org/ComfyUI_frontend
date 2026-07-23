@@ -109,8 +109,8 @@ export function useMembersPanel() {
   const {
     hasTeamPlan,
     isOnTeamPlan,
-    isCancelled,
     hasLapsedTeamPlan,
+    hasMemberSeats,
     isPlanLoading
   } = useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
@@ -118,11 +118,11 @@ export function useMembersPanel() {
 
   const permissions = computed(() => {
     const canManageMembers =
-      hasTeamPlan.value && workspaceRole.value === 'owner'
+      hasMemberSeats.value && workspaceRole.value === 'owner'
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: hasTeamPlan.value,
+      canViewOtherMembers: hasMemberSeats.value,
       canViewPendingInvites: canManageMembers,
       canInviteMembers: canManageMembers,
       canManageInvites: canManageMembers,
@@ -131,7 +131,7 @@ export function useMembersPanel() {
   })
 
   const uiConfig = computed(() => {
-    if (!hasTeamPlan.value) {
+    if (!hasMemberSeats.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -177,7 +177,7 @@ export function useMembersPanel() {
 
   const showViewTabs = computed(
     () =>
-      isOnTeamPlan.value &&
+      hasMemberSeats.value &&
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
@@ -191,20 +191,17 @@ export function useMembersPanel() {
       occupiedSeats.value >= maxSeats.value
   )
 
-  // Invite is allowed only on an active (non-cancelled) team plan that is under
-  // the member cap.
   const isInviteDisabled = computed(
     () =>
       isPlanLoading.value ||
       maxSeats.value === null ||
       occupiedSeats.value === null ||
-      !isOnTeamPlan.value ||
-      isCancelled.value ||
+      !hasMemberSeats.value ||
       isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
-    if (!isOnTeamPlan.value) return null
+    if (!hasMemberSeats.value) return null
     if (maxSeats.value === null || occupiedSeats.value === null) return null
     if (!isMemberLimitReached.value) return null
     return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
@@ -217,11 +214,11 @@ export function useMembersPanel() {
       occupiedSeats.value === null
     )
       return
-    if (!isOnTeamPlan.value) {
+    if (!hasMemberSeats.value) {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isCancelled.value || isMemberLimitReached.value) return
+    if (isMemberLimitReached.value) return
     void showInviteMemberDialog()
   }
 
@@ -358,6 +355,7 @@ export function useMembersPanel() {
     hasTeamPlan,
     isOnTeamPlan,
     hasLapsedTeamPlan,
+    hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,
     showSearch,
