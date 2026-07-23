@@ -409,17 +409,32 @@ export function useMediaAssetActions() {
   const openApiPromptAsWorkflow = async (
     asset: AssetItem,
     filename: string
-  ) => {
-    const apiPrompt = await extractApiPromptFromAsset(asset)
-    if (!app.isApiJson(apiPrompt)) return false
-
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
+      const apiPrompt = await extractApiPromptFromAsset(asset)
+      if (!app.isApiJson(apiPrompt)) return { success: false }
+
       await app.loadApiJson(apiPrompt, filename)
-      return true
+      return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
-      return false
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : undefined
+      }
     }
+  }
+
+  /**
+   * Open an asset's workflow in a new tab, falling back to the stored API
+   * graph for assets whose job embeds no workflow (API submissions)
+   */
+  const openAssetWorkflow = async (asset: AssetItem) => {
+    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+
+    return workflow
+      ? await workflowActions.openWorkflowAction(workflow, filename)
+      : await openApiPromptAsWorkflow(asset, filename)
   }
 
   /**
@@ -430,14 +445,7 @@ export function useMediaAssetActions() {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
-
-    // Use shared action service, falling back to the stored API graph for
-    // assets whose job embeds no workflow (API submissions)
-    const result: { success: boolean; error?: string } = workflow
-      ? await workflowActions.openWorkflowAction(workflow, filename)
-      : { success: await openApiPromptAsWorkflow(targetAsset, filename) }
+    const result = await openAssetWorkflow(targetAsset)
 
     if (!result.success) {
       toast.add({
@@ -599,11 +607,7 @@ export function useMediaAssetActions() {
 
     for (const asset of assets) {
       try {
-        const { workflow, filename } = await extractWorkflowFromAsset(asset)
-        const result = await workflowActions.openWorkflowAction(
-          workflow,
-          filename
-        )
+        const result = await openAssetWorkflow(asset)
 
         if (result.success) {
           succeeded++
