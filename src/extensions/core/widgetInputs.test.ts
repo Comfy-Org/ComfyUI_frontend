@@ -85,6 +85,7 @@ vi.mock('@/renderer/utils/nodeTypeGuards', () => ({
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { app } from '@/scripts/app'
@@ -308,13 +309,12 @@ describe('PrimitiveNode', () => {
       const comboValues = ['x', 'y', 'z']
       const callbackFn = vi.fn()
       node.widgets = [
-        {
-          name: 'value',
+        makeWidget({
           type: 'combo',
           value: 'removed_value',
           options: { values: [] },
           callback: callbackFn
-        } as any
+        })
       ]
       node.outputs[0].widget = {
         name: 'value',
@@ -423,9 +423,7 @@ describe('PrimitiveNode', () => {
           id === 2 ? existingTarget : targetNode
         )
       } as any
-      node.widgets = [
-        { name: 'value', value: 50, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 50 })]
 
       // mergeIfValid returns truthy → connection is valid
       const result = node.onConnectOutput(0, 'INT', input, targetNode, 0)
@@ -441,8 +439,8 @@ describe('PrimitiveNode', () => {
       node.outputs[0].name = 'INT'
       node.outputs[0].widget = { name: 'test' } as any
       node.widgets = [
-        { name: 'value', type: 'number', value: 0, onRemove } as any,
-        { name: 'control', type: 'combo', value: 'fixed', onRemove } as any
+        makeWidget({ value: 0, onRemove }),
+        makeWidget({ name: 'control', type: 'combo', value: 'fixed', onRemove })
       ]
 
       node.onLastDisconnect()
@@ -459,8 +457,8 @@ describe('PrimitiveNode', () => {
 
       const node = createPrimitiveNode()
       node.widgets = [
-        { name: 'value', type: 'number', value: 42 } as any,
-        { name: 'control', type: 'combo', value: 'fixed' } as any
+        makeWidget({ value: 42 }),
+        makeWidget({ name: 'control', type: 'combo', value: 'fixed' })
       ]
 
       node.onLastDisconnect()
@@ -594,6 +592,9 @@ describe('PrimitiveNode', () => {
           inputNameForBrowser: 'ckpt_name'
         })
       )
+      // The target widget's value should have been copied onto the created widget
+      const createdWidget = vi.mocked(createAssetWidget).mock.results[0]?.value
+      expect(createdWidget?.value).toBe('model1.safetensors')
     })
   })
 
@@ -613,9 +614,7 @@ describe('PrimitiveNode', () => {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => targetNode)
       } as any
-      node.widgets = [
-        { name: 'value', value: 0, type: 'number', options: {} } as any
-      ]
+      node.widgets = [makeWidget({ value: 0 })]
 
       node.onConnectionsChange(2, 0, false)
 
@@ -719,6 +718,21 @@ describe('setWidgetConfig', () => {
     setWidgetConfig(slot)
 
     expect(slot.widget).toBeUndefined()
+  })
+
+  it('sets GET_CONFIG on a real NodeInputSlot (exercises instanceof NodeSlot path)', () => {
+    const config: InputSpec = ['INT', { min: 5 }]
+    const parentNode = createMockLGraphNode({ id: 1 })
+    // Construct a real NodeInputSlot so the instanceof NodeSlot guard is reached.
+    // The slot has no graph link so the function returns after setting GET_CONFIG.
+    const slot = new NodeInputSlot(
+      { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
+      parentNode
+    )
+
+    setWidgetConfig(slot, config)
+
+    expect(slot.widget![GET_CONFIG]()).toEqual(config)
   })
 })
 
@@ -935,6 +949,8 @@ describe('mergeIfValid', () => {
   })
 
   it('uses provided config1 instead of fetching from output', () => {
+    // GET_CONFIG returns FLOAT — if config1 is ignored, mergeInputSpec would
+    // receive ['FLOAT', {}] as its first argument instead of config1.
     const output = {
       widget: {
         [GET_CONFIG]: () => ['FLOAT', {}] as InputSpec
@@ -944,8 +960,13 @@ describe('mergeIfValid', () => {
     const config1: InputSpec = ['INT', { min: 0 }]
     const config2: InputSpec = ['INT', { max: 100 }]
 
-    const result = mergeIfValid(output, config2, false, undefined, config1)
-    expect(result).toEqual({ customConfig: {} })
+    mergeIfValid(output, config2, false, undefined, config1)
+
+    // Verify config1 (not GET_CONFIG's result) was passed as the first argument
+    expect(vi.mocked(mergeInputSpec)).toHaveBeenCalledWith(
+      config1,
+      config2
+    )
   })
 
   it('clamps widget value to min when below range', () => {
