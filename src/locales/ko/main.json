@@ -3,6 +3,9 @@
     "dockToTop": "상단에 도킹",
     "feedback": "피드백",
     "feedbackTooltip": "피드백",
+    "freeTierPartner": "파트너 노드는 유료 플랜이 필요합니다",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE}회 남음",
+    "freeTierRunsExhausted": "남은 실행 없음",
     "share": "공유",
     "shareTooltip": "워크플로우 공유"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "무료 등급 가능",
       "freeTierDescription": "Google로 가입하면 매월 {credits} 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
       "freeTierDescriptionGeneric": "Google로 가입하면 매월 무료 크레딧을 받을 수 있습니다. 카드 필요 없음.",
+      "googleSsoInAppBrowserNotice": "인앱 브라우저(예: Instagram, LinkedIn)에서 이 페이지를 열었다면 Google 로그인이 작동하지 않을 수 있습니다. GitHub 또는 이메일을 사용하거나, 기기의 기본 브라우저에서 이 페이지를 여세요.",
       "insecureContextWarning": "이 연결은 안전하지 않습니다(HTTP) - 로그인을 계속하면 자격 증명이 공격자에게 가로채질 수 있습니다.",
       "loginButton": "로그인",
       "loginWithGithub": "Github로 로그인",
@@ -785,6 +789,11 @@
       "gpuUsage": "GPU 사용"
     },
     "faqs": "자주 묻는 질문",
+    "insufficient": {
+      "memberCta": "확인",
+      "memberDescription": "팀의 모든 크레딧이 사용되었습니다. 워크스페이스 관리자가 워크플로우 실행을 위해 크레딧을 추가해야 합니다.",
+      "memberTitle": "이 워크스페이스의 크레딧이 모두 소진되었습니다"
+    },
     "invoiceHistory": "청구서 내역",
     "lastUpdated": "마지막 업데이트",
     "loadEventsError": "활동을 불러오지 못했습니다. 다시 시도해 주세요.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "대기 중인 {filter} 내보내기 없음",
     "preparingExport": "내보내기 준비 중...",
     "retryDownload": "다운로드 재시도"
+  },
+  "feedback": {
+    "title": "피드백 공유"
   },
   "g": {
     "1x": "1배속",
@@ -2783,7 +2795,6 @@
     "accept": "네, 도와드릴게요!",
     "description": "이 기능을 사용해 주셨네요. 잠시 시간을 내어 피드백을 남겨주시겠어요?",
     "dontAskAgain": "다시 묻지 않기",
-    "loadError": "설문을 불러오지 못했습니다. 나중에 다시 시도해 주세요.",
     "notNow": "나중에",
     "title": "개선에 도움을 주세요"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "조정",
     "advanced": "고급",
+    "anima": "anima",
     "animate": "애니메이트",
     "attention_experiments": "어텐션 실험",
     "audio": "오디오",
@@ -2849,6 +2862,7 @@
     "create": "생성",
     "custom": "커스텀",
     "dancer": "댄서",
+    "dataset": "dataset",
     "debug": "디버그",
     "detection": "감지",
     "experimental": "실험적",
@@ -2870,6 +2884,7 @@
     "image": "이미지",
     "infinite talk": "infinite talk",
     "instructpix2pix": "InstructPix2Pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "잠재 데이터",
     "loaders": "로더",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "모델",
     "model specific": "모델별",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "멀티GPU",
     "noise": "노이즈",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "네이티브 앱",
       "appTypeWeb": "웹 앱",
       "deny": "취소",
+      "detailsHeader": "세부 정보",
       "errorExpired": "이 동의 요청이 만료되었거나 이미 사용되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
       "errorScopeBroadening": "이전에 승인된 권한이 이 요청을 포함하지 않습니다. 새로운 권한으로 다시 인증해야 합니다.",
       "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
       "subtitle": "계속하려면 {resource}에 로그인하세요",
       "title": "{client}에서 접근을 요청합니다",
-      "workspaceHelp": "권한은 이 워크스페이스에만 적용됩니다.",
       "workspaceLabel": "워크스페이스"
     },
     "scopes": {
@@ -3998,6 +4014,7 @@
       "waitingForSubscription": "새 탭에서 구독을 완료해주세요. 완료되면 자동으로 감지합니다!"
     },
     "resubscribe": "다시 구독하기",
+    "resubscribeFailed": "구독을 다시 활성화하지 못했습니다",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
     "saveYearly": "20% 절감",
@@ -4123,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "필터:",
     "allTemplates": "모든 템플릿",
     "categories": "카테고리",
     "category": {
@@ -4148,9 +4164,12 @@
       "Video": "비디오",
       "Video API": "비디오 API"
     },
+    "clearAllFilters": "모든 필터 지우기",
     "error": {
       "templateNotFound": "템플릿 \"{templateName}\"을(를) 찾을 수 없음"
     },
+    "filtersApplied": "{count}개 필터 적용됨",
+    "filtersButton": "필터",
     "licenseFilter": "라이선스",
     "loading": "템플릿 불러오는 중...",
     "loadingMore": "템플릿 더 불러오는 중...",
@@ -4248,6 +4267,9 @@
     "updateRequested": "업데이트 요청됨",
     "useApiKeyTip": "팁: 일반 로그인을 사용할 수 없나요? Comfy API Key 옵션을 사용하세요.",
     "userNotAuthenticated": "사용자가 인증되지 않았습니다"
+  },
+  "typeform": {
+    "loadError": "폼을 불러오지 못했습니다. 나중에 다시 시도해 주세요."
   },
   "userSelect": {
     "enterUsername": "사용자 이름 입력",
@@ -4384,6 +4406,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "그때까지 멤버들은 전체 접근 권한을 유지합니다. 공유 크레딧과 좌석을 유지하려면 플랜을 재활성화하세요.",
+        "reactivate": "플랜 재활성화",
+        "title": "팀 플랜이 {date}에 종료됩니다"
+      },
+      "outOfCredits": {
+        "addCredits": "크레딧 추가",
+        "body": "팀의 모든 크레딧이 사용되었습니다. 계속 생성하려면 크레딧을 추가하거나 {date}에 크레딧이 충전될 때까지 기다리세요.",
+        "bodyNoDate": "팀의 모든 크레딧이 사용되었습니다. 계속 생성하려면 크레딧을 추가하세요.",
+        "dismiss": "닫기",
+        "memberBody": "팀의 모든 크레딧이 사용되었습니다. 워크스페이스 관리자가 크레딧을 추가해야 계속 생성할 수 있습니다.",
+        "title": "크레딧 소진됨"
+      },
+      "paused": {
+        "body": "이 워크스페이스의 구독이 일시 중지되었습니다. 결제를 업데이트하여 다시 시작하세요.",
+        "memberBody": "이 워크스페이스의 구독이 일시 중지되었습니다. 워크스페이스 관리자가 결제 수단을 업데이트해야 합니다.",
+        "title": "구독 일시 중지됨"
+      },
+      "updatePayment": "결제 업데이트",
+      "warning": {
+        "body": "최근 결제가 처리되지 않았습니다. 결제가 업데이트되지 않으면 {date}에 구독이 일시 중지됩니다.",
+        "bodyNoDate": "최근 결제가 처리되지 않았습니다. 일시 중지를 피하려면 결제를 업데이트하세요.",
+        "title": "결제 거부됨"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "멤버로 강등",
       "demoteMessage": "관리자 권한이 사라집니다.",

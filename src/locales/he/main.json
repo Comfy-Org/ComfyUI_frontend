@@ -3,6 +3,9 @@
     "dockToTop": "עיגון למעלה",
     "feedback": "משוב",
     "feedbackTooltip": "משוב",
+    "freeTierPartner": "צמתים של שותפים דורשים תוכנית בתשלום",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} הרצות נותרו",
+    "freeTierRunsExhausted": "לא נותרו הרצות",
     "share": "שיתוף",
     "shareTooltip": "שיתוף תהליך העבודה"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "זכאי לדרגה החינמית",
       "freeTierDescription": "הירשם באמצעות Google כדי לקבל {credits} קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
       "freeTierDescriptionGeneric": "הירשם באמצעות Google כדי לקבל קרדיטים חינם בכל חודש. אין צורך בכרטיס אשראי.",
+      "googleSsoInAppBrowserNotice": "אם פתחת דף זה מתוך דפדפן מובנה באפליקציה (למשל אינסטגרם, לינקדאין), ייתכן שכניסה עם Google לא תעבוד. השתמש ב-GitHub או בדוא\"ל, או פתח דף זה בדפדפן ברירת המחדל של המכשיר שלך.",
       "insecureContextWarning": "חיבור זה אינו מאובטח (HTTP) - פרטי הכניסה שלך עלולים להיירט על-ידי תוקפים אם תמשיך בהתחברות.",
       "loginButton": "התחברות",
       "loginWithGithub": "התחברות באמצעות Github",
@@ -785,6 +789,11 @@
       "gpuUsage": "שימוש ב-GPU"
     },
     "faqs": "שאלות נפוצות",
+    "insufficient": {
+      "memberCta": "הבנתי",
+      "memberDescription": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להריץ תהליכי עבודה.",
+      "memberTitle": "לסביבת עבודה זו אזלו הקרדיטים"
+    },
     "invoiceHistory": "היסטוריית חשבוניות",
     "lastUpdated": "עודכן לאחרונה",
     "loadEventsError": "טעינת הפעילות נכשלה. אנא נסו שוב.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "אין ייצואי {filter} בתור",
     "preparingExport": "מכין ייצוא...",
     "retryDownload": "נסה להוריד שוב"
+  },
+  "feedback": {
+    "title": "שתף משוב"
   },
   "g": {
     "1x": "1x",
@@ -2783,7 +2795,6 @@
     "accept": "בטח, אשמח לעזור!",
     "description": "השתמשת בתכונה זו. האם תוכל להקדיש רגע לשיתוף המשוב שלך?",
     "dontAskAgain": "אל תשאל שוב",
-    "loadError": "טעינת הסקר נכשלה. אנא נסה שוב מאוחר יותר.",
     "notNow": "לא עכשיו",
     "title": "עזרו לנו להשתפר"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "adjustments",
     "advanced": "advanced",
+    "anima": "anima",
     "animate": "אנימציה",
     "attention_experiments": "attention_experiments",
     "audio": "audio",
@@ -2849,6 +2862,7 @@
     "create": "create",
     "custom": "מותאם אישית",
     "dancer": "רקדן",
+    "dataset": "מאגר נתונים",
     "debug": "debug",
     "detection": "detection",
     "experimental": "experimental",
@@ -2870,6 +2884,7 @@
     "image": "image",
     "infinite talk": "infinite talk",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latent",
     "loaders": "loaders",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "model",
     "model specific": "מותאם למודל",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "noise",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "יישום מקורי (Native)",
       "appTypeWeb": "יישום אינטרנט",
       "deny": "ביטול",
+      "detailsHeader": "פרטים",
       "errorExpired": "בקשת הסכמה זו פגה או כבר נוצלה. אנא התחל מחדש מיישום הלקוח.",
       "errorScopeBroadening": "ההרשאות שאושרו בעבר אינן מכסות בקשה זו. יהיה עליך לאשר מחדש עם ההרשאות החדשות.",
       "errorUnavailable": "תכונה זו אינה זמינה כרגע. אנא פנה לתמיכה אם הבעיה נמשכת.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
-      "workspaceHelp": "ההרשאות חלות על סביבת עבודה זו בלבד.",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -4010,6 +4026,7 @@
       "waitingForSubscription": "השלם את ההרשמה שלך בכרטיסייה החדשה. נזהה אוטומטית כשתסיים!"
     },
     "resubscribe": "הירשם מחדש",
+    "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
     "saveYearly": "חסוך 20%",
@@ -4135,7 +4152,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "מסננים:",
     "allTemplates": "כל התבניות",
     "categories": "קטגוריות",
     "category": {
@@ -4160,9 +4176,12 @@
       "Video": "סרטון",
       "Video API": "Video API"
     },
+    "clearAllFilters": "נקה את כל המסננים",
     "error": {
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
+    "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
+    "filtersButton": "מסננים",
     "licenseFilter": "רישיון",
     "loading": "טוען תבניות...",
     "loadingMore": "טוען תבניות נוספות...",
@@ -4260,6 +4279,9 @@
     "updateRequested": "התבקש עדכון",
     "useApiKeyTip": "טיפ: לא מצליח לגשת להתחברות הרגילה? השתמש באפשרות מפתח ה-API של Comfy.",
     "userNotAuthenticated": "המשתמש לא אומת"
+  },
+  "typeform": {
+    "loadError": "טעינת הטופס נכשלה. נסה שוב מאוחר יותר."
   },
   "userSelect": {
     "enterUsername": "הזן שם משתמש",
@@ -4396,6 +4418,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "החברים שומרים על גישה מלאה עד אז. הפעל מחדש כדי לשמור על הקרדיטים והמושבים המשותפים.",
+        "reactivate": "הפעל מחדש את התוכנית",
+        "title": "תוכנית הצוות שלך מסתיימת ב-{date}"
+      },
+      "outOfCredits": {
+        "addCredits": "הוסף קרדיטים",
+        "body": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה או המתן עד למילוי הקרדיטים ב-{date}.",
+        "bodyNoDate": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה.",
+        "dismiss": "סגור",
+        "memberBody": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להמשיך ביצירה.",
+        "title": "אזלו הקרדיטים"
+      },
+      "paused": {
+        "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",
+        "memberBody": "המנוי של סביבת עבודה זו מושהה. מנהלי סביבת העבודה צריכים לעדכן את אמצעי התשלום.",
+        "title": "המנוי מושהה"
+      },
+      "updatePayment": "עדכן תשלום",
+      "warning": {
+        "body": "התשלום האחרון שלך לא עבר. המנוי יושהה ב-{date} אלא אם תעדכן את התשלום.",
+        "bodyNoDate": "התשלום האחרון שלך לא עבר. עדכן את התשלום כדי למנוע השהיה.",
+        "title": "התשלום נדחה"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "הורד לחבר רגיל",
       "demoteMessage": "הגישה הניהולית תוסר.",

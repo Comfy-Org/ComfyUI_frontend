@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 import { useElementVisibility } from '@vueuse/core'
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
@@ -19,7 +19,6 @@ const AFTER_TYPING_MS = 520
 const RUN_TOOL_MS = 360
 const AFTER_CARD_MS = 900
 const BETWEEN_PROMPTS_MS = 650
-const REDUCED_MOTION_DWELL_MS = 2600
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
@@ -40,7 +39,6 @@ const nextPrompt = computed(
 const typed = ref(t(nextPrompt.value.promptKey, locale))
 const submitting = ref(false)
 const status = ref(idleStatus)
-const reducedMotion = computed(prefersReducedMotion)
 
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
@@ -54,13 +52,6 @@ function schedule(step: () => void, ms: number) {
 
 function typeNextPrompt() {
   const text = t(nextPrompt.value.promptKey, locale)
-
-  if (reducedMotion.value) {
-    typed.value = text
-    schedule(runTool, AFTER_TYPING_MS)
-    return
-  }
-
   typed.value = ''
 
   let typedLength = 0
@@ -104,21 +95,19 @@ function commitCard() {
 }
 
 function restBeforeNextPrompt() {
-  if (!reducedMotion.value) typed.value = ''
-
-  schedule(
-    typeNextPrompt,
-    reducedMotion.value ? REDUCED_MOTION_DWELL_MS : BETWEEN_PROMPTS_MS
-  )
+  typed.value = ''
+  schedule(typeNextPrompt, BETWEEN_PROMPTS_MS)
 }
 
-watch(visible, (onScreen) => {
-  if (onScreen) {
-    schedule(typeNextPrompt, START_DELAY_MS)
+watchEffect(() => {
+  clearTimeout(timer)
+  if (prefersReducedMotion()) {
+    typed.value = t(nextPrompt.value.promptKey, locale)
+    submitting.value = false
+    status.value = idleStatus
     return
   }
-
-  clearTimeout(timer)
+  if (visible.value) schedule(typeNextPrompt, START_DELAY_MS)
 })
 
 onUnmounted(() => clearTimeout(timer))
@@ -183,7 +172,6 @@ onUnmounted(() => clearTimeout(timer))
       <TransitionGroup
         name="card-slide"
         tag="div"
-        :css="!reducedMotion"
         class="flex flex-col gap-2.5"
       >
         <div

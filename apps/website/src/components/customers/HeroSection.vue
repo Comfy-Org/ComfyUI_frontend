@@ -34,7 +34,6 @@ function handleLogoLoad() {
     <div
       class="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left"
     >
-      <!-- 3D logo graphic -->
       <div
         ref="logoRef"
         class="order-2 mt-8 w-full lg:order-1 lg:mt-0 lg:w-5/12"
@@ -49,7 +48,6 @@ function handleLogoLoad() {
         />
       </div>
 
-      <!-- Text -->
       <div
         class="order-1 flex flex-col items-center lg:order-2 lg:w-7/12 lg:items-start lg:pt-16 lg:pl-12"
       >
@@ -70,8 +68,6 @@ function handleLogoLoad() {
         </p>
       </div>
     </div>
-
-    <!-- Video -->
 
     <div
       id="hero-video"
