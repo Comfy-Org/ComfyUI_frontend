@@ -415,8 +415,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set read_only(value: boolean) {
+    const changed = this.state.readOnly !== value
     this.state.readOnly = value
     this._updateCursorStyle()
+    if (changed) {
+      this.dispatchEvent('litegraph:read-only-changed', { readOnly: value })
+    }
   }
 
   get isDragging(): boolean {
@@ -3753,17 +3757,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param cancelled If true, the node is removed; otherwise it's placed
    */
   finalizeGhostPlacement(cancelled: boolean): void {
-    const nodeId = this.state.ghostNodeId
-    if (nodeId == null) return
-
-    this.state.ghostNodeId = null
-    this.isDragging = false
-    this.dispatchEvent('litegraph:ghost-placement', {
-      active: false,
-      nodeId
-    })
-    this._autoPan?.stop()
-    this._autoPan = null
+    const ownedGhostState =
+      this._ghostPointerHandler != null || this._ghostKeyHandler != null
 
     if (this._ghostPointerHandler) {
       document.removeEventListener('pointermove', this._ghostPointerHandler)
@@ -3778,6 +3773,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       document.removeEventListener('keydown', this._ghostKeyHandler, true)
       this._ghostKeyHandler = null
     }
+
+    if (ownedGhostState) {
+      this.isDragging = false
+      this._autoPan?.stop()
+      this._autoPan = null
+    }
+
+    const nodeId = this.state.ghostNodeId
+    if (nodeId == null) return
+
+    this.state.ghostNodeId = null
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
 
     const parsedNodeId = parseNodeId(nodeId)
     const node = parsedNodeId ? this.graph?.getNodeById(parsedNodeId) : null
@@ -3981,7 +3991,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (this._previously_dragging_canvas === null) {
           this._previously_dragging_canvas = this.dragging_canvas
         }
-        this.dragging_canvas = this.pointer.isDown
+        this.dragging_canvas =
+          this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
       } else if (e.key === 'Escape') {
         // esc
