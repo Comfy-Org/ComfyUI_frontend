@@ -8,14 +8,11 @@ import AccessibleTooltip from './AccessibleTooltip.vue'
 
 const openDialogs: HTMLElement[] = []
 afterEach(() => {
-  for (const dialog of openDialogs.splice(0)) {
-    ZIndex.clear(dialog)
-    dialog.remove()
-  }
+  for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
 })
 
 function openDialogAbove(baseZIndex: number): number {
-  const dialog = document.body.appendChild(document.createElement('div'))
+  const dialog = document.createElement('div')
   ZIndex.set('modal', dialog, baseZIndex)
   openDialogs.push(dialog)
   return Number(dialog.style.zIndex)
