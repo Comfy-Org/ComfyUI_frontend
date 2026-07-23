@@ -61,7 +61,12 @@ function bringToFront(key: ElementKey) {
 function onPointerDown(key: ElementKey, event: PointerEvent) {
   bringToFront(key)
   const target = event.target as Element
-  if (target.closest('a, input, label, [data-camera-scene]')) return
+  if (
+    target.closest(
+      'a, button, input, label, [role="slider"], [data-camera-scene]'
+    )
+  )
+    return
   const canvas = canvasEl.value
   if (!canvas) return
   drag.value = {
