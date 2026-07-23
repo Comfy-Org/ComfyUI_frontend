@@ -130,8 +130,7 @@ vi.mock('@/services/jobOutputCache', () => ({
 
 const createAnnotatedPathMock = vi.fn()
 vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: (filename: string, subfolder: string, type: string) =>
-    createAnnotatedPathMock(filename, subfolder, type)
+  createAnnotatedPath: (...args: unknown[]) => createAnnotatedPathMock(...args)
 }))
 
 const appendJsonExtMock = vi.fn((value: string) =>
@@ -280,6 +279,20 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).not.toHaveBeenCalled()
   })
 
+  it('uses an empty menu with the default current item getter', async () => {
+    const { jobMenuEntries, openJobWorkflow, copyJobId, cancelJob } =
+      useJobMenu()
+
+    await openJobWorkflow()
+    await copyJobId()
+    await cancelJob()
+
+    expect(jobMenuEntries.value).toEqual([])
+    expect(getJobWorkflowMock).not.toHaveBeenCalled()
+    expect(copyToClipboardMock).not.toHaveBeenCalled()
+    expect(queueStoreMock.update).not.toHaveBeenCalled()
+  })
+
   it.for([['running'], ['initialization'], ['pending']])(
     'cancels %s job via the state-agnostic jobs-namespace endpoint',
     async ([state]) => {
@@ -391,6 +404,26 @@ describe('useJobMenu', () => {
     expect(errorArg).toBeInstanceOf(Error)
     expect(errorArg.message).toBe('Job failed with error')
     expect(optionsArg).toEqual({ reportType: 'queueJobError' })
+  })
+
+  it('ignores failed report action when item disappears before click', async () => {
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(
+      createJobItem({
+        state: 'failed',
+        taskRef: {
+          errorMessage: 'Job failed with error'
+        } as Partial<TaskItemImpl>
+      })
+    )
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'report-error')
+    setCurrentItem(null)
+    await entry?.onClick?.()
+
+    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
+    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
   })
 
   it('ignores error actions when message missing', async () => {
@@ -544,6 +577,73 @@ describe('useJobMenu', () => {
     expect(createAnnotatedPathMock).not.toHaveBeenCalled()
   })
 
+  it('uses no root folder when preview type is not an API result type', async () => {
+    const node = {
+      widgets: [{ name: 'image', value: null, callback: vi.fn() }],
+      graph: { setDirtyCanvas: vi.fn() }
+    }
+    litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(node)
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {
+          previewOutput: {
+            isImage: true,
+            filename: 'foo.png',
+            subfolder: 'bar',
+            type: 'archive',
+            url: 'http://asset'
+          }
+        }
+      })
+    )
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
+    await entry?.onClick?.()
+
+    expect(createAnnotatedPathMock).toHaveBeenCalledWith(
+      {
+        filename: 'foo.png',
+        subfolder: 'bar',
+        type: undefined
+      },
+      { rootFolder: undefined }
+    )
+    expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+
+  it('marks graph dirty when created loader node has no matching widget', async () => {
+    const node = {
+      widgets: [{ name: 'other', value: null, callback: vi.fn() }],
+      graph: { setDirtyCanvas: vi.fn() }
+    }
+    litegraphServiceMock.addNodeOnGraph.mockReturnValueOnce(node)
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {
+          previewOutput: {
+            isImage: true,
+            filename: 'foo.png',
+            subfolder: '',
+            type: 'output'
+          }
+        }
+      })
+    )
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
+    await entry?.onClick?.()
+
+    expect(node.widgets[0].value).toBeNull()
+    expect(node.widgets[0].callback).not.toHaveBeenCalled()
+    expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+
   it('ignores add-to-current entry when preview missing entirely', async () => {
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -594,6 +694,45 @@ describe('useJobMenu', () => {
     expect(downloadFileMock).not.toHaveBeenCalled()
   })
 
+  it('ignores completed asset actions when item disappears before click', async () => {
+    const inspectSpy = vi.fn()
+    const { jobMenuEntries } = mountJobMenu(inspectSpy)
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {
+          previewOutput: {
+            isImage: true,
+            filename: 'foo.png',
+            subfolder: '',
+            type: 'output',
+            url: 'https://asset'
+          }
+        }
+      })
+    )
+
+    await nextTick()
+    const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
+    const addEntry = findActionEntry(jobMenuEntries.value, 'add-to-current')
+    const downloadEntry = findActionEntry(jobMenuEntries.value, 'download')
+    const exportEntry = findActionEntry(jobMenuEntries.value, 'export-workflow')
+    const deleteEntry = findActionEntry(jobMenuEntries.value, 'delete')
+    setCurrentItem(null)
+
+    void inspectEntry?.onClick?.()
+    await addEntry?.onClick?.()
+    void downloadEntry?.onClick?.()
+    await exportEntry?.onClick?.()
+    await deleteEntry?.onClick?.()
+
+    expect(inspectSpy).not.toHaveBeenCalled()
+    expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
+    expect(downloadFileMock).not.toHaveBeenCalled()
+    expect(getJobWorkflowMock).not.toHaveBeenCalled()
+    expect(mediaAssetActionsMock.deleteAssets).not.toHaveBeenCalled()
+  })
+
   it('exports workflow with default filename when prompting disabled', async () => {
     const workflow = { foo: 'bar' }
     getJobWorkflowMock.mockResolvedValue(workflow)
@@ -616,6 +755,17 @@ describe('useJobMenu', () => {
     await expect(blob.text()).resolves.toBe(
       JSON.stringify({ foo: 'bar' }, null, 2)
     )
+  })
+
+  it('does not export workflow when workflow data is unavailable', async () => {
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(createJobItem({ state: 'completed' }))
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
+    await entry?.onClick?.()
+
+    expect(downloadBlobMock).not.toHaveBeenCalled()
   })
 
   it('prompts for filename when setting enabled', async () => {
@@ -710,6 +860,24 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'delete')
     await entry?.onClick?.()
 
+    expect(queueStoreMock.update).not.toHaveBeenCalled()
+  })
+
+  it('does not delete asset when preview disappears before click', async () => {
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: { previewOutput: {} }
+      })
+    )
+
+    await nextTick()
+    const entry = findActionEntry(jobMenuEntries.value, 'delete')
+    setCurrentItem(createJobItem({ state: 'completed', taskRef: {} }))
+    await entry?.onClick?.()
+
+    expect(mediaAssetActionsMock.deleteAssets).not.toHaveBeenCalled()
     expect(queueStoreMock.update).not.toHaveBeenCalled()
   })
 

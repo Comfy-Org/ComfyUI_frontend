@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { releaseSharedObjectUrl } from '@/utils/objectUrlUtil'
@@ -71,6 +71,20 @@ describe('jobPreviewStore', () => {
     expect(store.previewsByPromptId).toEqual({ p2: 'blob:b' })
   })
 
+  it('ignores clearPreview without a prompt id', () => {
+    const store = useJobPreviewStore()
+    store.setPreviewUrl('p1', 'blob:a', 'node-1')
+    vi.mocked(releaseSharedObjectUrl).mockClear()
+
+    store.clearPreview(undefined)
+
+    expect(store.nodePreviewsByPromptId['p1']).toEqual({
+      url: 'blob:a',
+      nodeId: 'node-1'
+    })
+    expect(releaseSharedObjectUrl).not.toHaveBeenCalled()
+  })
+
   it('clears all previews', () => {
     const store = useJobPreviewStore()
     store.setPreviewUrl('p1', 'blob:a', 'node-1')
@@ -91,6 +105,24 @@ describe('jobPreviewStore', () => {
     expect(releaseSharedObjectUrl).not.toHaveBeenCalled()
   })
 
+  it('ignores missing prompt ids', () => {
+    const store = useJobPreviewStore()
+
+    store.setPreviewUrl(undefined, 'blob:a', 'node-1')
+
+    expect(store.nodePreviewsByPromptId).toEqual({})
+  })
+
+  it('releases the old url when replacing a preview', () => {
+    const store = useJobPreviewStore()
+    store.setPreviewUrl('p1', 'blob:a', 'node-1')
+
+    store.setPreviewUrl('p1', 'blob:b', 'node-1')
+
+    expect(releaseSharedObjectUrl).toHaveBeenCalledWith('blob:a')
+    expect(store.nodePreviewsByPromptId['p1']?.url).toBe('blob:b')
+  })
+
   it('ignores setPreviewUrl when previews are disabled', () => {
     previewMethodRef.value = 'none'
     const store = useJobPreviewStore()
@@ -98,5 +130,17 @@ describe('jobPreviewStore', () => {
     store.setPreviewUrl('p1', 'blob:a', 'node-1')
 
     expect(store.nodePreviewsByPromptId).toEqual({})
+  })
+
+  it('clears previews when previews are disabled after storage', async () => {
+    const store = useJobPreviewStore()
+    store.setPreviewUrl('p1', 'blob:a', 'node-1')
+    vi.mocked(releaseSharedObjectUrl).mockClear()
+
+    previewMethodRef.value = 'none'
+    await nextTick()
+
+    expect(store.nodePreviewsByPromptId).toEqual({})
+    expect(releaseSharedObjectUrl).toHaveBeenCalledWith('blob:a')
   })
 })

@@ -1,6 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
@@ -12,6 +13,8 @@ import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
+import { createTestWorkflow } from '@/stores/__tests__/workflowFixture'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const {
   mockNodeIdToNodeLocatorId,
@@ -22,7 +25,8 @@ const {
   mockShowTextPreview,
   mockTrackExecutionError,
   mockTrackExecutionSuccess,
-  mockTrackSharedWorkflowRun
+  mockTrackSharedWorkflowRun,
+  mockRevokePreviewsByExecutionId
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
@@ -34,7 +38,8 @@ const {
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
-    mockTrackSharedWorkflowRun: vi.fn()
+    mockTrackSharedWorkflowRun: vi.fn(),
+    mockRevokePreviewsByExecutionId: vi.fn()
   }
 })
 
@@ -129,7 +134,7 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
-    revokePreviewsByExecutionId: vi.fn()
+    revokePreviewsByExecutionId: mockRevokePreviewsByExecutionId
   })
 }))
 
@@ -157,13 +162,11 @@ beforeEach(() => {
 })
 
 function createQueuedWorkflow(path: string = 'workflows/test.json') {
-  return {
+  return createTestWorkflow({
     activeState: { id: 'workflow-id' },
     initialState: { id: 'workflow-id' },
     path
-  } as Parameters<
-    ReturnType<typeof useExecutionStore>['storeJob']
-  >[0]['workflow']
+  })
 }
 
 function createPromptNode(title: string, classType: string) {
@@ -423,6 +426,124 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
       'running'
     )
   })
+
+  it('keeps an existing error state when later progress maps to the same locator', () => {
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123',
+        state: 'error',
+        value: 0,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123:456',
+        state: 'running',
+        value: 50,
+        max: 100,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+        .state
+    ).toBe('error')
+  })
+
+  it('ignores finished progress when current state is already running', () => {
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123',
+        state: 'running',
+        value: 5,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123',
+        state: 'finished',
+        value: 10,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toMatchObject({ state: 'running', value: 5 })
+  })
+
+  it('keeps later running progress from moving a locator backwards', () => {
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123',
+        state: 'running',
+        value: 6,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123',
+        state: 'running',
+        value: 8,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toMatchObject({ state: 'running', value: 6, max: 10 })
+  })
+
+  it('merges zero-max running progress without dividing by zero', () => {
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '123',
+        state: 'pending',
+        value: 0,
+        max: 0,
+        prompt_id: 'test',
+        node_id: 'node1'
+      },
+      node2: {
+        display_node_id: '123',
+        state: 'running',
+        value: 0,
+        max: 0,
+        prompt_id: 'test',
+        node_id: 'node2'
+      }
+    }
+
+    expect(
+      store.nodeLocationProgressStates[createNodeLocatorId(null, toNodeId(123))]
+    ).toMatchObject({ state: 'running', value: 0, max: 0 })
+  })
+
+  it('skips nested progress when the execution id cannot be resolved', () => {
+    vi.mocked(app.rootGraph.getNodeById).mockReturnValue(null)
+    store.nodeProgressStates = {
+      node1: {
+        display_node_id: '404:1',
+        state: 'running',
+        value: 5,
+        max: 10,
+        prompt_id: 'test',
+        node_id: 'node1'
+      }
+    }
+
+    expect(store.nodeLocationProgressStates).toHaveProperty('404')
+    expect(store.nodeLocationProgressStates).not.toHaveProperty('404:1')
+  })
 })
 
 describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
@@ -551,18 +672,39 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 
     expect(store.initializingJobIds).toEqual(new Set())
   })
+
+  it('clears initialization ids directly', () => {
+    store.initializingJobIds = new Set(['job-1'])
+
+    store.clearInitializationByJobId(null)
+    store.clearInitializationByJobId('missing')
+    store.clearInitializationByJobId('job-1')
+
+    expect(store.initializingJobIds).toEqual(new Set())
+  })
+
+  it('checks initializing jobs by stringified id', () => {
+    store.initializingJobIds = new Set(['7'])
+
+    expect(store.isJobInitializing(undefined)).toBe(false)
+    expect(store.isJobInitializing(7)).toBe(true)
+  })
+
+  it('does not rewrite initializing state when no requested ids are tracked', () => {
+    store.initializingJobIds = new Set(['job-1'])
+    const before = store.initializingJobIds
+
+    store.clearInitializationByJobIds(['missing'])
+
+    expect(store.initializingJobIds).toBe(before)
+    expect(store.initializingJobIds).toEqual(new Set(['job-1']))
+  })
 })
 
 describe('useExecutionStore - workflowStatus', () => {
   let store: ReturnType<typeof useExecutionStore>
-  type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
-  const makeWorkflow = (path: string): Workflow => {
-    const workflow: Partial<Workflow> = {
-      path,
-      filename: path.split('/').pop()
-    }
-    return workflow as Workflow
-  }
+  const makeWorkflow = (path: string): ComfyWorkflow =>
+    fromPartial<ComfyWorkflow>({ path, filename: path.split('/').pop() })
   const workflowA = makeWorkflow('/workflows/a.json')
   const workflowB = makeWorkflow('/workflows/b.json')
 
@@ -609,7 +751,7 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
-  function callStoreJob(jobId: string, workflow: Workflow) {
+  function callStoreJob(jobId: string, workflow: ComfyWorkflow) {
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -675,6 +817,16 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
+  it('leaves workflowStatus unchanged when open workflows are unchanged', async () => {
+    callStoreJob('job-a', workflowA)
+    fireExecutionSuccess('job-a')
+
+    mockOpenWorkflows.value = [workflowA, workflowB]
+    await nextTick()
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+  })
+
   it('sets failed on execution_error', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
@@ -686,6 +838,14 @@ describe('useExecutionStore - workflowStatus', () => {
   it('skips status badge on user-initiated interrupt', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
+    fireExecutionInterrupted('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('handles interrupt for a queued workflow with no active job', () => {
+    callStoreJob('job-1', workflowA)
+
     fireExecutionInterrupted('job-1')
 
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
@@ -892,20 +1052,49 @@ describe('useExecutionStore - progress_text startup guard', () => {
     const mockNode = createMockLGraphNode({ id: 1 })
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
+    })
 
     fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
 
     expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
   })
+
+  it('should ignore progress_text for another active prompt', async () => {
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    })
+    store.activeJobId = 'job-1'
+
+    fireProgressText({
+      nodeId: toNodeId('1'),
+      text: 'warming up',
+      prompt_id: 'job-2'
+    })
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should ignore progress_text without text or node id', () => {
+    fireProgressText({ nodeId: toNodeId('1'), text: '' })
+    fireProgressText({
+      nodeId: '' as ReturnType<typeof toNodeId>,
+      text: 'warming up'
+    })
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
   it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
+    })
     mockExecutionIdToCurrentId.mockReturnValue(undefined)
 
     expect(() =>
@@ -913,6 +1102,19 @@ describe('useExecutionStore - progress_text startup guard', () => {
     ).not.toThrow()
 
     expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should ignore progress_text when the current node id cannot be parsed', async () => {
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: vi.fn() }
+    })
+    mockExecutionIdToCurrentId.mockReturnValue({})
+
+    fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
+
     expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
@@ -1366,14 +1568,26 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('clears initializing state for the starting job', () => {
-      store.initializingJobIds = new Set([
-        'job-1',
-        'job-2'
-      ]) as unknown as Set<string>
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
+    })
+
+    it('captures a queued workflow path when the start event wins the race', () => {
+      store.queuedJobs = {
+        'job-1': {
+          nodes: {},
+          workflow: createQueuedWorkflow('/workflows/race.json')
+        }
+      }
+
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        '/workflows/race.json'
+      )
     })
   })
 
@@ -1562,9 +1776,37 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         is_app_mode: true
       })
     })
+
+    it('uses current mode when shared queued job has no queued mode snapshot', () => {
+      mockAppModeState.mode.value = 'app'
+      mockAppModeState.isAppMode.value = true
+      store.queuedJobs = {
+        'job-1': {
+          nodes: {},
+          shareId: 'share-1'
+        }
+      }
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
+      })
+    })
   })
 
   describe('executing', () => {
+    it('is a no-op when there is no active job', () => {
+      store.activeJobId = 'ghost-job'
+
+      fire('executing', null)
+
+      expect(store.activeJobId).toBe('ghost-job')
+    })
+
     it('clears _executingNodeProgress and activeJobId when detail is null', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       store._executingNodeProgress = {
@@ -1590,6 +1832,29 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
   })
 
+  describe('progress_state', () => {
+    it('does not revoke previews when the node execution id is invalid', () => {
+      mockRevokePreviewsByExecutionId.mockClear()
+
+      fire('progress_state', {
+        prompt_id: 'job-1',
+        nodes: {
+          '': {
+            value: 1,
+            max: 2,
+            state: 'running',
+            node_id: '',
+            display_node_id: '',
+            prompt_id: 'job-1'
+          }
+        }
+      })
+
+      expect(mockRevokePreviewsByExecutionId).not.toHaveBeenCalled()
+      expect(store.nodeProgressStates).toHaveProperty('')
+    })
+  })
+
   describe('progress', () => {
     it('sets _executingNodeProgress from the event payload', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
@@ -1610,6 +1875,24 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.clientId).toBe('test-client')
       expect(removeSpy).toHaveBeenCalledWith('status', expect.any(Function))
     })
+
+    it('keeps listening when status arrives before clientId is available', async () => {
+      const apiModule = await import('@/scripts/api')
+      const removeSpy = vi.mocked(apiModule.api.removeEventListener)
+      apiModule.api.clientId = ''
+
+      try {
+        fire('status', { exec_info: { queue_remaining: 0 } })
+
+        expect(store.clientId).toBeNull()
+        expect(removeSpy).not.toHaveBeenCalledWith(
+          'status',
+          expect.any(Function)
+        )
+      } finally {
+        apiModule.api.clientId = 'test-client'
+      }
+    })
   })
 
   describe('execution_error', () => {
@@ -1628,6 +1911,40 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         type: 'StagnationError',
         message: 'StagnationError: Job has stagnated',
         details: 'line 1\nline 2'
+      })
+    })
+
+    it('uses the message directly for service-level errors without a type', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_message: 'Job failed before node execution',
+        traceback: []
+      })
+
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'error',
+        message: 'Job failed before node execution',
+        details: ''
+      })
+    })
+
+    it('uses an empty prompt message for service-level errors without backend copy', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_message: '',
+        traceback: []
+      })
+
+      expect(errorStore.lastPromptError).toMatchObject({
+        type: 'error',
+        message: '',
+        details: ''
       })
     })
 
@@ -1744,6 +2061,12 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.initializingJobIds.has('job-9')).toBe(false)
     })
+
+    it('ignores notifications without text', () => {
+      fire('notification', { id: 'job-9' })
+
+      expect(store.initializingJobIds.has('job-9')).toBe(false)
+    })
   })
 
   describe('unbindExecutionEvents', () => {
@@ -1784,11 +2107,11 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('storeJob populates queuedJobs and tracks the workflow path', () => {
-    const workflow = {
+    const workflow = createTestWorkflow({
       activeState: { id: 'wf-1' },
       initialState: { id: 'wf-1' },
       path: '/workflows/foo.json'
-    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+    })
 
     store.storeJob({
       nodes: ['a', 'b'],
@@ -1813,6 +2136,43 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     )
   })
 
+  it('storeJob works without workflow metadata', () => {
+    const workflow: ComfyWorkflow | undefined = fromPartial<ComfyWorkflow>({})
+    const missingWorkflow: ComfyWorkflow | undefined = undefined
+
+    store.storeJob({
+      nodes: ['a'],
+      id: 'job-1',
+      promptOutput: {
+        a: createPromptNode('Node A', 'NodeA')
+      },
+      workflow
+    })
+
+    expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false })
+    expect(store.jobIdToWorkflowId.has('job-1')).toBe(false)
+    expect(store.jobIdToSessionWorkflowPath.has('job-1')).toBe(false)
+
+    store.storeJob({
+      nodes: ['b'],
+      id: 'job-2',
+      promptOutput: {
+        b: createPromptNode('Node B', 'NodeB')
+      },
+      workflow: missingWorkflow
+    })
+
+    expect(store.queuedJobs['job-2']?.nodes).toEqual({ b: false })
+    expect(store.queuedJobs['job-2']?.workflow).toBeUndefined()
+  })
+
+  it('reports zero execution progress for an active job with no nodes', () => {
+    store.activeJobId = 'job-1'
+    store.queuedJobs = { 'job-1': { nodes: {} } }
+
+    expect(store.executionProgress).toBe(0)
+  })
+
   it('registerJobWorkflowIdMapping ignores empty inputs', () => {
     store.registerJobWorkflowIdMapping('job-1', 'wf-1')
     store.registerJobWorkflowIdMapping('', 'wf-2')
@@ -1828,5 +2188,59 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     store.ensureSessionWorkflowPath('job-1', '/b.json')
 
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe('/b.json')
+  })
+
+  it('evicts the oldest workflow paths when the session map exceeds capacity', () => {
+    for (let i = 0; i < 4001; i++) {
+      store.ensureSessionWorkflowPath(`job-${i}`, `/workflow-${i}.json`)
+    }
+
+    expect(store.jobIdToSessionWorkflowPath.size).toBe(4000)
+    expect(store.jobIdToSessionWorkflowPath.has('job-0')).toBe(false)
+    expect(store.jobIdToSessionWorkflowPath.get('job-4000')).toBe(
+      '/workflow-4000.json'
+    )
+  })
+
+  it('reports whether the active workflow is running', () => {
+    mockActiveWorkflow.value = { path: '/workflows/foo.json' }
+    store.activeJobId = 'job-1'
+    store.ensureSessionWorkflowPath('job-1', '/workflows/foo.json')
+
+    expect(store.isActiveWorkflowRunning).toBe(true)
+
+    store.ensureSessionWorkflowPath('job-1', '/workflows/bar.json')
+    expect(store.isActiveWorkflowRunning).toBe(false)
+
+    mockActiveWorkflow.value = {}
+    expect(store.isActiveWorkflowRunning).toBe(false)
+  })
+
+  it('counts running jobs from progress state', () => {
+    store.nodeProgressStatesByJob = {
+      'job-1': {
+        a: {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: 'a',
+          display_node_id: 'a',
+          prompt_id: 'job-1'
+        }
+      },
+      'job-2': {
+        b: {
+          value: 10,
+          max: 10,
+          state: 'finished',
+          node_id: 'b',
+          display_node_id: 'b',
+          prompt_id: 'job-2'
+        }
+      }
+    }
+
+    expect(store.runningJobIds).toEqual(['job-1'])
+    expect(store.runningWorkflowCount).toBe(1)
   })
 })
