@@ -987,7 +987,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'p3'
       ])
     })
-
   })
 
   describe('refresh error surfacing', () => {
@@ -995,13 +994,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('existing')
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('existing')])
+      )
       await store.updateModelsForNodeType(nodeType)
       expect(store.getError(nodeType)).toBeUndefined()
 
-      vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+      vi.mocked(assetService.getAssetsPageForNodeType).mockRejectedValueOnce(
         new Error('backend down')
       )
       await store.updateModelsForNodeType(nodeType)
@@ -1067,19 +1066,19 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
 
-      let resolveFirst!: (assets: AssetItem[]) => void
-      const firstFetch = new Promise<AssetItem[]>((resolve) => {
+      let resolveFirst!: (response: AssetResponse) => void
+      const firstFetch = new Promise<AssetResponse>((resolve) => {
         resolveFirst = resolve
       })
-      vi.mocked(assetService.getAssetsForNodeType)
+      vi.mocked(assetService.getAssetsPageForNodeType)
         .mockReturnValueOnce(firstFetch)
-        .mockReturnValue(new Promise<AssetItem[]>(() => {}))
+        .mockReturnValue(new Promise<AssetResponse>(() => {}))
 
       const staleRequest = store.updateModelsForNodeType(nodeType)
       store.invalidateCategory('checkpoints')
       void store.updateModelsForNodeType(nodeType)
 
-      resolveFirst([createMockAsset('stale')])
+      resolveFirst(makePage([createMockAsset('stale')]))
       await staleRequest
 
       // The stale request's teardown must not evict the newer request's
@@ -1087,7 +1086,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       // a duplicate walk.
       void store.updateModelsForNodeType(nodeType)
       expect(
-        vi.mocked(assetService.getAssetsForNodeType)
+        vi.mocked(assetService.getAssetsPageForNodeType)
       ).toHaveBeenCalledTimes(2)
     })
   })
@@ -1934,18 +1933,22 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
 
   it('caches model assets fetched by tag on non-cloud builds', async () => {
     const store = useAssetsStore()
-    vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
-      {
-        id: 'm1',
-        name: 'sd_xl_base_1.0.safetensors',
-        tags: ['checkpoints', 'models']
-      },
-      { id: 'm2', name: 'lora.safetensors', tags: ['loras', 'models'] }
-    ])
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue({
+      assets: [
+        {
+          id: 'm1',
+          name: 'sd_xl_base_1.0.safetensors',
+          tags: ['checkpoints', 'models']
+        },
+        { id: 'm2', name: 'lora.safetensors', tags: ['loras', 'models'] }
+      ],
+      total: 2,
+      has_more: false
+    })
 
     await store.updateModelsForTag('models')
 
-    expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
       'models',
       true,
       expect.anything()
