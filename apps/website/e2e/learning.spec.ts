@@ -6,9 +6,6 @@ import {
   featuredFor,
   filterByCategory,
   learningCategories,
-  learningDescription,
-  learningHeading,
-  learningMetaTitle,
   learningTutorials,
   populatedCategories,
   tutorialPath
@@ -21,6 +18,30 @@ const thumbnailLinkName = (title: string, locale: 'en' | 'zh-CN') =>
 
 const categoryNav = (page: Page, locale: 'en' | 'zh-CN' = 'en') =>
   page.getByRole('navigation', { name: t('learning.categoryNav', locale) })
+
+// Rendered copy pinned as literals (en) rather than re-derived from the
+// metadata helpers, so these assertions catch a regression in the helpers or
+// the underlying strings — not just the wiring.
+const EXPECTED_META = {
+  vfx: {
+    heading: 'VFX Tutorials',
+    description:
+      'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    title: 'VFX Tutorials - Comfy'
+  },
+  animations: {
+    heading: 'Animation Tutorials',
+    description:
+      'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    title: 'Animation Tutorials - Comfy'
+  },
+  ads: {
+    heading: 'Ad Creative Tutorials',
+    description:
+      'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    title: 'Ad Creative Tutorials - Comfy'
+  }
+} as const
 
 test.describe('Learning page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -157,13 +178,13 @@ test.describe('Learning category pages @smoke', () => {
 
     await expect(page).toHaveURL('/learning/vfx')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      learningHeading('en', 'vfx')
+      EXPECTED_META.vfx.heading
     )
-    await expect(page.getByText(learningDescription('en', 'vfx'))).toBeVisible()
-    await expect(page).toHaveTitle(learningMetaTitle('en', 'vfx'))
+    await expect(page.getByText(EXPECTED_META.vfx.description)).toBeVisible()
+    await expect(page).toHaveTitle(EXPECTED_META.vfx.title)
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
-      learningDescription('en', 'vfx')
+      EXPECTED_META.vfx.description
     )
   })
 
@@ -173,7 +194,7 @@ test.describe('Learning category pages @smoke', () => {
     }) => {
       await page.goto(`/learning/${category}`)
 
-      await expect(page).toHaveTitle(learningMetaTitle('en', category))
+      await expect(page).toHaveTitle(EXPECTED_META[category].title)
 
       for (const tutorial of learningTutorials) {
         const link = page.getByRole('link', {
