@@ -9,7 +9,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import {
+  extractApiPromptFromAsset,
+  extractWorkflowFromAsset
+} from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -396,6 +399,30 @@ export function useMediaAssetActions() {
   }
 
   /**
+   * Open the asset's stored API-format graph as a new workflow, the way the
+   * canvas already does when an API-format JSON file is dropped onto it.
+   *
+   * Layout is invented and groups/reroutes cannot survive API format, so the
+   * result is reopenable rather than faithful. It is only handed to the editor
+   * — nothing is written back to the job or the asset.
+   */
+  const openApiPromptAsWorkflow = async (
+    asset: AssetItem,
+    filename: string
+  ) => {
+    const apiPrompt = await extractApiPromptFromAsset(asset)
+    if (!app.isApiJson(apiPrompt)) return false
+
+    try {
+      app.loadApiJson(apiPrompt, filename)
+      return true
+    } catch (error) {
+      console.error('Failed to open API graph as workflow:', error)
+      return false
+    }
+  }
+
+  /**
    * Open the workflow from this asset in a new tab
    * Uses shared workflow extraction and action service
    */
@@ -406,8 +433,11 @@ export function useMediaAssetActions() {
     // Extract workflow using shared utility
     const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
 
-    // Use shared action service
-    const result = await workflowActions.openWorkflowAction(workflow, filename)
+    // Use shared action service, falling back to the stored API graph for
+    // assets whose job embeds no workflow (API submissions)
+    const result: { success: boolean; error?: string } = workflow
+      ? await workflowActions.openWorkflowAction(workflow, filename)
+      : { success: await openApiPromptAsWorkflow(targetAsset, filename) }
 
     if (!result.success) {
       toast.add({

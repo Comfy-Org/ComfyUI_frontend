@@ -13,11 +13,9 @@ import {
   extractApiPrompt,
   extractWorkflow
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import { convertApiGraphToWorkflow } from '@/platform/workflow/utils/apiGraphConversionUtil'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
@@ -117,31 +115,14 @@ export async function getJobWorkflow(
   jobId: string
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
-  return (
-    (await extractWorkflow(detail)) ??
-    (await synthesizeWorkflowFromApiPrompt(detail))
-  )
+  return await extractWorkflow(detail)
 }
 
 /**
- * Fallback for API/MCP-submitted jobs, which embed no UI workflow: synthesize
- * one from the stored API-format graph. The synthesized graph is only handed
- * to the caller — it is never written back to the job or its assets;
- * persistence happens when the user saves the opened workflow.
+ * The API-format graph a job stores, available only for jobs that embed no
+ * editor workflow. Returned unvalidated — see `extractApiPrompt`.
  */
-async function synthesizeWorkflowFromApiPrompt(
-  detail: JobDetail | undefined
-): Promise<ComfyWorkflowJSON | undefined> {
-  const apiPrompt = extractApiPrompt(detail)
-  if (!apiPrompt) return undefined
-
-  try {
-    const { nodeDefsByName } = useNodeDefStore()
-    return (
-      (await convertApiGraphToWorkflow(apiPrompt, nodeDefsByName)) ?? undefined
-    )
-  } catch (error) {
-    console.warn('Failed to synthesize workflow from API prompt:', error)
-    return undefined
-  }
+export async function getJobApiPrompt(jobId: string): Promise<unknown> {
+  const detail = await getJobDetail(jobId)
+  return extractApiPrompt(detail)
 }

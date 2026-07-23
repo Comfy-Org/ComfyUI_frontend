@@ -89,8 +89,10 @@ vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
 }))
 
 const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
+const mockExtractApiPromptFromAsset = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
-  extractWorkflowFromAsset: mockExtractWorkflowFromAsset
+  extractWorkflowFromAsset: mockExtractWorkflowFromAsset,
+  extractApiPromptFromAsset: mockExtractApiPromptFromAsset
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -187,6 +189,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockLoadApiJson = vi.hoisted(() => vi.fn())
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -194,7 +197,9 @@ vi.mock('@/scripts/app', () => ({
     },
     get rootGraph() {
       return mockAppGraph.value
-    }
+    },
+    isApiJson: (data: unknown) => !!data && typeof data === 'object',
+    loadApiJson: mockLoadApiJson
   }
 }))
 
@@ -394,6 +399,85 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
       })
+    })
+  })
+
+  describe('openWorkflow', () => {
+    const apiPrompt = {
+      '1': { class_type: 'KSampler', inputs: { seed: 1 } }
+    }
+
+    beforeEach(() => {
+      mockOpenWorkflowAction.mockResolvedValue({ success: true })
+      mockExtractApiPromptFromAsset.mockResolvedValue(undefined)
+    })
+
+    it('opens an embedded workflow without touching the stored API graph', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: { version: 0.4 },
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockOpenWorkflowAction).toHaveBeenCalledWith(
+        { version: 0.4 },
+        'open.json'
+      )
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+    })
+
+    it('opens the stored API graph when no workflow is embedded', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
+      expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('warns when loading the stored API graph fails', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      mockLoadApiJson.mockImplementationOnce(() => {
+        throw new Error('boom')
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+      consoleSpy.mockRestore()
+    })
+
+    it('warns when neither a workflow nor a stored API graph exists', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
     })
   })
 

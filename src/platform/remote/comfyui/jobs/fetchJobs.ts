@@ -6,9 +6,6 @@
  * All distributions use the /jobs endpoint.
  */
 
-import type { ComfyApiWorkflow } from '@comfyorg/api-to-workflow'
-import { zComfyApiWorkflow } from '@comfyorg/api-to-workflow'
-
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
@@ -205,22 +202,18 @@ export async function extractWorkflow(
 }
 
 /**
- * Extracts the stored API-format graph from a job detail response.
- * The graph is nested at: workflow.prompt
+ * Extracts the API-format graph a job stores at: workflow.prompt
  *
- * API/MCP submissions carry no extra_pnginfo.workflow; the API-format prompt
- * is the only stored graph they leave behind. Returns undefined whenever an
- * embedded UI workflow exists — those submissions must be used as-is, never
- * converted — or when the stored prompt is not a non-empty API-format graph.
+ * Jobs submitted through the API embed no editor workflow, leaving the
+ * API-format prompt as the only graph they store. Returns undefined whenever
+ * an embedded workflow exists so those submissions are always used as-is,
+ * never re-derived. The prompt itself is returned unvalidated — callers gate
+ * it with `app.isApiJson` before loading it.
  */
-export function extractApiPrompt(
-  job: JobDetail | undefined
-): ComfyApiWorkflow | undefined {
+export function extractApiPrompt(job: JobDetail | undefined): unknown {
   const parsed = zWorkflowContainer.safeParse(job?.workflow)
   if (!parsed.success) return undefined
   if (parsed.data.extra_data?.extra_pnginfo?.workflow) return undefined
 
-  const prompt = zComfyApiWorkflow.safeParse(parsed.data.prompt)
-  if (!prompt.success || Object.keys(prompt.data).length === 0) return undefined
-  return prompt.data
+  return parsed.data.prompt
 }
