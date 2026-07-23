@@ -217,7 +217,7 @@ describe('slotLinks', () => {
     expect(target.isInputConnected(0)).toBe(true)
   })
 
-  it('preflights assignments before disconnecting removed links', () => {
+  it('logs invalid assignments before disconnecting removed links', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'INT')
@@ -238,14 +238,20 @@ describe('slotLinks', () => {
     assignments.set(target.inputs[0], stale)
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    expect(() =>
+    expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
-    ).toThrow('does not own its current placement')
+    ).toEqual([])
+    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
+      code: 'unowned-topology',
+      message: `Link ${stale.id} does not own its current placement`
+    })
 
     expect(target.getInputLink(0)).toBe(kept)
     expect(target.getInputLink(1)).toBe(removed)
     expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 
   it('rejects duplicate input objects without changing topology', () => {

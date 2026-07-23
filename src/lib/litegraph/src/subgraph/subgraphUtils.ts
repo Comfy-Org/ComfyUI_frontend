@@ -125,7 +125,7 @@ export function getBoundaryLinks(
           )
 
           const linkId = inputLinkId(graph, node.id, inputIndex)
-          if (linkId == null) continue
+          if (linkId === undefined) continue
 
           const resolved = LLink.resolve(linkId, graph)
           if (!resolved) {
@@ -521,6 +521,14 @@ export function reorderSubgraphInputs(
   if (!subgraph) return
 
   const n = subgraph.inputs.length
+  if (subgraphNode.inputs.length !== n) {
+    console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
+      hostInputs: subgraphNode.inputs.length,
+      subgraphInputs: n
+    })
+    return
+  }
+
   if (
     orderedIndices.length !== n ||
     new Set(orderedIndices).size !== orderedIndices.length ||
@@ -536,8 +544,8 @@ export function reorderSubgraphInputs(
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
   const previousInputs = captureInputLayout(subgraphNode)
-  const orderedHostInputs = orderedIndices.flatMap(
-    (index) => previousInputs.inputs[index] ?? []
+  const orderedHostInputs = orderedIndices.map(
+    (index) => previousInputs.inputs[index]
   )
 
   reorderInPlace(subgraph.inputs, orderedIndices)

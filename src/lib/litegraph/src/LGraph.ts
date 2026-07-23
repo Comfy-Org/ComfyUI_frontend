@@ -769,8 +769,8 @@ export class LGraph
       // num of input connections
       let num = 0
       if (node.inputs) {
-        for (const [slot] of node.inputs.entries()) {
-          if (inputHasLink(this, node.id, slot)) {
+        for (const slotIndex of node.inputs.keys()) {
+          if (inputHasLink(this, node.id, slotIndex)) {
             num += 1
           }
         }
@@ -800,9 +800,9 @@ export class LGraph
       if (!node.outputs) continue
 
       // for every output
-      for (const [slot] of node.outputs.entries()) {
+      for (const slotIndex of node.outputs.keys()) {
         // for every connection
-        for (const link of outputLinks(this, node.id, slot)) {
+        for (const link of outputLinks(this, node.id, slotIndex)) {
           // already visited link (ignore it)
           if (visited_links[link.id]) continue
 

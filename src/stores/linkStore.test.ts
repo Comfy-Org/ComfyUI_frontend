@@ -107,9 +107,13 @@ describe('useLinkStore', () => {
     store.registerLink(graphA, incumbent)
     store.registerLink(graphA, mover)
 
-    expect(() =>
-      store.updateEndpoint(graphA, mover, { targetSlot: 2 })
-    ).toThrow('already occupied')
+    expect(store.updateEndpoint(graphA, mover, { targetSlot: 2 })).toEqual({
+      ok: false,
+      error: {
+        code: 'occupied-target',
+        message: 'Link target slot 9:2 is already occupied'
+      }
+    })
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(store.getInputSlotLink(graphA, toNodeId(9), 3)?.id).toBe(toLinkId(2))
@@ -151,12 +155,18 @@ describe('useLinkStore', () => {
     store.registerLink(graphA, first)
     store.registerLink(graphA, second)
 
-    expect(() =>
+    expect(
       store.updateEndpoints(graphA, [
         { topology: first, patch: { targetSlot: 2 } },
         { topology: second, patch: { targetSlot: 2 } }
       ])
-    ).toThrow('Multiple links')
+    ).toEqual({
+      ok: false,
+      error: {
+        code: 'duplicate-target',
+        message: 'Multiple links target input slot 9:2'
+      }
+    })
 
     expect(first.targetSlot).toBe(0)
     expect(second.targetSlot).toBe(1)

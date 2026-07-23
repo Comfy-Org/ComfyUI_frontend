@@ -191,7 +191,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       const linkId =
         inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
         null
-      if (linkId == null) {
+      if (linkId === null) {
         const id = subgraphNodeInput.widgetId
         if (!id) return
 

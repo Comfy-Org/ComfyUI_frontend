@@ -20,6 +20,18 @@ export interface EndpointUpdate {
   topology: LinkTopology
   patch: EndpointPatch
 }
+export interface EndpointUpdateError {
+  code:
+    | 'duplicate-topology'
+    | 'unowned-topology'
+    | 'duplicate-target'
+    | 'occupied-target'
+  message: string
+}
+
+export type EndpointUpdateResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: EndpointUpdateError }
 
 function patchedEndpoints(
   topology: LinkTopology,
@@ -154,22 +166,24 @@ export const useLinkStore = defineStore('link', () => {
     graphId: UUID,
     updates: readonly EndpointUpdate[],
     vacating: readonly LinkTopology[] = []
-  ): void {
+  ): EndpointUpdateError | undefined {
     const participants = [
       ...updates.map(({ topology }) => toRaw(topology)),
       ...vacating.map((topology) => toRaw(topology))
     ]
     if (new Set(participants).size !== participants.length) {
-      throw new Error(
-        'A link topology may only appear once in an endpoint batch'
-      )
+      return {
+        code: 'duplicate-topology',
+        message: 'A link topology may only appear once in an endpoint batch'
+      }
     }
 
     for (const topology of participants) {
       if (!ownsPlacement(graphId, topology)) {
-        throw new Error(
-          'Link ' + topology.id + ' does not own its current placement'
-        )
+        return {
+          code: 'unowned-topology',
+          message: `Link ${topology.id} does not own its current placement`
+        }
       }
     }
 
@@ -180,13 +194,19 @@ export const useLinkStore = defineStore('link', () => {
 
       const key = targetKey(final.targetNodeId, final.targetSlot)
       if (finalOwners.has(key)) {
-        throw new Error('Multiple links target input slot ' + key)
+        return {
+          code: 'duplicate-target',
+          message: `Multiple links target input slot ${key}`
+        }
       }
       finalOwners.add(key)
 
       const incumbent = targetIndex.value.get(graphId)?.get(key)
       if (incumbent && !participants.includes(toRaw(incumbent))) {
-        throw new Error('Link target slot ' + key + ' is already occupied')
+        return {
+          code: 'occupied-target',
+          message: `Link target slot ${key} is already occupied`
+        }
       }
     }
   }
@@ -195,14 +215,17 @@ export const useLinkStore = defineStore('link', () => {
   function updateEndpoints(
     graphId: UUID,
     updates: readonly EndpointUpdate[]
-  ): LinkTopology[] {
-    validateEndpointUpdates(graphId, updates)
+  ): EndpointUpdateResult<LinkTopology[]> {
+    const error = validateEndpointUpdates(graphId, updates)
+    if (error) return { ok: false, error }
+
     for (const { topology } of updates) displace(graphId, topology)
 
-    return updates.map(({ topology, patch }) => {
+    const value = updates.map(({ topology, patch }) => {
       Object.assign(reactive(topology), patchedEndpoints(topology, patch))
       return place(graphId, topology)
     })
+    return { ok: true, value }
   }
 
   /** Applies one endpoint patch atomically. */
@@ -210,8 +233,9 @@ export const useLinkStore = defineStore('link', () => {
     graphId: UUID,
     topology: LinkTopology,
     patch: EndpointPatch
-  ): LinkTopology {
-    return updateEndpoints(graphId, [{ topology, patch }])[0]
+  ): EndpointUpdateResult<LinkTopology> {
+    const result = updateEndpoints(graphId, [{ topology, patch }])
+    return result.ok ? { ok: true, value: result.value[0] } : result
   }
 
   function isInputSlotConnected(

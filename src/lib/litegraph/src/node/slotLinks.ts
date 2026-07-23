@@ -140,13 +140,20 @@ export function replaceNodeInputs(
       topology: link._state,
       patch: { targetNodeId: node.id, targetSlot: slot }
     }))
-    store.validateEndpointUpdates(
+    const validationError = store.validateEndpointUpdates(
       node.graph.rootGraph.id,
       updates,
       removals.map(({ link }) => link._state)
     )
+    if (validationError) {
+      console.error('Failed to replace node inputs', validationError)
+      return []
+    }
     for (const { link } of removals.toReversed()) node.graph.removeLink(link.id)
-    store.updateEndpoints(node.graph.rootGraph.id, updates)
+    const result = store.updateEndpoints(node.graph.rootGraph.id, updates)
+    if (!result.ok) {
+      console.error('Failed to replace node inputs', result.error)
+    }
   } else if (finalAssignments.length) {
     throw new Error('Cannot assign input links to a node without a graph')
   }

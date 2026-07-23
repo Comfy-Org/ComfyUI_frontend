@@ -26,6 +26,7 @@ import {
   captureInputLayout,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
+import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -51,6 +52,16 @@ type AutogrowNode = LGraphNode &
       >
     }
   }
+
+function commitMutatedInputs(
+  node: LGraphNode,
+  previous: InputLayoutSnapshot,
+  assignments: ReadonlyMap<INodeInputSlot, LLink>
+) {
+  const finalInputs = [...node.inputs]
+  node.inputs.splice(0, node.inputs.length, ...previous.inputs)
+  return replaceNodeInputs(node, previous, finalInputs, assignments)
+}
 
 function syncNodeWidgetOrder(node: LGraphNode) {
   const graphId = resolveNodeRootGraphId(node)
@@ -122,9 +133,7 @@ function dynamicComboWidget(
     }
 
     if (!newSpec) {
-      const finalInputs = [...node.inputs]
-      node.inputs.splice(0, node.inputs.length, ...previous.inputs)
-      replaceNodeInputs(node, previous, finalInputs, inputLinks)
+      commitMutatedInputs(node, previous, inputLinks)
       syncNodeWidgetOrder(node)
       return
     }
@@ -170,9 +179,7 @@ function dynamicComboWidget(
       )
         //input is inputOnly, but lacks an insertion point
         throw new Error('Failed to find input socket for ' + widget.name)
-      const finalInputs = [...node.inputs]
-      node.inputs.splice(0, node.inputs.length, ...previous.inputs)
-      replaceNodeInputs(node, previous, finalInputs, inputLinks)
+      commitMutatedInputs(node, previous, inputLinks)
       return
     }
     const addedInputs = node.inputs
@@ -193,14 +200,7 @@ function dynamicComboWidget(
       const link = inputLinks.get(input)
       if (replacement && link) inputLinks.set(replacement, link)
     }
-    const finalInputs = [...node.inputs]
-    node.inputs.splice(0, node.inputs.length, ...previous.inputs)
-    const replacements = replaceNodeInputs(
-      node,
-      previous,
-      finalInputs,
-      inputLinks
-    )
+    const replacements = commitMutatedInputs(node, previous, inputLinks)
     for (const { input, link, slot } of replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
@@ -451,9 +451,7 @@ function addAutogrowGroup(
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
-  const finalInputs = [...node.inputs]
-  node.inputs.splice(0, node.inputs.length, ...previous.inputs)
-  replaceNodeInputs(node, previous, finalInputs, inputLinks)
+  commitMutatedInputs(node, previous, inputLinks)
   app.canvas?.setDirty(true, true)
 }
 

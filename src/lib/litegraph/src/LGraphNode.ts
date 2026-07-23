@@ -1728,23 +1728,16 @@ export class LGraphNode
    * remove an existing input slot
    */
   removeInput(slot: number): void {
-    // Only disconnect if node is part of a graph
-    if (this.graph) {
-      this.disconnectInput(slot, true)
-    }
-    const { inputs } = this
-    const slot_info = inputs.splice(slot, 1)
+    const { graph, inputs } = this
+    if (graph) this.disconnectInput(slot, true)
+    const slotInfo = inputs.splice(slot, 1)
 
-    // Only update link indices if node is part of a graph. Ascending order:
-    // each decrement re-keys the link to an already-processed slot index.
-    if (this.graph) {
+    if (graph) {
       for (let oldSlot = slot + 1; oldSlot <= inputs.length; ++oldSlot) {
-        const link = inputLink(this.graph, this.id, oldSlot)
+        const link = inputLink(graph, this.id, oldSlot)
         if (link) link.target_slot--
       }
-    }
-    if (this.graph) {
-      for (const floatingLink of this.graph.floatingLinks.values()) {
+      for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&
           floatingLink.target_slot > slot
@@ -1752,7 +1745,7 @@ export class LGraphNode
           floatingLink.target_slot--
       }
     }
-    this.onInputRemoved?.(slot, slot_info[0])
+    this.onInputRemoved?.(slot, slotInfo[0])
     this.setDirtyCanvas(true, true)
   }
 
@@ -3211,7 +3204,7 @@ export class LGraphNode
     }
 
     const link_id = inputLinkId(graph, this.id, slot) ?? null
-    if (link_id != null) {
+    if (link_id !== null) {
       // remove other side
       const link_info = graph._links.get(link_id)
       if (link_info) {
@@ -3923,19 +3916,8 @@ export class LGraphNode
    * When {@link LGraphNode.collapsed} is `true`, this method draws the node's collapsed slots.
    */
   drawCollapsedSlots(ctx: CanvasRenderingContext2D): void {
-    // Render the first connected slot only.
-    for (const slot of this._concreteInputs) {
-      if (slot.isConnected) {
-        slot.drawCollapsed(ctx)
-        break
-      }
-    }
-    for (const slot of this._concreteOutputs) {
-      if (slot.isConnected) {
-        slot.drawCollapsed(ctx)
-        break
-      }
-    }
+    this._concreteInputs.find((slot) => slot.isConnected)?.drawCollapsed(ctx)
+    this._concreteOutputs.find((slot) => slot.isConnected)?.drawCollapsed(ctx)
   }
 
   get slots(): (INodeInputSlot | INodeOutputSlot)[] {

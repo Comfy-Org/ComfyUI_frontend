@@ -114,5 +114,8 @@ export function realignInputLinkSlots(
       patch: { targetSlot: slot }
     })
   }
-  useLinkStore().updateEndpoints(graph.rootGraph.id, updates)
+  const result = useLinkStore().updateEndpoints(graph.rootGraph.id, updates)
+  if (!result.ok) {
+    console.error('Failed to realign input link slots', result.error)
+  }
 }

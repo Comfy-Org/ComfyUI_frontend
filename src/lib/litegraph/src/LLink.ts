@@ -98,7 +98,14 @@ type BasicReadonlyNetwork = Pick<
 /** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
 function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
   if (link._graphId) {
-    useLinkStore().updateEndpoint(link._graphId, link._state, patch)
+    const result = useLinkStore().updateEndpoint(
+      link._graphId,
+      link._state,
+      patch
+    )
+    if (!result.ok) {
+      console.error('Failed to update link endpoints', result.error)
+    }
   } else {
     Object.assign(link._state, patch)
   }
