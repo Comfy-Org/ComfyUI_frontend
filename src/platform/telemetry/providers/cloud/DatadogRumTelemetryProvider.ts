@@ -7,12 +7,14 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     startTime,
     outcome
   }: ExecutionOutcomeMetadata): void {
+    const originViewId = datadogRum.getInternalContext(startTime)?.view?.id
     datadogRum.addDurationVital('workflow_execution', {
       startTime: performance.timeOrigin + startTime,
       duration: performance.now() - startTime,
       context: {
         outcome,
-        product: 'cloud_generation'
+        product: 'cloud_generation',
+        ...(originViewId && { origin_view_id: originViewId })
       }
     })
   }
