@@ -15,21 +15,42 @@
         "
       >
         <div class="flex items-center gap-1.5">
-          <!-- Status icon -->
-          <Loader
-            v-if="status === 'progress'"
-            size="sm"
-            variant="loader-circle"
-            class="shrink-0 text-base-foreground"
-          />
-          <i
-            v-else-if="status === 'done'"
-            class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
-          />
-          <i
-            v-else
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
-          />
+          <!-- Status icon. All three stay mounted and cross-fade, so the swap
+               animates in both directions without a motion library. -->
+          <div class="relative size-4 shrink-0">
+            <div
+              :class="
+                cn(
+                  ICON_TRANSITION,
+                  status === 'progress' ? ICON_SHOWN : ICON_HIDDEN
+                )
+              "
+            >
+              <Loader
+                size="sm"
+                variant="loader-circle"
+                class="text-base-foreground"
+              />
+            </div>
+            <i
+              :class="
+                cn(
+                  ICON_TRANSITION,
+                  'icon-[lucide--circle-check] size-4 text-success-background',
+                  status === 'done' ? ICON_SHOWN : ICON_HIDDEN
+                )
+              "
+            />
+            <i
+              :class="
+                cn(
+                  ICON_TRANSITION,
+                  'icon-[lucide--circle-alert] size-4 text-destructive-background',
+                  status === 'failed' ? ICON_SHOWN : ICON_HIDDEN
+                )
+              "
+            />
+          </div>
 
           <!-- Verb and percent read as one sentence, so they share a run -->
           <span
@@ -38,29 +59,33 @@
             {{ label }}
           </span>
 
-          <StatusBadge
-            v-if="failedCount && failedCount > 0"
-            severity="danger"
-            :label="t('processToast.failedCount', { count: failedCount })"
-            class="h-3.5 shrink-0 px-1 text-[9px] font-semibold"
-          />
+          <Transition v-bind="POP_TRANSITION">
+            <StatusBadge
+              v-if="failedCount && failedCount > 0"
+              severity="danger"
+              :label="t('processToast.failedCount', { count: failedCount })"
+              class="h-3.5 shrink-0 px-1 text-[9px] font-semibold"
+            />
+          </Transition>
         </div>
 
-        <template v-if="hasAction">
-          <div class="h-4 w-px shrink-0 bg-base-foreground/20" aria-hidden="true" />
-          <!-- Trailing action: default close (x); override via #action. -->
-          <slot name="action">
-            <Button
-              variant="textonly"
-              size="icon-sm"
-              :aria-label="t('g.close')"
-              data-testid="process-toast-close"
-              @click="$emit('close')"
-            >
-              <i class="icon-[lucide--x] size-4" />
-            </Button>
-          </slot>
-        </template>
+        <Transition v-bind="POP_TRANSITION">
+          <div v-if="hasAction" class="flex shrink-0 items-center gap-2">
+            <div class="h-4 w-px bg-base-foreground/20" aria-hidden="true" />
+            <!-- Trailing action: default close (x); override via #action. -->
+            <slot name="action">
+              <Button
+                variant="textonly"
+                size="icon-sm"
+                :aria-label="t('g.close')"
+                data-testid="process-toast-close"
+                @click="$emit('close')"
+              >
+                <i class="icon-[lucide--x] size-4" />
+              </Button>
+            </slot>
+          </div>
+        </Transition>
       </div>
 
       <!-- Chevron slab -->
@@ -68,20 +93,19 @@
         v-if="hasSlab"
         v-tooltip.bottom="expandTooltip"
         type="button"
-        class="z-1 flex h-9 w-[41px] cursor-pointer items-center justify-center rounded-r-lg border-none bg-comfy-menu-bg pr-3 pl-4"
+        class="z-1 flex h-9 w-[41px] cursor-pointer items-center justify-center rounded-r-lg border-none bg-comfy-menu-bg pr-3 pl-4 transition-transform duration-150 ease-out active:scale-[0.96] motion-reduce:transition-none"
         :aria-label="
           expanded ? t('processToast.collapse') : t('processToast.expand')
         "
         data-testid="process-toast-expand"
         @click="$emit('toggleExpand')"
       >
+        <!-- One chevron that rotates, so the flip is interruptible mid-turn -->
         <i
           :class="
             cn(
-              'size-4 opacity-50',
-              expanded
-                ? 'icon-[lucide--chevron-up]'
-                : 'icon-[lucide--chevron-down]'
+              'icon-[lucide--chevron-down] size-4 opacity-50 transition-transform duration-200 ease-out motion-reduce:transition-none',
+              expanded && 'rotate-180'
             )
           "
         />
@@ -93,7 +117,7 @@
         data-testid="process-toast-progress"
         :class="
           cn(
-            'absolute bottom-0 left-0 z-3 h-px rounded-[1px] transition-[width] duration-200 ease-out',
+            'absolute bottom-0 left-0 z-3 h-px rounded-[1px] transition-[width] duration-200 ease-out motion-reduce:transition-none',
             progressClass
           )
         "
@@ -102,7 +126,9 @@
     </div>
 
     <!-- Expanded details panel -->
-    <slot v-if="expanded" name="panel" />
+    <Transition v-bind="PANEL_TRANSITION">
+      <slot v-if="expanded" name="panel" />
+    </Transition>
   </div>
 </template>
 
@@ -118,6 +144,39 @@ import { clampPercentInt } from '@/utils/numberUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type ProcessToastStatus = 'progress' | 'done' | 'failed'
+
+/**
+ * Status icons never unmount; toggling these classes cross-fades them, which
+ * animates the exit as well as the enter. The curve stands in for a spring.
+ */
+const ICON_TRANSITION =
+  'absolute inset-0 flex items-center justify-center transition-[opacity,scale,filter] duration-300 [transition-timing-function:cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none'
+const ICON_SHOWN = 'scale-100 opacity-100 blur-0'
+const ICON_HIDDEN = 'scale-[0.25] opacity-0 blur-[4px]'
+
+/** Affordances that come and go inside the pill. */
+const POP_TRANSITION = {
+  enterActiveClass:
+    'transition-[opacity,scale] duration-200 ease-out motion-reduce:transition-none',
+  enterFromClass: 'opacity-0 scale-[0.9]',
+  enterToClass: 'opacity-100 scale-100',
+  leaveActiveClass:
+    'transition-[opacity,scale] duration-150 ease-in motion-reduce:transition-none',
+  leaveFromClass: 'opacity-100 scale-100',
+  leaveToClass: 'opacity-0 scale-[0.9]'
+} as const
+
+/** The panel drops out of the pill; the exit stays softer than the enter. */
+const PANEL_TRANSITION = {
+  enterActiveClass:
+    'transition-[opacity,translate,filter] duration-200 ease-out motion-reduce:transition-none',
+  enterFromClass: 'opacity-0 -translate-y-2 blur-[4px]',
+  enterToClass: 'opacity-100 translate-y-0 blur-0',
+  leaveActiveClass:
+    'transition-[opacity,translate,filter] duration-150 ease-in motion-reduce:transition-none',
+  leaveFromClass: 'opacity-100 translate-y-0 blur-0',
+  leaveToClass: 'opacity-0 -translate-y-2 blur-[4px]'
+} as const
 
 const {
   verb,
