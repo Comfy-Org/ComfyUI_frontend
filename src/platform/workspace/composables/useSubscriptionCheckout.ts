@@ -322,7 +322,8 @@ export function useSubscriptionCheckout(
 
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
-    shouldTrackSubscriptionSuccess = true
+    shouldTrackSubscriptionSuccess = true,
+    redirectImmediatePaymentUrl = false
   ): Promise<void> {
     if (!response) return
 
@@ -334,25 +335,15 @@ export function useSubscriptionCheckout(
       return
     }
 
-    // needs_payment_method / pending_payment both finish asynchronously, so poll
-    // the billing op either way. needs_payment_method additionally points at a
-    // Stripe page to collect a card when the backend supplies the URL; without
-    // it we still poll rather than silently stranding the user on confirm.
     if (
+      redirectImmediatePaymentUrl &&
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      // The open runs after `await subscribe(...)`, so it's not a direct user
-      // gesture and can be popup-blocked; warn instead of failing silently.
-      const paymentWindow = window.open(response.payment_method_url, '_blank')
-      if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
-        })
-      }
+      globalThis.location.assign(response.payment_method_url)
+      return
     }
+
     await advanceToSuccessOnOperation(response.billing_op_id)
   }
 
@@ -362,7 +353,8 @@ export function useSubscriptionCheckout(
   async function advanceToSuccessOnOperation(opId: string) {
     const operation = await billingOperationStore.startOperation(
       opId,
-      'subscription'
+      'subscription',
+      { hostedInvoiceReturnUrl: globalThis.location.href }
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
@@ -402,7 +394,7 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, true, true)
     } catch (error) {
       showSubscribeError(error)
     } finally {

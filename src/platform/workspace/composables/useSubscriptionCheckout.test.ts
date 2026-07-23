@@ -759,7 +759,7 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('opens the payment URL when the team subscribe needs a payment method', async () => {
+    it('redirects in the same tab when the team subscribe needs a payment method', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -775,15 +775,15 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-team-3',
         payment_method_url: 'https://stripe.com/team-pay'
       })
+      const assignSpy = vi
+        .spyOn(globalThis.location, 'assign')
+        .mockImplementation(() => {})
 
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
       await checkout.handleTeamSubscribe()
 
-      expect(openSpy).toHaveBeenCalledWith(
-        'https://stripe.com/team-pay',
-        '_blank'
-      )
-      openSpy.mockRestore()
+      expect(assignSpy).toHaveBeenCalledWith('https://stripe.com/team-pay')
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      assignSpy.mockRestore()
     })
 
     it('does not subscribe and shows an error when the stop has no id', async () => {
@@ -908,6 +908,64 @@ describe('useSubscriptionCheckout', () => {
       expect(mockFetchBalance).not.toHaveBeenCalled()
     })
 
+    it('completes a zero-due personal upgrade without polling for a URL', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'creator'
+      checkout.selectedBillingCycle.value = 'monthly'
+      checkout.previewData.value = {
+        allowed: true,
+        transition_type: 'upgrade',
+        effective_at: '2026-07-23',
+        is_immediate: true,
+        cost_today_cents: 0,
+        cost_next_period_cents: 3500,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7400,
+        new_plan: makeCreatorMonthly()
+      }
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-zero-due'
+      })
+      const openSpy = vi.spyOn(window, 'open')
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(openSpy).not.toHaveBeenCalled()
+      openSpy.mockRestore()
+    })
+
+    it('completes a saved-card personal payment without polling for a URL', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'creator'
+      checkout.selectedBillingCycle.value = 'monthly'
+      checkout.previewData.value = {
+        allowed: true,
+        transition_type: 'upgrade',
+        effective_at: '2026-07-23',
+        is_immediate: true,
+        cost_today_cents: 900,
+        cost_next_period_cents: 3500,
+        credits_today_cents: 2000,
+        credits_next_period_cents: 7400,
+        new_plan: makeCreatorMonthly()
+      }
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-saved-card'
+      })
+      const openSpy = vi.spyOn(window, 'open')
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.checkoutStep.value).toBe('success')
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(openSpy).not.toHaveBeenCalled()
+      openSpy.mockRestore()
+    })
+
     it('skips begin_checkout when no user id is available', async () => {
       mockUserId.value = null
       const checkout = await setup('subscribe_to_run')
@@ -949,7 +1007,7 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
-    it('opens payment URL when needs_payment_method', async () => {
+    it('waits for the polled payment action when a payment method is needed', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -959,14 +1017,14 @@ describe('useSubscriptionCheckout', () => {
         payment_method_url: 'https://stripe.com/pay'
       })
 
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
       await checkout.handleAddCreditCard()
 
-      expect(openSpy).toHaveBeenCalledWith('https://stripe.com/pay', '_blank')
-      openSpy.mockRestore()
+      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
+        hostedInvoiceReturnUrl: 'http://localhost:3000/'
+      })
     })
 
-    it('warns when the payment popup is blocked', async () => {
+    it('does not open the payment URL from the subscribe response', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -979,11 +1037,11 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleAddCreditCard()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'warn',
-          detail: 'subscription.preview.paymentPopupBlocked'
-        })
+      expect(openSpy).not.toHaveBeenCalled()
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-blocked',
+        'subscription',
+        { hostedInvoiceReturnUrl: 'http://localhost:3000/' }
       )
       openSpy.mockRestore()
     })
@@ -1004,7 +1062,8 @@ describe('useSubscriptionCheckout', () => {
       expect(openSpy).not.toHaveBeenCalled()
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-no-url',
-        'subscription'
+        'subscription',
+        { hostedInvoiceReturnUrl: 'http://localhost:3000/' }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1026,7 +1085,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-1',
-        'subscription'
+        'subscription',
+        { hostedInvoiceReturnUrl: 'http://localhost:3000/' }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()
@@ -1047,7 +1107,8 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockStartOperation).toHaveBeenCalledWith(
         'op-async-2',
-        'subscription'
+        'subscription',
+        { hostedInvoiceReturnUrl: 'http://localhost:3000/' }
       )
       expect(checkout.checkoutStep.value).toBe('preview')
     })
