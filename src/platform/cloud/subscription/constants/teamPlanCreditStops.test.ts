@@ -74,3 +74,28 @@ describe('getTeamPlanSlug', () => {
     expect(getTeamPlanSlug('yearly')).toBe('team_per_credit_annual')
   })
 })
+
+describe('getStopDiscountedMonthlyUsd with an extra discount', () => {
+  // Team EDU: +5% of list on top of the stop's own cycle discount.
+  it.for([
+    [{ usd: 200, discountPercentYearly: 0 }, 'monthly', 190],
+    [{ usd: 200, discountPercentYearly: 0 }, 'yearly', 190],
+    [{ usd: 400, discountPercentYearly: 5 }, 'monthly', 370],
+    [{ usd: 700, discountPercentYearly: 10 }, 'yearly', 595],
+    // Monthly halves the volume (5%) but the EDU extra stays 5% of list.
+    [{ usd: 700, discountPercentYearly: 10 }, 'monthly', 630],
+    [{ usd: 2500, discountPercentYearly: 20 }, 'yearly', 1875]
+  ] as const)('discounts %s', (testCase) => {
+    const [stop, cycle, expected] = testCase
+    expect(getStopDiscountedMonthlyUsd(stop, cycle, 5)).toBe(expected)
+  })
+
+  it('defaults to no extra discount', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'yearly'
+      )
+    ).toBe(630)
+  })
+})

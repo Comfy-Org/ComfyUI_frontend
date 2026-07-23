@@ -38,6 +38,7 @@
         </template>
       </SelectButton>
     </div>
+    <EduVerifyCallout />
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
@@ -48,6 +49,7 @@
             tier.isPopular ? 'border-muted-foreground' : ''
           )
         "
+        :data-testid="`pricing-tier-${tier.key}`"
       >
         <div class="flex flex-col gap-4 p-6 pb-0">
           <div class="flex flex-row items-center justify-between gap-2">
@@ -69,12 +71,12 @@
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
-                  ${{ getPrice(tier) }}
+                  ${{ formatTierPriceValue(getPrice(tier)) }}
                   <span
-                    v-show="currentBillingCycle === 'yearly'"
+                    v-if="getStruckPrice(tier) !== null"
                     class="text-2xl text-muted-foreground line-through"
                   >
-                    ${{ tier.pricing.monthly }}
+                    ${{ formatTierPriceValue(getStruckPrice(tier)!) }}
                   </span>
                 </span>
                 <span class="font-inter text-xl/normal text-base-foreground">
@@ -265,12 +267,16 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import EduVerifyCallout from '@/platform/cloud/subscription/components/EduVerifyCallout.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  TIER_TO_KEY,
+  applyEduDiscount,
+  formatTierPriceValue
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   SubscriptionTier,
@@ -449,11 +455,29 @@ const getButtonTextClass = (tier: PricingTierConfig): string =>
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
-const getPrice = (tier: PricingTierConfig): number =>
-  tier.pricing[currentBillingCycle.value]
+const { isEduPricingActive } = useEduPricing()
 
-const getAnnualTotal = (tier: PricingTierConfig): number =>
-  tier.pricing.yearly * 12
+const getPrice = (tier: PricingTierConfig): number => {
+  const base = tier.pricing[currentBillingCycle.value]
+  return isEduPricingActive.value
+    ? applyEduDiscount(base, tier.key, currentBillingCycle.value)
+    : base
+}
+
+// Monthly list price rendered struck through next to the active price, so the
+// EDU yearly card shows the full 25%-off-list story (mirrors stock yearly).
+const getStruckPrice = (tier: PricingTierConfig): number | null => {
+  if (isEduPricingActive.value || currentBillingCycle.value === 'yearly')
+    return tier.pricing.monthly
+  return null
+}
+
+const getAnnualTotal = (tier: PricingTierConfig): number => {
+  const total = tier.pricing.yearly * 12
+  return isEduPricingActive.value
+    ? applyEduDiscount(total, tier.key, 'yearly')
+    : total
+}
 
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)

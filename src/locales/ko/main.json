@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "이 워크스페이스는 구독 중이 아닙니다",
     "yearly": "연간",
     "yearlyCreditsLabel": "연간 총 크레딧",
-    "yourPlanIncludes": "귀하의 플랜 포함 사항:"
+    "yourPlanIncludes": "귀하의 플랜 포함 사항:",
+    "eduPromoHeader": "교육 할인: 인증된 학생 및 교육자에게 최대 {percent}% 할인",
+    "eduVerifyTitle": "학생 또는 교육자이신가요?",
+    "eduVerifyHeader": "이메일을 인증하고 최대 {percent}% 교육 할인가를 이용하세요",
+    "eduVerifySend": "인증 이메일 보내기",
+    "eduVerifySentHint": "받은편지함을 확인한 후 돌아오세요",
+    "eduVerifyConfirm": "인증했습니다",
+    "eduVerifySendFailed": "이메일을 보내지 못했습니다. 다시 시도해 주세요.",
+    "eduVerifyStillUnverified": "아직 인증되지 않았습니다. 먼저 받은편지함의 링크를 클릭해 주세요.",
+    "eduVerifyFailed": "문제가 발생했습니다. 다시 시도해 주세요."
   },
   "tabMenu": {
     "addToBookmarks": "북마크에 추가",

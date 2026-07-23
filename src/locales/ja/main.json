@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
-    "yourPlanIncludes": "ご利用プランに含まれるもの:"
+    "yourPlanIncludes": "ご利用プランに含まれるもの:",
+    "eduPromoHeader": "教育割引：認証済みの学生・教育者は最大 {percent}% オフ",
+    "eduVerifyTitle": "学生または教育者ですか？",
+    "eduVerifyHeader": "メールを認証して最大 {percent}% の教育価格をご利用ください",
+    "eduVerifySend": "認証メールを送信",
+    "eduVerifySentHint": "受信トレイを確認して戻ってきてください",
+    "eduVerifyConfirm": "認証しました",
+    "eduVerifySendFailed": "メールを送信できませんでした。もう一度お試しください。",
+    "eduVerifyStillUnverified": "まだ認証されていません。先にメール内のリンクをクリックしてください。",
+    "eduVerifyFailed": "問題が発生しました。もう一度お試しください。"
   },
   "tabMenu": {
     "addToBookmarks": "ブックマークに追加",

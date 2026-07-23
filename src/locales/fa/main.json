@@ -4123,7 +4123,16 @@
     "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
     "yearlyCreditsLabel": "کل اعتبار سالانه",
-    "yourPlanIncludes": "طرح شما شامل:"
+    "yourPlanIncludes": "طرح شما شامل:",
+    "eduPromoHeader": "تخفیف آموزشی: تا {percent}% برای دانشجویان و مدرسان تأییدشده",
+    "eduVerifyTitle": "دانشجو یا مدرس هستید؟",
+    "eduVerifyHeader": "ایمیل خود را تأیید کنید تا تا {percent}% قیمت آموزشی فعال شود",
+    "eduVerifySend": "ارسال ایمیل تأیید",
+    "eduVerifySentHint": "صندوق ورودی را بررسی کنید و برگردید",
+    "eduVerifyConfirm": "تأیید کردم",
+    "eduVerifySendFailed": "ارسال ایمیل ناموفق بود. دوباره تلاش کنید.",
+    "eduVerifyStillUnverified": "هنوز تأیید نشده است. ابتدا روی پیوند داخل ایمیل کلیک کنید.",
+    "eduVerifyFailed": "مشکلی پیش آمد. دوباره تلاش کنید."
   },
   "tabMenu": {
     "addToBookmarks": "افزودن به نشانک‌ها",

@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
-    "yourPlanIncludes": "خطتك تشمل:"
+    "yourPlanIncludes": "خطتك تشمل:",
+    "eduPromoHeader": "خصم تعليمي: حتى {percent}% للطلاب والمعلمين الموثّقين",
+    "eduVerifyTitle": "هل أنت طالب أو معلم؟",
+    "eduVerifyHeader": "وثّق بريدك الإلكتروني لفتح خصم تعليمي يصل إلى {percent}%",
+    "eduVerifySend": "إرسال بريد التوثيق",
+    "eduVerifySentHint": "تحقق من بريدك الوارد ثم عد",
+    "eduVerifyConfirm": "لقد وثّقت",
+    "eduVerifySendFailed": "تعذّر إرسال البريد. حاول مرة أخرى.",
+    "eduVerifyStillUnverified": "لم يتم التوثيق بعد. انقر أولاً على الرابط في بريدك الوارد.",
+    "eduVerifyFailed": "حدث خطأ ما. حاول مرة أخرى."
   },
   "tabMenu": {
     "addToBookmarks": "إضافة إلى العلامات",

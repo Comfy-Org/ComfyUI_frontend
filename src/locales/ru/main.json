@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
-    "yourPlanIncludes": "Ваш план включает:"
+    "yourPlanIncludes": "Ваш план включает:",
+    "eduPromoHeader": "Скидка для образования: до {percent}% для подтверждённых студентов и преподавателей",
+    "eduVerifyTitle": "Студент или преподаватель?",
+    "eduVerifyHeader": "Подтвердите почту, чтобы получить до {percent}% образовательной скидки",
+    "eduVerifySend": "Отправить письмо для подтверждения",
+    "eduVerifySentHint": "Проверьте почту и вернитесь",
+    "eduVerifyConfirm": "Я подтвердил",
+    "eduVerifySendFailed": "Не удалось отправить письмо. Попробуйте ещё раз.",
+    "eduVerifyStillUnverified": "Ещё не подтверждено. Сначала перейдите по ссылке из письма.",
+    "eduVerifyFailed": "Что-то пошло не так. Попробуйте ещё раз."
   },
   "tabMenu": {
     "addToBookmarks": "Добавить в закладки",

@@ -4111,7 +4111,16 @@
     "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
     "yearlyCreditsLabel": "年度總點數",
-    "yourPlanIncludes": "您的方案包含："
+    "yourPlanIncludes": "您的方案包含：",
+    "eduPromoHeader": "教育優惠：通過驗證的學生和教育工作者最高可享 {percent}% 折扣",
+    "eduVerifyTitle": "學生或教育工作者？",
+    "eduVerifyHeader": "驗證您的信箱，解鎖最高 {percent}% 的教育優惠",
+    "eduVerifySend": "傳送驗證郵件",
+    "eduVerifySentHint": "請查收信箱後返回",
+    "eduVerifyConfirm": "我已驗證",
+    "eduVerifySendFailed": "郵件傳送失敗，請重試。",
+    "eduVerifyStillUnverified": "尚未驗證。請先點擊信箱中的連結。",
+    "eduVerifyFailed": "發生問題，請重試。"
   },
   "tabMenu": {
     "addToBookmarks": "加入書籤",

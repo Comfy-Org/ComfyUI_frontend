@@ -4123,7 +4123,16 @@
     "workspaceNotSubscribed": "סביבת עבודה זו אינה במנוי",
     "yearly": "שנתי",
     "yearlyCreditsLabel": "סך הקרדיטים השנתיים",
-    "yourPlanIncludes": "המסלול שלך כולל:"
+    "yourPlanIncludes": "המסלול שלך כולל:",
+    "eduPromoHeader": "הנחת חינוך: עד {percent}% הנחה לסטודנטים ואנשי חינוך מאומתים",
+    "eduVerifyTitle": "סטודנט או איש חינוך?",
+    "eduVerifyHeader": "אמתו את האימייל כדי לפתוח עד {percent}% מחירי חינוך",
+    "eduVerifySend": "שליחת אימייל אימות",
+    "eduVerifySentHint": "בדקו את תיבת הדואר וחזרו",
+    "eduVerifyConfirm": "אימתתי",
+    "eduVerifySendFailed": "שליחת האימייל נכשלה. נסו שוב.",
+    "eduVerifyStillUnverified": "עדיין לא אומת. לחצו קודם על הקישור באימייל.",
+    "eduVerifyFailed": "משהו השתבש. נסו שוב."
   },
   "tabMenu": {
     "addToBookmarks": "הוספה לסימניות",
