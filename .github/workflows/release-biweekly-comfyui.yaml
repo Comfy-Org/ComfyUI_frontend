@@ -544,7 +544,7 @@ jobs:
 
           # --- 2. Target version is actually on PyPI ---
           PACKAGE="comfyui-frontend-package"
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json") || HTTP_CODE="000"
+          HTTP_CODE=$(curl -s --connect-timeout 10 --max-time 30 -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json") || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "200" ]; then
             echo "- ✅ PyPI has \`${PACKAGE}==${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -557,7 +557,7 @@ jobs:
           # higher minor), so there this is informational only.
           # Guard the fetch+parse: an empty result means the query failed, which must
           # be reported as a fetch failure rather than masquerading as a version mismatch.
-          PYPI_LATEST=$(curl -sf "https://pypi.org/pypi/${PACKAGE}/json" | jq -r '.info.version // empty') || PYPI_LATEST=""
+          PYPI_LATEST=$(curl -sf --connect-timeout 10 --max-time 30 "https://pypi.org/pypi/${PACKAGE}/json" | jq -r '.info.version // empty') || PYPI_LATEST=""
           if [ -z "$PYPI_LATEST" ]; then
             echo "::error title=Could not fetch PyPI latest::Failed to query PyPI info endpoint for ${PACKAGE}."
             echo "- ❌ Could not determine PyPI \`latest\` version for \`${PACKAGE}\`" >> "$GITHUB_STEP_SUMMARY"
@@ -573,7 +573,7 @@ jobs:
           # --- 3. ComfyUI master pin (warn-only: the pin PR is merged by a human) ---
           # Guard the fetch: a failed download leaves PIN empty and the check stays
           # warn-only (reported as <none>), never aborting the job.
-          if REQS=$(curl -sf "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"); then
+          if REQS=$(curl -sf --connect-timeout 10 --max-time 30 "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"); then
             PIN=$(printf '%s\n' "$REQS" | grep -oE "comfyui-frontend-package==[0-9.]+" | head -1 | cut -d= -f3) || PIN=""
           else
             PIN=""
