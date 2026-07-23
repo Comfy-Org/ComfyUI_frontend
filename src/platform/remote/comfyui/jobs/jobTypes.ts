@@ -113,7 +113,7 @@ const zJobOutputAsset = z
     node_id: z.string().nullable().optional(),
     output_key: z.string().nullable().optional(),
     output_index: z.number().nullable().optional(),
-    created_at: z.string()
+    created_at: z.string().nullable().optional()
   })
   .passthrough()
 

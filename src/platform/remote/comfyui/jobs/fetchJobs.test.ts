@@ -461,7 +461,7 @@ describe('fetchJobs', () => {
       expect(result[0].node_id).toBeNull()
     })
 
-    it('accepts null hash, preview_url, mime_type, and size fields', async () => {
+    it('accepts null hash, preview_url, mime_type, size, and created_at fields', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -474,7 +474,7 @@ describe('fetchJobs', () => {
                 preview_url: null,
                 mime_type: null,
                 size: null,
-                created_at: '2025-01-01T00:00:00.000Z'
+                created_at: null
               }
             ])
           )
@@ -539,12 +539,12 @@ describe('fetchJobs', () => {
       consoleWarnSpy.mockRestore()
     })
 
-    it('accepts an envelope without job_id, offset, or limit', async () => {
+    it('accepts an envelope without job_id, offset, limit, or asset created_at', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
-            assets: [{ id: 'asset-1', name: 'a.png', created_at: 't' }],
+            assets: [{ id: 'asset-1', name: 'a.png' }],
             pagination: { total: 1, has_more: false }
           })
       })
