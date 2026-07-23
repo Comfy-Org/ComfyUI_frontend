@@ -14,6 +14,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import type * as ApiModule from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -30,6 +31,10 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
     teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
+}))
+
+const { mockResetSocket } = vi.hoisted(() => ({
+  mockResetSocket: vi.fn()
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -119,6 +124,15 @@ vi.mock('@/stores/toastStore', () => ({
     add: vi.fn()
   })
 }))
+
+// Keep the real API singleton (other modules rely on its full surface) but
+// override resetSocket so we can assert socket lifecycle calls without opening
+// a real WebSocket.
+vi.mock('@/scripts/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof ApiModule>()
+  Object.assign(actual.api, { resetSocket: mockResetSocket })
+  return actual
+})
 
 // Mock useDialogService
 vi.mock('@/services/dialogService')
@@ -1223,6 +1237,58 @@ describe('useAuthStore', () => {
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+  })
+
+  describe('realtime socket identity lifecycle', () => {
+    const accountB: MockUser = {
+      ...mockUser,
+      uid: 'account-b-id',
+      email: 'b@example.com'
+    } as MockUser
+
+    it('does not reset the socket on the initial sign-in', () => {
+      // The store is created in beforeEach, which drives the initial
+      // authStateCallback(mockUser); the first identity must not reconnect
+      // because api.init() already owns the initial connect.
+      expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+
+    it('reconnects the socket on a direct A -> B account switch', () => {
+      mockResetSocket.mockClear()
+
+      authStateCallback(accountB)
+
+      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reconnect on a same-account token refresh', () => {
+      mockResetSocket.mockClear()
+
+      // Same UID observed again (e.g. onAuthStateChanged re-emitting the same
+      // user) must not tear down the connection.
+      authStateCallback(mockUser)
+
+      expect(mockResetSocket).not.toHaveBeenCalled()
+    })
+
+    it('reconnects the socket on sign-out', () => {
+      mockResetSocket.mockClear()
+
+      authStateCallback(null)
+
+      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reconnect when transitioning from signed-out to signed-in', () => {
+      authStateCallback(null)
+      mockResetSocket.mockClear()
+
+      // Re-signing in from a signed-out state records the identity again; the
+      // socket was already torn down on sign-out, so there is no extra reset.
+      authStateCallback(accountB)
+
+      expect(mockResetSocket).not.toHaveBeenCalled()
     })
   })
 })
