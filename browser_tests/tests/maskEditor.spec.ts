@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -6,6 +7,58 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import { toNodeId } from '@/types/nodeId'
 
 const wstest = mergeTests(test, webSocketFixture)
+
+function getMinimumToolIconContrast(dialog: Locator): Promise<number> {
+  return dialog
+    .locator('.maskEditor_toolPanelContainer')
+    .evaluateAll((toolButtons) => {
+      function parseColor(value: string) {
+        const channels = value.match(/[\d.]+/g)?.map(Number) ?? []
+        return {
+          red: channels[0] ?? 0,
+          green: channels[1] ?? 0,
+          blue: channels[2] ?? 0,
+          alpha: channels[3] ?? 1
+        }
+      }
+
+      function luminance(value: string) {
+        const { red, green, blue } = parseColor(value)
+        const channels = [red, green, blue].map((channel) => {
+          const normalized = channel / 255
+          return normalized <= 0.03928
+            ? normalized / 12.92
+            : ((normalized + 0.055) / 1.055) ** 2.4
+        })
+        return (
+          0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+        )
+      }
+
+      function effectiveBackground(element: Element) {
+        let current: Element | null = element
+        while (current) {
+          const background = getComputedStyle(current).backgroundColor
+          if (parseColor(background).alpha > 0) return background
+          current = current.parentElement
+        }
+        return 'rgb(255, 255, 255)'
+      }
+
+      return Math.min(
+        ...toolButtons.map((button) => {
+          const icon = button.querySelector('svg')
+          if (!icon) return 0
+
+          const foregroundLuminance = luminance(getComputedStyle(icon).fill)
+          const backgroundLuminance = luminance(effectiveBackground(button))
+          const lighter = Math.max(foregroundLuminance, backgroundLuminance)
+          const darker = Math.min(foregroundLuminance, backgroundLuminance)
+          return (lighter + 0.05) / (darker + 0.05)
+        })
+      )
+    })
+}
 
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   test(
@@ -213,6 +266,28 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
         '.maskEditor_toolPanelContainerSelected'
       )
       await expect(selectedTool).toHaveCount(1)
+    }
+  )
+
+  test(
+    'tool icons remain visible in light and dark themes',
+    { tag: ['@smoke'] },
+    async ({ comfyPage, maskEditor }) => {
+      const initialTheme = await comfyPage.menu.getThemeId()
+      const dialog = await maskEditor.openDialog()
+
+      try {
+        await expect
+          .poll(() => getMinimumToolIconContrast(dialog))
+          .toBeGreaterThanOrEqual(3)
+
+        await comfyPage.menu.toggleTheme()
+        await expect
+          .poll(() => getMinimumToolIconContrast(dialog))
+          .toBeGreaterThanOrEqual(3)
+      } finally {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', initialTheme)
+      }
     }
   )
 

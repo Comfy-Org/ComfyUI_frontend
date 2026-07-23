@@ -1,12 +1,22 @@
 import { expect } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  GetModelFoldersResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
+import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
+import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT]
 
 const test = createCloudAssetsFixture(CLOUD_ASSETS)
+const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -59,3 +69,84 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
     expect(await widget.getValue()).toBe(STABLE_CHECKPOINT.name)
   })
 })
+
+cloudAppFixture.describe(
+  'Import model dialog layout',
+  { tag: '@cloud' },
+  () => {
+    cloudAppFixture(
+      'uses one scroll region on a short viewport',
+      async ({ page }) => {
+        const features = {
+          model_upload_button_enabled: true,
+          private_models_enabled: true
+        } satisfies RemoteConfig
+        const settings = {
+          'Comfy.Assets.UseAssetAPI': true,
+          'Comfy.TutorialCompleted': true
+        }
+        const assetsResponse = {
+          assets: [],
+          total: 0,
+          has_more: false
+        } satisfies ListAssetsResponse
+        const modelFolders = [
+          { name: 'checkpoints', folders: [] }
+        ] satisfies GetModelFoldersResponse
+
+        await page.setViewportSize({ width: 1280, height: 420 })
+        await mockCloudBoot(page, { features, settings })
+        await bootCloud(page)
+        await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
+          route.fulfill(jsonRoute(assetsResponse))
+        )
+        await page.route('**/api/experiment/models', (route) =>
+          route.fulfill(jsonRoute(modelFolders))
+        )
+
+        await page.goto(APP_URL)
+        await waitForCloudApp(page)
+        await page.evaluate(() =>
+          window.app!.extensionManager.command.execute(
+            'Comfy.BrowseModelAssets'
+          )
+        )
+        await page.locator('[data-attr="upload-model-button"]').click()
+
+        const dialog = page.getByRole('dialog', { name: /Import a model/ })
+        const cancelButton = dialog.locator(
+          '[data-attr="upload-model-step1-cancel-button"]'
+        )
+        await expect(dialog).toBeVisible()
+        await expect(cancelButton).toBeVisible()
+
+        const metrics = await dialog.evaluate((element) => {
+          const scrollRegions = Array.from(
+            element.querySelectorAll<HTMLElement>('*')
+          ).filter((candidate) => {
+            const style = getComputedStyle(candidate)
+            return [style.overflowX, style.overflowY].some(
+              (overflow) => overflow === 'auto' || overflow === 'scroll'
+            )
+          })
+          const dialogRect = element.getBoundingClientRect()
+
+          return {
+            scrollRegionCount: scrollRegions.length,
+            dialogBottom: dialogRect.bottom,
+            viewportHeight: window.innerHeight
+          }
+        })
+
+        expect(metrics.scrollRegionCount).toBe(1)
+        expect(metrics.dialogBottom).toBeLessThanOrEqual(metrics.viewportHeight)
+
+        const cancelButtonRect = await cancelButton.boundingBox()
+        expect(cancelButtonRect).not.toBeNull()
+        expect(
+          cancelButtonRect!.y + cancelButtonRect!.height
+        ).toBeLessThanOrEqual(metrics.viewportHeight)
+      }
+    )
+  }
+)
