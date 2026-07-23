@@ -793,7 +793,7 @@ describe('verifyMediaCandidates', () => {
     expect(mockFetchHistoryPage).toHaveBeenCalledWith(
       expect.any(Function),
       200,
-      0
+      { offset: 0 }
     )
     expect(candidates[0]).toMatchObject({
       name: 'subfolder/photo.png [output]',
@@ -928,13 +928,13 @@ describe('verifyMediaCandidates', () => {
       1,
       expect.any(Function),
       200,
-      0
+      { offset: 0 }
     )
     expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
       2,
       expect.any(Function),
       200,
-      200
+      { offset: 200 }
     )
     expect(candidates[0].isMissing).toBe(false)
   })

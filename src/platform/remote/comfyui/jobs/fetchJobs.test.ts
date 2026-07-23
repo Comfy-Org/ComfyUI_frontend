@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  JobsApiError,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
@@ -13,7 +14,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { z } from 'zod'
 
-type JobsListResponse = z.infer<typeof zJobsListResponse>
+type JobsListResponse = z.input<typeof zJobsListResponse>
 
 function createMockJob(
   id: string,
@@ -39,7 +40,8 @@ function createMockResponse(
       offset: pagination.offset ?? 0,
       limit: pagination.limit ?? 200,
       total,
-      has_more: pagination.has_more ?? false
+      has_more: pagination.has_more ?? false,
+      next_cursor: pagination.next_cursor
     }
   }
 }
@@ -135,23 +137,73 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('propagates fetch errors', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('throws a JobsApiError carrying status and body on non-ok response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
-        status: 500
+        status: 400,
+        text: () =>
+          Promise.resolve('{"error":"Invalid cursor","code":"INVALID_CURSOR"}')
       })
 
-      const result = await fetchHistory(mockFetch)
+      await expect(fetchHistory(mockFetch)).rejects.toBeInstanceOf(JobsApiError)
+      await expect(fetchHistory(mockFetch)).rejects.toMatchObject({
+        status: 400,
+        message: expect.stringContaining('INVALID_CURSOR')
+      })
+    })
 
-      expect(result).toEqual([])
+    it('truncates oversized error bodies to 200 chars in the thrown message', async () => {
+      const oversized = 'x'.repeat(500)
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve(oversized)
+      })
+
+      const err = await fetchHistory(mockFetch).catch((e) => e)
+      expect(err).toBeInstanceOf(JobsApiError)
+      expect(err.message.length).toBeLessThanOrEqual(
+        '[Jobs API] Failed to fetch jobs: 500 '.length + 200 + 1 // +1 for the ellipsis
+      )
+      expect(err.message).toContain('…')
+    })
+
+    it('parses an empty-string next_cursor as absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')], 1, {
+              next_cursor: ''
+            })
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(result.nextCursor).toBeUndefined()
+    })
+
+    it('parses a null next_cursor as absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')], 1, {
+              next_cursor: null
+            })
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(result.nextCursor).toBeUndefined()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -205,7 +257,7 @@ describe('fetchJobs', () => {
           )
       })
 
-      const result = await fetchHistoryPage(mockFetch, 2, 5)
+      const result = await fetchHistoryPage(mockFetch, 2, { offset: 5 })
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/jobs?status=completed,failed,cancelled&limit=2&offset=5'
@@ -217,6 +269,79 @@ describe('fetchJobs', () => {
       expect(result.hasMore).toBe(true)
       expect(result.jobs[0].priority).toBe(5)
       expect(result.jobs[1].priority).toBe(4)
+    })
+
+    it('sends the cursor instead of offset and returns next_cursor', async () => {
+      const mockFetch = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify(
+              createMockResponse([createMockJob('job1', 'completed')], 10, {
+                has_more: true,
+                next_cursor: 'cursor-page-2'
+              })
+            ),
+            { status: 200 }
+          )
+        )
+
+      const result = await fetchHistoryPage(mockFetch, 200, {
+        after: 'cursor-page-1'
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=completed,failed,cancelled&limit=200&after=cursor-page-1'
+      )
+      expect(result.nextCursor).toBe('cursor-page-2')
+      expect(result.hasMore).toBe(true)
+    })
+
+    it('uri-encodes the cursor', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createMockResponse([]))
+      })
+
+      await fetchHistoryPage(mockFetch, 200, { after: 'a+b/c=' })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=completed,failed,cancelled&limit=200&after=a%2Bb%2Fc%3D'
+      )
+    })
+
+    it('returns next_cursor from offset-mode responses for cursor bootstrap', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')], 10, {
+              has_more: true,
+              next_cursor: 'minted-in-offset-mode'
+            })
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
+      )
+      expect(result.nextCursor).toBe('minted-in-offset-mode')
+    })
+
+    it('omits nextCursor when the server does not mint one', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')])
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(result.nextCursor).toBeUndefined()
     })
   })
 
@@ -268,12 +393,10 @@ describe('fetchJobs', () => {
       )
     })
 
-    it('returns empty arrays on error', async () => {
+    it('propagates fetch errors', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchQueue(mockFetch)
-
-      expect(result).toEqual({ Running: [], Pending: [] })
+      await expect(fetchQueue(mockFetch)).rejects.toThrow('Network error')
     })
   })
 
