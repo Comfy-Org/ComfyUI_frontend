@@ -201,6 +201,14 @@ export const useAssetsStore = defineStore('assets', () => {
   // a stale continuation can't merge into (or move the cursor of) the new walk.
   let historyFetchEpoch = 0
 
+  // Threaded through a single history walk so cursor recovery, which resets the
+  // list and bumps the epoch, can re-stamp the epoch it now owns. The caller
+  // then honours that self-recovery instead of misreading its own reset as an
+  // external supersession.
+  interface HistoryWalk {
+    epoch: number
+  }
+
   // True once any `next_cursor` has been received in the current walk epoch;
   // stays true even after the cursor exhausts (`historyNextCursor` back to
   // null), so head-refresh merges keep preserving scroll-loaded items
@@ -212,7 +220,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const fetchHistoryPageWithCursorRecovery = async (
     after: string | null,
-    epoch: number
+    walk: HistoryWalk
   ): Promise<FetchHistoryPageResult> => {
     if (after == null)
       return fetchHistoryJobsPage({ offset: historyOffset.value })
@@ -222,8 +230,16 @@ export const useAssetsStore = defineStore('assets', () => {
       // Drop only a rejected cursor (e.g. stale across a restart) to the
       // offset fallback; transient failures and superseded-walk
       // continuations must propagate so a valid/newer cursor isn't lost.
-      if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
+      if (!isRejectedCursorError(err) || walk.epoch !== historyFetchEpoch)
+        throw err
       console.warn('Stale history cursor rejected, resuming via offset:', err)
+      // Bump the epoch so a concurrent reader that captured the same one
+      // (notably an in-flight head refresh) sees supersession and bails on the
+      // list we clear next; re-stamp `walk` so our own caller reads this as
+      // self-recovery, not external supersession. This runs before the fallback
+      // fetch, so a failed retry still leaves the walk resumable from offset 0.
+      historyFetchEpoch += 1
+      walk.epoch = historyFetchEpoch
       historyNextCursor.value = null
       hadCursorThisWalk = false
       historyOffset.value = 0
@@ -231,7 +247,7 @@ export const useAssetsStore = defineStore('assets', () => {
       // The destructive reset waits until the fallback page is in hand, so a
       // failed fallback leaves the loaded list intact instead of stranding
       // `historyAssets` with no backing items.
-      if (epoch === historyFetchEpoch) {
+      if (walk.epoch === historyFetchEpoch) {
         allHistoryItems.value = []
         loadedIds.clear()
         loadedJobIds.clear()
@@ -258,7 +274,10 @@ export const useAssetsStore = defineStore('assets', () => {
    *   pagination state and replaces the list with the first page.
    * @returns The current accumulated list of history asset items.
    */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+  const fetchHistoryAssets = async (
+    loadMore = false,
+    walk: HistoryWalk = { epoch: 0 }
+  ): Promise<AssetItem[]> => {
     if (!loadMore) {
       historyFetchEpoch += 1
       historyOffset.value = 0
@@ -270,10 +289,10 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedJobIds.clear()
     }
 
-    const epoch = historyFetchEpoch
+    walk.epoch = historyFetchEpoch
     const requestedAfter = loadMore ? historyNextCursor.value : null
-    const page = await fetchHistoryPageWithCursorRecovery(requestedAfter, epoch)
-    if (epoch !== historyFetchEpoch) return allHistoryItems.value
+    const page = await fetchHistoryPageWithCursorRecovery(requestedAfter, walk)
+    if (walk.epoch !== historyFetchEpoch) return allHistoryItems.value
 
     page.jobs.forEach((job) => loadedJobIds.add(job.id))
     const newAssets = mapHistoryToAssets(page.jobs)
@@ -338,13 +357,13 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoadingMore.value = true
     historyError.value = null
 
-    const epoch = historyFetchEpoch
+    const walk: HistoryWalk = { epoch: historyFetchEpoch }
     try {
-      await fetchHistoryAssets(true)
-      if (epoch !== historyFetchEpoch) return
+      await fetchHistoryAssets(true, walk)
+      if (walk.epoch !== historyFetchEpoch) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
-      if (epoch !== historyFetchEpoch) return
+      if (walk.epoch !== historyFetchEpoch) return
       console.error('Error loading more history:', err)
       historyError.value = err
     } finally {
