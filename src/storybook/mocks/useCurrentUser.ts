@@ -13,6 +13,7 @@ export function useCurrentUser() {
   return {
     userDisplayName: ref('Ada Lovelace'),
     userEmail: ref('ada@example.com'),
+    resolvedUserInfo: ref({ id: 'user-ada' }),
     isLoggedIn: computed(() => true)
   }
 }

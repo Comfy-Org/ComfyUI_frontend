@@ -10,24 +10,24 @@ import type { ActivityEvent } from './useWorkspaceActivity'
 interface SetupOptions {
   search?: Ref<string>
   pageSize?: Ref<number>
-  selfName?: Ref<string | null>
+  selfUserId?: Ref<string | null>
   source?: ActivityEvent[]
 }
 
 function setup(options: SetupOptions = {}) {
   const search = options.search ?? ref('')
   const pageSize = options.pageSize ?? ref(100)
-  const selfName = options.selfName ?? ref<string | null>(null)
+  const selfUserId = options.selfUserId ?? ref<string | null>(null)
   const scope = effectScope()
   const api = scope.run(() =>
     useWorkspaceActivity(
       search,
       pageSize,
-      selfName,
+      selfUserId,
       options.source ?? activityFixture
     )
   )!
-  return { ...api, search, pageSize, selfName, stop: () => scope.stop() }
+  return { ...api, search, pageSize, selfUserId, stop: () => scope.stop() }
 }
 
 describe('useWorkspaceActivity', () => {
@@ -38,12 +38,42 @@ describe('useWorkspaceActivity', () => {
 
   it('scopes a member to their own usage rows plus workspace credit inflows', () => {
     const { total, pagedItems } = setup({
-      selfName: ref('Ada Lovelace')
+      selfUserId: ref('user-ada')
     })
     // Ada's 4 usage rows + the 2 credited inflows (userName '')
     expect(total.value).toBe(6)
     const names = new Set(pagedItems.value.map((e) => e.userName))
     expect(names).toEqual(new Set(['Ada Lovelace', '']))
+  })
+
+  it('does not expose another member with the same display name', () => {
+    const sameNameEvents: ActivityEvent[] = [
+      {
+        id: 'self',
+        date: new Date('2026-07-14T09:32:00Z'),
+        userId: 'user-ada',
+        userName: 'Ada Lovelace',
+        eventType: 'Cloud workflow run',
+        detail: '1 run',
+        credits: 100
+      },
+      {
+        id: 'other',
+        date: new Date('2026-07-14T09:31:00Z'),
+        userId: 'user-other-ada',
+        userName: 'Ada Lovelace',
+        eventType: 'Partner node usage',
+        detail: '1 run',
+        credits: 200
+      }
+    ]
+
+    const { pagedItems } = setup({
+      selfUserId: ref('user-ada'),
+      source: sameNameEvents
+    })
+
+    expect(pagedItems.value.map(({ id }) => id)).toEqual(['self'])
   })
 
   it('searches user name and event type only, not other columns', () => {
@@ -78,6 +108,7 @@ describe('useWorkspaceActivity', () => {
       {
         id: 'two-runs',
         date: new Date('2026-07-14T09:32:00Z'),
+        userId: 'user-ada',
         userName: 'Ada Lovelace',
         eventType: 'Partner node usage',
         detail: '2 runs',
@@ -86,6 +117,7 @@ describe('useWorkspaceActivity', () => {
       {
         id: 'ten-runs',
         date: new Date('2026-07-14T09:31:00Z'),
+        userId: 'user-ada',
         userName: 'Ada Lovelace',
         eventType: 'Partner node usage',
         detail: '10 runs',
@@ -126,7 +158,7 @@ describe('useWorkspaceActivity', () => {
 
   it('rolls up per-user totals excluding credit inflows', () => {
     const { userSummaries } = setup()
-    const ada = userSummaries.value.get('Ada Lovelace')
+    const ada = userSummaries.value.get('user-ada')
 
     expect(ada?.totalCredits).toBe(1840 + 5120 + 4100 + 2950)
     expect(ada?.lastActivity).toEqual(new Date('2026-07-14T09:32:00Z'))
