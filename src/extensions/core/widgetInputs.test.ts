@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockLGraphNode,
   createMockLLink,
@@ -142,7 +144,7 @@ function createTargetNode(widgetName: string, widgetValue: unknown = 'test') {
 
 function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
   const link = createMockLLink({
-    id: 1,
+    id: toLinkId(1),
     target_id: targetNode.id,
     target_slot: 0
   })
@@ -150,7 +152,7 @@ function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
     links: createMockLinks([link]),
     getNodeById: vi.fn(() => targetNode)
   } as any
-  node.outputs[0].links = [1]
+  node.outputs[0].links = [toLinkId(1)]
   return link
 }
 
@@ -221,12 +223,12 @@ describe('PrimitiveNode', () => {
     it('warns and skips when target node is not found', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const node = createPrimitiveNode()
-      const link = createMockLLink({ id: 1, target_id: 999, target_slot: 0 })
+      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(999), target_slot: 0 })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => undefined)
       } as any
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.widgets = [makeWidget({ value: 99 })]
 
       node.applyToGraph()
@@ -333,7 +335,7 @@ describe('PrimitiveNode', () => {
       ;(app as any).configuringGraph = true
 
       const node = createPrimitiveNode()
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.outputs[0].type = 'INT'
 
       node.onConnectionsChange(2, 0, true)
@@ -392,13 +394,13 @@ describe('PrimitiveNode', () => {
     it('validates and applies value when connecting additional outputs', () => {
       const node = createPrimitiveNode()
       const existingLink = createMockLLink({
-        id: 1,
-        target_id: 2,
+        id: toLinkId(1),
+        target_id: toNodeId(2),
         target_slot: 0
       })
       const existingTarget = createTargetNode('seed', 50)
 
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.outputs[0].widget = {
         [GET_CONFIG]: () => ['INT', { min: 0, max: 100 }] as InputSpec
       } as any
@@ -517,7 +519,7 @@ describe('PrimitiveNode', () => {
 
     it('falls back to onLastDisconnect when graph is missing', () => {
       const node = createPrimitiveNode()
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.outputs[0].type = 'INT'
       node.graph = null
       node.widgets = undefined
@@ -529,12 +531,12 @@ describe('PrimitiveNode', () => {
 
     it('returns early when link target node is not found', () => {
       const node = createPrimitiveNode()
-      const link = createMockLLink({ id: 1, target_id: 999, target_slot: 0 })
+      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(999), target_slot: 0 })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => undefined)
       } as any
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.widgets = undefined
 
       node.onAfterGraphConfigured()
@@ -548,7 +550,7 @@ describe('PrimitiveNode', () => {
         links: createMockLinks([]),
         getNodeById: vi.fn()
       } as any
-      node.outputs[0].links = [99]
+      node.outputs[0].links = [toLinkId(99)]
       node.widgets = undefined
 
       node.onAfterGraphConfigured()
@@ -601,7 +603,7 @@ describe('PrimitiveNode', () => {
   describe('_mergeWidgetConfig via onConnectionsChange', () => {
     it('removes CONFIG and recreates widget when links < 2 and had config', () => {
       const node = createPrimitiveNode()
-      node.outputs[0].links = [1]
+      node.outputs[0].links = [toLinkId(1)]
       node.outputs[0].widget = {
         name: 'test',
         [CONFIG]: ['INT', { min: 0 }],
@@ -609,7 +611,7 @@ describe('PrimitiveNode', () => {
       } as any
 
       const targetNode = createTargetNode('seed', 42)
-      const link = createMockLLink({ id: 1, target_id: 2, target_slot: 0 })
+      const link = createMockLLink({ id: toLinkId(1), target_id: toNodeId(2), target_slot: 0 })
       node.graph = {
         links: createMockLinks([link]),
         getNodeById: vi.fn(() => targetNode)
@@ -732,7 +734,7 @@ describe('setWidgetConfig', () => {
 
     setWidgetConfig(slot, config)
 
-    expect(slot.widget![GET_CONFIG]()).toEqual(config)
+    expect((slot.widget![GET_CONFIG] as () => unknown)()).toEqual(config)
   })
 })
 
