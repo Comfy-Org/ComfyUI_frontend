@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, provide } from 'vue'
-
-import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
-import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useI18n } from 'vue-i18n'
 
+import WidgetDescription from '@/components/builder/WidgetDescription.vue'
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -33,6 +33,7 @@ interface WidgetEntry {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
   }
   action: { widget: IBaseWidget; node: LGraphNode }
+  description?: string
 }
 
 const { mobile = false, builderMode = false } = defineProps<{
@@ -83,6 +84,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
       {
         key: widgetId,
         persistedHeight: config?.height,
+        description: config?.description,
         nodeData: {
           ...fullNodeData,
           widgets: [matchingWidget]
@@ -148,7 +150,13 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, persistedHeight, nodeData, action } in mappedSelections"
+    v-for="{
+      key,
+      persistedHeight,
+      nodeData,
+      action,
+      description
+    } in mappedSelections"
     :key
     :class="
       cn(
@@ -210,6 +218,24 @@ defineExpose({ handleDragDrop })
           </Button>
         </template>
       </Popover>
+    </div>
+    <div
+      v-if="description || builderMode"
+      data-testid="app-mode-widget-description"
+      :class="
+        cn(
+          'h-5 px-5',
+          description ? 'text-muted-foreground' : 'text-muted-background'
+        )
+      "
+    >
+      <WidgetDescription
+        :description
+        label-class="drag-handle"
+        label-type="div"
+        :disabled="!builderMode"
+        :widget="action.widget"
+      />
     </div>
     <div
       :style="

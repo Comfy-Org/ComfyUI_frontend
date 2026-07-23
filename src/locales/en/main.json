@@ -3823,7 +3823,8 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
+      "descriptionPlaceholder": "Double click to add a description"
     },
     "builder": {
       "title": "App builder mode",

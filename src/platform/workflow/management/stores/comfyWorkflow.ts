@@ -14,6 +14,7 @@ import type { WidgetId } from '@/types/widgetId'
 
 export interface InputWidgetConfig {
   height?: number
+  description?: string
 }
 
 type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
