@@ -302,7 +302,6 @@ const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 const {
   canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
-  isTeamPlan,
   subscription,
   showSubscriptionDialog,
   manageSubscription,
