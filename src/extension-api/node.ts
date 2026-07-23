@@ -69,7 +69,13 @@ export function createNodeHandle(node: LGraphNode): NodeHandle {
     },
 
     setSize([width, height]: Size): void {
-      if (!Number.isFinite(width) || !Number.isFinite(height)) return
+      if (
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width <= 0 ||
+        height <= 0
+      )
+        return
 
       const applyResize = (): void => {
         const mutations = useLayoutMutations()

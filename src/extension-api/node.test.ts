@@ -75,6 +75,7 @@ describe('createNodeHandle', () => {
         })
       )
       expect(layoutStore.getNodeLayoutRef(LATE).value).toBeNull()
+      const sourceBefore = layoutStore.getCurrentSource()
 
       handle.setSize([250, 180])
       // No layout entry yet → nothing applied.
@@ -95,6 +96,9 @@ describe('createNodeHandle', () => {
         width: 250,
         height: 180
       })
+      // The watcher callback applies the resize the same way the synchronous
+      // path does, so the shared source is restored afterwards too.
+      expect(layoutStore.getCurrentSource()).toBe(sourceBefore)
     })
 
     it.for([
@@ -102,8 +106,10 @@ describe('createNodeHandle', () => {
       {
         name: 'infinite height',
         size: [250, Number.POSITIVE_INFINITY] as const
-      }
-    ])('is a no-op for non-finite dimensions: $name', ({ size }) => {
+      },
+      { name: 'zero width', size: [0, 180] as const },
+      { name: 'negative height', size: [250, -50] as const }
+    ])('is a no-op for invalid dimensions: $name', ({ size }) => {
       const sizeBefore = { ...layoutStore.getNodeLayoutRef(NODE).value?.size }
       const sourceBefore = layoutStore.getCurrentSource()
 
