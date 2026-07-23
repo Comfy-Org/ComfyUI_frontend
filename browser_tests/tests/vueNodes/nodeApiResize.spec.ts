@@ -58,7 +58,9 @@ test.describe(
       await comfyPage.canvasOps.resetView()
 
       const resized = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-      await expect.poll(resized.pollHeight).toBeGreaterThan(initial.height)
+      await expect
+        .poll(() => resized.pollHeight())
+        .toBeGreaterThan(initial.height)
     })
   }
 )
