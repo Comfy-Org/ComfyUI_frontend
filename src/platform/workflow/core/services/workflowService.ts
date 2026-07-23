@@ -23,6 +23,7 @@ import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -48,6 +49,7 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
@@ -95,6 +97,25 @@ export const useWorkflowService = () => {
       message: t('sideToolbar.workflowTab.confirmOverwrite'),
       itemList: [targetPath]
     })
+  }
+
+  /**
+   * Switching workflows while selecting nodes for the agent composer would
+   * silently strand that selection on a graph it no longer applies to, so
+   * confirm exiting the mode first.
+   * @returns true if it's safe to proceed with the workflow switch
+   */
+  async function confirmExitNodeSelectionMode(): Promise<boolean> {
+    if (!agentNodeSelectionStore.isActive) return true
+
+    const confirmed = await dialogService.confirm({
+      title: t('agent.nodeSelection.exitConfirmTitle'),
+      message: t('agent.nodeSelection.exitConfirmMessage')
+    })
+    if (!confirmed) return false
+
+    agentNodeSelectionStore.exit()
+    return true
   }
 
   async function getFilename(defaultName: string): Promise<string | null> {
@@ -278,7 +299,12 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { force: boolean } = { force: false }
   ) => {
-    if (workflowStore.isActive(workflow) && !options.force) return
+    const isSwitchingWorkflow = !workflowStore.isActive(workflow)
+    if (!isSwitchingWorkflow) {
+      if (!options.force) return
+    } else if (!(await confirmExitNodeSelectionMode())) {
+      return
+    }
 
     const loadFromRemote = !workflow.isLoaded
     if (loadFromRemote) {
@@ -296,6 +322,11 @@ export const useWorkflowService = () => {
         skipAssetScans: !loadFromRemote && !options.force
       }
     )
+    // Referenced nodes point at LGraphNode instances from the graph being
+    // left behind, so they no longer apply once a different workflow loads.
+    if (isSwitchingWorkflow) {
+      agentNodeSelectionStore.clear()
+    }
     showPendingWarnings(undefined, {
       silent: !loadFromRemote && !options.force
     })

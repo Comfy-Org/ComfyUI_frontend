@@ -30,7 +30,9 @@
       "bannerTitle": "Add nodes from graph",
       "bannerSubtitle": "Select one or many nodes to add as reference",
       "exit": "Exit mode",
-      "chipRemove": "Remove node reference"
+      "chipRemove": "Remove node reference",
+      "exitConfirmTitle": "Exit node selection mode?",
+      "exitConfirmMessage": "You're selecting nodes from the graph to reference in the chat. Switching workflows will exit this mode."
     },
     "mentionPicker": {
       "empty": "No nodes found"

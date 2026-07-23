@@ -12,6 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -19,7 +20,10 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@/utils/appMode'
 import { t } from '@/i18n'
 
@@ -484,6 +488,71 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('openWorkflow node selection mode', () => {
+    let agentNodeSelectionStore: ReturnType<typeof useAgentNodeSelectionStore>
+
+    beforeEach(() => {
+      agentNodeSelectionStore = useAgentNodeSelectionStore()
+      agentNodeSelectionStore.isActive = true
+    })
+
+    it('confirms and exits node selection mode before switching to a different workflow', async () => {
+      const workflow = createWorkflow(null, { loadable: true })
+      mockConfirm.mockResolvedValue(true)
+
+      await useWorkflowService().openWorkflow(workflow)
+
+      expect(mockConfirm).toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalled()
+      expect(agentNodeSelectionStore.isActive).toBe(false)
+    })
+
+    it('cancels the switch and keeps node selection mode active when declined', async () => {
+      const workflow = createWorkflow(null, { loadable: true })
+      mockConfirm.mockResolvedValue(false)
+
+      await useWorkflowService().openWorkflow(workflow)
+
+      expect(mockConfirm).toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(agentNodeSelectionStore.isActive).toBe(true)
+    })
+
+    it('does not prompt when reopening the already active workflow', async () => {
+      const workflow = createWorkflow(null, { loadable: true })
+      useWorkflowStore().activeWorkflow = workflow as LoadedComfyWorkflow
+
+      await useWorkflowService().openWorkflow(workflow, { force: true })
+
+      expect(mockConfirm).not.toHaveBeenCalled()
+      expect(agentNodeSelectionStore.isActive).toBe(true)
+    })
+  })
+
+  describe('openWorkflow referenced nodes', () => {
+    it('clears referenced nodes when switching to a different workflow', async () => {
+      const agentNodeSelectionStore = useAgentNodeSelectionStore()
+      agentNodeSelectionStore.referencedNodes = [createMockLGraphNode()]
+      const workflow = createWorkflow(null, { loadable: true })
+
+      await useWorkflowService().openWorkflow(workflow)
+
+      expect(agentNodeSelectionStore.referencedNodes).toEqual([])
+    })
+
+    it('keeps referenced nodes when reopening the already active workflow', async () => {
+      const agentNodeSelectionStore = useAgentNodeSelectionStore()
+      const node = createMockLGraphNode()
+      agentNodeSelectionStore.referencedNodes = [node]
+      const workflow = createWorkflow(null, { loadable: true })
+      useWorkflowStore().activeWorkflow = workflow as LoadedComfyWorkflow
+
+      await useWorkflowService().openWorkflow(workflow, { force: true })
+
+      expect(agentNodeSelectionStore.referencedNodes).toEqual([node])
     })
   })
 
