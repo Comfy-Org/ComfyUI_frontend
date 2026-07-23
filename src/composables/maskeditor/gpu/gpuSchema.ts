@@ -3,7 +3,7 @@ import * as d from 'typegpu/data'
 // Global brush uniforms
 export const BrushUniforms = d.struct({
   brushColor: d.vec3f,
-  brushOpacity: d.f32,
+  opacity: d.f32,
   hardness: d.f32,
   screenSize: d.vec2f,
   brushShape: d.u32 // 0: Circle, 1: Square
