@@ -117,6 +117,9 @@ const MUTATING_SIZE_METHODS = new Set([
   'sort'
 ])
 
+/** Captures only the {@link layoutStore} singleton, so shared across nodes. */
+const layoutMutations = useLayoutMutations()
+
 interface INodePropertyInfo {
   name?: string
   type?: string
@@ -515,9 +518,8 @@ export class LGraphNode
     this._pos[1] = value[1]
     if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(this.id, { x: value[0], y: value[1] })
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.moveNode(this.id, { x: value[0], y: value[1] })
   }
 
   /**
@@ -542,15 +544,8 @@ export class LGraphNode
    * mutating methods ({@link MUTATING_SIZE_METHODS}) also commit, so growing the
    * node via `node.size.set(...)` reflows just like a bare element write.
    *
-   * TODO(litegraph-stable-resize-api): this Proxy is the deprecation on-ramp for
-   * a stable resize API that does not exist yet. Its set trap already commits the
-   * legacy `node.size[1] =` idiom through `resizeNode` — the SAME layout-store
-   * primitive the sanctioned future API will call. Direction / migration: target
-   * end-state is a `Comfy.Node.Resize` command + `NodeHandle.setSize()`/
-   * `autosize()`/`on('resize')` (v2 extension handles). Once that API lands, emit
-   * a one-time `warnDeprecated` from this trap naming the sanctioned call, turning
-   * direct element writes into a migrate-me signal instead of a silent shim (the
-   * deliberate fast-follow — no runtime warn today).
+   * TODO(litegraph-stable-resize-api): interim shim — remove once a stable resize
+   * API replaces direct typed-array size access.
    */
   public get size(): Size {
     return (this._sizeProxy ??= new Proxy(this._size, {
@@ -594,9 +589,8 @@ export class LGraphNode
     const layout = layoutStore.getNodeLayoutRef(this.id).value
     if (layout && isSizeEqual(layout.size, size)) return
 
-    const mutations = useLayoutMutations()
-    mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(this.id, size)
+    layoutMutations.setSource(LayoutSource.Canvas)
+    layoutMutations.resizeNode(this.id, size)
   }
 
   /**
