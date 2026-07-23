@@ -336,67 +336,45 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeySession() returns a validated Direct-mode session', async () => {
+    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
       const data = {
-        customer_id: 'workspace-1',
+        customer_id: 'cus_test_1',
         auth_hash: 'hash-1',
-        mode: 'test',
-        subscription: {
-          id: 'subscription-1',
-          started_at: '2026-01-01T00:00:00Z',
-          status: 'active',
-          current_period_start: '2026-07-01T00:00:00Z',
-          current_period_end: '2026-08-01T00:00:00Z',
-          plan: {
-            id: 'creator-monthly',
-            name: 'Creator',
-            amount_cents: 3500,
-            currency: 'usd',
-            interval: 'month',
-            interval_count: 1
-          },
-          quantity: 1
-        }
+        mode: 'test'
       }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeySession()).resolves.toEqual(data)
+      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/session',
+        '/api/billing/churnkey/auth',
         { headers: AUTH_HEADER }
       )
     })
 
     it.for([
       {
-        customer_id: 'workspace-1',
+        customer_id: '',
         auth_hash: 'hash-1',
         mode: 'test'
       },
       {
-        customer_id: 'workspace-1',
-        auth_hash: 'hash-1',
-        mode: 'test',
-        subscription: { status: 'canceled' }
+        customer_id: 'cus_test_1',
+        auth_hash: '',
+        mode: 'test'
       },
       {
-        customer_id: 'workspace-1',
+        customer_id: 'cus_test_1',
         auth_hash: 'hash-1',
-        mode: 'test',
-        subscription: {
-          id: 'subscription-1',
-          started_at: 'not-a-date',
-          status: 'active'
-        }
+        mode: 'invalid'
       }
-    ])('getChurnkeySession() falls back on malformed data', async (data) => {
+    ])('getChurnkeyAuth() falls back on malformed data', async (data) => {
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      await expect(workspaceApi.getChurnkeySession()).resolves.toBeNull()
+      await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
     })
 
     it.for([404, 503])(
-      'getChurnkeySession() falls back on HTTP %s',
+      'getChurnkeyAuth() falls back on HTTP %s',
       async (status) => {
         mockAxiosInstance.get.mockRejectedValue({
           isAxiosError: true,
@@ -404,18 +382,18 @@ describe('workspaceApi', () => {
           message: 'Request failed'
         })
 
-        await expect(workspaceApi.getChurnkeySession()).resolves.toBeNull()
+        await expect(workspaceApi.getChurnkeyAuth()).resolves.toBeNull()
       }
     )
 
-    it('getChurnkeySession() preserves unexpected API failures', async () => {
+    it('getChurnkeyAuth() preserves unexpected API failures', async () => {
       mockAxiosInstance.get.mockRejectedValue({
         isAxiosError: true,
         response: { status: 500, data: { message: 'Server Error' } },
         message: 'Request failed'
       })
 
-      await expect(workspaceApi.getChurnkeySession()).rejects.toMatchObject({
+      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 500
       })

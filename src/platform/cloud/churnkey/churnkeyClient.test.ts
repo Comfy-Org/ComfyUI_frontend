@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ChurnkeySessionResponse } from './churnkeySessionSchema'
+import type { ChurnkeyAuthResponse } from './churnkeyAuthSchema'
 
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
   appId: 'app_test',
-  getChurnkeySession: vi.fn(),
+  getChurnkeyAuth: vi.fn(),
   init: vi.fn(),
   hide: vi.fn(),
   clearState: vi.fn()
@@ -24,33 +24,17 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getChurnkeySession: mocks.getChurnkeySession
+    getChurnkeyAuth: mocks.getChurnkeyAuth
   }
 }))
 
 import { prepareChurnkey } from './churnkeyClient'
 
-function sessionResponse(): ChurnkeySessionResponse {
+function authResponse(): ChurnkeyAuthResponse {
   return {
-    customer_id: 'workspace-1',
+    customer_id: 'cus_test_1',
     auth_hash: 'signed-hash',
-    mode: 'test',
-    subscription: {
-      id: 'subscription-1',
-      started_at: '2026-01-01T00:00:00Z',
-      status: 'active',
-      current_period_start: '2026-07-01T00:00:00Z',
-      current_period_end: '2026-08-01T00:00:00Z',
-      plan: {
-        id: 'creator-monthly',
-        name: 'Creator',
-        amount_cents: 3500,
-        currency: 'usd',
-        interval: 'month',
-        interval_count: 1
-      },
-      quantity: 1
-    }
+    mode: 'test'
   }
 }
 
@@ -64,7 +48,7 @@ describe('churnkeyClient', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.appId = 'app_test'
-    mocks.getChurnkeySession.mockResolvedValue(sessionResponse())
+    mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
     window.churnkey = {
       init: mocks.init,
       hide: mocks.hide,
@@ -72,7 +56,7 @@ describe('churnkeyClient', () => {
     }
   })
 
-  it('builds a Direct-mode session from the backend snapshot', async () => {
+  it('builds a Stripe-provider session from backend credentials', async () => {
     const session = await prepareChurnkey()
     if (!session) throw new Error('Expected a Churnkey session')
 
@@ -87,47 +71,24 @@ describe('churnkeyClient', () => {
     expect(config).toMatchObject({
       appId: 'app_test',
       authHash: 'signed-hash',
-      provider: 'direct',
+      customerId: 'cus_test_1',
+      provider: 'stripe',
       mode: 'test',
-      customer: { id: 'workspace-1' },
-      customerAttributes: { tier: 'PRO' },
-      subscriptions: [
-        {
-          id: 'subscription-1',
-          start: new Date('2026-01-01T00:00:00Z'),
-          status: {
-            name: 'active',
-            currentPeriod: {
-              start: new Date('2026-07-01T00:00:00Z'),
-              end: new Date('2026-08-01T00:00:00Z')
-            }
-          },
-          items: [
-            {
-              price: {
-                id: 'creator-monthly',
-                name: 'Creator',
-                amount: { value: 3500, currency: 'usd' },
-                interval: 'month',
-                intervalCount: 1
-              },
-              quantity: 1
-            }
-          ]
-        }
-      ]
+      customerAttributes: { tier: 'PRO' }
     })
+    expect(config).not.toHaveProperty('customer')
+    expect(config).not.toHaveProperty('subscriptions')
     expect(config).not.toHaveProperty('record')
     expect(config).not.toHaveProperty('handlePause')
     expect(config).not.toHaveProperty('handleDiscount')
 
     await expect(
-      config.handleCancel({ id: 'workspace-1' }, 'Too expensive', 'Feedback')
+      config.handleCancel('cus_test_1', 'Too expensive', 'Feedback')
     ).resolves.toEqual({ message: 'Canceled' })
     expect(handleCancel).toHaveBeenCalledWith('Too expensive', 'Feedback')
 
-    config.onClose({ aborted: true })
-    await expect(showPromise).resolves.toEqual({ aborted: true })
+    config.onClose({ status: 'closed' })
+    await expect(showPromise).resolves.toEqual({ status: 'closed' })
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
@@ -135,7 +96,7 @@ describe('churnkeyClient', () => {
     mocks.appId = ''
 
     await expect(prepareChurnkey()).resolves.toBeNull()
-    expect(mocks.getChurnkeySession).not.toHaveBeenCalled()
+    expect(mocks.getChurnkeyAuth).not.toHaveBeenCalled()
     expect(mocks.init).not.toHaveBeenCalled()
   })
 
@@ -152,7 +113,7 @@ describe('churnkeyClient', () => {
     const showPromise = session.show({ handleCancel: vi.fn() })
     const config = capturedConfig()
     config.onError('No active subscription', 'cancel_flow')
-    config.onClose({ aborted: true })
+    config.onClose({ status: 'closed' })
 
     await expect(showPromise).rejects.toThrow(
       'No active subscription (cancel_flow)'
@@ -162,23 +123,9 @@ describe('churnkeyClient', () => {
   })
 
   it('does not load the embed when backend credentials are unavailable', async () => {
-    mocks.getChurnkeySession.mockResolvedValue(null)
+    mocks.getChurnkeyAuth.mockResolvedValue(null)
 
     await expect(prepareChurnkey()).resolves.toBeNull()
-    expect(mocks.init).not.toHaveBeenCalled()
-  })
-
-  it('rejects malformed subscription dates before showing the embed', async () => {
-    const response = sessionResponse()
-    response.subscription.current_period_end = 'not-a-date'
-    mocks.getChurnkeySession.mockResolvedValue(response)
-
-    const session = await prepareChurnkey()
-    if (!session) throw new Error('Expected a Churnkey session')
-
-    await expect(session.show({ handleCancel: vi.fn() })).rejects.toThrow(
-      'Invalid Churnkey subscription date: not-a-date'
-    )
     expect(mocks.init).not.toHaveBeenCalled()
   })
 

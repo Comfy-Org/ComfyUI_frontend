@@ -1,12 +1,11 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ChurnkeySessionResponse } from '@/platform/cloud/churnkey/churnkeySessionSchema'
+import type { ChurnkeyAuthResponse } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 import { createScriptLoader } from '@/utils/loadExternalScript'
 
 import type {
   ChurnkeyHandlerResult,
-  ChurnkeyDirectSubscription,
   ChurnkeyInit,
   ChurnkeyInitConfig,
   ChurnkeySessionResults
@@ -40,46 +39,6 @@ function runBestEffort(cleanup: () => void): void {
   }
 }
 
-function dateFromApi(value: string): Date {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    throw new Error(`Invalid Churnkey subscription date: ${value}`)
-  }
-  return date
-}
-
-function directSubscription(
-  session: ChurnkeySessionResponse
-): ChurnkeyDirectSubscription {
-  const { subscription } = session
-  return {
-    id: subscription.id,
-    start: dateFromApi(subscription.started_at),
-    status: {
-      name: subscription.status,
-      currentPeriod: {
-        start: dateFromApi(subscription.current_period_start),
-        end: dateFromApi(subscription.current_period_end)
-      }
-    },
-    items: [
-      {
-        price: {
-          id: subscription.plan.id,
-          name: subscription.plan.name,
-          amount: {
-            value: subscription.plan.amount_cents,
-            currency: subscription.plan.currency
-          },
-          interval: subscription.plan.interval,
-          intervalCount: subscription.plan.interval_count
-        },
-        quantity: subscription.quantity
-      }
-    ]
-  }
-}
-
 export interface ChurnkeyShowOptions {
   customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
@@ -94,7 +53,7 @@ export interface ChurnkeySession {
 
 function createSession(
   init: ChurnkeyInit,
-  session: ChurnkeySessionResponse,
+  auth: ChurnkeyAuthResponse,
   configuredAppId: string
 ): ChurnkeySession {
   return {
@@ -113,11 +72,10 @@ function createSession(
 
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
-          authHash: session.auth_hash,
-          provider: 'direct',
-          mode: session.mode,
-          customer: { id: session.customer_id },
-          subscriptions: [directSubscription(session)],
+          authHash: auth.auth_hash,
+          customerId: auth.customer_id,
+          provider: 'stripe',
+          mode: auth.mode,
           customerAttributes: options.customerAttributes,
           handleCancel: (_customer, surveyResponse, freeformFeedback) =>
             options.handleCancel(surveyResponse, freeformFeedback),
@@ -149,9 +107,9 @@ export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
   const configuredAppId = useFeatureFlags().flags.churnkeyAppId
   if (!configuredAppId) return null
 
-  const session = await workspaceApi.getChurnkeySession()
-  if (!session) return null
+  const auth = await workspaceApi.getChurnkeyAuth()
+  if (!auth) return null
 
   const init = await loadChurnkey(configuredAppId)
-  return createSession(init, session, configuredAppId)
+  return createSession(init, auth, configuredAppId)
 }

@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { churnkeySessionResponseSchema } from '@/platform/cloud/churnkey/churnkeySessionSchema'
-import type { ChurnkeySessionResponse } from '@/platform/cloud/churnkey/churnkeySessionSchema'
+import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
+import type { ChurnkeyAuthResponse } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -701,14 +701,14 @@ export const workspaceApi = {
     }
   },
 
-  async getChurnkeySession(): Promise<ChurnkeySessionResponse | null> {
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<unknown>(
-        api.apiURL('/billing/churnkey/session'),
+        api.apiURL('/billing/churnkey/auth'),
         { headers }
       )
-      const result = churnkeySessionResponseSchema.safeParse(response.data)
+      const result = churnkeyAuthResponseSchema.safeParse(response.data)
       return result.success ? result.data : null
     } catch (err) {
       if (

@@ -1,60 +1,26 @@
-import type { ChurnkeySessionResponse } from './churnkeySessionSchema'
+import type { ChurnkeyAuthResponse } from './churnkeyAuthSchema'
 
-type ChurnkeyMode = ChurnkeySessionResponse['mode']
+type ChurnkeyMode = ChurnkeyAuthResponse['mode']
 
 export interface ChurnkeyHandlerResult {
   message?: string
 }
 
 export interface ChurnkeySessionResults {
-  aborted?: boolean
-  canceled?: boolean
+  status?: 'canceled' | 'discounted' | 'paused' | 'closed'
   acceptedOffer?: Record<string, unknown> | null
   [key: string]: unknown
-}
-
-type ChurnkeyBillingInterval =
-  ChurnkeySessionResponse['subscription']['plan']['interval']
-
-interface ChurnkeyDirectCustomer {
-  id: string
-}
-
-export interface ChurnkeyDirectSubscription {
-  id: string
-  start: Date
-  status: {
-    name: 'active'
-    currentPeriod: {
-      start: Date
-      end: Date
-    }
-  }
-  items: Array<{
-    price: {
-      id: string
-      name?: string
-      amount: {
-        value: number
-        currency: string
-      }
-      interval: ChurnkeyBillingInterval
-      intervalCount: number
-    }
-    quantity: number
-  }>
 }
 
 export interface ChurnkeyInitConfig {
   appId: string
   authHash: string
-  provider: 'direct'
+  customerId: string
+  provider: 'stripe'
   mode: ChurnkeyMode
-  customer: ChurnkeyDirectCustomer
-  subscriptions: ChurnkeyDirectSubscription[]
   customerAttributes?: Record<string, string | number | boolean>
   handleCancel: (
-    customer: ChurnkeyDirectCustomer,
+    customer: string,
     surveyResponse: string,
     freeformFeedback?: string
   ) => Promise<ChurnkeyHandlerResult>

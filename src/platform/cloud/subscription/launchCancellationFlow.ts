@@ -103,7 +103,7 @@ async function runCancellationFlow(
       }
     })
 
-    if (!didCancelSucceed && results.aborted) {
+    if (!didCancelSucceed && results.status === 'closed') {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {

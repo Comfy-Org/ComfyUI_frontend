@@ -85,7 +85,7 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
-        return { canceled: true }
+        return { status: 'canceled' }
       })
     )
     const showFallback = vi.fn()
@@ -112,7 +112,7 @@ describe('launchCancellationFlow', () => {
   })
 
   it('tracks an abandoned flow when the user closes the embed', async () => {
-    mocks.prepare.mockResolvedValue(session(async () => ({ aborted: true })))
+    mocks.prepare.mockResolvedValue(session(async () => ({ status: 'closed' })))
 
     await launchCancellationFlow({ showFallback: vi.fn() })
 
@@ -208,7 +208,7 @@ describe('launchCancellationFlow', () => {
     expect(mocks.prepare).toHaveBeenCalledOnce()
     const resolveFlow = closeFlow
     if (!resolveFlow) throw new Error('Expected the flow to be open')
-    resolveFlow({ aborted: true })
+    resolveFlow({ status: 'closed' })
     await first
   })
 })
