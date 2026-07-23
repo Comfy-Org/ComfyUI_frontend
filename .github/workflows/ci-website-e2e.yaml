@@ -86,7 +86,7 @@ jobs:
           DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
-            OUTPUT=$(npx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
