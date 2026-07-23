@@ -1,11 +1,25 @@
+import { ZIndex } from '@primeuix/utils/zindex'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 
+// Base that vRekaZIndex registers Reka dialogs at.
+const MODAL_BASE_Z_INDEX = 1700
+// The popover's static z-3000 class, which a stacked dialog can climb past.
+const POPOVER_Z_INDEX_FLOOR = 3000
+
 describe('usePrimeVueOverlayChildStyle', () => {
   let scope: EffectScope | undefined
+  const openDialogs: HTMLElement[] = []
+
+  function openRekaDialog(): number {
+    const dialog = document.createElement('div')
+    ZIndex.set('modal', dialog, MODAL_BASE_Z_INDEX)
+    openDialogs.push(dialog)
+    return Number(dialog.style.zIndex)
+  }
 
   function mountComposable() {
     scope = effectScope()
@@ -30,10 +44,33 @@ describe('usePrimeVueOverlayChildStyle', () => {
     scope?.stop()
     scope = undefined
     document.body.innerHTML = ''
+    for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
   })
 
-  it('preserves existing stacking when there is no PrimeVue parent overlay', () => {
+  it('preserves existing stacking when no dialog is open above it', () => {
     const { overlayScopeRef, contentStyle } = mountComposable()
+
+    overlayScopeRef.value = document.createElement('div')
+
+    expect(contentStyle.value).toEqual({})
+  })
+
+  it('renders above a Reka dialog, which has no PrimeVue mask to find', () => {
+    const { overlayScopeRef, contentStyle } = mountComposable()
+
+    let dialogZIndex = openRekaDialog()
+    while (dialogZIndex <= POPOVER_Z_INDEX_FLOOR) {
+      dialogZIndex = openRekaDialog()
+    }
+
+    overlayScopeRef.value = document.createElement('div')
+
+    expect(contentStyle.value).toEqual({ zIndex: dialogZIndex + 1 })
+  })
+
+  it('keeps the static floor while stacked dialogs stay below it', () => {
+    const { overlayScopeRef, contentStyle } = mountComposable()
+    openRekaDialog()
 
     overlayScopeRef.value = document.createElement('div')
 
