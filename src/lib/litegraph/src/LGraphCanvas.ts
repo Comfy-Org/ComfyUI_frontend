@@ -116,7 +116,7 @@ import type {
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
-import { findFirstNode, getAllNestedItems } from './utils/collections'
+import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -689,6 +689,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
+  /**
+   * Modifier state of the most recent drag pointer event, so the auto-pan
+   * callback resolves the same dragged-item set as normal pointer movement
+   * (e.g. Cmd/Ctrl-drag moves a group without its contents). Updated on every
+   * drag move and seeded from the pointer-down event when a drag starts.
+   */
+  private _lastDragModifiers: Pick<MouseEvent, 'ctrlKey' | 'metaKey'> = {
+    ctrlKey: false,
+    metaKey: false
+  }
   private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
   private _ghostKeyHandler: ((e: KeyboardEvent) => void) | null = null
 
@@ -3554,7 +3564,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._autoPan?.updatePointer(e.clientX, e.clientY)
 
         const selected = this.selectedItems
-        const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
+        this._lastDragModifiers = { ctrlKey: e.ctrlKey, metaKey: e.metaKey }
+        const allItems = getDraggedItems(selected, e)
 
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
@@ -3640,6 +3651,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
 
+    // Seed the auto-pan modifier state from the pointer-down event so a drag
+    // that reaches the canvas edge before the first move still honours the
+    // "move group without contents" modifier.
+    if (pointer.eDown) {
+      this._lastDragModifiers = {
+        ctrlKey: pointer.eDown.ctrlKey,
+        metaKey: pointer.eDown.metaKey
+      }
+    }
+
     this._startNodeAutoPan()
   }
 
@@ -3650,7 +3671,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
-        const allItems = getAllNestedItems(selected)
+        const allItems = getDraggedItems(selected, this._lastDragModifiers)
 
         if (LiteGraph.vueNodesMode) {
           this.moveChildNodesInGroupVueMode(allItems, panX, panY)
