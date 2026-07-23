@@ -307,6 +307,7 @@ export interface BillingOpStatusResponse {
   id: string
   status: BillingOpStatus
   error_message?: string
+  next_action_redirect_url?: string
   started_at: string
   completed_at?: string
 }

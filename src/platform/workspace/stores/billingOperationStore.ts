@@ -165,6 +165,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
 
+      if (response.next_action_redirect_url) {
+        beginRedirectOperation(opId, operation.type)
+        globalThis.location.assign(response.next_action_redirect_url)
+        return
+      }
+
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
         return
