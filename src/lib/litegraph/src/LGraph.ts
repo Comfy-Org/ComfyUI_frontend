@@ -392,7 +392,9 @@ export class LGraph
     this.status = LGraph.STATUS_STOPPED
 
     const graphId = this.id
-    if (this.isRootGraph && graphId !== zeroUuid) {
+    const isEmptyUnconfiguredGraph =
+      graphId === zeroUuid && this._nodes.length === 0
+    if (this.isRootGraph && !isEmptyUnconfiguredGraph) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
