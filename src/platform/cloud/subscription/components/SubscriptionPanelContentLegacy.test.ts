@@ -33,7 +33,9 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    canAccessSubscriptionFeatures: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isCancelled: computed(() => mockIsCancelled.value),
     isFreeTier: computed(() => mockIsFreeTier.value),
     formattedRenewalDate: computed(() => '2026-08-01'),

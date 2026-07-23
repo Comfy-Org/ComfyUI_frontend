@@ -32,7 +32,9 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: state.canAccessSubscriptionFeatures },
+    canAccessSubscriptionFeatures: {
+      value: state.canAccessSubscriptionFeatures
+    },
     isFreeTier: { value: state.isFreeTier },
     type: { value: state.type }
   })
