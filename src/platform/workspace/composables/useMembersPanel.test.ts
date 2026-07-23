@@ -373,6 +373,9 @@ vi.mock(
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    isActiveSubscription: mockCanAccessSubscriptionFeatures,
+    isInitialized: mockIsInitialized,
+    isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
     subscriptionStatus: mockSubscriptionStatus,
     getMaxSeats: (tierKey: string) => {
@@ -414,6 +417,10 @@ describe('useMembersPanel', () => {
     mockTotalMemberSlots.value = 0
     mockIsInviteLimitReached.value = false
     mockCanAccessSubscriptionFeatures.value = true
+    mockIsInitialized.value = true
+    mockIsTeamPlan.value = true
+    mockSubscriptionStatus.value = 'active'
+    mockWorkspaceRole.value = 'owner'
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,

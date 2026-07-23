@@ -122,7 +122,7 @@ const mockError = ref<string | null>(null)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     isTeamPlan: mockIsTeamPlan,
     subscription: mockSubscription,
