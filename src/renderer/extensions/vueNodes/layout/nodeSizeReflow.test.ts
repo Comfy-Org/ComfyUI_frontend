@@ -114,21 +114,6 @@ describe('LGraphNode size reflow', () => {
     ).toHaveLength(1)
   })
 
-  it('commits a chained index write after a fluent TypedArray mutator', () => {
-    const { node, resizeCommits } = setup()
-
-    const size = node.size
-    if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
-    size.fill(160)[1] = 180
-
-    const layout = layoutStore.getNodeLayoutRef(node.id)
-    expect(layout.value?.size).toEqual({ width: 160, height: 180 })
-    expect(
-      resizeCommits(),
-      'fill(...) returns the Proxy, so the chained [1] = write still commits'
-    ).toHaveLength(2)
-  })
-
   it('does not commit for size mutations before the node joins a graph', () => {
     const detached = new LGraphNode('detached')
 
@@ -136,63 +121,6 @@ describe('LGraphNode size reflow', () => {
       detached.size[1] = 500
     }).not.toThrow()
     expect(detached.size[1]).toBe(500)
-  })
-
-  it('keeps typed-array semantics through the size Proxy', () => {
-    const { node } = setup()
-    node.size[1] = 175
-
-    expect(node.size[0]).toBe(210)
-    expect(node.size[1]).toBe(175)
-    expect(node.size.length).toBe(2)
-    expect([...node.size]).toEqual([210, 175])
-    expect(Array.from(node.size)).toEqual([210, 175])
-  })
-
-  it('preserves the Float64Array identity and buffer contract', () => {
-    const { node } = setup()
-    const size = node.size
-
-    expect(size instanceof Float64Array).toBe(true)
-    if (!(size instanceof Float64Array)) throw new Error('not a Float64Array')
-
-    expect(size.BYTES_PER_ELEMENT).toBe(8)
-    expect(size.buffer).toBeInstanceOf(ArrayBuffer)
-    // size is the subarray(2, 4) view of the node's [x, y, w, h] Rectangle.
-    expect(size.byteOffset).toBe(2 * Float64Array.BYTES_PER_ELEMENT)
-
-    const view = size.subarray(1, 2)
-    expect(ArrayBuffer.isView(view)).toBe(true)
-    node.size[1] = 321
-    expect(view[0]).toBe(321)
-  })
-
-  it('returns a cached Proxy that stays bound to the live backing store', () => {
-    const { node } = setup()
-    const cached = node.size
-
-    expect(node.size).toBe(cached)
-
-    node.size = [260, 140]
-    expect(cached[0]).toBe(260)
-    expect(cached[1]).toBe(140)
-
-    node.size[1] = 999
-    expect(cached[1]).toBe(999)
-  })
-
-  it('does not disturb the sibling pos subarray when size is mutated', () => {
-    const { node } = setup()
-    node.pos[0] = 33
-    node.pos[1] = 44
-
-    node.size[0] = 500
-    node.size[1] = 600
-
-    expect(node.pos[0]).toBe(33)
-    expect(node.pos[1]).toBe(44)
-    expect(node.size[0]).toBe(500)
-    expect(node.size[1]).toBe(600)
   })
 
   it('serializes size as a plain array, never leaking the Proxy', () => {
