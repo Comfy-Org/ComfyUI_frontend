@@ -17,6 +17,7 @@ catalog:
   '@astrojs/vue': ^6.0.1
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
+  '@datadog/browser-rum': ^6.33.0
   '@eslint/js': ^10.0.1
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
