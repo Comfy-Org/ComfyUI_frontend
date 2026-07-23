@@ -1,4 +1,4 @@
-import { externalLinks, getRoutes } from '../config/routes'
+import { externalLinks, getRoutes, localizeHref } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
 // Events page (/events) data.
@@ -85,6 +85,30 @@ function youtubeWatchHref(videoId: string): LocalizedText {
   return { en: href, 'zh-CN': href }
 }
 
+export const pastEventPath = (event: PastEvent): string => `/events/${event.id}`
+
+// Referenced by both the hero carousel and the past-events grid.
+const blackMathHackathon: PastEvent = {
+  id: 'black-math-hackathon',
+  category: 'livestream',
+  title: {
+    en: 'Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI',
+    'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松'
+  },
+  description: {
+    en: 'Design and technology studio Black Math used ComfyUI to build a full hackathon experience in just three weeks. Jeremy Sahlman (Co-Founder & Chief Creative Officer, Black Math) shares how.',
+    'zh-CN':
+      '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。'
+  },
+  media: eventImage('black-math_comfy.png', {
+    en: 'Black Math X Comfy livestream with Jeremy Sahlman',
+    'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
+  }),
+  watch: { href: youtubeWatchHref('O72yyU-jupU') },
+  youtubeVideoId: 'O72yyU-jupU',
+  publishedDate: '2026-07-23'
+}
+
 const foundersLiveFeatured: FeaturedEvent = {
   id: 'krea-founders-live',
   eyebrow: UPCOMING_LIVESTREAM,
@@ -104,11 +128,22 @@ const foundersLiveFeatured: FeaturedEvent = {
   href: youtubeHref
 }
 
+const blackMathFeatured: FeaturedEvent = {
+  id: blackMathHackathon.id,
+  eyebrow: { en: 'LIVESTREAM', 'zh-CN': '直播' },
+  title: blackMathHackathon.title,
+  // The artwork already carries the title, date, and speaker.
+  showTitle: false,
+  media: blackMathHackathon.media,
+  href: {
+    en: pastEventPath(blackMathHackathon),
+    'zh-CN': localizeHref(pastEventPath(blackMathHackathon), 'zh-CN')
+  }
+}
+
 export const featuredEvents: readonly FeaturedEvent[] = [
   foundersLiveFeatured,
-  // TODO: placeholder duplicate so the carousel keeps its controls — replace
-  // with the real second featured event once its assets are ready.
-  { ...foundersLiveFeatured, id: 'krea-founders-live-placeholder' }
+  blackMathFeatured
 ]
 
 const launchesHref: LocalizedText = {
@@ -135,7 +170,8 @@ export const upcomingEvents: readonly UpcomingEvent[] = [
   }
 ]
 
-export const pastEvents: readonly PastEvent[] = [
+const pastEventEntries: readonly PastEvent[] = [
+  blackMathHackathon,
   {
     id: 'comfy-mcp-claude-cursor',
     category: 'livestream',
@@ -218,13 +254,16 @@ export const pastEvents: readonly PastEvent[] = [
   }
 ]
 
+// Newest recording first, regardless of entry order above.
+export const pastEvents: readonly PastEvent[] = [...pastEventEntries].sort(
+  (a, b) => b.publishedDate.localeCompare(a.publishedDate)
+)
+
 // Past events that have a recording and therefore their own /events/[slug]
 // page; the slug is the event id.
 export const watchablePastEvents: readonly PastEvent[] = pastEvents.filter(
   (event) => event.youtubeVideoId
 )
-
-export const pastEventPath = (event: PastEvent): string => `/events/${event.id}`
 
 export const getPastEventBySlug = (slug: string): PastEvent | undefined =>
   watchablePastEvents.find((event) => event.id === slug)
