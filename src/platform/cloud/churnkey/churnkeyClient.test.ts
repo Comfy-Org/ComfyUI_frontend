@@ -136,6 +136,33 @@ describe('churnkeyClient', () => {
     expect(mocks.clearState).toHaveBeenCalledOnce()
   })
 
+  it('waits for pending cancellation before closing the session', async () => {
+    const session = await prepareChurnkey()
+    if (!session) throw new Error('Expected a Churnkey session')
+
+    let finishCancellation: (() => void) | undefined
+    const cancellation = new Promise<{ message: string }>((resolve) => {
+      finishCancellation = () => resolve({ message: 'Canceled' })
+    })
+    const showPromise = session.show({
+      handleCancel: vi.fn().mockReturnValue(cancellation)
+    })
+    const config = capturedConfig()
+
+    const handlerPromise = config.handleCancel({ id: 'cus_test_1' })
+    config.onClose({ canceled: true })
+    await Promise.resolve()
+
+    expect(mocks.clearState).not.toHaveBeenCalled()
+    const resolveCancellation = finishCancellation
+    if (!resolveCancellation) throw new Error('Expected cancellation to start')
+    resolveCancellation()
+
+    await expect(handlerPromise).resolves.toEqual({ message: 'Canceled' })
+    await expect(showPromise).resolves.toEqual({ canceled: true })
+    expect(mocks.clearState).toHaveBeenCalledOnce()
+  })
+
   it('does not load the embed when backend credentials are unavailable', async () => {
     mocks.getChurnkeyAuth.mockResolvedValue(null)
 

@@ -64,6 +64,7 @@ function createSession(
     show: (options) =>
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
+        let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
 
         function settle(fn: () => void, { deferClearState = false } = {}) {
           if (settled) return
@@ -88,14 +89,42 @@ function createSession(
           provider: 'stripe',
           mode: auth.mode,
           customerAttributes: options.customerAttributes,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) =>
-            options.handleCancel(surveyResponse, freeformFeedback),
+          handleCancel: (_customer, surveyResponse, freeformFeedback) => {
+            const cancellation = options.handleCancel(
+              surveyResponse,
+              freeformFeedback
+            )
+            pendingCancellation = cancellation
+            void cancellation.then(
+              () => {
+                if (pendingCancellation === cancellation) {
+                  pendingCancellation = null
+                }
+              },
+              () => {
+                if (pendingCancellation === cancellation) {
+                  pendingCancellation = null
+                }
+              }
+            )
+            return cancellation
+          },
           handlePause: rejectUnsupportedOffer,
           handleDiscount: rejectUnsupportedOffer,
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
-          onClose: (results) => settle(() => resolve(results)),
+          onClose: (results) => {
+            const cancellation = pendingCancellation
+            if (!cancellation) {
+              settle(() => resolve(results))
+              return
+            }
+            void cancellation.then(
+              () => settle(() => resolve(results)),
+              () => settle(() => resolve(results))
+            )
+          },
           onError: (error, type) =>
             settle(
               () => {
