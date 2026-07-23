@@ -52,7 +52,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
-          // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
@@ -97,11 +96,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, hideHero: true }
       },
       {
-        path: 'oauth/consent',
-        name: 'cloud-oauth-consent',
-        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
-      },
-      {
         path: 'user-check',
         name: 'cloud-user-check',
         component: () =>
@@ -127,6 +121,18 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
         meta: { requiresAuth: true }
+      }
+    ]
+  },
+  {
+    path: '/oauth',
+    component: () =>
+      import('@/platform/cloud/onboarding/components/OAuthLayoutView.vue'),
+    children: [
+      {
+        path: 'consent',
+        name: 'cloud-oauth-consent',
+        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
       }
     ]
   }

@@ -2972,6 +2972,7 @@
       "loading": "認可リクエストを読み込み中…",
       "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
       "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
+      "detailsHeader": "詳細",
       "permissionsHeader": "権限",
       "redirectNotice": "リダイレクト先：",
       "resourceFallback": "このアプリ",
@@ -2979,7 +2980,6 @@
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
       "subtitle": "続行するには{resource}にサインインしてください",
       "title": "{client} がアクセスを要求しています",
-      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
