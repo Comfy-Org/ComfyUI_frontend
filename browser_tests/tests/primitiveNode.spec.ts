@@ -59,6 +59,51 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 
+  test('Preserves combo options on the primitive after pressing R to refresh', async ({
+    comfyPage
+  }) => {
+    async function getPrimitiveComboState() {
+      return comfyPage.page.evaluate(() => {
+        const primitive = window.app!.graph!.nodes.find(
+          (node) => node.type === 'PrimitiveNode'
+        )
+        const widget = primitive?.widgets?.[0]
+        const values = widget?.options?.values
+        return {
+          isArray: Array.isArray(values),
+          length: Array.isArray(values) ? values.length : 0,
+          includesEuler: Array.isArray(values)
+            ? values.includes('euler')
+            : false,
+          value: widget?.value
+        }
+      })
+    }
+
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/primitive_combo_sampler_name'
+    )
+
+    await expect.poll(getPrimitiveComboState).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
+    const before = await getPrimitiveComboState()
+    expect(before.length).toBeGreaterThan(0)
+
+    await comfyPage.canvas.click()
+    await comfyPage.page.keyboard.press('r')
+
+    await expect.poll(getPrimitiveComboState).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
+    const after = await getPrimitiveComboState()
+    expect(after.length).toBeGreaterThan(0)
+  })
+
   test('Report missing nodes when connect to missing node', async ({
     comfyPage
   }) => {
