@@ -1,5 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { FetchHistoryPageResult } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -185,11 +186,20 @@ async function fetchGeneratedHistoryAssets(
     signal?.throwIfAborted()
 
     const requestedOffset = offset
-    const historyPage = await fetchHistoryPage(
-      api.fetchApi.bind(api),
-      HISTORY_MEDIA_ASSETS_PAGE_SIZE,
-      { offset: requestedOffset }
-    )
+    let historyPage: FetchHistoryPageResult
+    try {
+      historyPage = await fetchHistoryPage(
+        api.fetchApi.bind(api),
+        HISTORY_MEDIA_ASSETS_PAGE_SIZE,
+        { offset: requestedOffset }
+      )
+    } catch (err) {
+      // A transient page failure degrades to a partial scan instead of
+      // aborting the whole missing-media resolution.
+      if (signal?.aborted) throw err
+      console.warn('Missing-media history walk stopped by a failed page:', err)
+      return assets
+    }
 
     signal?.throwIfAborted()
 

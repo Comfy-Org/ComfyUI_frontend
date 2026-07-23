@@ -88,7 +88,13 @@ const zPaginationInfo = z.object({
   limit: z.number(),
   total: z.number(),
   has_more: z.boolean(),
-  next_cursor: z.string().min(1).nullish()
+  // Opaque keyset cursor; null/absent/'' all mean "no cursor" (offset mode
+  // or end of the walk). '' is absorbed rather than rejected so a defensive
+  // server sentinel can't fail the whole page parse.
+  next_cursor: z
+    .string()
+    .nullish()
+    .transform((cursor) => cursor || undefined)
 })
 
 export const zJobsListResponse = z.object({

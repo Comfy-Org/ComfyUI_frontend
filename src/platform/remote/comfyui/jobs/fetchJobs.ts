@@ -28,24 +28,28 @@ export type JobsPageRequest =
   | { after: string; offset?: never }
   | { offset?: number; after?: never }
 
+const MAX_ERROR_BODY_LENGTH = 200
+
 /**
  * Non-ok response from the jobs API. Carries the HTTP status so callers can
  * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
  */
-const MAX_ERROR_BODY_LENGTH = 200
-
 export class JobsApiError extends Error {
   constructor(
-    readonly status: number,
-    body: string
+    message: string,
+    readonly status: number
   ) {
-    const truncated =
-      body.length > MAX_ERROR_BODY_LENGTH
-        ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
-        : body
-    super(`[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim())
+    super(message)
     this.name = 'JobsApiError'
   }
+}
+
+function jobsApiErrorMessage(status: number, body: string): string {
+  const truncated =
+    body.length > MAX_ERROR_BODY_LENGTH
+      ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
+      : body
+  return `[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim()
 }
 
 interface FetchJobsRawResult {
@@ -78,7 +82,7 @@ async function fetchJobsRaw(
   maxItems: number = 200,
   page: JobsPageRequest = {}
 ): Promise<FetchJobsRawResult> {
-  const statusParam = statuses.join(',')
+  const statusParam = statuses.map(encodeURIComponent).join(',')
   const pageParam =
     page.after != null
       ? `after=${encodeURIComponent(page.after)}`
@@ -86,16 +90,25 @@ async function fetchJobsRaw(
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&${pageParam}`
   const res = await fetchApi(url)
   if (!res.ok) {
-    throw new JobsApiError(res.status, await res.text().catch(() => ''))
+    const body = await res.text().catch(() => '')
+    throw new JobsApiError(jobsApiErrorMessage(res.status, body), res.status)
   }
-  const data = zJobsListResponse.parse(await res.json())
+  const parsed = zJobsListResponse.safeParse(await res.json())
+  if (!parsed.success) {
+    console.error(
+      `[Jobs API] Malformed jobs response from ${url}:`,
+      parsed.error
+    )
+    throw parsed.error
+  }
+  const data = parsed.data
   return {
     jobs: data.jobs,
     total: data.pagination.total,
     offset: data.pagination.offset,
     limit: data.pagination.limit,
     hasMore: data.pagination.has_more,
-    nextCursor: data.pagination.next_cursor ?? undefined
+    nextCursor: data.pagination.next_cursor
   }
 }
 
@@ -119,6 +132,8 @@ function assignPriority(
 /**
  * Fetches history (terminal state jobs: completed, failed, cancelled)
  * Assigns synthetic priority starting from total (lower than queue jobs).
+ * @deprecated Use {@link fetchHistoryPage}, which exposes pagination metadata
+ * and supports cursor paging via {@link JobsPageRequest}.
  */
 export async function fetchHistory(
   fetchApi: (url: string) => Promise<Response>,

@@ -331,6 +331,28 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(mockFetchHistoryPage).toHaveBeenCalledOnce()
   })
 
+  it('returns partial generated results when a history page fetch fails', async () => {
+    mockFetchHistoryPage
+      .mockResolvedValueOnce(
+        makeHistoryPage([makeHistoryJob('first.png')], {
+          hasMore: true,
+          total: 2
+        })
+      )
+      .mockRejectedValueOnce(new Error('HTTP 500'))
+
+    const result = await resolveMissingMediaAssetSources({
+      isCloud: false,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['missing.png']),
+      allowCompactSuffix: true
+    })
+
+    expect(result.generatedAssets).toHaveLength(1)
+    expect(result.generatedAssets[0].name).toBe('first.png')
+    expect(mockFetchHistoryPage).toHaveBeenCalledTimes(2)
+  })
+
   it('stops if history repeats the same job page', async () => {
     const repeatedJob = makeHistoryJob('other.png', { id: 'same-job' })
     mockFetchHistoryPage
