@@ -1320,13 +1320,21 @@ export type SecretProvidersResponse = {
 }
 
 /**
- * A provider the user may configure a secret for. The shape is deliberately minimal (identifier only) and reserved for future per-provider fields such as sub-keys.
+ * A provider the user may configure a secret for.
  */
 export type SecretProvider = {
   /**
    * Provider identifier (e.g., huggingface, civitai, runway, gemini)
    */
   id: string
+  /**
+   * How the credential is entered. `text` is a single-line secret (an API key); `json_file` is an uploaded/pasted JSON document (e.g. a Vertex service-account key). Defaults to `text` when omitted.
+   */
+  input_type?: 'text' | 'json_file'
+  /**
+   * Human-facing display label for the provider. Falls back to the frontend registry label, then the raw id, when omitted.
+   */
+  label?: string
 }
 
 /**
