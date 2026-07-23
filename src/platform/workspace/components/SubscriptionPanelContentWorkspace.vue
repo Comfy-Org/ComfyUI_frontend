@@ -425,7 +425,6 @@ function openSubscriptionVerification() {
 const {
   canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
-  isTeamPlan,
   subscription,
   plans,
   billingStatus,
