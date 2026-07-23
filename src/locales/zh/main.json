@@ -4127,7 +4127,6 @@
     "modelsSelected": "已选 {count} 个模型",
     "noResults": "未找到模板",
     "noResultsHint": "请尝试调整搜索或筛选条件",
-    "resetFilters": "清除筛选",
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",

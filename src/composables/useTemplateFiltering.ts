@@ -24,7 +24,7 @@ type TemplateBrowseSort =
   | 'vram-low-to-high'
   | 'model-size-low-to-high'
 
-type TemplateSortMode = TemplateBrowseSort | 'relevance'
+export type TemplateSortMode = TemplateBrowseSort | 'relevance'
 
 /** The title shown on the card, trimmed for stable sorting. */
 function displayTitle(template: TemplateInfo): string {

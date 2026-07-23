@@ -4115,7 +4115,6 @@
     "modelsSelected": "{count} 個模型",
     "noResults": "找不到範本",
     "noResultsHint": "請嘗試調整您的搜尋或篩選條件",
-    "resetFilters": "清除篩選",
     "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
     "runsOnFilter": "運行於",
     "runsOnSelected": "{count} 次運行於",
