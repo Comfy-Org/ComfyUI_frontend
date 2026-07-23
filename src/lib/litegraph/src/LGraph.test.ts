@@ -1381,7 +1381,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
 describe('Zero UUID handling in configure', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
