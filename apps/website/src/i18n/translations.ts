@@ -4811,20 +4811,52 @@ const translations = {
     'zh-CN': '避免'
   },
   'brand.voice.do.0': {
-    en: 'Route your prompt through a ControlNet. Wire the output to the VAE decode.',
-    'zh-CN': '让你的 prompt 经过 ControlNet，再将输出连接到 VAE decode。'
+    en: 'Maintain the 14° slant angle.',
+    'zh-CN': '保持 14° 的倾斜角度。'
   },
   'brand.voice.do.1': {
-    en: 'Comfy runs on your hardware. Nothing leaves your machine.',
-    'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
+    en: 'Keep minimum clear space at 50%.',
+    'zh-CN': '保留至少 50% 的净空间距。'
+  },
+  'brand.voice.do.2': {
+    en: 'Use only approved color pairings.',
+    'zh-CN': '仅使用经批准的配色组合。'
+  },
+  'brand.voice.do.3': {
+    en: 'Respect minimum size thresholds.',
+    'zh-CN': '遵守最小尺寸限制。'
+  },
+  'brand.voice.do.4': {
+    en: 'Hang the logo slightly over margins for optical balance.',
+    'zh-CN': '让 logo 略微超出边距，以获得视觉平衡。'
+  },
+  'brand.voice.do.5': {
+    en: 'Pair amplified expressions with core logos.',
+    'zh-CN': '将放大的表现形式与核心 logo 搭配使用。'
   },
   'brand.voice.dont.0': {
-    en: 'Simply connect your AI blocks and watch the magic happen!',
-    'zh-CN': '只需连接你的 AI 模块，见证奇迹的发生！'
+    en: 'Outline the logo.',
+    'zh-CN': '为 logo 描边。'
   },
   'brand.voice.dont.1': {
-    en: 'Oops! Something went wrong. Please try again later.',
-    'zh-CN': '哎呀！出了点问题，请稍后再试。'
+    en: 'Use the logo as a pattern.',
+    'zh-CN': '将 logo 用作重复图案。'
+  },
+  'brand.voice.dont.2': {
+    en: 'Stretch the logo.',
+    'zh-CN': '拉伸 logo。'
+  },
+  'brand.voice.dont.3': {
+    en: 'Straighten the oblique logo.',
+    'zh-CN': '将倾斜的 logo 摆正。'
+  },
+  'brand.voice.dont.4': {
+    en: "Edit the logo's corner radii.",
+    'zh-CN': '修改 logo 的圆角半径。'
+  },
+  'brand.voice.dont.5': {
+    en: 'Overlay the logomark on the wordmark.',
+    'zh-CN': '将图形标叠加在文字标之上。'
   },
   'brand.trademark.heading': {
     en: 'Trademark guidelines.',
