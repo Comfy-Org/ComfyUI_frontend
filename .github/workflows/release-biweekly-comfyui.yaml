@@ -506,7 +506,7 @@ jobs:
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
 
           FAILED=0
           {
@@ -517,10 +517,19 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           # --- 1. No commits stranded past the release tag (the 1.47.9 class) ---
-          git fetch --quiet --tags origin "${TARGET_BRANCH}"
-          if git rev-parse -q --verify "refs/tags/v${TARGET_VERSION}^{commit}" >/dev/null; then
-            STRANDED=$(git rev-list "v${TARGET_VERSION}..FETCH_HEAD" --count)
-            if [ "$STRANDED" -ne 0 ]; then
+          if ! git fetch --quiet --tags origin "${TARGET_BRANCH}"; then
+            echo "::error title=Fetch failed::Could not fetch ${TARGET_BRANCH} from origin."
+            echo "- ❌ Failed to fetch \`${TARGET_BRANCH}\` from origin" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          elif git rev-parse -q --verify "refs/tags/v${TARGET_VERSION}^{commit}" >/dev/null; then
+            # Guard the substitution: a failed rev-list (empty/non-numeric output)
+            # must be a hard failure, not a silent "no commits stranded" pass.
+            STRANDED=$(git rev-list "v${TARGET_VERSION}..FETCH_HEAD" --count) || STRANDED=""
+            if ! [[ "$STRANDED" =~ ^[0-9]+$ ]]; then
+              echo "::error title=Could not compute stranded commits::git rev-list failed or produced non-numeric output."
+              echo "- ❌ Could not determine stranded-commit count for \`v${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+              FAILED=1
+            elif [ "$STRANDED" -ne 0 ]; then
               echo "::error title=Commits stranded past the release tag::${STRANDED} commit(s) on ${TARGET_BRANCH} are newer than v${TARGET_VERSION}; the published release does not contain them."
               echo "- ❌ **${STRANDED}** commit(s) on \`${TARGET_BRANCH}\` are newer than \`v${TARGET_VERSION}\` (stranded)" >> "$GITHUB_STEP_SUMMARY"
               FAILED=1
@@ -535,7 +544,7 @@ jobs:
 
           # --- 2. Target version is actually on PyPI ---
           PACKAGE="comfyui-frontend-package"
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json")
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/${PACKAGE}/${TARGET_VERSION}/json") || HTTP_CODE="000"
           if [ "$HTTP_CODE" = "200" ]; then
             echo "- ✅ PyPI has \`${PACKAGE}==${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -546,8 +555,14 @@ jobs:
           # For main-line releases the target should also be PyPI's `latest`. core/*
           # patches are intentionally non-latest (a patch must not steal `latest` from a
           # higher minor), so there this is informational only.
-          PYPI_LATEST=$(curl -s "https://pypi.org/pypi/${PACKAGE}/json" | jq -r '.info.version')
-          if [ "$TARGET_BRANCH" = "main" ] && [ "$PYPI_LATEST" != "$TARGET_VERSION" ]; then
+          # Guard the fetch+parse: an empty result means the query failed, which must
+          # be reported as a fetch failure rather than masquerading as a version mismatch.
+          PYPI_LATEST=$(curl -sf "https://pypi.org/pypi/${PACKAGE}/json" | jq -r '.info.version // empty') || PYPI_LATEST=""
+          if [ -z "$PYPI_LATEST" ]; then
+            echo "::error title=Could not fetch PyPI latest::Failed to query PyPI info endpoint for ${PACKAGE}."
+            echo "- ❌ Could not determine PyPI \`latest\` version for \`${PACKAGE}\`" >> "$GITHUB_STEP_SUMMARY"
+            FAILED=1
+          elif [ "$TARGET_BRANCH" = "main" ] && [ "$PYPI_LATEST" != "$TARGET_VERSION" ]; then
             echo "::error title=PyPI latest mismatch::PyPI latest is ${PYPI_LATEST}, expected ${TARGET_VERSION}."
             echo "- ❌ PyPI \`latest\` is \`${PYPI_LATEST}\`, expected \`${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
             FAILED=1
@@ -556,8 +571,13 @@ jobs:
           fi
 
           # --- 3. ComfyUI master pin (warn-only: the pin PR is merged by a human) ---
-          PIN=$(curl -s "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt" \
-            | grep -oE "comfyui-frontend-package==[0-9.]+" | head -1 | cut -d= -f3)
+          # Guard the fetch: a failed download leaves PIN empty and the check stays
+          # warn-only (reported as <none>), never aborting the job.
+          if REQS=$(curl -sf "https://raw.githubusercontent.com/Comfy-Org/ComfyUI/master/requirements.txt"); then
+            PIN=$(printf '%s\n' "$REQS" | grep -oE "comfyui-frontend-package==[0-9.]+" | head -1 | cut -d= -f3) || PIN=""
+          else
+            PIN=""
+          fi
           if [ "$PIN" = "$TARGET_VERSION" ]; then
             echo "- ✅ ComfyUI \`master\` pins \`${TARGET_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           else
