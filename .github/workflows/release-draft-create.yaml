@@ -124,6 +124,11 @@ jobs:
           fetch-depth: 2
 
       - name: Post release summary comment
+        # The summary comment is cosmetic. A crash here (e.g. a Node error in the
+        # action) must never mark an otherwise-successful release as `failure` —
+        # build/draft_release/publish_types already succeeded by this point.
+        # See #14033 (release-draft-create run 29983428805, v1.47.10).
+        continue-on-error: true
         uses: ./.github/actions/comment-release-links
         with:
           issue-number: ${{ github.event.pull_request.number }}
