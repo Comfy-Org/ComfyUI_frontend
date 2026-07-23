@@ -1,0 +1,8 @@
+{
+  "datadog": {
+    "site": "datadoghq.com",
+    "scheduleId": ""
+  },
+  "fallbackGithubLogin": "christian-byrne",
+  "githubLoginByEmail": {}
+}

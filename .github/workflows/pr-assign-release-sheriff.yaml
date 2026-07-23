@@ -1,0 +1,138 @@
+# Description: Assigns the on-call release sheriff to backport and release
+# version-bump PRs so they are never left unowned.
+#
+# Why: backport PRs and the nightly version-bump PR are opened by automation
+# with no assignee and no reviewer. Nobody is notified, so strays sit open for
+# days — which blocks backport-auto-merge.yaml (it needs an approval) and
+# delays nightly builds.
+#
+# Source of truth: the release sheriff rotation lives in Datadog On-Call. The
+# current responder is fetched at execution time and mapped to a GitHub login
+# via .github/release-sheriff.json. Nothing is cached in the repo, so a
+# rotation handover takes effect on the next run with no commit and no PR.
+# When Datadog is unreachable, unconfigured, or returns an unmapped user, the
+# configured `fallbackGithubLogin` is used so PRs still get an owner.
+#
+# The hourly sweep is the safety net: PR events only catch PRs at the moment
+# they are opened or labelled, and that is exactly what gets missed today.
+name: 'PR: Assign Release Sheriff'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled]
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize every run so two runs cannot race on the same PR.
+concurrency:
+  group: assign-release-sheriff
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    name: Assign release sheriff
+    # The condition is only a cheap gate to avoid spinning up a runner for
+    # every unrelated PR opened in the repo. It is deliberately broader than
+    # the real rule, which lives in scripts/release-sheriff/release-sheriff.ts.
+    # GitHub expression string comparisons are case-insensitive.
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name != 'pull_request_target' ||
+       contains(github.event.pull_request.labels.*.name, 'backport') ||
+       contains(github.event.pull_request.labels.*.name, 'Release') ||
+       contains(github.event.pull_request.title, 'backport') ||
+       startsWith(github.event.pull_request.head.ref, 'version-bump-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # assignees are set through the issues API
+      pull-requests: write # review requests
+
+    steps:
+      # pull_request_target checks out the base branch, never PR head code.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Collect candidate PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          FIELDS=number,title,isDraft,headRefName,labels,assignees,reviewRequests,reviewDecision,author
+
+          # Three narrow queries instead of listing every open PR: the repo
+          # carries hundreds of them and only these can ever be in scope.
+          gh pr list --state open --label backport --limit 100 \
+            --json "$FIELDS" > backport-label.json
+          gh pr list --state open --label Release --limit 100 \
+            --json "$FIELDS" > release-label.json
+          gh pr list --state open --search 'backport in:title' --limit 100 \
+            --json "$FIELDS" > backport-title.json
+
+          jq -s 'add | unique_by(.number)' \
+            backport-label.json release-label.json backport-title.json > prs.json
+
+          echo "Candidate PRs: $(jq 'length' prs.json)"
+
+      - name: Resolve sheriff and plan assignments
+        id: plan
+        env:
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+        run: |
+          pnpm exec tsx scripts/release-sheriff/resolve-assignments.ts \
+            --config .github/release-sheriff.json \
+            --prs prs.json
+
+      - name: Apply assignments
+        if: steps.plan.outputs.sheriff != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHERIFF: ${{ steps.plan.outputs.sheriff }}
+          SOURCE: ${{ steps.plan.outputs.source }}
+          ASSIGN: ${{ steps.plan.outputs.assign }}
+          REVIEW: ${{ steps.plan.outputs.review }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "### Release sheriff: \`${SHERIFF}\` (via ${SOURCE})"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for pr in ${ASSIGN:-}; do
+            if gh api --method POST "repos/${GH_REPO}/issues/${pr}/assignees" \
+              -f "assignees[]=${SHERIFF}" --silent; then
+              echo "- Assigned #${pr}" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Could not assign #${pr} to ${SHERIFF}"
+            fi
+          done
+
+          # A review request can legitimately fail (e.g. the sheriff is not a
+          # collaborator on a fork-based PR), and it must not undo the
+          # assignments above.
+          for pr in ${REVIEW:-}; do
+            if gh api --method POST \
+              "repos/${GH_REPO}/pulls/${pr}/requested_reviewers" \
+              -f "reviewers[]=${SHERIFF}" --silent; then
+              echo "- Requested review on #${pr}" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Could not request review from ${SHERIFF} on #${pr}"
+            fi
+          done
+
+          if [ -z "${ASSIGN:-}" ] && [ -z "${REVIEW:-}" ]; then
+            echo "Nothing to do — every candidate PR already has an owner." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
