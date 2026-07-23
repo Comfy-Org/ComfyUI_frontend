@@ -151,6 +151,7 @@ app.registerExtension({
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
     ComfyApp.open_maskeditor = openMaskEditorFromClipspace
+    ComfyApp.maskeditor_is_opended = isOpened
 
     console.warn(
       '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
