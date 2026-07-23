@@ -55,3 +55,11 @@ jobs:
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+
+      - name: Upload critical coverage summary
+        if: always() && !cancelled() && hashFiles('coverage/coverage-summary.json') != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: critical-coverage-summary
+          path: coverage/coverage-summary.json
+          retention-days: 1
