@@ -1,5 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
+import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -49,7 +51,11 @@ export function useMaskEditorSaver() {
 
       await updateNodePreview(sourceNode, outputData)
 
-      await uploadAllLayers(outputData)
+      if (shouldCompositeOnServer()) {
+        await uploadLayersWithServerComposite(outputData)
+      } else {
+        await uploadAllLayers(outputData)
+      }
 
       updateNodeWithServerReferences(sourceNode, outputData)
 
@@ -207,6 +213,77 @@ export function useMaskEditorSaver() {
     const ref = createFileRef(filename)
 
     return { canvas, blob, ref }
+  }
+
+  function shouldCompositeOnServer(): boolean {
+    return (
+      !isCloud &&
+      useSettingStore().get('Comfy.Image.PreviewCompression') &&
+      !!dataStore.inputData?.sourceRef
+    )
+  }
+
+  async function uploadLayersWithServerComposite(
+    outputData: EditorOutputData
+  ): Promise<void> {
+    const sourceRef = dataStore.inputData!.sourceRef
+    const formData = new FormData()
+    formData.append(
+      'image',
+      outputData.maskedImage.blob,
+      outputData.maskedImage.ref.filename
+    )
+    formData.append('type', 'input')
+    formData.append('original_ref', JSON.stringify(sourceRef))
+    formData.append(
+      'paint',
+      outputData.paintLayer.blob,
+      outputData.paintLayer.ref.filename
+    )
+    formData.append('paint_filename', outputData.paintLayer.ref.filename)
+    formData.append('painted_filename', outputData.paintedImage.ref.filename)
+    formData.append(
+      'painted_masked_filename',
+      outputData.paintedMaskedImage.ref.filename
+    )
+
+    const response = await api.fetchApi('/upload/mask', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Failed to composite mask layers on server (${response.status}${body ? `: ${body}` : ''})`
+      )
+    }
+
+    let data: UploadImageResponse
+    try {
+      data = await response.json()
+    } catch (error) {
+      throw new Error(
+        `Invalid composite upload response: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        { cause: error }
+      )
+    }
+    if (!data?.name) {
+      throw new Error('Composite upload response missing file name')
+    }
+
+    const subfolder = data.subfolder || ''
+    const type = data.type || 'input'
+    outputData.maskedImage.ref = { filename: data.name, subfolder, type }
+    for (const layer of [
+      outputData.paintLayer,
+      outputData.paintedImage,
+      outputData.paintedMaskedImage
+    ]) {
+      layer.ref = { ...layer.ref, subfolder, type }
+    }
   }
 
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {

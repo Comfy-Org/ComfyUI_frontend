@@ -210,6 +210,14 @@
   "Comfy_Locale": {
     "name": "Language"
   },
+  "Comfy_Image_PreviewCompression": {
+    "name": "Load large images as compressed previews",
+    "tooltip": "When enabled, image editors (currently the mask editor) load images as compressed, downscaled previews. This greatly improves performance with very large images; edits are applied to the original at full resolution on save. Downscaling requires the assets system on the server (--enable-assets); without it images are only recompressed at full resolution."
+  },
+  "Comfy_Image_PreviewMaxSize": {
+    "name": "Compressed preview maximum size",
+    "tooltip": "Maximum size in pixels for the longest edge of a compressed preview. Images whose longest edge exceeds this are downscaled proportionally until it fits; the aspect ratio is preserved and images are never upscaled."
+  },
   "Comfy_MaskEditor_BrushAdjustmentSpeed": {
     "name": "Brush adjustment speed multiplier",
     "tooltip": "Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes."
