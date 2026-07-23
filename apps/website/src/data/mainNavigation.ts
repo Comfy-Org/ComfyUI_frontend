@@ -65,8 +65,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
               label: t('nav.comfyApi', locale),
-              href: routes.api,
-              badge: 'new'
+              href: routes.api
             },
             {
               label: t('nav.comfyEnterprise', locale),
@@ -87,8 +86,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             // { label: t('nav.agentSkills', locale), href: '#' },
             {
               label: t('nav.launches', locale),
-              href: routes.launches,
-              badge: 'new'
+              href: routes.launches
             },
             { label: t('nav.supportedModels', locale), href: routes.models },
             {
@@ -122,8 +120,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.gallery', locale), href: routes.gallery },
             {
               label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
+              href: routes.affiliates
             },
             {
               label: t('nav.learning', locale),
