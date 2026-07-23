@@ -4268,7 +4268,7 @@ const translations = {
   'models.faq.howToUse.answerWithDocs': {
     en: 'Follow the step-by-step tutorial at {url}. You can also load any of the {count} community workflow templates that use {name} directly in ComfyUI.',
     'zh-CN':
-      '按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载任意 {count} 个使用 {name} 的社区工作流模板。'
+      '按照 {url} 上的分步教程操作。您也可以从 {count} 个使用 {name} 的社区工作流模板中加载任意一个，直接在 ComfyUI 中使用。'
   },
   'models.faq.howToUse.answerNoDocs': {
     en: 'Open ComfyUI and browse the {count} community workflow templates that use {name}. Load one as a starting point, then customize the nodes and parameters to fit your use case.',
