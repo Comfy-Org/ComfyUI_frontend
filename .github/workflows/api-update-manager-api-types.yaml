@@ -18,7 +18,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -33,7 +33,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Checkout ComfyUI-Manager repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Comfy-Org/ComfyUI-Manager
           path: ComfyUI-Manager
