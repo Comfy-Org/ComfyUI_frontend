@@ -126,6 +126,7 @@ export function useMembersPanel() {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showMemberLimitDialog
@@ -233,6 +234,16 @@ export function useMembersPanel() {
           roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
         ]
       },
+      // Caps are Member-only: billing managers see the workspace total as
+      // their operative number, so owner rows never expose a limit action.
+      ...(member.role === 'member'
+        ? [
+            {
+              label: t('workspacePanel.members.actions.setCreditLimit'),
+              command: () => handleSetCreditLimit(member)
+            }
+          ]
+        : []),
       {
         label: t('workspacePanel.members.actions.removeMember'),
         command: () => handleRemoveMember(member)
@@ -302,6 +313,15 @@ export function useMembersPanel() {
 
   function handleRemoveMember(member: WorkspaceMember) {
     void showRemoveMemberDialog(member.id)
+  }
+
+  function handleSetCreditLimit(member: WorkspaceMember) {
+    void showSetMemberCreditLimitDialog({
+      memberId: member.id,
+      memberName: member.name || member.email,
+      creditsUsed: member.creditsUsedThisMonth,
+      currentLimit: member.monthlyCreditLimit
+    })
   }
 
   function handleChangeRole(

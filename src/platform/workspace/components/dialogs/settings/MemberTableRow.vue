@@ -38,7 +38,23 @@
       v-if="canManageMembers"
       class="text-right text-sm text-muted-foreground tabular-nums"
     >
-      {{ creditsLabel }}
+      <div class="flex flex-col items-end gap-1">
+        <span>{{ creditsLabel }}</span>
+        <div
+          v-if="member.monthlyCreditLimit != null"
+          role="progressbar"
+          :aria-valuenow="member.creditsUsedThisMonth ?? 0"
+          :aria-valuemin="0"
+          :aria-valuemax="member.monthlyCreditLimit"
+          :aria-label="$t('workspacePanel.members.columns.creditsUsed')"
+          class="h-1 w-24 overflow-hidden rounded-full bg-secondary-background-hover"
+        >
+          <div
+            class="h-full rounded-full bg-credit"
+            :style="{ width: `${creditUsagePercent}%` }"
+          />
+        </div>
+      </div>
     </TableCell>
     <TableCell v-if="canManageMembers" class="text-right" @click.stop>
       <DropdownMenu
@@ -111,7 +127,16 @@ const lastActivityLabel = computed(() => {
   })
 })
 
-const creditsLabel = computed(() =>
-  (member.creditsUsedThisMonth ?? 0).toLocaleString()
-)
+const creditsLabel = computed(() => {
+  const used = (member.creditsUsedThisMonth ?? 0).toLocaleString()
+  return member.monthlyCreditLimit == null
+    ? used
+    : `${used} / ${member.monthlyCreditLimit.toLocaleString()}`
+})
+
+const creditUsagePercent = computed(() => {
+  const limit = member.monthlyCreditLimit
+  if (limit == null || limit <= 0) return 0
+  return Math.min(100, ((member.creditsUsedThisMonth ?? 0) / limit) * 100)
+})
 </script>

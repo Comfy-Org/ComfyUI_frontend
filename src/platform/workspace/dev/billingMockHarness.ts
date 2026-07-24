@@ -381,7 +381,10 @@ function members(): unknown {
             role: cfg.role === 'admin' ? 'owner' : 'member',
             is_original_owner: false,
             last_active_at: hoursAgo(1),
-            credits_used_this_month: usage(1234)
+            credits_used_this_month: usage(1234),
+            // Caps are Member-only; a member self-row gets one so the
+            // member-facing display (min-rule menu, popover) is exercisable.
+            monthly_credit_limit: cfg.role === 'member' ? 3000 : undefined
           }
         ]
   // A long roster so the table overflows and scrolls under its sticky header.
@@ -425,7 +428,12 @@ function members(): unknown {
     last_active_at: hoursAgo([0.1, 2, 7, 23, 24, 72, 120][i % 7]),
     credits_used_this_month: usage(
       [15, 140, 320, 1025, 2586, 88, 1740, 6][i % 7] * (i + 1)
-    )
+    ),
+    // Caps are Member-only (owners never carry one). The rotation yields
+    // uncapped members plus capped rows that land under, at, and over their
+    // limit as the usage formula scales with i.
+    monthly_credit_limit:
+      i % 3 === 0 ? undefined : [null, 2000, 5000, null][i % 4]
   }))
   const list = cfg.ws === 'team' ? [creator, ...selfRow, ...team] : [creator]
   return {
