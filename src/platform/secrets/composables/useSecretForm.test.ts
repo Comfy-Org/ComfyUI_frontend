@@ -1006,4 +1006,148 @@ describe('useSecretForm', () => {
       expect(form.secretValue).toBe('')
     })
   })
+
+  describe('credential-class sub-selection', () => {
+    const geminiProviders: SecretProviderInfo[] = [
+      {
+        id: 'gemini',
+        credential_options: [
+          {
+            credential_type: 'api_key',
+            input_type: 'text',
+            label: 'API key (Google AI Studio)'
+          },
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
+    ]
+
+    it('preselects the first advertised option and sends its credential_type', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+
+      const {
+        form,
+        credentialOptions,
+        credentialType,
+        selectedInputType,
+        handleSubmit
+      } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+
+      expect(credentialOptions.value).toHaveLength(2)
+      expect(credentialType.value).toBe('api_key')
+      expect(selectedInputType.value).toBe('text')
+
+      form.name = 'Gemini key'
+      form.secretValue = 'AIza-test-key'
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Gemini key',
+        secret_value: 'AIza-test-key',
+        provider: 'gemini',
+        credential_type: 'api_key'
+      })
+    })
+
+    it('switches to json_file and sends gcp_service_account when that option is selected', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+
+      const { form, credentialType, selectedInputType, handleSubmit } =
+        useSecretForm({
+          mode: 'create',
+          existingProviders: () => [],
+          availableProviders: () => geminiProviders,
+          visible,
+          onSaved: vi.fn()
+        })
+
+      form.provider = 'gemini'
+      await nextTick()
+      credentialType.value = 'gcp_service_account'
+      await nextTick()
+
+      expect(selectedInputType.value).toBe('json_file')
+
+      form.name = 'Vertex SA'
+      form.secretValue = '{"type":"service_account"}'
+      await handleSubmit()
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Vertex SA',
+        secret_value: '{"type":"service_account"}',
+        provider: 'gemini',
+        credential_type: 'gcp_service_account'
+      })
+    })
+
+    it('discards the entered value when the credential class changes', async () => {
+      const visible = ref(true)
+
+      const { form, credentialType, fileName } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => [],
+        availableProviders: () => geminiProviders,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      form.provider = 'gemini'
+      await nextTick()
+      form.secretValue = 'AIza-test-key'
+      fileName.value = 'key.json'
+
+      credentialType.value = 'gcp_service_account'
+      await nextTick()
+
+      // An api_key string must never survive into a gcp_service_account submit.
+      expect(form.secretValue).toBe('')
+      expect(fileName.value).toBe('')
+    })
+
+    it('omits credential_type for a provider advertising no options', async () => {
+      const visible = ref(true)
+      mockCreate.mockResolvedValue({})
+
+      const { form, credentialOptions, credentialType, handleSubmit } =
+        useSecretForm({
+          mode: 'create',
+          existingProviders: () => [],
+          availableProviders: () => [{ id: 'civitai' }],
+          visible,
+          onSaved: vi.fn()
+        })
+
+      form.provider = 'civitai'
+      await nextTick()
+
+      expect(credentialOptions.value).toHaveLength(0)
+      expect(credentialType.value).toBeNull()
+
+      form.name = 'Civitai token'
+      form.secretValue = 'token123'
+      await handleSubmit()
+
+      // Payload stays byte-identical to the pre-credential_options shape.
+      expect(mockCreate).toHaveBeenCalledWith({
+        name: 'Civitai token',
+        secret_value: 'token123',
+        provider: 'civitai'
+      })
+    })
+  })
 })
