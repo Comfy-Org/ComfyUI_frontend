@@ -384,6 +384,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'pro-monthly',
+          confirmation_token: undefined,
           return_url: 'https://return.url',
           cancel_url: 'https://cancel.url',
           team_credit_stop_id: undefined,
@@ -407,6 +408,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'team_per_credit_annual',
+          confirmation_token: undefined,
           return_url: undefined,
           cancel_url: undefined,
           team_credit_stop_id: 'team_700',

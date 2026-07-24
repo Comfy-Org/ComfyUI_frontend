@@ -2831,6 +2831,11 @@
       "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     },
     "preview": {
+      "paymentMethod": "Payment method",
+      "stripeMethodChoice": "Choose Card or Alipay securely with Stripe.",
+      "alipayRenewalNote": "Card can be saved for top-ups and auto top-ups. Approved Alipay can be used for subscription renewals; auto top-ups require a card.",
+      "payAndSubscribe": "Pay and subscribe",
+      "stripeUnavailable": "Stripe payment methods are unavailable right now. Please try again later.",
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
       "startingToday": "Starts today",

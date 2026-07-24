@@ -24,6 +24,7 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -157,5 +158,6 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
+if (isCloud) useBillingOperationStore(pinia).restoreRedirectOperation()
 
 app.mount('#vue-app')

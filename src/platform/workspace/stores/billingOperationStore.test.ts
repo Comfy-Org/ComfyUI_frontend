@@ -172,6 +172,25 @@ describe('billingOperationStore', () => {
         group: 'billing-operation'
       })
     })
+
+    it('persists a pending operation when polling returns a payment action', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-redirect',
+        status: 'pending',
+        next_action_redirect_url: 'https://stripe.com/authorize',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-redirect', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(localStorage.getItem('Comfy.BillingRedirectOperation')).toBe(
+        JSON.stringify({ opId: 'op-redirect', type: 'subscription' })
+      )
+      localStorage.removeItem('Comfy.BillingRedirectOperation')
+    })
   })
 
   describe('polling success', () => {
