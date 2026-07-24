@@ -8,37 +8,19 @@ const DATADOG_ENV_BY_HOSTNAME = new Map([
   ['testcloud.comfy.org', 'test-v2']
 ])
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
-const USER_MANUAL_REFRESH_PENDING_KEY = 'user_manual_refresh_pending'
 let initializationPromise: Promise<void> | undefined
 
-function emitPendingUserManualRefresh(): void {
-  try {
-    if (sessionStorage.getItem(USER_MANUAL_REFRESH_PENDING_KEY) !== 'true') {
-      return
-    }
-
-    sessionStorage.removeItem(USER_MANUAL_REFRESH_PENDING_KEY)
-    datadogRum.addAction('user_manual_refresh')
-  } catch {
+function trackUserManualRefresh(): void {
+  const navigationEntry = performance.getEntriesByType('navigation')[0]
+  if (
+    !navigationEntry ||
+    !('type' in navigationEntry) ||
+    navigationEntry.type !== 'reload'
+  ) {
     return
   }
-}
 
-function trackUserManualRefresh(): void {
-  emitPendingUserManualRefresh()
-
-  const navigation = window.navigation
-  if (!navigation) return
-
-  navigation.addEventListener('navigate', (event) => {
-    if (event.navigationType !== 'reload' || !event.userInitiated) return
-
-    try {
-      sessionStorage.setItem(USER_MANUAL_REFRESH_PENDING_KEY, 'true')
-    } catch {
-      return
-    }
-  })
+  datadogRum.addAction('user_manual_refresh')
 }
 
 async function setFrontendContext(): Promise<void> {

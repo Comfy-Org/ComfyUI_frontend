@@ -22,10 +22,22 @@ vi.mock('@datadog/browser-rum', () => ({
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { initDatadogRum } from './initDatadogRum'
 
+function createNavigationEntry(type: string): PerformanceEntry & {
+  type: string
+} {
+  return {
+    duration: 0,
+    entryType: 'navigation',
+    name: window.location.href,
+    startTime: 0,
+    toJSON: () => ({}),
+    type
+  }
+}
+
 describe('initDatadogRum', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    sessionStorage.clear()
     for (const key of Object.keys(hoisted.context)) {
       delete hoisted.context[key]
     }
@@ -35,7 +47,7 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
-    vi.stubGlobal('navigation', new EventTarget())
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([])
   })
 
   afterEach(() => {
@@ -230,55 +242,24 @@ describe('initDatadogRum', () => {
     expect(hoisted.init).not.toHaveBeenCalled()
   })
 
-  it('remembers user-initiated page reloads for the next load', async () => {
-    await initDatadogRum('cloud.comfy.org')
-
-    window.navigation.dispatchEvent(
-      Object.assign(new Event('navigate'), {
-        navigationType: 'reload',
-        userInitiated: true
-      })
-    )
-
-    expect(sessionStorage.getItem('user_manual_refresh_pending')).toBe('true')
-    expect(hoisted.addAction).not.toHaveBeenCalled()
-  })
-
-  it('tracks a remembered user-initiated page reload', async () => {
-    sessionStorage.setItem('user_manual_refresh_pending', 'true')
+  it('tracks a page reload', async () => {
+    vi.mocked(performance.getEntriesByType).mockReturnValue([
+      createNavigationEntry('reload')
+    ])
 
     await initDatadogRum('cloud.comfy.org')
 
     expect(hoisted.addAction).toHaveBeenCalledWith('user_manual_refresh')
-    expect(sessionStorage.getItem('user_manual_refresh_pending')).toBeNull()
   })
 
-  it('initializes without the Navigation API', async () => {
-    vi.stubGlobal('navigation', undefined)
+  it('does not track a non-reload navigation', async () => {
+    vi.mocked(performance.getEntriesByType).mockReturnValue([
+      createNavigationEntry('navigate')
+    ])
 
     await initDatadogRum('cloud.comfy.org')
 
     expect(hoisted.init).toHaveBeenCalledOnce()
     expect(hoisted.addAction).not.toHaveBeenCalled()
   })
-
-  it.for([
-    { navigationType: 'reload', userInitiated: false },
-    { navigationType: 'push', userInitiated: true }
-  ])(
-    'ignores $navigationType navigations when userInitiated is $userInitiated',
-    async ({ navigationType, userInitiated }) => {
-      await initDatadogRum('cloud.comfy.org')
-
-      window.navigation.dispatchEvent(
-        Object.assign(new Event('navigate'), {
-          navigationType,
-          userInitiated
-        })
-      )
-
-      expect(sessionStorage.getItem('user_manual_refresh_pending')).toBeNull()
-      expect(hoisted.addAction).not.toHaveBeenCalled()
-    }
-  )
 })
