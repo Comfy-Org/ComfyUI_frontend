@@ -77,11 +77,14 @@ describe('AVIF metadata', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderError('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('resolves empty when the FileReader fires abort', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockFileReaderAbort('readAsArrayBuffer')
       expect(await getFromAvifFile(file)).toEqual({})
+      expect(console.error).not.toHaveBeenCalled()
     })
   })
 })
