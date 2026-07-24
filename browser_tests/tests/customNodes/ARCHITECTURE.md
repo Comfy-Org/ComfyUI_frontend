@@ -761,12 +761,16 @@ not by editing pins. Drift detection is therefore intrinsic on the cloud side:
 a per-PR cloud red after a deploy is the deploy drifting, which is why the
 cloud side needs no separate drift canary the way the pinned core side does.
 
-Fork-safety and the required-check contract match the core gate: the same
-same-repo `if:` skips fork PRs (which have no secrets), and a skipped job
-counts as passing. Two cloud-specific differences: because runs share one
-Cloud test instance, the workflow serializes them repo-wide (`concurrency` on
-a constant group, `cancel-in-progress: false`) instead of per-ref, so two
-runs never cross-talk on the shared backend's execution stream; and because
+Fork-safety matches the core gate: the same same-repo `if:` skips fork PRs
+(which have no secrets), and a skipped job counts as passing. Two
+cloud-specific differences: because runs share one Cloud test instance, the
+gate and the cloud geometry record serialize on one shared literal
+`concurrency` group (`cancel-in-progress: false`) instead of per-ref, so no
+two runs cross-talk on the shared backend's execution stream - at the cost
+that a newly queued run CANCELS a pending (not in-progress) one, which is
+why this check must not be marked required until a per-run instance (open
+item: run isolation) or an in-job lock replaces group serialization; and
+because
 the cloud smoke secrets may be unset (pre-calibration, or on a fork clone), a
 gate step checks them first - absent, it emits a loud `::notice` and no-ops
 the job green without running a test; present, the suite runs for real. The

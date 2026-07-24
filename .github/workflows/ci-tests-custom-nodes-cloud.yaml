@@ -39,15 +39,20 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Repo-wide serialization, NOT the core gate's per-ref group. Every cloud run
-  # drives the ONE shared Cloud test instance (a dedicated per-run instance is
-  # open item 7 in the plan, still unanswered), so two runs at once would cross-
-  # talk on that backend's execution/websocket streams. A constant group name
-  # (github.workflow is constant repo-wide) funnels every ref through one lane.
-  # cancel-in-progress:false so a freshly-queued PR run WAITS its turn instead
-  # of killing an in-flight run mid backend interaction - a cancel could leave
-  # the shared instance mid-execution for the next run to trip over.
-  group: ${{ github.workflow }}
+  # One literal group SHARED with record-custom-nodes-geometry-cloud.yaml, NOT
+  # the core gate's per-ref group: every run in either workflow drives the ONE
+  # shared Cloud test instance (a dedicated per-run instance is open item 7 in
+  # the plan, still unanswered), so a gate run and a record run must never
+  # overlap on that backend's execution/websocket streams.
+  # cancel-in-progress:false protects the IN-PROGRESS run from being killed
+  # mid backend interaction, but GitHub still cancels a PENDING run when a
+  # newer one queues into the group - under 3+ concurrent triggers the middle
+  # run is cancelled, not queued. Fine while this check is non-required and
+  # no-ops in seconds (secrets absent); NOT fine for a required check running
+  # for real. Do not mark this check required until open item 7 lands a
+  # per-run instance (then switch to the core gate's per-ref group) or an
+  # in-job lock replaces group serialization.
+  group: custom-nodes-cloud-instance
   cancel-in-progress: false
 
 jobs:
@@ -118,13 +123,21 @@ jobs:
         if: steps.secrets.outputs.has-secrets == 'true'
         uses: actions/checkout@v6
 
-      # Build the PR's own dist so the suite tests THIS PR's frontend against
-      # Cloud. `vite preview` (below) serves this dist.
       - name: Setup frontend
         if: steps.secrets.outputs.has-secrets == 'true'
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: true
+          include_build_step: false
+
+      # Build the PR's own dist AS THE CLOUD DISTRIBUTION. DISTRIBUTION is a
+      # build-time constant (__DISTRIBUTION__), so the shared action's plain
+      # build would bake 'localhost' and every isCloud-gated code path this
+      # gate exists to exercise would be compiled out - preview-time env
+      # cannot fix that. `vite preview` (below) serves this dist.
+      - name: Build cloud dist
+        if: steps.secrets.outputs.has-secrets == 'true'
+        shell: bash
+        run: pnpm build:cloud-e2e
 
       - name: Setup Playwright
         if: steps.secrets.outputs.has-secrets == 'true'

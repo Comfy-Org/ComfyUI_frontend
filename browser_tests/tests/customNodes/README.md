@@ -141,7 +141,9 @@ swapped.
   `ci-tests-custom-nodes-cloud.yaml`): the SAME suite with
   `CUSTOM_NODES_ENV=cloud` against the remote Comfy Cloud backend - no pack
   install; expectations come from the generated cloud manifest and re-float
-  when Cloud redeploys. Gated on the cloud smoke secrets: with any absent the
+  when Cloud redeploys. Gated on the cloud smoke secrets
+  (`SMOKE_FIREBASE_API_KEY`, `SMOKE_ACCOUNT_EMAIL`, `SMOKE_ACCOUNT_PASSWORD`,
+  `CLOUD_BACKEND_URL` - configure all four to enable the gate): with any absent the
   job emits a `::notice` naming the missing ones and no-ops green (required-safe
   pre-calibration - it never fake-passes a green "0 tests"); with all present
   the suite runs for real. Skipped tests are failures.

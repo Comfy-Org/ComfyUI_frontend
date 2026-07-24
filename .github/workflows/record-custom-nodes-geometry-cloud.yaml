@@ -30,7 +30,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}
+  # Shared literal group with ci-tests-custom-nodes-cloud.yaml: both drive the
+  # one shared Cloud instance, so a record run and a gate run must never
+  # overlap (see the gate's concurrency comment for the full semantics).
+  group: custom-nodes-cloud-instance
   cancel-in-progress: false
 
 jobs:
@@ -68,7 +71,13 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: true
+          include_build_step: false
+
+      # DISTRIBUTION is a build-time constant: the recorded baselines must come
+      # from the cloud dist, not a localhost build (see the gate's build step).
+      - name: Build cloud dist
+        shell: bash
+        run: pnpm build:cloud-e2e
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright

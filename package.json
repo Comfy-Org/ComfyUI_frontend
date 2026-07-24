@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
+    "build:cloud-e2e": "cross-env DISTRIBUTION=cloud VITE_USE_LEGACY_DEFAULT_GRAPH=true vite build --config vite.config.mts",
     "build:desktop": "pnpm --filter @comfyorg/desktop-ui run build",
     "build-storybook": "storybook build",
     "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
