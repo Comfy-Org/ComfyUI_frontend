@@ -60,8 +60,9 @@ export class FeatureFlagHelper {
    * Note: this merges the injected flags at call time. A subsequent WS
    * reconnect or a late `feature_flags` handshake will full-replace
    * `serverFeatureFlags`, dropping the overrides. For flags that must survive
-   * reconnects, use `mockServerFeatures()` to intercept the /api/features
-   * route instead.
+   * reconnects, use `setServerFlagsPersistent()`, which re-applies on each
+   * handshake. (`mockServerFeatures()` does not help: it intercepts
+   * /api/features, which never populates `serverFeatureFlags`.)
    */
   async setServerFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.evaluate((flagMap: Record<string, unknown>) => {
