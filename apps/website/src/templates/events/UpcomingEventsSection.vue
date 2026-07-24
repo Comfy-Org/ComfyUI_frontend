@@ -22,11 +22,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           >
             {{ t('events.upcoming.title', locale) }}
           </h2>
-          <p
-            class="mt-8 text-base font-light text-primary-comfy-canvas lg:text-lg"
-          >
-            {{ t('events.upcoming.description', locale) }}
-          </p>
         </div>
 
         <ul class="flex min-w-0 grow flex-col">
@@ -64,6 +59,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
               as="a"
               variant="link"
               :href="event.link.href[locale]"
+              target="_blank"
+              rel="noopener noreferrer"
               :append-icon="ArrowRight"
               :aria-label="`${event.name[locale]} — ${t('events.upcoming.learnMore', locale)}`"
               class="shrink-0 normal-case"

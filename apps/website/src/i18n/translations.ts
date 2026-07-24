@@ -4715,9 +4715,9 @@ const translations = {
     'zh-CN': '活动 - 直播、黑客松与社区聚会 | Comfy'
   },
   'events.page.description': {
-    en: 'Livestreams and hackathons we run. Community events worldwide. Join upcoming Comfy events or catch up on past livestreams, hackathons, and community meetups.',
+    en: 'Upcoming livestreams, hackathons, and events worldwide. Join upcoming Comfy events or catch up on past livestreams, hackathons, and community meetups.',
     'zh-CN':
-      '我们举办的直播和黑客松，以及遍布全球的社区活动。参加即将举行的 Comfy 活动，或回看过往的直播、黑客松和社区聚会。'
+      '即将举行的直播、黑客松以及遍布全球的活动。参加即将举行的 Comfy 活动，或回看过往的直播、黑客松和社区聚会。'
   },
   'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
   'events.hero.title': {
@@ -4725,8 +4725,8 @@ const translations = {
     'zh-CN': '创作者，齐聚一堂'
   },
   'events.hero.subtitle': {
-    en: 'Livestreams and hackathons we run. Community events worldwide.',
-    'zh-CN': '我们举办的直播和黑客松，以及遍布全球的社区活动。'
+    en: 'Upcoming livestreams, hackathons, and events worldwide',
+    'zh-CN': '即将举行的直播、黑客松以及遍布全球的活动'
   },
   'events.hero.prevSlide': {
     en: 'Previous featured event',
@@ -4739,10 +4739,6 @@ const translations = {
   'events.upcoming.title': {
     en: 'Upcoming events',
     'zh-CN': '即将举行的活动'
-  },
-  'events.upcoming.description': {
-    en: 'Join the waitlist to share and learn with other creators.',
-    'zh-CN': '加入候补名单，与其他创作者分享和学习。'
   },
   'events.upcoming.learnMore': { en: 'Learn more', 'zh-CN': '了解更多' },
   'events.past.title': {

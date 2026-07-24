@@ -1,4 +1,3 @@
-import { getRoutes } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
 type EventCategory = 'livestream' | 'hackathon' | 'community'
@@ -140,11 +139,6 @@ export const featuredEvents: readonly FeaturedEvent[] = [
   blackMathFeatured
 ]
 
-const launchesHref: LocalizedText = {
-  en: getRoutes('en').launches,
-  'zh-CN': getRoutes('zh-CN').launches
-}
-
 // zh-CN copy is a first pass and pending native review.
 export const upcomingEvents: readonly UpcomingEvent[] = [
   {
@@ -160,7 +154,12 @@ export const upcomingEvents: readonly UpcomingEvent[] = [
       'zh-CN': '2026年7月29日 · 上午10点（PT）'
     },
     dateTime: '2026-07-29T10:00:00-07:00',
-    link: { href: launchesHref }
+    link: {
+      href: {
+        en: 'https://www.youtube.com/live/8RGN69h_xTU',
+        'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
+      }
+    }
   }
 ]
 
