@@ -43,6 +43,41 @@ export async function openErrorsTab(comfyPage: ComfyPage) {
   await errorsTab.click()
 }
 
+export async function expectNoErrorUiForObservationWindow(
+  comfyPage: ComfyPage,
+  observationMs = 2_000
+): Promise<void> {
+  const panel = new PropertiesPanelHelper(comfyPage.page)
+  await panel.open(comfyPage.actionbar.propertiesButton)
+
+  const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  let sawErrorUi = false
+  const startedAt = Date.now()
+
+  await expect
+    .poll(
+      async () => {
+        sawErrorUi =
+          sawErrorUi ||
+          (await overlay.isVisible()) ||
+          (await panel.errorsTab.isVisible())
+
+        return {
+          observed: Date.now() - startedAt >= observationMs,
+          sawErrorUi
+        }
+      },
+      {
+        timeout: observationMs + 1_000,
+        intervals: [100]
+      }
+    )
+    .toEqual({
+      observed: true,
+      sawErrorUi: false
+    })
+}
+
 /**
  * Remove the fake model file from the backend so it is detected as missing.
  * Fixture URLs (e.g. http://localhost:8188/...) are not actually downloaded
