@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "無料プランには、Comfy Cloudをお試しいただける毎月{credits}クレジットが含まれています。",
       "descriptionGeneric": "無料プランには、Comfy Cloudをお試しいただける毎月のクレジット枠が含まれています。",
+      "descriptionQuota": "無料プランには、Comfy Cloud を始めるための {runs} 回の実行が含まれています（クレジットカード不要）。",
       "nextRefresh": "クレジットは{date}にリフレッシュされます。",
       "outOfCredits": {
         "subtitle": "サブスクリプションでチャージや追加機能を利用しましょう",

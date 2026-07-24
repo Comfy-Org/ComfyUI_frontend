@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "Ücretsiz planınız, Comfy Cloud'u denemek için her ay {credits} kredi içerir.",
       "descriptionGeneric": "Ücretsiz planınız, Comfy Cloud'u denemek için aylık kredi hakkı içerir.",
+      "descriptionQuota": "Ücretsiz planınız, Comfy Cloud ile başlamak için {runs} çalıştırma içerir — kart gerekmez.",
       "nextRefresh": "Kredileriniz {date} tarihinde yenilenecek.",
       "outOfCredits": {
         "subtitle": "Yeniden yükleme ve daha fazlasının kilidini açmak için abone olun",

@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "Votre plan gratuit inclut {credits} crédits chaque mois pour essayer Comfy Cloud.",
       "descriptionGeneric": "Votre plan gratuit inclut une allocation mensuelle de crédits pour essayer Comfy Cloud.",
+      "descriptionQuota": "Votre offre gratuite comprend {runs} exécutions pour commencer avec Comfy Cloud — aucune carte requise.",
       "nextRefresh": "Vos crédits seront renouvelés le {date}.",
       "outOfCredits": {
         "subtitle": "Abonnez-vous pour débloquer les recharges et plus encore",

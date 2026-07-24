@@ -3874,6 +3874,7 @@
     "freeTier": {
       "description": "تشمل خطتك المجانية {credits} رصيد شهري لتجربة Comfy Cloud.",
       "descriptionGeneric": "تشمل خطتك المجانية رصيدًا شهريًا لتجربة Comfy Cloud.",
+      "descriptionQuota": "تشمل خطتك المجانية {runs} تشغيل للبدء مع Comfy Cloud — بدون الحاجة إلى بطاقة.",
       "nextRefresh": "سيتم تجديد رصيدك في {date}.",
       "outOfCredits": {
         "subtitle": "اشترك لفتح الشحن والمزيد",

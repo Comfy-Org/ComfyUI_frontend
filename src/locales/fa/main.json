@@ -3886,6 +3886,7 @@
     "freeTier": {
       "description": "طرح رایگان شما شامل {credits} اعتبار در هر ماه برای استفاده از Comfy Cloud است.",
       "descriptionGeneric": "طرح رایگان شما شامل اعتبار ماهانه برای استفاده از Comfy Cloud است.",
+      "descriptionQuota": "طرح رایگان شما شامل {runs} اجرا برای شروع با Comfy Cloud است — بدون نیاز به کارت.",
       "nextRefresh": "اعتبار شما در تاریخ {date} به‌روزرسانی می‌شود.",
       "outOfCredits": {
         "subtitle": "با اشتراک، امکان شارژ مجدد و امکانات بیشتر را فعال کنید",
