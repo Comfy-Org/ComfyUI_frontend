@@ -266,13 +266,73 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
    - `refactor:` for code refactoring
    - `test:` for test additions/changes
    - `chore:` for maintenance tasks
+5. **Draft PRs**: Mark as Draft if not ready for review
+6. **Assign Reviewer**: When ready, set one person as `Assignee` — they'll receive a Slack notification. Use git blame and context to pick someone relevant.
+7. **Re-review**: After addressing comments, re-assign to the reviewer (and optionally ping them in Slack)
+8. **Merging**: Merge once all `Assignees` have approved and you feel all comments are addressed. Don't wait for non-assignee approvals unless they've added themselves as `Assignee`.
+9. **Auto-merge**: Only enable after full approvals, not while waiting
+
+### Comment Types
+
+When leaving or receiving review comments:
+
+- **`nit:`** — Optional suggestion; author chooses whether to implement
+- **`Should we...?` / `What do you think?`** — Optional discussion point
+- **No prefix** — Required change; must be addressed before merge
+
+If a comment's blocking status is unclear, respond asking for clarification.
+
+### Comment Resolution
+
+- **Reviewers** resolve their own comments when satisfied
+- **Authors** may only resolve in these specific cases:
+  - Automated reviews (Coderabbit, Claude, etc.)
+  - Trivial single-interpretation comments (e.g. fixing a typo)
+  - Applying a suggested fix exactly as written via GitHub's "Apply suggestion"
+
+### Deferring Work
+
+If you want to defer non-critical feedback to a follow-up PR, use:
+
+```
+@coderabbitai please make a tracking issue for this and assign me
+```
+
+Deferred work must have a tracking issue — implicit deferrals are not allowed.
 
 ### Review Process
 
 1. All PRs require at least one review
-2. Address review feedback promptly
+2. Address review feedback promptly (reviewers should respond within 24 hours or reassign)
 3. Keep PRs focused - one feature/fix per PR
 4. Large features should be discussed in an issue first
+5. For extended discussions or potential huddles, post the PR link in `#frontend-code-reviews`
+
+### Reviewer Decision Guide
+
+```
+Starting PR Review
+├── Changes needed → Request Changes
+│   ├── All comments required → No prefix (blocking by default)
+│   └── Some optional → Use "nit:" prefix
+├── Looks good, confident → Approve
+│   ├── With comments → All comments are nits
+│   └── Clean approval → No comments needed
+├── Looks good, not confident → Comment Review with "LGTM"
+│   └── Indicates reviewed but not confident enough to approve alone
+├── Need discussion/questions → Comment Review
+│   └── Ask questions while indicating full PR review
+└── Just adding annotations → Normal Comment
+    └── Add comments for future readers
+```
+
+### Resolving Disagreements
+
+1. Use comment threads for clarification
+2. Create a huddle or schedule a live review for complex discussions
+3. Escalate to team leads if discussion goes in circles
+4. Document recurring style conflicts in Coderabbit config or `CLAUDE.md`
+5. Defer to the author for pure personal preference items (but don't mislabel technical decisions as preference)
 
 ## Questions?
 
