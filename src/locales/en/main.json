@@ -4007,6 +4007,7 @@
       "copyUrl": "Copy URL",
       "gatedModelsHint": "Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.",
       "gatedModelTooltip": "This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.",
+      "gatedModelDownloadTooltip": "Download may require signing in to Hugging Face first.",
       "locateNode": "Locate node on canvas",
       "openHuggingFaceRepo": "Open Hugging Face repo",
       "expandNodes": "Show referencing nodes",

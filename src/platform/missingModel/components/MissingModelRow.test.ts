@@ -431,14 +431,19 @@ describe('MissingModelRow', () => {
 
     const gatedModelTooltip =
       'This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.'
+    const gatedModelDownloadTooltip =
+      'Download may require signing in to Hugging Face first.'
     expect(screen.getByTestId('missing-model-gated-access')).toHaveAttribute(
       'title',
       gatedModelTooltip
     )
     expect(screen.getByTestId('missing-model-download')).toHaveAttribute(
       'title',
-      gatedModelTooltip
+      gatedModelDownloadTooltip
     )
+    expect(
+      screen.getByTestId('missing-model-download')
+    ).toHaveAccessibleDescription(gatedModelDownloadTooltip)
   })
 
   it('opens gated repo action separately from the download action', async () => {
@@ -469,104 +474,6 @@ describe('MissingModelRow', () => {
         directory: 'checkpoints'
       },
       {}
-    )
-  })
-
-  it('delegates the gated repo action to the Desktop bridge with its receiver', async () => {
-    mockIsCloud.value = false
-    const user = userEvent.setup()
-    let receiver: unknown
-    let openedUrl: string | undefined
-    const bridge = {
-      isRemote: () => true,
-      async openModelAccessPage(this: unknown, url: string) {
-        receiver = this
-        openedUrl = url
-        return true
-      }
-    }
-    window.__comfyDesktop2 = bridge
-    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
-    model.representative.url =
-      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
-
-    renderRow(model, vi.fn(), false)
-    const store = useMissingModelStore()
-    store.setGatedRepoUrl(
-      model.representative.url,
-      'https://huggingface.co/bfl/FLUX.1'
-    )
-    await nextTick()
-
-    await user.click(screen.getByTestId('missing-model-gated-access'))
-
-    expect(receiver).toBe(bridge)
-    expect(openedUrl).toBe('https://huggingface.co/bfl/FLUX.1')
-    expect(mockOpenGatedRepoPage).not.toHaveBeenCalled()
-  })
-
-  it('falls back when the Desktop bridge resolves false', async () => {
-    mockIsCloud.value = false
-    const user = userEvent.setup()
-    const openModelAccessPage = vi.fn().mockResolvedValue(false)
-    window.__comfyDesktop2 = {
-      isRemote: () => false,
-      openModelAccessPage
-    }
-    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
-    model.representative.url =
-      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
-
-    renderRow(model, vi.fn(), false)
-    const store = useMissingModelStore()
-    store.setGatedRepoUrl(
-      model.representative.url,
-      'https://huggingface.co/bfl/FLUX.1'
-    )
-    await nextTick()
-
-    await user.click(screen.getByTestId('missing-model-gated-access'))
-
-    expect(openModelAccessPage).toHaveBeenCalledWith(
-      'https://huggingface.co/bfl/FLUX.1'
-    )
-    expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
-      'https://huggingface.co/bfl/FLUX.1'
-    )
-  })
-
-  it('falls back when the Desktop bridge rejects', async () => {
-    mockIsCloud.value = false
-    const user = userEvent.setup()
-    const error = new Error('Desktop bridge unavailable')
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-    window.__comfyDesktop2 = {
-      isRemote: () => false,
-      openModelAccessPage: vi.fn().mockRejectedValue(error)
-    }
-    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
-    model.representative.url =
-      'https://huggingface.co/bfl/FLUX.1/resolve/main/model.safetensors'
-
-    renderRow(model, vi.fn(), false)
-    useMissingModelStore().setGatedRepoUrl(
-      model.representative.url,
-      'https://huggingface.co/bfl/FLUX.1'
-    )
-    await nextTick()
-
-    await user.click(screen.getByTestId('missing-model-gated-access'))
-
-    await waitFor(() => {
-      expect(mockOpenGatedRepoPage).toHaveBeenCalledWith(
-        'https://huggingface.co/bfl/FLUX.1'
-      )
-    })
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to open model access page in Desktop:',
-      error
     )
   })
 

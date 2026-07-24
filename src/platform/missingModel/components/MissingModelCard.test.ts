@@ -335,7 +335,7 @@ describe('MissingModelCard (OSS)', () => {
       'https://huggingface.co/comfy/test'
     await nextTick()
 
-    expect(screen.getByTestId('missing-model-gated-hint')).toHaveTextContent(
+    expect(screen.getByRole('note')).toHaveTextContent(
       'Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.'
     )
   })

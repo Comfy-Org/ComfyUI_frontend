@@ -3,7 +3,7 @@
     <div
       v-if="showGatedModelsHint"
       data-testid="missing-model-gated-hint"
-      role="status"
+      role="note"
       class="mb-2 flex gap-2 rounded-md border border-warning-background/30 bg-warning-background/10 p-2.5"
     >
       <i

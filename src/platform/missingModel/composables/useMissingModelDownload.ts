@@ -1,6 +1,7 @@
 import {
   downloadModel,
   fetchModelMetadata,
+  isTrustedHuggingFaceUrl,
   openGatedRepoPage
 } from '@/platform/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
@@ -30,6 +31,8 @@ export function useMissingModelDownload() {
   // anchor fallback inside Electron hits shell.openExternal and strands the
   // provider cookies in the system browser.
   async function openModelAccessPage(repoUrl: string): Promise<void> {
+    if (!isTrustedHuggingFaceUrl(repoUrl)) return
+
     const bridge = window.__comfyDesktop2
     if (bridge?.openModelAccessPage) {
       try {

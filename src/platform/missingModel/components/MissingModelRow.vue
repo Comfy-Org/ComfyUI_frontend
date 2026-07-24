@@ -145,11 +145,21 @@
           size="sm"
           class="shrink-0 focus-visible:ring-inset"
           :aria-label="`${t('g.download')} ${model.name}`"
-          :title="gatedModelTooltip"
+          :aria-describedby="
+            showGatedRepoAction ? gatedDownloadDescriptionId : undefined
+          "
+          :title="gatedModelDownloadTooltip"
           @click="handleDownload"
         >
           {{ t('g.download') }}
         </Button>
+        <span
+          v-if="showGatedRepoAction"
+          :id="gatedDownloadDescriptionId"
+          hidden
+        >
+          {{ gatedModelDownloadTooltip }}
+        </span>
       </template>
 
       <Button
@@ -208,7 +218,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  useId,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -341,6 +358,12 @@ const gatedModelTooltip = computed(() =>
     ? t('rightSidePanel.missingModels.gatedModelTooltip')
     : undefined
 )
+const gatedModelDownloadTooltip = computed(() =>
+  showGatedRepoAction.value
+    ? t('rightSidePanel.missingModels.gatedModelDownloadTooltip')
+    : undefined
+)
+const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
