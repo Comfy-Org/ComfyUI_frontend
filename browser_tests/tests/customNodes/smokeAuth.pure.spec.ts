@@ -2,11 +2,9 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { FIREBASE_APP_NAME } from '@e2e/fixtures/helpers/firebaseAuthStorage'
 import {
-  FIREBASE_APP_NAME,
-  FIREBASE_WEB_API_KEY
-} from '@e2e/fixtures/helpers/firebaseAuthStorage'
-import {
+  identityToolkitErrorCode,
   missingSmokeEnvVars,
   SMOKE_ENV_VARS,
   smokeAuthUserRecord
@@ -17,6 +15,7 @@ import {
 // silent field drift here would boot the cloud suite signed out.
 
 const NOW = 1_700_000_000_000
+const SMOKE_KEY = 'smoke-project-api-key'
 
 function signInResponse(): Record<string, unknown> {
   return {
@@ -35,11 +34,13 @@ test.describe('smokeAuthUserRecord', () => {
     const record = smokeAuthUserRecord(
       signInResponse(),
       'fallback@comfy.org',
+      SMOKE_KEY,
       NOW
     )
     expect(record).toEqual({
       uid: 'smoke-uid',
       email: 'smoke-test@comfy.org',
+      displayName: null,
       emailVerified: true,
       isAnonymous: false,
       providerData: [
@@ -57,7 +58,9 @@ test.describe('smokeAuthUserRecord', () => {
         accessToken: 'header.payload.signature',
         expirationTime: NOW + 3600 * 1000
       },
-      apiKey: FIREBASE_WEB_API_KEY,
+      // The persistence key embeds the apiKey, so the record must carry the
+      // project that minted the tokens - never a hardcoded app key.
+      apiKey: SMOKE_KEY,
       appName: FIREBASE_APP_NAME
     })
   })
@@ -67,6 +70,7 @@ test.describe('smokeAuthUserRecord', () => {
     const record = smokeAuthUserRecord(
       { ...withoutEmail, displayName: 'Smoke User' },
       'fallback@comfy.org',
+      SMOKE_KEY,
       NOW
     )
     expect(record.email).toBe('fallback@comfy.org')
@@ -83,7 +87,7 @@ test.describe('smokeAuthUserRecord', () => {
     } = signInResponse()
     let thrown = ''
     try {
-      smokeAuthUserRecord(partial, 'fallback@comfy.org', NOW)
+      smokeAuthUserRecord(partial, 'fallback@comfy.org', SMOKE_KEY, NOW)
     } catch (error) {
       thrown = String(error)
     }
@@ -95,12 +99,13 @@ test.describe('smokeAuthUserRecord', () => {
 
   test('non-object and non-numeric-expiry responses fail loudly', () => {
     expect(() =>
-      smokeAuthUserRecord(undefined, 'fallback@comfy.org', NOW)
+      smokeAuthUserRecord(undefined, 'fallback@comfy.org', SMOKE_KEY, NOW)
     ).toThrow(/missing idToken/)
     expect(() =>
       smokeAuthUserRecord(
         { ...signInResponse(), expiresIn: 'soon' },
         'fallback@comfy.org',
+        SMOKE_KEY,
         NOW
       )
     ).toThrow(/expiresIn/)
@@ -108,9 +113,26 @@ test.describe('smokeAuthUserRecord', () => {
       smokeAuthUserRecord(
         { ...signInResponse(), expiresIn: '0' },
         'fallback@comfy.org',
+        SMOKE_KEY,
         NOW
       )
     ).toThrow(/expiresIn/)
+  })
+})
+
+test.describe('identityToolkitErrorCode', () => {
+  test('extracts the code from a well-formed error body', () => {
+    expect(
+      identityToolkitErrorCode({ error: { message: 'INVALID_PASSWORD' } })
+    ).toBe('INVALID_PASSWORD')
+  })
+
+  test('returns undefined for every malformed shape', () => {
+    expect(identityToolkitErrorCode(undefined)).toBeUndefined()
+    expect(identityToolkitErrorCode('EMAIL_NOT_FOUND')).toBeUndefined()
+    expect(identityToolkitErrorCode({})).toBeUndefined()
+    expect(identityToolkitErrorCode({ error: null })).toBeUndefined()
+    expect(identityToolkitErrorCode({ error: { message: 42 } })).toBeUndefined()
   })
 })
 

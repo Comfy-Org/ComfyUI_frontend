@@ -20,7 +20,7 @@ export const FIREBASE_APP_NAME = '[DEFAULT]'
 export interface FirebaseAuthUserRecord {
   uid: string
   email: string
-  displayName?: string
+  displayName: string | null
   emailVerified: boolean
   isAnonymous: boolean
   providerData: Array<{

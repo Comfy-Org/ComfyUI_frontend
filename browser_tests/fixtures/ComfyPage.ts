@@ -569,12 +569,10 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
-    }
-
-    // CUSTOM_NODES_ENV=cloud runs the custom-node suite against a real Cloud
-    // backend: seed a real smoke-user session (no route mocks) before the
-    // app boots so the Firebase SDK restores it.
-    if (customNodesEnv() === 'cloud') {
+    } else if (customNodesEnv() === 'cloud') {
+      // A real smoke-user session (no route mocks), seeded before the app
+      // boots so the Firebase SDK restores it. Mutually exclusive with the
+      // @cloud mock above: its interceptions would corrupt a real session.
       await seedSmokeAuth(page, comfyPage.url)
     }
 
