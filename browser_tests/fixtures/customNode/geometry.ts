@@ -25,15 +25,20 @@ export function packGeometryRelativePath(pack: string): string {
 // by the canvas scale at capture (the chunk-fit zoom), making them
 // graph-space numbers too - otherwise a pack-count change would rescale
 // whole chunks and every node in them would show phantom deltas. Values are
-// stored raw and compared with exact equality, no rounding: in a fully
-// pinned environment the render is deterministic, and rounding is a
-// tolerance in disguise. If jitter is ever observed, that red is the
-// evidence to justify one. The scale division leaves ~1e-5 float
-// residuals in Vue values, so a chunk-composition change (the pack's
-// node count moved) perturbs them and forces a whole-pack re-record -
-// which the pin-bump flow performs anyway. Same-composition determinism
-// is proven: two independent CI runs came back byte-exact outside the
-// ledgered nodes below.
+// stored raw and compared with a GEOMETRY_EPSILON_PX absolute tolerance.
+// Exact equality was the original bet - a fully pinned environment renders
+// deterministically - and its own rationale said "if jitter is ever
+// observed, that red is the evidence to justify a tolerance." Run
+// 30116507105 was that evidence: on the IDENTICAL runner image
+// (ubuntu24/20260720.247) and the pinned bundled Chromium, 3187 widths
+// jittered by up to 2e-4px between two ephemeral runners - hardware/session
+// float the browser+image pin cannot reach. Tolerance is now justified per
+// that clause. 0.01px sits ~47x above the observed 2e-4px noise ceiling
+// (which had a hard gap: nothing measured between 1e-3px and the one real
+// 212px change) and still catches any shift >= 1/100th px, 100x finer than
+// a 1px move. The scale division leaves ~1e-5 float residuals in Vue
+// values, so a chunk-composition change (the pack's node count moved) still
+// forces a whole-pack re-record, which the pin-bump flow performs anyway.
 export interface LitegraphNodeGeometry {
   w: number
   h: number
@@ -85,7 +90,13 @@ export const GEOMETRY_UNSTABLE_NODES: Record<string, Record<string, string>> = {
     // Observed live: SplineEditor widgets[13].y measured 915 in the CI
     // record run and 920 in the CI compare run at identical code.
     SplineEditor: 'editor_base init race shifts widget y between runs',
-    PointsEditor: 'same editor_base init race as SplineEditor'
+    PointsEditor: 'same editor_base init race as SplineEditor',
+    // litegraph node height tracks a preview that follows the input-dir
+    // contents (the staged run-tier media), so it is content-variable, not
+    // fixed. Observed live: h measured 566 in the record run and a compare
+    // run, then 354 in another compare at identical code and runner image -
+    // the same content-variability its auto-run exclusion documents.
+    LoadAndResizeImage: 'litegraph height follows input-dir preview contents'
   }
 }
 
@@ -107,6 +118,11 @@ export function savePackGeometry(pack: string, file: PackGeometryFile): void {
   writeFileSync(geometryPath(pack), JSON.stringify(file, null, 1) + '\n')
 }
 
+// Absolute per-value tolerance: absorbs cross-runner sub-pixel float
+// (observed ceiling ~2e-4px) while still catching any real shift >= 0.01px.
+// See the module header for the run that justified moving off exact equality.
+const GEOMETRY_EPSILON_PX = 0.01
+
 // Depth-first first-difference finder. Returns every node-level delta but
 // only the first differing field per node, so a real layout shift reads as
 // one line per affected node instead of hundreds of coordinates.
@@ -122,10 +138,15 @@ function firstDelta(
     actual === null ||
     typeof expected !== 'object' ||
     typeof actual !== 'object'
-  )
+  ) {
+    if (typeof expected === 'number' && typeof actual === 'number')
+      return Math.abs(expected - actual) <= GEOMETRY_EPSILON_PX
+        ? null
+        : `${path}: expected ${expected}, got ${actual}`
     return expected === actual
       ? null
       : `${path}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
+  }
   if (Array.isArray(expected) || Array.isArray(actual)) {
     const a = expected as unknown[]
     const b = actual as unknown[]

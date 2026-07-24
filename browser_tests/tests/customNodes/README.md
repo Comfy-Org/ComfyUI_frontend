@@ -85,9 +85,10 @@ Any `-g` pattern works against the generic scripts, e.g.
   escape hatch.
 - **Layout geometry**: while the mount sweep has each node on screen, its
   geometry (node size, widget-row positions, slot positions, in both
-  renderers) is measured and compared exactly against committed per-pack
-  baselines - any layout shift, the "shrinking node" class, fails naming
-  the node and field. The compare runs in CI only (local runs log and
+  renderers) is measured and compared against committed per-pack baselines
+  to within a 0.01px tolerance (absorbs cross-runner sub-pixel float, still
+  catches any real shift) - any layout move, the "shrinking node" class,
+  fails naming the node and field. The compare runs in CI only (local runs log and
   skip: baselines encode CI fonts and pack-JS layout, which local
   environments cannot reproduce). Baselines are recorded automatically by
   the record workflow (`.github/workflows/record-custom-nodes-geometry.yaml`);

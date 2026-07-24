@@ -214,7 +214,7 @@ tier, or a `run` tier with an empty `workflow`.
 
 Every pack commits a layout baseline
 (`browser_tests/fixtures/customNode/geometry/<pack>.json`): the mount sweep
-measures every node's geometry and compares it exactly, so a missing
+measures every node's geometry and compares it to within a 0.01px tolerance, so a missing
 baseline fails CI rather than silently skipping the new pack. Record it in
 the CI environment, not on a dev machine: font metrics differ across
 platforms by whole pixels, and the baselines encode pack-JS-built layout

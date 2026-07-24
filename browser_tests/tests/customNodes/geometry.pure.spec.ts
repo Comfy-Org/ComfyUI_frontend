@@ -12,8 +12,8 @@ import { loadManifest } from '@e2e/fixtures/customNode/manifest'
 
 // The differ is the geometry tier's entire failure-reporting contract:
 // every red a maintainer ever sees comes out of diffGeometry. These cases
-// pin each red path and the exact-equality discipline (no rounding, no
-// tolerance) the tier is built on.
+// pin each red path and the GEOMETRY_EPSILON_PX tolerance the tier compares
+// with (sub-0.01px cross-runner float absorbed; anything larger reds).
 
 function node(overrides: Partial<NodeGeometry> = {}): NodeGeometry {
   return {
@@ -47,11 +47,20 @@ test.describe('diffGeometry', () => {
     ])
   })
 
-  test('exactness holds at full float precision - a 1-ulp neighbor reds', () => {
+  test('sub-epsilon cross-runner float jitter is absorbed', () => {
     const measured = node()
-    measured.vue!.w = 263.84375667861894
+    // ~ the observed 2e-4px noise ceiling on a width, plus a 0.005px height
+    // wobble - both under GEOMETRY_EPSILON_PX (0.01), so neither reds.
+    measured.vue!.w = 263.8437566786189 + 0.0002
+    measured.litegraph.h = 106.005
+    expect(diffGeometry({ A: node() }, { A: measured })).toEqual([])
+  })
+
+  test('a delta beyond GEOMETRY_EPSILON_PX still reds with the exact path', () => {
+    const measured = node()
+    measured.litegraph.h = 106.5
     expect(diffGeometry({ A: node() }, { A: measured })).toEqual([
-      'A.vue.w: expected 263.8437566786189, got 263.84375667861894'
+      'A.litegraph.h: expected 106, got 106.5'
     ])
   })
 
