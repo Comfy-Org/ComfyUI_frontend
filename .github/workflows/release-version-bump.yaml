@@ -24,8 +24,12 @@ on:
     # 00:00 UTC ≈ 4:00 PM PST / 5:00 PM PDT on the previous calendar day
     - cron: '0 0 * * *'
 
+# Key concurrency by target branch so per-branch bumps (e.g. the cloud
+# release fan-out that dispatches this workflow once per active branch) do
+# not cancel one another before their PRs are opened. Scheduled/main runs
+# fall back to 'main'.
 concurrency:
-  group: release-version-bump
+  group: release-version-bump-${{ github.event.inputs.branch || 'main' }}
   cancel-in-progress: true
 
 jobs:
