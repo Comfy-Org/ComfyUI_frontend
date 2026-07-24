@@ -49,36 +49,144 @@ runs:
 
           // Escape special regex characters in delimiter strings
           const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-          const comments = await github.paginate(
-            github.rest.issues.listComments,
-            { ...context.repo, issue_number: prNumber }
-          )
-
-          const existing = comments.find(
-            (c) =>
-              c.user?.login === 'github-actions[bot]' &&
-              c.body?.includes(commentMarker)
-          )
-
-          if (!existing) {
-            return github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: prNumber,
-              body: `${commentMarker}\n${sectionBlock}`
-            })
-          }
-
-          const body = existing.body ?? ''
           const sectionRegex = new RegExp(
             `${escapeRegex(sectionStart)}[\\s\\S]*?${escapeRegex(sectionEnd)}`
           )
-          const updated = sectionRegex.test(body)
-            ? body.replace(sectionRegex, sectionBlock)
-            : body.trimEnd() + '\n\n' + sectionBlock
 
-          return github.rest.issues.updateComment({
-            ...context.repo,
-            comment_id: existing.id,
-            body: updated
-          })
+          // Every section-start marker in a body, used to detect whether a
+          // concurrent writer's section was lost across our write.
+          const sectionStartsIn = (body) =>
+            body.match(/<!-- section:[a-z0-9-]+:start -->/g) ?? []
+
+          const findComment = async () => {
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { ...context.repo, issue_number: prNumber }
+            )
+            return comments.find(
+              (c) =>
+                c.user?.login === 'github-actions[bot]' &&
+                c.body?.includes(commentMarker)
+            )
+          }
+
+          // Several workflows share one comment via read-modify-write, which the
+          // REST API can't do atomically. Re-read immediately before each write
+          // and verify our section plus every previously-present section
+          // survived; on a detected clobber, re-read and retry so writers
+          // converge instead of silently dropping each other's sections.
+          const maxAttempts = 5
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const existing = await findComment()
+
+            if (!existing) {
+              try {
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: prNumber,
+                  body: `${commentMarker}\n${sectionBlock}`
+                })
+                // Concurrent writers may have also created a comment; merge all
+                // sections from every duplicate into the lowest-id copy, verify,
+                // then delete the rest so no report content is lost.
+                const allComments = await github.paginate(
+                  github.rest.issues.listComments,
+                  { ...context.repo, issue_number: prNumber }
+                )
+                const markers = allComments.filter(
+                  (c) =>
+                    c.user?.login === 'github-actions[bot]' &&
+                    c.body?.includes(commentMarker)
+                )
+                if (markers.length > 1) {
+                  markers.sort((a, b) => a.id - b.id)
+                  const canonical = markers[0]
+                  // Merge sections from all duplicates into the canonical body
+                  let mergedBody = canonical.body ?? ''
+                  for (const dup of markers.slice(1)) {
+                    const dupSections = (dup.body ?? '').match(
+                      /<!-- section:[a-z0-9-]+:start -->[\s\S]*?<!-- section:[a-z0-9-]+:end -->/g
+                    ) ?? []
+                    for (const block of dupSections) {
+                      const nameMatch = block.match(/<!-- section:([a-z0-9-]+):start -->/)
+                      if (!nameMatch) continue
+                      const name = nameMatch[1]
+                      const startTag = `<!-- section:${name}:start -->`
+                      const endTag = `<!-- section:${name}:end -->`
+                      const existingRegex = new RegExp(
+                        `${escapeRegex(startTag)}[\\s\\S]*?${escapeRegex(endTag)}`
+                      )
+                      mergedBody = existingRegex.test(mergedBody)
+                        ? mergedBody.replace(existingRegex, block)
+                        : mergedBody.trimEnd() + '\n\n' + block
+                    }
+                  }
+                  try {
+                    await github.rest.issues.updateComment({
+                      ...context.repo,
+                      comment_id: canonical.id,
+                      body: mergedBody
+                    })
+                    // Verify canonical has all sections before deleting duplicates
+                    const verified = (await github.rest.issues.getComment({
+                      ...context.repo,
+                      comment_id: canonical.id
+                    })).data.body ?? ''
+                    const allSections = markers.flatMap(
+                      (m) => sectionStartsIn(m.body ?? '')
+                    )
+                    const allPresent = allSections.every((s) => verified.includes(s))
+                    if (allPresent) {
+                      for (const dup of markers.slice(1)) {
+                        try {
+                          await github.rest.issues.deleteComment({
+                            ...context.repo,
+                            comment_id: dup.id
+                          })
+                        } catch (_) {}
+                      }
+                    }
+                  } catch (_) {
+                    // Leave duplicates rather than risk losing content
+                  }
+                }
+                return
+              } catch (err) {
+                if (attempt === maxAttempts) throw err
+                continue // another writer likely created it first; retry updates
+              }
+            }
+
+            const body = existing.body ?? ''
+            const expectedSections = sectionStartsIn(body)
+            const updated = sectionRegex.test(body)
+              ? body.replace(sectionRegex, sectionBlock)
+              : body.trimEnd() + '\n\n' + sectionBlock
+
+            try {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body: updated
+              })
+            } catch (err) {
+              if (attempt === maxAttempts) throw err
+              continue // transient failure; retry
+            }
+
+            const current = (await findComment())?.body ?? ''
+            const survived =
+              current.includes(sectionBlock) &&
+              expectedSections.every((s) => current.includes(s))
+            if (survived) return
+
+            if (attempt === maxAttempts) {
+              core.warning(
+                `upsert-comment-section: section "${sectionName}" may have been clobbered by a concurrent writer after ${maxAttempts} attempts`
+              )
+              return
+            }
+            await new Promise((resolve) =>
+              setTimeout(resolve, 250 * attempt + Math.floor(Math.random() * 250))
+            )
+          }

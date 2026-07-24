@@ -58,7 +58,7 @@ jobs:
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
           section-name: preview
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
             ## 🔗 Website Preview
