@@ -173,11 +173,10 @@ describe('GPUBrushRenderer', () => {
     })
 
     it('uses maximum blending for accumulated stroke coverage', () => {
-      const accumulatePipeline = (
-        device.createRenderPipeline as ReturnType<typeof vi.fn>
-      ).mock.calls[1][0] as GPURenderPipelineDescriptor
-      const target = accumulatePipeline.fragment as GPUFragmentState
-      const blend = target.targets?.[0]?.blend
+      const accumulatePipeline = vi.mocked(device.createRenderPipeline).mock
+        .calls[1][0]
+      const blend = Array.from(accumulatePipeline.fragment?.targets ?? [])[0]
+        ?.blend
 
       expect(blend).toEqual({
         color: {
@@ -264,8 +263,8 @@ describe('GPUBrushRenderer', () => {
       expect(device.queue.writeBuffer).toHaveBeenCalledTimes(2)
       expect(device.queue.submit).toHaveBeenCalled()
 
-      const uniformData = (device.queue.writeBuffer as ReturnType<typeof vi.fn>)
-        .mock.calls[0][2] as ArrayBuffer
+      const uniformData = vi.mocked(device.queue.writeBuffer).mock
+        .calls[0][2] as ArrayBuffer
       expect(new Float32Array(uniformData)[3]).toBe(1)
     })
 
