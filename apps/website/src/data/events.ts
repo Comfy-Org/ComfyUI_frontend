@@ -1,10 +1,5 @@
-import { externalLinks, getRoutes, localizeHref } from '../config/routes'
+import { getRoutes } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
-
-// Events page (/events) data.
-// Past-event thumbnails are live at media.comfy.org/website/events/<file>.
-// Featured/upcoming media, real event links, and native zh-CN review are
-// pending follow-ups.
 
 type EventCategory = 'livestream' | 'hackathon' | 'community'
 
@@ -16,8 +11,6 @@ export type FeaturedEvent = {
   id: string
   eyebrow: LocalizedText
   title: LocalizedText
-  // Designer-requested toggle: hide the text overlay when the artwork
-  // already carries the event title.
   showTitle: boolean
   media: EventMedia
   href?: LocalizedText
@@ -40,10 +33,7 @@ export type PastEvent = {
   description: LocalizedText
   media: EventMedia
   watch: { href: LocalizedText }
-  // Recording played on the event's own page (/events/[slug]); without it
-  // the card falls back to a plain link to `watch.href`.
   youtubeVideoId?: string
-  // ISO date the recording was published; VideoObject uploadDate.
   publishedDate: string
 }
 
@@ -75,9 +65,9 @@ function eventVideo(
   }
 }
 
-const youtubeHref: LocalizedText = {
-  en: externalLinks.youtube,
-  'zh-CN': externalLinks.youtube
+const foundersLiveStreamHref: LocalizedText = {
+  en: 'https://www.youtube.com/live/dbp5Jnto7S8',
+  'zh-CN': 'https://www.youtube.com/live/dbp5Jnto7S8'
 }
 
 function youtubeWatchHref(videoId: string): LocalizedText {
@@ -116,7 +106,8 @@ const foundersLiveFeatured: FeaturedEvent = {
     en: 'Krea X Comfy: Founders Live',
     'zh-CN': 'Krea X Comfy：创始人直播'
   },
-  showTitle: true,
+  // The video artwork already carries the title.
+  showTitle: false,
   media: eventVideo(
     'founders-live.mp4',
     {
@@ -125,7 +116,7 @@ const foundersLiveFeatured: FeaturedEvent = {
     },
     'founders-live-thumb.png'
   ),
-  href: youtubeHref
+  href: foundersLiveStreamHref
 }
 
 const blackMathFeatured: FeaturedEvent = {
@@ -134,10 +125,13 @@ const blackMathFeatured: FeaturedEvent = {
   title: blackMathHackathon.title,
   // The artwork already carries the title, date, and speaker.
   showTitle: false,
-  media: blackMathHackathon.media,
+  media: eventImage('july-launches.jpg', {
+    en: 'July Launches livestream',
+    'zh-CN': '七月发布直播'
+  }),
   href: {
-    en: pastEventPath(blackMathHackathon),
-    'zh-CN': localizeHref(pastEventPath(blackMathHackathon), 'zh-CN')
+    en: 'https://www.youtube.com/live/8RGN69h_xTU',
+    'zh-CN': 'https://www.youtube.com/live/8RGN69h_xTU'
   }
 }
 

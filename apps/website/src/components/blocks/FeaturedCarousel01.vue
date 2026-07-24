@@ -98,8 +98,12 @@ const pauseIfReduced = (el: unknown) => {
             />
 
             <div
-              v-if="slide.showTitle !== false && (slide.eyebrow || slide.title)"
-              class="absolute inset-x-6 bottom-6 flex flex-col gap-3 lg:right-56 lg:bottom-14 lg:left-[72px]"
+              v-if="slide.eyebrow || slide.title"
+              :class="
+                slide.showTitle !== false
+                  ? 'absolute inset-x-6 bottom-6 flex flex-col gap-3 lg:right-56 lg:bottom-14 lg:left-[72px]'
+                  : 'sr-only'
+              "
             >
               <p
                 v-if="slide.eyebrow"
