@@ -177,6 +177,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # An earlier step (build, server boot, the suite itself) may have
+          # failed before Playwright wrote its json; the job is already red,
+          # so surface that rather than a confusing jq "no such file" error.
+          if [ ! -f custom-nodes-results.json ]; then
+            echo "no results json - the suite did not produce output (an earlier step failed)"
+            exit 0
+          fi
           skipped=$(jq '.stats.skipped' custom-nodes-results.json)
           echo "skipped tests: $skipped"
           if [ "$skipped" != "0" ]; then
