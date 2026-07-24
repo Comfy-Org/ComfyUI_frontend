@@ -25,6 +25,7 @@ const { mockHasTeamPlan, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
 vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
   useTeamPlan: () => ({
     hasTeamPlan: mockHasTeamPlan,
+    hasMemberSeats: mockHasTeamPlan,
     isPlanLoading: mockIsPlanLoading
   })
 }))

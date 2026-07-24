@@ -91,6 +91,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     activeView: mockActiveView,
     maxSeats: computed(() => 20),
     hasTeamPlan: mockHasTeamPlan,
+    hasMemberSeats: computed(() => mockIsOnTeamPlan.value),
     isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
     hasLapsedTeamPlan: mockHasLapsedTeamPlan,

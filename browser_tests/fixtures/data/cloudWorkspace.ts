@@ -72,6 +72,8 @@ const TEAM_PLAN_SLUG = 'team-pro-monthly'
 
 export const TEAM_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
+  max_seats: 30,
+  occupied_seats: DEFAULT_TEAM_MEMBERS.length,
   subscription_status: 'active',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',

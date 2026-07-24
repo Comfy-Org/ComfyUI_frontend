@@ -57,6 +57,8 @@ const DEFAULT_BALANCE = { amount: 6000, monthly: 5000, prepaid: 1000 }
 
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',

@@ -113,7 +113,6 @@ function clearLastWorkspaceId(): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -201,14 +200,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const pendingInvites = computed<PendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
-  )
-
-  const totalMemberSlots = computed(
-    () => members.value.length + pendingInvites.value.length
-  )
-
-  const isInviteLimitReached = computed(
-    () => totalMemberSlots.value >= MAX_WORKSPACE_MEMBERS
   )
 
   const workspaceId = computed(() => activeWorkspace.value?.id ?? null)
@@ -883,8 +874,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isCurrentUserOriginalOwner,
     pendingInvites,
     originalOwnerId,
-    totalMemberSlots,
-    isInviteLimitReached,
     workspaceId,
     workspaceName,
     isWorkspaceSubscribed,
