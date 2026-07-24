@@ -287,8 +287,9 @@ export function useSubscriptionCheckout(
       const planSlug = getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) return
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      const returnUrl = `${getComfyPlatformBaseUrl()}/payment/success`
       const response = await subscribe(planSlug, {
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        returnUrl,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
       })
 
@@ -301,7 +302,7 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response)
+      await handleSubscribeResponse(response, true, returnUrl)
     } catch (error) {
       showSubscribeError(error)
     } finally {
@@ -322,7 +323,8 @@ export function useSubscriptionCheckout(
 
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
-    shouldTrackSubscriptionSuccess = true
+    shouldTrackSubscriptionSuccess = true,
+    returnUrl: string | null = null
   ): Promise<void> {
     if (!response) return
 
@@ -353,16 +355,20 @@ export function useSubscriptionCheckout(
         })
       }
     }
-    await advanceToSuccessOnOperation(response.billing_op_id)
+    await advanceToSuccessOnOperation(response.billing_op_id, returnUrl)
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
-  async function advanceToSuccessOnOperation(opId: string) {
+  async function advanceToSuccessOnOperation(
+    opId: string,
+    returnUrl: string | null = null
+  ) {
     const operation = await billingOperationStore.startOperation(
       opId,
-      'subscription'
+      'subscription',
+      returnUrl
     )
     if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
