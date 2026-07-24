@@ -44,9 +44,9 @@ function parseCssMs(value: string | undefined, fallbackMs: number) {
   return match[2].toLowerCase() === 's' ? amount * 1000 : amount
 }
 
-function cssMs(name: string, initial: string) {
-  const raw = useCssVar(name, root, { initialValue: initial, observe: true })
-  const fallbackMs = parseCssMs(initial, 0)
+function cssMs(name: string, initialValue: string) {
+  const raw = useCssVar(name, root, { initialValue, observe: true })
+  const fallbackMs = parseCssMs(initialValue, 0)
   return computed(() => parseCssMs(raw.value, fallbackMs))
 }
 
