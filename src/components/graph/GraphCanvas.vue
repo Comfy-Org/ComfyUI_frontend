@@ -158,6 +158,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { installNodeOutputClearingHooks } from '@/composables/graph/useNodeOutputClearingHooks'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -262,11 +263,16 @@ const vueNodeLifecycle = useVueNodeLifecycle()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
+let cleanupNodeOutputHooks: (() => void) | null = null
 watch(
   () => canvasStore.currentGraph,
   (graph) => {
     cleanupErrorHooks?.()
     cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+    cleanupNodeOutputHooks?.()
+    cleanupNodeOutputHooks = graph
+      ? installNodeOutputClearingHooks(graph)
+      : null
   }
 )
 
@@ -549,6 +555,9 @@ onMounted(async () => {
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+      cleanupNodeOutputHooks = installNodeOutputClearingHooks(
+        comfyApp.canvas.graph
+      )
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
@@ -587,6 +596,8 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
+  cleanupNodeOutputHooks?.()
+  cleanupNodeOutputHooks = null
   vueNodeLifecycle.cleanup()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
