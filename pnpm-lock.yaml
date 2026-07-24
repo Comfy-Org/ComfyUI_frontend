@@ -545,16 +545,16 @@ importers:
         version: 14.3.0(vue@3.5.39(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: 'catalog:'
-        version: 14.3.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.39(typescript@6.0.3))
+        version: 14.3.0(axios@1.18.1)(fuse.js@7.5.0)(vue@3.5.39(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.3.0
         version: 14.3.0(vue-router@5.2.0(@vue/compiler-sfc@3.5.39)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3)))(rolldown@1.1.5)(vite@8.1.4(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3)))(vue@3.5.39(typescript@6.0.3))
       '@xterm/addon-fit':
-        specifier: ^0.10.0
-        version: 0.10.0(@xterm/xterm@5.5.0)
+        specifier: ^0.11.0
+        version: 0.11.0
       '@xterm/addon-serialize':
-        specifier: ^0.13.0
-        version: 0.13.0(@xterm/xterm@5.5.0)
+        specifier: ^0.14.0
+        version: 0.14.0
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
@@ -580,17 +580,17 @@ importers:
         specifier: ^1.39.9
         version: 1.49.0
       extendable-media-recorder:
-        specifier: ^9.2.27
-        version: 9.2.38
+        specifier: ^9.2.39
+        version: 9.2.39
       extendable-media-recorder-wav-encoder:
-        specifier: ^7.0.129
-        version: 7.0.139
+        specifier: ^7.0.140
+        version: 7.0.140
       firebase:
         specifier: 'catalog:'
         version: 11.10.0
       fuse.js:
-        specifier: 7.0.0
-        version: 7.0.0
+        specifier: 7.5.0
+        version: 7.5.0
       glob:
         specifier: 'catalog:'
         version: 13.0.6
@@ -628,8 +628,8 @@ importers:
         specifier: 'catalog:'
         version: 0.184.0
       tiptap-markdown:
-        specifier: ^0.8.10
-        version: 0.8.10(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
+        specifier: ^0.9.0
+        version: 0.9.0(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
       typegpu:
         specifier: 'catalog:'
         version: 0.8.2
@@ -4811,15 +4811,11 @@ packages:
   '@xstate/fsm@1.6.5':
     resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
 
-  '@xterm/addon-fit@0.10.0':
-    resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
+  '@xterm/addon-fit@0.11.0':
+    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
 
-  '@xterm/addon-serialize@0.13.0':
-    resolution: {integrity: sha512-kGs8o6LWAmN1l2NpMp01/YkpxbmO4UrfWybeGu79Khw5K9+Krp7XhXbBTOTc3GJRRhd6EmILjpR8k5+odY39YQ==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
+  '@xterm/addon-serialize@0.14.0':
+    resolution: {integrity: sha512-uteyTU1EkrQa2Ux6P/uFl2fzmXI46jy5uoQMKEOM0fKTyiW7cSn0WrFenHm5vO5uEXX/GpwW/FgILvv3r0WbkA==}
 
   '@xterm/xterm@5.5.0':
     resolution: {integrity: sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A==}
@@ -5970,11 +5966,11 @@ packages:
   extendable-media-recorder-wav-encoder-worker@8.0.123:
     resolution: {integrity: sha512-WRKybAbfSICvwCzkfvWIaHBClf5G9njUq1jyX8pFonzSv3koo5FqwKHv7e5jyGsd7mpDLAtOSZcPZOkM10SaRQ==}
 
-  extendable-media-recorder-wav-encoder@7.0.139:
-    resolution: {integrity: sha512-Hl9NoJCZ7uAPTp6M46pxpgValdQyfNnAD4KbLd1pP9LvyG0zgDPkCXizxSLCViGrJguvsVdB9T3i13R2DjbruA==}
+  extendable-media-recorder-wav-encoder@7.0.140:
+    resolution: {integrity: sha512-xKJL6XSWutZ0AArONTekZvB1BL9NtYX5Naf/mqGbUl4DjoMeT/JR4pdSXaBZGb/mKGPz2nQAzWMcj4etdXMdEA==}
 
-  extendable-media-recorder@9.2.38:
-    resolution: {integrity: sha512-HD5IqjYtSmwr6p0pTd6AG3fEYmILOrURguEqyoSCQvTtS426OwijJqnbCOtg7/UzgN9Rrdin24rziEkz+OX8cQ==}
+  extendable-media-recorder@9.2.39:
+    resolution: {integrity: sha512-I+/4G3AAdIoLsuFBO99EanrF4aq/5WNIYqOJOur8M/8zmLXA18mBio51dcNgCgJKrAgXuypckbjTjFWnW5gWaA==}
 
   fallow@2.104.0:
     resolution: {integrity: sha512-UX6Q10Feyb7epe5tTI0sHCHPReOhuKOtxdVpkbqr1lLSZirv2PJiLTTrJr7gKeLHbztE9CHR1y7YARSe0rNYag==}
@@ -6157,8 +6153,8 @@ packages:
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
 
-  fuse.js@7.0.0:
-    resolution: {integrity: sha512-14F4hBIxqKvD4Zz/XjDc3y94mNZN6pRv3U13Udo0lNLCWRBUsrMv2xwcF/y/Z5sV6+FQW+/ow68cHpm4sunt8Q==}
+  fuse.js@7.5.0:
+    resolution: {integrity: sha512-sQtrEfA+ez/3G0cCZecF70oqpCRttCexYUG4mUrtWL49ULUzUyxokt5kyqwtKzj1270RaKih+hcP3qLcumccow==}
     engines: {node: '>=10'}
 
   gensync@1.0.0-beta.2:
@@ -7131,8 +7127,8 @@ packages:
   media-encoder-host-worker@10.0.29:
     resolution: {integrity: sha512-AT1X6mIp6W++OxMimGMm622GFkAARzny82T1k8jxZWK0rIZhVoro9FaqIx+xERdGSMPZioN4qj0MKAgY04XENA==}
 
-  media-encoder-host@9.0.30:
-    resolution: {integrity: sha512-LOmX7zW5SjvpeFA6lPPsp8wg+f0G39lqcf40kZkFTkSI4n/Rh2CJsPS/IhxRngMAcEDepiIvoXLrqetsOq4eSw==}
+  media-encoder-host@9.0.31:
+    resolution: {integrity: sha512-PTgBe18JxIAntMnxiiPU8bnWZi75ZVHp+ed9Zmm+ogUmtbEbCNkuuDu5T86FlEa2ekiQ0G7Lx0F7xA9EB+FKCA==}
 
   meow@14.1.0:
     resolution: {integrity: sha512-EDYo6VlmtnumlcBCbh1gLJ//9jvM/ndXHfVXIFrZVr6fGcwTUyCTFNTLCKuY3ffbK8L/+3Mzqnd58RojiZqHVw==}
@@ -7970,8 +7966,8 @@ packages:
   recorder-audio-worklet-processor@5.0.41:
     resolution: {integrity: sha512-TXaP51ZloO7mDyi71pF6BVU1MenHTMbEOFCbY4KfQGBjOsPuvvvhJzj25b/9RjchaF857x6MGg2CT8Ai8XbtXg==}
 
-  recorder-audio-worklet@6.0.59:
-    resolution: {integrity: sha512-ZK0Gsn83AR5SgHjt1QHF1TJiec68W5CIAMIt9DstUGAA/lN/akh9bXUv9txaX3IPcfuDy6khm0W7sron9BjLcw==}
+  recorder-audio-worklet@6.0.60:
+    resolution: {integrity: sha512-ZIDm5URZxsPH4bqr2BgGkSC5QLqtAKMSvovM9KeDsI2pCvZVpy+PSWZFrlpgJ/QeuAF/f9cbHX/s9GjFxm7Pjw==}
 
   redent@3.0.0:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
@@ -8544,10 +8540,10 @@ packages:
     resolution: {integrity: sha512-azl+t0z7pw/z958Gy9svOTuzqIk6xq+NSheJzn5MMWtWTFywIacg2wUlzKFGtt3cthx0r2SxMK0yzJOR0IES7Q==}
     engines: {node: '>=14.0.0'}
 
-  tiptap-markdown@0.8.10:
-    resolution: {integrity: sha512-iDVkR2BjAqkTDtFX0h94yVvE2AihCXlF0Q7RIXSJPRSR5I0PA1TMuAg6FHFpmqTn4tPxJ0by0CK7PUMlnFLGEQ==}
+  tiptap-markdown@0.9.0:
+    resolution: {integrity: sha512-dKLQ9iiuGNgrlGVjrNauF/UBzWu4LYOx5pkD0jNkmQt/GOwfCJsBuzZTsf1jZ204ANHOm572mZ9PYvGh1S7tpQ==}
     peerDependencies:
-      '@tiptap/core': ^2.0.3
+      '@tiptap/core': ^3.0.1
 
   tldts-core@7.4.8:
     resolution: {integrity: sha512-c1P7u0EhACHj7lPy4MJm8iTFEU8+nB0LCtddH0fhP7noaVoXAqafMtOOeX+ulpuPBqnrRgRhw494RICT3mbhnw==}
@@ -13255,14 +13251,14 @@ snapshots:
       '@vueuse/shared': 14.3.0(vue@3.5.39(typescript@6.0.3))
       vue: 3.5.39(typescript@6.0.3)
 
-  '@vueuse/integrations@14.3.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.39(typescript@6.0.3))':
+  '@vueuse/integrations@14.3.0(axios@1.18.1)(fuse.js@7.5.0)(vue@3.5.39(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.3.0(vue@3.5.39(typescript@6.0.3))
       '@vueuse/shared': 14.3.0(vue@3.5.39(typescript@6.0.3))
       vue: 3.5.39(typescript@6.0.3)
     optionalDependencies:
       axios: 1.18.1
-      fuse.js: 7.0.0
+      fuse.js: 7.5.0
 
   '@vueuse/metadata@12.8.2': {}
 
@@ -13290,13 +13286,9 @@ snapshots:
 
   '@xstate/fsm@1.6.5': {}
 
-  '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
+  '@xterm/addon-fit@0.11.0': {}
 
-  '@xterm/addon-serialize@0.13.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
+  '@xterm/addon-serialize@0.14.0': {}
 
   '@xterm/xterm@5.5.0': {}
 
@@ -14603,19 +14595,19 @@ snapshots:
       tslib: 2.8.1
       worker-factory: 7.0.50
 
-  extendable-media-recorder-wav-encoder@7.0.139:
+  extendable-media-recorder-wav-encoder@7.0.140:
     dependencies:
       '@babel/runtime': 7.29.7
       extendable-media-recorder-wav-encoder-broker: 7.0.128
       extendable-media-recorder-wav-encoder-worker: 8.0.123
       tslib: 2.8.1
 
-  extendable-media-recorder@9.2.38:
+  extendable-media-recorder@9.2.39:
     dependencies:
       '@babel/runtime': 7.29.7
-      media-encoder-host: 9.0.30
+      media-encoder-host: 9.0.31
       multi-buffer-data-view: 6.0.27
-      recorder-audio-worklet: 6.0.59
+      recorder-audio-worklet: 6.0.60
       standardized-audio-context: 25.3.77
       subscribable-things: 2.1.60
       tslib: 2.8.1
@@ -14833,7 +14825,7 @@ snapshots:
 
   functions-have-names@1.2.3: {}
 
-  fuse.js@7.0.0: {}
+  fuse.js@7.5.0: {}
 
   gensync@1.0.0-beta.2: {}
 
@@ -16013,7 +16005,7 @@ snapshots:
       tslib: 2.8.1
       worker-factory: 7.0.50
 
-  media-encoder-host@9.0.30:
+  media-encoder-host@9.0.31:
     dependencies:
       '@babel/runtime': 7.29.7
       media-encoder-host-broker: 8.0.29
@@ -17217,7 +17209,7 @@ snapshots:
       '@babel/runtime': 7.29.7
       tslib: 2.8.1
 
-  recorder-audio-worklet@6.0.59:
+  recorder-audio-worklet@6.0.60:
     dependencies:
       '@babel/runtime': 7.29.7
       broker-factory: 3.1.15
@@ -17935,7 +17927,7 @@ snapshots:
 
   tinyspy@4.0.4: {}
 
-  tiptap-markdown@0.8.10(@tiptap/core@2.27.2(@tiptap/pm@2.27.2)):
+  tiptap-markdown@0.9.0(@tiptap/core@2.27.2(@tiptap/pm@2.27.2)):
     dependencies:
       '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
       '@types/markdown-it': 13.0.9
