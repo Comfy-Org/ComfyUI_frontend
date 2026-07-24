@@ -2261,4 +2261,120 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
   })
+
+  describe('in-flight tracking: refresh vs loadMore', () => {
+    it('refresh during an in-flight loadMore runs its reset path and is not dropped', async () => {
+      const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`a${i}`, `f${i}.png`)
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage(firstPage, { hasMore: true })
+      )
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockClear()
+
+      let resolveLoadMore!: (page: AssetResponse) => void
+      const loadMorePromise = new Promise<AssetResponse>((res) => {
+        resolveLoadMore = res
+      })
+      let resolveRefresh!: (page: AssetResponse) => void
+      const refreshPromise = new Promise<AssetResponse>((res) => {
+        resolveRefresh = res
+      })
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePromise)
+        .mockReturnValueOnce(refreshPromise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        2
+      )
+
+      resolveRefresh(makePage([makeAsset('fresh-1', 'fresh.png')]))
+      resolveLoadMore(makePage([makeAsset('extra-1', 'extra.png')]))
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toContain('fresh-1')
+      expect(store.flatOutputAssets.map((a) => a.id)).not.toContain('extra-1')
+    })
+
+    it('a stale loadMore that resolves before the refresh does not corrupt seenIds', async () => {
+      const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`a${i}`, `f${i}.png`)
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage(firstPage, { hasMore: true })
+      )
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockClear()
+
+      let resolveLoadMore!: (page: AssetResponse) => void
+      const loadMorePromise = new Promise<AssetResponse>((res) => {
+        resolveLoadMore = res
+      })
+      let resolveRefresh!: (page: AssetResponse) => void
+      const refreshPromise = new Promise<AssetResponse>((res) => {
+        resolveRefresh = res
+      })
+
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockReturnValueOnce(loadMorePromise)
+        .mockReturnValueOnce(refreshPromise)
+
+      const loadMoreResult = store.loadMoreFlatOutputs()
+      const refreshResult = store.updateFlatOutputs()
+
+      // The stale loadMore settles first, before the refresh has replaced the
+      // list. Its page must be discarded rather than folded into seenIds.
+      resolveLoadMore(makePage([makeAsset('extra-1', 'extra.png')]))
+      resolveRefresh(
+        makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: true })
+      )
+      await Promise.all([loadMoreResult, refreshResult])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
+
+      // If the discarded loadMore had leaked 'extra-1' into seenIds, this
+      // legitimate next page would be filtered out and never shown.
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([makeAsset('extra-1', 'extra.png')])
+      )
+      await store.loadMoreFlatOutputs()
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual([
+        'fresh-1',
+        'extra-1'
+      ])
+    })
+
+    it('a second concurrent refresh coalesces into the first refresh promise', async () => {
+      let resolvePage!: (page: AssetResponse) => void
+      const pagePromise = new Promise<AssetResponse>((res) => {
+        resolvePage = res
+      })
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+        pagePromise
+      )
+
+      const store = useAssetsStore()
+      const r1 = store.updateFlatOutputs()
+      const r2 = store.updateFlatOutputs()
+
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        1
+      )
+
+      resolvePage(makePage([makeAsset('only-1', 'only.png')]))
+      await Promise.all([r1, r2])
+
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['only-1'])
+    })
+  })
 })
