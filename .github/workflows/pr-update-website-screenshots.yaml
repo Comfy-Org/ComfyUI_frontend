@@ -75,7 +75,7 @@ jobs:
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -177,7 +177,7 @@ jobs:
       group: website-pr-comment-${{ github.event.number || github.event.issue.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.number || github.event.issue.number }}
@@ -201,7 +201,7 @@ jobs:
       group: website-pr-comment-${{ needs.update-screenshots.outputs.pr-number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build screenshot-update section content
         id: content

@@ -78,13 +78,13 @@ jobs:
 
     steps:
       - name: Checkout ComfyUI_frontend
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: frontend
 
       - name: Checkout ComfyUI (sparse)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Comfy-Org/ComfyUI
           sparse-checkout: |
@@ -217,7 +217,7 @@ jobs:
           exit 1
 
       - name: Checkout code at target version
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: v${{ needs.resolve-version.outputs.target_version }}
 
@@ -310,7 +310,7 @@ jobs:
 
     steps:
       - name: Checkout ComfyUI fork
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
           token: ${{ secrets.PR_GH_TOKEN }}

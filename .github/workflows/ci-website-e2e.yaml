@@ -20,7 +20,7 @@ jobs:
       app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -41,7 +41,7 @@ jobs:
       # Evaluated at job level (not from a step) — static expression.
       is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pnpm
         run: corepack enable && corepack prepare
@@ -189,7 +189,7 @@ jobs:
       group: website-pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
@@ -214,7 +214,7 @@ jobs:
       group: website-pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build e2e section content
         id: content

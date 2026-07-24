@@ -21,7 +21,7 @@ jobs:
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -77,7 +77,7 @@ jobs:
         shardTotal: [16]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -135,7 +135,7 @@ jobs:
           [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
@@ -241,7 +241,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert playwright starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -268,7 +268,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download all playwright reports
         uses: actions/download-artifact@v7
