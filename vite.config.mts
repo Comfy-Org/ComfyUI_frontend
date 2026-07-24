@@ -27,6 +27,12 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 // vite dev server will listen on all addresses, including LAN and public addresses
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
+// Cloud custom-node e2e serving (`vite preview` of the built dist with /api
+// forwarded to a Cloud URL; preview inherits server.proxy): the two dev-only
+// /api bypasses below would blind that suite - `/api/extensions -> []` hides
+// every pack's frontend JS, and the cloud `/api/users -> {}` fakes
+// single-user mode and masks real auth.
+const CLOUD_E2E_SERVE = process.env.CLOUD_E2E_SERVE === '1'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
@@ -267,13 +273,17 @@ export default defineConfig({
 
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
-          if (req.url === '/api/extensions') {
+          if (!CLOUD_E2E_SERVE && req.url === '/api/extensions') {
             res.end(JSON.stringify([]))
             return false
           }
 
           // Bypass multi-user auth check from staging (cloud only)
-          if (DISTRIBUTION === 'cloud' && req.url === '/api/users') {
+          if (
+            !CLOUD_E2E_SERVE &&
+            DISTRIBUTION === 'cloud' &&
+            req.url === '/api/users'
+          ) {
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({})) // Return empty object to simulate single-user mode
             return false

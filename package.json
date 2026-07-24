@@ -48,6 +48,7 @@
     "oxlint": "oxlint src browser_tests --type-aware",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",
+    "preview:cloud-e2e": "cross-env CLOUD_E2E_SERVE=1 DISTRIBUTION=cloud vite preview --strictPort --config vite.config.mts",
     "storybook": "storybook dev -p 6006",
     "storybook:desktop": "pnpm --filter @comfyorg/desktop-ui run storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",

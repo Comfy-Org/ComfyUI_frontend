@@ -14,12 +14,17 @@ import {
   dismissTemplatesDialog,
   drainBackendToIdle
 } from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  referencedRunMedia,
+  uploadRunMedia
+} from '@e2e/fixtures/customNode/cloudMedia'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   isForeignExecutionNoise,
   unallowlistedErrors
 } from '@e2e/fixtures/customNode/consoleErrorLedger'
 import {
+  customNodesEnv,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -183,7 +188,10 @@ for (const entry of loadManifest()) {
       // any visible error surface; collect console + uncaught page errors
       // across the whole run, filtered through the shared pack ledger.
       const consoleErrors = collectConsoleErrors(comfyPage.page)
-      await comfyPage.workflow.loadGraphData(readWorkflow(workflowRelative))
+      const workflow = readWorkflow(workflowRelative)
+      if (customNodesEnv() === 'cloud')
+        await uploadRunMedia(comfyPage.page, referencedRunMedia(workflow))
+      await comfyPage.workflow.loadGraphData(workflow)
       // A drifted fixture that dropped an expected node would silently
       // shrink the executed-set assertion (an empty id list PASSes on
       // execution_success alone): require every expected type to actually

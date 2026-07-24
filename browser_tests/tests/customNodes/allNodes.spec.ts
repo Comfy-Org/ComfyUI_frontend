@@ -15,6 +15,10 @@ import {
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
+import {
+  cloudAutoRunExclusions,
+  disabledHarnessNodes
+} from '@e2e/fixtures/customNode/cloudExclusions'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   CONSOLE_ERROR_ALLOWLIST,
@@ -29,9 +33,11 @@ import {
   diffGeometry,
   GEOMETRY_UNSTABLE_NODES,
   loadPackGeometry,
+  packGeometryRelativePath,
   savePackGeometry
 } from '@e2e/fixtures/customNode/geometry'
 import {
+  loadCloudCoreDisabledNodes,
   loadManifest,
   rendererPassesFor
 } from '@e2e/fixtures/customNode/manifest'
@@ -743,7 +749,7 @@ for (const entry of loadManifest()) {
           nodes: measuredGeometry
         })
         throw new Error(
-          `geometry baselines recorded for ${entry.pack} - commit browser_tests/fixtures/customNode/geometry/${entry.pack}.json and re-run without CN_GEOMETRY`
+          `geometry baselines recorded for ${entry.pack} - commit ${packGeometryRelativePath(entry.pack)} and re-run without CN_GEOMETRY`
         )
       } else if (!process.env.CI) {
         console.log(
@@ -1069,7 +1075,15 @@ for (const entry of loadManifest()) {
         'backend still has a running prompt after a 150s drain - a genuinely wedged (non-interruptible) execution; restart the test backend'
       ).toBe(0)
 
-      const excluded = AUTO_RUN_EXCLUDE[entry.pack] ?? {}
+      const disabledHarness = disabledHarnessNodes(loadCloudCoreDisabledNodes())
+      expect(
+        disabledHarness,
+        'Cloud label-disables auto-run harness node(s); synthesized chains cannot run without them'
+      ).toEqual([])
+      const excluded = {
+        ...(AUTO_RUN_EXCLUDE[entry.pack] ?? {}),
+        ...cloudAutoRunExclusions(entry)
+      }
       for (const [key, reason] of Object.entries(excluded)) {
         expect(
           keys,
