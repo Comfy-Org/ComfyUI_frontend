@@ -28,6 +28,7 @@ function getMinimapColors() {
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
+    blockedColor: '#F59E0B',
     isLightTheme
   }
 }
@@ -116,7 +117,13 @@ function renderNodes(
       w: number
       h: number
       hasErrors?: boolean
-      executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+      executionState?:
+        | 'pending'
+        | 'running'
+        | 'finished'
+        | 'error'
+        | 'blocked'
+        | null
     }>
   >()
 
@@ -161,6 +168,9 @@ function renderNodes(
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       } else if (node.executionState === 'finished') {
         ctx.strokeStyle = colors.successColor
+        ctx.strokeRect(node.x, node.y, node.w, node.h)
+      } else if (node.executionState === 'blocked') {
+        ctx.strokeStyle = colors.blockedColor
         ctx.strokeRect(node.x, node.y, node.w, node.h)
       } else if (
         node.executionState === 'error' &&

@@ -64,7 +64,7 @@ const zProgressWsMessage = z.object({
 const zNodeProgressState = z.object({
   value: z.number(),
   max: z.number(),
-  state: z.enum(['pending', 'running', 'finished', 'error']),
+  state: z.enum(['pending', 'running', 'finished', 'error', 'blocked']),
   node_id: zNodeId,
   prompt_id: zJobId,
   display_node_id: zNodeId.optional(),
@@ -94,7 +94,15 @@ const zExecutionWsMessageBase = z.object({
 })
 
 const zExecutionStartWsMessage = zExecutionWsMessageBase
-const zExecutionSuccessWsMessage = zExecutionWsMessageBase
+const zExecutionSuccessWsMessage = zExecutionWsMessageBase.extend({
+  completion_status: z.enum(['success', 'partial_success']).optional(),
+  has_errors: z.boolean().optional(),
+  execution_error_count: z.number().int().optional(),
+  failed_node_ids: z.array(zNodeId).optional(),
+  blocked_node_ids: z.array(zNodeId).optional(),
+  blocked_output_node_ids: z.array(zNodeId).optional(),
+  successful_output_node_ids: z.array(zNodeId).optional()
+})
 const zExecutionCachedWsMessage = zExecutionWsMessageBase.extend({
   nodes: z.array(zNodeId)
 })
@@ -181,6 +189,7 @@ export type ExecutionInterruptedWsMessage = z.infer<
   typeof zExecutionInterruptedWsMessage
 >
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
+export type ExecutionNodeErrorWsMessage = ExecutionErrorWsMessage
 export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
 export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>

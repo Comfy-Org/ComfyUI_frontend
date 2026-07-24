@@ -1480,6 +1480,26 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
 
+    it('keeps partial failure states visible until the next execution starts', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        completion_status: 'partial_success',
+        failed_node_ids: ['failed'],
+        blocked_node_ids: ['blocked']
+      })
+
+      expect(store.activeJobId).toBeNull()
+      expect(store.nodeProgressStates['failed'].state).toBe('error')
+      expect(store.nodeProgressStates['blocked'].state).toBe('blocked')
+
+      fire('execution_start', { prompt_id: 'job-2', timestamp: 2 })
+
+      expect(store.nodeProgressStates).toEqual({})
+    })
+
     it('does not track success for jobs this client did not queue', () => {
       fire('execution_success', { prompt_id: 'foreign-job', timestamp: 0 })
 
@@ -1632,6 +1652,28 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('execution_error', () => {
+    it('collects execution_node_error without terminating the job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+      const detail = {
+        prompt_id: 'job-1',
+        timestamp: 1,
+        node_id: 'n1',
+        node_type: 'SeeDanceVideo',
+        executed: [],
+        exception_type: 'RuntimeError',
+        exception_message: 'Content filtered',
+        traceback: [],
+        current_inputs: {},
+        current_outputs: {}
+      }
+
+      fire('execution_node_error', detail)
+
+      expect(store.executionErrorsByJob['job-1']).toEqual([detail])
+      expect(store.activeJobId).toBe('job-1')
+      expect(useExecutionErrorStore().lastExecutionError).toBeNull()
+    })
+
     it('routes a service-level error (no node_id) to the prompt error store', () => {
       const errorStore = useExecutionErrorStore()
 

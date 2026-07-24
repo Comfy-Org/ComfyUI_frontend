@@ -18,6 +18,7 @@ import { app } from '@/scripts/app'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockExecutionState: 'idle' as 'idle' | 'error' | 'blocked',
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
@@ -91,7 +92,7 @@ vi.mock(
       progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
-      executionState: computed(() => 'idle' as const)
+      executionState: computed(() => mockData.mockExecutionState)
     }))
   })
 )
@@ -178,6 +179,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockExecutionState = 'idle'
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -245,6 +247,34 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('should render failed execution state separately from validation errors', () => {
+    mockData.mockExecutionState = 'error'
+
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(getNodeRoot(container)).toHaveAttribute(
+      'data-execution-state',
+      'error'
+    )
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
+      'ring-destructive-background'
+    )
+  })
+
+  it('should render blocked execution state as a warning', () => {
+    mockData.mockExecutionState = 'blocked'
+
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(getNodeRoot(container)).toHaveAttribute(
+      'data-execution-state',
+      'blocked'
+    )
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
+      'ring-warning-background/70'
+    )
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

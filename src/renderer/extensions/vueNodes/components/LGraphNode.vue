@@ -9,6 +9,9 @@
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
+    :data-execution-state="
+      executionState === 'idle' ? undefined : executionState
+    "
     :class="
       cn(
         'group/node lg-node absolute isolate text-xs',
@@ -75,7 +78,9 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
-          hasAnyError && 'ring-4 ring-destructive-background',
+          (hasAnyError || executionState === 'error') &&
+            'ring-4 ring-destructive-background',
+          executionState === 'blocked' && 'ring-4 ring-warning-background/70',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
           isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
@@ -352,7 +357,8 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(
   () => getLocatorIdFromNodeData(nodeData) ?? undefined
 )
-const { executing, progress } = useNodeExecutionState(nodeLocatorId)
+const { executing, progress, executionState } =
+  useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()

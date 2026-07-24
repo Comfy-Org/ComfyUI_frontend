@@ -16,6 +16,9 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
+const mockExecutionState = vi.hoisted(() => ({
+  nodes: {} as Record<string, { state: string }>
+}))
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: mockUseColorPaletteStore
 }))
@@ -25,9 +28,9 @@ vi.mock('@/utils/colorUtil', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
-    nodeProgressStates: {}
-  })
+  useExecutionStore: vi.fn(() => ({
+    nodeProgressStates: mockExecutionState.nodes
+  }))
 }))
 
 describe('minimapCanvasRenderer', () => {
@@ -37,6 +40,7 @@ describe('minimapCanvasRenderer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockExecutionState.nodes = {}
 
     mockContext = {
       clearRect: vi.fn(),
@@ -218,6 +222,31 @@ describe('minimapCanvasRenderer', () => {
 
     // Should set stroke style for errors
     expect(mockContext.strokeStyle).toBe('#FF0000')
+    expect(mockContext.strokeRect).toHaveBeenCalled()
+  })
+
+  it('should render blocked execution state with amber outline', () => {
+    mockGraph._nodes = [mockGraph._nodes[0]]
+    mockExecutionState.nodes = {
+      '1': { state: 'blocked' }
+    }
+    const context: MinimapRenderContext = {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: true,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200
+    }
+
+    renderMinimapToCanvas(mockCanvas, mockGraph, context)
+
+    expect(mockContext.strokeStyle).toBe('#F59E0B')
     expect(mockContext.strokeRect).toHaveBeenCalled()
   })
 

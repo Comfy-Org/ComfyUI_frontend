@@ -26,6 +26,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import {
@@ -252,8 +253,18 @@ describe('ComfyApp', () => {
         node_errors: nodeErrors,
         error: ''
       })
+      api.serverFeatureFlags.value = { supports_node_failure_policy: true }
+      useQueueSettingsStore().continueIndependentBranches = true
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(api.queuePrompt).toHaveBeenCalledWith(
+        0,
+        expect.any(Object),
+        expect.objectContaining({
+          nodeFailurePolicy: 'continue_independent'
+        })
+      )
 
       const errorStore = useExecutionErrorStore()
       const executionStore = useExecutionStore()

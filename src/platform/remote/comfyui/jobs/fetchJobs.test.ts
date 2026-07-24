@@ -68,6 +68,31 @@ describe('fetchJobs', () => {
       expect(result[1].id).toBe('job2')
     })
 
+    it('preserves partial success metadata on completed jobs', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([
+              createMockJob('job1', 'completed', {
+                completion_status: 'partial_success',
+                has_errors: true,
+                execution_error_count: 2
+              })
+            ])
+          )
+      })
+
+      const [job] = await fetchHistory(mockFetch)
+
+      expect(job).toMatchObject({
+        status: 'completed',
+        completion_status: 'partial_success',
+        has_errors: true,
+        execution_error_count: 2
+      })
+    })
+
     it('assigns synthetic priorities', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,

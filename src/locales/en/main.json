@@ -1092,6 +1092,7 @@
     "runWorkflowFront": "Run workflow (Queue at front)",
     "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
+    "continueIndependentBranches": "Continue independent branches if a node fails",
     "stopRunInstant": "Stop Run (Instant)",
     "stopRunInstantTooltip": "Stop running",
     "execute": "Execute",
@@ -1367,6 +1368,8 @@
       "failedAfter": "Failed after",
       "errorMessage": "Error message",
       "report": "Report",
+      "completedWithErrors": "Completed with {count} node error | Completed with {count} node errors",
+      "nodeError": "{nodeType} (node {nodeId})",
       "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
       "eta": {
         "seconds": "~{count} second | ~{count} seconds",

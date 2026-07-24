@@ -8,6 +8,7 @@ import type {
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useCommandStore } from '@/stores/commandStore'
+import { api } from '@/scripts/api'
 import {
   TaskItemImpl,
   useQueueSettingsStore,
@@ -53,6 +54,8 @@ const i18n = createI18n({
     en: {
       menu: {
         run: 'Run',
+        continueIndependentBranches:
+          'Continue independent branches if a node fails',
         disabledTooltip: 'Disabled tooltip',
         onChange: 'On Change',
         onChangeTooltip: 'On change tooltip',
@@ -85,7 +88,9 @@ const stubs = {
   DropdownMenuTrigger: { template: '<div><slot /></div>' },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
   DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  DropdownMenuItem: { template: '<div><slot /></div>' },
+  DropdownMenuCheckboxItem: { template: '<div><slot /></div>' },
+  DropdownMenuItemIndicator: { template: '<span><slot /></span>' }
 }
 
 function renderQueueButton() {
@@ -106,6 +111,19 @@ function renderQueueButton() {
 }
 
 describe('ComfyQueueButton', () => {
+  it('only offers continuing independent branches when supported', async () => {
+    renderQueueButton()
+    expect(
+      screen.queryByTestId('continue-independent-branches')
+    ).not.toBeInTheDocument()
+
+    api.serverFeatureFlags.value = { supports_node_failure_policy: true }
+    await nextTick()
+
+    expect(
+      screen.getByTestId('continue-independent-branches')
+    ).toHaveTextContent('Continue independent branches if a node fails')
+  })
   it('renders the batch count control before the run button', () => {
     renderQueueButton()
     const controls = screen.getAllByTestId(/batch-count-edit|queue-button/)
