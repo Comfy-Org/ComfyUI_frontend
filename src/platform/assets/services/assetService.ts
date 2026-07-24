@@ -55,6 +55,7 @@ interface AssetExportOptions {
     | 'group_by_job_time'
     | 'preserve'
     | 'asset_id'
+    | 'flat'
   job_asset_name_filters?: Record<string, string[]>
   include_previews?: boolean
 }
