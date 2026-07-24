@@ -168,11 +168,10 @@ function scanNodeErrorTargets(
 function getActiveExecutionId(node: LGraphNode): string | null {
   if (!app.rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
-  // verify each node's own mode; entering a bypassed subgraph (via
-  // useGraphNodeManager replaying onNodeAdded for existing interior
-  // nodes) reaches this point without the ancestor check. A null
-  // execId means the node has no current graph (e.g. detached mid
-  // lifecycle) — also skip, since we cannot verify its scope.
+  // verify each node's own mode, so an active node added inside a
+  // bypassed subgraph reaches this point without the ancestor check.
+  // A null execId means the node has no current graph (e.g. detached
+  // mid lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId

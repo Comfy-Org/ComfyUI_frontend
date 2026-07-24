@@ -72,11 +72,6 @@
       v-for="nodeData in allNodes"
       :key="nodeData.id"
       :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -264,9 +259,9 @@ watch(
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeNodeManagerAndSyncs()
+    vueNodeLifecycle.disposeVueNodeLayout()
     await nextTick()
-    vueNodeLifecycle.initializeNodeManager()
+    vueNodeLifecycle.initializeVueNodeLayout()
   }
 }
 
@@ -583,7 +578,7 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.cleanup()
+  vueNodeLifecycle.disposeVueNodeLayout()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)

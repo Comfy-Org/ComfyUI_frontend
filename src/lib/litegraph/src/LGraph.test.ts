@@ -19,6 +19,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -544,6 +545,64 @@ describe('node:before-removed event', () => {
       'onRemoved(graph=set)',
       'onNodeRemoved(graph=null)'
     ])
+  })
+
+  it('fires node:before-removed for every node cleared by clear()', () => {
+    const graph = new LGraph()
+    graph.add(new LGraphNode('a'))
+    graph.add(new LGraphNode('b'))
+
+    const fired = vi.fn()
+    graph.events.addEventListener('node:before-removed', fired)
+
+    graph.clear()
+
+    expect(
+      fired,
+      'clear() must dispatch node:before-removed so subscribers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('layoutStore seeding', () => {
+  it('seeds a layout entry on add, using the node geometry', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.pos = [120, 340]
+    node.size = [260, 180]
+
+    graph.add(node)
+
+    expect(layoutStore.getNodeLayoutRef(node.id).value).toEqual(
+      expect.objectContaining({
+        position: { x: 120, y: 340 },
+        size: { width: 260, height: 180 }
+      })
+    )
+  })
+
+  it('tracks geometry set after add, as configure() does', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    node.pos = [40, 50]
+
+    expect(layoutStore.getNodeLayoutRef(node.id).value?.position).toEqual({
+      x: 40,
+      y: 50
+    })
+  })
+
+  it('drops the layout entry on remove', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    expect(layoutStore.getNodeLayoutRef(node.id).value).toBeTruthy()
+
+    graph.remove(node)
+
+    expect(layoutStore.getNodeLayoutRef(node.id).value).toBeNull()
   })
 })
 

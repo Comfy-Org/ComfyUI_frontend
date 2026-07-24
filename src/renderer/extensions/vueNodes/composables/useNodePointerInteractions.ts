@@ -7,9 +7,10 @@ import {
   isMiddlePointerInput
 } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { NodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
@@ -24,10 +25,13 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
-  const { nodeManager } = useVueNodeLifecycle()
+  const canvasStore = useCanvasStore()
+  const nodeDataStore = useNodeDataStore()
 
   function isPinnedNode(nodeId: NodeId): boolean {
-    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return false
+    return !!nodeDataStore.getNode(rootGraphId, nodeId)?.flags.pinned
   }
 
   const forwardMiddlePointerIfNeeded = (

@@ -64,17 +64,6 @@ vi.mock(
   }
 )
 
-vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
-  useVueNodeLifecycle: () => ({
-    nodeManager: ref({
-      getNode: vi.fn((id: string) => ({
-        id,
-        selected: false // Default to not selected
-      }))
-    })
-  })
-}))
-
 const mockData = vi.hoisted(() => {
   const fakeNodeLayout = {
     id: 'test-node-123',

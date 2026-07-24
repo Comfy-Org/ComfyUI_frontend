@@ -13,6 +13,9 @@ import {
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
+    getCurrentSource: vi.fn(),
+    getCurrentActor: vi.fn(),
+    applyOperation: vi.fn(),
     querySlotAtPoint: vi.fn(),
     queryRerouteAtPoint: vi.fn(),
     getNodeLayoutRef: vi.fn(() => ({ value: null })),

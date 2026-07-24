@@ -903,8 +903,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
   it('does not surface interior missing model when entering a bypassed subgraph', async () => {
     // Repro: root has a bypassed subgraph container, interior node is
-    // itself active. useGraphNodeManager replays `onNodeAdded` for each
-    // interior node on subgraph entry, which previously reached
+    // itself active. An interior add previously reached
     // scanSingleNodeErrors without an ancestor check and resurfaced the
     // error that the initial pipeline post-filter had correctly dropped.
     const subgraph = createTestSubgraph()
@@ -933,8 +932,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     installErrorClearingHooks(subgraph)
 
-    // Simulate useGraphNodeManager replaying onNodeAdded for existing
-    // interior nodes after Vue node manager init on subgraph entry.
+    // An add inside the bypassed subgraph's interior.
     subgraph.onNodeAdded?.(interiorNode)
     await new Promise((r) => setTimeout(r, 0))
 
