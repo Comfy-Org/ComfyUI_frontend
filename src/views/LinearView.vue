@@ -10,6 +10,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import EmailVerificationNudge from '@/components/topbar/EmailVerificationNudge.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -103,6 +104,7 @@ function dragDrop(e: DragEvent) {
       <div class="flex h-full items-center">
         <WorkflowTabs />
         <TopbarBadges />
+        <EmailVerificationNudge />
         <TopbarSubscribeButton />
       </div>
     </div>
