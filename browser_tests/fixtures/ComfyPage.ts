@@ -32,6 +32,7 @@ import {
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { customNodesEnv } from '@e2e/fixtures/customNode/manifest'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
@@ -45,6 +46,7 @@ import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
 import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import { seedSmokeAuth } from '@e2e/fixtures/helpers/smokeAuth'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
@@ -567,6 +569,13 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
+    }
+
+    // CUSTOM_NODES_ENV=cloud runs the custom-node suite against a real Cloud
+    // backend: seed a real smoke-user session (no route mocks) before the
+    // app boots so the Firebase SDK restores it.
+    if (customNodesEnv() === 'cloud') {
+      await seedSmokeAuth(page, comfyPage.url)
     }
 
     if (Object.keys(initialFeatureFlags).length > 0) {
