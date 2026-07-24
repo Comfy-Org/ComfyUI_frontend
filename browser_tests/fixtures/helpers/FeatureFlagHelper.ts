@@ -73,6 +73,35 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Force server feature flags and keep them applied across websocket
+   * reconnects. Merges the flags into `api.serverFeatureFlags` now, and
+   * re-merges on every subsequent `feature_flags` handshake message.
+   *
+   * The server replies to the client's handshake with a `feature_flags`
+   * message on every socket open (including reconnects), and the handler
+   * full-replaces `serverFeatureFlags` with that payload, so a plain
+   * `setServerFlags` merge is dropped by any later handshake. Re-applying on
+   * each `feature_flags` event survives that. `mockServerFeatures` does not
+   * help here: it intercepts `/api/features`, which never populates
+   * `serverFeatureFlags`.
+   */
+  async setServerFlagsPersistent(
+    flags: Record<string, unknown>
+  ): Promise<void> {
+    await this.page.evaluate((flagMap: Record<string, unknown>) => {
+      const api = window.app!.api
+      const apply = () => {
+        api.serverFeatureFlags.value = {
+          ...api.serverFeatureFlags.value,
+          ...flagMap
+        }
+      }
+      apply()
+      api.addEventListener('feature_flags', apply)
+    }, flags)
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

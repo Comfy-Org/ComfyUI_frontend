@@ -50,7 +50,7 @@ test.describe('Model library sidebar - asset mode', () => {
     await assetApi.mock()
     await comfyPage.modelLibrary.mockModelFolders(REGISTERED_FOLDERS)
     await comfyPage.setup()
-    await comfyPage.featureFlags.setServerFlags({
+    await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
     await comfyPage.menu.modelLibraryTab.open()
@@ -210,7 +210,7 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
     await assetApi.mockError(500)
     await comfyPage.modelLibrary.mockModelFolders(REGISTERED_FOLDERS)
     await comfyPage.setup()
-    await comfyPage.featureFlags.setServerFlags({
+    await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
     await comfyPage.menu.modelLibraryTab.open()
@@ -259,7 +259,7 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
     // feature_flags handshake would otherwise decide which mode this tests.
     // Bare-tag backends bucket by bare tags and emit no loader_path, so
     // names fall back to the filename.
-    await comfyPage.featureFlags.setServerFlags({
+    await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: false
     })
     await comfyPage.menu.modelLibraryTab.open()
