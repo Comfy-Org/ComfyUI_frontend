@@ -162,12 +162,85 @@ export function getAssetModelType(asset: AssetItem): string | null {
   return typeTag ?? null
 }
 
+/**
+ * Builds the namespaced subtype tag the backend stores in `model_type:` mode.
+ * The argument is a discovery folder_name (e.g. `checkpoints`,
+ * `ultralytics_bbox`); the backend keeps the bare directory-path twin in sync.
+ * An already-namespaced input is returned unchanged rather than silently
+ * double-prefixed.
+ */
+export function toModelTypeTag(folderName: string): string {
+  if (folderName.startsWith(MODEL_TYPE_TAG_PREFIX)) return folderName
+  return `${MODEL_TYPE_TAG_PREFIX}${folderName}`
+}
+
 /** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
 function getModelTypeTagValues(asset: AssetItem): string[] {
   return asset.tags
     .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
     .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
     .filter((tag) => tag.length > 0)
+}
+
+/**
+ * The asset's primary `model_type:` membership: the lexicographically-first of
+ * its stripped `model_type:` values, or `undefined` for an uncovered asset.
+ * Sorting makes the choice deterministic because the backend does not guarantee
+ * the order of an asset's `model_type:` tags. This is the single membership a
+ * re-type replaces and the value the edit dropdown / browser title reflect.
+ */
+function getPrimaryModelType(asset: AssetItem): string | undefined {
+  return getModelTypeTagValues(asset).toSorted()[0]
+}
+
+/**
+ * Resolves the folder_name shown as the asset's current model type in the edit
+ * dropdown. In `modelTypeMode` the primary `model_type:` value is authoritative
+ * (covered assets); an uncovered asset with no `model_type:` tag falls back to
+ * its bare subtype tag, mirroring the read-side grouping. Outside the mode this
+ * is the legacy first-non-`models` tag.
+ */
+export function getEditableModelType(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): string | null {
+  if (modelTypeMode) {
+    const primary = getPrimaryModelType(asset)
+    if (primary !== undefined) return primary
+  }
+  return getAssetModelType(asset)
+}
+
+/**
+ * Computes the tag set for re-typing a model asset to `newFolderName`. In
+ * `modelTypeMode` only the primary `model_type:` membership is replaced: a
+ * covered asset drops `model_type:<primary>` and its bare directory-path twin,
+ * leaving any sibling `model_type:` memberships of a multi-type asset intact;
+ * an uncovered asset drops its bare current type. The new
+ * `model_type:<folder_name>` is then added (deduped if it already exists as a
+ * sibling). Outside the mode it swaps the legacy bare subtype tag, preserving
+ * the pre-namespace behavior.
+ */
+export function buildModelTypeTagUpdate(
+  asset: AssetItem,
+  newFolderName: string,
+  modelTypeMode: boolean
+): string[] {
+  if (!modelTypeMode) {
+    const currentType = getAssetModelType(asset)
+    return asset.tags.filter((tag) => tag !== currentType).concat(newFolderName)
+  }
+
+  const primary = getPrimaryModelType(asset)
+  const currentBareType = getAssetModelType(asset)
+  const tagsToRemove =
+    primary !== undefined
+      ? new Set([toModelTypeTag(primary), primary])
+      : new Set(currentBareType ? [currentBareType] : [])
+
+  const newTag = toModelTypeTag(newFolderName)
+  const retained = asset.tags.filter((tag) => !tagsToRemove.has(tag))
+  return retained.includes(newTag) ? retained : retained.concat(newTag)
 }
 
 /** Legacy grouping: each non-`models` tag's top-level path segment. */
@@ -205,7 +278,7 @@ export function getAssetCategories(
 
 /**
  * Resolves the primary tag a browser surface titles itself after. In
- * `modelTypeMode` a covered asset uses its first `model_type:*` value — the
+ * `modelTypeMode` a covered asset uses its primary `model_type:*` value — the
  * key it groups under — while an uncovered asset keeps the legacy selection
  * (first non-`models` tag, verbatim, hierarchical paths intact). Outside the
  * mode this is exactly the legacy selection.
@@ -215,8 +288,8 @@ export function getPrimaryCategoryTag(
   modelTypeMode: boolean
 ): string | undefined {
   if (modelTypeMode) {
-    const [modelType] = getModelTypeTagValues(asset)
-    if (modelType) return modelType
+    const primary = getPrimaryModelType(asset)
+    if (primary !== undefined) return primary
     return asset.tags.find(
       (tag) => tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
     )
