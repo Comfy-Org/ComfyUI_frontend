@@ -93,7 +93,7 @@ describe('keybindingService - dialog gate', () => {
     expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
-  it('still executes a keybinding whose target lives inside the open dialog', async () => {
+  it('does NOT execute a global keybinding from inside an open dialog', async () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
 
@@ -107,9 +107,25 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w', inner)
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).toHaveBeenCalledWith(
-        'Workspace.ToggleSidebarTab.workflows'
-      )
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    } finally {
+      document.body.removeChild(dialog)
+    }
+  })
+
+  it('does NOT execute a global keybinding while a local modal is open', async () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    document.body.appendChild(dialog)
+
+    try {
+      const event = createKeyboardEvent('w')
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
     } finally {
       document.body.removeChild(dialog)
     }

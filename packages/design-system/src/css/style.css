@@ -1513,16 +1513,12 @@ audio.comfy-audio.empty-audio-widget {
   position: relative;
   transition: background-color 0.2s;
 }
-.maskEditor_toolPanelContainerSelected svg {
-  fill: var(--p-button-text-primary-color) !important;
-}
 .maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
   display: block;
 }
 .maskEditor_toolPanelContainer svg {
   width: 75%;
   aspect-ratio: 1/1;
-  fill: var(--p-button-text-secondary-color);
 }
 
 .maskEditor_toolPanelContainerDark:hover {
@@ -1539,7 +1535,7 @@ audio.comfy-audio.empty-audio-widget {
   width: 4px;
   position: absolute;
   left: 0;
-  background: var(--p-button-text-primary-color);
+  background: currentColor;
 }
 .maskEditor_sidePanelSeparator {
   width: 100%;
