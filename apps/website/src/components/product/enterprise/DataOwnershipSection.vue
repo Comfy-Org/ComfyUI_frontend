@@ -33,6 +33,8 @@ useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
       ref="topLeftRef"
       src="https://media.comfy.org/website/gallery/gallery.webp"
       alt=""
+      loading="lazy"
+      decoding="async"
       class="absolute top-4 -left-6 size-36 rounded-3xl object-cover lg:top-8 lg:left-[8%] lg:h-72 lg:w-64"
       aria-hidden="true"
     />
@@ -40,6 +42,8 @@ useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
       ref="midLeftRef"
       src="https://media.comfy.org/website/enterprise/retro-sakura-window.webp"
       alt=""
+      loading="lazy"
+      decoding="async"
       class="absolute top-[40%] -left-10 h-44 w-40 rounded-3xl object-cover lg:top-[38%] lg:-left-4 lg:h-56 lg:w-52"
       aria-hidden="true"
     />
@@ -79,6 +83,8 @@ useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
       ref="bottomRightRef"
       src="https://media.comfy.org/website/enterprise/glitter-metallic-face.webp"
       alt=""
+      loading="lazy"
+      decoding="async"
       class="absolute top-[62%] -right-4 hidden h-44 w-56 rounded-3xl object-cover lg:block"
       aria-hidden="true"
     />
@@ -88,14 +94,14 @@ useParallax([bottomLeftRef, bottomRightRef], { ...parallaxOpts, y: 400 })
       class="relative z-10 mx-auto flex max-w-3xl flex-col items-center py-16 text-center lg:py-24"
     >
       <h2
-        class="text-primary-comfy-canvas flex flex-col gap-6 text-5xl font-light lg:gap-10 lg:text-8xl"
+        class="flex flex-col gap-6 text-5xl font-light text-primary-comfy-canvas lg:gap-10 lg:text-8xl"
       >
         <span>{{ t('enterprise.ownership.line1', locale) }}</span>
         <span>{{ t('enterprise.ownership.line2', locale) }}</span>
         <span>{{ t('enterprise.ownership.line3', locale) }}</span>
       </h2>
       <p
-        class="text-primary-comfy-canvas mt-12 max-w-xl text-sm lg:mt-16 lg:text-base"
+        class="mt-12 max-w-xl text-sm text-primary-comfy-canvas lg:mt-16 lg:text-base"
       >
         {{ t('enterprise.ownership.subtitle', locale) }}
       </p>

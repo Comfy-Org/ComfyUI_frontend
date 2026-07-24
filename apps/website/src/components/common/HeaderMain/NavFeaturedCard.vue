@@ -17,6 +17,8 @@ defineProps<{ featured: NavFeatured }>()
         class="aspect-4/3 w-62 max-w-none rounded-xl"
         :src="featured.imageSrc"
         :alt="featured.imageAlt ?? ''"
+        loading="lazy"
+        decoding="async"
       />
       <p class="mt-4 font-extrabold uppercase">
         {{ featured.title }}
