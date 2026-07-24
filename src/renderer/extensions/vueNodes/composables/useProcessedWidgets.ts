@@ -14,6 +14,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import type { NodeError } from '@/schemas/apiSchema'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -39,13 +40,17 @@ import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import { hasErrorForSlot } from '@/utils/executionErrorUtil'
+import {
+  executionIdToNodeLocatorId,
+  getExecutionIdFromNodeData
+} from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -121,9 +126,7 @@ function createWidgetUpdateHandler(
 export function hasWidgetError(
   widget: SafeWidgetData,
   nodeExecId: NodeExecutionId,
-  nodeErrors:
-    | { errors: { extra_info?: { input_name?: string } }[] }
-    | undefined,
+  nodeErrors: Pick<NodeError, 'errors'> | undefined,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): boolean {
@@ -135,7 +138,7 @@ export function hasWidgetError(
     ? (widget.sourceWidgetName ?? widget.name)
     : widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === errorInputName) ||
+    (!!errors && hasErrorForSlot(errors, errorInputName)) ||
     missingModelStore.isWidgetMissingModel(nodeExecId, widget.name)
   )
 }
@@ -185,8 +188,18 @@ function getProcessedNodeExecutionId(
 
 function getWidgetNodeLocatorId(
   nodeData: VueNodeData,
-  bareWidgetId: NodeId | null
+  bareWidgetId: NodeId | null,
+  sourceExecutionId: NodeExecutionId | undefined,
+  rootGraph: LGraph | null
 ): NodeLocatorId | undefined {
+  if (sourceExecutionId && rootGraph) {
+    const sourceLocator = executionIdToNodeLocatorId(
+      rootGraph,
+      sourceExecutionId
+    )
+    if (sourceLocator) return sourceLocator
+  }
+
   if (!bareWidgetId) return undefined
 
   return (
@@ -330,7 +343,12 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = getWidgetNodeLocatorId(nodeData, bareWidgetId)
+    const nodeLocatorId = getWidgetNodeLocatorId(
+      nodeData,
+      bareWidgetId,
+      widget.sourceExecutionId,
+      rootGraph
+    )
 
     const simplified: SimplifiedWidget = {
       name: widgetState?.name ?? widget.name,

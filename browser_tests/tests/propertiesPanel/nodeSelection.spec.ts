@@ -36,6 +36,24 @@ test.describe('Properties panel - Node selection', () => {
     })
 
     test(
+      'should not display canvasOnly widgets',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.contextMenu
+          .openFor(comfyPage.vueNodes.getNodeByTitle('KSampler'))
+          .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
+
+        await panel.contentArea
+          .getByRole('button', { name: 'ADVANCED INPUTS' })
+          .click()
+        await expect(panel.contentArea.getByText('steps')).toBeVisible()
+        await expect(
+          panel.contentArea.getByText('control after generate')
+        ).toBeHidden()
+      }
+    )
+
+    test(
       'a linked widget is disabled',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {

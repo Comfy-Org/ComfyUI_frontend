@@ -205,21 +205,39 @@ describe('missingModelPipeline', () => {
     it('reloads node definitions before scanning the current graph', async () => {
       const order: string[] = []
       const graph = createGraph()
+      let resolveReload: () => void = () => {}
       const reloadNodeDefs = vi.fn(async () => {
-        order.push('reload')
+        order.push('reload:start')
+        await new Promise<void>((resolve) => {
+          resolveReload = resolve
+        })
+        order.push('reload:end')
       })
       mockHandles.scanAllModelCandidates.mockImplementation(() => {
         order.push('scan')
         return []
       })
 
-      await refreshMissingModelPipeline({
+      const refreshPromise = refreshMissingModelPipeline({
         graph,
         reloadNodeDefs,
         missingModelStore: mockHandles.missingModelStore
       })
 
-      expect(order).toEqual(['reload', 'scan'])
+      expect(order).toEqual(['reload:start'])
+      resolveReload()
+      await refreshPromise
+
+      expect(order).toEqual(['reload:start', 'reload:end', 'scan'])
+    })
+
+    it('scans the current graph when node definition reload is omitted', async () => {
+      await refreshMissingModelPipeline({
+        graph: createGraph(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+
+      expect(mockHandles.scanAllModelCandidates).toHaveBeenCalled()
     })
 
     it('reuses active workflow model metadata when refreshing the current graph', async () => {

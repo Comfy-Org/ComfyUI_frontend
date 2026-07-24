@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
+  BillingRail,
   BillingStatusResponse,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
@@ -19,19 +20,31 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 
 const {
   mockTeamWorkspacesEnabled,
-  mockBillingControlEnabled,
+  mockConsolidatedBillingEnabled,
   mockIsPersonal,
+  mockBillingRail,
   mockPlans,
+  mockFetchPlans,
+  mockLegacyFetchStatus,
+  mockLegacyFetchBalance,
+  mockLegacySubscribe,
   mockPurchaseCredits,
   mockUpdateActiveWorkspace,
+  mockSetWorkspaceBillingRail,
   mockBillingStatus
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
-  mockBillingControlEnabled: { value: false },
+  mockConsolidatedBillingEnabled: { value: false },
   mockIsPersonal: { value: true },
+  mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
+  mockFetchPlans: vi.fn().mockResolvedValue(undefined),
+  mockLegacyFetchStatus: vi.fn().mockResolvedValue(undefined),
+  mockLegacyFetchBalance: vi.fn().mockResolvedValue(undefined),
+  mockLegacySubscribe: vi.fn().mockResolvedValue(undefined),
   mockPurchaseCredits: vi.fn(),
   mockUpdateActiveWorkspace: vi.fn(),
+  mockSetWorkspaceBillingRail: vi.fn(),
   mockBillingStatus: {
     value: {
       is_active: true,
@@ -59,11 +72,13 @@ vi.mock('@/composables/useFeatureFlags', async () => {
       teamWorkspacesEnabledRef.value = value
     }
   })
-  const billingControlEnabledRef = ref(mockBillingControlEnabled.value)
-  Object.defineProperty(mockBillingControlEnabled, 'value', {
-    get: () => billingControlEnabledRef.value,
+  const consolidatedBillingEnabledRef = ref(
+    mockConsolidatedBillingEnabled.value
+  )
+  Object.defineProperty(mockConsolidatedBillingEnabled, 'value', {
+    get: () => consolidatedBillingEnabledRef.value,
     set: (value: boolean) => {
-      billingControlEnabledRef.value = value
+      consolidatedBillingEnabledRef.value = value
     }
   })
   return {
@@ -72,27 +87,41 @@ vi.mock('@/composables/useFeatureFlags', async () => {
         get teamWorkspacesEnabled() {
           return mockTeamWorkspacesEnabled.value
         },
-        get billingControlEnabled() {
-          return mockBillingControlEnabled.value
+        get consolidatedBillingEnabled() {
+          return mockConsolidatedBillingEnabled.value
         }
       }
     })
   }
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsPersonal.value
-    },
-    get activeWorkspace() {
-      return mockIsPersonal.value
-        ? { id: 'personal-123', type: 'personal' }
-        : { id: 'team-456', type: 'team' }
-    },
-    updateActiveWorkspace: mockUpdateActiveWorkspace
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
+  const { ref } = await import('vue')
+  const billingRailRef = ref(mockBillingRail.value)
+  Object.defineProperty(mockBillingRail, 'value', {
+    get: () => billingRailRef.value,
+    set: (value: BillingRail | undefined) => {
+      billingRailRef.value = value
+    }
   })
-}))
+  return {
+    useTeamWorkspaceStore: () => ({
+      get isInPersonalWorkspace() {
+        return mockIsPersonal.value
+      },
+      get activeWorkspace() {
+        return mockIsPersonal.value
+          ? { id: 'personal-123', type: 'personal' }
+          : { id: 'team-456', type: 'team' }
+      },
+      get activeWorkspaceBillingRail() {
+        return mockBillingRail.value
+      },
+      updateActiveWorkspace: mockUpdateActiveWorkspace,
+      setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+    })
+  }
+})
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -103,9 +132,9 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
       value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
     },
     isCancelled: { value: false },
-    fetchStatus: vi.fn().mockResolvedValue(undefined),
+    fetchStatus: mockLegacyFetchStatus,
     manageSubscription: vi.fn().mockResolvedValue(undefined),
-    subscribe: vi.fn().mockResolvedValue(undefined),
+    subscribe: mockLegacySubscribe,
     showSubscriptionDialog: vi.fn()
   })
 }))
@@ -129,7 +158,7 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     balance: { amount_micros: 5000000 },
-    fetchBalance: vi.fn().mockResolvedValue({ amount_micros: 5000000 })
+    fetchBalance: mockLegacyFetchBalance
   })
 }))
 
@@ -141,7 +170,7 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
     currentPlanSlug: { value: null },
     isLoading: { value: false },
     error: { value: null },
-    fetchPlans: vi.fn().mockResolvedValue(undefined),
+    fetchPlans: mockFetchPlans,
     getPlanBySlug: vi.fn().mockReturnValue(null)
   })
 }))
@@ -163,8 +192,14 @@ describe('useBillingContext', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockTeamWorkspacesEnabled.value = false
-    mockBillingControlEnabled.value = false
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = true
+    mockBillingRail.value = undefined
+    mockSetWorkspaceBillingRail.mockImplementation(
+      (_workspaceId: string, billingRail: BillingRail) => {
+        mockBillingRail.value = billingRail
+      }
+    )
     mockPlans.value = []
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
@@ -175,27 +210,27 @@ describe('useBillingContext', () => {
     expect(type.value).toBe('legacy')
   })
 
-  it('keeps personal on legacy when billing control is disabled', () => {
+  it('keeps personal on legacy when consolidated billing is disabled', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockBillingControlEnabled.value = false
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('legacy')
   })
 
-  it('selects workspace type for personal when billing control is enabled', () => {
+  it('selects workspace type for personal when consolidated billing is enabled', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockBillingControlEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
   })
 
-  it('selects workspace type for team regardless of billing control', () => {
+  it('selects workspace type for team regardless of consolidated billing', () => {
     mockTeamWorkspacesEnabled.value = true
-    mockBillingControlEnabled.value = false
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = false
 
     const { type } = useBillingContext()
@@ -261,6 +296,100 @@ describe('useBillingContext', () => {
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
   })
 
+  it('uses workspace checkout while keeping legacy topups on legacy Stripe', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
+    mockBillingRail.value = 'legacy_stripe'
+    mockPlans.value = [
+      {
+        slug: 'creator-annual',
+        tier: 'CREATOR',
+        duration: 'ANNUAL',
+        price_cents: 33600,
+        credits_cents: 42086,
+        max_seats: 1,
+        availability: { available: true },
+        seat_summary: {
+          seat_count: 1,
+          total_cost_cents: 33600,
+          total_credits_cents: 42086
+        }
+      }
+    ]
+
+    const context = useBillingContext()
+    vi.clearAllMocks()
+
+    expect(context.type.value).toBe('legacy')
+    expect(context.plans.value).toEqual(mockPlans.value)
+
+    await context.fetchPlans()
+    await context.fetchStatus()
+
+    expect(mockFetchPlans).toHaveBeenCalledOnce()
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+
+    await context.previewSubscribe('creator-annual')
+    await context.subscribe('creator-annual')
+    await context.topup(500)
+
+    expect(workspaceApi.previewSubscribe).toHaveBeenCalledWith(
+      'creator-annual',
+      undefined
+    )
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+      'creator-annual',
+      undefined
+    )
+    expect(mockLegacySubscribe).not.toHaveBeenCalled()
+    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+  })
+
+  it('switches billing adapters before refreshing a migrated balance', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
+    mockBillingRail.value = 'legacy_stripe'
+    mockBillingStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      billing_rail: 'stripe'
+    }
+
+    const context = useBillingContext()
+    vi.clearAllMocks()
+
+    await context.reconcileSubscriptionSuccess()
+
+    expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+      'personal-123',
+      'stripe'
+    )
+    expect(context.type.value).toBe('workspace')
+    expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    expect(workspaceApi.getBillingBalance).toHaveBeenCalled()
+    expect(mockLegacyFetchStatus).not.toHaveBeenCalled()
+    expect(mockLegacyFetchBalance).not.toHaveBeenCalled()
+  })
+
+  it('does not refresh a balance through a stale rail after discovery fails', async () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
+    mockBillingRail.value = 'legacy_stripe'
+
+    const context = useBillingContext()
+    vi.clearAllMocks()
+    vi.mocked(workspaceApi.getBillingStatus).mockRejectedValueOnce(
+      new Error('status unavailable')
+    )
+
+    await expect(context.reconcileSubscriptionSuccess()).rejects.toThrow(
+      'status unavailable'
+    )
+
+    expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    expect(mockLegacyFetchBalance).not.toHaveBeenCalled()
+  })
+
   it('rejects topup amounts that are not positive whole-dollar cents', async () => {
     const { topup } = useBillingContext()
     await expect(topup(550)).rejects.toThrow()
@@ -296,7 +425,7 @@ describe('useBillingContext', () => {
     expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
 
     // Authenticated remote config resolves the flag on for the same workspace
-    mockBillingControlEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
     mockTeamWorkspacesEnabled.value = true
 
     await vi.waitFor(() => {
@@ -305,16 +434,16 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('moves a personal workspace to workspace billing when billing control flips on', async () => {
+  it('moves a personal workspace to workspace billing when consolidated billing flips on', async () => {
     mockTeamWorkspacesEnabled.value = true
-    mockBillingControlEnabled.value = false
+    mockConsolidatedBillingEnabled.value = false
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     await nextTick()
     expect(type.value).toBe('legacy')
 
-    mockBillingControlEnabled.value = true
+    mockConsolidatedBillingEnabled.value = true
 
     await vi.waitFor(() => {
       expect(type.value).toBe('workspace')
@@ -323,9 +452,9 @@ describe('useBillingContext', () => {
   })
 
   describe('subscription mirror to workspace store', () => {
-    it('mirrors subscription for personal workspaces on the billing control flow', async () => {
+    it('mirrors subscription for personal workspaces on the consolidated billing flow', async () => {
       mockTeamWorkspacesEnabled.value = true
-      mockBillingControlEnabled.value = true
+      mockConsolidatedBillingEnabled.value = true
       mockIsPersonal.value = true
 
       const { initialize } = useBillingContext()
@@ -577,6 +706,24 @@ describe('useBillingContext', () => {
           credits_monthly: 700,
           stop_usd: 332
         }
+      }
+
+      const { initialize, isTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isTeamPlan.value).toBe(true)
+    })
+
+    it('is true for a per-credit Team plan in a personal workspace before its credit stop is populated', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockConsolidatedBillingEnabled.value = true
+      mockIsPersonal.value = true
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
       }
 
       const { initialize, isTeamPlan } = useBillingContext()

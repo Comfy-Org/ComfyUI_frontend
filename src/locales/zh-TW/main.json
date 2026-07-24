@@ -3,6 +3,9 @@
     "dockToTop": "停靠到頂部",
     "feedback": "意見回饋",
     "feedbackTooltip": "意見回饋",
+    "freeTierPartner": "合作夥伴節點需付費方案",
+    "freeTierRuns": "剩餘 {available} / {MAX_AVAILABLE} 次運行",
+    "freeTierRunsExhausted": "已無剩餘運行次數",
     "share": "分享",
     "shareTooltip": "分享工作流程"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "符合免費方案資格",
       "freeTierDescription": "使用 Google 註冊，每月可獲得 {credits} 免費點數。無需信用卡。",
       "freeTierDescriptionGeneric": "使用 Google 註冊，每月可獲得免費點數。無需信用卡。",
+      "googleSsoInAppBrowserNotice": "如果您是從應用程式內瀏覽器（如 Instagram、LinkedIn）開啟此頁面，Google 登入可能無法使用。請改用 GitHub 或電子郵件登入，或在裝置的預設瀏覽器中開啟此頁面。",
       "insecureContextWarning": "此連線不安全（HTTP）。如果您繼續登入，您的憑證可能會被攻擊者攔截。",
       "loginButton": "登入",
       "loginWithGithub": "使用 Github 登入",
@@ -785,6 +789,11 @@
       "gpuUsage": "GPU 使用量"
     },
     "faqs": "常見問題",
+    "insufficient": {
+      "memberCta": "知道了",
+      "memberDescription": "您的團隊已用完所有點數。工作區管理員需新增點數才能繼續執行工作流程。",
+      "memberTitle": "此工作區已無點數"
+    },
     "invoiceHistory": "發票紀錄",
     "lastUpdated": "最後更新",
     "loadEventsError": "載入活動失敗。請再試一次。",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "佇列中沒有 {filter} 匯出",
     "preparingExport": "正在準備匯出...",
     "retryDownload": "重試下載"
+  },
+  "feedback": {
+    "title": "分享回饋"
   },
   "g": {
     "1x": "1倍速",
@@ -2783,7 +2795,6 @@
     "accept": "好的，我願意協助！",
     "description": "您已經使用過這個功能。能否花一點時間分享您的回饋？",
     "dontAskAgain": "不要再詢問",
-    "loadError": "載入問卷失敗。請稍後再試。",
     "notNow": "暫時不要",
     "title": "協助我們改進"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "雙子星",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "調整",
     "advanced": "進階",
+    "anima": "anima",
     "animate": "動畫",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
@@ -2849,6 +2862,7 @@
     "create": "建立",
     "custom": "自訂",
     "dancer": "舞者",
+    "dataset": "資料集",
     "debug": "除錯",
     "detection": "偵測",
     "experimental": "實驗性",
@@ -2870,6 +2884,7 @@
     "image": "影像",
     "infinite talk": "無限對話",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "潛空間",
     "loaders": "載入器",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型專用",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "多GPU",
     "noise": "雜訊",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "原生應用程式",
       "appTypeWeb": "網頁應用程式",
       "deny": "取消",
+      "detailsHeader": "詳細資訊",
       "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
       "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
       "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "無法繼續 OAuth 登入",
       "subtitle": "登入 {resource} 以繼續",
       "title": "{client} 想要存取",
-      "workspaceHelp": "權限僅適用於此工作區。",
       "workspaceLabel": "工作區"
     },
     "scopes": {
@@ -3998,6 +4014,7 @@
       "waitingForSubscription": "請在新分頁中完成訂閱。完成後我們會自動偵測！"
     },
     "resubscribe": "重新訂閱",
+    "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
     "saveYearly": "節省 20%",
@@ -4123,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "篩選條件：",
     "allTemplates": "所有範本",
     "categories": "分類",
     "category": {
@@ -4148,9 +4164,12 @@
       "Video": "影片",
       "Video API": "影片 API"
     },
+    "clearAllFilters": "清除所有篩選器",
     "error": {
       "templateNotFound": "找不到範本 \"{templateName}\""
     },
+    "filtersApplied": "已套用 {count} 個篩選器",
+    "filtersButton": "篩選器",
     "licenseFilter": "授權",
     "loading": "正在載入範本...",
     "loadingMore": "載入更多範本...",
@@ -4158,7 +4177,6 @@
     "modelsSelected": "{count} 個模型",
     "noResults": "找不到範本",
     "noResultsHint": "請嘗試調整您的搜尋或篩選條件",
-    "resetFilters": "清除篩選",
     "resultsCount": "顯示 {count} 個範本（共 {total} 個）",
     "runsOnFilter": "運行於",
     "runsOnSelected": "{count} 次運行於",
@@ -4249,6 +4267,9 @@
     "updateRequested": "已請求更新",
     "useApiKeyTip": "提示：無法正常登入？請使用 Comfy API 金鑰選項。",
     "userNotAuthenticated": "使用者未驗證"
+  },
+  "typeform": {
+    "loadError": "表單載入失敗。請稍後再試。"
   },
   "userSelect": {
     "enterUsername": "輸入用戶名稱",
@@ -4385,6 +4406,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "在此之前成員可保有完整存取權。重新啟用可保留共享點數與席次。",
+        "reactivate": "重新啟用方案",
+        "title": "您的團隊方案將於 {date} 結束"
+      },
+      "outOfCredits": {
+        "addCredits": "新增點數",
+        "body": "您的團隊已用完所有點數。請新增點數以繼續產生，或等到 {date} 點數自動補充。",
+        "bodyNoDate": "您的團隊已用完所有點數。請新增點數以繼續產生。",
+        "dismiss": "關閉",
+        "memberBody": "您的團隊已用完所有點數。請聯絡工作區管理員新增點數以繼續產生。",
+        "title": "點數已用完"
+      },
+      "paused": {
+        "body": "此工作區的訂閱已暫停。請更新付款方式以恢復使用。",
+        "memberBody": "此工作區的訂閱已暫停。請聯絡工作區管理員更新付款方式。",
+        "title": "訂閱已暫停"
+      },
+      "updatePayment": "更新付款方式",
+      "warning": {
+        "body": "您的上次付款未成功。若未更新付款方式，訂閱將於 {date} 暫停。",
+        "bodyNoDate": "您的上次付款未成功。請更新付款方式以避免暫停。",
+        "title": "付款失敗"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "降級為成員",
       "demoteMessage": "他們將失去管理員權限。",

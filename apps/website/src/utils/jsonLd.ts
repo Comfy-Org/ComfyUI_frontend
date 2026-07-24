@@ -32,11 +32,9 @@ const sameAs = [
   externalLinks.instagram,
   externalLinks.reddit,
   externalLinks.linkedin,
-  // Wikidata entity for the organization, so the Knowledge Graph can resolve it.
   externalLinks.wikidataComfyOrg
 ]
 
-// Authoritative encyclopedic and review-platform references for the ComfyUI software entity.
 const comfyUiSameAs = [
   externalLinks.wikidataComfyUi,
   externalLinks.wikipediaComfyUi,
@@ -143,6 +141,33 @@ export function itemListNode(
       url: item.url,
       ...(item.name ? { name: item.name } : {})
     }))
+  }
+}
+
+interface ArticleInput {
+  siteUrl: string
+  pageUrl: string
+  title: string
+  description?: string
+  imageUrl?: string
+  locale: Locale
+}
+
+export function articleNode(input: ArticleInput): JsonLdNode {
+  const webPageRef = { '@id': jsonLdId(input.pageUrl, 'webpage') }
+  const orgRef = { '@id': organizationId(input.siteUrl) }
+  return {
+    '@type': 'Article',
+    '@id': jsonLdId(input.pageUrl, 'article'),
+    headline: input.title,
+    name: input.title,
+    description: input.description,
+    image: input.imageUrl,
+    inLanguage: input.locale,
+    isPartOf: webPageRef,
+    mainEntityOfPage: webPageRef,
+    author: orgRef,
+    publisher: orgRef
   }
 }
 
@@ -327,6 +352,36 @@ export function productNode(input: ProductInput): JsonLdNode {
         unitText: 'MONTH'
       }
     }))
+  }
+}
+
+export interface VideoObjectInput {
+  siteUrl: string
+  /** Fragment @id, typically jsonLdId(pageUrl, 'video'). */
+  id: string
+  pageUrl: string
+  name: string
+  description: string
+  thumbnailUrl: string
+  contentUrl: string
+  uploadDate: string
+  locale: Locale
+  embedUrl?: string
+}
+
+export function videoObjectNode(input: VideoObjectInput): JsonLdNode {
+  return {
+    '@type': 'VideoObject',
+    '@id': input.id,
+    name: input.name,
+    description: input.description,
+    thumbnailUrl: input.thumbnailUrl,
+    contentUrl: input.contentUrl,
+    embedUrl: input.embedUrl,
+    uploadDate: input.uploadDate,
+    inLanguage: input.locale,
+    publisher: { '@id': organizationId(input.siteUrl) },
+    isPartOf: { '@id': jsonLdId(input.pageUrl, 'webpage') }
   }
 }
 
