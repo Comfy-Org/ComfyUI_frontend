@@ -1,4 +1,8 @@
-import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
+import type { Route } from '@playwright/test'
+
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   jobOutputInsertionAssets,
   jobOutputInsertionJobs
@@ -8,12 +12,25 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 
-export const jobOutputInsertionTest = createCloudAssetsFixture(
-  jobOutputInsertionAssets
-).extend({
+const ASSETS_ROUTE_PATTERN = /\/api\/assets(?:\?.*)?$/
+
+export const jobOutputInsertionTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     const jobsApi = new JobsRouteMocker(page)
 
+    async function assetsRouteHandler(route: Route) {
+      const assets = assetRequestIncludesTag(route.request().url(), 'output')
+        ? jobOutputInsertionAssets
+        : []
+      const response: ListAssetsResponse = {
+        assets,
+        total: assets.length,
+        has_more: false
+      }
+      await route.fulfill({ json: response })
+    }
+
+    await page.route(ASSETS_ROUTE_PATTERN, assetsRouteHandler)
     await mockCloudBoot(page, {
       features: {},
       settings: {
@@ -34,6 +51,7 @@ export const jobOutputInsertionTest = createCloudAssetsFixture(
     try {
       await use(page)
     } finally {
+      await page.unroute(ASSETS_ROUTE_PATTERN, assetsRouteHandler)
       await unrouteObjectInfo()
     }
   }
