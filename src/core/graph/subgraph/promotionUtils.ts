@@ -1,11 +1,12 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -100,33 +101,28 @@ export function createPromotedHostWidgetIdLookup(
 
 function resolvePromotionSource(
   subgraphNode: SubgraphNode,
-  subgraphInput: { linkIds: readonly LinkId[] }
+  subgraphInput: SubgraphInput
 ): PromotedWidgetSource | undefined {
-  for (const linkId of subgraphInput.linkIds) {
-    const link = subgraphNode.subgraph.getLink(linkId)
-    if (!link) continue
+  return resolveSubgraphInputLink(
+    subgraphNode,
+    subgraphInput,
+    ({ inputNode, targetInput, getTargetWidget }) => {
+      if (inputNode.isSubgraphNode()) {
+        return {
+          sourceNodeId: inputNode.id,
+          sourceWidgetName: targetInput.name
+        }
+      }
 
-    const { inputNode } = link.resolve(subgraphNode.subgraph)
-    if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+      const targetWidget = getTargetWidget()
+      if (!targetWidget) return undefined
 
-    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
-    if (!targetInput) continue
-
-    if (inputNode.isSubgraphNode()) {
       return {
         sourceNodeId: inputNode.id,
-        sourceWidgetName: targetInput.name
+        sourceWidgetName: targetWidget.name
       }
     }
-
-    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-    if (!targetWidget) continue
-
-    return {
-      sourceNodeId: inputNode.id,
-      sourceWidgetName: targetWidget.name
-    }
-  }
+  )
 }
 
 export function reorderSubgraphInputsByName(
@@ -199,22 +195,17 @@ function isSamePromotedInput(
   const linkedInput = input?._subgraphSlot
   if (!input || !linkedInput) return false
 
-  for (const linkId of linkedInput.linkIds) {
-    const link = subgraphNode.subgraph.getLink(linkId)
-    if (!link) continue
+  const matchesHostWidgetId =
+    !!input.widgetId && input.widgetId === orderedWidget.widgetId
 
-    const { inputNode, input: targetInput } = link.resolve(
-      subgraphNode.subgraph
-    )
-    if (!inputNode || !targetInput) continue
-
-    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-    if (targetWidget === orderedWidget) return true
-
-    if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
-  }
-
-  return false
+  return (
+    resolveSubgraphInputLink(
+      subgraphNode,
+      linkedInput,
+      ({ getTargetWidget }) =>
+        matchesHostWidgetId || getTargetWidget() === orderedWidget || undefined
+    ) ?? false
+  )
 }
 
 function isPreviewExposed(
