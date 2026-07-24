@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
@@ -33,6 +33,27 @@ const done = (id: string): AgentChatEvent =>
 
 const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
+
+const historyRow = (
+  seq: number,
+  role: 'user' | 'assistant',
+  turnId: string,
+  text: string,
+  id: string = `row-${seq}`
+): AgentMessages[number] => ({
+  id,
+  thread_id: 'th',
+  seq,
+  role,
+  status: 'complete',
+  turn_id: turnId,
+  content: { text }
+})
+
+const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
+  store.messages.flatMap((m) =>
+    m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
+  )
 
 describe('useAgentConversationStore', () => {
   beforeEach(() => {
@@ -240,6 +261,46 @@ describe('useAgentConversationStore', () => {
 
     expect(store.entries.map((e) => e.role)).toEqual(['user', 'assistant'])
     expect(store.messages.map((m) => m.id)).toEqual([T1])
+    expect(store.isStreaming).toBe(true)
+  })
+
+  it('keeps a settled background reply when an earlier history turn shares its prompt text', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T2)
+    store.recordUser(T2, 'go')
+    store.ingest(delta('t2', 'the awaited reply'))
+    store.stashActiveTurn()
+    store.ingest(done('t2'))
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go'),
+      historyRow(2, 'assistant', 'turn-a', 'older reply'),
+      historyRow(3, 'user', 'turn-b', 'different'),
+      historyRow(4, 'assistant', 'turn-b', 'other reply')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toContain('the awaited reply')
+  })
+
+  it('keeps an earlier completed turn when a returning live turn repeats its prompt text', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T2)
+    store.recordUser(T2, 'go')
+    store.ingest(delta('t2', 'second reply'))
+    store.stashActiveTurn()
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'go'),
+      historyRow(2, 'assistant', 'turn-a', 'first reply')
+    ])
+    store.resumeBackgroundTurn()
+
+    const texts = partTexts(store)
+    expect(texts).toContain('first reply')
+    expect(texts).toContain('second reply')
     expect(store.isStreaming).toBe(true)
   })
 })
