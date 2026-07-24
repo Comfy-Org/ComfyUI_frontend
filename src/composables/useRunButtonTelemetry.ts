@@ -6,16 +6,18 @@ import type {
 } from '@/platform/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { app } from '@/scripts/app'
 
 type RunButtonTelemetryOptions = {
   subscribe_to_run?: boolean
   trigger_source?: ExecutionTriggerSource
+  execution_scope?: RunButtonProperties['execution_scope']
 }
 
 export function getRunButtonTelemetryProperties(
   options?: RunButtonTelemetryOptions
 ): RunButtonProperties {
-  const executionContext = getExecutionContext()
+  const executionContext = getExecutionContext(app.rootGraph)
   const { mode, isAppMode } = useAppMode()
 
   return {
@@ -23,6 +25,7 @@ export function getRunButtonTelemetryProperties(
     workflow_type: executionContext.is_template ? 'template' : 'custom',
     workflow_name: executionContext.workflow_name ?? 'untitled',
     custom_node_count: executionContext.custom_node_count,
+    api_node_count: executionContext.api_node_count,
     total_node_count: executionContext.total_node_count,
     subgraph_count: executionContext.subgraph_count,
     has_api_nodes: executionContext.has_api_nodes,
@@ -30,6 +33,7 @@ export function getRunButtonTelemetryProperties(
     has_toolkit_nodes: executionContext.has_toolkit_nodes,
     toolkit_node_names: executionContext.toolkit_node_names,
     trigger_source: options?.trigger_source,
+    execution_scope: options?.execution_scope ?? 'full',
     view_mode: mode.value,
     is_app_mode: isAppMode.value,
     dock_state: getActionbarDockState()

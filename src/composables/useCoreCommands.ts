@@ -552,7 +552,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        trackRunButton(metadata)
+        trackRunButton({ ...metadata, execution_scope: 'partial' })
         if (!isActiveSubscription.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return

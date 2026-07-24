@@ -440,6 +440,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       workflow_type: 'custom',
       workflow_name: 'untitled',
       custom_node_count: 0,
+      api_node_count: 0,
       total_node_count: 0,
       subgraph_count: 0,
       has_api_nodes: false,
@@ -447,6 +448,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       has_toolkit_nodes: false,
       toolkit_node_names: [],
       trigger_source: 'button',
+      execution_scope: 'full',
       view_mode: 'graph',
       is_app_mode: false,
       dock_state: 'floating'

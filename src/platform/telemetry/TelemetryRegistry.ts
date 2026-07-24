@@ -39,6 +39,7 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
+  WorkflowErrorMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
@@ -267,6 +268,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWorkflowExecution(): void {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
+  }
+
+  trackWorkflowError(metadata: WorkflowErrorMetadata): void {
+    this.dispatch((provider) => provider.trackWorkflowError?.(metadata))
   }
 
   trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {

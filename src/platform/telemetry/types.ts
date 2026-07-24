@@ -109,6 +109,7 @@ export interface RunButtonProperties {
   workflow_type: 'template' | 'custom'
   workflow_name: string
   custom_node_count: number
+  api_node_count: number
   total_node_count: number
   subgraph_count: number
   has_api_nodes: boolean
@@ -116,6 +117,7 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
+  execution_scope: WorkflowExecutionContext['execution_scope']
   view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
@@ -157,9 +159,38 @@ export interface ExecutionErrorMetadata {
   error?: string
 }
 
+export type WorkflowComplexityBucket = 'small' | 'medium' | 'large' | 'xlarge'
+
+export type WorkflowDependencyProfile =
+  | 'core_only'
+  | 'custom_nodes'
+  | 'partner_nodes'
+  | 'mixed'
+
+export interface WorkflowExecutionContext {
+  workflow_type: 'template' | 'custom'
+  view_mode: AppMode
+  execution_scope: 'full' | 'partial'
+  total_node_count: number
+  executable_node_count: number
+  custom_node_count: number
+  api_node_count: number
+  subgraph_count: number
+  complexity_bucket: WorkflowComplexityBucket
+  dependency_profile: WorkflowDependencyProfile
+}
+
+export interface WorkflowErrorMetadata {
+  error: unknown
+  operation: 'workflow_queue'
+  phase: 'submit'
+  workflowContext: WorkflowExecutionContext
+}
+
 export interface ExecutionOutcomeMetadata {
   startTime: number
   outcome: 'success' | 'failure'
+  workflowContext?: WorkflowExecutionContext
 }
 
 /**
@@ -638,6 +669,7 @@ export interface TelemetryProvider {
 
   // Workflow execution events
   trackWorkflowExecution?(): void
+  trackWorkflowError?(metadata: WorkflowErrorMetadata): void
   trackExecutionOutcome?(metadata: ExecutionOutcomeMetadata): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
@@ -782,6 +814,7 @@ export type TelemetryEventProperties =
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
+  | WorkflowErrorMetadata
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata

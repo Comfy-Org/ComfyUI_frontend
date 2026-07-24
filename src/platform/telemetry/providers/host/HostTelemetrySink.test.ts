@@ -29,6 +29,7 @@ describe('HostTelemetrySink', () => {
       workflow_type: 'custom',
       workflow_name: 'Host workflow',
       custom_node_count: 2,
+      api_node_count: 1,
       total_node_count: 4,
       subgraph_count: 1,
       has_api_nodes: true,
@@ -36,6 +37,7 @@ describe('HostTelemetrySink', () => {
       has_toolkit_nodes: false,
       toolkit_node_names: [],
       trigger_source: 'button',
+      execution_scope: 'full',
       view_mode: 'graph',
       is_app_mode: false,
       dock_state: 'docked'
@@ -48,6 +50,7 @@ describe('HostTelemetrySink', () => {
         workflow_type: 'custom',
         workflow_name: 'Host workflow',
         custom_node_count: 2,
+        api_node_count: 1,
         total_node_count: 4,
         subgraph_count: 1,
         has_api_nodes: true,
@@ -55,6 +58,7 @@ describe('HostTelemetrySink', () => {
         has_toolkit_nodes: false,
         toolkit_node_names: [],
         trigger_source: 'button',
+        execution_scope: 'full',
         view_mode: 'graph',
         is_app_mode: false,
         dock_state: 'docked'
