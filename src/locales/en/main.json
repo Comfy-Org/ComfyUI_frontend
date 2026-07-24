@@ -3181,6 +3181,7 @@
       "failedToFetchWorkspaces": "Failed to load workspaces"
     },
     "memberCredits": {
+      "edgeLead": "The workspace is low on credits.",
       "edgeExplainer": "This is what you can spend right now, not your monthly limit.",
       "monthlyLimit": "Monthly limit: {n}",
       "requestLimitIncrease": "Request limit increase",

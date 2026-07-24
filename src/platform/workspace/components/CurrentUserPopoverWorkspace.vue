@@ -58,7 +58,7 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
+    <div class="relative flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--coins] text-sm text-amber-400" />
       <Skeleton
         v-if="isLoadingBalance"
@@ -71,7 +71,7 @@
         :class="
           cn(
             'text-base font-semibold text-base-foreground',
-            (isEdgeState || isLimitReached) && 'text-amber-400'
+            isLimitReached && 'text-amber-400'
           )
         "
         >{{ displayedCredits }}</span
@@ -89,7 +89,7 @@
       </Button>
       <span
         v-else-if="isEdgeState"
-        class="relative mr-auto"
+        class="mr-auto"
         @mouseenter="isEdgePopoverOpen = true"
         @mouseleave="isEdgePopoverOpen = false"
         @focusin="isEdgePopoverOpen = true"
@@ -103,24 +103,25 @@
         >
           <i class="icon-[lucide--info]" />
         </Button>
-        <div
-          v-if="isEdgePopoverOpen"
-          class="absolute top-full left-0 z-50 mt-1 w-64 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
-          data-testid="member-credits-edge-popover"
-        >
-          <p class="m-0 text-sm text-base-foreground">
-            {{ $t('workspacePanel.memberCredits.edgeExplainer') }}
-          </p>
-          <p class="m-0 mt-1 text-sm text-muted-foreground">
-            {{
-              $t('workspacePanel.memberCredits.monthlyLimit', {
-                n: memberCap.limit.toLocaleString()
-              })
-            }}
-          </p>
-        </div>
       </span>
       <span v-else class="mr-auto" />
+      <div
+        v-if="isEdgeState && isEdgePopoverOpen && memberCap"
+        class="absolute top-1/2 right-full z-50 mr-8 w-72 -translate-y-1/2 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
+        data-testid="member-credits-edge-popover"
+      >
+        <p class="m-0 text-sm text-base-foreground">
+          {{ $t('workspacePanel.memberCredits.edgeLead') }}
+          {{ $t('workspacePanel.memberCredits.edgeExplainer') }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          {{
+            $t('workspacePanel.memberCredits.monthlyLimit', {
+              n: memberCap.limit.toLocaleString()
+            })
+          }}
+        </p>
+      </div>
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
@@ -400,7 +401,10 @@ const isTeamMemberViewer = computed(
 )
 const requestAction = computed(() => {
   if (!isTeamMemberViewer.value) return null
-  if (isWorkspaceOut.value || isEdgeState.value) return 'notifyOwner' as const
+  if (isWorkspaceOut.value) return 'notifyOwner' as const
+  // Edge state shows no button — the popover alone explains the substituted
+  // number, and a limit increase wouldn't help while the pool binds.
+  if (isEdgeState.value) return null
   if (memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
     return 'requestLimitIncrease' as const
   if (!memberCap.value && displayedNumber.value <= REQUEST_BUTTON_FLOOR)
