@@ -210,11 +210,14 @@ export function useMaskEditorSaver() {
   }
 
   async function uploadAllLayers(outputData: EditorOutputData): Promise<void> {
-    const actualMaskedRef = await uploadLayer(outputData.maskedImage)
+    const sourceRef = dataStore.inputData!.sourceRef
+
+    const actualMaskedRef = await uploadLayer(outputData.maskedImage, sourceRef)
     const actualPaintRef = await uploadLayer(outputData.paintLayer)
     const actualPaintedRef = await uploadLayer(outputData.paintedImage)
     const actualPaintedMaskedRef = await uploadLayer(
-      outputData.paintedMaskedImage
+      outputData.paintedMaskedImage,
+      actualPaintedRef
     )
 
     outputData.maskedImage.ref = actualMaskedRef
@@ -223,15 +226,24 @@ export function useMaskEditorSaver() {
     outputData.paintedMaskedImage.ref = actualPaintedMaskedRef
   }
 
-  async function uploadLayer(layer: EditorOutputLayer): Promise<ImageRef> {
+  async function uploadLayer(
+    layer: EditorOutputLayer,
+    originalRef?: ImageRef
+  ): Promise<ImageRef> {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
+    if (originalRef) {
+      formData.append('original_ref', JSON.stringify(originalRef))
+    }
 
-    const response = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body: formData
-    })
+    const response = await api.fetchApi(
+      originalRef ? '/upload/mask' : '/upload/image',
+      {
+        method: 'POST',
+        body: formData
+      }
+    )
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')

@@ -197,24 +197,50 @@ describe('useMaskEditorSaver', () => {
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
   })
 
-  it('omits subfolder from the upload FormData under the unified contract', async () => {
+  it('preserves RGB beneath transparent mask pixels during upload', async () => {
     const fetchApiMock = vi.mocked(api.fetchApi)
+    const uploadedNames = [
+      'clipspace-mask-123.png',
+      'clipspace-paint-123.png',
+      'clipspace-painted-123.png',
+      'clipspace-painted-masked-123.png'
+    ]
+    fetchApiMock.mockImplementation(
+      async () =>
+        ({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              name: uploadedNames.shift(),
+              subfolder: '',
+              type: 'input'
+            })
+        }) as Response
+    )
 
     const { save } = useMaskEditorSaver()
     await save()
 
-    // The unified contract uploads to /upload/image with only image + type;
-    // subfolder is intentionally omitted (the server assigns it). Assert it
-    // here so the next reader knows the omission is deliberate, not accidental.
-    expect(fetchApiMock).toHaveBeenCalledWith(
+    expect(fetchApiMock.mock.calls.map(([route]) => route)).toEqual([
+      '/upload/mask',
       '/upload/image',
-      expect.objectContaining({ method: 'POST' })
-    )
-    const [, init] = fetchApiMock.mock.calls[0]
-    const body = init?.body as FormData
-    expect(body).toBeInstanceOf(FormData)
-    expect(body.get('type')).toBe('input')
-    expect(body.get('subfolder')).toBeNull()
+      '/upload/image',
+      '/upload/mask'
+    ])
+
+    const maskedBody = fetchApiMock.mock.calls[0][1]?.body as FormData
+    expect(JSON.parse(String(maskedBody.get('original_ref')))).toEqual({
+      filename: 'original.png',
+      subfolder: '',
+      type: 'input'
+    })
+
+    const paintedMaskedBody = fetchApiMock.mock.calls[3][1]?.body as FormData
+    expect(JSON.parse(String(paintedMaskedBody.get('original_ref')))).toEqual({
+      filename: 'clipspace-painted-123.png',
+      subfolder: '',
+      type: 'input'
+    })
   })
 
   it('exports full internal mask coverage as zero PNG alpha', async () => {
