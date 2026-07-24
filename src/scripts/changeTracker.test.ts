@@ -1,6 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  createNestedSubgraphs,
+  createTestRootGraph,
+  createTestSubgraphData,
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -38,6 +50,7 @@ vi.mock('@/scripts/app', () => ({
         last_link_id: 0
       }))
     },
+    loadGraphData: vi.fn(() => Promise.resolve()),
     canvas: {
       ds: { scale: 1, offset: [0, 0] }
     }
@@ -72,17 +85,21 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 let nodeIdCounter = 0
 
 function createState(nodeCount = 0): ComfyWorkflowJSON {
-  const nodes = Array.from({ length: nodeCount }, () => ({
-    id: ++nodeIdCounter,
-    type: 'TestNode',
-    pos: [0, 0],
-    size: [100, 50],
-    flags: {},
-    order: 0,
-    inputs: [],
-    outputs: [],
-    properties: {}
-  }))
+  const nodes: ComfyWorkflowJSON['nodes'] = Array.from(
+    { length: nodeCount },
+    () => ({
+      id: ++nodeIdCounter,
+      type: 'TestNode',
+      pos: [0, 0],
+      size: [100, 50],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: {}
+    })
+  )
   return {
     nodes,
     links: [],
@@ -92,12 +109,15 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
     version: 0.4,
     last_node_id: nodeIdCounter,
     last_link_id: 0
-  } as unknown as ComfyWorkflowJSON
+  }
 }
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
-  const workflow = { path: '/test/workflow.json' } as never
+  const testName = expect.getState().currentTestName ?? 'unknown-test'
+  const workflow = {
+    path: `/test/${encodeURIComponent(testName)}.json`
+  } as never
   const tracker = new ChangeTracker(workflow, state)
   mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
   return tracker
@@ -107,13 +127,97 @@ function mockCanvasState(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
 }
 
+async function requireValidWorkflow(value: unknown) {
+  const state = await validateComfyWorkflow(value, (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('invalid workflow fixture')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
+}
+
+async function createSubgraphState(
+  subgraphCount = 1
+): Promise<ComfyWorkflowJSON> {
+  const rootGraph = createTestRootGraph()
+
+  for (let index = 0; index < subgraphCount; index++) {
+    const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+    subgraph.addInput('input', '*')
+    subgraph.addOutput('output', '*')
+    const host = createTestSubgraphNode(subgraph, { id: 100 + index })
+    rootGraph.add(host)
+    const interior = new LGraphNode('InteriorNode')
+    interior.type = 'InteriorNode'
+    interior.pos = [0, 0]
+    interior.setSize([100, 50])
+    interior.addWidget('number', 'value', 1 + index, () => undefined)
+    const input = interior.addInput('input', '*')
+    const output = interior.addOutput('output', '*')
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(input, interior)
+    subgraph.outputNode.slots[0].connect(output, interior)
+  }
+
+  return await requireValidWorkflow(rootGraph.serialize())
+}
+
+type ExportedSubgraphWithNodes = ExportedSubgraph &
+  Required<Pick<ExportedSubgraph, 'nodes'>>
+
+function isExportedSubgraph(
+  value: unknown
+): value is ExportedSubgraphWithNodes {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'nodes' in value &&
+    Array.isArray(value.nodes)
+  )
+}
+
+function findSubgraphDefinition(
+  state: ComfyWorkflowJSON | ExportedSubgraphWithNodes,
+  id: string
+): ExportedSubgraphWithNodes | undefined {
+  for (const subgraph of state.definitions?.subgraphs ?? []) {
+    if (!isExportedSubgraph(subgraph)) continue
+    if (subgraph.id === id) return subgraph
+    const nested = findSubgraphDefinition(subgraph, id)
+    if (nested) return nested
+  }
+}
+
+function getSubgraphDefinition(state: ComfyWorkflowJSON, index = 0) {
+  const subgraph = state.definitions?.subgraphs[index]
+  if (!isExportedSubgraph(subgraph))
+    throw new Error('subgraph definition missing')
+  return subgraph
+}
+
+function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
+  const subgraph = getSubgraphDefinition(state)
+  if (!subgraph.nodes[0]) throw new Error('interior node missing')
+
+  delete subgraph.links
+  delete subgraph.nodes[0].inputs
+  delete subgraph.nodes[0].outputs
+}
+
 describe('ChangeTracker', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
   })
 
   describe('captureCanvasState', () => {
@@ -187,7 +291,62 @@ describe('ChangeTracker', () => {
           'graphChanged',
           changed
         )
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged',
+          changed
+        )
       })
+
+      it('squashes late serialized updates into the captured state', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const squashed = structuredClone(changed)
+        squashed.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        mockCanvasState(squashed)
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(squashed)
+        expect(tracker.undoQueue).toEqual([initial])
+        expect(api.dispatchCustomEvent).toHaveBeenCalledTimes(2)
+      })
+
+      it.for([
+        {
+          name: 'tracker becomes inactive',
+          blockSquash: () => {
+            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+          }
+        },
+        {
+          name: 'graph loading starts',
+          blockSquash: () => {
+            ChangeTracker.isLoadingGraph = true
+          }
+        }
+      ])(
+        'does not squash when $name before the debounce finishes',
+        async ({ blockSquash }) => {
+          const initial = createState(1)
+          const changed = structuredClone(initial)
+          changed.nodes[0].widgets_values = [2]
+          const lateState = structuredClone(changed)
+          lateState.nodes[0].widgets_values = [3]
+          const tracker = createTracker(initial)
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+          mockCanvasState(lateState)
+          blockSquash()
+          await vi.advanceTimersByTimeAsync(50)
+
+          expect(tracker.activeState).toEqual(changed)
+        }
+      )
 
       it('does not push when state is identical', () => {
         const state = createState()
@@ -198,6 +357,315 @@ describe('ChangeTracker', () => {
 
         expect(tracker.undoQueue).toHaveLength(0)
       })
+
+      it.for([
+        {
+          name: 'node position',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].pos = [40, 50]
+          }
+        },
+        {
+          name: 'node size',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].size = [200, 100]
+          }
+        },
+        {
+          name: 'collapsed state',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].flags = { collapsed: true }
+          }
+        },
+        {
+          name: 'node title',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].title = 'Renamed node'
+          }
+        },
+        {
+          name: 'group layout',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.groups = [
+              {
+                title: 'Test Group',
+                bounding: [0, 0, 400, 300]
+              }
+            ]
+          }
+        }
+      ])('does not dispatch executionGraphChanged for $name', ({ mutate }) => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        mutate(changed)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'executionGraphChanged',
+          expect.anything()
+        )
+      })
+
+      it('does not dispatch a graph change for the canvas viewport', () => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.extra = {
+          ds: {
+            scale: 2,
+            offset: [40, 50]
+          }
+        }
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+      })
+
+      it('ignores link metadata changes that preserve the connection', () => {
+        const initial = createState(2)
+        initial.links = [
+          [1, initial.nodes[0].id, 0, initial.nodes[1].id, 0, '*']
+        ]
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.links = [
+          [2, changed.nodes[0].id, 0, changed.nodes[1].id, 0, '*']
+        ]
+        changed.reroutes = [{ id: 1, pos: [40, 50], linkIds: [2] }]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'executionGraphChanged',
+          expect.anything()
+        )
+      })
+
+      it.for([
+        {
+          name: 'widget value',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].widgets_values = [2]
+          }
+        },
+        {
+          name: 'node mode',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes[0].mode = 2
+          }
+        },
+        {
+          name: 'connection',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.links = [[1, state.nodes[0].id, 0, state.nodes[1].id, 0, '*']]
+          }
+        },
+        {
+          name: 'node addition',
+          mutate: (state: ComfyWorkflowJSON) => {
+            const addedNode = structuredClone(state.nodes[0])
+            addedNode.id = 999
+            state.nodes.push(addedNode)
+          }
+        },
+        {
+          name: 'node removal',
+          mutate: (state: ComfyWorkflowJSON) => {
+            state.nodes.pop()
+          }
+        }
+      ])(
+        'dispatches executionGraphChanged for a $name change',
+        ({ mutate }) => {
+          const initial = createState(2)
+          const tracker = createTracker(initial)
+          const changed = structuredClone(initial)
+          mutate(changed)
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+
+          expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+            'executionGraphChanged',
+            changed
+          )
+        }
+      )
+
+      it('ignores layout changes inside a subgraph', async () => {
+        const initial = await createSubgraphState()
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const interior = getSubgraphDefinition(changed).nodes[0]
+        if (!interior) throw new Error('interior node missing')
+        interior.pos = [40, 50]
+        interior.size = [200, 100]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'executionGraphChanged',
+          expect.anything()
+        )
+      })
+
+      it('detects widget changes inside a subgraph', async () => {
+        const initial = await createSubgraphState()
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const interior = getSubgraphDefinition(changed).nodes[0]
+        if (!interior) throw new Error('interior node missing')
+        interior.widgets_values = [2]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged',
+          changed
+        )
+      })
+
+      it('detects widget changes inside a nested subgraph', async () => {
+        const nested = createNestedSubgraphs({
+          depth: 2,
+          nodesPerLevel: 1
+        })
+        const leafNode = nested.leafSubgraph?.nodes[0]
+        if (!leafNode) throw new Error('nested leaf node missing')
+        for (const subgraph of nested.subgraphs) {
+          nested.rootGraph.subgraphs.set(subgraph.id, subgraph)
+        }
+        const initial = await requireValidWorkflow(nested.rootGraph.serialize())
+        const leafId = nested.leafSubgraph?.id
+        if (!leafId) throw new Error('nested leaf id missing')
+        const initialLeaf = findSubgraphDefinition(initial, leafId)
+        if (!initialLeaf) throw new Error('nested leaf definition missing')
+        const initialLeafNode = initialLeaf.nodes[0]
+        if (!initialLeafNode) throw new Error('nested leaf node missing')
+        initialLeafNode.widgets_values = [1]
+        const tracker = createTracker(initial)
+
+        const changed = structuredClone(initial)
+        const changedLeaf = findSubgraphDefinition(changed, leafId)
+        if (!changedLeaf) throw new Error('nested leaf definition missing')
+        const changedLeafNode = changedLeaf.nodes[0]
+        if (!changedLeafNode) throw new Error('nested leaf node missing')
+        changedLeafNode.widgets_values = [2]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged',
+          changed
+        )
+      })
+
+      it('detects data changes when optional subgraph collections are omitted', async () => {
+        const initial = await createSubgraphState()
+        const changed = structuredClone(initial)
+        const interior = getSubgraphDefinition(changed).nodes[0]
+        if (!interior) throw new Error('interior node missing')
+        interior.widgets_values = [2]
+        omitOptionalSubgraphCollections(initial)
+        omitOptionalSubgraphCollections(changed)
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'executionGraphChanged',
+          changed
+        )
+      })
+
+      it('ignores subgraph presentation metadata changes', async () => {
+        const initial = await createSubgraphState()
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const subgraph = getSubgraphDefinition(changed)
+        subgraph.name = 'Renamed subgraph'
+        subgraph.description = 'Updated description'
+        subgraph.category = 'Updated category'
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'executionGraphChanged',
+          expect.anything()
+        )
+      })
+
+      it('ignores subgraph definition order changes', async () => {
+        const initial = await createSubgraphState(2)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const subgraphs = changed.definitions?.subgraphs
+        if (!subgraphs) throw new Error('subgraph definitions missing')
+        subgraphs.reverse()
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'executionGraphChanged',
+          expect.anything()
+        )
+      })
+
+      it.for(['Note', 'MarkdownNote'])(
+        'ignores content changes to the %s node',
+        (nodeType) => {
+          const initial = createState(1)
+          initial.nodes[0].type = nodeType
+          initial.nodes[0].widgets_values = ['Initial content']
+          const tracker = createTracker(initial)
+          const changed = structuredClone(initial)
+          changed.nodes[0].widgets_values = ['Updated content']
+          mockCanvasState(changed)
+
+          tracker.captureCanvasState()
+
+          expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+            'graphChanged',
+            changed
+          )
+          expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+            'executionGraphChanged',
+            expect.anything()
+          )
+        }
+      )
 
       it('clears redoQueue on new change', () => {
         const tracker = createTracker(createState(1))
@@ -238,6 +706,61 @@ describe('ChangeTracker', () => {
 
         expect(tracker.undoQueue).toHaveLength(ChangeTracker.MAX_HISTORY)
       })
+    })
+  })
+
+  describe('undo and redo', () => {
+    it('dispatches executionGraphChanged for a data change in both directions', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+
+      await tracker.undo()
+
+      expect(app.loadGraphData).toHaveBeenCalled()
+      expect(tracker.activeState).toEqual(initial)
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'executionGraphChanged',
+        initial
+      )
+
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+      await tracker.redo()
+
+      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.undoQueue).toEqual([initial])
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'executionGraphChanged',
+        changed
+      )
+    })
+
+    it('does not dispatch executionGraphChanged for layout-only undo or redo', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].size = [200, 100]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(initial)
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+        'executionGraphChanged',
+        expect.anything()
+      )
+
+      vi.mocked(api.dispatchCustomEvent).mockClear()
+      await tracker.redo()
+
+      expect(tracker.activeState).toEqual(changed)
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+        'executionGraphChanged',
+        expect.anything()
+      )
     })
   })
 
