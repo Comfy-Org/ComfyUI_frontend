@@ -142,8 +142,8 @@ swapped.
   `ci-tests-custom-nodes-cloud.yaml`): the SAME suite with
   `CUSTOM_NODES_ENV=cloud` against the remote Comfy Cloud backend - no pack
   install; expectations come from the generated cloud manifest and re-float
-  when Cloud redeploys. Gated on TWO preconditions: the cloud test credentials
-  (`CLOUD_TEST_EMAIL`, `CLOUD_TEST_PASSWORD`) both configured AND the generated
+  when Cloud redeploys. Gated on TWO preconditions: the smoke user credentials
+  (`SMOKE_ACCOUNT_EMAIL`, `SMOKE_ACCOUNT_PASSWORD`) both configured AND the generated
   `customNodeManifest.cloud.json` present in the checkout. With either
   missing the job emits a `::notice` naming exactly what and no-ops green
   (required-safe pre-calibration - it never fake-passes a green "0 tests"

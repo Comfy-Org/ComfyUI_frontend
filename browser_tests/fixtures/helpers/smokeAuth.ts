@@ -7,15 +7,15 @@ import {
   seedFirebaseAuthUser
 } from '@e2e/fixtures/helpers/firebaseAuthStorage'
 
-export const CLOUD_AUTH_ENV_VARS = [
-  'CLOUD_TEST_EMAIL',
-  'CLOUD_TEST_PASSWORD'
+export const SMOKE_ENV_VARS = [
+  'SMOKE_ACCOUNT_EMAIL',
+  'SMOKE_ACCOUNT_PASSWORD'
 ] as const
 
-export function missingCloudAuthEnvVars(
+export function missingSmokeEnvVars(
   env: Record<string, string | undefined>
 ): string[] {
-  return CLOUD_AUTH_ENV_VARS.filter((name) => !env[name])
+  return SMOKE_ENV_VARS.filter((name) => !env[name])
 }
 
 function stringField(
@@ -103,13 +103,13 @@ export function identityToolkitErrorCode(body: unknown): string | undefined {
 }
 
 async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
-  const missing = missingCloudAuthEnvVars(process.env)
+  const missing = missingSmokeEnvVars(process.env)
   if (missing.length > 0)
     throw new Error(
-      `CUSTOM_NODES_ENV=cloud needs ${CLOUD_AUTH_ENV_VARS.join(', ')} in the ` +
-        `environment to sign in the cloud test user; missing: ${missing.join(', ')}`
+      `CUSTOM_NODES_ENV=cloud needs ${SMOKE_ENV_VARS.join(', ')} in the ` +
+        `environment to sign in the smoke user; missing: ${missing.join(', ')}`
     )
-  const email = process.env.CLOUD_TEST_EMAIL!
+  const email = process.env.SMOKE_ACCOUNT_EMAIL!
   const apiKey = FIREBASE_WEB_API_KEY
   // Node fetch, not page.request: traced transports retain the credential in failure artifacts.
   const response = await fetch(
@@ -119,7 +119,7 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
-        password: process.env.CLOUD_TEST_PASSWORD,
+        password: process.env.SMOKE_ACCOUNT_PASSWORD,
         returnSecureToken: true,
         clientType: 'CLIENT_TYPE_WEB'
       }),
@@ -130,7 +130,7 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
   if (!response.ok) {
     const code = identityToolkitErrorCode(body)
     throw new Error(
-      `cloud test-user sign-in failed (HTTP ${response.status}${code ? `: ${code}` : ''}) - check the CLOUD_TEST_EMAIL / CLOUD_TEST_PASSWORD credentials`
+      `smoke-user sign-in failed (HTTP ${response.status}${code ? `: ${code}` : ''}) - check the SMOKE_ACCOUNT_EMAIL / SMOKE_ACCOUNT_PASSWORD credentials`
     )
   }
   return smokeAuthUserRecord(body, email, apiKey, Date.now())

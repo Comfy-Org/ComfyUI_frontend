@@ -19,7 +19,7 @@
 # manifest (`customNodeManifest.cloud.json`) is generated from a Cloud
 # `/object_info` probe snapshot that has not landed, so `loadManifest()` throws
 # under `CUSTOM_NODES_ENV=cloud`. The gate step below therefore checks BOTH
-# preconditions - the cloud test credentials are configured AND the generated
+# preconditions - the smoke user credentials are configured AND the generated
 # manifest exists in the checkout - and no-ops the job green with a loud
 # `::notice` naming whichever is missing. It never fake-passes with a green
 # "0 tests", and it never reds on the half-ready states (secrets landed
@@ -122,16 +122,16 @@ jobs:
       - name: Gate on cloud secrets and manifest
         id: gate
         env:
-          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
-          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           missing=()
-          [ -n "${CLOUD_TEST_EMAIL:-}" ] || missing+=(CLOUD_TEST_EMAIL)
-          [ -n "${CLOUD_TEST_PASSWORD:-}" ] || missing+=(CLOUD_TEST_PASSWORD)
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice::custom-nodes-e2e-cloud did not run: cloud test credentials unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See browser_tests/tests/customNodes/README.md."
+            echo "::notice::custom-nodes-e2e-cloud did not run: smoke user credentials unconfigured (missing: ${missing[*]}). Expected pre-calibration - the gate no-ops green until these repo secrets AND the generated customNodeManifest.cloud.json land. See browser_tests/tests/customNodes/README.md."
             echo "run-cloud=false" >> "$GITHUB_OUTPUT"
           elif [ ! -f browser_tests/fixtures/data/customNodeManifest.cloud.json ]; then
             echo "::notice::custom-nodes-e2e-cloud did not run: secrets are configured but the generated browser_tests/fixtures/data/customNodeManifest.cloud.json is not in this checkout. Generate it from the Phase-1 probe snapshot ('pnpm gen:cloud-manifest') and commit it - the gate no-ops green until then. See browser_tests/tests/customNodes/README.md."
@@ -196,7 +196,7 @@ jobs:
       # CUSTOM_NODES_ENV=cloud selects the cloud manifest/baselines and triggers
       # the real smoke sign-in; PLAYWRIGHT_TEST_URL points at the preview server
       # (its /api proxies to Cloud, so setup + in-page API calls are same-origin
-      # and carry the seeded bearer token). CLOUD_TEST_EMAIL/PASSWORD feed the
+      # and carry the seeded bearer token). SMOKE_ACCOUNT_EMAIL/PASSWORD feed the
       # per-worker Firebase sign-in (smokeAuth.ts). workers=1: the auto-run tier
       # needs exclusive backend-queue access.
       - name: Run custom-node cloud suite
@@ -205,8 +205,8 @@ jobs:
           CUSTOM_NODES_ENV: cloud
           PLAYWRIGHT_TEST_URL: http://localhost:4173
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-cloud-results.json
-          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
-          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/ \
             --project=custom-nodes --reporter=list,json,html --workers=1

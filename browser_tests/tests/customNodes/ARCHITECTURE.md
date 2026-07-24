@@ -777,7 +777,7 @@ that a newly queued run CANCELS a pending (not in-progress) one, which is
 why this check must not be marked required until a per-run instance (open
 item: run isolation) or an in-job lock replaces group serialization; and
 because
-the cloud test credentials may be unset (pre-calibration, or on a fork clone)
+the smoke user credentials may be unset (pre-calibration, or on a fork clone)
 and the generated cloud manifest may not be committed yet, a gate step
 checks BOTH first - either absent, it emits a loud `::notice` naming which
 and no-ops the job green without running a test (secrets landing before the

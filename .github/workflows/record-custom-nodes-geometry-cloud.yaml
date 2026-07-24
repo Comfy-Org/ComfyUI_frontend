@@ -20,7 +20,7 @@
 # secrets are an operator error, not an expected pre-calibration state - the
 # job FAILS LOUD rather than silently recording nothing.
 #
-# Runs for real only once the cloud test credentials AND the generated
+# Runs for real only once the smoke user credentials AND the generated
 # customNodeManifest.cloud.json exist (without the manifest the mount sweep
 # throws at collection under cloud env). Dispatch it during Phase 5
 # calibration, after the manifest lands, on the branch carrying it.
@@ -46,16 +46,16 @@ jobs:
     steps:
       # Fail loud if the operator dispatched without the cloud secrets: a record
       # that silently produced no baselines would look like a crashed run.
-      - name: Require cloud test credentials
+      - name: Require smoke user credentials
         env:
-          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
-          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           missing=()
-          [ -n "${CLOUD_TEST_EMAIL:-}" ] || missing+=(CLOUD_TEST_EMAIL)
-          [ -n "${CLOUD_TEST_PASSWORD:-}" ] || missing+=(CLOUD_TEST_PASSWORD)
+          [ -n "${SMOKE_ACCOUNT_EMAIL:-}" ] || missing+=(SMOKE_ACCOUNT_EMAIL)
+          [ -n "${SMOKE_ACCOUNT_PASSWORD:-}" ] || missing+=(SMOKE_ACCOUNT_PASSWORD)
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::cloud geometry record needs these repo secrets: ${missing[*]}"
             exit 1
@@ -118,8 +118,8 @@ jobs:
           CUSTOM_NODES_ENV: cloud
           CN_GEOMETRY: record
           PLAYWRIGHT_TEST_URL: http://localhost:4173
-          CLOUD_TEST_EMAIL: ${{ secrets.CLOUD_TEST_EMAIL }}
-          CLOUD_TEST_PASSWORD: ${{ secrets.CLOUD_TEST_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
         run: |
           pnpm exec playwright test browser_tests/tests/customNodes/allNodes.spec.ts \
             --project=custom-nodes --reporter=list --workers=1 --retries=0 \
