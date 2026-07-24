@@ -93,7 +93,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
   })
 
   // The server-returned provider metadata keyed by id, so option rendering and
-  // the selected provider's input type can look up their `label`/`input_type`.
+  // the selected provider's input type can look up their `label` /
+  // `credential_options`.
   const providerInfoById = computed(() => {
     const map = new Map<string, SecretProviderInfo>()
     for (const info of toValue(availableProviders) ?? []) map.set(info.id, info)
@@ -133,11 +134,18 @@ export function useSecretForm(options: UseSecretFormOptions) {
     }))
   })
 
-  // How the selected provider's credential is entered. Providers omitting
-  // `input_type` (and any unlisted selection) default to a single-line secret.
+  // How the selected provider's credential is entered, read from the provider's
+  // first advertised credential option. Providers advertising none (and any
+  // unlisted selection) default to a single-line secret.
+  //
+  // Taking the first option preserves the pre-`credential_options` behaviour of
+  // one input type per provider. Rendering a sub-selection when a provider
+  // advertises more than one (e.g. Gemini's AI Studio key vs Vertex service
+  // account) is deliberately out of scope here.
   const selectedInputType = computed<SecretInputType>(() => {
     if (!form.provider) return 'text'
-    return providerInfoById.value.get(form.provider)?.input_type ?? 'text'
+    const provider = providerInfoById.value.get(form.provider)
+    return provider?.credential_options?.[0]?.input_type ?? 'text'
   })
 
   // Once the server allowlist resolves, drop a selection the resolved list no

@@ -489,7 +489,18 @@ describe('useSecretForm', () => {
       const { form, selectedInputType } = useSecretForm({
         mode: 'create',
         existingProviders: () => [],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => [
+          {
+            id: 'gemini',
+            credential_options: [
+              {
+                credential_type: 'gcp_service_account',
+                input_type: 'json_file',
+                label: 'Service account (Vertex AI)'
+              }
+            ]
+          }
+        ],
         visible,
         onSaved: vi.fn()
       })
@@ -501,7 +512,16 @@ describe('useSecretForm', () => {
 
   describe('json_file credential input', () => {
     const vertexProviders: SecretProviderInfo[] = [
-      { id: 'gemini', input_type: 'json_file' }
+      {
+        id: 'gemini',
+        credential_options: [
+          {
+            credential_type: 'gcp_service_account',
+            input_type: 'json_file',
+            label: 'Service account (Vertex AI)'
+          }
+        ]
+      }
     ]
 
     it('loads file contents into the secret value', async () => {
