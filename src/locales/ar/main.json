@@ -3,6 +3,9 @@
     "dockToTop": "إلصق بالأعلى",
     "feedback": "ملاحظات",
     "feedbackTooltip": "إرسال ملاحظات",
+    "freeTierPartner": "العُقد الشريكة تتطلب خطة مدفوعة",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} عمليات متبقية",
+    "freeTierRunsExhausted": "لا توجد عمليات متبقية",
     "share": "مشاركة",
     "shareTooltip": "مشاركة سير العمل"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "مؤهل للخطة المجانية",
       "freeTierDescription": "سجّل باستخدام Google للحصول على {credits} رصيد مجاني كل شهر. لا حاجة لبطاقة.",
       "freeTierDescriptionGeneric": "سجّل باستخدام Google للحصول على رصيد مجاني كل شهر. لا حاجة لبطاقة.",
+      "googleSsoInAppBrowserNotice": "إذا فتحت هذه الصفحة من متصفح داخل التطبيق (مثل إنستغرام أو لينكدإن)، قد لا يعمل تسجيل الدخول عبر Google. استخدم GitHub أو البريد الإلكتروني، أو افتح هذه الصفحة في متصفح جهازك الافتراضي.",
       "insecureContextWarning": "هذا الاتصال غير آمن (HTTP) - قد يتم اعتراض بيانات اعتمادك من قبل المهاجمين إذا تابعت تسجيل الدخول.",
       "loginButton": "تسجيل الدخول",
       "loginWithGithub": "تسجيل الدخول باستخدام Github",
@@ -785,6 +789,11 @@
       "gpuUsage": "استخدام GPU"
     },
     "faqs": "الأسئلة المتكررة",
+    "insufficient": {
+      "memberCta": "حسنًا، فهمت",
+      "memberDescription": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة لتشغيل سير العمل.",
+      "memberTitle": "هذه المساحة workspace نفدت أرصدتها"
+    },
     "invoiceHistory": "تاريخ الفواتير",
     "lastUpdated": "آخر تحديث",
     "loadEventsError": "فشل في تحميل النشاط. يرجى المحاولة مرة أخرى.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
     "preparingExport": "جاري تجهيز التصدير...",
     "retryDownload": "إعادة محاولة التحميل"
+  },
+  "feedback": {
+    "title": "مشاركة الملاحظات"
   },
   "g": {
     "1x": "1x",
@@ -2783,7 +2795,6 @@
     "accept": "بكل سرور، سأساعد!",
     "description": "لقد استخدمت هذه الميزة. هل يمكنك تخصيص لحظة لمشاركة ملاحظاتك؟",
     "dontAskAgain": "لا تسأل مرة أخرى",
-    "loadError": "فشل في تحميل الاستبيان. يرجى المحاولة لاحقًا.",
     "notNow": "ليس الآن",
     "title": "ساعدنا في التحسين"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "جيميني",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "تعديلات",
     "advanced": "متقدم",
+    "anima": "anima",
     "animate": "تحريك",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
@@ -2849,6 +2862,7 @@
     "create": "إنشاء",
     "custom": "مخصص",
     "dancer": "راقص",
+    "dataset": "مجموعة بيانات",
     "debug": "تصحيح",
     "detection": "الكشف",
     "experimental": "تجريبي",
@@ -2870,6 +2884,7 @@
     "image": "صورة",
     "infinite talk": "حديث لا نهائي",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "كامِن",
     "loaders": "التحميلات",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "نموذج",
     "model specific": "نموذج محدد",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "تعدد وحدات معالجة الرسومات",
     "noise": "ضجيج",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "تطبيق أصلي",
       "appTypeWeb": "تطبيق ويب",
       "deny": "إلغاء",
+      "detailsHeader": "التفاصيل",
       "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
       "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
       "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "title": "{client} يطلب الوصول",
-      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
@@ -3998,6 +4014,7 @@
       "waitingForSubscription": "أكمل اشتراكك في علامة التبويب الجديدة. سنكتشف تلقائيًا عند الانتهاء!"
     },
     "resubscribe": "إعادة الاشتراك",
+    "resubscribeFailed": "فشل في إعادة تفعيل الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
     "saveYearly": "وفّر 20%",
@@ -4123,7 +4140,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "المرشحات:",
     "allTemplates": "جميع القوالب",
     "categories": "الفئات",
     "category": {
@@ -4148,9 +4164,12 @@
       "Video": "فيديو",
       "Video API": "واجهة برمجة تطبيقات الفيديو"
     },
+    "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
+    "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
+    "filtersButton": "فلاتر",
     "licenseFilter": "الرخصة",
     "loading": "جارٍ تحميل القوالب...",
     "loadingMore": "تحميل المزيد من القوالب...",
@@ -4248,6 +4267,9 @@
     "updateRequested": "تم طلب التحديث",
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
     "userNotAuthenticated": "المستخدم غير مصدق"
+  },
+  "typeform": {
+    "loadError": "فشل تحميل النموذج. يرجى المحاولة لاحقًا."
   },
   "userSelect": {
     "enterUsername": "أدخل اسم المستخدم",
@@ -4384,6 +4406,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "يحتفظ الأعضاء بكامل الوصول حتى ذلك الحين. أعد تفعيل الخطة للاحتفاظ بالأرصدة والمقاعد المشتركة.",
+        "reactivate": "إعادة تفعيل الخطة",
+        "title": "تنتهي خطة فريقك في {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "إضافة أرصدة",
+        "body": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة أو انتظر حتى يتم إعادة تعبئة الأرصدة في {date}.",
+        "bodyNoDate": "لقد استخدم فريقك جميع أرصدته. أضف المزيد من الأرصدة للمتابعة.",
+        "dismiss": "تجاهل",
+        "memberBody": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة للمتابعة.",
+        "title": "نفدت الأرصدة"
+      },
+      "paused": {
+        "body": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يرجى تحديث الدفع للاستمرار.",
+        "memberBody": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يجب على مسؤولي المساحة تحديث طريقة الدفع.",
+        "title": "تم إيقاف الاشتراك مؤقتًا"
+      },
+      "updatePayment": "تحديث الدفع",
+      "warning": {
+        "body": "لم تتم معالجة آخر دفعة لك. سيتم إيقاف اشتراكك في {date} ما لم يتم تحديث الدفع.",
+        "bodyNoDate": "لم تتم معالجة آخر دفعة لك. يرجى تحديث الدفع لتجنب الإيقاف.",
+        "title": "تم رفض الدفع"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "تخفيض إلى عضو",
       "demoteMessage": "سيفقد صلاحيات الإدارة.",

@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -27,17 +26,6 @@ const i18n = createI18n({
   }
 })
 
-const ToggleSwitchStub = defineComponent({
-  name: 'ToggleSwitch',
-  props: {
-    modelValue: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false }
-  },
-
-  emits: ['update:modelValue'],
-  template: `<input type="checkbox" role="switch" :checked="modelValue" :disabled="disabled" @change="$emit('update:modelValue', $event.target.checked)" />`
-})
-
 describe('WidgetToggleSwitch Value Binding', () => {
   const createToggleWidget = (
     value: boolean = false,
@@ -58,15 +46,28 @@ describe('WidgetToggleSwitch Value Binding', () => {
     onModelUpdate?: (value: boolean | undefined) => void
   ) => {
     const user = userEvent.setup()
-    const result = render(WidgetToggleSwitch, {
-      props: {
-        widget,
-        modelValue,
-        ...(onModelUpdate ? { 'onUpdate:modelValue': onModelUpdate } : {})
+    const Wrapper = defineComponent({
+      components: { WidgetToggleSwitch },
+      setup() {
+        const value = ref(modelValue)
+        function updateValue(nextValue: boolean | undefined) {
+          if (nextValue === undefined) return
+          value.value = nextValue
+          onModelUpdate?.(nextValue)
+        }
+        return { updateValue, value, widget }
       },
+      template: `
+        <WidgetToggleSwitch
+          :widget="widget"
+          :model-value="value"
+          @update:model-value="updateValue"
+        />
+      `
+    })
+    const result = render(Wrapper, {
       global: {
-        plugins: [PrimeVue, i18n],
-        stubs: { ToggleSwitch: ToggleSwitchStub },
+        plugins: [i18n],
         components: { ToggleGroup, ToggleGroupItem }
       }
     })
@@ -177,7 +178,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(screen.queryByRole('switch')).toBeNull()
     })
 
-    it('renders ToggleSwitch when no labels are provided', () => {
+    it('renders Switch when no labels are provided', () => {
       const widget = createToggleWidget(false, {})
       mountComponent(widget, false)
 
@@ -283,6 +284,34 @@ describe('WidgetToggleSwitch Value Binding', () => {
       for (const button of buttons) {
         expect(button).toBeDisabled()
       }
+    })
+
+    it('keeps an implicit switch unchanged when read_only is set', async () => {
+      const widget = createToggleWidget(false, { read_only: true })
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
+
+      const control = screen.getByRole('switch')
+      expect(control).toHaveAttribute('aria-readonly', 'true')
+
+      await user.click(control)
+
+      expect(onModelUpdate).not.toHaveBeenCalled()
+      expect(control).not.toBeChecked()
+    })
+
+    it('disables an implicit switch when disabled is set', async () => {
+      const widget = createToggleWidget(false, { disabled: true })
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
+
+      const control = screen.getByRole('switch')
+      expect(control).toBeDisabled()
+
+      await user.click(control)
+
+      expect(onModelUpdate).not.toHaveBeenCalled()
+      expect(control).not.toBeChecked()
     })
 
     it('does not emit when clicking already-selected option', async () => {

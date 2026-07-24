@@ -28,7 +28,6 @@
       <div class="flex w-full flex-col gap-4 pt-5 pb-2">
         <template v-if="!showEmailForm">
           <Button
-            v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
             class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
@@ -47,6 +46,14 @@
             <i class="pi pi-github text-base" />
             {{ t('auth.login.loginWithGithub') }}
           </Button>
+
+          <p
+            v-if="showGoogleSsoInAppBrowserNotice"
+            class="my-0 text-xs/5 text-primary-comfy-canvas/60"
+            data-testid="google-sso-in-app-browser-notice"
+          >
+            {{ t('auth.login.googleSsoInAppBrowserNotice') }}
+          </p>
 
           <Button
             variant="link"
@@ -100,12 +107,12 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isEmbeddedWebView } from '@/base/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
-import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -114,7 +121,7 @@ const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const showEmailForm = ref(false)
-const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const { onAuthSuccess } = usePostAuthRedirect({
   authError,
   successSummary: 'Login Completed',

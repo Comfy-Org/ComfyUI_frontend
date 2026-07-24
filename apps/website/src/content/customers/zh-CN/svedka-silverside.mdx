@@ -1,0 +1,142 @@
+---
+title: "Shake Your Bots Off：Svedka 与 Silverside AI 如何用 ComfyUI 打造首支主要由 AI 生成的超级碗广告"
+category: "案例研究"
+description: "Silverside AI 如何在 ComfyUI 工作流上重建 Svedka 失传的 Fembot，并将史上首支主要由 AI 生成的广告送上超级碗荧屏。"
+cover: "https://media.comfy.org/website/customers/svedka-silverside/cover.webp"
+order: 10
+sections:
+  - id: topic-1
+    label: "简介"
+  - id: topic-2
+    label: "概览"
+  - id: topic-3
+    label: "产出成果"
+  - id: topic-4
+    label: "面临的问题"
+  - id: topic-5
+    label: "解决方案"
+  - id: topic-6
+    label: "为何选择 ComfyUI"
+  - id: topic-7
+    label: "总结"
+---
+
+<Section id="topic-1">
+
+2026 年 2 月 8 日，超级碗 LX 播出了这项赛事历史上首支主要由 AI 生成的广告，也是 Sazerac 的首支超级碗广告。《Shake Your Bots Off》由 Svedka 的 Fembot 主演——这个角色在此前一年八月于沉寂 12 年后重新回归，并搭档了新伙伴 Brobot。
+
+这支广告的背后，是一个传统制作流程无法解决的难题。当 Sazerac 收购 Svedka 时，用 Svedka 全球整合营销与创新副总裁 Amy Remley 的话说，这个品牌已经被"忽视了大约 10 年"，团队再也找不到其最具辨识度角色的 CGI 源文件。Svedka 携手重建 Fembot 并制作这支广告的工作室 Silverside AI，在 Silverside 于 ComfyUI 中构建的工作流上重新创造了她和她的世界，其时间线是任何线性制作都无法企及的。
+
+</Section>
+
+<Section id="topic-2" title="概览">
+
+<AtAGlance rows={[
+  { label: "活动", value: "《Shake Your Bots Off》，超级碗 LX（2026 年 2 月 8 日）" },
+  { label: "品牌", value: "Svedka 伏特加（Sazerac）" },
+  { label: "工作室", value: "Silverside AI" },
+  { label: "核心技术", value: "基于组件的 ComfyUI 工作流：将角色、世界和编舞作为可分别控制的元素，为渐进式修改而构建" },
+  { label: "时间线", value: "此类规模的活动历来约需半年；本次制作用时不到一个月" },
+  { label: "成果", value: "首支主要由 AI 生成的超级碗广告（据 ADWEEK）；前 10 秒内 12 个机器人动作；众包舞蹈在数小时内完成整合" }
+]} />
+
+</Section>
+
+<Section id="topic-3" title="产出成果">
+
+凭借在 ComfyUI 中构建的工作流，Svedka 与 Silverside AI 交付了：
+
+- 据 ADWEEK，首支主要由 AI 生成的超级碗广告
+- 广告前 10 秒内 12 个独立的机器人动作
+- 历来需要半年的制作时间线，缩短到不足一个月
+- 一段众包舞蹈——在主要场景完成之后才到位——数小时内被编入机器人，Fembot 的动作则在数分钟内完成
+
+</Section>
+
+<Section id="topic-4" title="面临的问题：一个没有源文件的标志性角色">
+
+<Figure src="https://media.comfy.org/website/customers/svedka-silverside/original-fembot.webp" alt="Svedka 早年的 Fembot 广告" caption="Svedka 早年的 Fembot。来源：Business Insider" />
+
+在一个产品本身几乎没有差异化的品类里，重生的 Fembot 是这个品牌打造标志性资产的最佳机会。"美国大多数家庭都有伏特加，"Remley 指出，"而它无色、无味，最终口感也相当寡淡。"但创造这个角色的文件却遍寻不着。
+
+<Quote name="Amy Remley | Svedka 全球整合营销与创新副总裁">老实说，我们并没有整个机器人的文件。她是个机器人。如果你要让她回归并创造她的世界，就得在后期用某种方式把它做出来。作为一家制作与广告公司，AI 就是答案。</Quote>
+
+"我们很幸运，偶然间遇到了 Silverside，"Remley 说，"因为那几乎是我们让她重生的唯一选择。"
+
+Sazerac 在选定品牌之前就买下了超级碗的广告时段，而 Svedka 凭借创意而非技术赢得了内部竞争："怎么做没有做什么那么重要，"Remley 说。品牌在前一年秋天用 AI 制作过三支样片，但这场比赛意味着在没有名人来撑场的情况下接受全国的审视；Fembot 没有声音，因此 AI 本身就将成为明星。
+
+<Quote name="Amy Remley | Svedka 全球整合营销与创新副总裁">在某个时刻，我们非常清楚自己正走进风暴之眼。批评、议论、黑粉，这些都不是品牌最糟糕的处境。品牌最糟糕的处境是变得无关紧要。</Quote>
+
+传统的制作流程——数月锁定的分镜、锁定的脚本和锁定的音乐——无法从零重建一个角色，还要持续打磨她直到播出。团队需要一个无需锁定任何东西的系统。
+
+</Section>
+
+<Section id="topic-5" title="解决方案：让每个决策都保持开放的工作流">
+
+### 重建一个标志性角色，三支团队同时推进
+
+Silverside 从纸、笔和工业设计入手，对原版 Fembot 进行现代化改造并创造 Brobot。随后，工作室将通常需要顺序进行的工作并行推进：一组在新角色上训练 AI 模型，另一组训练模型来构建它们的世界，第三组则开发候选故事。团队看中的每个脚本，其动画样片都在数天内诞生。
+
+### 组件化工作流，而非"提示加祈祷"
+
+Silverside 没有从单一提示词生成镜头再听天由命，而是在 ComfyUI——一个围绕将不同组件连接起来而构建的系统——中搭建工作流。为了实现渐进式修改，制作团队甚至不得不开发新的工作流，这样换一个想法就不必重新开始生成。一道专门的最终处理会在交付前清除残余的幻觉。
+
+<Quote name="《Shake Your Bots Off》幕后花絮影片">这里没有"提示加祈祷"。仅在前 10 秒内，我们的两个机器人就完成了 12 个独立动作，其编舞水准远高于任何 AI 制作。</Quote>
+
+### 永不锁定
+
+由于策略、创意和制作同时进行，这支广告以线性制作从不允许的方式保持可编辑。审片周期昼夜不停，新的剪辑版本会在凌晨 2 点发短信给品牌方。据 Sazerac 首席营销官 Sara Saunders 所说，Silverside 在发布前一周还对广告做了重大修改。
+
+<Quote name="Amy Remley | Svedka 全球整合营销与创新副总裁">永远不锁定。永远。我们都已经把片子交给 NBC 了，我还在接到这样的电话：'嘿，我们能再改改吗？'</Quote>
+
+这种开放非但没有让流程变得敷衍，反而让它更加投入。
+
+<Quote name="Amy Remley | Svedka 全球整合营销与创新副总裁">我们在这支广告上花的时间更多，与创意团队的打磨也更多，因为一旦你意识到自己可以有一个新想法并随时修改，你就会想不停地改。</Quote>
+
+这种自由需要纪律。"你必须有一支非常紧密的团队，还要有足够的信任，才能在混沌中灵活推进，因为你要不断做决定，"Sazerac 战略、客户与运营总监 Drew Heidel 说。当一切都可控时，"理论上任何东西都是一个选项"，而"意图的清晰就变得极其重要"。
+
+### 舞蹈来自大众
+
+与此同时，Svedka 发起了一场公开征集，寻找机器人要表演的舞步。获胜的舞蹈来自 Jessica Rizzardi，一位 23 岁的纳什维尔居民，她的 TikTok 舞蹈赢得了比赛，Silverside 在数小时内就将它编入了机器人。时机正是关键所在："等我们的主要场景准备就绪时，来自 TikTok 的获胜舞蹈已经在等着我们了，"影片讲述道。"我们只需把它接入工作流。几分钟内，Fembot 的所有舞步就都做好了。"一段众包舞步，在数月前就锁定的流程里根本无法存活。
+
+<Embed src="https://www.youtube.com/embed/egsiBWbVFz4" title="通过 Silverside 的工作流被编入 Fembot 的众包舞步" />
+
+*一段众包舞步，通过 Silverside 的工作流被编入 Fembot。来源：Svedka。*
+
+### 自动化繁琐，保留匠心
+
+这一切都没有把人从工作中移除。"我们在这支广告上投入的头脑和双手，和任何传统制作广告一样多，"Remley 说。"只不过这一切都发生在后期。"改变的是这些双手投向了哪里：自动化吸收了繁琐的处理环节（在动画领域，工作流自动化通常会吸收诸如从关键帧到上色这类艺术家长久以来最不情愿做的步骤），而这些系统让创意足够快地成形，使团队能在影片已在制作之中时继续创造。正如幕后花絮影片所表述的，这不是一个技术取代人类的故事；而是一种技术取代了更旧的技术。
+
+对 Silverside AI 联合创始人 PJ Pereira 而言，正是这种被释放的流程才是关键所在。正如他对 ADWEEK 所说：
+
+<Quote name="PJ Pereira | Silverside AI 联合创始人">这是我们作为一个行业从未拥有过的创作自由。以前，创作流程的每一步都必须锁定。而这个流程让我们能够不断修正所有决策，确保做到最好，这反而让它比以往任何时候都更有人味。</Quote>
+
+</Section>
+
+<Section id="topic-6" title="为何选择 ComfyUI">
+
+持续修正的自由建立在控制之上，而控制正是 Silverside 围绕其构建 ComfyUI 流程的核心。单一提示词工具会以一种熟悉的方式失败：结果已经足够接近，但再改一处就会牵一发而动全身。工作流系统终结了这种循环。当一支团队准备把实验推向生产时，它们就登场了：工作流环境不是那种把某样东西丢还给你、任你取用或丢弃的老虎机，而是让镜头的每一个元素都处于制作团队的掌控之中。
+
+这种控制，在 Silverside 手中压缩了排期：历来需要半年的时间线被缩短到不足一个月。当广告最终播出时，Comfy 团队和其他人一样观看着它：一屋子技术人坐在超级碗前，摸不清这场比赛的规则，等着广告播出。
+
+</Section>
+
+<Section id="topic-7" title="总结">
+
+Silverside 的制作架构并没有把创意外包给模型。它给了人类更多施展创意的机会：更多迭代、更多打磨、更多决策，而且比任何传统流程所允许的都要晚。
+
+<Quote name="Sara Saunders | Sazerac 首席营销官">我们一直非常有意识地把一切都做到极致的品质，其中有人的情感。AI 不是捷径。</Quote>
+
+而在创意归属于何处这个问题上，Saunders 同样直言不讳："事实是，AI 并不具有创造力。我们需要人来做简报、指导、实验、编辑、迭代、打样，把一件高品质的创意作品交付出去。"
+
+对于考虑迈出这一步的品牌，Svedka 团队的建议是：锁定唯一重要的那件事，把其余一切都解锁。用 Heidel 的话说，品牌应当"确定并锁定他们所代表的东西"，然后建立"一支真正互相信任、能以 AI 的速度协作的团队，因为那才是唯一拖住你的东西"。
+
+至于 Fembot 为何回归，Remley 说得很清楚："这是一个提醒人类要有人味的机器人，让人放下手机，真正和身边的人交流。"她不会离开。
+
+<Embed src="https://www.youtube.com/embed/pkeWRI2yJGM" title="超级碗 LX 广告：《Shake Your Bots Off》" />
+
+*超级碗 '26 广告，《Shake Your Bots Off》。来源：Svedka。*
+
+<Quote name="《Shake Your Bots Off》幕后花絮影片">归根结底，匠心即热情。一种非常人性的热情，由我们的动画师、剪辑师、特效专业人员、设计师、调色师、音乐人和作家日复一日地呈现。</Quote>
+
+</Section>

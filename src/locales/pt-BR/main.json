@@ -3,6 +3,9 @@
     "dockToTop": "Fixar no topo",
     "feedback": "Feedback",
     "feedbackTooltip": "Feedback",
+    "freeTierPartner": "Nodes parceiros precisam de um plano pago",
+    "freeTierRuns": "{available} / {MAX_AVAILABLE} execuções restantes",
+    "freeTierRunsExhausted": "Sem execuções restantes",
     "share": "Compartilhar",
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
@@ -261,6 +264,7 @@
       "freeTierBadge": "Elegível para o Plano Gratuito",
       "freeTierDescription": "Cadastre-se com Google para ganhar {credits} créditos gratuitos todo mês. Não precisa de cartão.",
       "freeTierDescriptionGeneric": "Cadastre-se com Google para ganhar créditos gratuitos todo mês. Não precisa de cartão.",
+      "googleSsoInAppBrowserNotice": "Se você abriu isso de um navegador dentro do app (ex: Instagram, LinkedIn), o login com Google pode não funcionar. Use GitHub ou e-mail, ou abra esta página no navegador padrão do seu dispositivo.",
       "insecureContextWarning": "Esta conexão é insegura (HTTP) - suas credenciais podem ser interceptadas por invasores se você continuar.",
       "loginButton": "Entrar",
       "loginWithGithub": "Entrar com Github",
@@ -785,6 +789,11 @@
       "gpuUsage": "Uso de GPU"
     },
     "faqs": "Perguntas frequentes",
+    "insufficient": {
+      "memberCta": "Ok, entendi",
+      "memberDescription": "Sua equipe usou todos os créditos. Os administradores do workspace precisam adicionar mais créditos para executar workflows.",
+      "memberTitle": "Este workspace está sem créditos"
+    },
     "invoiceHistory": "Histórico de faturas",
     "lastUpdated": "Última atualização",
     "loadEventsError": "Falha ao carregar a atividade. Por favor, tente novamente.",
@@ -1452,6 +1461,9 @@
     "noExportsInQueue": "Nenhuma exportação de {filter} na fila",
     "preparingExport": "Preparando exportação...",
     "retryDownload": "Tentar baixar novamente"
+  },
+  "feedback": {
+    "title": "Enviar feedback"
   },
   "g": {
     "1x": "1x",
@@ -2783,7 +2795,6 @@
     "accept": "Claro, vou ajudar!",
     "description": "Você tem usado este recurso. Pode dedicar um momento para compartilhar seu feedback?",
     "dontAskAgain": "Não perguntar novamente",
-    "loadError": "Falha ao carregar a pesquisa. Por favor, tente novamente mais tarde.",
     "notNow": "Agora não",
     "title": "Ajude-nos a melhorar"
   },
@@ -2798,6 +2809,7 @@
     "ElevenLabs": "ElevenLabs",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HeyGen": "HeyGen",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -2827,6 +2839,7 @@
     "ace": "ace",
     "adjustments": "ajustes",
     "advanced": "avançado",
+    "anima": "anima",
     "animate": "animar",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
@@ -2849,6 +2862,7 @@
     "create": "criar",
     "custom": "personalizado",
     "dancer": "dançarino",
+    "dataset": "dataset",
     "debug": "depuração",
     "detection": "detecção",
     "experimental": "experimental",
@@ -2870,6 +2884,7 @@
     "image": "imagem",
     "infinite talk": "infinite talk",
     "instructpix2pix": "instructpix2pix",
+    "joyimage": "joyimage",
     "kandinsky": "kandinsky",
     "latent": "latente",
     "loaders": "carregadores",
@@ -2882,6 +2897,7 @@
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "modelo específico",
+    "model_patches": "model_patches",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "ruído",
@@ -3001,6 +3017,7 @@
       "appTypeNative": "Aplicativo nativo",
       "appTypeWeb": "Aplicativo web",
       "deny": "Cancelar",
+      "detailsHeader": "Detalhes",
       "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
       "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
       "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
@@ -3015,7 +3032,6 @@
       "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
       "subtitle": "Faça login em {resource} para continuar",
       "title": "{client} deseja acesso",
-      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
       "workspaceLabel": "Workspace"
     },
     "scopes": {
@@ -4010,6 +4026,7 @@
       "waitingForSubscription": "Conclua sua assinatura na nova aba. Detectaremos automaticamente quando você terminar!"
     },
     "resubscribe": "Reassinar",
+    "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
     "saveYearly": "Economize 20%",
@@ -4135,7 +4152,6 @@
     }
   },
   "templateWorkflows": {
-    "activeFilters": "Filtros:",
     "allTemplates": "Todos os Modelos",
     "categories": "Categorias",
     "category": {
@@ -4160,9 +4176,12 @@
       "Video": "Vídeo",
       "Video API": "API de Vídeo"
     },
+    "clearAllFilters": "Limpar todos os filtros",
     "error": {
       "templateNotFound": "Modelo \"{templateName}\" não encontrado"
     },
+    "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
+    "filtersButton": "Filtros",
     "licenseFilter": "Licença",
     "loading": "Carregando modelos...",
     "loadingMore": "Carregando mais modelos...",
@@ -4260,6 +4279,9 @@
     "updateRequested": "Atualização solicitada",
     "useApiKeyTip": "Dica: Não consegue acessar o login normal? Use a opção Comfy API Key.",
     "userNotAuthenticated": "Usuário não autenticado"
+  },
+  "typeform": {
+    "loadError": "Falha ao carregar o formulário. Por favor, tente novamente mais tarde."
   },
   "userSelect": {
     "enterUsername": "Digite um nome de usuário",
@@ -4396,6 +4418,32 @@
     }
   },
   "workspacePanel": {
+    "billingStatus": {
+      "ending": {
+        "body": "Os membros mantêm acesso total até lá. Reative para manter seus créditos e vagas compartilhados.",
+        "reactivate": "Reativar plano",
+        "title": "O plano da sua equipe termina em {date}"
+      },
+      "outOfCredits": {
+        "addCredits": "Adicionar créditos",
+        "body": "Sua equipe usou todos os créditos. Adicione mais créditos para continuar gerando ou aguarde até que os créditos sejam renovados em {date}.",
+        "bodyNoDate": "Sua equipe usou todos os créditos. Adicione mais créditos para continuar gerando.",
+        "dismiss": "Dispensar",
+        "memberBody": "Sua equipe usou todos os créditos. Os administradores do workspace precisam adicionar mais créditos para continuar gerando.",
+        "title": "Sem créditos"
+      },
+      "paused": {
+        "body": "A assinatura deste workspace está pausada. Atualize o pagamento para retomar.",
+        "memberBody": "A assinatura deste workspace está pausada. Os administradores do workspace precisam atualizar o método de pagamento.",
+        "title": "Assinatura pausada"
+      },
+      "updatePayment": "Atualizar pagamento",
+      "warning": {
+        "body": "Seu último pagamento não foi processado. Sua assinatura será pausada em {date} caso o pagamento não seja atualizado.",
+        "bodyNoDate": "Seu último pagamento não foi processado. Atualize o pagamento para evitar a pausa.",
+        "title": "Pagamento recusado"
+      }
+    },
     "changeRoleDialog": {
       "demoteConfirm": "Rebaixar para membro",
       "demoteMessage": "Ele(a) perderá acesso de administrador.",

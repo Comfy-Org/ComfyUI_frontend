@@ -177,6 +177,32 @@
       }
     }
   },
+  "AnimaLLLiteApply": {
+    "display_name": "הפעל Anima LLLite",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "description": "כוונן את עוצמת השמע בכמות מסוימת בדציבלים (dB).",
     "display_name": "כוונון עוצמת שמע",
@@ -2010,9 +2036,6 @@
       },
       "model_reasoning_effort": {
         "name": "reasoning_effort"
-      },
-      "model_temperature": {
-        "name": "temperature"
       },
       "prompt": {
         "name": "prompt",
@@ -5861,6 +5884,212 @@
       }
     }
   },
+  "HeyGenAvatarVideoNode": {
+    "description": "צור וידאו מגיש מדבר מאווטאר של HeyGen. כולל את האווטארים הציבוריים הפופולריים ביותר של HeyGen; ניתן לספק כל מזהה מראה (look ID) כעקיפה.",
+    "display_name": "וידאו אווטאר HeyGen",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס גובה-רוחב של הווידאו. 'auto' עוקב אחרי חומר המקור של האווטאר."
+      },
+      "background_color": {
+        "name": "background_color",
+        "tooltip": "צבע רקע אחיד כאקס קוד (hex) (למשל '#00ff00'). השאר ריק כדי להשתמש ברקע של האווטאר."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "custom_avatar_id": {
+        "name": "custom_avatar_id",
+        "tooltip": "מזהה מראה אווטאר של HeyGen (אופציונלי). כאשר מוגדר, עוקף את האווטאר שנבחר למעלה. ניתן להשתמש בכל אחד מ-3000+ המראות הציבוריות של HeyGen (או אווטארים פרטיים שלך)."
+      },
+      "engine": {
+        "name": "engine",
+        "tooltip": "מנוע רינדור; כל בחירה מציגה רק את האווטארים התומכים בה. 'auto' מציע כל אווטאר ובוחר את המנוע הטוב ביותר עבורו (Avatar IV מועדף). Avatar V הוא באיכות הגבוהה ביותר, Avatar III הוא המשתלם ביותר."
+      },
+      "engine_avatar": {
+        "name": "avatar"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "רזולוציית הווידאו המתקבל."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "לא נשלח ל-HeyGen; שינוי הערך יגרום להרצה מחדש."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "הנעה של האווטאר באמצעות תסריט טקסט (HeyGen text-to-speech) או אודיו משלך."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenCreateAvatarNode": {
+    "description": "צור אווטאר HeyGen לשימוש חוזר מתמונה של אדם או מהנחיה טקסטואלית (דמות שנוצרה). הזן את ה-avatar_id שהתקבל לשדה custom_avatar_id של HeyGen Avatar Video — ושמור את המזהה לשימוש עתידי בתהליכי עבודה.",
+    "display_name": "יצירת אווטאר HeyGen",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "צור דמות חדשה מהנחיה טקסטואלית, או צור את האווטאר מתמונה מחוברת של אדם."
+      },
+      "source_prompt": {
+        "name": "prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "avatar_id",
+        "tooltip": "מזהה מראה אווטאר. העבר אותו לשדה custom_avatar_id של HeyGen Avatar Video; שמור אותו לשימוש חוזר באווטאר מאוחר יותר."
+      },
+      "1": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTalkingPhotoNode": {
+    "description": "הנפש כל תמונה של אדם לסרטון מדבר מסונכרן שפתיים (HeyGen Avatar IV). ניתן להניע באמצעות תסריט טקסט או אודיו משלך.",
+    "display_name": "HeyGen Talking Photo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס גובה-רוחב בפלט. 'auto' עוקב אחרי התמונה המקורית."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expressiveness": {
+        "name": "expressiveness",
+        "tooltip": "רמת ההבעה של הפנים והתנועות המונפשות."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "תמונה של אדם להנפשה. מוקטן אוטומטית אם גדול מ-2K."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "רזולוציית וידאו בפלט."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "לא נשלח ל-HeyGen; שינוי הערך יגרום להרצה מחדש."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "הנעה של האווטאר באמצעות תסריט טקסט (HeyGen text-to-speech) או אודיו משלך."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenTextToSpeechNode": {
+    "description": "הפק אודיו דיבור מטקסט באמצעות מנוע Starfish TTS של HeyGen. כולל את הקולות הפופולריים ביותר של HeyGen ב-17 שפות.",
+    "display_name": "HeyGen Text to Speech",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "custom_voice_id": {
+        "name": "custom_voice_id",
+        "tooltip": "מזהה קול אופציונלי של HeyGen. כאשר מוגדר, עוקף את הקול שנבחר למעלה. הקול חייב לתמוך במנוע Starfish."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "לא נשלח ל-HeyGen; שינוי הערך יגרום להרצה מחדש."
+      },
+      "speed": {
+        "name": "speed",
+        "tooltip": "מקדם מהירות הדיבור."
+      },
+      "ssml": {
+        "name": "ssml",
+        "tooltip": "התייחס לטקסט כ-SSML (לשליטה בהפסקות, הדגשות והגייה)."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "טקסט לסינתוז (עד 5000 תווים). הדיבור שנוצר חייב להיות באורך של לפחות שנייה אחת."
+      },
+      "voice": {
+        "name": "voice",
+        "tooltip": "הקול לשימוש (נבחר מתוך הקולות הפופולריים ביותר התואמים ל-Starfish של HeyGen)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVideoTranslateNode": {
+    "description": "תרגם וידאו מדובר לשפה אחרת. משכפל את קול הדובר המקורי ומסנכרן מחדש את תנועות הפה כך שיתאימו לדיבור המתורגם.",
+    "display_name": "HeyGen תרגום וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "'speed' מהיר יותר; 'precision' מספק סנכרון שפתיים איכותי יותר במחיר כפול."
+      },
+      "output_language": {
+        "name": "שפת יעד",
+        "tooltip": "שפת היעד לוידאו המתורגם."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "לא נשלח ל-HeyGen; שינוי הערך יגרום להרצה מחדש."
+      },
+      "speaker_count": {
+        "name": "מספר דוברים",
+        "tooltip": "מספר הדוברים בוידאו. 0 = זיהוי אוטומטי."
+      },
+      "translate_audio_only": {
+        "name": "תרגם אודיו בלבד",
+        "tooltip": "החלף רק את רצועת האודיו, תוך שמירה על תנועות הפה המקוריות (ללא סנכרון שפתיים)."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "וידאו עם דיבור לתרגום."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "ממוצע את פלט המודל על פני מספר מיקומי טלאים מוזזים בשלבי הדגימה המאוחרים. מבטל תפרים.",
     "display_name": "HiDream-O1 החלקת תפרי טלאים",
@@ -9493,6 +9722,42 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "LoadVideoDataSetFromFolder": {
+    "description": "טען מערך נתונים של וידאו מתיקיה מוגדרת והחזר רשימת סרטונים. פורמטים נתמכים: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "טעינת וידאו (מתיקיה)",
+    "inputs": {
+      "folder": {
+        "name": "תיקיה",
+        "tooltip": "התיקיה המכילה קבצי וידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "וידאו",
+        "tooltip": "הפניות וידאו עצלות; פריימים מפוענחים רק כאשר יש צורך בהמשך התהליך."
+      }
+    }
+  },
+  "LoadVideoTextDataSetFromFolder": {
+    "description": "טען מערך נתונים של זוגות וידאו וטקסט מתיקיה מוגדרת והחזר אותם כרשימה. פורמטים נתמכים: MP4, AVI, MOV, WEBM, MKV, FLV.",
+    "display_name": "טעינת וידאו-טקסט (מתיקיה)",
+    "inputs": {
+      "folder": {
+        "name": "תיקיה",
+        "tooltip": "התיקיה המכילה קבצי וידאו וכתובות .txt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "וידאו",
+        "tooltip": "הפניות וידאו עצלות; פריימים מפוענחים רק כאשר יש צורך בהמשך התהליך."
+      },
+      "1": {
+        "name": "טקסטים",
+        "tooltip": "רשימת כתוביות טקסט."
       }
     }
   },
@@ -18445,6 +18710,60 @@
       }
     }
   },
+  "ShuffleVideoDataset": {
+    "description": "ערבב באופן אקראי את סדר הסרטונים ברשימה.",
+    "display_name": "ערבוב רשימת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed אקראי."
+      },
+      "videos": {
+        "name": "וידאו",
+        "tooltip": "רשימת סרטונים לערבוב."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "וידאו",
+        "tooltip": "וידאו מעורבב"
+      }
+    }
+  },
+  "ShuffleVideoTextDataset": {
+    "description": "ערבב באופן אקראי את סדר זוגות הוידאו-טקסט ברשימה.",
+    "display_name": "ערבוב זוגות וידאו-טקסט",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed אקראי."
+      },
+      "texts": {
+        "name": "טקסטים",
+        "tooltip": "רשימת טקסטים לערבוב."
+      },
+      "videos": {
+        "name": "וידאו",
+        "tooltip": "רשימת סרטונים לערבוב."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "וידאו",
+        "tooltip": "וידאו מעורבב"
+      },
+      "1": {
+        "name": "טקסטים",
+        "tooltip": "טקסטים מעורבבים"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "גרסה גנרית של צומת SkipLayerGuidance שניתן להשתמש בה בכל מודל DiT.",
     "display_name": "SkipLayerGuidanceDiT",
@@ -19644,6 +19963,28 @@
       },
       "prompt": {
         "name": "פרומפט"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeJoyImageEdit": {
+    "display_name": "TextEncodeJoyImageEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -21644,6 +21985,37 @@
       }
     }
   },
+  "VideoFrameSample": {
+    "description": "דגום מספר קבוע של פריימים מווידאו באמצעות אסטרטגיות שונות.",
+    "display_name": "דגימת פריים מווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "num_frames": {
+        "name": "מספר פריימים",
+        "tooltip": "מספר הפריימים לדגימה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי (משמש רק עם אסטרטגיית 'random')."
+      },
+      "strategy": {
+        "name": "אסטרטגיה",
+        "tooltip": "uniform: מרווחים שווים, head: ראשונים N, tail: אחרונים N, random: אקראי ממויין."
+      },
+      "video": {
+        "name": "ווידאו",
+        "tooltip": "קלט ווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ווידאו",
+        "tooltip": "ווידאו מדוגם."
+      }
+    }
+  },
   "VideoLinearCFGGuidance": {
     "display_name": "Video Linear CFG Guidance",
     "inputs": {
@@ -21652,6 +22024,57 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoRandomTemporalCrop": {
+    "description": "חתוך באופן אקראי טווח רציף של פריימים מווידאו.",
+    "display_name": "חיתוך ווידאו (טמפורלי אקראי)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "length": {
+        "name": "אורך",
+        "tooltip": "מספר הפריימים לשמירה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "זרע אקראי."
+      },
+      "video": {
+        "name": "ווידאו",
+        "tooltip": "קלט ווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ווידאו",
+        "tooltip": "ווידאו חתוך (עצלני)."
+      }
+    }
+  },
+  "VideoTemporalCrop": {
+    "description": "חתוך טווח רציף של פריימים מווידאו.",
+    "display_name": "חיתוך ווידאו (טמפורלי)",
+    "inputs": {
+      "length": {
+        "name": "אורך",
+        "tooltip": "מספר הפריימים לשמירה."
+      },
+      "start_frame": {
+        "name": "פריים התחלה",
+        "tooltip": "אינדקס פריים התחלתי."
+      },
+      "video": {
+        "name": "ווידאו",
+        "tooltip": "קלט ווידאו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ווידאו",
+        "tooltip": "ווידאו חתוך (עצלני)."
       }
     }
   },
@@ -23886,6 +24309,33 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "WanUni3CControlnetApply": {
+    "display_name": "הפעלת Wan Uni3C ControlNet",
+    "inputs": {
+      "end_percent": {
+        "name": "אחוז סיום"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "render_video": {
+        "name": "ווידאו רנדר",
+        "tooltip": "ווידאו ההנחיה שנוצר ממסלול המצלמה, לרוב רנדרים של ענן נקודות מעוותים של תמונת הקלט."
+      },
+      "start_percent": {
+        "name": "אחוז התחלה"
+      },
+      "strength": {
+        "name": "עוצמה"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },

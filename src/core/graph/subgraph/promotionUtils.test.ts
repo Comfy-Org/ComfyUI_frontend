@@ -54,6 +54,7 @@ vi.mock('@/services/litegraphService', () => ({
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   autoExposeKnownPreviewNodes,
+  createPromotedHostWidgetIdLookup,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
@@ -585,6 +586,68 @@ describe('isLinkedPromotion', () => {
     expect(isLinkedPromotion(host, String(nodeB.id), 'value')).toBe(true)
     expect(isLinkedPromotion(host, String(nodeA.id), 'value')).toBe(false)
     expect(isLinkedPromotion(host, '5', 'string_a')).toBe(false)
+  })
+})
+
+describe('createPromotedHostWidgetIdLookup', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function promoteFreshSource(
+    host: SubgraphNode,
+    nodeTitle: string,
+    widgetName: string
+  ): LGraphNode {
+    const node = new LGraphNode(nodeTitle)
+    host.subgraph.add(node)
+    const input = node.addInput(widgetName, 'STRING')
+    const sourceWidget = node.addWidget('text', widgetName, 'v', () => {})
+    input.widget = { name: sourceWidget.name }
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, node, sourceWidget).ok
+    ).toBe(true)
+    return node
+  }
+
+  it('returns undefined (does not throw) when the interior source node is gone', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const interiorNode = promoteFreshSource(host, 'Source', 'text')
+    const resolveBefore = createPromotedHostWidgetIdLookup(host)
+    expect(resolveBefore(String(interiorNode.id), 'text')).toBe(
+      host.inputs[0]?.widgetId
+    )
+
+    host.subgraph.remove(interiorNode)
+
+    let resolveAfter: ReturnType<typeof createPromotedHostWidgetIdLookup>
+    expect(() => {
+      resolveAfter = createPromotedHostWidgetIdLookup(host)
+    }).not.toThrow()
+    expect(resolveAfter!(String(interiorNode.id), 'text')).toBeUndefined()
+  })
+
+  it('resolves each host widgetId independently for two sources promoting different widgets', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const nodeA = promoteFreshSource(host, 'GlslA', 'alpha')
+    const nodeB = promoteFreshSource(host, 'GlslB', 'beta')
+
+    const hostIdAlpha = host.inputs.find(
+      (input) => input.name === 'alpha'
+    )?.widgetId
+    const hostIdBeta = host.inputs.find(
+      (input) => input.name === 'beta'
+    )?.widgetId
+    expect(hostIdAlpha).toBeDefined()
+    expect(hostIdBeta).toBeDefined()
+    expect(hostIdAlpha).not.toBe(hostIdBeta)
+
+    const resolve = createPromotedHostWidgetIdLookup(host)
+
+    expect(resolve(String(nodeA.id), 'alpha')).toBe(hostIdAlpha)
+    expect(resolve(String(nodeB.id), 'beta')).toBe(hostIdBeta)
+    expect(resolve(String(nodeA.id), 'beta')).toBeUndefined()
+    expect(resolve(String(nodeB.id), 'alpha')).toBeUndefined()
   })
 })
 
