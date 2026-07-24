@@ -438,7 +438,6 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuting(e: CustomEvent<string | number | null>): void {
     progressCoalescer.cancel()
 
-
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
