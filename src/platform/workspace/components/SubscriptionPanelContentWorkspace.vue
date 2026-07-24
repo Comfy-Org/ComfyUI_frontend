@@ -242,7 +242,8 @@
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
           <div class="w-full lg:max-w-md">
-            <CreditsTile :zero-state="showZeroState" />
+            <MemberCreditsTile v-if="memberCap" />
+            <CreditsTile v-else :zero-state="showZeroState" />
           </div>
 
           <div
@@ -316,6 +317,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import MemberCreditsTile from '@/platform/workspace/components/MemberCreditsTile.vue'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -389,6 +392,8 @@ const isMemberView = computed(
 const showZeroState = computed(
   () => showTeamSubscribePrompt.value || isMemberView.value
 )
+
+const { memberCap } = useMemberCreditDisplay()
 
 function handleSubscribeWorkspace() {
   showSubscriptionDialog({ reason: 'settings_billing_panel' })

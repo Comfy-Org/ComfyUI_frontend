@@ -265,13 +265,10 @@ import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  centsToCredits,
-  formatCreditsFromCents
-} from '@/base/credits/comfyCredits'
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -286,6 +283,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useMemberCreditDisplay } from '@/platform/workspace/composables/useMemberCreditDisplay'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -295,13 +293,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
-  members,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-
-onMounted(() => {
-  if (!isPersonalWorkspace.value) void workspaceStore.ensureMembersLoaded()
-})
 const { permissions } = useWorkspaceUI()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
@@ -340,53 +333,16 @@ const subscriptionDialog = useSubscriptionDialog()
 const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
-const selfMember = computed(() =>
-  members.value.find(
-    (m) => m.email.toLowerCase() === userEmail.value?.toLowerCase()
-  )
-)
-
-const memberCap = computed(() => {
-  const m = selfMember.value
-  if (isPersonalWorkspace.value || !m || m.role !== 'member') return null
-  if (m.monthlyCreditLimit == null) return null
-  return {
-    limit: m.monthlyCreditLimit,
-    remaining: Math.max(0, m.monthlyCreditLimit - (m.creditsUsedThisMonth ?? 0))
-  }
-})
-
-const balanceCredits = computed(() =>
-  centsToCredits(
-    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
-  )
-)
-
-const displayedNumber = computed(() =>
-  memberCap.value
-    ? Math.min(memberCap.value.remaining, balanceCredits.value)
-    : balanceCredits.value
-)
-
-const isWorkspaceOut = computed(() => balanceCredits.value <= 0)
-const isLimitReached = computed(
-  () =>
-    memberCap.value !== null &&
-    memberCap.value.remaining <= 0 &&
-    !isWorkspaceOut.value
-)
-const isEdgeState = computed(
-  () =>
-    memberCap.value !== null &&
-    !isWorkspaceOut.value &&
-    !isLimitReached.value &&
-    balanceCredits.value < memberCap.value.remaining
-)
+const {
+  memberCap,
+  displayedNumber,
+  isWorkspaceOut,
+  isLimitReached,
+  isEdgeState,
+  isTeamMemberViewer
+} = useMemberCreditDisplay()
 
 const REQUEST_BUTTON_FLOOR = 1500
-const isTeamMemberViewer = computed(
-  () => !isPersonalWorkspace.value && selfMember.value?.role === 'member'
-)
 const requestAction = computed(() => {
   if (!isTeamMemberViewer.value) return null
   if (isWorkspaceOut.value) return 'notifyOwner' as const
