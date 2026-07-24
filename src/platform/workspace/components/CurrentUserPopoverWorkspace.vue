@@ -107,7 +107,7 @@
       <span v-else class="mr-auto" />
       <div
         v-if="isEdgeState && isEdgePopoverOpen && memberCap"
-        class="absolute top-1/2 right-full z-50 mr-2 w-72 -translate-y-1/2 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
+        class="absolute top-1/2 right-full z-50 mr-3 w-72 -translate-y-1/2 rounded-lg border border-border-default bg-base-background p-3 shadow-lg"
         data-testid="member-credits-edge-popover"
       >
         <p class="m-0 text-sm text-base-foreground">
