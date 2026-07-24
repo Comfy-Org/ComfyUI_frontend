@@ -11,6 +11,7 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly preset50: Locator
   readonly preset100: Locator
   readonly payAmountInput: Locator
+  readonly contactUsLink: Locator
   readonly pricingLink: Locator
 
   constructor(page: Page) {
@@ -38,6 +39,7 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.payAmountInput = this.root
       .getByTestId('top-up-pay-amount')
       .locator('input')
+    this.contactUsLink = this.root.getByRole('link', { name: 'Contact us' })
     this.pricingLink = this.root.getByRole('link', {
       name: 'View pricing details'
     })
