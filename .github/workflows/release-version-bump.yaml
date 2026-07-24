@@ -93,10 +93,6 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            // Only nightly patch bumps use the `version-bump-` prefix. The weekly
-            // Monday minor RC cut uses `release-weekly-cut-*` and so is never
-            // matched here — it must survive until it auto-merges and cuts the
-            // release branches.
             const prefix = 'version-bump-'
             const closed = []
             const prs = await github.paginate(github.rest.pulls.list, {
@@ -108,6 +104,13 @@ jobs:
 
             for (const pr of prs) {
               if (!pr.head?.ref?.startsWith(prefix)) {
+                continue
+              }
+
+              // The weekly Monday minor RC cut is also a `version-bump-*` PR, but
+              // it must survive until it auto-merges and cuts the release
+              // branches. Never close the PR carrying the weekly-cut marker.
+              if (pr.labels?.some((label) => label.name === 'weekly-release-cut')) {
                 continue
               }
 
@@ -230,13 +233,14 @@ jobs:
             ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
 
             **Base branch:** `${{ steps.prepared-inputs.outputs.branch }}`
-          # Weekly Monday minor cut uses a distinct branch prefix so the nightly
-          # "Close stale nightly version bump PRs" step (which only matches
-          # `version-bump-*`) never closes it before it merges.
-          branch: ${{ steps.prepared-inputs.outputs.weekly_cut == 'true' && format('release-weekly-cut-{0}', steps.bump-version.outputs.NEW_VERSION) || format('version-bump-{0}', steps.bump-version.outputs.NEW_VERSION) }}
+          # Shared `version-bump-*` prefix (same as nightly bumps and the former
+          # manual minor bumps) so the weekly cut keeps the existing release CI
+          # treatment (Chromatic in ci-tests-storybook.yaml, i18n-update-core.yaml).
+          # The `weekly-release-cut` marker label — added here for the Monday cut —
+          # is what exempts it from the stale-PR closer above.
+          branch: version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: ${{ steps.prepared-inputs.outputs.branch }}
-          labels: |
-            Release
+          labels: ${{ steps.prepared-inputs.outputs.weekly_cut == 'true' && 'Release,weekly-release-cut' || 'Release' }}
 
       - name: Enable auto-merge for weekly RC cut PR
         # Only the Monday weekly minor bump. Native auto-merge makes the PR merge
@@ -256,9 +260,9 @@ jobs:
           PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           set -euo pipefail
-          # Marker label so the freeze PR is easy to find and is unmistakably
-          # distinct from nightly patch bumps.
-          gh pr edit "$PR_NUMBER" --add-label 'weekly-release-cut' \
-            || echo "::warning::Could not add 'weekly-release-cut' label to PR #$PR_NUMBER"
-          gh pr merge "$PR_NUMBER" --auto --squash \
-            || echo "::warning::Could not enable auto-merge for PR #$PR_NUMBER (is the repo 'Allow auto-merge' setting enabled?)"
+          # Fail loudly if auto-merge cannot be armed: the PR exists but the cut
+          # would silently never happen, so surface it instead of swallowing it.
+          if ! gh pr merge "$PR_NUMBER" --auto --squash; then
+            echo "::error::Could not enable auto-merge for PR #$PR_NUMBER. The weekly RC cut will NOT proceed until this PR merges. Enable auto-merge / merge it manually, and confirm the repo 'Allow auto-merge' setting is on."
+            exit 1
+          fi
