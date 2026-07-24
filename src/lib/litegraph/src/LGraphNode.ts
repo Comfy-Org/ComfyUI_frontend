@@ -1,4 +1,4 @@
-import { toValue } from 'vue'
+import { shallowReactive, toValue } from 'vue'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
@@ -239,6 +239,15 @@ export interface LGraphNode {
 // #endregion Types
 
 /**
+ * Overwrites `slots` with `value` without swapping the array, so subscribers
+ * keep tracking the same reactive target. A self-assignment is a no-op.
+ */
+function replaceSlotsInPlace<T>(slots: T[], value: readonly T[]): void {
+  if (slots === value) return
+  slots.splice(0, slots.length, ...value)
+}
+
+/**
  * Base class for all nodes
  * @param title a name for the node
  * @param type a type for the node
@@ -320,8 +329,32 @@ export class LGraphNode
     return this._state.type
   }
 
-  inputs: INodeInputSlot[] = []
-  outputs: INodeOutputSlot[] = []
+  protected _inputs?: INodeInputSlot[]
+  protected _outputs?: INodeOutputSlot[]
+
+  /**
+   * Input slots, held in a `shallowReactive` array so the Vue renderer tracks
+   * slot add / remove / reorder. Slot objects themselves are not made reactive.
+   *
+   * Assignment replaces the contents in place rather than swapping the array,
+   * so the identity the renderer subscribed to survives.
+   */
+  get inputs(): INodeInputSlot[] {
+    return (this._inputs ??= shallowReactive<INodeInputSlot[]>([]))
+  }
+
+  set inputs(value: INodeInputSlot[]) {
+    replaceSlotsInPlace(this.inputs, value)
+  }
+
+  /** @see {@link inputs} */
+  get outputs(): INodeOutputSlot[] {
+    return (this._outputs ??= shallowReactive<INodeOutputSlot[]>([]))
+  }
+
+  set outputs(value: INodeOutputSlot[]) {
+    replaceSlotsInPlace(this.outputs, value)
+  }
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
@@ -337,6 +370,15 @@ export class LGraphNode
     this._state.flags = value
   }
 
+  /**
+   * The node's widgets. Render order is owned by `widgetValueStore`, which
+   * {@link addWidget}, {@link addCustomWidget} and {@link removeWidget} keep in
+   * step — use them to add or remove.
+   *
+   * Mutating this array directly (`node.widgets.splice(…)`) leaves the store's
+   * order stale and the widget will keep rendering until something else
+   * invalidates it.
+   */
   widgets?: IBaseWidget[]
 
   /** Property manager for this node */
@@ -987,7 +1029,6 @@ export class LGraphNode
       this.title = this.constructor.title
     }
 
-    this.inputs ??= []
     this.inputs = this.inputs.map((input) =>
       toClass(NodeInputSlot, input, this)
     )
@@ -1001,7 +1042,6 @@ export class LGraphNode
       this.onInputAdded?.(input)
     }
 
-    this.outputs ??= []
     this.outputs = this.outputs.map((output) =>
       toClass(NodeOutputSlot, output, this)
     )
