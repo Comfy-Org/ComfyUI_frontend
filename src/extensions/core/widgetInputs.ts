@@ -400,6 +400,14 @@ export class PrimitiveNode extends LGraphNode {
 
     this._removeWidgets()
   }
+
+  override resolveVirtualValue() {
+    const w = this.widgets?.[0]
+    let value = w?.serializeValue ? w.serializeValue(this, 0) : w?.value
+    return value && this.properties[replacePropertyName] && this.graph
+      ? applyTextReplacements(this.graph, String(value))
+      : value
+  }
 }
 
 export function getWidgetConfig(

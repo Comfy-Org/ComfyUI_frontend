@@ -308,7 +308,7 @@ export const useLitegraphService = () => {
     }
 
     if (!widget?.options?.socketless) {
-      const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
+      const inputSpecV1 = transformInputSpecV2ToV1(inputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
         localized_name: st(nameKey, inputName),
