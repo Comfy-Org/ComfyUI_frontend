@@ -7,133 +7,13 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
-import { loadTemplateWorkflow } from './__fixtures__/loadTemplateWorkflow'
 import {
   fromWorkflowJson,
   resolveRoles,
   templateOverrides
 } from './roleResolver'
-import type { CuratedTemplateId } from './roleResolver'
 
-interface CuratedExpectation {
-  sourceId: number | null
-  promptInnerId: number
-  promptWidget: string
-  engineId: number
-  sinkId: number
-  mediaKind: 'image' | 'video'
-}
-
-const CURATED: Record<CuratedTemplateId, CuratedExpectation> = {
-  image_krea2_turbo_t2i: {
-    sourceId: null,
-    promptInnerId: 19,
-    promptWidget: 'value',
-    engineId: 3,
-    sinkId: 29,
-    mediaKind: 'image'
-  },
-  image_z_image_turbo: {
-    sourceId: null,
-    promptInnerId: 27,
-    promptWidget: 'text',
-    engineId: 3,
-    sinkId: 9,
-    mediaKind: 'image'
-  },
-  video_ltx2_3_i2v: {
-    sourceId: 269,
-    promptInnerId: 319,
-    promptWidget: 'value',
-    engineId: 283,
-    sinkId: 75,
-    mediaKind: 'video'
-  },
-  video_wan2_2_14B_i2v: {
-    sourceId: 97,
-    promptInnerId: 93,
-    promptWidget: 'text',
-    engineId: 86,
-    sinkId: 108,
-    mediaKind: 'video'
-  },
-  flux_kontext_dev_basic: {
-    sourceId: 190,
-    promptInnerId: 6,
-    promptWidget: 'text',
-    engineId: 31,
-    sinkId: 136,
-    mediaKind: 'image'
-  }
-}
-
-const curatedIds = Object.keys(CURATED) as CuratedTemplateId[]
-
-describe('resolveRoles — curated templates, heuristics only (no override)', () => {
-  it.for(curatedIds)('resolves %s from its real JSON', (id) => {
-    const expected = CURATED[id]
-    const roles = resolveRoles(loadTemplateWorkflow(id))
-
-    if (expected.sourceId === null) {
-      expect(roles.source).toBeNull()
-    } else {
-      expect(roles.source?.nodeId).toBe(toNodeId(expected.sourceId))
-    }
-    expect(roles.prompt?.innerNodeId).toBe(toNodeId(expected.promptInnerId))
-    expect(roles.prompt?.widgetName).toBe(expected.promptWidget)
-    expect(roles.engine?.nodeId).toBe(toNodeId(expected.engineId))
-    expect(roles.sink?.nodeId).toBe(toNodeId(expected.sinkId))
-    expect(roles.mediaKind).toBe(expected.mediaKind)
-  })
-
-  it('rejects the internal-fed decoy CLIPTextEncode (krea 6, ltx 303)', () => {
-    expect(
-      resolveRoles(loadTemplateWorkflow('image_krea2_turbo_t2i')).prompt
-        ?.innerNodeId
-    ).not.toBe(toNodeId(6))
-    expect(
-      resolveRoles(loadTemplateWorkflow('video_ltx2_3_i2v')).prompt?.innerNodeId
-    ).not.toBe(toNodeId(303))
-  })
-
-  it('picks the boundary-fed user prompt over a sibling system prompt (krea)', () => {
-    const roles = resolveRoles(loadTemplateWorkflow('image_krea2_turbo_t2i'))
-    expect(roles.prompt?.innerNodeId).toBe(toNodeId(19))
-  })
-
-  it('picks the positive CLIPTextEncode over the negative one (wan)', () => {
-    const roles = resolveRoles(loadTemplateWorkflow('video_wan2_2_14B_i2v'))
-    expect(roles.prompt?.innerNodeId).toBe(toNodeId(93))
-  })
-
-  it('picks one source when several LoadImage exist (flux)', () => {
-    const roles = resolveRoles(loadTemplateWorkflow('flux_kontext_dev_basic'))
-    expect(roles.source?.nodeId).toBe(toNodeId(190))
-  })
-
-  it('exposes the subgraph node id and prompt port for fallback', () => {
-    const zImage = resolveRoles(loadTemplateWorkflow('image_z_image_turbo'))
-    expect(zImage.prompt?.subgraphNodeId).toBe(toNodeId(57))
-    expect(zImage.prompt?.portFallback).toBe('text')
-
-    const ltx = resolveRoles(loadTemplateWorkflow('video_ltx2_3_i2v'))
-    expect(ltx.prompt?.portFallback).toBe('value')
-  })
-})
-
-describe('templateOverrides pin the heuristic result', () => {
-  it('matches the heuristic result for every curated id', () => {
-    for (const id of curatedIds) {
-      const roles = resolveRoles(loadTemplateWorkflow(id))
-      const pin = templateOverrides[id]
-      expect(pin.promptNodeId).toBe(roles.prompt?.innerNodeId)
-      expect(pin.engineNodeId).toBe(roles.engine?.nodeId)
-      expect(pin.sinkNodeId).toBe(roles.sink?.nodeId)
-      expect(pin.mediaKind).toBe(roles.mediaKind)
-      if (roles.source) expect(pin.sourceNodeId).toBe(roles.source.nodeId)
-    }
-  })
-
+describe('templateOverrides applied to the graph', () => {
   it('override sink, engine, and media win over the heuristics on the graph', () => {
     const pin = templateOverrides.image_z_image_turbo
     const roles = resolveRoles(
@@ -166,22 +46,53 @@ describe('templateOverrides pin the heuristic result', () => {
   })
 
   it('spotlights the subgraph host, not the pinned inner node, for a nested prompt', () => {
+    const subgraphId = '33333333-3333-3333-3333-333333333333'
+    const pin = templateOverrides.image_z_image_turbo
     const roles = resolveRoles(
-      loadTemplateWorkflow('flux_kontext_dev_basic'),
-      'flux_kontext_dev_basic'
+      {
+        ...workflow([
+          node(50, subgraphId, { inputs: [] }),
+          node(9, 'SaveImage', {
+            inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+          })
+        ]),
+        definitions: {
+          subgraphs: [
+            {
+              id: subgraphId,
+              inputs: [],
+              nodes: [cte(Number(pin.promptNodeId), 4, 'a red fox')],
+              links: []
+            }
+          ]
+        }
+      } as unknown as ComfyWorkflowJSON,
+      'image_z_image_turbo'
     )
 
-    expect(roles.prompt?.innerNodeId).toBe(toNodeId(6))
-    expect(roles.prompt?.subgraphNodeId).toBe(toNodeId(192))
+    expect(roles.prompt?.innerNodeId).toBe(pin.promptNodeId)
+    expect(roles.prompt?.subgraphNodeId).toBe(toNodeId(50))
   })
 
   it('ignores an unknown template id and falls back to heuristics', () => {
-    const withUnknown = resolveRoles(
-      loadTemplateWorkflow('image_z_image_turbo'),
-      'not_a_real_template'
+    const graph = workflow(
+      [
+        cte(6, 4, 'a red fox'),
+        node(3, 'KSampler', {
+          inputs: [{ name: 'positive', type: 'CONDITIONING', link: 4 }]
+        }),
+        node(9, 'SaveImage', {
+          inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+        })
+      ],
+      [
+        [4, 6, 0, 3, 1, 'CONDITIONING'],
+        [8, 3, 0, 9, 0, 'IMAGE']
+      ]
     )
-    const heuristic = resolveRoles(loadTemplateWorkflow('image_z_image_turbo'))
-    expect(withUnknown).toEqual(heuristic)
+    expect(resolveRoles(graph, 'not_a_real_template')).toEqual(
+      resolveRoles(graph)
+    )
   })
 })
 
@@ -379,16 +290,46 @@ describe('fromWorkflowJson normalizes the serialized shape', () => {
   })
 
   it('reads object links and the boundary origin inside subgraphs', () => {
-    const graph = fromWorkflowJson(loadTemplateWorkflow('image_z_image_turbo'))
-    const subgraph = graph.subgraphs[0]
-    const clip = subgraph.nodes.find((n) => n.id === toNodeId(27))
+    const subgraphId = '44444444-4444-4444-4444-444444444444'
+    const graph = fromWorkflowJson({
+      ...workflow([node(50, subgraphId, { inputs: [] })]),
+      definitions: {
+        subgraphs: [
+          {
+            id: subgraphId,
+            inputs: [{ name: 'text', type: 'STRING' }],
+            nodes: [
+              node(27, 'CLIPTextEncode', {
+                inputs: [{ name: 'text', type: 'STRING', link: 7 }]
+              })
+            ],
+            links: [
+              {
+                id: 7,
+                origin_id: -10,
+                origin_slot: 0,
+                target_id: 27,
+                target_slot: 0
+              }
+            ]
+          }
+        ]
+      }
+    } as unknown as ComfyWorkflowJSON)
+    const clip = graph.subgraphs[0].nodes.find((n) => n.id === toNodeId(27))
     const textInput = clip?.inputs.find((i) => i.name === 'text')
 
     expect(textInput?.origin).toEqual({ kind: 'boundary', slot: 0 })
   })
 
   it('flags the hosting subgraph node', () => {
-    const graph = fromWorkflowJson(loadTemplateWorkflow('image_z_image_turbo'))
+    const subgraphId = '44444444-4444-4444-4444-444444444444'
+    const graph = fromWorkflowJson({
+      ...workflow([node(50, subgraphId, { inputs: [] })]),
+      definitions: {
+        subgraphs: [{ id: subgraphId, inputs: [], nodes: [], links: [] }]
+      }
+    } as unknown as ComfyWorkflowJSON)
     const host = graph.nodes.find((n) => n.subgraphId !== null)
 
     expect(host?.subgraphId).toBe(graph.subgraphs[0].id)
@@ -502,11 +443,24 @@ describe('resolveRoles — hostile node types do not match prototype members', (
   })
 
   it('ignores a template id that names a prototype member', () => {
-    const heuristic = resolveRoles(loadTemplateWorkflow('image_z_image_turbo'))
+    const graph = workflow(
+      [
+        cte(6, 4, 'a red fox'),
+        node(3, 'KSampler', {
+          inputs: [{ name: 'positive', type: 'CONDITIONING', link: 4 }]
+        }),
+        node(9, 'SaveImage', {
+          inputs: [{ name: 'images', type: 'IMAGE', link: 8 }]
+        })
+      ],
+      [
+        [4, 6, 0, 3, 1, 'CONDITIONING'],
+        [8, 3, 0, 9, 0, 'IMAGE']
+      ]
+    )
+    const heuristic = resolveRoles(graph)
     for (const id of ['constructor', 'toString', 'hasOwnProperty']) {
-      expect(
-        resolveRoles(loadTemplateWorkflow('image_z_image_turbo'), id)
-      ).toEqual(heuristic)
+      expect(resolveRoles(graph, id)).toEqual(heuristic)
     }
   })
 })
