@@ -286,16 +286,25 @@ const displayImageDimensions = computed(() =>
   resolveDisplayImageDimensions(asset, imageDimensions.value)
 )
 
-// Get metadata info based on file kind
+const format = computed(() => {
+  const suffix = getFilenameDetails(asset?.name ?? '').suffix
+  return suffix ? suffix.toUpperCase() : ''
+})
+
 const metaInfo = computed(() => {
   if (!asset) return ''
+  const parts: string[] = []
+  if (format.value) parts.push(format.value)
+
   if (fileKind.value === 'image' && displayImageDimensions.value) {
-    return `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    parts.push(
+      `${displayImageDimensions.value.width}x${displayImageDimensions.value.height}`
+    )
+  } else if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    parts.push(formatSize(asset.size))
   }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
-    return formatSize(asset.size)
-  }
-  return ''
+
+  return parts.join(' ')
 })
 
 const showActionsOverlay = computed(() => {

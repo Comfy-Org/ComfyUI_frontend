@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -35,7 +36,9 @@ const asset: AssetItem = {
   preview_url: '/preview.png'
 }
 
-function renderCard() {
+function renderCard(
+  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
+) {
   setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
@@ -45,7 +48,7 @@ function renderCard() {
     fallbackWarn: false
   })
   return render(MediaAssetCard, {
-    props: { asset, loading: true },
+    props: { asset, loading: true, ...props },
     global: {
       plugins: [i18n],
       stubs: {
@@ -114,5 +117,34 @@ describe('MediaAssetCard', () => {
         expect.any(String)
       )
     })
+  })
+
+  it('shows image format and dimensions without file size', () => {
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        size: 1048576,
+        metadata: { width: 1024, height: 768 },
+        user_metadata: { executionTimeInSeconds: 1.25 }
+      }
+    })
+
+    expect(screen.getByText('1.25s')).toBeInTheDocument()
+    expect(screen.getByText('PNG 1024x768')).toBeInTheDocument()
+    expect(screen.queryByText(/MB/)).not.toBeInTheDocument()
+  })
+
+  it('shows format and file size for non-image assets', () => {
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        name: 'clip.mp4',
+        size: 1048576
+      }
+    })
+
+    expect(screen.getByText(/^MP4 .*MB$/)).toBeInTheDocument()
   })
 })
