@@ -700,10 +700,12 @@ byte-identical across two independent CI runs.
 ## 13. The CI deployment view
 
 In today's implementation, the suite is Playwright driving bundled
-Chromium, and the CI platform is GitHub Actions. The suite deploys twice
-from the same manifest: a gating PR check where nothing git-level moves,
-and a nightly non-gating canary that is where drift is allowed to show up
-instead.
+Chromium, and the CI platform is GitHub Actions. The same suite deploys
+against two backends, chosen by `CUSTOM_NODES_ENV` - a local Python backend
+(`core`) and the remote Comfy Cloud backend (`cloud`) - each as its own
+gating PR check, plus a nightly non-gating canary where git-level drift is
+allowed to show up instead. The manifest, tiers, and every assertion are
+shared; only the backend and its calibrated expectations differ.
 
 ### The PR gate (`custom-nodes-e2e-core`, gating)
 
@@ -735,6 +737,50 @@ Ballpark at the time of writing, moving like the scale snapshot: about
 eight minutes of suite on top of about four and a half minutes of
 environment setup, with sharding starting to pay once the whole job
 passes roughly twelve minutes.
+
+### The cloud PR gate (`custom-nodes-e2e-cloud`, gating)
+
+The same suite pointed at the remote Comfy Cloud backend by
+`CUSTOM_NODES_ENV=cloud`, in `ci-tests-custom-nodes-cloud.yaml`. The core
+gate's flow above holds with its backend half swapped out - no ComfyUI
+checkout, no pack install, no torch constraints, because Cloud already runs
+every supported pack. In place of "provision a CPU backend ... install every
+pack", one step serves the PR's built dist through `vite preview` with `/api`
+proxied to the Cloud URL (the two dev-only proxy bypasses turned off, so pack
+frontend JS and real auth are exercised rather than faked), and the suite
+signs in as Cloud's shared smoke user before it runs. Everything downstream -
+one worker, the skip gate, the report artifact - is identical, so the flow
+gets no second diagram: it is the same picture with the environment and
+install boxes replaced by one serve-against-Cloud box.
+
+Where the core gate PINS its world, the cloud gate FLOATS with Cloud. Its
+expectations are not hand-pinned but generated into the cloud manifest from a
+Cloud `/object_info` snapshot, so a Cloud redeploy that moves the installed
+pack set is recalibrated by regenerating that manifest (a regenerate-and-diff),
+not by editing pins. Drift detection is therefore intrinsic on the cloud side:
+a per-PR cloud red after a deploy is the deploy drifting, which is why the
+cloud side needs no separate drift canary the way the pinned core side does.
+
+Fork-safety and the required-check contract match the core gate: the same
+same-repo `if:` skips fork PRs (which have no secrets), and a skipped job
+counts as passing. Two cloud-specific differences: because runs share one
+Cloud test instance, the workflow serializes them repo-wide (`concurrency` on
+a constant group, `cancel-in-progress: false`) instead of per-ref, so two
+runs never cross-talk on the shared backend's execution stream; and because
+the cloud smoke secrets may be unset (pre-calibration, or on a fork clone), a
+gate step checks them first - absent, it emits a loud `::notice` and no-ops
+the job green without running a test; present, the suite runs for real. The
+suite cannot pass until the generated cloud manifest is committed too, so
+until then that no-op is the honest state, never a green "0 tests".
+
+**Release-pipeline stage (the cloud drift leg).** Beyond the per-PR gate, this
+same cloud suite is the custom-node stage of the release pipeline - nightly
+cut, staging Cloud, CI, QA, canary, rollout - pointed at the STAGING Cloud
+carrying the version being cut and blocking rollout progression on red. It
+reuses everything here and is triggered by the release pipeline, not a cron in
+this repo. In the drift-leg naming this is the **cloud** leg (floats the Cloud
+deployment, holds the frontend at the nightly cut); the **core** and **node
+packs** legs are the nightly canary's two jobs below.
 
 ### The nightly canary (non-gating drift radar)
 
@@ -790,6 +836,7 @@ The one place where architecture names meet code symbols.
 | ------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pack Manifest                         | `browser_tests/fixtures/data/customNodeManifest.core.json`                 | one row per pack: `pack`, `repo`, `pin`, `tiers`, `workflow`, `expectedNodes`, `expectedExtensions`, `requiresGpu`, `requiresModels`, `timeoutMs`, plus optional `vueNodesCompatible`, `vueIncompatibleNodes`, `cannotRunAlone` |
 | Manifest loader                       | `browser_tests/fixtures/customNode/manifest.ts`                            | `loadManifest`, `rendererPassesFor`                                                                                                                                                                                             |
+| Suite env switch (`core`/`cloud`)     | `browser_tests/fixtures/customNode/manifest.ts`                            | `customNodesEnv()` reads `CUSTOM_NODES_ENV` (default `core`); selects `customNodeManifest.core.json` vs `.cloud.json`, `geometry/` vs `geometry/cloud/`; `cloud` seeds the smoke session via `fixtures/helpers/smokeAuth.ts`    |
 | Test Orchestrator                     | each spec file                                                             | the `for (const entry of loadManifest())` loop heading allNodes.spec.ts, connectivity.spec.ts, customNode.regression.spec.ts                                                                                                    |
 | Evidence Ledgers + Reconciler         | `browser_tests/tests/customNodes/allNodes.spec.ts`, `connectivity.spec.ts` | the `*_ALLOWLIST` maps, `AUTO_RUN_EXCLUDE`, the `cannotRunAlone` two-way reconciliation, stale-entry guards                                                                                                                     |
 | Definition Normalizer                 | `browser_tests/fixtures/customNode/typePairing.ts`                         | `normalizeNodeDefs`, `packOf`                                                                                                                                                                                                   |
@@ -805,4 +852,5 @@ The one place where architecture names meet code symbols.
 | Dynamic-input (autogrow) tier         | `browser_tests/tests/customNodes/dynamicInputs.spec.ts`                    | `AUTOGROW_CASES` (curated cases), `consumerShape` (graph + DOM census), per-path connect/disconnect loop                                                                                                                        |
 | Parser/classifier fixtures            | `browser_tests/tests/customNodes/*.pure.spec.ts`                           | census-derived cases for both definition dialects                                                                                                                                                                               |
 | PR gate                               | `.github/workflows/ci-tests-custom-nodes.yaml`                             | gating check `custom-nodes-e2e-core`; core pin via `comfyui_ref`                                                                                                                                                                |
+| Cloud PR gate                         | `.github/workflows/ci-tests-custom-nodes-cloud.yaml`                       | gating check `custom-nodes-e2e-cloud`; `CUSTOM_NODES_ENV=cloud`; smoke-secrets no-op gate; served dist proxied to `CLOUD_BACKEND_URL`                                                                                           |
 | Nightly canary                        | `.github/workflows/ci-nightly-custom-nodes-canary.yaml`                    | `canary-core-drift` (core floats), `canary-pack-drift` (packs float at HEAD), label-deduped issue filing                                                                                                                        |

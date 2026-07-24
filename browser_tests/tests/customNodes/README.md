@@ -125,15 +125,26 @@ Any `-g` pattern works against the generic scripts, e.g.
 
 ## CI
 
-Two workflows deploy this suite; [ARCHITECTURE.md section 13](ARCHITECTURE.md#13-the-ci-deployment-view)
-has the full deployment view.
+The suite deploys across several workflows against the same manifest;
+[ARCHITECTURE.md section 13](ARCHITECTURE.md#13-the-ci-deployment-view) has the
+full deployment view. Which backend a run targets is chosen by
+`CUSTOM_NODES_ENV` (`core`, the default, or `cloud`) - same suite, backend
+swapped.
 
-- **The PR gate** (`custom-nodes-e2e-core` in `ci-tests-custom-nodes.yaml`; mark
-  it as a required check in branch protection once this lands): runs the
-  suite with every git surface pinned - ComfyUI
-  core at the exact verified commit (`comfyui_ref`) and every pack at its
-  manifest pin - so a red points at the PR, not at drift. Skipped tests
-  are failures.
+- **The core PR gate** (`custom-nodes-e2e-core` in `ci-tests-custom-nodes.yaml`;
+  mark it as a required check in branch protection once this lands):
+  `CUSTOM_NODES_ENV=core` against a local Python backend with every git surface
+  pinned - ComfyUI core at the exact verified commit (`comfyui_ref`) and every
+  pack at its manifest pin - so a red points at the PR, not at drift. Skipped
+  tests are failures.
+- **The cloud PR gate** (`custom-nodes-e2e-cloud` in
+  `ci-tests-custom-nodes-cloud.yaml`): the SAME suite with
+  `CUSTOM_NODES_ENV=cloud` against the remote Comfy Cloud backend - no pack
+  install; expectations come from the generated cloud manifest and re-float
+  when Cloud redeploys. Gated on the cloud smoke secrets: with any absent the
+  job emits a `::notice` naming the missing ones and no-ops green (required-safe
+  pre-calibration - it never fake-passes a green "0 tests"); with all present
+  the suite runs for real. Skipped tests are failures.
 - **The nightly canary** (`ci-nightly-custom-nodes-canary.yaml`,
   non-gating): where drift surfaces instead. Two jobs, one moving git
   variable each: `canary-core-drift` floats ComfyUI core with packs

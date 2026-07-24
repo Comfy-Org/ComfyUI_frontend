@@ -397,6 +397,41 @@ exclusion) or, for genuine upstream drift after a pin bump, re-pin the
 pack to its last good commit. Never paper
 over it with a skip.
 
+## Cloud packs (`CUSTOM_NODES_ENV=cloud`)
+
+Everything above is the CORE path (`customNodeManifest.core.json`, local
+backend). The cloud gate runs the same suite against the remote Comfy Cloud
+backend off a SECOND manifest, `customNodeManifest.cloud.json`, and its rows
+are authored differently:
+
+- **Cloud rows are GENERATED, never hand-edited.** `pnpm gen:cloud-manifest`
+  builds `.cloud.json` by joining Cloud's `supported_nodes.yaml` (the
+  Cloud-ops source of truth for which packs are deployed and how they are
+  pinned) with a Cloud `/object_info` snapshot. Do not add or edit a cloud row
+  by hand - it is overwritten on the next regeneration and a hand-edit hides
+  real drift. Fix the inputs (the vendored yaml or the snapshot) and
+  regenerate.
+- **Regeneration tracks Cloud deploys, not our pins.** A `.cloud.json` change
+  belongs in the commit that re-vendors `supported_nodes.yaml` or re-takes the
+  snapshot after Cloud redeploys; `.core.json` still tracks our own pin bumps.
+  The recalibration path is regenerate-and-diff, the same discipline as
+  re-recording geometry.
+- **`disabledNodes` carry their label mechanisms.** Cloud disables individual
+  nodes (usually for security); each is a `disabledNodes` entry whose labels
+  ARE the mechanism (`DisabledOnCloud`, `ReadsArbitraryFile`, `WritesToDisk`,
+  ...), the same "every exception carries its mechanism" rule the core ledgers
+  use. The generator emits them - you do not write them.
+- **Curated cloud workflows follow this same Step 1-7 process, with
+  upload-based media.** A cloud pack still gets a hand-authored run workflow the
+  same way, but a node disabled on Cloud cannot appear in it: use the unlabeled
+  equivalent (e.g. the upload-based `VHS_LoadVideo` in place of the disabled
+  disk-path `VHS_LoadVideoPath`), and stage media by uploading it through the
+  running session, not by copying into a backend `input/` dir (there is no
+  local backend to copy into). Cloud geometry baselines record into
+  `geometry/cloud/<pack>.json` via the cloud record workflow
+  (`.github/workflows/record-custom-nodes-geometry-cloud.yaml`), the cloud
+  sibling of Step 5b.
+
 ## Vue Nodes 2.0 compatibility policy
 
 Some packs only work under the LiteGraph canvas renderer and fail to mount
