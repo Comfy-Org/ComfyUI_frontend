@@ -43,6 +43,7 @@ test('the VHS cloud variant differs from the core workflow only by the node swap
   const cloud = readAsset('customNodes/vhs_video_pipeline_cloud_run.json')
   const loader = core.nodes[0]
   expect(loader.type).toBe('VHS_LoadVideoPath')
+  expect(loader.properties['Node name for S&R']).toBe('VHS_LoadVideoPath')
   expect(loader.widgets_values).toEqual([
     'input/plain_video.mp4',
     0,

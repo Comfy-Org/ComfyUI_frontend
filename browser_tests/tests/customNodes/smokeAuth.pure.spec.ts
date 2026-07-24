@@ -129,9 +129,11 @@ test.describe('identityToolkitErrorCode', () => {
 
   test('returns undefined for every malformed shape', () => {
     expect(identityToolkitErrorCode(undefined)).toBeUndefined()
+    expect(identityToolkitErrorCode(null)).toBeUndefined()
     expect(identityToolkitErrorCode('EMAIL_NOT_FOUND')).toBeUndefined()
     expect(identityToolkitErrorCode({})).toBeUndefined()
     expect(identityToolkitErrorCode({ error: null })).toBeUndefined()
+    expect(identityToolkitErrorCode({ error: 'flat' })).toBeUndefined()
     expect(identityToolkitErrorCode({ error: { message: 42 } })).toBeUndefined()
   })
 })

@@ -138,7 +138,10 @@ async function signInSmokeUser(): Promise<FirebaseAuthUserRecord> {
         email,
         password: process.env.SMOKE_ACCOUNT_PASSWORD,
         returnSecureToken: true
-      })
+      }),
+      // Node fetch has no default request timeout; a stalled sign-in would
+      // otherwise hang the memoized promise for the whole worker.
+      signal: AbortSignal.timeout(30_000)
     }
   )
   const body: unknown = await response.json().catch(() => undefined)
