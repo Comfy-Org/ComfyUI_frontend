@@ -13,15 +13,18 @@
     "type": "git",
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git"
   },
+  "files": [
+    "src/css",
+    "src/icons"
+  ],
   "type": "module",
   "exports": {
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*"
   },
-  "files": [
-    "src/css",
-    "src/icons"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
@@ -36,8 +39,5 @@
   "devDependencies": {
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
