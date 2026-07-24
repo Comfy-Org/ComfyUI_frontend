@@ -633,7 +633,7 @@ describe('useSecretForm', () => {
       })
     })
 
-    it('falls back to provider input_type for a secret without a stored credential type', async () => {
+    it('falls back to the provider credential option for a secret without a stored credential type', async () => {
       const visible = ref(false)
       const secret = createMockSecret({ provider: 'gemini' })
 
@@ -641,7 +641,18 @@ describe('useSecretForm', () => {
         mode: 'edit',
         secret: () => secret,
         existingProviders: () => ['gemini'],
-        availableProviders: () => [{ id: 'gemini', input_type: 'json_file' }],
+        availableProviders: () => [
+          {
+            id: 'gemini',
+            credential_options: [
+              {
+                credential_type: 'gcp_service_account',
+                input_type: 'json_file',
+                label: 'Service account (Vertex AI)'
+              }
+            ]
+          }
+        ],
         visible,
         onSaved: vi.fn()
       })
