@@ -160,16 +160,11 @@ function patchPromotedWidgets(
 export function collectReservedRerouteIds(
   graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
 ): Set<number> {
-  const reserved = new Set<number>()
-  for (const reroute of graph.reroutes.values()) {
-    reserved.add(Number(reroute.id))
-  }
-  for (const subgraph of graph.subgraphs.values()) {
-    for (const reroute of subgraph.reroutes.values()) {
-      reserved.add(Number(reroute.id))
-    }
-  }
-  return reserved
+  return new Set<number>(
+    [graph, ...graph.subgraphs.values()].flatMap((g) =>
+      [...g.reroutes.values()].map((reroute) => reroute.id)
+    )
+  )
 }
 
 /**
