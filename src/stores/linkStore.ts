@@ -19,7 +19,7 @@ export interface EndpointUpdate {
   topology: LinkTopology
   patch: EndpointPatch
 }
-export interface EndpointUpdateError {
+interface EndpointUpdateError {
   code:
     | 'duplicate-topology'
     | 'unowned-topology'
@@ -28,7 +28,7 @@ export interface EndpointUpdateError {
   message: string
 }
 
-export type EndpointUpdateResult<T> =
+type EndpointUpdateResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: EndpointUpdateError }
 

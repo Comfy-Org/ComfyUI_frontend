@@ -120,7 +120,6 @@ export { LGraphGroup, type GroupId } from './LGraphGroup'
 export {
   LGraphNode,
   registerNodeState,
-  unregisterAllNodeStates,
   unregisterNodeState
 } from './LGraphNode'
 export { LLink } from './LLink'

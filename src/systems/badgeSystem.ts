@@ -254,7 +254,7 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
   return rows.value
 }
 
-export interface CreditsBadgeEntry {
+interface CreditsBadgeEntry {
   nodeId: NodeId
   price: string
   title: string

@@ -38,7 +38,6 @@ describe('LGraphNode node-data adoption', () => {
 
     node.title = 'Renamed'
     expect(title.value).toBe('Renamed')
-    // Reads see the write back through the raw view.
     expect(node.title).toBe('Renamed')
 
     node.flags.collapsed = true

@@ -45,10 +45,6 @@ vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useGraphNodeManager', () => ({
-  getControlWidget: vi.fn(() => undefined)
-}))
-
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
   () => ({

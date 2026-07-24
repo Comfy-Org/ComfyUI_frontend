@@ -886,7 +886,6 @@ describe('appModeStore', () => {
       const hostState = fromAny<LGraphNode['_state'], unknown>({ id: hostId })
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         _state: hostState,
-        _stateRaw: hostState,
         inputs: [{ name: 'Prompt', _widget: hostWidget }],
         widgets: [hostWidget],
         isSubgraphNode: () => true
