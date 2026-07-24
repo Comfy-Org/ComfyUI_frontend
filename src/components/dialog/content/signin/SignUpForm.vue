@@ -1,14 +1,14 @@
 <template>
   <Form
     v-slot="$form"
-    class="flex flex-col gap-6"
+    class="flex flex-col gap-4"
     :resolver="zodResolver(signUpSchema)"
     @submit="onSubmit"
   >
     <!-- Email Field -->
     <FormField v-slot="$field" name="email" class="flex flex-col gap-2">
       <label
-        class="mb-2 text-base font-medium opacity-80"
+        class="text-base font-medium opacity-80"
         for="comfy-org-sign-up-email"
       >
         {{ t('auth.signup.emailLabel') }}
@@ -51,7 +51,8 @@
     <Button
       v-else
       type="submit"
-      class="mt-4 h-10 font-medium"
+      variant="secondary"
+      class="relative mt-4 h-10 gap-4 rounded-md border border-solid border-primary-comfy-canvas/20 bg-primary-comfy-canvas/5 text-sm font-medium text-primary-comfy-canvas hover:bg-primary-comfy-canvas/10"
       :disabled="!$form.valid || waitingForTurnstile"
       :aria-describedby="
         waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined

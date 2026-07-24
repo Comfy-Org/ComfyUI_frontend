@@ -5,7 +5,7 @@
     <div class="relative flex flex-1 flex-col">
       <div class="flex h-16 shrink-0 items-center px-6">
         <i
-          class="icon-[comfy--comfy-logo] h-5 w-22 text-brand-yellow md:h-6 md:w-26"
+          class="icon-[comfy--comfy-logo] aspect-100/23 h-5 text-brand-yellow md:h-6"
         />
       </div>
       <div class="flex flex-1 items-center justify-center overflow-auto">
