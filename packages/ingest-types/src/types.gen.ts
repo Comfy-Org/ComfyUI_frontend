@@ -1361,6 +1361,10 @@ export type SecretResponse = {
    */
   provider?: string
   /**
+   * Credential class discriminator (`api_key` or `gcp_service_account`).
+   */
+  credential_type?: 'api_key' | 'gcp_service_account'
+  /**
    * When the secret was last used for decryption
    */
   last_used_at?: string
