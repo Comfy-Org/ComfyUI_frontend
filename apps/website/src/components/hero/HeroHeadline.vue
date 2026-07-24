@@ -39,9 +39,11 @@ const lineGap = 'mt-[0.33em]'
 
     <div class="inline-grid">
       <!-- Liquid yellow backing: text is transparent here, present only so
-           each pill sizes to its line. The bridge pill is static. -->
+           each pill sizes to its line. The bridge pill is static. The goo
+           blur is in device pixels, which turns small pills to mush, so
+           below md the text pills carry their own solid background instead. -->
       <div
-        class="relative col-start-1 row-start-1 flex flex-col items-center"
+        class="relative col-start-1 row-start-1 hidden flex-col items-center md:flex"
         style="filter: url(#hero-goo)"
         aria-hidden="true"
       >
@@ -70,11 +72,30 @@ const lineGap = 'mt-[0.33em]'
 
       <!-- Crisp dark text on top of the liquid backing -->
       <h1 class="col-start-1 row-start-1 flex flex-col items-center">
-        <span :class="cn(pill, 'text-primary-comfy-ink')">
-          <span :class="inner">{{ lines[0] }}</span>
+        <span
+          :class="
+            cn(
+              pill,
+              'max-md:bg-primary-comfy-yellow text-primary-comfy-ink max-md:skew-x-[-8deg]'
+            )
+          "
+        >
+          <span :class="cn(inner, 'max-md:skew-x-[8deg]')">
+            {{ lines[0] }}
+          </span>
         </span>
-        <span :class="cn(pill, 'text-primary-comfy-ink', lineGap)">
-          <span :class="inner">{{ lines[1] }}</span>
+        <span
+          :class="
+            cn(
+              pill,
+              'max-md:bg-primary-comfy-yellow text-primary-comfy-ink max-md:skew-x-[-8deg]',
+              lineGap
+            )
+          "
+        >
+          <span :class="cn(inner, 'max-md:skew-x-[8deg]')">
+            {{ lines[1] }}
+          </span>
         </span>
       </h1>
     </div>

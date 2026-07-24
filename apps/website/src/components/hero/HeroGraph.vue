@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { DEFAULT_POSE } from './cameraVocabulary'
-import { resolveAsset } from './assetResolver'
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
 import GraphLinks from './GraphLinks.vue'
@@ -13,19 +11,13 @@ import HeroHeadline from './HeroHeadline.vue'
 import HeroImageCard from './HeroImageCard.vue'
 import type { ElementKey } from './graphLayout'
 import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
+import { useHeroPipeline } from './useHeroPipeline'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const canvasEl = ref<HTMLElement>()
 
-const hue = ref(0)
-const saturation = ref(1)
-
-const outputFilter = computed(() =>
-  hue.value === 0 && saturation.value === 1
-    ? undefined
-    : `hue-rotate(${hue.value}deg) saturate(${saturation.value})`
-)
+const { pose, hue, saturation, output, outputFilter } = useHeroPipeline()
 
 const positions = reactive(
   Object.fromEntries(
@@ -37,10 +29,6 @@ const positions = reactive(
 )
 
 const zOrder = ref<ElementKey[]>([...ELEMENT_KEYS])
-
-const pose = reactive({ ...DEFAULT_POSE })
-
-const output = computed(() => resolveAsset(pose))
 
 interface DragState {
   key: ElementKey
