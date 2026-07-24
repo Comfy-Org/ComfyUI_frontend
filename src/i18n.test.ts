@@ -248,6 +248,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('it')).toBe('it')
     })
 
     it('matches case-insensitively per BCP-47 and returns canonical casing', () => {
@@ -272,7 +273,6 @@ describe('i18n', () => {
 
     it('falls back to en for unsupported and missing inputs', () => {
       expect(resolveSupportedLocale('de')).toBe('en')
-      expect(resolveSupportedLocale('it')).toBe('en')
       expect(resolveSupportedLocale('nl')).toBe('en')
       expect(resolveSupportedLocale('xx-YY')).toBe('en')
       expect(resolveSupportedLocale('')).toBe('en')
@@ -285,7 +285,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
       // Empty / all-unshipped arrays fall back to en.
       expect(resolveSupportedLocale([])).toBe('en')
-      expect(resolveSupportedLocale(['de', 'it'])).toBe('en')
+      expect(resolveSupportedLocale(['de', 'nl'])).toBe('en')
     })
   })
 })
