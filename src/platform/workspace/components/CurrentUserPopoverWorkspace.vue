@@ -165,7 +165,6 @@
     <div v-if="requestAction" class="px-4 py-1">
       <Button
         :variant="isLimitReached ? 'primary' : 'secondary'"
-        size="sm"
         class="w-full"
         :disabled="requestSent"
         data-testid="member-credits-request-button"
