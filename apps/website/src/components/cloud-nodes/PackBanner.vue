@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useBannerImage } from '../../composables/useBannerImage'
 
@@ -27,6 +27,9 @@ const {
 })
 
 const bannerLoaded = ref(false)
+watch(imgSrc, () => {
+  bannerLoaded.value = false
+})
 </script>
 
 <template>
