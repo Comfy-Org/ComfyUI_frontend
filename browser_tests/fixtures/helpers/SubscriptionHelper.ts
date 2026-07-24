@@ -1,3 +1,4 @@
+import { expect, errors } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
@@ -11,6 +12,7 @@ import type {
   BalanceResponse,
   SubscriptionStatusResponse
 } from '@e2e/fixtures/data/subscriptionFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export interface SubscriptionConfig {
   status: SubscriptionStatusResponse
@@ -77,8 +79,8 @@ export class SubscriptionHelper {
     private readonly page: Page,
     config: SubscriptionConfig = emptyConfig()
   ) {
-    this.statusResponse = createSubscriptionStatus(config.status)
-    this.balanceResponse = createBalance(config.balance)
+    this.statusResponse = { ...config.status }
+    this.balanceResponse = { ...config.balance }
   }
 
   async mock(): Promise<void> {
@@ -96,10 +98,7 @@ export class SubscriptionHelper {
     const featuresHandler = async (route: Route) => {
       await route.fulfill({ json: { subscription_required: true } })
     }
-    this.routeHandlers.push({
-      pattern: featuresPattern,
-      handler: featuresHandler
-    })
+    this.routeHandlers.push({ pattern: featuresPattern, handler: featuresHandler })
     await this.page.route(featuresPattern, featuresHandler)
 
     const statusPattern = '**/customers/cloud-subscription-status'
@@ -113,10 +112,7 @@ export class SubscriptionHelper {
     const balanceHandler = async (route: Route) => {
       await route.fulfill({ json: this.balanceResponse })
     }
-    this.routeHandlers.push({
-      pattern: balancePattern,
-      handler: balanceHandler
-    })
+    this.routeHandlers.push({ pattern: balancePattern, handler: balanceHandler })
     await this.page.route(balancePattern, balanceHandler)
 
     const checkoutPattern = '**/customers/cloud-subscription-checkout**'
@@ -125,47 +121,34 @@ export class SubscriptionHelper {
         json: { checkout_url: 'https://checkout.stripe.com/mock' }
       })
     }
-    this.routeHandlers.push({
-      pattern: checkoutPattern,
-      handler: checkoutHandler
-    })
+    this.routeHandlers.push({ pattern: checkoutPattern, handler: checkoutHandler })
     await this.page.route(checkoutPattern, checkoutHandler)
   }
 
   configure(...operators: SubscriptionOperator[]): void {
-    const base: SubscriptionConfig = {
-      status: createSubscriptionStatus(this.statusResponse),
-      balance: createBalance(this.balanceResponse)
-    }
     const config = operators.reduce<SubscriptionConfig>(
       (cfg, op) => op(cfg),
-      base
+      {
+        status: { ...this.statusResponse },
+        balance: { ...this.balanceResponse }
+      }
     )
-    this.statusResponse = createSubscriptionStatus(config.status)
-    this.balanceResponse = createBalance(config.balance)
+    this.statusResponse = { ...config.status }
+    this.balanceResponse = { ...config.balance }
   }
 
   setStatus(overrides: Partial<SubscriptionStatusResponse>): void {
-    this.statusResponse = {
-      ...this.statusResponse,
-      ...overrides
-    }
+    this.statusResponse = { ...this.statusResponse, ...overrides }
   }
 
   setBalance(overrides: Partial<BalanceResponse>): void {
-    this.balanceResponse = {
-      ...this.balanceResponse,
-      ...overrides
-    }
+    this.balanceResponse = { ...this.balanceResponse, ...overrides }
   }
 
   /**
-   * Seed localStorage with a pending checkout attempt.
-   * Required for `visibilitychange` to trigger a subscription re-fetch,
-   * because `recoverPendingSubscriptionCheckout` checks
-   * `hasPendingSubscriptionCheckoutAttempt()` before fetching.
-   *
-   * Call AFTER page navigation (localStorage needs a page context).
+   * Seed localStorage with a pending checkout attempt so that
+   * `recoverPendingSubscriptionCheckout` triggers a status re-fetch on
+   * the next `visibilitychange` event. Must be called after navigation.
    */
   async seedPendingCheckout(
     tier: string = 'standard',
@@ -190,9 +173,9 @@ export class SubscriptionHelper {
   }
 
   /**
-   * Dispatch `visibilitychange` to trigger pending-checkout recovery.
-   * The app listens for this event and re-fetches subscription status
-   * when a pending checkout attempt exists in localStorage.
+   * Dispatch `visibilitychange` to simulate returning from Stripe checkout.
+   * The app re-fetches subscription status when a pending checkout attempt
+   * exists in localStorage (seeded via `seedPendingCheckout`).
    */
   async triggerSubscriptionRefetch(): Promise<void> {
     await this.page.evaluate(() => {
@@ -200,13 +183,64 @@ export class SubscriptionHelper {
     })
   }
 
+  /**
+   * Open the user popover and return its locator after verifying visibility.
+   * Uses `dispatchEvent` to bypass Playwright's actionability check — a
+   * subscription dialog backdrop can intercept a normal `.click()` during
+   * initial page load.
+   */
+  async openUserPopover() {
+    await this.page.getByTestId(TestIds.user.currentUserButton).dispatchEvent('click')
+    const popover = this.page.getByTestId(TestIds.user.currentUserPopover)
+    await expect(popover).toBeVisible()
+    return popover
+  }
+
+  /**
+   * Open the user popover and click the subscribe button.
+   * Uses `dispatchEvent` on the button too — the subscription dialog's
+   * backdrop appears mid-action, which would cause Playwright's actionability
+   * re-check to block a standard `.click()`.
+   */
+  async clickPopoverSubscribe(): Promise<void> {
+    const popover = await this.openUserPopover()
+    await popover
+      .getByRole('button', { name: /subscribe/i })
+      .first()
+      .dispatchEvent('click')
+  }
+
+  /**
+   * Dismiss the subscription-required dialog if it appears after boot.
+   * The dialog opens asynchronously after the `isLoggedIn` watcher fires,
+   * so we poll briefly; absence is not a failure.
+   */
+  async dismissSubscriptionDialogIfOpen(): Promise<void> {
+    const dialog = this.page.locator('[aria-labelledby="subscription-required"]')
+    const appeared = await expect(dialog)
+      .toBeVisible({ timeout: 2000 })
+      .then(() => true)
+      .catch((e: unknown) => {
+        if (e instanceof errors.TimeoutError) return false
+        throw e
+      })
+    if (!appeared) return
+    const closeButton = dialog.getByRole('button', { name: /close/i }).first()
+    if (await closeButton.isVisible()) {
+      await closeButton.click()
+    } else {
+      await this.page.keyboard.press('Escape')
+    }
+    await expect(dialog).toBeHidden()
+  }
+
   async clearMocks(): Promise<void> {
     for (const { pattern, handler } of this.routeHandlers) {
       await this.page.unroute(pattern, handler)
     }
     this.routeHandlers = []
-    this.statusResponse = createSubscriptionStatus(UNSUBSCRIBED)
-    this.balanceResponse = createBalance(ZERO_BALANCE)
+    this.statusResponse = { ...UNSUBSCRIBED }
+    this.balanceResponse = { ...ZERO_BALANCE }
   }
 }
 
