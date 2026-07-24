@@ -73,6 +73,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
     setNodePreviewsByNodeId: mockSetNodePreviewsByNodeId,
     setNodePreviewsByLocatorId: vi.fn(),
     revokePreviewsByLocatorId: vi.fn(),
+    getNodeImageUrls: vi.fn(() => undefined),
     nodeOutputs: mockNodeOutputs
   })
 }))
@@ -126,6 +127,10 @@ describe('useGLSLPreview', () => {
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
+    // happy-dom lacks ImageBitmap, which getResolution references via
+    // `instanceof`; browsers always define it.
+    globalThis.ImageBitmap ??=
+      class ImageBitmap {} as unknown as typeof globalThis.ImageBitmap
   })
 
   it('does not activate for non-GLSLShader nodes', () => {
@@ -286,6 +291,27 @@ describe('useGLSLPreview', () => {
       const toBlobOrder = mockRendererFactory.toBlob.mock.invocationCallOrder[0]
       expect(compileOrder).toBeLessThan(renderOrder)
       expect(renderOrder).toBeLessThan(toBlobOrder)
+    })
+
+    it('binds a resolved image to its original slot when an earlier slot is unresolved', async () => {
+      const image1 = fromAny<HTMLImageElement, unknown>({
+        naturalWidth: 64,
+        naturalHeight: 64
+      })
+      const node = createMockNode({
+        inputs: [
+          { name: 'images.image0', link: 10 },
+          { name: 'images.image1', link: 11 }
+        ],
+        getInputNode: vi.fn((slot: number) =>
+          slot === 1 ? fromAny({ imgs: [image1] }) : null
+        )
+      })
+      await setupAndRender(node)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledTimes(1)
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(1, image1)
     })
 
     it('sets lastError on compilation failure', async () => {
