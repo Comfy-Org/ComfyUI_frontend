@@ -422,9 +422,12 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
         loadCheckpointHeaderPos
       )
 
-      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      expect(newHeaderPos.x).toBeCloseTo(loadCheckpointHeaderPos.x + 64)
-      expect(newHeaderPos.y).toBeCloseTo(loadCheckpointHeaderPos.y + 64)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.x))
+        .toBeCloseTo(loadCheckpointHeaderPos.x + 64, 0)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Load Checkpoint').then((p) => p.y))
+        .toBeCloseTo(loadCheckpointHeaderPos.y + 64, 0)
     }
   )
 })
