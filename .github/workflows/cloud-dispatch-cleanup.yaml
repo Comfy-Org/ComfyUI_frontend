@@ -14,6 +14,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   dispatch:
     # Only dispatch when:
@@ -38,3 +42,4 @@ jobs:
           event-type: frontend-preview-cleanup
           client-payload: >-
             {"pr_number": "${{ github.event.pull_request.number }}"}
+

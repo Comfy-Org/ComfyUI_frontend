@@ -6,6 +6,10 @@ on:
     types: ['closed']
     branches: [cloud/*]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   create-tag:
     if: >
@@ -67,3 +71,4 @@ jobs:
             echo "Version: ${VERSION}"
             echo "Commit: ${{ github.event.pull_request.merge_commit_sha }}"
           } >> "$GITHUB_STEP_SUMMARY"
+

@@ -17,6 +17,14 @@ on:
         type: string
         default: 'Comfy-Org'
 
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-locales:
     runs-on: ubuntu-latest
@@ -134,3 +142,4 @@ jobs:
           gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales --body "Update locales for ${{ inputs.repository }}"
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+

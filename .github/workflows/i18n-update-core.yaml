@@ -9,6 +9,14 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-locales:
     # Branch detection: Only run for manual dispatch or version-bump-* branches from main repo
@@ -59,3 +67,4 @@ jobs:
           git add src/locales/
           git diff --staged --quiet || git commit -m "Update locales"
           git push origin HEAD:${{ github.head_ref }}
+
