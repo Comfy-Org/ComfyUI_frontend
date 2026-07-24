@@ -162,6 +162,25 @@ describe('ModelInfoPanel', () => {
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     })
 
+    it('blames immutability, not core, for a read-only immutable asset on cloud', () => {
+      mockDistribution.isCloud = true
+      renderPanel(createMockAsset({ is_immutable: true }))
+      expect(
+        screen.getByTitle('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByTitle('assetBrowser.modelInfo.modelTypeCoreReadonly')
+      ).not.toBeInTheDocument()
+    })
+
+    it('blames core for a read-only model type off-cloud', () => {
+      mockDistribution.isCloud = false
+      renderPanel(createMockAsset({ is_immutable: false }))
+      expect(
+        screen.getByTitle('assetBrowser.modelInfo.modelTypeCoreReadonly')
+      ).toBeInTheDocument()
+    })
+
     it('renders base models field', () => {
       const asset = createMockAsset({
         user_metadata: { base_model: ['SDXL'] }

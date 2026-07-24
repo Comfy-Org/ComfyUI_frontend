@@ -89,7 +89,7 @@
         </Select>
         <div
           v-else
-          :title="t('assetBrowser.modelInfo.modelTypeCoreReadonly')"
+          :title="modelTypeReadonlyReason"
           class="cursor-not-allowed p-2 text-sm text-muted-foreground"
         >
           {{
@@ -283,6 +283,14 @@ const isImmutable = computed(() => asset.is_immutable ?? true)
 // Retagging a model rewrites its asset tags; core is filesystem-backed and does
 // not yet move the file to match, so the model type is read-only off-cloud.
 const isModelTypeEditable = computed(() => !isImmutable.value && isCloud)
+// The read-only field is reached for an immutable asset (even on cloud) or on
+// core. Immutability is the more specific, actionable reason, so it wins when
+// both hold rather than blaming "core" on a cloud deployment.
+const modelTypeReadonlyReason = computed(() =>
+  isImmutable.value
+    ? t('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+    : t('assetBrowser.modelInfo.modelTypeCoreReadonly')
+)
 const displayName = computed(
   () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
 )
