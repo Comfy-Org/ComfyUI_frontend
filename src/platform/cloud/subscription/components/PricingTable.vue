@@ -176,17 +176,45 @@
                   <span class="text-foreground text-sm/relaxed font-normal">
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
-                  <div class="group flex flex-row items-center gap-2 pt-2">
-                    <i
-                      class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
-                    />
-                    <span
-                      class="cursor-pointer text-sm font-normal text-muted-foreground group-hover:text-base-foreground"
-                      @click="togglePopover"
+                  <Popover>
+                    <PopoverTrigger as-child>
+                      <button
+                        type="button"
+                        class="focus-visible:ring-secondary-foreground group flex cursor-pointer flex-row items-center gap-2 rounded-sm pt-2 text-left focus-visible:ring-1 focus-visible:outline-none"
+                      >
+                        <i
+                          class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
+                          aria-hidden="true"
+                        />
+                        <span
+                          class="text-sm font-normal text-muted-foreground group-hover:text-base-foreground"
+                        >
+                          {{ t('subscription.videoEstimateHelp') }}
+                        </span>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      class="z-1800 w-auto max-w-xs rounded-lg border border-interface-stroke bg-interface-panel-surface p-4 shadow-lg"
                     >
-                      {{ t('subscription.videoEstimateHelp') }}
-                    </span>
-                  </div>
+                      <div class="flex flex-col gap-2">
+                        <p class="text-sm/normal text-base-foreground">
+                          {{ t('subscription.videoEstimateExplanation') }}
+                        </p>
+                        <a
+                          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="flex gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+                        >
+                          <span class="underline">
+                            {{ t('subscription.videoEstimateTryTemplate') }}
+                          </span>
+                          <span class="no-underline" aria-hidden="true">→</span>
+                        </a>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
@@ -218,52 +246,20 @@
         </div>
       </div>
     </div>
-
-    <!-- Video Estimate Help Popover -->
-    <Popover
-      ref="popover"
-      append-to="body"
-      :auto-z-index="true"
-      :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class:
-            'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
-        }
-      }"
-    >
-      <div class="flex flex-col gap-2">
-        <p class="text-sm/normal text-base-foreground">
-          {{ t('subscription.videoEstimateExplanation') }}
-        </p>
-        <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex gap-1 text-sm text-azure-600 no-underline hover:text-azure-400"
-        >
-          <span class="underline">
-            {{ t('subscription.videoEstimateTryTemplate') }}
-          </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
-        </a>
-      </div>
-    </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
+import { PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -388,7 +384,6 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
 const loadingTier = ref<CheckoutTierKey | null>(null)
-const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const hasPaidSubscription = computed(
@@ -417,10 +412,6 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
     currentTierKey.value === tierKey &&
     isYearlySubscription.value === selectedIsYearly
   )
-}
-
-const togglePopover = (event: Event) => {
-  popover.value.toggle(event)
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
