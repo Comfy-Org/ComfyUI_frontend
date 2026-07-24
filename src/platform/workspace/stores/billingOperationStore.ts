@@ -28,6 +28,7 @@ interface BillingOperation {
   startedAt: number
   returnUrl: string | null
   paymentNavigationStarted: boolean
+  hostedInvoiceUrl: string | null
 }
 
 interface PendingBillingOperation {
@@ -69,6 +70,16 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     )
   )
 
+  const hostedInvoiceUrl = computed(
+    () =>
+      [...operations.value.values()].find(
+        (op) =>
+          op.status === 'pending' &&
+          op.type === 'subscription' &&
+          op.hostedInvoiceUrl
+      )?.hostedInvoiceUrl ?? null
+  )
+
   function getOperation(opId: string) {
     return operations.value.get(opId)
   }
@@ -90,27 +101,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       errorMessage: null,
       startedAt: Date.now(),
       returnUrl: getSameOriginUrl(options.hostedInvoiceReturnUrl),
-      paymentNavigationStarted: false
+      paymentNavigationStarted: false,
+      hostedInvoiceUrl: null
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
     persistPendingOperation(operation)
 
-    if (type !== 'cancel') {
-      const messageKey =
-        type === 'subscription'
-          ? 'billingOperation.subscriptionProcessing'
-          : 'billingOperation.topupProcessing'
-
-      const toastMessage: ToastMessageOptions = {
-        severity: 'info',
-        summary: t(messageKey),
-        group: 'billing-operation'
-      }
-      receivedToasts.set(opId, toastMessage)
-      useToastStore().add(toastMessage)
-    }
+    showProcessingToast(operation)
 
     const terminal = createTerminalPromise(opId)
 
@@ -152,10 +151,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
       if (
         response.customer_action?.type === 'pay_hosted_invoice' &&
-        !currentOperation.paymentNavigationStarted &&
+        !currentOperation.hostedInvoiceUrl &&
         currentOperation.returnUrl
       ) {
-        beginPaymentNavigation(opId, response.customer_action.url)
+        exposeHostedInvoice(opId, response.customer_action.url)
         return
       }
 
@@ -318,21 +317,46 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation) return
 
-    const updated = { ...operation, status, errorMessage }
+    const updated = {
+      ...operation,
+      status,
+      errorMessage,
+      hostedInvoiceUrl: status === 'pending' ? operation.hostedInvoiceUrl : null
+    }
     operations.value = new Map(operations.value).set(opId, updated)
   }
 
-  function beginPaymentNavigation(opId: string, paymentUrl: string) {
+  function exposeHostedInvoice(opId: string, paymentUrl: string) {
     const operation = operations.value.get(opId)
     if (!operation?.returnUrl) return
 
-    const updated = { ...operation, paymentNavigationStarted: true }
+    const updated = {
+      ...operation,
+      paymentNavigationStarted: true,
+      hostedInvoiceUrl: paymentUrl
+    }
     if (!persistPendingOperation(updated)) {
       handleFailure(opId, null)
       return
     }
     operations.value = new Map(operations.value).set(opId, updated)
-    globalThis.location.assign(paymentUrl)
+    scheduleNextPoll(opId)
+  }
+
+  function showProcessingToast(operation: BillingOperation) {
+    if (operation.type === 'cancel') return
+
+    const messageKey =
+      operation.type === 'subscription'
+        ? 'billingOperation.subscriptionProcessing'
+        : 'billingOperation.topupProcessing'
+    const toastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: t(messageKey),
+      group: 'billing-operation'
+    }
+    receivedToasts.set(operation.opId, toastMessage)
+    useToastStore().add(toastMessage)
   }
 
   function persistPendingOperation(operation: BillingOperation): boolean {
@@ -429,11 +453,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       ...pendingOperation,
       status: 'pending',
       errorMessage: null,
-      startedAt: Date.now()
+      startedAt: Date.now(),
+      hostedInvoiceUrl: null
     }
     operations.value = new Map(operations.value).set(operation.opId, operation)
     intervals.set(operation.opId, INITIAL_INTERVAL_MS)
     void createTerminalPromise(operation.opId)
+    showProcessingToast(operation)
     void poll(operation.opId)
   }
 
@@ -491,6 +517,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     hasPendingOperations,
     isSettingUp,
     isAddingCredits,
+    hostedInvoiceUrl,
     getOperation,
     startOperation,
     recoverPendingOperation,

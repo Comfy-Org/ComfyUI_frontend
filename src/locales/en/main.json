@@ -2554,6 +2554,7 @@
   },
   "billingOperation": {
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
+    "continueToPayment": "Continue to payment",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionTimeout": "Subscription verification timed out",

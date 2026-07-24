@@ -175,7 +175,7 @@ describe('billingOperationStore', () => {
       })
     })
 
-    it('persists recovery context before navigating to a hosted invoice', async () => {
+    it('exposes a hosted invoice without navigating or persisting its URL', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-hosted',
         status: 'pending',
@@ -195,9 +195,8 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(assignSpy).toHaveBeenCalledWith(
-        'https://invoice.test/bearer-token'
-      )
+      expect(assignSpy).not.toHaveBeenCalled()
+      expect(store.hostedInvoiceUrl).toBe('https://invoice.test/bearer-token')
       expect(store.getOperation('op-hosted')).toMatchObject({
         status: 'pending',
         paymentNavigationStarted: true
@@ -208,7 +207,7 @@ describe('billingOperationStore', () => {
       expect(persisted).not.toContain('bearer-token')
     })
 
-    it('resumes a hosted invoice operation after browser return', async () => {
+    it('keeps polling the exact hosted invoice operation to completion', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-return',
@@ -238,11 +237,24 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1500)
-
-      store.resumePendingOperations()
-      await vi.advanceTimersByTimeAsync(0)
+      expect(store.hostedInvoiceUrl).toBe('https://invoice.test/bearer-token')
+      await vi.advanceTimersByTimeAsync(2250)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenNthCalledWith(
+        1,
+        'op-return'
+      )
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenNthCalledWith(
+        2,
+        'op-return'
+      )
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenNthCalledWith(
+        3,
+        'op-return'
+      )
+      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(store.hostedInvoiceUrl).toBeNull()
       expect(localStorage.getItem('comfy.billing.pending_operation')).toBeNull()
     })
 
@@ -273,6 +285,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-storage-failure')).toMatchObject({
         status: 'failed'
       })
+      expect(store.hostedInvoiceUrl).toBeNull()
       setItemSpy.mockRestore()
     })
 
@@ -330,6 +343,54 @@ describe('billingOperationStore', () => {
       })
       expect(assignSpy).not.toHaveBeenCalled()
       expect(localStorage.getItem('comfy.billing.pending_operation')).toBeNull()
+    })
+
+    it('re-exposes a hosted invoice URL after reload and keeps it ephemeral', async () => {
+      localStorage.setItem(
+        'comfy.billing.pending_operation',
+        JSON.stringify({
+          opId: 'op-reload-action',
+          type: 'subscription',
+          startedAt: Date.now(),
+          returnUrl: globalThis.location.href,
+          paymentNavigationStarted: true
+        })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-reload-action',
+          status: 'pending',
+          customer_action: {
+            type: 'pay_hosted_invoice',
+            url: 'https://invoice.test/reloaded-bearer-token'
+          },
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValueOnce({
+          id: 'op-reload-action',
+          status: 'succeeded',
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.hostedInvoiceUrl).toBe(
+        'https://invoice.test/reloaded-bearer-token'
+      )
+      expect(
+        localStorage.getItem('comfy.billing.pending_operation')
+      ).not.toContain('reloaded-bearer-token')
+
+      await vi.advanceTimersByTimeAsync(1500)
+
+      expect(store.getOperation('op-reload-action')).toMatchObject({
+        status: 'succeeded'
+      })
+      expect(store.hostedInvoiceUrl).toBeNull()
+      expect(localStorage.getItem('comfy.billing.pending_operation')).toBeNull()
+      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
     })
 
     it('coalesces reload and pageshow recovery polling', async () => {
