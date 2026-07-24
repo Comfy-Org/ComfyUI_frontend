@@ -4,6 +4,7 @@ const hoisted = vi.hoisted(() => {
   const context: Record<string, unknown> = {}
 
   return {
+    addAction: vi.fn(),
     context,
     fetch: vi.fn<typeof fetch>(),
     getInitConfiguration: vi.fn(),
@@ -21,6 +22,19 @@ vi.mock('@datadog/browser-rum', () => ({
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { initDatadogRum } from './initDatadogRum'
 
+function createNavigationEntry(type: string): PerformanceEntry & {
+  type: string
+} {
+  return {
+    duration: 0,
+    entryType: 'navigation',
+    name: window.location.href,
+    startTime: 0,
+    toJSON: () => ({}),
+    type
+  }
+}
+
 describe('initDatadogRum', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -33,6 +47,7 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([])
   })
 
   afterEach(() => {
@@ -225,5 +240,26 @@ describe('initDatadogRum', () => {
     await initDatadogRum('cloud.comfy.org')
 
     expect(hoisted.init).not.toHaveBeenCalled()
+  })
+
+  it('tracks a page reload', async () => {
+    vi.mocked(performance.getEntriesByType).mockReturnValue([
+      createNavigationEntry('reload')
+    ])
+
+    await initDatadogRum('cloud.comfy.org')
+
+    expect(hoisted.addAction).toHaveBeenCalledWith('user_manual_refresh')
+  })
+
+  it('does not track a non-reload navigation', async () => {
+    vi.mocked(performance.getEntriesByType).mockReturnValue([
+      createNavigationEntry('navigate')
+    ])
+
+    await initDatadogRum('cloud.comfy.org')
+
+    expect(hoisted.init).toHaveBeenCalledOnce()
+    expect(hoisted.addAction).not.toHaveBeenCalled()
   })
 })
