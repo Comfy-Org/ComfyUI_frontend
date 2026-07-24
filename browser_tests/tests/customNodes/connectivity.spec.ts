@@ -57,16 +57,6 @@ const SLOT_CONTRACT_MISMATCH_ALLOWLIST: string[] = [
 // (reproducible manually: wire, save, reload - link gone). Pack behavior on
 // record, not frontend regressions.
 const ROUNDTRIP_LOST_ALLOWLIST: string[] = [
-  // rgthree SDXL Power Prompt rebuilds its dimension widget-inputs during
-  // configure and drops inbound links to them.
-  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).target_width',
-  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).target_height',
-  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).crop_width',
-  'BatchCount+.INT -> SDXL Power Prompt - Positive (rgthree).crop_height',
-  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).target_width',
-  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).target_height',
-  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).crop_width',
-  'BatchCount+.INT -> SDXL Power Prompt - Simple / Negative (rgthree).crop_height',
   // VHS_SelectLatest rebuilds its dynamic slots on configure, detaching
   // links on both its inputs and outputs.
   'AddTextPrefix.texts -> VHS_SelectLatest.filename_prefix',

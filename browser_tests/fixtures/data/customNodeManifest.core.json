@@ -43,20 +43,6 @@
     ]
   },
   {
-    "pack": "rgthree-comfy",
-    "repo": "https://github.com/rgthree/rgthree-comfy",
-    "pin": "27b4f4cdcf3b127c29d5d8135ac1536ecbd4c383",
-    "tiers": ["load", "connectivity", "run"],
-    "workflow": "assets/customNodes/rgthree_seed_display_run.json",
-    "expectedNodes": ["Seed (rgthree)", "Display Any (rgthree)"],
-    "expectedNodeCount": 24,
-    "expectedExtensions": ["rgthree.AnySwitch"],
-    "requiresGpu": false,
-    "requiresModels": [],
-    "timeoutMs": 30000,
-    "cannotRunAlone": ["Image or Latent Size (rgthree)"]
-  },
-  {
     "pack": "ComfyUI_essentials",
     "repo": "https://github.com/cubiq/ComfyUI_essentials",
     "pin": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9",

@@ -19,7 +19,7 @@ LiteGraph, and the DOM renderer, Vue Nodes 2.0), it survives save/reload,
 its slots wire type-correctly, and it executes when its inputs allow.
 Section 1 states each proof precisely.
 
-> **Scale snapshot (example, at the time of writing):** 7 packs, 823
+> **Scale snapshot (example, at the time of writing):** 6 packs, 799
 > registered nodes, about 5,000 planned wiring checks, about 440 nodes
 > executing clean per run. These are observations printed by the run, not
 > properties of the design; they move whenever the manifest or a pin moves.

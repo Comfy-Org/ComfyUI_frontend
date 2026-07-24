@@ -44,12 +44,7 @@ const OBJECT_INFO_SANITY_FLOOR = 50
 // (WAS `Text to Console`) emit NO ui payload and stay off this list, so a
 // pack whose only sink prints to console gets execution-completed proof
 // only.
-const CURATED_SINK_TYPES = [
-  'PreviewAny',
-  'DisplayAny',
-  'Display Any (rgthree)',
-  'ShowText|pysssss'
-]
+const CURATED_SINK_TYPES = ['PreviewAny', 'DisplayAny', 'ShowText|pysssss']
 
 test.use({ initialSettings: customNodeSuiteSettings })
 

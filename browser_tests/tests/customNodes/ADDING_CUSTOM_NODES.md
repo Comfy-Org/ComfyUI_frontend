@@ -154,7 +154,7 @@ run tier asserts each one actually executes on the backend.
 
 Add one JSON file under `browser_tests/assets/customNodes/`, named
 `<pack>_<what it does>_run.json`. Copy an existing asset as the template
-(`rgthree_seed_display_run.json` is the simplest two-node example;
+(`essentials_math_display_run.json` is the simplest two-node example;
 `was_number_text_run.json` shows a 3-node chain). It is the frontend
 workflow format, hand-authorable:
 
@@ -469,8 +469,8 @@ failures and without skipping tests:
    sets the flag. When only SOME of a pack's nodes fail to mount, use the
    per-node `vueIncompatibleNodes` ledger in the manifest row instead of
    flagging the whole pack - compatibility is per-node, not per-pack (all
-   823 nodes across the first 7 packs mount clean, so both mechanisms ship
-   unused; the every-node mount tier is what earns an entry).
+   799 nodes across the 6 manifest packs mount clean, so both mechanisms
+   ship unused; the every-node mount tier is what earns an entry).
 3. **Effect of `false`**: the load tier runs its LiteGraph pass only, and
    the connectivity drag test does not drag that pack's edges under Vue
    Nodes. The tests still run and pass their canvas assertions - nothing is

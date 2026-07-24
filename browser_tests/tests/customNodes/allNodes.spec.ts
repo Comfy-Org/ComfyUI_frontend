@@ -77,12 +77,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     ImageReceiver:
       'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
   },
-  'rgthree-comfy': {
-    'Power Primitive (rgthree)':
-      'requires its pack JS to build the primitive value at queue time; raw defaults KeyError. Whether a page applies pack JS varies by serving setup, so excluded unconditionally - curated-workflow candidate',
-    'Power Puter (rgthree)':
-      'requires its pack JS to compile the expression at queue time; raw defaults KeyError. Excluded unconditionally - curated-workflow candidate'
-  },
   'ComfyUI-KJNodes': {
     CreateMagicMask:
       'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
@@ -226,10 +220,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
       'pack JS validates and resets its aspect/format text widgets on configure',
     ImageTransformKJ:
       'pack JS initializes its fill-options JSON widget on configure; a fresh create serializes an empty string'
-  },
-  'rgthree-comfy': {
-    'Power Primitive (rgthree)':
-      'pack JS rebuilds and normalizes its value widget on configure (a written string comes back as the typed default)'
   },
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
