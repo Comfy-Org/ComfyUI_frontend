@@ -273,6 +273,11 @@ describe('curated overlay', () => {
     ).toThrow(/tiers/)
     expect(() =>
       validateCuratedCloudOverlay({
+        Pack: { workflow: 'a.json', tiers: ['load', 'connectivity'] }
+      })
+    ).toThrow(/must include 'run'/)
+    expect(() =>
+      validateCuratedCloudOverlay({
         Pack: { workflow: 'a.json', tiers: 'run' }
       })
     ).toThrow(/tiers/)

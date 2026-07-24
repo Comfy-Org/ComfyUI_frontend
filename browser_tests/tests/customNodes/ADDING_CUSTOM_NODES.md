@@ -444,7 +444,7 @@ are authored differently:
   `geometry/cloud/<pack>.json` via the cloud record workflow
   (`.github/workflows/record-custom-nodes-geometry-cloud.yaml`), the cloud
   sibling of Step 5b.
-- **Two pre-calibration assertions are waiting to be flipped.** The pure
+- **Three pre-calibration assertions are waiting to be flipped.** The pure
   specs currently assert the not-yet-landed artifacts are ABSENT (marked
   `PRE-CALIBRATION assertion: INVERT`): `manifest.pure.spec.ts` expects
   `loadManifest()` / `loadCloudCoreDisabledNodes()` to throw under

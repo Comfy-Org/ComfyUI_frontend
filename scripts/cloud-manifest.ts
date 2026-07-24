@@ -161,6 +161,10 @@ export function validateCuratedCloudOverlay(
       throw new Error(
         `curated overlay: ${pack} tiers must be the row's full non-empty tier list`
       )
+    // The overlay exists to enroll authored run workflows; a workflow-carrying
+    // entry that omits 'run' would silently register no run test.
+    if (!entry.tiers.includes('run'))
+      throw new Error(`curated overlay: ${pack} tiers must include 'run'`)
     if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||

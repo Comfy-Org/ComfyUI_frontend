@@ -72,6 +72,14 @@ test.describe('customNode manifest', () => {
     delete process.env.CUSTOM_NODES_ALLOW_UNPINNED
     try {
       expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
+      // Run-enrolled rows must carry a workflow: this loader guard is what
+      // lets T1 registration trust every registered row has one.
+      expect(() =>
+        assertCoreEntry({ ...validEntry(), workflow: '' }, 0)
+      ).toThrow(/workflow/)
+      expect(() =>
+        assertCloudEntry({ ...validCloudEntry(), workflow: '' }, 0)
+      ).toThrow(/workflow/)
       expect(() => assertCoreEntry({ ...validEntry(), pin: '' }, 0)).toThrow(
         /pin/
       )
