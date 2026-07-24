@@ -21,24 +21,35 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-function createMockCtx(): CanvasRenderingContext2D {
+function createMockCtx(
+  maskAlpha = 0,
+  onPutImageData?: (imageData: ImageData) => void
+): CanvasRenderingContext2D {
+  const data = new Uint8ClampedArray(4 * 4 * 4)
+  for (let i = 3; i < data.length; i += 4) data[i] = maskAlpha
+
   return fromPartial<CanvasRenderingContext2D>({
     drawImage: vi.fn(),
     getImageData: vi.fn(() => ({
-      data: new Uint8ClampedArray(4 * 4 * 4),
+      data: data.slice(),
       width: 4,
       height: 4
     })),
-    putImageData: vi.fn(),
+    putImageData: vi.fn((imageData: ImageData) => onPutImageData?.(imageData)),
     globalCompositeOperation: 'source-over'
   })
 }
 
-function createMockCanvas(): HTMLCanvasElement {
+function createMockCanvas(
+  maskAlpha = 0,
+  onPutImageData?: (imageData: ImageData) => void
+): HTMLCanvasElement {
+  const context = createMockCtx(maskAlpha, onPutImageData)
+
   return fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
-    getContext: vi.fn(() => createMockCtx()),
+    getContext: vi.fn(() => context),
     toBlob: vi.fn((cb: BlobCallback) => {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),
@@ -88,6 +99,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode
+  let outputImageData: ImageData[]
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
@@ -109,6 +121,7 @@ describe('useMaskEditorSaver', () => {
       properties: { image: 'original.png [input]' },
       graph: { setDirtyCanvas: vi.fn() }
     })
+    outputImageData = []
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -136,7 +149,9 @@ describe('useMaskEditorSaver', () => {
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
         if (tagName === 'canvas')
-          return fromAny<HTMLCanvasElement, unknown>(createMockCanvas())
+          return fromAny<HTMLCanvasElement, unknown>(
+            createMockCanvas(0, (imageData) => outputImageData.push(imageData))
+          )
         return originalCreateElement(tagName, options)
       }
     )
@@ -182,23 +197,101 @@ describe('useMaskEditorSaver', () => {
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
   })
 
-  it('omits subfolder from the upload FormData under the unified contract', async () => {
+  it('preserves RGB beneath transparent mask pixels during upload', async () => {
     const fetchApiMock = vi.mocked(api.fetchApi)
+    const uploadedFilenames = new WeakMap<FormData, string>()
+    const append = FormData.prototype.append
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(function (
+      this: FormData,
+      name: string,
+      value: string | Blob,
+      filename?: string
+    ) {
+      if (name === 'image' && filename) {
+        uploadedFilenames.set(this, filename)
+      }
+      if (typeof value === 'string') {
+        return (append as (name: string, value: string) => void).call(
+          this,
+          name,
+          value
+        )
+      }
+      return (
+        append as (name: string, value: Blob, filename?: string) => void
+      ).call(this, name, value, filename)
+    })
+    fetchApiMock.mockImplementation(async (_route, init) => {
+      const body = init?.body as FormData
+      const filename = uploadedFilenames.get(body)
+      if (!filename) throw new Error('Missing uploaded image')
+
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: filename,
+            subfolder: '',
+            type: 'input'
+          })
+      } as Response
+    })
 
     const { save } = useMaskEditorSaver()
     await save()
 
-    // The unified contract uploads to /upload/image with only image + type;
-    // subfolder is intentionally omitted (the server assigns it). Assert it
-    // here so the next reader knows the omission is deliberate, not accidental.
-    expect(fetchApiMock).toHaveBeenCalledWith(
-      '/upload/image',
-      expect.objectContaining({ method: 'POST' })
+    const requests = fetchApiMock.mock.calls.map(([route, init], index) => ({
+      route,
+      body: init?.body as FormData,
+      index
+    }))
+    function uploadedFilename(body: FormData) {
+      return uploadedFilenames.get(body) ?? ''
+    }
+    const paintedImageRequest = requests.find(
+      ({ route, body }) =>
+        route === '/upload/image' &&
+        uploadedFilename(body).startsWith('clipspace-painted-')
     )
-    const [, init] = fetchApiMock.mock.calls[0]
-    const body = init?.body as FormData
-    expect(body).toBeInstanceOf(FormData)
-    expect(body.get('type')).toBe('input')
-    expect(body.get('subfolder')).toBeNull()
+    if (!paintedImageRequest) throw new Error('Missing painted image upload')
+
+    const maskRequests = requests.filter(
+      ({ route }) => route === '/upload/mask'
+    )
+    expect(maskRequests).toHaveLength(2)
+    const originalRefs = maskRequests.map(({ body }) =>
+      JSON.parse(String(body.get('original_ref')))
+    )
+    expect(originalRefs).toEqual(
+      expect.arrayContaining([
+        {
+          filename: 'original.png',
+          subfolder: '',
+          type: 'input'
+        },
+        {
+          filename: uploadedFilename(paintedImageRequest.body),
+          subfolder: '',
+          type: 'input'
+        }
+      ])
+    )
+
+    const paintedMaskedRequest = maskRequests.find(({ body }) => {
+      const originalRef = JSON.parse(String(body.get('original_ref')))
+      return originalRef.filename === uploadedFilename(paintedImageRequest.body)
+    })
+    expect(paintedMaskedRequest?.index).toBeGreaterThan(
+      paintedImageRequest.index
+    )
+  })
+
+  it('exports full internal mask coverage as zero PNG alpha', async () => {
+    mockEditorStore.maskCanvas = createMockCanvas(255)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    expect(outputImageData[0]?.data[3]).toBe(0)
   })
 })
