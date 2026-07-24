@@ -28,6 +28,7 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -96,104 +97,107 @@ function dragDrop(e: DragEvent) {
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
-    <div
-      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
-    >
-      <div class="flex h-full items-center">
-        <WorkflowTabs />
-        <TopbarBadges />
-        <TopbarSubscribeButton />
+  <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div
+        class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+      >
+        <div class="flex h-full items-center">
+          <WorkflowTabs />
+          <TopbarBadges />
+          <TopbarSubscribeButton />
+        </div>
+      </div>
+      <div
+        class="flex flex-1 overflow-hidden bg-secondary-background"
+        :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
+      >
+        <SideToolbar
+          v-if="!isBuilderMode"
+          :visible-tab-ids="['assets', 'apps']"
+          force-connected
+          hide-workspace-toggles
+        />
+        <Splitter
+          :key="splitterKey"
+          class="h-full flex-1 border-none bg-secondary-background"
+          @resizestart="$event.originalEvent.preventDefault()"
+          @resizeend="onResizeEnd"
+        >
+          <SplitterPanel
+            v-if="hasLeftPanel"
+            ref="leftPanel"
+            :size="SIDE_PANEL_SIZE"
+            :min-size="
+              sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
+            "
+            :style="
+              showRightBuilder && !activeTab ? { display: 'none' } : undefined
+            "
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+          >
+            <AppBuilder v-if="showLeftBuilder" />
+            <div
+              v-else-if="sidebarOnLeft && activeTab"
+              class="size-full overflow-x-hidden border-r border-border-subtle"
+            >
+              <ExtensionSlot :extension="activeTab" />
+            </div>
+            <LinearControls
+              v-else-if="!isArrangeMode"
+              ref="linearWorkflowRef"
+              :toast-to="unrefElement(bottomLeftRef) ?? undefined"
+            />
+          </SplitterPanel>
+          <SplitterPanel
+            id="linearCenterPanel"
+            data-testid="linear-center-panel"
+            :size="CENTER_PANEL_SIZE"
+            class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+            @drop="dragDrop"
+          >
+            <LinearProgressBar
+              data-testid="linear-header-progress-bar"
+              class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
+            />
+            <LinearPreview
+              :run-button-click="linearWorkflowRef?.runButtonClick"
+            />
+            <div class="absolute top-2 left-2 z-21">
+              <AppModeToolbar v-if="!isBuilderMode" />
+            </div>
+            <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
+            <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
+          </SplitterPanel>
+          <SplitterPanel
+            v-if="hasRightPanel"
+            ref="rightPanel"
+            :size="SIDE_PANEL_SIZE"
+            :min-size="
+              sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
+            "
+            :style="
+              showLeftBuilder && !activeTab ? { display: 'none' } : undefined
+            "
+            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+          >
+            <AppBuilder v-if="showRightBuilder" />
+            <LinearControls
+              v-else-if="sidebarOnLeft && !isArrangeMode"
+              ref="linearWorkflowRef"
+              :toast-to="unrefElement(bottomRightRef) ?? undefined"
+            />
+            <div
+              v-else-if="activeTab"
+              class="h-full overflow-x-hidden border-l border-border-subtle"
+            >
+              <ExtensionSlot :extension="activeTab" />
+            </div>
+          </SplitterPanel>
+        </Splitter>
       </div>
     </div>
-    <div
-      class="flex flex-1 overflow-hidden bg-secondary-background"
-      :class="sidebarOnLeft ? 'flex-row' : 'flex-row-reverse'"
-    >
-      <SideToolbar
-        v-if="!isBuilderMode"
-        :visible-tab-ids="['assets', 'apps']"
-        force-connected
-        hide-workspace-toggles
-      />
-      <Splitter
-        :key="splitterKey"
-        class="h-full flex-1 border-none bg-secondary-background"
-        @resizestart="$event.originalEvent.preventDefault()"
-        @resizeend="onResizeEnd"
-      >
-        <SplitterPanel
-          v-if="hasLeftPanel"
-          ref="leftPanel"
-          :size="SIDE_PANEL_SIZE"
-          :min-size="
-            sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
-          "
-          :style="
-            showRightBuilder && !activeTab ? { display: 'none' } : undefined
-          "
-          class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
-        >
-          <AppBuilder v-if="showLeftBuilder" />
-          <div
-            v-else-if="sidebarOnLeft && activeTab"
-            class="size-full overflow-x-hidden border-r border-border-subtle"
-          >
-            <ExtensionSlot :extension="activeTab" />
-          </div>
-          <LinearControls
-            v-else-if="!isArrangeMode"
-            ref="linearWorkflowRef"
-            :toast-to="unrefElement(bottomLeftRef) ?? undefined"
-          />
-        </SplitterPanel>
-        <SplitterPanel
-          id="linearCenterPanel"
-          data-testid="linear-center-panel"
-          :size="CENTER_PANEL_SIZE"
-          class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
-          @drop="dragDrop"
-        >
-          <LinearProgressBar
-            data-testid="linear-header-progress-bar"
-            class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
-          />
-          <LinearPreview
-            :run-button-click="linearWorkflowRef?.runButtonClick"
-          />
-          <div class="absolute top-2 left-2 z-21">
-            <AppModeToolbar v-if="!isBuilderMode" />
-          </div>
-          <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
-          <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
-        </SplitterPanel>
-        <SplitterPanel
-          v-if="hasRightPanel"
-          ref="rightPanel"
-          :size="SIDE_PANEL_SIZE"
-          :min-size="
-            sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
-          "
-          :style="
-            showLeftBuilder && !activeTab ? { display: 'none' } : undefined
-          "
-          class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
-        >
-          <AppBuilder v-if="showRightBuilder" />
-          <LinearControls
-            v-else-if="sidebarOnLeft && !isArrangeMode"
-            ref="linearWorkflowRef"
-            :toast-to="unrefElement(bottomRightRef) ?? undefined"
-          />
-          <div
-            v-else-if="activeTab"
-            class="h-full overflow-x-hidden border-l border-border-subtle"
-          >
-            <ExtensionSlot :extension="activeTab" />
-          </div>
-        </SplitterPanel>
-      </Splitter>
-    </div>
+    <DockedAgentPanel />
   </div>
 </template>
 

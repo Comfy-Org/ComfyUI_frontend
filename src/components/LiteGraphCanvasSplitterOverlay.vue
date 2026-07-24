@@ -1,123 +1,131 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-row"
   >
-    <slot name="workflow-tabs" />
-
     <div
-      class="pointer-events-none flex flex-1 overflow-hidden"
-      :class="{
-        'flex-row': sidebarLocation === 'left',
-        'flex-row-reverse': sidebarLocation === 'right'
-      }"
+      class="pointer-events-none flex min-w-0 flex-1 flex-col overflow-hidden"
     >
-      <div class="side-toolbar-container">
-        <slot name="side-toolbar" />
-      </div>
+      <slot name="workflow-tabs" />
 
-      <Splitter
-        :key="splitterRefreshKey"
-        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
-        :state-key="
-          isSelectMode
-            ? sidebarLocation === 'left'
-              ? 'builder-splitter'
-              : 'builder-splitter-right'
-            : sidebarStateKey
-        "
-        state-storage="local"
-        @resizestart="onResizestart"
-        @resizeend="normalizeSavedSizes"
+      <div
+        class="pointer-events-none flex flex-1 overflow-hidden"
+        :class="{
+          'flex-row': sidebarLocation === 'left',
+          'flex-row-reverse': sidebarLocation === 'right'
+        }"
       >
-        <!-- First panel: sidebar when left, properties when right -->
-        <SplitterPanel
-          v-if="firstPanelVisible"
-          :class="
-            sidebarLocation === 'left'
-              ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                  sidebarPanelVisible && 'min-w-78'
-                )
-              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+        <div class="side-toolbar-container">
+          <slot name="side-toolbar" />
+        </div>
+
+        <Splitter
+          :key="splitterRefreshKey"
+          class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+          :state-key="
+            isSelectMode
+              ? sidebarLocation === 'left'
+                ? 'builder-splitter'
+                : 'builder-splitter-right'
+              : sidebarStateKey
           "
-          :min-size="
-            sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
-          "
-          :size="SIDE_PANEL_SIZE"
-          :style="firstPanelStyle"
-          :role="sidebarLocation === 'left' ? 'complementary' : undefined"
-          :aria-label="
-            sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
-          "
+          state-storage="local"
+          @resizestart="onResizestart"
+          @resizeend="normalizeSavedSizes"
         >
-          <slot
-            v-if="sidebarLocation === 'left' && sidebarPanelVisible"
-            name="side-bar-panel"
-          />
-          <slot
-            v-else-if="sidebarLocation === 'right'"
-            name="right-side-panel"
-          />
-        </SplitterPanel>
-
-        <!-- Main panel (always present) -->
-        <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
-          <slot name="topmenu" :sidebar-panel-visible />
-
-          <Splitter
-            class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
-            layout="vertical"
-            :pt:gutter="
-              cn(
-                'rounded-t-lg',
-                !(bottomPanelVisible && !focusMode) && 'hidden'
-              )
+          <!-- First panel: sidebar when left, properties when right -->
+          <SplitterPanel
+            v-if="firstPanelVisible"
+            :class="
+              sidebarLocation === 'left'
+                ? cn(
+                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidebarPanelVisible && 'min-w-78'
+                  )
+                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
             "
-            state-key="bottom-panel-splitter"
-            state-storage="local"
-            @resizestart="onResizestart"
+            :min-size="
+              sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+            "
+            :size="SIDE_PANEL_SIZE"
+            :style="firstPanelStyle"
+            :role="sidebarLocation === 'left' ? 'complementary' : undefined"
+            :aria-label="
+              sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
+            "
           >
-            <SplitterPanel class="graph-canvas-panel relative overflow-visible">
-              <slot name="graph-canvas-panel" />
-            </SplitterPanel>
-            <SplitterPanel
-              v-show="bottomPanelVisible && !focusMode"
-              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
-            >
-              <slot name="bottom-panel" />
-            </SplitterPanel>
-          </Splitter>
-        </SplitterPanel>
+            <slot
+              v-if="sidebarLocation === 'left' && sidebarPanelVisible"
+              name="side-bar-panel"
+            />
+            <slot
+              v-else-if="sidebarLocation === 'right'"
+              name="right-side-panel"
+            />
+          </SplitterPanel>
 
-        <!-- Last panel: properties when left, sidebar when right -->
-        <SplitterPanel
-          v-if="lastPanelVisible"
-          :class="
-            sidebarLocation === 'right'
-              ? cn(
-                  'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                  sidebarPanelVisible && 'min-w-78'
+          <!-- Main panel (always present) -->
+          <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
+            <slot name="topmenu" :sidebar-panel-visible />
+
+            <Splitter
+              class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
+              layout="vertical"
+              :pt:gutter="
+                cn(
+                  'rounded-t-lg',
+                  !(bottomPanelVisible && !focusMode) && 'hidden'
                 )
-              : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
-          "
-          :min-size="
-            sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
-          "
-          :size="SIDE_PANEL_SIZE"
-          :style="lastPanelStyle"
-          :role="sidebarLocation === 'right' ? 'complementary' : undefined"
-          :aria-label="
-            sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
-          "
-        >
-          <slot v-if="sidebarLocation === 'left'" name="right-side-panel" />
-          <slot
-            v-else-if="sidebarLocation === 'right' && sidebarPanelVisible"
-            name="side-bar-panel"
-          />
-        </SplitterPanel>
-      </Splitter>
+              "
+              state-key="bottom-panel-splitter"
+              state-storage="local"
+              @resizestart="onResizestart"
+            >
+              <SplitterPanel
+                class="graph-canvas-panel relative overflow-visible"
+              >
+                <slot name="graph-canvas-panel" />
+              </SplitterPanel>
+              <SplitterPanel
+                v-show="bottomPanelVisible && !focusMode"
+                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
+              >
+                <slot name="bottom-panel" />
+              </SplitterPanel>
+            </Splitter>
+          </SplitterPanel>
+
+          <!-- Last panel: properties when left, sidebar when right -->
+          <SplitterPanel
+            v-if="lastPanelVisible"
+            :class="
+              sidebarLocation === 'right'
+                ? cn(
+                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
+                    sidebarPanelVisible && 'min-w-78'
+                  )
+                : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
+            "
+            :min-size="
+              sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
+            "
+            :size="SIDE_PANEL_SIZE"
+            :style="lastPanelStyle"
+            :role="sidebarLocation === 'right' ? 'complementary' : undefined"
+            :aria-label="
+              sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
+            "
+          >
+            <slot v-if="sidebarLocation === 'left'" name="right-side-panel" />
+            <slot
+              v-else-if="sidebarLocation === 'right' && sidebarPanelVisible"
+              name="side-bar-panel"
+            />
+          </SplitterPanel>
+        </Splitter>
+      </div>
     </div>
+
+    <slot name="agent-panel" />
   </div>
 </template>
 

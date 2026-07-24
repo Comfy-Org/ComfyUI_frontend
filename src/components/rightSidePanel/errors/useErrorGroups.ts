@@ -46,6 +46,11 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 
+const AGENT_PROMPT_ERROR_TYPES = new Set([
+  'agent_api_failed',
+  'agent_draft_apply_failed'
+])
+
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
 
@@ -372,6 +377,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       errors: [
         {
           message: error.message,
+          ...(AGENT_PROMPT_ERROR_TYPES.has(error.type)
+            ? { details: error.details }
+            : {}),
           ...resolvedDisplay
         }
       ]

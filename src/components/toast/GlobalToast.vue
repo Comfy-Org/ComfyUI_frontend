@@ -11,16 +11,21 @@
 </template>
 
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { nextTick, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
 const settingStore = useSettingStore()
+const { isOpen: agentPanelOpen, width: agentPanelWidth } =
+  storeToRefs(useAgentPanelStore())
 
 watch(
   () => toastStore.messagesToAdd,
@@ -33,6 +38,7 @@ watch(
       toast.add(message)
     })
     toastStore.messagesToAdd = []
+    void nextTick(updateToastPosition)
   },
   { deep: true }
 )
@@ -62,18 +68,30 @@ watch(
   }
 )
 
+function visibleRect(selector: string): DOMRect | undefined {
+  const rect = document.querySelector(selector)?.getBoundingClientRect()
+  return rect !== undefined && rect.width > 0 ? rect : undefined
+}
+
 function updateToastPosition() {
+  const container = visibleRect('.graph-canvas-container')
+  // App mode hides the graph container; anchor beside the docked panel there.
+  const anchor = container ?? visibleRect('.docked-agent-panel')
+  if (anchor === undefined) return
+  const edge = container
+    ? (visibleRect('.graph-canvas-panel') ?? container)
+    : undefined
+  const right =
+    edge === undefined
+      ? window.innerWidth - anchor.left + 20
+      : window.innerWidth - (edge.left + edge.width) + 20
   const styleElement =
     document.getElementById('dynamic-toast-style') || createStyleElement()
-  const rect = document
-    .querySelector('.graph-canvas-container')
-    ?.getBoundingClientRect()
-  if (!rect) return
 
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
-      top: ${rect.top + 100}px !important;
-      right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
+      top: ${anchor.top + 100}px !important;
+      right: ${right}px !important;
        z-index: 10000 !important;
     }
   `
@@ -95,5 +113,10 @@ watch(
   () => settingStore.get('Comfy.Sidebar.Location'),
   () => nextTick(updateToastPosition),
   { immediate: true }
+)
+watchDebounced(
+  [agentPanelOpen, agentPanelWidth],
+  () => nextTick(updateToastPosition),
+  { debounce: 100 }
 )
 </script>

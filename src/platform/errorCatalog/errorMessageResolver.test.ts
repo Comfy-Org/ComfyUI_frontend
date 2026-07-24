@@ -584,6 +584,23 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves the agent draft-apply failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_draft_apply_failed',
+          message: "Couldn't apply the agent's draft to the canvas",
+          details: 'Validation error: Required at "version"'
+        }
+      })
+    ).toEqual({
+      displayTitle: "Couldn't apply agent changes",
+      displayMessage: "Couldn't apply the agent's draft to the canvas."
+    })
+  })
+
   it('resolves server_error prompt copy by environment', () => {
     const error = {
       type: 'server_error',

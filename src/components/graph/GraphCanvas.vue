@@ -38,6 +38,9 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
+    <template v-if="showUI" #agent-panel>
+      <DockedAgentPanel v-if="!linearMode" />
+    </template>
     <template #graph-canvas-panel>
       <div
         ref="canvasPanelBoundsRef"
@@ -189,6 +192,7 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'

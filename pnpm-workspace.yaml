@@ -120,6 +120,7 @@ catalog:
   primevue: 4.2.5
   reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
+  shiki: ^4.3.0
   storybook: ^10.5.0
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
