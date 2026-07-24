@@ -326,7 +326,7 @@ describe('fixBadLinks', () => {
 describe('fixBadLinks ↔ linkStore integration', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it('completes the input mirror for a registered link missing it', () => {
+  it('treats a store-registered link as consistent without repairs', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
     const b = new LGraphNode('B')
@@ -335,20 +335,19 @@ describe('fixBadLinks ↔ linkStore integration', () => {
     graph.add(a)
     graph.add(b)
 
-    // Registered via the chokepoint, but the input mirror was never written.
-    const orphan = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
-    graph._addLink(orphan)
+    // Registered via the chokepoint; slot views derive from the store.
+    const link = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
+    graph._addLink(link)
 
     const store = useLinkStore()
     const graphId = graph.rootGraph.id
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
-    expect(b.inputs[0].link).toBeNull()
+    expect(b.inputs[0].link).toBe(link.id)
 
     const result = fixBadLinks(graph, { fix: true, silent: true })
 
-    expect(result).toMatchObject({ fixed: true, patched: 1, deleted: 0 })
-    expect(graph._links.has(orphan.id)).toBe(true)
-    expect(b.inputs[0].link).toBe(orphan.id)
+    expect(result).toMatchObject({ hasBadLinks: false, deleted: 0 })
+    expect(graph._links.has(link.id)).toBe(true)
     expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
   })
 })

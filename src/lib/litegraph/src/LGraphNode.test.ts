@@ -20,6 +20,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -312,6 +313,63 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected output
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
+    })
+
+    function createConnectedPair() {
+      const sourceNode = new LGraphNode('SourceNode')
+      const targetNode = new LGraphNode('TargetNode')
+      sourceNode.configure(
+        getMockISerialisedNode({
+          id: 1,
+          outputs: [{ name: 'Output1', type: 'number', links: [] }]
+        })
+      )
+      targetNode.configure(
+        getMockISerialisedNode({
+          id: 2,
+          inputs: [{ name: 'Input1', type: 'number', link: null }]
+        })
+      )
+      const graph = new LGraph()
+      graph.add(sourceNode)
+      graph.add(targetNode)
+      expect(sourceNode.connect(0, targetNode, 0)).not.toBeNull()
+      return { graph, sourceNode, targetNode }
+    }
+
+    function expectDisconnectedStateOnConnectionChange(targetNode: LGraphNode) {
+      expect(targetNode.onConnectionsChange).toBeUndefined()
+
+      const onConnectionsChange = vi.fn<
+        NonNullable<LGraphNode['onConnectionsChange']>
+      >(function (type, slot, isConnected) {
+        expect(type).toBe(NodeSlotType.INPUT)
+        expect(isConnected).toBe(false)
+        expect(this.isInputConnected(slot)).toBe(false)
+        expect(this.getInputLink(slot)).toBeNull()
+      })
+      targetNode.onConnectionsChange = onConnectionsChange
+      return onConnectionsChange
+    }
+
+    test('target sees disconnected state inside onConnectionsChange when all output links are removed', () => {
+      const { sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
+    })
+
+    test('target sees disconnected state inside onConnectionsChange when the source node is removed', () => {
+      const { graph, sourceNode, targetNode } = createConnectedPair()
+      const onConnectionsChange =
+        expectDisconnectedStateOnConnectionChange(targetNode)
+
+      graph.remove(sourceNode)
+
+      expect(onConnectionsChange).toHaveBeenCalledOnce()
     })
   })
 

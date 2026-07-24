@@ -942,6 +942,7 @@ describe('_removeDuplicateLinks', () => {
 
   it('removes orphaned duplicate links from _links and output.links', () => {
     const { graph, source, target } = createConnectedGraph()
+    const store = useLinkStore()
 
     for (let i = 0; i < 3; i++) injectDuplicateLink(graph, source, target)
 
@@ -953,40 +954,49 @@ describe('_removeDuplicateLinks', () => {
 
     expect(graph._links.size).toBe(1)
     expect(source.outputs[0].links).toHaveLength(1)
-    expect(target.inputs[0].link).toBe(source.outputs[0].links![0])
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+      source.outputs[0].links![0]
+    )
   })
 
-  it('keeps the link referenced by input.link', () => {
+  it('keeps the link registered to the target input', () => {
     const { graph, source, target } = createConnectedGraph()
-    const keptLinkId = target.inputs[0].link!
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dupLink = injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
-    expect(target.inputs[0].link).toBe(keptLinkId)
+    expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
     expect(graph._links.has(keptLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
   })
 
   it('drops purged duplicates from the link store and keeps the survivor indexed', () => {
     const { graph, source, target } = createConnectedGraph()
-    const keptLinkId = target.inputs[0].link!
+    const store = useLinkStore()
+    const graphId = graph.rootGraph.id
+    const keptLinkId = store.getInputSlotLink(graphId, target.id, 0)!.id
 
     const dup = injectDuplicateLink(graph, source, target)
 
     graph._removeDuplicateLinks()
 
-    const store = useLinkStore()
-    const graphId = graph.rootGraph.id
     expect(dup._graphId).toBeUndefined()
     expect(store.getInputSlotLink(graphId, target.id, 0)?.id).toBe(keptLinkId)
   })
 
-  it('keeps the valid link when input.link is at a shifted slot index', () => {
+  it('keeps the valid link when the input is at a shifted slot index', () => {
     const { graph, source, target } = createConnectedGraph()
-    const validLinkId = target.inputs[0].link!
+    const store = useLinkStore()
+    const validLinkId = store.getInputSlotLink(
+      graph.rootGraph.id,
+      target.id,
+      0
+    )!.id
 
     // Simulate widget-to-input conversion shifting the slot: insert a new
     // input BEFORE the connected one, moving it from index 0 to index 1.
@@ -1004,22 +1014,29 @@ describe('_removeDuplicateLinks', () => {
     expect(graph._links.size).toBe(1)
     expect(graph._links.has(validLinkId)).toBe(true)
     expect(graph._links.has(dupLink.id)).toBe(false)
-    expect(target.inputs[1].link).toBe(validLinkId)
+    expect(store.getInputSlotLink(graph.rootGraph.id, target.id, 0)?.id).toBe(
+      validLinkId
+    )
   })
 
-  it('repairs input.link when it points to a removed duplicate', () => {
+  it('keeps the surviving link registered after dedup', () => {
     const { graph, source, target } = createConnectedGraph()
 
+    const store = useLinkStore()
     const dupLink = injectDuplicateLink(graph, source, target)
-    // Point input.link to the duplicate (simulating corrupted state)
-    target.inputs[0].link = dupLink.id
 
     graph._removeDuplicateLinks()
 
     expect(graph._links.size).toBe(1)
+    expect(graph._links.has(dupLink.id)).toBe(false)
     const survivingId = graph._links.keys().next().value!
-    expect(target.inputs[0].link).toBe(survivingId)
-    expect(graph._links.has(target.inputs[0].link!)).toBe(true)
+    const registeredLink = store.getInputSlotLink(
+      graph.rootGraph.id,
+      target.id,
+      0
+    )
+    expect(registeredLink?.id).toBe(survivingId)
+    expect(graph._links.has(registeredLink!.id)).toBe(true)
   })
 
   it('is a no-op when no duplicates exist', () => {
@@ -1379,7 +1396,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
 describe('Zero UUID handling in configure', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {

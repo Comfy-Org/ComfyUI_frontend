@@ -189,7 +189,6 @@ export class SubgraphInputNode
       subgraph.removeFloatingLink(floatingLink)
     }
 
-    input.link = null
     subgraph.setDirtyCanvas(false, true)
 
     if (!link) return

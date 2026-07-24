@@ -32,6 +32,7 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -237,7 +238,7 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!inputSlot) return null
 
-    const directLink = graph.getLink(inputSlot.link)
+    const directLink = inputLink(graph, nodeId, slotIndex)
     if (directLink) {
       const reroutes = LLink.getReroutes(graph, directLink)
       const lastReroute = reroutes.at(-1)
@@ -630,11 +631,14 @@ export function useSlotLinkInteraction({
 
     const ctrlOrMeta = event.ctrlKey || event.metaKey
 
-    const inputLinkId = inputSlot?.link ?? null
+    const existingInputLink = isInputSlot
+      ? inputLink(graph, localNodeId, index)
+      : undefined
     const inputFloatingCount = isInputSlot
       ? slotFloatingLinks(graph, 'input', localNodeId, index).length
       : 0
-    const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
+    const hasExistingInputLink =
+      existingInputLink !== undefined || inputFloatingCount > 0
 
     const hasExistingOutputLink =
       isOutputSlot &&
@@ -658,11 +662,6 @@ export function useSlotLinkInteraction({
       ctrlOrMeta &&
       event.altKey &&
       !event.shiftKey
-
-    const existingInputLink =
-      isInputSlot && inputLinkId != null
-        ? graph.getLink(inputLinkId)
-        : undefined
 
     if (shouldBreakExistingInputLink && resolvedNode) {
       resolvedNode.disconnectInput(index, true)

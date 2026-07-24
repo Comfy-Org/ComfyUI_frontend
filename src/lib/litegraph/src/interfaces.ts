@@ -360,7 +360,13 @@ export interface IWidgetLocator {
 }
 
 export interface INodeInputSlot extends INodeSlot {
-  link: LinkId | null
+  /**
+   * @deprecated Id of the link targeting this slot, derived from the link
+   * store by a warning getter. Read via `node.isInputConnected(slot)` /
+   * `node.getInputLink(slot)`; mutate via `node.connect()` /
+   * `node.disconnectInput()`.
+   */
+  readonly link?: LinkId | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean

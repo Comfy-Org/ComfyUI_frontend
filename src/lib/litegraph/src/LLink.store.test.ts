@@ -196,6 +196,32 @@ describe('LLink ↔ linkStore integration', () => {
     expect(floating.origin_slot).toBe(5)
   })
 
+  it('keeps both links registered when two target slots are swapped', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in0', 'INT')
+    b.addInput('in1', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const first = a.connect(0, b, 0)!
+    const second = a.connect(0, b, 1)!
+
+    const store = useLinkStore()
+    store.updateEndpoints(graph.rootGraph.id, [
+      { topology: first._state, patch: { targetSlot: 1 } },
+      { topology: second._state, patch: { targetSlot: 0 } }
+    ])
+
+    const graphId = graph.rootGraph.id
+    expect(b.isInputConnected(0)).toBe(true)
+    expect(b.isInputConnected(1)).toBe(true)
+    expect(store.getInputSlotLink(graphId, b.id, 0)?.id).toBe(second.id)
+    expect(store.getInputSlotLink(graphId, b.id, 1)?.id).toBe(first.id)
+  })
+
   it('moving a link via target_slot reindexes the store', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

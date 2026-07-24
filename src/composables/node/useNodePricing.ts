@@ -251,8 +251,9 @@ const buildJsonataContext = (
 
   const inputs: Record<string, { connected: boolean }> = {}
   for (const name of rule.depends_on.inputs) {
-    const slot = node.inputs?.find((x: INodeInputSlot) => x.name === name)
-    inputs[name] = { connected: slot?.link != null }
+    const index =
+      node.inputs?.findIndex((x: INodeInputSlot) => x.name === name) ?? -1
+    inputs[name] = { connected: index !== -1 && node.isInputConnected(index) }
   }
 
   // Count connected inputs per autogrow group
@@ -261,8 +262,8 @@ const buildJsonataContext = (
     const prefix = groupName + '.'
     inputGroups[groupName] =
       node.inputs?.filter(
-        (inp: INodeInputSlot) =>
-          inp.name?.startsWith(prefix) && inp.link != null
+        (inp: INodeInputSlot, index: number) =>
+          inp.name?.startsWith(prefix) && node.isInputConnected(index)
       ).length ?? 0
   }
 

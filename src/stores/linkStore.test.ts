@@ -57,6 +57,26 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 4)?.id).toBe(toLinkId(1))
   })
 
+  it('ignores undefined endpoint patch values', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+
+    store.updateEndpoint(graphA, topology, {
+      originNodeId: undefined,
+      originSlot: undefined,
+      targetNodeId: undefined,
+      targetSlot: undefined
+    })
+
+    expect(topology).toMatchObject({
+      originNodeId: toNodeId(5),
+      originSlot: 0,
+      targetNodeId: toNodeId(9),
+      targetSlot: 2
+    })
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
+  })
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
@@ -80,21 +100,98 @@ describe('useLinkStore', () => {
     expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
   })
 
-  it('reports a lost placement when a target moves onto an occupied slot', () => {
+  it('rejects an occupied target without changing either link', () => {
     const store = useLinkStore()
-    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    const incumbent = link(1, 5, 0, 9, 2)
     const mover = link(2, 5, 1, 9, 3)
+    store.registerLink(graphA, incumbent)
     store.registerLink(graphA, mover)
 
-    expect(
-      store.updateEndpoint(graphA, mover, { targetSlot: 2 })
-    ).toBeUndefined()
+    expect(store.updateEndpoint(graphA, mover, { targetSlot: 2 })).toEqual({
+      ok: false,
+      error: {
+        code: 'occupied-target',
+        message: 'Link target slot 9:2 is already occupied'
+      }
+    })
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
-    expect(store.isInputSlotConnected(graphA, toNodeId(9), 3)).toBe(false)
-    expect(mover.targetSlot).toBe(2)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 3)?.id).toBe(toLinkId(2))
+    expect(mover.targetSlot).toBe(3)
   })
 
+  it.for([
+    { name: 'pairwise swap', targets: [1, 0] },
+    { name: 'three-slot rotation', targets: [1, 2, 0] }
+  ])('keeps every link registered across a $name', ({ targets }) => {
+    const store = useLinkStore()
+    const topologies = targets.map((_, slot) =>
+      link(slot + 1, 5, slot, 9, slot)
+    )
+    for (const topology of topologies) {
+      store.registerLink(graphA, topology)
+    }
+
+    store.updateEndpoints(
+      graphA,
+      topologies.map((topology, slot) => ({
+        topology,
+        patch: { targetSlot: targets[slot] }
+      }))
+    )
+
+    for (const targetSlot of targets) {
+      const sourceSlot = targets.indexOf(targetSlot)
+      expect(store.getInputSlotLink(graphA, toNodeId(9), targetSlot)?.id).toBe(
+        toLinkId(sourceSlot + 1)
+      )
+    }
+  })
+
+  it('moves into a removed link target in one transaction', () => {
+    const store = useLinkStore()
+    const mover = link(1, 5, 0, 9, 0)
+    const removed = link(2, 5, 1, 9, 1)
+    store.registerLink(graphA, mover)
+    store.registerLink(graphA, removed)
+
+    expect(
+      store.updateEndpoints(
+        graphA,
+        [{ topology: mover, patch: { targetSlot: 1 } }],
+        [removed]
+      )
+    ).toEqual({ ok: true, value: [mover] })
+
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)).toBeUndefined()
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(1))
+    expect([...store.graphTopologies(graphA)]).toEqual([mover])
+  })
+  it('rejects duplicate final targets without partial mutation', () => {
+    const store = useLinkStore()
+    const first = link(1, 5, 0, 9, 0)
+    const second = link(2, 5, 1, 9, 1)
+    store.registerLink(graphA, first)
+    store.registerLink(graphA, second)
+
+    expect(
+      store.updateEndpoints(graphA, [
+        { topology: first, patch: { targetSlot: 2 } },
+        { topology: second, patch: { targetSlot: 2 } }
+      ])
+    ).toEqual({
+      ok: false,
+      error: {
+        code: 'duplicate-target',
+        message: 'Multiple links target input slot 9:2'
+      }
+    })
+
+    expect(first.targetSlot).toBe(0)
+    expect(second.targetSlot).toBe(1)
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 0)?.id).toBe(toLinkId(1))
+    expect(store.getInputSlotLink(graphA, toNodeId(9), 1)?.id).toBe(toLinkId(2))
+  })
   it('never answers target queries from floating links', () => {
     const store = useLinkStore()
     const inputFloating: LinkTopology = {

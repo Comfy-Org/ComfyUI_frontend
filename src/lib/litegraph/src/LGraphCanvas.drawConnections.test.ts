@@ -80,11 +80,10 @@ function createTestLink(
     inputSlot
   )
   graph._addLink(link)
-  targetNode.inputs[inputSlot].link = linkId
   return link
 }
 
-describe('drawConnections widget-input slot positioning', () => {
+describe('drawConnections', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
@@ -175,6 +174,65 @@ describe('drawConnections widget-input slot positioning', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
+  it('renders links in target order instead of generated id order', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.pos = [300, 100]
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.pos = [300, 200]
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    canvas.visible_area[2] = 800
+    canvas.visible_area[3] = 600
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.drawConnections(createMockCtx())
+
+    expect([...canvas.renderedPaths]).toEqual([firstLink, secondLink])
+  })
+
+  it('connects, draws, and serializes without deprecation warnings', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [300, 100]
+    targetNode.addInput('in', 'STRING')
+    graph.add(targetNode)
+
+    const onWarning = vi.fn()
+    const warningCallbacks = vi
+      .spyOn(LiteGraph, 'onDeprecationWarning', 'get')
+      .mockReturnValue([onWarning])
+
+    try {
+      const link = sourceNode.connect(0, targetNode, 0)
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+      canvas.drawConnections(createMockCtx())
+      const serialized = graph.serialize()
+
+      expect(link).not.toBeNull()
+      expect([...canvas.renderedPaths]).toEqual([link])
+      expect(serialized.links).toHaveLength(1)
+      expect(onWarning).not.toHaveBeenCalled()
+    } finally {
+      warningCallbacks.mockRestore()
+    }
+  })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [0, 100]

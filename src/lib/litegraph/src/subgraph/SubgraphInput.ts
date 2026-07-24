@@ -1,3 +1,4 @@
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
@@ -76,10 +77,10 @@ export class SubgraphInput extends SubgraphSlot {
     // }
 
     // Disconnect target input, if it is already connected.
-    if (slot.link != null) {
+    const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
+    if (existingLink) {
       subgraph.beforeChange()
-      const link = subgraph.getLink(slot.link)
-      this.parent._disconnectNodeInput(node, slot, link)
+      this.parent._disconnectNodeInput(node, slot, existingLink)
     }
 
     const inputWidget = node.getWidgetFromSlot(slot)
@@ -119,7 +120,6 @@ export class SubgraphInput extends SubgraphSlot {
 
     // Set link ID in each slot
     this.linkIds.push(link.id)
-    slot.link = link.id
 
     anchorRerouteChain(subgraph, link)
     subgraph.incrementVersion()

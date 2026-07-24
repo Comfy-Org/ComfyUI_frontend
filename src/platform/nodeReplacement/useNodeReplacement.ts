@@ -1,6 +1,6 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
@@ -43,7 +43,7 @@ function transferInputConnection(
   if (oldSlotIdx == null || oldSlotIdx === -1) return
   if (newSlotIdx == null || newSlotIdx === -1) return
 
-  const linkId = oldNode.inputs[oldSlotIdx].link
+  const linkId = inputLinkId(graph, oldNode.id, oldSlotIdx)
   if (linkId == null) return
 
   const link = graph.links.get(linkId)
@@ -51,8 +51,6 @@ function transferInputConnection(
 
   link.target_id = newNode.id
   link.target_slot = newSlotIdx
-  newNode.inputs[newSlotIdx].link = linkId
-  oldNode.inputs[oldSlotIdx].link = null
 }
 
 function transferOutputConnections(

@@ -15,7 +15,12 @@ import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
-import { outputHasLinks, outputLinks } from './node/slotLinks'
+import {
+  inputHasLink,
+  inputLinkId,
+  outputHasLinks,
+  outputLinks
+} from './node/slotLinks'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
@@ -25,7 +30,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import {
   groupLinksByTuple,
   purgeOrphanedLinks,
-  repairInputLinks,
+  realignInputLinkSlots,
   selectSurvivorLink
 } from './linkDeduplication'
 
@@ -764,8 +769,8 @@ export class LGraph
       // num of input connections
       let num = 0
       if (node.inputs) {
-        for (const input of node.inputs) {
-          if (input?.link != null) {
+        for (const slotIndex of node.inputs.keys()) {
+          if (inputHasLink(this, node.id, slotIndex)) {
             num += 1
           }
         }
@@ -795,9 +800,9 @@ export class LGraph
       if (!node.outputs) continue
 
       // for every output
-      for (const [slot] of node.outputs.entries()) {
+      for (const slotIndex of node.outputs.keys()) {
         // for every connection
-        for (const link of outputLinks(this, node.id, slot)) {
+        for (const link of outputLinks(this, node.id, slotIndex)) {
           // already visited link (ignore it)
           if (visited_links[link.id]) continue
 
@@ -1170,8 +1175,8 @@ export class LGraph
 
     // disconnect inputs
     if (inputs) {
-      for (const [i, slot] of inputs.entries()) {
-        if (slot.link != null) node.disconnectInput(i, true)
+      for (const [i] of inputs.entries()) {
+        if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
       }
     }
 
@@ -1744,14 +1749,17 @@ export class LGraph
 
   /**
    * Removes duplicate links that share the same connection tuple
-   * (origin_id, origin_slot, target_id, target_slot). Keeps the link
-   * referenced by input.link and removes orphaned duplicates from
-   * output.links and the graph's _links map.
+   * (origin_id, origin_slot, target_id, target_slot). Keeps the link registered
+   * to the target input slot and removes orphaned duplicates from the graph.
    *
    * Three phases: group links by tuple, select the survivor, purge duplicates.
+   * @returns A map from each purged duplicate id to the survivor kept in its
+   * place, so a later realign can follow a serialized input reference through
+   * to the surviving link.
    */
-  _removeDuplicateLinks(): void {
+  _removeDuplicateLinks(): Map<LinkId, LinkId> {
     const groups = groupLinksByTuple(this._links)
+    const survivorByPurged = new Map<LinkId, LinkId>()
 
     for (const ids of groups.values()) {
       if (ids.length <= 1) continue
@@ -1761,8 +1769,12 @@ export class LGraph
       const keepId = selectSurvivorLink(ids, node)
 
       purgeOrphanedLinks(ids, keepId, this)
-      repairInputLinks(ids, keepId, node)
+      for (const id of ids) {
+        if (id !== keepId) survivorByPurged.set(id, keepId)
+      }
     }
+
+    return survivorByPurged
   }
 
   /**
@@ -1876,20 +1888,10 @@ export class LGraph
       groups: structuredClone([...groups].map((group) => group.serialize()))
     } satisfies ExportedSubgraph
 
-    const subgraph = this.createSubgraph(data)
-    subgraph.configure(data)
-    for (const node of subgraph.nodes) node.onGraphConfigured?.()
-    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
-
-    // Position the subgraph input nodes
-    subgraph.inputNode.arrange()
-    subgraph.outputNode.arrange()
-    const { boundingRect: inputRect } = subgraph.inputNode
-    const { boundingRect: outputRect } = subgraph.outputNode
-    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
-    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
-
-    // Remove items converted to subgraph
+    // Remove the originals before configuring the subgraph: its internal links
+    // reuse the boundary links' target slots, and the link store's first-wins
+    // registration would otherwise reject them in favour of the soon-removed
+    // originals that still hold those slots.
     for (const resolved of resolvedInputLinks)
       resolved.inputNode?.disconnectInput(
         resolved.inputNode.inputs.indexOf(resolved.input!),
@@ -1904,6 +1906,19 @@ export class LGraph
     for (const node of nodes) this.remove(node)
     for (const reroute of reroutes) this.removeReroute(reroute.id)
     for (const group of groups) this.remove(group)
+
+    const subgraph = this.createSubgraph(data)
+    subgraph.configure(data)
+    for (const node of subgraph.nodes) node.onGraphConfigured?.()
+    for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
+
+    // Position the subgraph input nodes
+    subgraph.inputNode.arrange()
+    subgraph.outputNode.arrange()
+    const { boundingRect: inputRect } = subgraph.inputNode
+    const { boundingRect: outputRect } = subgraph.outputNode
+    alignOutsideContainer(inputRect, Alignment.MidLeft, boundingRect, [50, 0])
+    alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
 
     this.rootGraph.events.dispatch('convert-to-subgraph', {
       subgraph,
@@ -2146,7 +2161,7 @@ export class LGraph
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        const outerLinkId = subgraphNode.inputs[link.origin_slot].link
+        const outerLinkId = inputLinkId(this, subgraphNode.id, link.origin_slot)
         if (!outerLinkId) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2715,7 +2730,15 @@ export class LGraph
       // (origin_id, origin_slot, target_id, target_slot) tuple.
       // This repairs corrupted data where extra link objects were created
       // without proper cleanup of the previous connection.
-      this._removeDuplicateLinks()
+      const survivorByPurged = this._removeDuplicateLinks()
+
+      // Node configure() overrides may have reordered serialized inputs in
+      // place to match current node definitions; re-key links to the slots
+      // that reference them. Uses nodeDataMap: the effective (possibly
+      // deduplicated-clone) data nodes were actually configured from.
+      // survivorByPurged lets an input that referenced a deduplicated link
+      // realign the survivor kept in its place.
+      realignInputLinkSlots(this, nodeDataMap.values(), survivorByPurged)
 
       // groups
       this._groups.length = 0

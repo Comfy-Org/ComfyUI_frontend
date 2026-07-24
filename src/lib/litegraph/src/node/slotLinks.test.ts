@@ -5,7 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
-import { outputHasLinks, outputLinkIds, outputLinks } from './slotLinks'
+import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import {
+  captureInputLayout,
+  inputHasLink,
+  inputLink,
+  inputLinkId,
+  outputHasLinks,
+  outputLinkIds,
+  outputLinks,
+  replaceNodeInputs
+} from './slotLinks'
 
 function createConnectedGraph(targetCount: number) {
   const graph = new LGraph()
@@ -45,9 +55,9 @@ describe('slotLinks', () => {
     expect(outputLinks(graph, source.id, 0)).toEqual([])
   })
 
-  it('never includes floating links', () => {
+  it('never reports a floating link on the output side', () => {
     const { graph, source, targets } = createConnectedGraph(1)
-    const link = graph.getLink(targets[0].inputs[0].link!)!
+    const link = inputLink(graph, targets[0].id, 0)!
     const reroute = graph.createReroute([0, 0], link)!
     graph.remove(targets[0])
 
@@ -55,6 +65,67 @@ describe('slotLinks', () => {
     expect(reroute.floatingLinkIds.size).toBe(1)
     expect(outputHasLinks(graph, source.id, 0)).toBe(false)
     expect(outputLinks(graph, source.id, 0)).toEqual([])
+  })
+
+  it('reports presence, id, and the resolved link for an input slot', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+
+    expect(inputHasLink(graph, target.id, 0)).toBe(true)
+    const id = inputLinkId(graph, target.id, 0)
+    const link = inputLink(graph, target.id, 0)
+    expect(link?.id).toBe(id)
+    expect(link?.target_id).toBe(target.id)
+    expect(link?.target_slot).toBe(0)
+  })
+
+  it('returns nothing for an unconnected input slot', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    target.disconnectInput(0)
+
+    expect(inputHasLink(graph, target.id, 0)).toBe(false)
+    expect(inputLinkId(graph, target.id, 0)).toBeUndefined()
+    expect(inputLink(graph, target.id, 0)).toBeUndefined()
+  })
+
+  it('never reports a floating link on the input side', () => {
+    const { graph, source, targets } = createConnectedGraph(1)
+    const link = inputLink(graph, targets[0].id, 0)!
+    graph.createReroute([0, 0], link)
+
+    graph.remove(source)
+
+    expect(graph.floatingLinks.size).toBe(1)
+    expect(inputHasLink(graph, targets[0].id, 0)).toBe(false)
+    expect(inputLink(graph, targets[0].id, 0)).toBeUndefined()
+  })
+
+  it('resolves links inside a subgraph', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 2 })
+    const [first, second] = subgraph.nodes
+    const innerLink = first.connect(0, second, 0)!
+
+    expect(inputHasLink(subgraph, second.id, 0)).toBe(true)
+    expect(inputLinkId(subgraph, second.id, 0)).toBe(innerLink.id)
+    expect(inputLink(subgraph, second.id, 0)).toBe(innerLink)
+  })
+
+  it('reads empty during the INPUT callback of a disconnect', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    const seen: boolean[] = []
+    target.onConnectionsChange = vi.fn(
+      (type: NodeSlotType, _slot: number, connected: boolean) => {
+        if (type === NodeSlotType.INPUT && !connected) {
+          seen.push(inputHasLink(graph, target.id, 0))
+        }
+      }
+    )
+
+    target.disconnectInput(0)
+
+    expect(seen).toEqual([false])
   })
 
   it('reads empty during the final OUTPUT callback of a disconnect-all', () => {
@@ -71,5 +142,181 @@ describe('slotLinks', () => {
     source.disconnectOutput(0)
 
     expect(seen).toEqual([true, false])
+  })
+  it('atomically reorders connected inputs', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(target)
+    const first = source.connect(0, target, 0)!
+    const second = source.connect(0, target, 1)!
+    const previous = captureInputLayout(target)
+
+    replaceNodeInputs(target, previous, target.inputs.toReversed())
+
+    expect(target.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+    expect(target.getInputLink(0)).toBe(second)
+    expect(target.getInputLink(1)).toBe(first)
+  })
+
+  it('exposes the committed layout to reentrant disconnect callbacks', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    source.addOutput('replacement', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('remove', 'INT')
+    target.addInput('keep', 'INT')
+    graph.add(target)
+    const removed = source.connect(0, target, 0)!
+    const kept = source.connect(0, target, 1)!
+    const reconnect = vi.fn(() => source.connect(1, target, 0))
+    expect(target.onConnectionsChange).toBeUndefined()
+    target.onConnectionsChange = (type, _slot, connected, link) => {
+      if (type !== NodeSlotType.INPUT || connected || link !== removed) return
+      expect(target.inputs.map(({ name }) => name)).toEqual(['keep'])
+      expect(target.getInputLink(0)).toBe(kept)
+      reconnect()
+    }
+
+    replaceNodeInputs(target, captureInputLayout(target), [target.inputs[1]])
+
+    expect(graph.getLink(removed.id)).toBeUndefined()
+    expect(graph.getLink(kept.id)).toBeUndefined()
+    expect(reconnect).toHaveBeenCalledOnce()
+    expect(target.getInputLink(0)).toBe(reconnect.mock.results[0].value)
+  })
+
+  it('disconnects a removed linked input before replacing the layout', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('keep', 'INT')
+    target.addInput('remove', 'INT')
+    graph.add(target)
+    const removedLink = source.connect(0, target, 1)!
+    const removedInput = target.inputs[1]
+    const disconnected = vi.fn()
+    target.onConnectionsChange = (type, slot, connected, _link, input) => {
+      if (type === NodeSlotType.INPUT && !connected) {
+        disconnected(slot, input)
+      }
+    }
+
+    replaceNodeInputs(target, captureInputLayout(target), [target.inputs[0]])
+
+    expect(disconnected).toHaveBeenCalledOnce()
+    expect(disconnected).toHaveBeenCalledWith(1, removedInput)
+    expect(graph.getLink(removedLink.id)).toBeUndefined()
+    expect(target.inputs).toHaveLength(1)
+  })
+
+  it('removes a discarded link with a missing origin output', () => {
+    const { graph, source, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    const link = target.getInputLink(0)!
+    const previous = captureInputLayout(target)
+    source.outputs.splice(0, 1)
+
+    replaceNodeInputs(target, previous, [])
+
+    expect(target.inputs).toHaveLength(0)
+    expect(graph.getLink(link.id)).toBeUndefined()
+    expect(inputLink(graph, target.id, 0)).toBeUndefined()
+  })
+  it('rejects a stale layout snapshot before changing topology', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    target.addInput('extra', 'INT')
+    const previous = captureInputLayout(target)
+    const link = target.getInputLink(0)
+    target.inputs.reverse()
+
+    expect(() => replaceNodeInputs(target, previous, previous.inputs)).toThrow(
+      'changed after it was captured'
+    )
+    expect(graph.getLink(link!.id)).toBe(link)
+    expect(target.isInputConnected(0)).toBe(true)
+  })
+
+  it('logs invalid assignments before disconnecting removed links', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('keep', 'INT')
+    target.addInput('remove', 'INT')
+    graph.add(target)
+    const kept = source.connect(0, target, 0)!
+    const removed = source.connect(0, target, 1)!
+    const staleTarget = new LGraphNode('Stale')
+    staleTarget.addInput('in', 'INT')
+    graph.add(staleTarget)
+    const stale = source.connect(0, staleTarget, 0)!
+    staleTarget.disconnectInput(0)
+    const previous = captureInputLayout(target)
+    const assignments = new Map(previous.links)
+    assignments.set(target.inputs[0], stale)
+    const onConnectionsChange = vi.fn()
+    target.onConnectionsChange = onConnectionsChange
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
+    ).toEqual([])
+    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
+      code: 'unowned-topology',
+      message: `Link ${stale.id} does not own its current placement`
+    })
+
+    expect(target.getInputLink(0)).toBe(kept)
+    expect(target.getInputLink(1)).toBe(removed)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('rejects duplicate input objects without changing topology', () => {
+    const { graph, targets } = createConnectedGraph(1)
+    const target = targets[0]
+    const input = target.inputs[0]
+    const link = target.getInputLink(0)!
+
+    expect(() =>
+      replaceNodeInputs(target, captureInputLayout(target), [input, input])
+    ).toThrow('only appear once')
+
+    expect(target.inputs).toEqual([input])
+    expect(graph.getLink(link.id)).toBe(link)
+    expect(target.getInputLink(0)).toBe(link)
+  })
+
+  it('rejects assigning one link to two inputs without changing topology', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const previous = captureInputLayout(target)
+    const assignments = new Map(previous.links)
+    assignments.set(target.inputs[1], link)
+
+    expect(() =>
+      replaceNodeInputs(target, previous, target.inputs, assignments)
+    ).toThrow('only be assigned to one input slot')
+
+    expect(target.getInputLink(0)).toBe(link)
+    expect(target.getInputLink(1)).toBeNull()
   })
 })

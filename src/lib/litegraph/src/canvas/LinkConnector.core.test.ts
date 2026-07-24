@@ -53,7 +53,7 @@ const test = baseTest.extend<TestContext>({
     const reroutes = new Map<RerouteId, Reroute>()
 
     await use({
-      links: new Map<LinkId, LLink>(),
+      links: graph._links,
       reroutes,
       floatingLinks,
       getLink: graph.getLink.bind(graph),
@@ -134,9 +134,8 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
-      network.links.set(link.id, link)
-      targetNode.inputs[0].link = link.id
+      const link = sourceNode.connect(0, targetNode, 0)!
+      expect(link).toBeTruthy()
 
       connector.moveInputLink(network, targetNode, targetNode.inputs[0])
 

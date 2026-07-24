@@ -80,14 +80,18 @@ of the primary index:
   stays detached. `link._graphId` records a won registration; it is the
   ownership marker that lets `unregisterLink` and re-registration no-op
   safely for losers.
-- `deleteLink` and `updateEndpoint` are **identity-checked** (`toRaw`
-  comparison): only the registered topology can vacate or re-key its
-  slot.
-- `updateEndpoint` re-keys atomically — displace, patch fields through
-  a reactive wrapper, re-place under the new key — and returns
-  `undefined` when the new target is already occupied. The `reactive()`
-  wrap stays even though registered links already hold the proxy: the
-  store is public API and may be handed a raw topology object.
+- `deleteLink` is **identity-checked** (`toRaw` comparison): only the
+  registered topology can vacate its slot.
+- updateEndpoints validates a complete endpoint batch before mutation.
+  Every participant must own its current placement, final target keys must
+  be unique, and an occupied destination is valid only when its incumbent
+  participates and vacates that key. After validation, the store removes all
+  old placements, patches every reactive topology, and inserts all final
+  placements. Swaps and rotations therefore commit without transient
+  eviction; an invalid move leaves every topology and index unchanged.
+  updateEndpoint is the single-item form and rejects occupied targets.
+  Graph-owned systems disconnect links before removal because only the graph
+  can coordinate callbacks, reroutes, and link-map lifecycle.
 
 ## Decision 5: Mutation chokepoints
 
@@ -105,11 +109,9 @@ subgraph-definition GC unregister whole graphs
 
 This design covers link topology (endpoints, type, chain terminus).
 Link visual state (`color`, path caches) and the layout store's link
-_geometry_ records are out of scope. The `output.links` mirror has since
-been deleted — the store is the single source for output-side
-connectivity (see
-[output slot connectivity](output-slot-connectivity.md) Decision 6). The
-`input.link` slot mirror remains the litegraph-native representation
-un-migrated consumers read; extracting it is the `SlotConnection`
-component work in the [ECS migration plan](ecs-migration-plan.md), not
-part of this store.
+_geometry_ records are out of scope. The `output.links` and `input.link`
+slot mirrors have since been deleted — the store is the single source
+for slot connectivity in both directions (see
+[output slot connectivity](output-slot-connectivity.md) Decision 6);
+the remaining fields are deprecated warning getters kept as extension
+migration telemetry.

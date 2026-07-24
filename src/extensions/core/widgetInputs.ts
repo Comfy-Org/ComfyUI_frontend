@@ -458,11 +458,11 @@ export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
   }
 
   if (!(slot instanceof NodeSlot)) return
-  const graph = slot.node.graph
-  if (!graph) return
-  const link = graph.getLink(slot.link)
+  const { node } = slot
+  if (!node.graph) return
+  const link = node.getInputLink(node.inputs.indexOf(slot))
   if (!link) return
-  const originNode = graph.getNodeById(link.origin_id)
+  const originNode = node.graph.getNodeById(link.origin_id)
   if (!originNode || !isPrimitiveNode(originNode)) return
   if (config) {
     originNode.recreateWidget()

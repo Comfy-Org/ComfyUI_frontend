@@ -22,14 +22,14 @@ function collectPromotedControlTargets(
   if (!node.isSubgraphNode()) return []
 
   const targets: PromotedControlTarget[] = []
-  for (const input of node.inputs) {
+  for (const [index, input] of node.inputs.entries()) {
     // Promoted inputs are store-backed and addressed by widgetId.
     if (!input.widgetId) continue
 
     // An incoming link means the value is fed externally (or by an outer
     // subgraph boundary in the nested case), so the host store is not the
     // authoritative source and control must not run here.
-    if (input.link != null) continue
+    if (node.isInputConnected(index)) continue
 
     const source = promotedInputSource(node, input)
     if (!source) continue

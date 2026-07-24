@@ -2,7 +2,7 @@ import { remove } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
@@ -144,7 +144,9 @@ export class LinkConnector {
 
     const { state, inputLinks, renderLinks } = this
 
-    const linkId = input.link
+    const linkId = node.graph
+      ? (inputLinkId(node.graph, node.id, node.inputs.indexOf(input)) ?? null)
+      : null
     if (linkId == null) {
       // No link connected, check for a floating link
       const [floatingLink] = slotFloatingLinks(

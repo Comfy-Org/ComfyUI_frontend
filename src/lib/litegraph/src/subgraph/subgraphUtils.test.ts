@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/lib/litegraph/src/litegraph'
 
+import { reorderSubgraphInputs } from './subgraphUtils'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -21,6 +22,33 @@ describe('subgraphUtils', () => {
     resetSubgraphFixtureState()
   })
 
+  describe('reorderSubgraphInputs', () => {
+    it('logs and preserves mismatched host and subgraph inputs', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.inputs.pop()
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      reorderSubgraphInputs(host, [1, 0])
+
+      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
+        'first',
+        'second'
+      ])
+      expect(consoleError).toHaveBeenCalledWith(
+        'reorderSubgraphInputs: host and subgraph inputs differ',
+        { hostInputs: 1, subgraphInputs: 2 }
+      )
+      consoleError.mockRestore()
+    })
+  })
   describe('getDirectSubgraphIds', () => {
     it('should return empty set for graph with no subgraph nodes', () => {
       const graph = new LGraph()
