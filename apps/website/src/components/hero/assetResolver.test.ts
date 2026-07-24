@@ -38,14 +38,16 @@ describe('resolveAsset', () => {
     )
   })
 
-  it('degrades distance to the nearest shipped label when the bucket is missing', () => {
-    // front eye-level ships only medium, so close-up and wide zooms degrade.
+  it('matches every shipped front-view distance bucket', () => {
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 9 }).src).toContain(
-      'front-view__eye-level-shot__medium-shot'
+      'front-view__eye-level-shot__close-up'
     )
     expect(resolveAsset({ azimuth: 0, elevation: 0, zoom: 0 }).src).toContain(
-      'front-view__eye-level-shot__medium-shot'
+      'front-view__eye-level-shot__wide-shot'
     )
+  })
+
+  it('degrades distance to the nearest shipped label when the bucket is missing', () => {
     // front high-angle ships medium + wide, so a close-up zoom degrades.
     expect(resolveAsset({ azimuth: 0, elevation: 60, zoom: 9 }).src).toContain(
       'front-view__high-angle-shot__medium-shot'

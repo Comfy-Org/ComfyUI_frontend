@@ -41,6 +41,8 @@ function angleAsset(
 }
 
 export const ANGLE_ASSETS: AngleAsset[] = [
+  angleAsset('front view', 'eye-level shot', 'close-up'),
+  angleAsset('front view', 'eye-level shot', 'wide shot'),
   angleAsset('front view', 'eye-level shot', 'medium shot'),
   angleAsset('front-right quarter view', 'eye-level shot', 'medium shot'),
   angleAsset('right side view', 'eye-level shot', 'medium shot'),
