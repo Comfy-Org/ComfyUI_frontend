@@ -3,6 +3,7 @@ import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
 import { isCloud } from '@/platform/distribution/types'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -97,23 +98,36 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   function loadAuthenticatedStores() {
     if (storesLoaded) return
     storesLoaded = true
-    void settingStore.load()
-    void workflowStore.loadWorkflows()
+
+    const phaseSettings = bootstrapTracer.startPhase('bootstrap/settings')
+    void settingStore.load().then(() => phaseSettings.stop())
+
+    const phaseWorkflows = bootstrapTracer.startPhase('bootstrap/workflows')
+    void workflowStore.loadWorkflows().then(() => phaseWorkflows.stop())
   }
 
   async function startStoreBootstrap() {
     if (isCloud) {
+      const phaseAuth = bootstrapTracer.startPhase('auth-gate/initialized')
       await waitForCloudAuth()
+      phaseAuth.stop()
     }
 
     const userStore = useUserStore()
+    const phaseUser = bootstrapTracer.startPhase('auth-gate/user-store')
     await userStore.initialize()
+    phaseUser.stop()
 
     const { needsLogin } = storeToRefs(userStore)
+    const phaseLogin = bootstrapTracer.startPhase('auth-gate/needs-login')
     await until(needsLogin).toBe(false)
+    phaseLogin.stop()
 
     void loadI18n()
     loadAuthenticatedStores()
+
+    bootstrapTracer.milestone('stores-ready')
+    bootstrapTracer.logSummary()
   }
 
   return {
