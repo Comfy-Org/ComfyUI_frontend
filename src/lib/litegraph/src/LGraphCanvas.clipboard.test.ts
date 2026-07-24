@@ -4,11 +4,19 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraph,
   LGraphCanvas,
@@ -192,38 +200,6 @@ describe('remapClipboardSubgraphNodeIds', () => {
   })
 })
 
-const registeredTypesToCleanup: string[] = []
-
-afterEach(() => {
-  for (const type of registeredTypesToCleanup) {
-    LiteGraph.unregisterNodeType(type)
-  }
-  registeredTypesToCleanup.length = 0
-})
-
-function registerSubgraphNodeTypeOnCreate(rootGraph: LGraph): void {
-  rootGraph.events.addEventListener('subgraph-created', (e) => {
-    const { subgraph } = e.detail
-    class TestSubgraphNode extends SubgraphNode {
-      constructor() {
-        super(rootGraph, subgraph as Subgraph, {
-          id: -1,
-          type: subgraph.id,
-          pos: [0, 0],
-          size: [100, 100],
-          inputs: [],
-          outputs: [],
-          flags: {},
-          order: 0,
-          mode: 0
-        })
-      }
-    }
-    LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-    registeredTypesToCleanup.push(subgraph.id)
-  })
-}
-
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
   el.width = 800
@@ -244,7 +220,7 @@ function registerClipboardNodeType(type: string): void {
     }
   }
   LiteGraph.registerNodeType(type, ClipboardNode)
-  registeredTypesToCleanup.push(type)
+  onTestFinished(() => LiteGraph.unregisterNodeType(type))
 }
 
 describe('_deserializeItems paste-time migration & auto-expose', () => {
@@ -340,7 +316,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       })
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -416,7 +392,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       autoExposeKnownPreviewNodes(hostNode)
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -556,7 +532,7 @@ describe('clipboard reroute id integrity', () => {
   it('copying a subgraph node leaves the live subgraph in control of its reroute registrations', () => {
     registerClipboardNodeType(carrierType)
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
     const { subgraph, host } = createLiveRerouteSubgraph(rootGraph)
 
@@ -576,7 +552,7 @@ describe('clipboard reroute id integrity', () => {
   it('pasting a subgraph node remaps colliding reroute ids instead of hijacking live registrations', () => {
     registerClipboardNodeType(carrierType)
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
     const canvas = createCanvas(rootGraph)
     const { subgraph: liveSubgraph } = createLiveRerouteSubgraph(rootGraph)
 

@@ -1,15 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { computed } from 'vue'
 
-import {
-  LGraph,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -233,44 +228,20 @@ describe('Reroute ↔ rerouteStore integration', () => {
     const reroute = graph.createReroute([10, 10], link)!
     const graphId = graph.rootGraph.id
 
-    const registeredTypes: string[] = []
-    graph.events.addEventListener('subgraph-created', (e) => {
-      const { subgraph } = e.detail
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(graph, subgraph as Subgraph, {
-            id: -1,
-            type: subgraph.id,
-            pos: [0, 0],
-            size: [100, 100],
-            inputs: [],
-            outputs: [],
-            flags: {},
-            order: 0,
-            mode: 0
-          })
-        }
-      }
-      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-      registeredTypes.push(subgraph.id)
-    })
+    onTestFinished(enableSubgraphNodeCreation(graph))
 
-    try {
-      const { subgraph } = graph.convertToSubgraph(new Set([a, b, reroute]))
+    const { subgraph } = graph.convertToSubgraph(new Set([a, b, reroute]))
 
-      expect(graph.reroutes.size).toBe(0)
-      const converted = subgraph.reroutes.get(reroute.id)
-      expect(converted).toBeDefined()
+    expect(graph.reroutes.size).toBe(0)
+    const converted = subgraph.reroutes.get(reroute.id)
+    expect(converted).toBeDefined()
 
-      const [innerLink] = [...subgraph._links.values()]
-      expect(innerLink.parentId).toBe(reroute.id)
-      expect(store.getReroute(graphId, reroute.id)).toBeDefined()
+    const [innerLink] = [...subgraph._links.values()]
+    expect(innerLink.parentId).toBe(reroute.id)
+    expect(store.getReroute(graphId, reroute.id)).toBeDefined()
 
-      subgraph.removeReroute(reroute.id)
-      expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
-    } finally {
-      for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
-    }
+    subgraph.removeReroute(reroute.id)
+    expect(store.getReroute(graphId, reroute.id)).toBeUndefined()
   })
 
   it('floating marker survives through the store state', () => {

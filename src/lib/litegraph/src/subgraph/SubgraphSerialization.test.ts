@@ -13,13 +13,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   LGraph,
   LGraphNode,
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -34,31 +34,6 @@ const DUPLICATE_ID_SUBGRAPH_A = '11111111-1111-4111-8111-111111111111'
 const DUPLICATE_ID_SUBGRAPH_B = '22222222-2222-4222-8222-222222222222'
 const LEGACY_SUBGRAPH_INPUT_ID = -10
 const LEGACY_SUBGRAPH_OUTPUT_ID = -20
-
-function createRegisteredNode(
-  graph: LGraph | Subgraph,
-  inputs: ISlotType[] = [],
-  outputs: ISlotType[] = [],
-  title?: string
-) {
-  const type = JSON.stringify({ inputs, outputs })
-  if (!LiteGraph.registered_node_types[type]) {
-    class testnode extends LGraphNode {
-      constructor(title: string) {
-        super(title)
-        let i = 0
-        for (const input of inputs) this.addInput('input_' + i++, input)
-        let o = 0
-        for (const output of outputs) this.addOutput('output_' + o++, output)
-      }
-    }
-    LiteGraph.registered_node_types[type] = testnode
-  }
-  const node = LiteGraph.createNode(type, title)
-  if (!node) throw new Error('Failed to create node')
-  graph.add(node)
-  return node
-}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -471,9 +446,9 @@ describe('SubgraphSerialization - Data Integrity', () => {
   it('should preserve interior link structure through serialization', () => {
     const subgraph = createTestSubgraph({ nodeCount: 0 })
 
-    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
-    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
-    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+    const nodeA = createTestNode(subgraph, [], ['number'], 'A')
+    const nodeB = createTestNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createTestNode(subgraph, ['string'], [], 'C')
 
     nodeA.connect(0, nodeB, 0)
     nodeB.connect(0, nodeC, 0)
@@ -503,9 +478,9 @@ describe('SubgraphSerialization - Data Integrity', () => {
   it('serializes interior links with contract key order and round-trips byte-identically', () => {
     const subgraph = createTestSubgraph({ nodeCount: 0 })
 
-    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
-    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
-    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+    const nodeA = createTestNode(subgraph, [], ['number'], 'A')
+    const nodeB = createTestNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createTestNode(subgraph, ['string'], [], 'C')
 
     nodeA.connect(0, nodeB, 0)
     nodeB.connect(0, nodeC, 0)

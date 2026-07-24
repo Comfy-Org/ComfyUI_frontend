@@ -59,6 +59,46 @@ function nextFixtureUuid(): UUID {
 export function resetSubgraphFixtureState(): void {
   fixtureUuidSequence = 1
   cleanupComplexPromotionFixtureNodeType()
+  disposeSubgraphNodeCreation()
+}
+
+const subgraphNodeTypesToDispose: string[] = []
+
+function disposeSubgraphNodeCreation(): void {
+  for (const type of subgraphNodeTypesToDispose) {
+    delete LiteGraph.registered_node_types[type]
+  }
+  subgraphNodeTypesToDispose.length = 0
+}
+
+/**
+ * Registers a {@link SubgraphNode} type for every subgraph created under
+ * `rootGraph`, so that operations which rehydrate a subgraph instance by type
+ * (`convertToSubgraph`, clipboard paste, `configure`) can resolve one.
+ * @returns A disposer that unregisters the types. Test files that call
+ * {@link resetSubgraphFixtureState} between tests may ignore it.
+ */
+export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
+  rootGraph.events.addEventListener('subgraph-created', (e) => {
+    const { subgraph } = e.detail
+    LiteGraph.registered_node_types[subgraph.id] = class extends SubgraphNode {
+      constructor() {
+        super(rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+    }
+    subgraphNodeTypesToDispose.push(subgraph.id)
+  })
+  return disposeSubgraphNodeCreation
 }
 
 export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
