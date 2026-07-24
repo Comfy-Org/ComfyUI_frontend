@@ -17,7 +17,9 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
@@ -163,15 +165,25 @@ describe('insertWorkflow scratch graph isolation', () => {
     expect(liveWidget.value).toBe(42)
   })
 
-  it('does not add badge rows for inserted nodes that are not in the live graph', async () => {
+  it('does not change widget rows in the live graph bucket', async () => {
     const workflowId = createUuidv4()
     const liveGraph = new LGraph(graphJson(workflowId, 7))
     const nodeToDelete = liveGraph.getNodeById(toNodeId(2))
     if (!nodeToDelete) throw new Error('probe node missing')
     liveGraph.remove(nodeToDelete)
+    const widgetStore = useWidgetValueStore()
+    const liveWidgetId = widgetId(workflowId, toNodeId(1), 'value')
+    const missingWidgetId = widgetId(workflowId, toNodeId(2), 'value')
+    const liveWidgetState = widgetStore.getWidget(liveWidgetId)
+    widgetStore.deleteWidget(missingWidgetId)
+    expect(liveWidgetState).toBeDefined()
+    expect(widgetStore.getWidget(missingWidgetId)).toBeUndefined()
 
     await useWorkflowService().insertWorkflow(
       stubWorkflow(graphJson(workflowId, 7))
     )
+
+    expect(widgetStore.getWidget(liveWidgetId)).toBe(liveWidgetState)
+    expect(widgetStore.getWidget(missingWidgetId)).toBeUndefined()
   })
 })
