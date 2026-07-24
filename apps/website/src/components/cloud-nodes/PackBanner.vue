@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { useBannerImage } from '../../composables/useBannerImage'
 
 const {
@@ -23,6 +25,8 @@ const {
   bannerUrl: () => bannerUrl,
   iconUrl: () => iconUrl
 })
+
+const bannerLoaded = ref(false)
 </script>
 
 <template>
@@ -41,7 +45,7 @@ const {
     </div>
     <div v-else class="relative size-full">
       <div
-        v-if="imgSrc && !isImageError"
+        v-if="imgSrc && !isImageError && bannerLoaded"
         class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
         :style="{ backgroundImage: `url(${imgSrc})`, filter: 'blur(10px)' }"
       />
@@ -55,6 +59,7 @@ const {
             ? 'relative z-10 size-full object-cover'
             : 'relative z-10 size-full object-contain'
         "
+        @load="bannerLoaded = true"
         @error="onImageError"
       />
     </div>
