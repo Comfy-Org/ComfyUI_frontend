@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
-import { DialogContent, useForwardPropsEmits } from 'reka-ui'
+import {
+  DialogContent,
+  injectDialogRootContext,
+  useForwardPropsEmits
+} from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DialogContentSize } from './dialog.variants'
 import { dialogContentVariants } from './dialog.variants'
+import { useModalPointerLock } from './useModalPointerLock'
 
 const {
   size,
@@ -23,6 +28,11 @@ const {
 
 const emits = defineEmits<DialogContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
+
+const dialogRootContext = injectDialogRootContext(null)
+if (dialogRootContext?.modal.value) {
+  useModalPointerLock(() => dialogRootContext.open.value)
+}
 </script>
 
 <template>

@@ -1,5 +1,11 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { isDesktop } from '@/platform/distribution/types'
+import { useModelDownloadStore } from '@/platform/modelManager/stores/modelDownloadStore'
+import { DownloadApiError } from '@/platform/modelManager/types'
+import { buildModelId } from '@/platform/modelManager/utils/modelId'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
@@ -29,6 +35,7 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
 ])
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
+const MODEL_MANAGER_TAB_ID = 'model-manager'
 
 export interface ModelWithUrl {
   name: string
@@ -45,6 +52,96 @@ async function startDesktop2ModelDownload(
   } catch (error: unknown) {
     console.error('Failed to start Desktop2 model download:', error)
   }
+}
+
+function revealDownloadManager(): void {
+  useSidebarTabStore().activeSidebarTabId = MODEL_MANAGER_TAB_ID
+}
+
+/**
+ * Already on disk: surface a confirmation, refresh the model folder, and
+ * re-scan missing models so any node error for this model clears. Loaded
+ * lazily to keep this module's import graph (and its unit tests) light.
+ */
+async function refreshAfterModelAvailable(model: ModelWithUrl): Promise<void> {
+  try {
+    const [{ useModelStore }, { useMissingModelStore }] = await Promise.all([
+      import('@/stores/modelStore'),
+      import('@/platform/missingModel/missingModelStore')
+    ])
+    if (model.directory) {
+      try {
+        await useModelStore().refreshModelFolder(model.directory)
+      } catch (error) {
+        console.warn(
+          '[MissingModel] Failed to refresh model folder after model available',
+          error
+        )
+      }
+    }
+    void useMissingModelStore().refreshMissingModels()
+  } catch (error) {
+    console.warn(
+      '[MissingModel] Failed to refresh after model available',
+      error
+    )
+  }
+}
+
+/**
+ * Enqueues a server-side download and reveals the Model Manager panel so the
+ * user can watch live progress, status, and completion. The two benign `409`
+ * cases get an info toast: `ALREADY_DOWNLOADING` links to the existing job,
+ * `ALREADY_AVAILABLE` confirms it's installed and clears the node error. Any
+ * other failure is reported via an error toast.
+ */
+async function startServerSideModelDownload(
+  model: ModelWithUrl
+): Promise<void> {
+  const toast = useToastStore()
+  try {
+    await useModelDownloadStore().enqueue({
+      url: model.url,
+      model_id: buildModelId(model.directory, model.name)
+    })
+    revealDownloadManager()
+  } catch (error: unknown) {
+    if (error instanceof DownloadApiError && error.is('ALREADY_DOWNLOADING')) {
+      revealDownloadManager()
+      toast.add({
+        severity: 'info',
+        summary: t('modelManager.alreadyDownloading'),
+        detail: model.name,
+        life: 4000
+      })
+      return
+    }
+    if (error instanceof DownloadApiError && error.is('ALREADY_AVAILABLE')) {
+      toast.add({
+        severity: 'info',
+        summary: t('modelManager.alreadyInstalled'),
+        detail: model.name,
+        life: 4000
+      })
+      void refreshAfterModelAvailable(model)
+      return
+    }
+    toast.add({
+      severity: 'error',
+      summary: t('modelManager.actionFailed'),
+      detail: error instanceof Error ? error.message : String(error),
+      life: 5000
+    })
+  }
+}
+
+function startBrowserModelDownload(model: ModelWithUrl): void {
+  const link = document.createElement('a')
+  link.href = model.url
+  link.download = model.name
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.click()
 }
 
 /**
@@ -82,12 +179,11 @@ export function downloadModel(
   }
 
   if (!isDesktop) {
-    const link = document.createElement('a')
-    link.href = model.url
-    link.download = model.name
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.click()
+    if (useFeatureFlags().flags.serverSideModelDownloads) {
+      void startServerSideModelDownload(model)
+    } else {
+      startBrowserModelDownload(model)
+    }
     return
   }
 

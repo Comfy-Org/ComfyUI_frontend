@@ -265,7 +265,7 @@ onMounted(() => {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
 
-  --sidebar-default-floating-width: 48px;
+  --sidebar-default-floating-width: 50px;
   --sidebar-default-connected-width: calc(
     var(--sidebar-default-floating-width) + var(--sidebar-padding) * 2
   );

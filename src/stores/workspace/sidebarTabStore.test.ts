@@ -5,12 +5,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
+const {
+  mockGetSetting,
+  mockRegisterCommand,
+  mockRegisterCommands,
+  mockUnregisterCommand,
+  mockServerSideModelDownloads
+} = vi.hoisted(() => ({
+  mockGetSetting: vi.fn(),
+  mockRegisterCommand: vi.fn(),
+  mockRegisterCommands: vi.fn(),
+  mockUnregisterCommand: vi.fn(),
+  mockServerSideModelDownloads: { value: false }
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -21,9 +28,42 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
     registerCommand: mockRegisterCommand,
+    unregisterCommand: mockUnregisterCommand,
     commands: []
   })
 }))
+
+vi.mock('@/composables/useFeatureFlags', async () => {
+  const { ref } = await import('vue')
+  const serverSideModelDownloadsRef = ref(mockServerSideModelDownloads.value)
+  Object.defineProperty(mockServerSideModelDownloads, 'value', {
+    get: () => serverSideModelDownloadsRef.value,
+    set: (value: boolean) => {
+      serverSideModelDownloadsRef.value = value
+    }
+  })
+  return {
+    useFeatureFlags: () => ({
+      flags: {
+        get serverSideModelDownloads() {
+          return mockServerSideModelDownloads.value
+        }
+      }
+    })
+  }
+})
+
+vi.mock(
+  '@/platform/modelManager/composables/useModelManagerSidebarTab',
+  () => ({
+    useModelManagerSidebarTab: () => ({
+      id: 'model-manager',
+      title: 'model-manager',
+      type: 'vue',
+      component: {}
+    })
+  })
+)
 
 vi.mock('@/stores/menuItemStore', () => ({
   useMenuItemStore: () => ({
@@ -99,6 +139,8 @@ describe('useSidebarTabStore', () => {
     mockGetSetting.mockReset()
     mockRegisterCommand.mockClear()
     mockRegisterCommands.mockClear()
+    mockUnregisterCommand.mockClear()
+    mockServerSideModelDownloads.value = false
   })
 
   it('registers the job history tab when QPO V2 is enabled', () => {
@@ -159,5 +201,58 @@ describe('useSidebarTabStore', () => {
       'apps'
     ])
     expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+  })
+
+  it('registers the model-manager tab when the feature flag starts enabled', () => {
+    mockServerSideModelDownloads.value = true
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain('model-manager')
+  })
+
+  it('does not register the model-manager tab when the feature flag is disabled', () => {
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'model-manager'
+    )
+  })
+
+  it('registers the model-manager tab when the feature flag turns on later', async () => {
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'model-manager'
+    )
+
+    mockServerSideModelDownloads.value = true
+    await nextTick()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain('model-manager')
+    expect(mockRegisterCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'Workspace.ToggleSidebarTab.model-manager'
+      })
+    )
+  })
+
+  it('unregisters the model-manager tab and its command when the flag turns off', async () => {
+    mockServerSideModelDownloads.value = true
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+    expect(store.sidebarTabs.map((tab) => tab.id)).toContain('model-manager')
+
+    mockServerSideModelDownloads.value = false
+    await nextTick()
+
+    expect(store.sidebarTabs.map((tab) => tab.id)).not.toContain(
+      'model-manager'
+    )
+    expect(mockUnregisterCommand).toHaveBeenCalledWith(
+      'Workspace.ToggleSidebarTab.model-manager'
+    )
   })
 })

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { DownloadApiError } from '@/platform/modelManager/types'
+
 import {
   downloadModel,
   fetchModelMetadata,
@@ -7,13 +9,23 @@ import {
   toBrowsableUrl
 } from './missingModelDownload'
 
-const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
-  vi.hoisted(() => ({
-    fetchMock: vi.fn(),
-    mockIsDesktop: { value: false },
-    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
-    mockStartDownload: vi.fn()
-  }))
+const {
+  fetchMock,
+  mockIsDesktop,
+  mockSidebarTabStore,
+  mockStartDownload,
+  mockEnqueue,
+  mockToastAdd,
+  mockFlags
+} = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  mockIsDesktop: { value: false },
+  mockSidebarTabStore: { activeSidebarTabId: null as string | null },
+  mockStartDownload: vi.fn(),
+  mockEnqueue: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockFlags: { serverSideModelDownloads: false }
+}))
 
 vi.stubGlobal('fetch', fetchMock)
 
@@ -33,12 +45,38 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
+vi.mock('@/platform/modelManager/stores/modelDownloadStore', () => ({
+  useModelDownloadStore: () => ({ enqueue: mockEnqueue })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
+}))
+
+const mockRefreshModelFolder = vi.fn()
+const mockRefreshMissingModels = vi.fn()
+
+vi.mock('@/stores/modelStore', () => ({
+  useModelStore: () => ({ refreshModelFolder: mockRefreshModelFolder })
+}))
+
+vi.mock('@/platform/missingModel/missingModelStore', () => ({
+  useMissingModelStore: () => ({
+    refreshMissingModels: mockRefreshMissingModels
+  })
+}))
+
 let testId = 0
 
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.resetAllMocks()
   delete window.__comfyDesktop2
+  mockFlags.serverSideModelDownloads = false
 })
 
 describe('fetchModelMetadata', () => {
@@ -115,6 +153,26 @@ describe('fetchModelMetadata', () => {
     expect(metadata.fileSize).toBeNull()
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns null metadata when the Civitai request throws', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network down'))
+
+    const metadata = await fetchModelMetadata(
+      `https://civitai.com/api/download/models/${testId}`
+    )
+
+    expect(metadata).toEqual({ fileSize: null, gatedRepoUrl: null })
+  })
+
+  it('returns null metadata when the HEAD request throws', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network down'))
+
+    const metadata = await fetchModelMetadata(
+      `https://huggingface.co/org/model/resolve/main/throws-${testId}.safetensors`
+    )
+
+    expect(metadata).toEqual({ fileSize: null, gatedRepoUrl: null })
   })
 
   it('returns cached metadata on second call', async () => {
@@ -239,6 +297,16 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(false)
+  })
+
+  it('allows explicitly whitelisted URLs from an otherwise disallowed host', () => {
+    expect(
+      isModelDownloadable({
+        name: 'RealESRGAN_x4plus.pth',
+        url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+        directory: 'upscale_models'
+      })
+    ).toBe(true)
   })
 })
 
@@ -377,6 +445,152 @@ describe('downloadModel', () => {
 
     expect(desktopDownloadModel).not.toHaveBeenCalled()
     expect(anchorClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the browser fallback on web when server-side downloads are disabled', () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+    expect(mockEnqueue).not.toHaveBeenCalled()
+  })
+
+  it('enqueues a server-side download and reveals the manager when enabled', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockResolvedValue({ download_id: 'd1', accepted: true })
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-manager')
+    })
+    expect(mockEnqueue).toHaveBeenCalledWith({
+      url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+      model_id: 'checkpoints/model.safetensors'
+    })
+    expect(anchorClick).not.toHaveBeenCalled()
+  })
+
+  it('shows a toast when a server-side enqueue fails', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockRejectedValue(new Error('boom'))
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'boom' })
+      )
+    })
+    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+  })
+
+  it('reveals the download manager and shows an info toast for an in-progress download', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockRejectedValue(
+      new DownloadApiError('exists', 'ALREADY_DOWNLOADING', 409)
+    )
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-manager')
+    })
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'model.safetensors'
+      })
+    )
+  })
+
+  it('refreshes the model folder and re-scans missing models when already available', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockRejectedValue(
+      new DownloadApiError('already there', 'ALREADY_AVAILABLE', 409)
+    )
+    mockRefreshModelFolder.mockResolvedValue(undefined)
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'info',
+          detail: 'model.safetensors'
+        })
+      )
+    })
+    await vi.waitFor(() => {
+      expect(mockRefreshModelFolder).toHaveBeenCalledWith('checkpoints')
+    })
+    expect(mockRefreshMissingModels).toHaveBeenCalled()
+    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+  })
+
+  it('still re-scans missing models when the post-available folder refresh fails', async () => {
+    mockFlags.serverSideModelDownloads = true
+    mockEnqueue.mockRejectedValue(
+      new DownloadApiError('already there', 'ALREADY_AVAILABLE', 409)
+    )
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockRefreshModelFolder.mockRejectedValue(new Error('boom'))
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(mockRefreshMissingModels).toHaveBeenCalled()
+    })
+    expect(consoleWarn).toHaveBeenCalled()
+    consoleWarn.mockRestore()
   })
 
   it('opens the model library sidebar before starting a desktop download', () => {
