@@ -2,10 +2,26 @@
   "name": "@comfyorg/design-system",
   "version": "1.0.0",
   "description": "Shared design system for ComfyUI Frontend",
+  "homepage": "https://comfy.org",
+  "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git"
+  },
   "type": "module",
   "exports": {
-    "./css/*": "./src/css/*"
+    "./css/*": "./src/css/*",
+    "./icons/*": "./src/icons/*"
   },
+  "files": [
+    "src/css",
+    "src/icons"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
@@ -20,5 +36,8 @@
   "devDependencies": {
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
