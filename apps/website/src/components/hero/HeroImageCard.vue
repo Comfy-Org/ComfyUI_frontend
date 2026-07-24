@@ -1,0 +1,57 @@
+<script setup lang="ts">
+const {
+  src,
+  alt,
+  label,
+  filter,
+  dot = false
+} = defineProps<{
+  src: string
+  alt: string
+  label?: string
+  filter?: string
+  dot?: boolean
+}>()
+</script>
+
+<template>
+  <div
+    class="relative size-full overflow-hidden rounded-[1.25em] border border-white/12 bg-black/40"
+  >
+    <Transition
+      enter-active-class="transition-opacity duration-500 ease-out"
+      leave-active-class="transition-opacity duration-500 ease-out absolute inset-0"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+      mode="default"
+    >
+      <img
+        :key="src"
+        :src
+        :alt
+        :style="{ filter }"
+        draggable="false"
+        class="absolute inset-0 size-full object-cover select-none"
+        decoding="async"
+      />
+    </Transition>
+
+    <!-- Wire anchor; its centre must match PORTS.inputOut in graphLayout.ts -->
+    <span
+      v-if="dot"
+      class="bg-primary-comfy-yellow absolute top-[1.325em] right-[1.225em] size-[0.55em] rounded-full"
+    />
+
+    <span
+      v-if="label"
+      class="bg-secondary-deep-plum absolute top-[1em] left-[1em] z-10 flex items-center gap-[0.5em] rounded-[0.5em] px-[0.9em] py-[0.45em]"
+    >
+      <span class="bg-primary-comfy-yellow size-[0.5em] rounded-full" />
+      <span
+        class="text-primary-comfy-yellow font-formula text-[0.75em] font-semibold tracking-[0.12em]"
+      >
+        {{ label }}
+      </span>
+    </span>
+  </div>
+</template>
