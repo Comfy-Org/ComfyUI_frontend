@@ -30,6 +30,16 @@ const jobDetailCache = new QuickLRU<string, JobDetail>({
 // Track latest request to dedupe stale responses
 let latestTaskRequestId: string | null = null
 
+export function invalidateCachedJob(jobId: string): void {
+  taskCache.delete(jobId)
+  jobDetailCache.delete(jobId)
+}
+
+export function clearJobOutputCache(): void {
+  taskCache.clear()
+  jobDetailCache.clear()
+}
+
 // ===== Task Output Caching =====
 
 export function findActiveIndex(
