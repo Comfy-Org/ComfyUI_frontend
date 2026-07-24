@@ -27,8 +27,6 @@ import {
   deletePayload,
   deletePayloads,
   getPayloadKeys,
-  isStorageAvailable,
-  markStorageUnavailable,
   readIndex,
   readPayload,
   writeIndex,
@@ -104,8 +102,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Primes index cache, writes payload, then persists updated index.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
-    if (!isStorageAvailable()) return false
-
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
@@ -197,8 +193,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
-    // All evictions failed - mark storage as unavailable
-    markStorageUnavailable()
     return false
   }
 
